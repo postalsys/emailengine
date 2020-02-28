@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="IMAP API Homepage" />
+        <title>IMAP API</title>
+
+        <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
+        <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/static/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+        <link rel="manifest" href="/static/favicon/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+
+        <link href="/static/bootstrap-4.4.1-dist/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="/static/css/callout.css" rel="stylesheet" />
+
+        <style>
+            footer {
+                background-color: #f5f5f5;
+            }
+        </style>
+    </head>
+    <body class="d-flex flex-column h-100">
+        <main role="main" class="flex-shrink-0">
+            <div class="container mt-4">
+                <div id="toastContainer" style="position: absolute; top: 50px; right: 50px; min-width: 250px;"></div>
+
+                <img src="/static/logo.png" style="display: block; float: left; margin: 10px 10px 0 0;" />
+
+                <h1>
+                    IMAP API
+                </h1>
+
+                <div class="row mt-4">
+                    <div class="col-sm-8">
+                        <ul class="nav nav-tabs" id="myTab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true"
+                                    >Overview</a
+                                >
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="docs-tab" data-toggle="tab" href="#docs" role="tab" aria-controls="docs" aria-selected="false">
+                                    <img src="/static/icons/document-code.svg" width="20" height="20" title="Documentation" />
+                                    Documentation</a
+                                >
+                            </li>
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link"
+                                    id="settings-tab"
+                                    data-toggle="tab"
+                                    href="#settings"
+                                    role="tab"
+                                    aria-controls="settings"
+                                    aria-selected="false"
+                                >
+                                    <img src="/static/icons/gear.svg" width="20" height="20" title="Setings" />
+                                    Settings</a
+                                >
+                            </li>
+                        </ul>
+
+                        <div class="tab-content mt-4">
+                            <div class="tab-pane active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                                <p>
+                                    IMAP API is a self hosted server application for accessing IMAP accounts over REST API. IMAP API connects to user's IMAP
+                                    account, translates API requests to IMAP and also sends webhooks for changes like new or deleted emails.
+                                </p>
+
+                                <div class="bd-callout bd-callout-info">
+                                    <p>
+                                        IMAP API stores only the minimal amount of data required to keep mailbox state in sync. Email contents are not sent to
+                                        any external provider and are not stored.
+                                    </p>
+                                </div>
+
+                                <p>
+                                    IMAP API allows you to:
+                                </p>
+
+                                <ul>
+                                    <li>
+                                        List folders and messages in a user's email account
+                                        <span class="text-muted">– IMAP API provides an easy to use paging and sorts newer messages first</span>
+                                    </li>
+                                    <li>
+                                        Track changes in user's email account
+                                        <span class="text-muted">– IMAP API uses webhooks to notify your application</span>
+                                    </li>
+                                    <li>
+                                        Send out emails on behalf of the user
+                                        <span class="text-muted"
+                                            >– IMAP API sets all required headers and message flags when replying or forwarding a message and also uploads the
+                                            message to the Sent Mail folder</span
+                                        >
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="tab-pane" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+                                <p>API documentation for IMAP API is available <a href="/docs">here</a>.</p>
+
+                                <h4>Getting started</h4>
+
+                                <h5 class="mt-4">1. Set up webhook target</h5>
+
+                                <p>
+                                    Open the <em>Settings</em> tab and set an URL for webhooks. Whenever something happens with any of the tracked email
+                                    accounts you get a notification to this URL.
+                                </p>
+
+                                <p>For example if flags are updated for a message you'd get a notification that looks like this:</p>
+
+                                <pre>
+{
+    "account": "example",
+    "path": "[Google Mail]/All Mail",
+    "event": "messageUpdated",
+    "data": {
+        "id": "AAAAAQAAAeE",
+        "uid": 350861,
+        "changes": {
+            "flags": {
+                "added": [
+                    "\\Seen"
+                ]
+            }
+        }
+    }
+}</pre
+                                >
+
+                                <h5 class="mt-4">2. Register an email account with IMAP API</h5>
+                                <p>
+                                    You need IMAP and SMTP settings and also provide some kind of an identification string value for this account. You can use
+                                    the same IDs as your main system or generate some unique ones. This value is later needed to identify this account and to
+                                    perform operations on it.
+                                </p>
+
+                                <pre>
+$ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "content-type: application/json" -d '{
+    "account": "example",
+    "name": "My Example Account",
+    "imap": {
+        "host": "imap.gmail.com",
+        "port": 993,
+        "secure": true,
+        "auth": {
+            "user": "myuser@gmail.com",
+            "pass": "verysecret"
+        }
+    },
+    "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "secure": true,
+        "auth": {
+            "user": "myuser@gmail.com",
+            "pass": "verysecret"
+        }
+    }
+}'</pre>
+
+                                <h5 class="mt-4">3. That's about it</h5>
+
+                                <p>
+                                    Now whenever something happens you get a notification. If this is not enought then you can perform normal operations with
+                                    the IMAP account as well. See the <a href="/docs">API docs</a> page for details.
+                                </p>
+
+                                <h5 class="mt-4">Bonus! List some messages</h5>
+
+                                <p>
+                                    IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a
+                                    mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
+                                </p>
+
+                                <pre>$ curl -XGET "<span class="domainName">localhost:3000</span>/v1/account/example/messages?path=INBOX"</pre>
+
+                                <p>In the response you should see a listing of messages.</p>
+
+                                <pre>
+{
+  "page": 0,
+  "pages": 10,
+  "messages": [
+    {
+      "id": "AAAAAQAAAeE",
+      "uid": 481,
+      "date": "2019-10-07T06:05:23.000Z",
+      "size": 4334,
+      "subject": "Test message",
+      "from": {
+        "name": "Peter Põder",
+        "address": "Peter.Poder@example.com"
+      },
+      "to": [
+        {
+          "name": "",
+          "address": "andris@imapapi.com"
+        }
+      ],
+      "messageId": "<0ebdd7b084794911b03986c827128f1b@example.com>",
+      "text": {
+        "id": "AAAAAQAAAeGTkaExkaEykA",
+        "encodedSize": {
+          "plain": 17,
+          "html": 2135
+        }
+      }
+    },
+    ...
+  ]
+}</pre
+                                >
+
+                                <div class="mt-4"></div>
+                            </div>
+
+                            <div class="tab-pane" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                <form id="settingsForm" class="needs-validation" novalidate>
+                                    <div class="form-group">
+                                        <label for="settingsWebhooks">Webhook URL</label>
+                                        <input type="url" class="form-control" id="settingsWebhooks" aria-describedby="emailHelp" required />
+                                        <div class="invalid-feedback">
+                                            Enter vaid URL for the webhook
+                                        </div>
+                                        <small class="form-text text-muted"
+                                            >IMAP API makes a POST request against this URL for every detected change in user's account. This includes new
+                                            messages, deleted messages and flag changes.</small
+                                        >
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary">Update settings</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer mt-auto py-3">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-8">
+                        <span class="text-muted">&copy; 2020 Andris Reinman</span> |
+                        <a class="text-muted" href="mailto:andris@imapapi.com" target="_blank">andris@imapapi.com</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script src="/static/js/jquery-3.4.1.slim.min.js"></script>
+        <script src="/static/js/popper.min.js"></script>
+        <script src="/static/bootstrap-4.4.1-dist/js/bootstrap.min.js"></script>
+        <script src="/static/js/imapapi.js"></script>
+    </body>
+</html>
