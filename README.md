@@ -32,6 +32,112 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ![](https://cldup.com/dSa0mf3AjF.png)
 
+## Example
+
+#### 1. Set up webhook target
+
+Open the <em>Settings</em> tab and set an URL for webhooks. Whenever something happens with any of the tracked email accounts you get a notification to this URL.
+
+For example if flags are updated for a message you'd get a notification that looks like this:
+
+```json
+{
+    "account": "example",
+    "path": "[Google Mail]/All Mail",
+    "event": "messageUpdated",
+    "data": {
+        "id": "AAAAAQAAAeE",
+        "uid": 350861,
+        "changes": {
+            "flags": {
+                "added": ["\\Seen"]
+            }
+        }
+    }
+}
+```
+
+#### 2. Register an email account with IMAP API
+
+You need IMAP and SMTP settings and also provide some kind of an identification string value for this account. You can use the same IDs as your main system or generate some unique ones. This value is later needed to identify this account and to perform operations on it.
+
+```
+$ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '{
+    "account": "example",
+    "name": "My Example Account",
+    "imap": {
+        "host": "imap.gmail.com",
+        "port": 993,
+        "secure": true,
+        "auth": {
+            "user": "myuser@gmail.com",
+            "pass": "verysecret"
+        }
+    },
+    "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "secure": true,
+        "auth": {
+            "user": "myuser@gmail.com",
+            "pass": "verysecret"
+        }
+    }
+}
+```
+
+#### 3. That's about it to get started
+
+Now whenever something happens you get a notification. If this is not enought then you can perform normal operations with the IMAP account as well.
+
+#### Bonus! List some messages
+
+IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
+
+```
+$ curl -XGET "localhost:3000/v1/account/example/messages?path=INBOX"
+```
+
+In the response you should see a listing of messages.
+
+```json
+{
+    "page": 0,
+    "pages": 10,
+    "messages": [
+        {
+            "id": "AAAAAQAAAeE",
+            "uid": 481,
+            "date": "2019-10-07T06:05:23.000Z",
+            "size": 4334,
+            "subject": "Test message",
+            "from": {
+                "name": "Peter Põder",
+                "address": "Peter.Poder@example.com"
+            },
+            "to": [
+                {
+                    "name": "",
+                    "address": "andris@imapapi.com"
+                }
+            ],
+            "messageId": "<0ebdd7b084794911b03986c827128f1b@example.com>",
+            "text": {
+                "id": "AAAAAQAAAeGTkaExkaEykA",
+                "encodedSize": {
+                    "plain": 17,
+                    "html": 2135
+                }
+            }
+        }
+    ]
+}
+```
+
+#### API
+
+Entire API descripion is available in the application as a swagger page.
+
 ## License
 
 Licensed for evaluation use only
