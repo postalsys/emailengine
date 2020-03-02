@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                webhooks: document.getElementById('settingsWebhooks').value
+                webhooks: document.getElementById('settingsWebhooks').value,
+                authServer: document.getElementById('settingsAuthServer').value
             })
         })
             .then(result => {
@@ -59,11 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true')
+    fetch('/v1/settings?webhooks=true&authServer=true')
         .then(result => result.json())
         .then(result => {
             console.log(result);
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
+            document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
         })
         .catch(err => {
             console.log(err);

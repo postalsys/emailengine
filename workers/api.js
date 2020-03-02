@@ -14,6 +14,7 @@ const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
 const packageData = require('../package.json');
 const pathlib = require('path');
+const config = require('wild-config');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -27,7 +28,17 @@ const settingsSchema = {
             allowRelative: false
         })
         .example('https://myservice.com/imap/webhooks')
-        .description('Webhook URL')
+        .description('Webhook URL'),
+
+    authServer: Joi.string()
+        .uri({
+            scheme: ['http', 'https'],
+            allowRelative: false
+        })
+        .allow('')
+        .example('https://myservice.com/authentication')
+        .description('URL to fetch authentication data from')
+        .label('AuthServer')
 };
 
 const addressSchema = Joi.object({
@@ -62,12 +73,20 @@ const imapSchema = {
             .description('Account username'),
         pass: Joi.string()
             .max(256)
-            .required()
             .example('verysecret')
-            .description('Account password')
+            .description('Account password'),
+        accessToken: Joi.string()
+            .max(2 * 256)
+            .description('Access Token for OAuth2')
     })
+        .xor('pass', 'accessToken')
         .description('Authentication info')
         .label('Authentication'),
+
+    useAuthServer: Joi.boolean()
+        .example(false)
+        .description('Set to true to use authentication server instead of username/password'),
+
     host: Joi.string()
         .hostname()
         .required()
@@ -108,10 +127,19 @@ const smtpSchema = {
             .max(256)
             .required()
             .example('verysecret')
-            .description('Account password')
+            .description('Account password'),
+        accessToken: Joi.string()
+            .max(2 * 256)
+            .description('Access Token for OAuth2')
     })
+        .xor('pass', 'accessToken')
         .description('Authentication info')
         .label('Authentication'),
+
+    useAuthServer: Joi.boolean()
+        .example(false)
+        .description('Set to true to use authentication server instead of username/password'),
+
     host: Joi.string()
         .hostname()
         .required()
@@ -224,8 +252,8 @@ parentPort.on('message', message => {
 
 const init = async () => {
     const server = Hapi.server({
-        port: 3000,
-        host: 'localhost',
+        port: config.api.port,
+        host: config.api.host,
         query: {
             parser: query => qs.parse(query, { depth: 3 })
         }
@@ -244,7 +272,7 @@ const init = async () => {
             version: packageData.version,
             contact: {
                 name: 'Andris Reinman',
-                email: 'andris@kreata.ee'
+                email: 'andris@imapapi.com'
             }
         }
     };
@@ -338,6 +366,7 @@ const init = async () => {
                     imap: Joi.object(imapSchema)
                         .description('IMAP configuration')
                         .label('IMAP'),
+
                     smtp: Joi.object(smtpSchema)
                         .description('SMTP configuration')
                         .label('SMTP')
