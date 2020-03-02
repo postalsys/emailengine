@@ -83,7 +83,7 @@ $ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d
             "pass": "verysecret"
         }
     }
-}
+}'
 ```
 
 #### 3. That's about it to get started
