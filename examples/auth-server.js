@@ -1,5 +1,8 @@
 'use strict';
 
+// This is an example authentication server
+// It provides fixed credentials foir an account called "example" and generates OAuth2 access tokens for an account called "oauth-user"
+
 const Hapi = require('@hapi/hapi');
 const hapiPino = require('hapi-pino');
 const XOAuth2 = require('nodemailer/lib/xoauth2');
@@ -54,6 +57,8 @@ const init = async () => {
     console.log('Authentication Server URL: %s/credentials', server.info.uri);
 };
 
+// The following crux re-uses OAuth2 token generation from the Nodemailer package.
+// Normally you'd probably use something like this instead: https://www.npmjs.com/package/google-auth-library
 const tokens = new Map();
 async function getAccessToken(user, refreshToken) {
     // check cache first
