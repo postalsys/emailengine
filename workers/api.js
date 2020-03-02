@@ -68,6 +68,16 @@ const imapSchema = {
     })
         .description('Authentication info')
         .label('Authentication'),
+
+    authServer: Joi.string()
+        .uri({
+            scheme: ['http', 'https'],
+            allowRelative: false
+        })
+        .example('https://myservice.com/authentication')
+        .description('URL to fetch authentication data from')
+        .label('AuthServer'),
+
     host: Joi.string()
         .hostname()
         .required()
@@ -112,6 +122,16 @@ const smtpSchema = {
     })
         .description('Authentication info')
         .label('Authentication'),
+
+    authServer: Joi.string()
+        .uri({
+            scheme: ['http', 'https'],
+            allowRelative: false
+        })
+        .example('https://myservice.com/authentication')
+        .description('URL to fetch authentication data from')
+        .label('AuthServer'),
+
     host: Joi.string()
         .hostname()
         .required()
@@ -336,9 +356,11 @@ const init = async () => {
                         .description('Display name for the account'),
 
                     imap: Joi.object(imapSchema)
+                        .xor('auth', 'authServer')
                         .description('IMAP configuration')
                         .label('IMAP'),
                     smtp: Joi.object(smtpSchema)
+                        .xor('auth', 'authServer')
                         .description('SMTP configuration')
                         .label('SMTP')
                 }).label('CreateAccount')
@@ -390,9 +412,11 @@ const init = async () => {
                         .description('Display name for the account'),
 
                     imap: Joi.object(imapSchema)
+                        .xor('auth', 'authServer')
                         .description('IMAP configuration')
                         .label('IMAP'),
                     smtp: Joi.object(smtpSchema)
+                        .xor('auth', 'authServer')
                         .description('SMTP configuration')
                         .label('SMTP')
                 }).label('UpdateAccount')
@@ -1225,9 +1249,11 @@ const init = async () => {
 
                 payload: Joi.object({
                     imap: Joi.object(imapSchema)
+                        .xor('auth', 'authServer')
                         .description('IMAP configuration')
                         .label('IMAP'),
                     smtp: Joi.object(smtpSchema)
+                        .xor('auth', 'authServer')
                         .description('SMTP configuration')
                         .label('SMTP')
                 }).label('VerifyAccount')
