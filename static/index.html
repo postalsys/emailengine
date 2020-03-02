@@ -223,13 +223,27 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                 <form id="settingsForm" class="needs-validation" novalidate>
                                     <div class="form-group">
                                         <label for="settingsWebhooks">Webhook URL</label>
-                                        <input type="url" class="form-control" id="settingsWebhooks" aria-describedby="emailHelp" required />
+                                        <input type="url" class="form-control" id="settingsWebhooks" required />
                                         <div class="invalid-feedback">
                                             Enter vaid URL for the webhook
                                         </div>
                                         <small class="form-text text-muted"
-                                            >IMAP API makes a POST request against this URL for every detected change in user's account. This includes new
-                                            messages, deleted messages and flag changes.</small
+                                            ><strong>Required.</strong> IMAP API makes a POST request against this URL for every detected change in user's
+                                            account. This includes new messages, deleted messages and flag changes.</small
+                                        >
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="settingsAuthServer">Auth Server URL</label>
+                                        <input type="url" class="form-control" id="settingsAuthServer" />
+                                        <div class="invalid-feedback">
+                                            Enter vaid URL for Auth Server
+                                        </div>
+                                        <small class="form-text text-muted"
+                                            >You can configure accounts to resolve authentication info from an authentication server instead of setting fixed
+                                            credentials. Whenever IMAP API needs to authenticate such account it makes a GET request against this URL with 2
+                                            additional query arguments - <code>account</code> as the account ID and <code>proto</code> which is either "imap" or
+                                            "smtp". Using auth server is always required for OAuth accounts.</small
                                         >
                                     </div>
 

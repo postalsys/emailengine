@@ -89,7 +89,7 @@ curl -XPOST "localhost:3000/v1/account/pangalink/submit" -H "content-type: appli
     },
     "to": [{
         "name": "Andris Reinman",
-        "address": "andris@kreata.ee"
+        "address": "andris@imapapi.com"
     }],
     "subject": "test kiri",
     "text": "eriti test kiri",

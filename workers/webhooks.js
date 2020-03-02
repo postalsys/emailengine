@@ -5,6 +5,7 @@ const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
 const logger = require('../lib/logger');
 const packageData = require('../package.json');
+const he = require('he');
 
 function getAccountKey(account) {
     return `iad:${account}`;
@@ -29,14 +30,33 @@ notifyQueue.process('*', async job => {
         return;
     }
 
+    let headers = {
+        'Content-Type': 'application/json',
+        'User-Agent': `${packageData.name}/${packageData.version} (+https://imapapi.com)`
+    };
+
+    let parsed = new URL(webhooks);
+    let username, password;
+
+    if (parsed.username) {
+        username = he.decode(parsed.username);
+        parsed.username = '';
+    }
+
+    if (parsed.password) {
+        password = he.decode(parsed.password);
+        parsed.password = '';
+    }
+
+    if (username || password) {
+        headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
+    }
+
     try {
-        let res = await fetch(webhooks, {
+        let res = await fetch(parsed.toString(), {
             method: 'post',
             body: JSON.stringify(job.data),
-            headers: {
-                'Content-Type': 'application/json',
-                'User-Agent': `${packageData.name}/${packageData.version} (+https://imapapi.com)`
-            }
+            headers
         });
         if (!res.ok) {
             throw new Error(`Invalid response: ${res.status} ${res.statusText}`);
