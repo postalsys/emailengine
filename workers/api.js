@@ -26,6 +26,7 @@ const settingsSchema = {
             scheme: ['http', 'https'],
             allowRelative: false
         })
+        .example('https://myservice.com/imap/webhooks')
         .description('Webhook URL')
 };
 
@@ -52,15 +53,17 @@ const settingsQuerySchema = Object.fromEntries(
     ])
 );
 
-const accountSchema = Joi.object({
+const imapSchema = {
     auth: Joi.object({
         user: Joi.string()
             .max(256)
             .required()
+            .example('myuser@gmail.com')
             .description('Account username'),
         pass: Joi.string()
             .max(256)
             .required()
+            .example('verysecret')
             .description('Account password')
     })
         .description('Authentication info')
@@ -68,26 +71,75 @@ const accountSchema = Joi.object({
     host: Joi.string()
         .hostname()
         .required()
+        .example('imap.gmail.com')
         .description('Hostname to connect to'),
     port: Joi.number()
         .min(1)
         .max(64 * 1024)
         .required()
+        .example(993)
         .description('Service port number'),
     secure: Joi.boolean()
         .default(false)
-        .description('Should connection use TLS'),
+        .example(true)
+        .description('Should connection use TLS. Usually true for port 993'),
     tls: Joi.object({
         rejectUnauthorized: Joi.boolean()
             .default(true)
+            .example(true)
             .description('How to treat invalid certificates'),
         minVersion: Joi.string()
             .max(256)
+            .example('TLSv1.2')
             .description('Minimal TLS version')
     })
         .description('Optional TLS configuration')
         .label('TLS')
-});
+};
+
+const smtpSchema = {
+    auth: Joi.object({
+        user: Joi.string()
+            .max(256)
+            .required()
+            .example('myuser@gmail.com')
+            .description('Account username'),
+        pass: Joi.string()
+            .max(256)
+            .required()
+            .example('verysecret')
+            .description('Account password')
+    })
+        .description('Authentication info')
+        .label('Authentication'),
+    host: Joi.string()
+        .hostname()
+        .required()
+        .example('smtp.gmail.com')
+        .description('Hostname to connect to'),
+    port: Joi.number()
+        .min(1)
+        .max(64 * 1024)
+        .required()
+        .example(587)
+        .description('Service port number'),
+    secure: Joi.boolean()
+        .default(false)
+        .example(false)
+        .description('Should connection use TLS. Usually true for port 465'),
+    tls: Joi.object({
+        rejectUnauthorized: Joi.boolean()
+            .default(true)
+            .example(true)
+            .description('How to treat invalid certificates'),
+        minVersion: Joi.string()
+            .max(256)
+            .example('TLSv1.2')
+            .description('Minimal TLS version')
+    })
+        .description('Optional TLS configuration')
+        .label('TLS')
+};
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
@@ -274,15 +326,21 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
 
                     name: Joi.string()
                         .max(256)
                         .required()
+                        .example('My Email Account')
                         .description('Display name for the account'),
 
-                    imap: accountSchema.description('IMAP configuration').label('IMAP'),
-                    smtp: accountSchema.description('SMTP configuration').label('SMTP')
+                    imap: Joi.object(imapSchema)
+                        .description('IMAP configuration')
+                        .label('IMAP'),
+                    smtp: Joi.object(smtpSchema)
+                        .description('SMTP configuration')
+                        .label('SMTP')
                 }).label('CreateAccount')
             }
         }
@@ -321,15 +379,22 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 }),
 
                 payload: Joi.object({
                     name: Joi.string()
                         .max(256)
+                        .example('My Email Account')
                         .description('Display name for the account'),
-                    imap: accountSchema.description('IMAP configuration').label('IMAP'),
-                    smtp: accountSchema.description('SMTP configuration').label('SMTP')
+
+                    imap: Joi.object(imapSchema)
+                        .description('IMAP configuration')
+                        .label('IMAP'),
+                    smtp: Joi.object(smtpSchema)
+                        .description('SMTP configuration')
+                        .label('SMTP')
                 }).label('UpdateAccount')
             }
         }
@@ -368,6 +433,7 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 })
             }
@@ -408,6 +474,7 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 })
             }
@@ -447,6 +514,7 @@ const init = async () => {
                 params: Joi.object({
                     account: Joi.string()
                         .max(256)
+                        .example('example')
                         .required()
                         .description('Account ID')
                 }),
@@ -454,6 +522,7 @@ const init = async () => {
                 payload: Joi.object({
                     path: Joi.array()
                         .items(Joi.string().max(256))
+                        .example(['Parent folder', 'Subfolder'])
                         .description('Mailbox path. Array elements are joined using valid path separator')
                         .label('MailboxPath')
                 }).label('CreateMailbox')
@@ -495,12 +564,14 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 }),
 
                 query: Joi.object({
                     path: Joi.string()
                         .required()
+                        .example('My Outdated Mail')
                         .description('Mailbox folder path to delete')
                         .label('MailboxPath')
                 }).label('DeleteMailbox')
@@ -541,10 +612,12 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     message: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
+                        .example('AAAAAQAACnA')
                         .required()
                         .description('Message ID')
                 })
@@ -585,11 +658,13 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     attachment: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
                         .required()
+                        .example('AAAAAQAACnAcde')
                         .description('Attachment ID')
                 })
             }
@@ -629,10 +704,12 @@ const init = async () => {
                     maxBytes: Joi.number()
                         .min(0)
                         .max(1024 * 1024 * 1024)
+                        .example(5 * 1025 * 1024)
                         .description('Max length of text content'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
+                        .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.')
                 }),
 
@@ -640,11 +717,13 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     message: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
                         .required()
+                        .example('AAAAAQAACnA')
                         .description('Message ID')
                 })
             }
@@ -684,10 +763,12 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     message: Joi.string()
                         .max(256)
                         .required()
+                        .example('AAAAAQAACnA')
                         .description('Message ID')
                 }),
 
@@ -696,14 +777,17 @@ const init = async () => {
                         add: Joi.array()
                             .items(Joi.string().max(128))
                             .description('Add new flags')
+                            .example(['\\Seen'])
                             .label('AddFlags'),
                         delete: Joi.array()
                             .items(Joi.string().max(128))
                             .description('Delete specific flags')
+                            .example(['\\Flagged'])
                             .label('DeleteFlags'),
                         set: Joi.array()
                             .items(Joi.string().max(128))
                             .description('Override all flags')
+                            .example(['\\Seen', '\\Flagged'])
                             .label('SetFlags')
                     })
                         .description('Flag updates')
@@ -746,10 +830,12 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     message: Joi.string()
                         .max(256)
                         .required()
+                        .example('AAAAAQAACnA')
                         .description('Message ID')
                 })
             }
@@ -789,11 +875,13 @@ const init = async () => {
                     maxBytes: Joi.number()
                         .min(0)
                         .max(1024 * 1024 * 1024)
+                        .example(5 * 1024 * 1024)
                         .description('Max length of text content'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
                         .default('*')
+                        .example('*')
                         .description('Which text content to return, use * for all. By default all contents are returned.')
                 }),
 
@@ -801,11 +889,13 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID'),
                     text: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
                         .required()
+                        .example('AAAAAQAACnAcdfaaN')
                         .description('Message text ID')
                 }).label('Text')
             }
@@ -829,7 +919,7 @@ const init = async () => {
         },
         options: {
             description: 'List messages in a folder',
-            notes: 'Lists messages in a mailbox folder',
+            notes: 'Lists messages in a mailbox folder. For search query arguments use qs syntax (?search[unseen]=true)',
             tags: ['api', 'message'],
 
             validate: {
@@ -844,22 +934,26 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 }),
 
                 query: Joi.object({
                     path: Joi.string()
                         .required()
+                        .example('INBOX')
                         .description('Mailbox folder path'),
                     page: Joi.number()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
-                        .description('Page number (zero indexed'),
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)'),
                     pageSize: Joi.number()
                         .min(1)
                         .max(1000)
                         .default(20)
+                        .example(20)
                         .description('How many entries per page'),
                     search: Joi.object({
                         unseen: Joi.boolean()
@@ -950,6 +1044,7 @@ const init = async () => {
                     account: Joi.string()
                         .max(256)
                         .required()
+                        .example('example')
                         .description('Account ID')
                 }),
 
@@ -969,11 +1064,12 @@ const init = async () => {
                         .description('Message reference for reply or forward. This is IMAP API specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
-                    from: addressSchema.required(),
+                    from: addressSchema.required().example([{ name: 'From Me', address: 'sender@example.com' }]),
 
                     to: Joi.array()
                         .items(addressSchema)
                         .description('List of addresses')
+                        .example([{ address: 'recipient@example.com' }])
                         .label('AddressList'),
 
                     cc: Joi.array()
@@ -988,13 +1084,17 @@ const init = async () => {
 
                     subject: Joi.string()
                         .max(1024)
+                        .example('What a wonderful message')
                         .description('Message subject'),
 
                     text: Joi.string()
                         .max(5 * 1024 * 1024)
+                        .example('Hello from myself!')
                         .description('Message Text'),
+
                     html: Joi.string()
                         .max(5 * 1024 * 1024)
+                        .example('<p>Hello from myself!</p>')
                         .description('Message HTML'),
 
                     attachments: Joi.array()
@@ -1124,8 +1224,12 @@ const init = async () => {
                 failAction,
 
                 payload: Joi.object({
-                    imap: accountSchema.description('IMAP configuration'),
-                    smtp: accountSchema.description('SMTP configuration')
+                    imap: Joi.object(imapSchema)
+                        .description('IMAP configuration')
+                        .label('IMAP'),
+                    smtp: Joi.object(smtpSchema)
+                        .description('SMTP configuration')
+                        .label('SMTP')
                 }).label('VerifyAccount')
             }
         }
