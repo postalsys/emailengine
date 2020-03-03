@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return result.json();
             })
             .then(result => {
-                console.log(result);
                 if (result.error) {
                     showToast(`Failed to store settings (${result.message})`, 'alert-triangle');
                     return;
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Settings updated');
             })
             .catch(err => {
-                console.log(err);
+                console.error(err);
                 showToast(err.message);
             });
     });
@@ -63,12 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('/v1/settings?webhooks=true&authServer=true')
         .then(result => result.json())
         .then(result => {
-            console.log(result);
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
             document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
         })
         .catch(err => {
-            console.log(err);
+            console.error(err);
             showToast(err.message, 'alert-triangle');
         });
 

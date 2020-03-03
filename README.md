@@ -16,7 +16,7 @@ Self hosted application to access IMAP accounts over REST.
 IMAP API requires Redis to be available. For any special configuration edit [config/default.toml](config/default.toml) configuration file.
 
 ```
-$ npm install
+$ npm install --production
 $ npm start
 ```
 
@@ -90,7 +90,7 @@ $ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d
 
 Now whenever something happens you get a notification. If this is not enought then you can perform normal operations with the IMAP account as well.
 
-#### Bonus! List some messages
+#### List some messages
 
 IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
 
@@ -133,6 +133,50 @@ In the response you should see a listing of messages.
     ]
 }
 ```
+
+#### Send an email
+
+The following is an example of how to send a reply. In this case you should specify a reference message you are replying to (NB! this message must exist). Use the "id" from message listing as the "reference.message" value.
+
+If referenced message was not found from the IMAP account then API responds with a 404 error and does not send out the reply.
+
+```
+curl -XPOST "localhost:3000/v1/account/pangalink/submit" -H "content-type: application/json" -d '{
+    "reference": {
+        "message": "AAAAAQAAAeE",
+        "action": "reply"
+    },
+    "from": {
+        "name": "Pangalink",
+        "address": "no-reply@pangalink.net"
+    },
+    "to": [{
+        "name": "Andris Reinman",
+        "address": "andris@imapapi.com"
+    }],
+    "text": "my reply to you",
+    "html": "<p>my reply to you</p>",
+    "attachments": [
+        {
+            "filename": "checkmark.png",
+            "content": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAABlBMVEUAAAD///+l2Z/dAAAAM0lEQVR4nGP4/5/h/1+G/58ZDrAz3D/McH8yw83NDDeNGe4Ug9C9zwz3gVLMDA/A6P9/AFGGFyjOXZtQAAAAAElFTkSuQmCC"
+        }
+    ]
+}'
+```
+
+**NB!** if you are sending a standalone email then you most probably want to set `subject` value as well. For replies and forwards, IMAP API sets subject itself, based on the referenced message.
+
+When sending a referenced message:
+
+-   IMAP API sets correct In-Reply-To and Referenced message headers to the outgoing message
+-   If subject is not set, then IMAP API derives it from the referenced message and adds Re: or Fwd: prefix to it
+-   IMAP API sets `\Answered` flag to the referenced message
+
+For all messages:
+
+-   IMAP API uploads sent message to Sent Mail folder (if the folder can be detected automatically)
+-   IMAP API does not upload to Sent Mail folder when the account is Gmail/GSuite as Gmail does this automatically
 
 #### API
 

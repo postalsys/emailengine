@@ -364,10 +364,12 @@ const init = async () => {
                         .description('Display name for the account'),
 
                     imap: Joi.object(imapSchema)
+                        .xor('useAuthServer', 'auth')
                         .description('IMAP configuration')
                         .label('IMAP'),
 
                     smtp: Joi.object(smtpSchema)
+                        .xor('useAuthServer', 'auth')
                         .description('SMTP configuration')
                         .label('SMTP')
                 }).label('CreateAccount')
@@ -419,9 +421,11 @@ const init = async () => {
                         .description('Display name for the account'),
 
                     imap: Joi.object(imapSchema)
+                        .xor('useAuthServer', 'auth')
                         .description('IMAP configuration')
                         .label('IMAP'),
                     smtp: Joi.object(smtpSchema)
+                        .xor('useAuthServer', 'auth')
                         .description('SMTP configuration')
                         .label('SMTP')
                 }).label('UpdateAccount')
@@ -1086,6 +1090,7 @@ const init = async () => {
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
                         action: Joi.string()
+                            .lowercase()
                             .valid('forward', 'reply')
                             .example('reply')
                             .default('reply')
