@@ -141,14 +141,14 @@ The following is an example of how to send a reply. In this case you should spec
 If referenced message was not found from the IMAP account then API responds with a 404 error and does not send out the reply.
 
 ```
-curl -XPOST "localhost:3000/v1/account/pangalink/submit" -H "content-type: application/json" -d '{
+curl -XPOST "localhost:3000/v1/account/example/submit" -H "content-type: application/json" -d '{
     "reference": {
         "message": "AAAAAQAAAeE",
         "action": "reply"
     },
     "from": {
-        "name": "Pangalink",
-        "address": "no-reply@pangalink.net"
+        "name": "Example Sender",
+        "address": "sender@example.com"
     },
     "to": [{
         "name": "Andris Reinman",
@@ -167,13 +167,13 @@ curl -XPOST "localhost:3000/v1/account/pangalink/submit" -H "content-type: appli
 
 **NB!** if you are sending a standalone email then you most probably want to set `subject` value as well. For replies and forwards, IMAP API sets subject itself, based on the referenced message.
 
-When sending a referenced message:
+**When sending a referenced message:**
 
 -   IMAP API sets correct In-Reply-To and Referenced message headers to the outgoing message
 -   If subject is not set, then IMAP API derives it from the referenced message and adds Re: or Fwd: prefix to it
 -   IMAP API sets `\Answered` flag to the referenced message
 
-For all messages:
+**For all messages:**
 
 -   IMAP API uploads sent message to Sent Mail folder (if the folder can be detected automatically)
 -   IMAP API does not upload to Sent Mail folder when the account is Gmail/GSuite as Gmail does this automatically
@@ -186,12 +186,33 @@ You can find an example authentication server implementation from [examples/auth
 
 #### To use authentication server:
 
--   You must set `useAuthServer:true` flag for the account settings
+-   You must set `useAuthServer:true` flag for the account settings and not set `auth` value
 -   Set authentication server URL in the _Settings_ page, the same way you set the webhook URL
 -   IMAP API makes HTTP request against authentication server URL with 2 extra GET params: `account` and `proto`, eg `url?account=example&proto=imap`
 -   Authentication server must respond with a correct JSON structure for this account
 
-**For OAuth2 accounts:**
+**Register managed account**
+
+```
+curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '{
+    "account": "ouath-user",
+    "name": "Example",
+    "imap": {
+        "host": "imap.gmail.com",
+        "port": 993,
+        "secure": true,
+        "useAuthServer": true
+    },
+    "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "secure": true,
+        "useAuthServer": true
+    }
+}'
+```
+
+**Auth server response for OAuth2 accounts:**
 
 ```json
 {
@@ -200,7 +221,7 @@ You can find an example authentication server implementation from [examples/auth
 }
 ```
 
-**For password based accounts:**
+**Auth server response for password based accounts:**
 
 ```json
 {
