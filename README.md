@@ -178,20 +178,20 @@ For all messages:
 -   IMAP API uploads sent message to Sent Mail folder (if the folder can be detected automatically)
 -   IMAP API does not upload to Sent Mail folder when the account is Gmail/GSuite as Gmail does this automatically
 
-#### Using OAuth2
+## Using OAuth2
 
 IMAP API does not manage OAuth2 access tokens, you have to provide these yourself. This means that every time IMAP API needs to authenticate an OAuth2 account, it makes a HTTP request to your authentication server. This server is responsible of respoding with a valid access token.
 
 You can find an example authentication server implementation from [examples/auth-server.js](examples/auth-server.js).
 
-**To use authentication server:**
+#### To use authentication server:
 
 -   You must set `useAuthServer:true` flag for the account settings
 -   Set authentication server URL in the _Settings_ page, the same way you set the webhook URL
 -   IMAP API makes HTTP request against authentication server URL with 2 extra GET params: `account` and `proto`, eg `url?account=example&proto=imap`
 -   Authentication server must respond with a correct JSON structure for this account
 
-For OAuth2 accounts:
+**For OAuth2 accounts:**
 
 ```json
 {
@@ -200,7 +200,7 @@ For OAuth2 accounts:
 }
 ```
 
-For password based accounts:
+**For password based accounts:**
 
 ```json
 {
@@ -209,7 +209,7 @@ For password based accounts:
 }
 ```
 
-#### API
+## API
 
 Entire API descripion is available in the application as a swagger page.
 
