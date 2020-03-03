@@ -2,6 +2,11 @@
 
 Self hosted application to access IMAP accounts over REST.
 
+## Use cases
+
+-   Email applications (webmail, mobile apps etc.)
+-   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
+
 ## Features
 
 -   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings. All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
