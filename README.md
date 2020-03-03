@@ -67,6 +67,8 @@ For example if flags are updated for a message you'd get a notification that loo
 
 You need IMAP and SMTP settings and also provide some kind of an identification string value for this account. You can use the same IDs as your main system or generate some unique ones. This value is later needed to identify this account and to perform operations on it.
 
+> **NB!** Trying to create a new account with the same ID updates the existing account.
+
 ```
 $ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '{
     "account": "example",
@@ -138,6 +140,12 @@ In the response you should see a listing of messages.
         }
     ]
 }
+```
+
+When fetching next page, add `page` query argument to the URL. Pages are zero indexes so if the server shows that there are 10 pages in total, it means you can query from `page=0` to `page=9`. If you want longer pages, use `pageSize` query argument.
+
+```
+$ curl -XGET "localhost:3000/v1/account/example/messages?path=INBOX&page=5"
 ```
 
 #### Send an email
