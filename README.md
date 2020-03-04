@@ -1,10 +1,10 @@
 # IMAP API
 
-Self hosted application to access IMAP accounts over REST.
+Self hosted application to access IMAP and SMTP accounts over REST.
 
 ## Use cases
 
--   Email applications (webmail, mobile apps etc.)
+-   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 -   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
 
 ## Features
@@ -29,8 +29,8 @@ Even though still available from Github, it has clearly been abandoned, so not g
 
 #### 3. Nylas Universal Email API
 
--   Nylas Email API is a service while IMAP API is a self hosted application.
--   Nylas in general does "too much" while IMAP API only tries to handle the hard parts.
+-   Nylas Email API is a service while IMAP API is a self hosted application. Your data never leaves your system when using IMAP API while Nylas can not even operate without copying your customers' data and emails to their servers.
+-   Nylas in general tries to do everything while IMAP API only tries to handle the hard parts.
 -   Nylas supports both IMAP and Exchange while IMAP API currently supports just IMAP. This might change in the future though.
 
 ## Usage
@@ -271,4 +271,4 @@ Entire API descripion is available in the application as a swagger page.
 
 ## License
 
-Licensed for evaluation use only
+Licensed under GNU Affero General Public License v3.0 or later

@@ -13,7 +13,7 @@
         "IMAP"
     ],
     "author": "",
-    "license": "UNLICENSED",
+    "license": "AGPL-3.0-or-later",
     "dependencies": {
         "@hapi/boom": "9.0.0",
         "@hapi/hapi": "19.1.1",
@@ -27,7 +27,7 @@
         "hapi-pino": "6.5.0",
         "hapi-swagger": "12.1.2",
         "he": "1.2.0",
-        "imapflow": "1.0.27",
+        "imapflow": "1.0.28",
         "ioredis": "4.16.0",
         "jquery": "3.4.1",
         "libmime": "4.2.1",
