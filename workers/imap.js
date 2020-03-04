@@ -337,6 +337,29 @@ class ConnectionHandler {
             case 'submitMessage':
                 return await this.submitMessage(message);
 
+            case 'countConnections': {
+                let results = {};
+                let count = status => {
+                    if (!results[status]) {
+                        results[status] = 0;
+                    }
+                    results[status] += 1;
+                };
+                this.accounts.forEach(accountObject => {
+                    if (!accountObject || !accountObject.connection) {
+                        return count('unassigned');
+                    }
+
+                    if (accountObject.connection.isConnected()) {
+                        return count('connected');
+                    }
+
+                    return count('disconnected');
+                });
+
+                return results;
+            }
+
             default:
                 return false;
         }
@@ -359,6 +382,15 @@ class ConnectionHandler {
                 mid,
                 message
             });
+        });
+    }
+
+    metrics(key, method, ...args) {
+        parentPort.postMessage({
+            cmd: 'metrics',
+            key,
+            method,
+            args
         });
     }
 }

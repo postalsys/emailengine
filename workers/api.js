@@ -205,6 +205,15 @@ async function call(message, transferList) {
     });
 }
 
+async function metrics(key, method, ...args) {
+    parentPort.postMessage({
+        cmd: 'metrics',
+        key,
+        method,
+        args
+    });
+}
+
 async function onCommand(command) {
     console.log(command);
     return 444;
@@ -295,6 +304,18 @@ const init = async () => {
         }
     ]);
 
+    server.events.on('response', request => {
+        if (!/^\/v1\//.test(request.route.path)) {
+            // only log API calls
+            return;
+        }
+        metrics('apiCall', 'inc', {
+            method: request.method,
+            route: request.route.path,
+            statusCode: request.response && request.response.statusCode
+        });
+    });
+
     server.route({
         method: 'GET',
         path: '/',
@@ -329,7 +350,8 @@ const init = async () => {
             let accountObject = new Account({ redis, call });
 
             try {
-                return await accountObject.create(request.payload);
+                let result = await accountObject.create(request.payload);
+                return result;
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -1266,6 +1288,17 @@ const init = async () => {
                         .label('SMTP')
                 }).label('VerifyAccount')
             }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/metrics',
+        async handler(request, h) {
+            const renderedMetrics = await call({ cmd: 'metrics' });
+            const response = h.response('success');
+            response.type('text/plain');
+            return renderedMetrics;
         }
     });
 

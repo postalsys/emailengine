@@ -6,6 +6,30 @@ const logger = require('./lib/logger');
 const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
+const promClient = require('prom-client');
+
+const metrics = {
+    threadStarts: new promClient.Counter({
+        name: 'thread_starts',
+        help: 'Number of started threads'
+    }),
+    threadStops: new promClient.Counter({
+        name: 'thread_stops',
+        help: 'Number of stopped threads'
+    }),
+
+    apiCall: new promClient.Counter({
+        name: 'api_call',
+        help: 'Number of API calls',
+        labelNames: ['method', 'statusCode', 'route']
+    }),
+
+    imapConnections: new promClient.Gauge({
+        name: 'imap_connections',
+        help: 'Current IMAP connection state',
+        labelNames: ['status']
+    })
+};
 
 let callQueue = new Map();
 let mids = 0;
@@ -30,9 +54,13 @@ let spawnWorker = type => {
     }
 
     let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), { SHARE_ENV });
+    metrics.threadStarts.inc();
+
     workers.get(type).add(worker);
 
     worker.on('exit', exitCode => {
+        metrics.threadStops.inc();
+
         workers.get(type).delete(worker);
         availableIMAPWorkers.delete(worker);
 
@@ -54,7 +82,11 @@ let spawnWorker = type => {
     });
 
     worker.on('message', message => {
-        if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
+        if (!message) {
+            return;
+        }
+
+        if (message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
             let { resolve, reject, timer } = callQueue.get(message.mid);
             clearTimeout(timer);
             callQueue.delete(message.mid);
@@ -72,7 +104,7 @@ let spawnWorker = type => {
             }
         }
 
-        if (message && message.cmd === 'call' && message.mid) {
+        if (message.cmd === 'call' && message.mid) {
             return onCommand(worker, message.message)
                 .then(response => {
                     worker.postMessage({
@@ -90,6 +122,12 @@ let spawnWorker = type => {
                         statusCode: err.statusCode
                     });
                 });
+        }
+
+        if (message.cmd === 'metrics') {
+            if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
+                metrics[message.key][message.method](...message.args);
+            }
         }
 
         switch (type) {
@@ -195,6 +233,9 @@ async function assignAccounts() {
 
 async function onCommand(worker, message) {
     switch (message.cmd) {
+        case 'metrics':
+            return promClient.register.metrics();
+
         case 'new':
             unassigned.add(message.account);
             assignAccounts().catch(err => logger.error(err));
@@ -255,6 +296,34 @@ for (let i = 0; i < 4; i++) {
 // single worker for HTTP
 spawnWorker('api');
 spawnWorker('webhooks');
+
+async function collectMetrics() {
+    let result = {};
+
+    if (workers.has('imap')) {
+        let imapWorkers = workers.get('imap');
+        for (let imapWorker of imapWorkers) {
+            try {
+                let workerStats = await call(imapWorker, { cmd: 'countConnections' });
+                Object.keys(workerStats || {}).forEach(status => {
+                    if (!result[status]) {
+                        result[status] = 0;
+                    }
+                    result[status] += Number(workerStats[status]) || 0;
+                });
+            } catch (err) {
+                logger.error(err);
+            }
+        }
+    }
+    Object.keys(result).forEach(status => {
+        metrics.imapConnections.set({ status }, result[status]);
+    });
+}
+
+setInterval(() => {
+    collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
+}, 5000).unref();
 
 process.on('SIGTERM', () => {
     if (closing) {

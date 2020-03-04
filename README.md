@@ -17,6 +17,22 @@ Self hosted application to access IMAP accounts over REST.
 -   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
 -   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
 
+## Comparison with other systems
+
+#### 1. Context.io
+
+It was closed down, so there's nothing to compare.
+
+#### 2. Nylas Sync Engine (open source version)
+
+Even though still available from Github, it has clearly been abandoned, so not going to look into it.
+
+#### 3. Nylas Universal Email API
+
+-   Nylas Email API is a service while IMAP API is a self hosted application.
+-   Nylas in general does "too much" while IMAP API only tries to handle the hard parts.
+-   Nylas supports both IMAP and Exchange while IMAP API currently supports just IMAP. This might change in the future though.
+
 ## Usage
 
 IMAP API requires Redis to be available. For any special configuration edit [config/default.toml](config/default.toml) configuration file.
@@ -247,6 +263,11 @@ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '
 ## API
 
 Entire API descripion is available in the application as a swagger page.
+
+## Future features
+
+-   **Horizontal scaling.** Currently you can start a single instance of IMAP API application. In the future you should be able to start several and in different servers, depending on the number of accounts you need to track.
+-   **MS Exchange support.** Event though the app is called IMAP API the plan is to start supporting ActiveSync as well. It does not happen any time soon though, mostly because I do not have access to a good testing environment and I'm not competent enough to set up my own Exchange system.
 
 ## License
 
