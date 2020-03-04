@@ -272,3 +272,5 @@ Entire API descripion is available in the application as a swagger page.
 ## License
 
 Licensed under GNU Affero General Public License v3.0 or later
+
+Commercial license available at request. Contact andris@imapapi.com for license issues.
