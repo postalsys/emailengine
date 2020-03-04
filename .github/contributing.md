@@ -5,8 +5,8 @@
 (agreement below borrowed from [Sidekiq Legal](https://github.com/mperham/sidekiq/blob/master/.github/contributing.md))
 
 By submitting a Pull Request, you disavow any rights or claims to any changes
-submitted to the Sidekiq project and assign the copyright of
-those changes to Contributed Systems LLC.
+submitted to the IMAP API project and assign the copyright of
+those changes to Andris Reinman.
 
 If you cannot or do not want to reassign those rights (your employment
 contract for your employer may not allow this), you should not submit a PR.
