@@ -297,8 +297,12 @@ for (let i = 0; i < 4; i++) {
 spawnWorker('api');
 spawnWorker('webhooks');
 
+let metricsResult = {};
 async function collectMetrics() {
-    let result = {};
+    // reset all counters
+    Object.keys(metricsResult || {}).forEach(key => {
+        metricsResult[key] = 0;
+    });
 
     if (workers.has('imap')) {
         let imapWorkers = workers.get('imap');
@@ -306,18 +310,19 @@ async function collectMetrics() {
             try {
                 let workerStats = await call(imapWorker, { cmd: 'countConnections' });
                 Object.keys(workerStats || {}).forEach(status => {
-                    if (!result[status]) {
-                        result[status] = 0;
+                    if (!metricsResult[status]) {
+                        metricsResult[status] = 0;
                     }
-                    result[status] += Number(workerStats[status]) || 0;
+                    metricsResult[status] += Number(workerStats[status]) || 0;
                 });
             } catch (err) {
                 logger.error(err);
             }
         }
     }
-    Object.keys(result).forEach(status => {
-        metrics.imapConnections.set({ status }, result[status]);
+
+    Object.keys(metricsResult).forEach(status => {
+        metrics.imapConnections.set({ status }, metricsResult[status]);
     });
 }
 

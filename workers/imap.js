@@ -6,6 +6,8 @@ const logger = require('../lib/logger');
 const { redis, notifyQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 
+const { threadId } = require('worker_threads');
+
 class ConnectionHandler {
     constructor() {
         this.callQueue = new Map();
@@ -345,16 +347,16 @@ class ConnectionHandler {
                     }
                     results[status] += 1;
                 };
+
                 this.accounts.forEach(accountObject => {
+                    let state;
+
                     if (!accountObject || !accountObject.connection) {
-                        return count('unassigned');
+                        state = 'unassigned';
                     }
 
-                    if (accountObject.connection.isConnected()) {
-                        return count('connected');
-                    }
-
-                    return count('disconnected');
+                    state = accountObject.connection.currentState();
+                    return count(state);
                 });
 
                 return results;
