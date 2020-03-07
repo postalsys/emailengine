@@ -33,6 +33,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        let logs = {
+            all: !!document.getElementById('settingsLogsAll').checked,
+            accounts: Array.from(
+                new Set(
+                    document
+                        .getElementById('settingsLogsAccounts')
+                        .value.trim()
+                        .split(/\r?\n/)
+                        .map(a => a.trim())
+                        .filter(a => a)
+                )
+            ),
+            maxLogLines: Number(document.getElementById('settingsLogsMaxLogLines').value)
+        };
+
         fetch('/v1/settings', {
             method: 'POST', // or 'PUT'
             headers: {
@@ -40,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify({
                 webhooks: document.getElementById('settingsWebhooks').value,
-                authServer: document.getElementById('settingsAuthServer').value
+                authServer: document.getElementById('settingsAuthServer').value,
+                logs
             })
         })
             .then(result => {
@@ -59,11 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true')
+    fetch('/v1/settings?webhooks=true&authServer=true&logs=true')
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
             document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
+
+            let logs = (result && result.logs) || {};
+            let maxLogLines = 'maxLogLines' in logs ? logs.maxLogLines : 10000;
+
+            document.getElementById('settingsLogsAll').checked = !!logs.all;
+            document.getElementById('settingsLogsAccounts').value = logs.accounts ? logs.accounts.join('\n') : '';
+            document.getElementById('settingsLogsMaxLogLines').value = maxLogLines;
         })
         .catch(err => {
             console.error(err);

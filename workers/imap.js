@@ -449,18 +449,18 @@ parentPort.on('message', message => {
 process.on('SIGTERM', () => {
     connectionHandler.kill().catch(err => {
         logger.error({ msg: 'Execution failed', err });
-        process.exit(1);
+        process.exit(4);
     });
 });
 
 process.on('SIGINT', () => {
     connectionHandler.kill().catch(err => {
         logger.error({ msg: 'Execution failed', err });
-        process.exit(1);
+        process.exit(5);
     });
 });
 
 main().catch(err => {
     logger.error({ msg: 'Execution failed', err });
-    setImmediate(() => process.exit(2));
+    setImmediate(() => process.exit(6));
 });

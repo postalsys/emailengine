@@ -38,7 +38,25 @@ const settingsSchema = {
         .allow('')
         .example('https://myservice.com/authentication')
         .description('URL to fetch authentication data from')
-        .label('AuthServer')
+        .label('AuthServer'),
+
+    logs: Joi.object({
+        all: Joi.boolean()
+            .truthy('Y', 'true', '1')
+            .falsy('N', 'false', 0)
+            .default(false)
+            .description('Enable logs for all accounts'),
+        accounts: Joi.array()
+            .items(Joi.string().max(256))
+            .default([])
+            .example(['account-id-1', 'account-id-2'])
+            .description('Enable logs for listed accounts')
+            .label('LoggedAccounts'),
+        maxLogLines: Joi.number()
+            .min(0)
+            .max(1000000)
+            .default(10000)
+    }).label('LogSettings')
 };
 
 const addressSchema = Joi.object({
@@ -1227,10 +1245,8 @@ const init = async () => {
         async handler(request) {
             let updated = [];
             for (let key of Object.keys(request.payload)) {
-                let keyUpdated = await settings.set(key, request.payload[key]);
-                if (keyUpdated) {
-                    updated.push(key);
-                }
+                await settings.set(key, request.payload[key]);
+                updated.push(key);
             }
             return { updated };
         },
@@ -1369,12 +1385,7 @@ async function verifyAccountInfo(accountData) {
     return response;
 }
 
-process.on('unhandledRejection', err => {
-    logger.error({ msg: 'Unhandled Rejection', err });
-    process.exit(1);
-});
-
 init().catch(err => {
     logger.error(err);
-    setImmediate(() => process.exit(1));
+    setImmediate(() => process.exit(3));
 });
