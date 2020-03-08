@@ -272,6 +272,10 @@ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '
 
 Entire API descripion is available in the application as a swagger page.
 
+## Monitoring
+
+There is a Prometheus output available at `/metrics` URL path of the app.
+
 ## Future features
 
 -   **Horizontal scaling.** Currently you can start a single instance of IMAP API application. In the future you should be able to start several and in different servers, depending on the number of accounts you need to track.
