@@ -46,13 +46,21 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ## Screenshots
 
-![](https://cldup.com/2J7GkY2Hck.png)
+**1. General overview**
 
-![](https://cldup.com/FXLAIx7jv1.png)
+![](https://cldup.com/56xZSp7861.png)
 
-![](https://cldup.com/xuM8QjP7-q.png)
+**2. Documentation**
 
-![](https://cldup.com/dSa0mf3AjF.png)
+![](https://cldup.com/XwGPogMeJ3.png)
+
+**3. Settings**
+
+![](https://cldup.com/Fl3mkHHS5J.png)
+
+**4. Download stored logs**
+
+![](https://cldup.com/cM29dsQXce.png)
 
 ## Example
 
