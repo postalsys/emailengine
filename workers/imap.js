@@ -32,12 +32,13 @@ class ConnectionHandler {
 
         return {
             enabled: logging.enabled,
-            log: entry => {
+            maxLogLines: logging.maxLogLines,
+            log(entry) {
                 let logRow = msgpack.encode(entry);
                 redis
                     .multi()
                     .lpush(logKey, logRow)
-                    .ltrim(logKey, 0, logging.maxLogLines - 1)
+                    .ltrim(logKey, 0, this.maxLogLines - 1)
                     .exec()
                     .catch(err => this.logger.error(err));
             }
@@ -317,7 +318,30 @@ class ConnectionHandler {
         let dataview = new DataView(message);
         dataview.setUint8(Number(threadId), Number(threadId));
         */
-        console.log(message);
+
+        switch (message.cmd) {
+            case 'settings':
+                if (message.data && message.data.logs) {
+                    for (let [account, accountObject] of this.accounts) {
+                        // update log handling
+                        let logging = await settings.getLoggingInfo(account, message.data.logs);
+                        if (accountObject.connection) {
+                            accountObject.connection.accountLogger.maxLogLines = logging.maxLogLines;
+                            accountObject.connection.accountLogger.enabled = logging.enabled;
+                            accountObject.connection.emitLogs = logging.enabled;
+                            if (accountObject.connection.imapClient) {
+                                accountObject.connection.imapClient.emitLogs = logging.enabled;
+                            }
+                        }
+                        if (!logging.enabled) {
+                            await redis.del(this.getLogKey(account));
+                        }
+                    }
+                }
+                return;
+        }
+
+        logger.debug({ msg: 'Unhandled message', message });
     }
 
     // message that expects a response
@@ -471,6 +495,8 @@ parentPort.on('message', message => {
                 });
             });
     }
+
+    connectionHandler.onMessage(message).catch(err => logger.error(err));
 });
 
 process.on('SIGTERM', () => {

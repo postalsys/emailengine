@@ -124,10 +124,18 @@ let spawnWorker = type => {
                 });
         }
 
-        if (message.cmd === 'metrics') {
-            if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
-                metrics[message.key][message.method](...message.args);
-            }
+        switch (message.cmd) {
+            case 'metrics':
+                if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
+                    metrics[message.key][message.method](...message.args);
+                }
+                return;
+
+            case 'settings':
+                availableIMAPWorkers.forEach(worker => {
+                    worker.postMessage(message);
+                });
+                return;
         }
 
         switch (type) {

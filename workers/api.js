@@ -232,9 +232,15 @@ async function metrics(key, method, ...args) {
     });
 }
 
+async function notify(cmd, data) {
+    parentPort.postMessage({
+        cmd,
+        data
+    });
+}
+
 async function onCommand(command) {
-    console.log(command);
-    return 444;
+    logger.debug({ msg: 'Unhandled command', command });
 }
 
 parentPort.on('message', message => {
@@ -1248,6 +1254,7 @@ const init = async () => {
                 await settings.set(key, request.payload[key]);
                 updated.push(key);
             }
+            notify('settings', request.payload);
             return { updated };
         },
         options: {
