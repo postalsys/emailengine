@@ -5,8 +5,8 @@ const { Account } = require('../lib/account');
 const logger = require('../lib/logger');
 const { redis, notifyQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
-
-const { threadId } = require('worker_threads');
+const settings = require('../lib/settings');
+const msgpack = require('msgpack5')();
 
 class ConnectionHandler {
     constructor() {
@@ -21,6 +21,29 @@ class ConnectionHandler {
         parentPort.postMessage({ cmd: 'ready' });
     }
 
+    getLogKey(account) {
+        // this format ensures that the key is deleted when user is removed
+        return `iam:${account}:g`;
+    }
+
+    async getAccountLogger(account) {
+        let logKey = this.getLogKey(account);
+        let logging = await settings.getLoggingInfo(account);
+
+        return {
+            enabled: logging.enabled,
+            log: entry => {
+                let logRow = msgpack.encode(entry);
+                redis
+                    .multi()
+                    .lpush(logKey, logRow)
+                    .ltrim(logKey, 0, logging.maxLogLines - 1)
+                    .exec()
+                    .catch(err => this.logger.error(err));
+            }
+        };
+    }
+
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
         let accountObject = new Account({ redis, account });
@@ -30,7 +53,8 @@ class ConnectionHandler {
             account,
             accountObject,
             redis,
-            notifyQueue
+            notifyQueue,
+            accountLogger: await this.getAccountLogger(account)
         });
 
         let accountData = await accountObject.loadAccountData();
@@ -298,7 +322,10 @@ class ConnectionHandler {
 
     // message that expects a response
     async onCommand(message) {
-        logger.info(message);
+        if (message && !['countConnections'].includes(message.cmd)) {
+            logger.info(message);
+        }
+
         switch (message.cmd) {
             case 'assign':
                 return await this.assignConnection(message.account);
