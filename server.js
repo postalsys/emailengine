@@ -13,6 +13,7 @@ const metrics = {
         name: 'thread_starts',
         help: 'Number of started threads'
     }),
+
     threadStops: new promClient.Counter({
         name: 'thread_stops',
         help: 'Number of stopped threads'
@@ -243,6 +244,18 @@ async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
             return promClient.register.metrics();
+
+        case 'structuredMetrics': {
+            let connections = {};
+
+            for (let key of Object.keys(metrics.imapConnections.hashMap)) {
+                if (key.indexOf('status:') === 0) {
+                    let metric = metrics.imapConnections.hashMap[key];
+                    connections[metric.labels.status] = metric.value;
+                }
+            }
+            return { connections };
+        }
 
         case 'new':
             unassigned.add(message.account);

@@ -48,7 +48,7 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 **1. General overview**
 
-![](https://cldup.com/56xZSp7861.png)
+![](https://cldup.com/DqCiFxVRyC.png)
 
 **2. Documentation**
 

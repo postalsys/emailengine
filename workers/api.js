@@ -1308,6 +1308,19 @@ const init = async () => {
     });
 
     server.route({
+        method: 'GET',
+        path: '/v1/stats',
+
+        async handler() {
+            return await getStats();
+        },
+        options: {
+            description: 'Return server stats',
+            tags: ['api', 'stats']
+        }
+    });
+
+    server.route({
         method: 'POST',
         path: '/v1/verifyAccount',
 
@@ -1463,6 +1476,19 @@ async function verifyAccountInfo(accountData) {
     }
 
     return response;
+}
+
+async function getStats() {
+    const structuredMetrics = await call({ cmd: 'structuredMetrics' });
+
+    let stats = Object.assign(
+        {
+            version: packageData.version
+        },
+        structuredMetrics
+    );
+
+    return stats;
 }
 
 init().catch(err => {

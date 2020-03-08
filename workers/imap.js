@@ -395,7 +395,13 @@ class ConnectionHandler {
                 return await this.submitMessage(message);
 
             case 'countConnections': {
-                let results = {};
+                let results = {
+                    connected: 0,
+                    connecting: 0,
+                    authenticationError: 0,
+                    connectError: 0
+                };
+
                 let count = status => {
                     if (!results[status]) {
                         results[status] = 0;

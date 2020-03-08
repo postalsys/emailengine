@@ -83,6 +83,25 @@
                                     </p>
                                 </div>
 
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Connecting</th>
+                                            <th>Connected</th>
+                                            <th>Authentication error</th>
+                                            <th>Connection error</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="stats-conn-connecting"></td>
+                                            <td class="stats-conn-connected"></td>
+                                            <td class="stats-conn-authenticationError"></td>
+                                            <td class="stats-conn-connectError"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
                                 <p>
                                     IMAP API allows you to:
                                 </p>
@@ -319,8 +338,9 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
             <div class="container">
                 <div class="row">
                     <div class="col-sm-8">
-                        <span class="text-muted">&copy; 2020 Andris Reinman</span> |
-                        <a class="text-muted" href="mailto:andris@imapapi.com" target="_blank">andris@imapapi.com</a>
+                        IMAP API
+                        <span class="text-muted app-version"></span> | <span class="text-muted">&copy; 2020</span>
+                        <a class="text-muted" href="mailto:andris@imapapi.com" target="_blank">Andris Reinman</a>
                     </div>
                 </div>
             </div>

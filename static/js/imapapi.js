@@ -23,6 +23,31 @@ function showToast(message, icon) {
     $(toast).toast('show');
 }
 
+function checkStatus() {
+    fetch('/v1/stats')
+        .then(result => {
+            return result.json();
+        })
+        .then(result => {
+            for (let elm of document.querySelectorAll('.app-version')) {
+                elm.textContent = 'v' + result.version;
+            }
+
+            ['connecting', 'connected', 'authenticationError', 'connectError'].forEach(key => {
+                for (let elm of document.querySelectorAll('.stats-conn-' + key)) {
+                    elm.textContent = (result.connections && result.connections[key]) || 0;
+                }
+            });
+
+            setTimeout(checkStatus, 5000);
+        })
+        .catch(err => {
+            console.error(err);
+            showToast(err.message);
+            setTimeout(checkStatus, 5000);
+        });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
     settingsForm.addEventListener('submit', e => {
@@ -130,4 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let elm of document.querySelectorAll('.domainName')) {
         elm.textContent = `${window.location.protocol}//${window.location.host}`;
     }
+
+    checkStatus();
 });
