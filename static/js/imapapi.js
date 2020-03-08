@@ -93,6 +93,40 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(err.message, 'alert-triangle');
         });
 
+    const logsForm = document.getElementById('logsForm');
+    logsForm.addEventListener('submit', e => {
+        e.preventDefault();
+        logsForm.classList.add('was-validated');
+        if (logsForm.checkValidity() === false) {
+            e.stopPropagation();
+            return;
+        }
+
+        const account = document.getElementById('logsAccount').value.trim();
+        fetch(`/v1/logs/${encodeURIComponent(account)}`, {
+            method: 'GET'
+        })
+            .then(result => {
+                return result.blob();
+            })
+            .then(blob => {
+                const a = document.createElement('a');
+                a.style = 'display: none';
+
+                const url = window.URL.createObjectURL(blob);
+                a.href = url;
+                document.body.appendChild(a);
+
+                a.download = `logs-${account}.log`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(err => {
+                console.error(err);
+                showToast(err.message);
+            });
+    });
+
     for (let elm of document.querySelectorAll('.domainName')) {
         elm.textContent = `${window.location.protocol}//${window.location.host}`;
     }

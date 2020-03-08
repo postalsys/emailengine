@@ -60,6 +60,13 @@
                                     Settings</a
                                 >
                             </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" id="logs-tab" data-toggle="tab" href="#logs" role="tab" aria-controls="logs" aria-selected="false">
+                                    <img src="/static/icons/download.svg" width="20" height="20" title="Logs" />
+                                    Logs</a
+                                >
+                            </li>
                         </ul>
 
                         <div class="tab-content mt-4">
@@ -277,6 +284,27 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
 
                                     <div class="mt-3">
                                         <button type="submit" class="btn btn-primary">Update settings</button>
+                                    </div>
+                                    <div class="mt-3"></div>
+                                </form>
+                            </div>
+
+                            <div class="tab-pane" id="logs" role="tabpanel" aria-labelledby="logs-tab">
+                                <form id="logsForm" class="needs-validation" novalidate>
+                                    <p class="text-muted">
+                                        You can download stored logs here for accounts that have logging enabled. Logging can be enabled either for all or
+                                        specific accounts in the Settings tab.
+                                    </p>
+                                    <div class="form-group">
+                                        <label for="logsAccount">Account ID</label>
+                                        <input type="text" class="form-control" id="logsAccount" required />
+                                        <div class="invalid-feedback">
+                                            Enter valid account ID
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <button type="submit" class="btn btn-primary">Download logs</button>
                                     </div>
                                     <div class="mt-3"></div>
                                 </form>

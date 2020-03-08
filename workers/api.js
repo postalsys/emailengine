@@ -15,6 +15,8 @@ const HapiSwagger = require('hapi-swagger');
 const packageData = require('../package.json');
 const pathlib = require('path');
 const config = require('wild-config');
+const { PassThrough } = require('stream');
+const msgpack = require('msgpack5')();
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -1276,6 +1278,36 @@ const init = async () => {
     });
 
     server.route({
+        method: 'GET',
+        path: '/v1/logs/{account}',
+
+        async handler(request) {
+            return getLogs(request.params.account);
+        },
+        options: {
+            description: 'Return IMAP logs for an account',
+            tags: ['api', 'logs'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string()
+                        .max(256)
+                        .required()
+                        .example('example')
+                        .description('Account ID')
+                })
+            }
+        }
+    });
+
+    server.route({
         method: 'POST',
         path: '/v1/verifyAccount',
 
@@ -1335,6 +1367,47 @@ const init = async () => {
 
     await server.start();
 };
+
+function getLogs(account) {
+    let logKey = `iam:${account}:g`;
+    let passThrough = new PassThrough();
+
+    redis
+        .lrangeBuffer(logKey, 0, -1)
+        .then(rows => {
+            if (!rows || !Array.isArray(rows) || !rows.length) {
+                return passThrough.end(`No logs found for ${account}\n`);
+            }
+            let processNext = () => {
+                if (!rows.length) {
+                    return passThrough.end();
+                }
+
+                let row = rows.shift();
+                let entry;
+                try {
+                    entry = msgpack.decode(row);
+                } catch (err) {
+                    entry = { error: err.stack };
+                }
+
+                if (entry) {
+                    if (!passThrough.write(JSON.stringify(entry) + '\n')) {
+                        return passThrough.once('drain', processNext);
+                    }
+                }
+
+                setImmediate(processNext);
+            };
+
+            processNext();
+        })
+        .catch(err => {
+            passThrough.end(`\nFailed to process logs\n${err.stack}\n`);
+        });
+
+    return passThrough;
+}
 
 async function verifyAccountInfo(accountData) {
     let response = {};

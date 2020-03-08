@@ -34,11 +34,15 @@ class ConnectionHandler {
             enabled: logging.enabled,
             maxLogLines: logging.maxLogLines,
             log(entry) {
+                if (!this.maxLogLines || !this.enabled) {
+                    return;
+                }
+
                 let logRow = msgpack.encode(entry);
                 redis
                     .multi()
-                    .lpush(logKey, logRow)
-                    .ltrim(logKey, 0, this.maxLogLines - 1)
+                    .rpush(logKey, logRow)
+                    .ltrim(logKey, -this.maxLogLines, -1)
                     .exec()
                     .catch(err => this.logger.error(err));
             }
