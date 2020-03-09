@@ -1483,7 +1483,8 @@ async function getStats() {
 
     let stats = Object.assign(
         {
-            version: packageData.version
+            version: packageData.version,
+            accounts: await redis.scard('ia:accounts')
         },
         structuredMetrics
     );

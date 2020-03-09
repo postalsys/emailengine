@@ -33,7 +33,7 @@
                 </h1>
 
                 <div class="row mt-4">
-                    <div class="col-sm-8">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-8">
                         <ul class="nav nav-tabs" id="myTab" role="tablist">
                             <li class="nav-item">
                                 <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home" aria-selected="true"
@@ -83,24 +83,28 @@
                                     </p>
                                 </div>
 
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Connecting</th>
-                                            <th>Connected</th>
-                                            <th>Authentication error</th>
-                                            <th>Connection error</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td class="stats-conn-connecting"></td>
-                                            <td class="stats-conn-connected"></td>
-                                            <td class="stats-conn-authenticationError"></td>
-                                            <td class="stats-conn-connectError"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Accounts</th>
+                                                <th>Connecting</th>
+                                                <th>Connected</th>
+                                                <th>Authentication error</th>
+                                                <th>Connection error</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th class="stats-accounts text-center"></th>
+                                                <td class="stats-conn-connecting text-center"></td>
+                                                <td class="stats-conn-connected text-center"></td>
+                                                <td class="stats-conn-authenticationError text-center"></td>
+                                                <td class="stats-conn-connectError text-center"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
 
                                 <p>
                                     IMAP API allows you to:
@@ -126,7 +130,11 @@
                             </div>
 
                             <div class="tab-pane" id="docs" role="tabpanel" aria-labelledby="docs-tab">
-                                <p>API documentation for IMAP API is available <a href="/docs">here</a>.</p>
+                                <div class="bd-callout bd-callout-warning">
+                                    <p>
+                                        API documentation for IMAP API is available as <a href="/docs" target="_blank" class="btn btn-success">Swagger docs</a>
+                                    </p>
+                                </div>
 
                                 <h4>Getting started</h4>
 

@@ -8,6 +8,16 @@ const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
+const DEFAULT_STATES = {
+    init: 0,
+    connected: 0,
+    connecting: 0,
+    authenticationError: 0,
+    connectError: 0,
+    unset: 0,
+    disconnected: 0
+};
+
 class ConnectionHandler {
     constructor() {
         this.callQueue = new Map();
@@ -395,12 +405,7 @@ class ConnectionHandler {
                 return await this.submitMessage(message);
 
             case 'countConnections': {
-                let results = {
-                    connected: 0,
-                    connecting: 0,
-                    authenticationError: 0,
-                    connectError: 0
-                };
+                let results = Object.assign({}, DEFAULT_STATES);
 
                 let count = status => {
                     if (!results[status]) {
