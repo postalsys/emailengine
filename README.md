@@ -48,19 +48,23 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 **1. General overview**
 
-![](https://cldup.com/DqCiFxVRyC.png)
+![](https://cldup.com/UYvRSyD_ci.png)
 
 **2. Documentation**
 
-![](https://cldup.com/XwGPogMeJ3.png)
+![](https://cldup.com/hmGEgSgOXX.png)
 
 **3. Settings**
 
-![](https://cldup.com/Fl3mkHHS5J.png)
+![](https://cldup.com/Ro-0lpKkuJ.png)
 
 **4. Download stored logs**
 
-![](https://cldup.com/cM29dsQXce.png)
+![](https://cldup.com/0bQkl1mfIh.png)
+
+**5. Swagger**
+
+![](https://cldup.com/0Hg1VvhOGz.png)
 
 ## Example
 

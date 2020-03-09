@@ -292,6 +292,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group form-check">
                                             <input type="checkbox" class="form-check-input" id="settingsLogsAll" />
                                             <label class="form-check-label" for="settingsLogsAll">Store IMAP logs for all accounts</label>
+                                            <small class="form-text text-muted">Not recommended if IMAP API tracks large number of accounts</small>
                                         </div>
 
                                         <div class="form-group">
@@ -301,11 +302,15 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="settingsLogsMaxLogLines">Maximum lines of logs to keep</label>
+                                            <label for="settingsLogsMaxLogLines">Maximum lines of logs to store</label>
                                             <input type="number" class="form-control" id="settingsLogsMaxLogLines" min="0" max="1000000" />
                                             <div class="invalid-feedback">
                                                 Enter valid number between 0 and 1000000
                                             </div>
+                                            <small class="form-text text-muted"
+                                                >Logs are stored in Redis which in other words means RAM, so it might not be a good idea to store too much data
+                                                in it</small
+                                            >
                                         </div>
                                     </div>
 
