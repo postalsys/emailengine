@@ -43,6 +43,7 @@ const init = async () => {
 
             switch (request.query.account) {
                 case 'oauth-user':
+                case 'ouath-user':
                     return {
                         user: USER_ADDRESS,
                         accessToken: await getAccessToken(USER_ADDRESS, USER_REFRESH_TOKEN)
