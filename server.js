@@ -171,7 +171,7 @@ async function call(worker, message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, 10 * 1000);
+        }, message.timeout || 10 * 1000);
 
         callQueue.set(mid, { resolve, reject, timer });
         worker.postMessage(
@@ -286,6 +286,7 @@ async function onCommand(worker, message) {
             return;
 
         case 'listMessages':
+        case 'buildContacts':
         case 'getRawMessage':
         case 'getText':
         case 'getMessage':

@@ -32,7 +32,7 @@ function checkStatus() {
             for (let elm of document.querySelectorAll('.app-version')) {
                 elm.textContent = 'v' + result.version;
             }
-            console.log(result);
+
             for (let elm of document.querySelectorAll('.stats-accounts')) {
                 elm.textContent = result.accounts || 0;
             }

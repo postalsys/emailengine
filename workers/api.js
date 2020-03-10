@@ -210,7 +210,7 @@ async function call(message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, 10 * 1000);
+        }, message.timeout || 10 * 1000);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -1087,6 +1087,45 @@ const init = async () => {
                         .description('Optional search query to limit messages')
                         .label('Search')
                 }).label('List')
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/contacts',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call });
+            try {
+                return await accountObject.buildContacts();
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+            }
+        },
+        options: {
+            description: 'Builds a contact listing',
+            notes: 'Builds a contact listings from email addresses. For larger mailboxes this could take a lot of time.',
+            tags: ['api', 'message'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string()
+                        .max(256)
+                        .required()
+                        .example('example')
+                        .description('Account ID')
+                })
             }
         }
     });
