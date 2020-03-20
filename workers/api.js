@@ -528,6 +528,68 @@ const init = async () => {
 
     server.route({
         method: 'GET',
+        path: '/v1/accounts',
+
+        async handler(request) {
+            try {
+                let accounts = await redis.smembers('ia:accounts');
+                let getStates = redis.pipeline();
+                for (let account of accounts) {
+                    getStates = getStates.hgetall(`iad:${account}`);
+                }
+                let results = await getStates.exec();
+                console.log(JSON.stringify(results, false, 2));
+
+                let accountList = results
+                    .map(
+                        row =>
+                            row &&
+                            row[1] && {
+                                account: row[1].account,
+                                name: row[1].name,
+                                state: row[1].state,
+                                lastError: row[1].state === 'connected' ? null : parseJSON(row[1].lastErrorState)
+                            }
+                    )
+                    .filter(row => row)
+                    .filter(row => !request.query.state || request.query.state === row.state)
+                    .sort((a, b) => a.account.toLowerCase().localeCompare(b.account.toLowerCase()));
+
+                return { accounts: accountList };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+            }
+        },
+
+        options: {
+            description: 'List accounts',
+            notes: 'Lists registered accounts',
+            tags: ['api', 'account'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    state: Joi.string()
+                        .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                        .example('connected')
+                        .description('Filter accounts by state')
+                        .label('AccountState')
+                }).label('AccountsFilter')
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/v1/account/{account}/mailboxes',
 
         async handler(request) {
@@ -1539,6 +1601,18 @@ async function verifyAccountInfo(accountData) {
     }
 
     return response;
+}
+
+function parseJSON(value) {
+    if (!value || typeof value !== 'string') {
+        return null;
+    }
+
+    try {
+        return JSON.parse(value);
+    } catch (err) {
+        return { error: err.message };
+    }
 }
 
 async function getStats() {
