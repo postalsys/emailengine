@@ -301,6 +301,16 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <small class="form-text text-muted">Enter one account ID per line</small>
                                         </div>
 
+                                        <div class="form-group form-check">
+                                            <input type="checkbox" class="form-check-input" id="settingsResetLoggedAccounts" />
+                                            <label class="form-check-label" for="settingsResetLoggedAccounts">Re-connect logged accounts</label>
+                                            <small class="form-text text-muted"
+                                                >Mark this checkbox if you want to make sure that logged accounts are re-connected and authenticated (one time
+                                                action, checkbox state is not stored). Established connections are kept alive as long as possible so enabling
+                                                logging for existing users without forced re-connect may not give any useful info.</small
+                                            >
+                                        </div>
+
                                         <div class="form-group">
                                             <label for="settingsLogsMaxLogLines">Maximum lines of logs to store</label>
                                             <input type="number" class="form-control" id="settingsLogsMaxLogLines" min="0" max="1000000" />

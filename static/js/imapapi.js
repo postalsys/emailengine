@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         .filter(a => a)
                 )
             ),
+            resetLoggedAccounts: !!document.getElementById('settingsResetLoggedAccounts').checked,
             maxLogLines: Number(document.getElementById('settingsLogsMaxLogLines').value)
         };
 

@@ -48,6 +48,11 @@ const settingsSchema = {
             .falsy('N', 'false', 0)
             .default(false)
             .description('Enable logs for all accounts'),
+        resetLoggedAccounts: Joi.boolean()
+            .truthy('Y', 'true', '1')
+            .falsy('N', 'false', 0)
+            .default(false)
+            .description('Re-connect logged accounts'),
         accounts: Joi.array()
             .items(Joi.string().max(256))
             .default([])
@@ -1292,9 +1297,28 @@ const init = async () => {
         async handler(request) {
             let updated = [];
             for (let key of Object.keys(request.payload)) {
+                switch (key) {
+                    case 'logs': {
+                        let logs = request.payload.logs;
+                        let resetLoggedAccounts = logs.resetLoggedAccounts;
+                        delete logs.resetLoggedAccounts;
+                        if (resetLoggedAccounts && logs.accounts && logs.accounts.length) {
+                            for (let account of logs.accounts) {
+                                logger.info({ msg: 'Request re-connect for logging', account });
+                                try {
+                                    await call({ cmd: 'update', account });
+                                } catch (err) {
+                                    logger.error({ action: 'request_reconnect', account, err });
+                                }
+                            }
+                        }
+                    }
+                }
+
                 await settings.set(key, request.payload[key]);
                 updated.push(key);
             }
+
             notify('settings', request.payload);
             return { updated };
         },

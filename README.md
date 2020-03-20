@@ -32,6 +32,7 @@ Even though still available from Github, it has clearly been abandoned, so not g
 -   Nylas Email API is a service while IMAP API is a self hosted application. Your data never leaves your system when using IMAP API while Nylas can not even operate without copying your customers' data and emails to their servers.
 -   Nylas in general tries to do everything while IMAP API only tries to handle the hard parts.
 -   Nylas supports both IMAP and Exchange while IMAP API currently supports just IMAP. This might change in the future though.
+-   No rate limiting in IMAP API (IMAP calls could be rate limited by the IMAP server though)
 
 ## Usage
 
