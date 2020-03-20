@@ -96,11 +96,11 @@
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <th class="stats-accounts text-center"></th>
-                                                <td class="stats-conn-connecting text-center"></td>
-                                                <td class="stats-conn-connected text-center"></td>
-                                                <td class="stats-conn-authenticationError text-center"></td>
-                                                <td class="stats-conn-connectError text-center"></td>
+                                                <th class="text-center"><a href="#" class="btn btn-info stats-accounts">0</a></th>
+                                                <td class="text-center"><a href="#" class="btn btn-info stats-conn-connecting">0</a></td>
+                                                <td class="text-center"><a href="#" class="btn btn-info stats-conn-connected">0</a></td>
+                                                <td class="text-center"><a href="#" class="btn btn-info stats-conn-authenticationError">0</a></td>
+                                                <td class="text-center"><a href="#" class="btn btn-info stats-conn-connectError">0</a></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -368,6 +368,49 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                 </div>
             </div>
         </footer>
+
+        <div id="modals">
+            <div class="modal fade" id="accountsModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="accountsModalTitle">Accounts</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-hover">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Account</th>
+                                        <th>Name</th>
+                                        <th>State</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="accountsTableBody">
+                                    <tr>
+                                        <th>test</th>
+                                        <td>Test Name</td>
+                                        <td>Errored</td>
+                                        <td><code>getaddrinfo ENOTFOUND imap.mail.yahoo.com</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th>test</th>
+                                        <td>Test Name</td>
+                                        <td colspan="2">Connected</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <script src="/static/js/jquery-3.4.1.slim.min.js"></script>
         <script src="/static/js/popper.min.js"></script>

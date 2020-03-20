@@ -52,6 +52,78 @@ function checkStatus() {
         });
 }
 
+let fetchingAccountList = false;
+function showAccounts(e, state) {
+    e.preventDefault();
+    if (fetchingAccountList) {
+        e.stopPropagation();
+        return;
+    }
+    fetchingAccountList = true;
+    fetch('/v1/accounts' + (state ? '?state=' + state : ''))
+        .then(result => {
+            return result.json();
+        })
+        .then(result => {
+            fetchingAccountList = false;
+
+            let table = document.getElementById('accountsTableBody');
+            table.innerHTML = '';
+
+            for (let accounData of result.accounts) {
+                let row = document.createElement('tr');
+
+                let thAccount = document.createElement('th');
+                thAccount.textContent = accounData.account;
+                row.appendChild(thAccount);
+
+                let tdName = document.createElement('td');
+                tdName.textContent = accounData.name || '';
+                row.appendChild(tdName);
+
+                let tdState = document.createElement('td');
+                let state;
+                switch (accounData.state) {
+                    case 'authenticationError':
+                        state = 'Authentication failed';
+                        break;
+                    case 'connectError':
+                        state = 'Connection failed';
+                        break;
+                    default:
+                        state = accounData.state.replace(/^./, c => c.toUpperCase());
+                        break;
+                }
+
+                tdState.textContent = state;
+
+                if (accounData.lastError) {
+                    row.appendChild(tdState);
+
+                    let tdDescription = document.createElement('td');
+                    let tdDescriptionCode = document.createElement('code');
+                    tdDescriptionCode.textContent = accounData.lastError.response || accounData.lastError.serverResponseCode || '';
+                    tdDescription.appendChild(tdDescriptionCode);
+                    row.appendChild(tdDescription);
+                } else {
+                    tdState.setAttribute('colspan', '2');
+                    row.appendChild(tdState);
+                }
+
+                table.appendChild(row);
+            }
+
+            $('#accountsModal').modal('show');
+        })
+        .catch(err => {
+            fetchingAccountList = false;
+
+            console.error(err);
+            showToast(err.message);
+            setTimeout(checkStatus, 5000);
+        });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
     settingsForm.addEventListener('submit', e => {
@@ -160,6 +232,16 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let elm of document.querySelectorAll('.domainName')) {
         elm.textContent = `${window.location.protocol}//${window.location.host}`;
     }
+
+    for (let elm of document.querySelectorAll('.stats-accounts')) {
+        elm.addEventListener('click', e => showAccounts(e, false));
+    }
+
+    ['connecting', 'connected', 'authenticationError', 'connectError'].forEach(key => {
+        for (let elm of document.querySelectorAll('.stats-conn-' + key)) {
+            elm.addEventListener('click', e => showAccounts(e, key));
+        }
+    });
 
     checkStatus();
 });

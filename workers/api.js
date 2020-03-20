@@ -537,9 +537,8 @@ const init = async () => {
                 for (let account of accounts) {
                     getStates = getStates.hgetall(`iad:${account}`);
                 }
-                let results = await getStates.exec();
-                console.log(JSON.stringify(results, false, 2));
 
+                let results = await getStates.exec();
                 let accountList = results
                     .map(
                         row =>
@@ -1176,7 +1175,7 @@ const init = async () => {
         options: {
             description: 'Builds a contact listing',
             notes: 'Builds a contact listings from email addresses. For larger mailboxes this could take a lot of time.',
-            tags: ['api', 'experimental'],
+            tags: [/*'api', */ 'experimental'],
 
             validate: {
                 options: {
