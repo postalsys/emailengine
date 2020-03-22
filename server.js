@@ -2,6 +2,9 @@
 
 process.title = 'imapapi';
 
+// cache before wild-config
+const argv = process.argv.slice(2);
+
 const logger = require('./lib/logger');
 const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
@@ -54,7 +57,10 @@ let spawnWorker = type => {
         workers.set(type, new Set());
     }
 
-    let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), { SHARE_ENV });
+    let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), {
+        argv,
+        env: SHARE_ENV
+    });
     metrics.threadStarts.inc();
 
     workers.get(type).add(worker);

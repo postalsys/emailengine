@@ -36,11 +36,31 @@ Even though still available from Github, it has clearly been abandoned, so not g
 
 ## Usage
 
-IMAP API requires Redis to be available. For any special configuration edit [config/default.toml](config/default.toml) configuration file.
+### Requirements
+
+-   **Redis** – any version
+-   **Node.js** - v12.16.0 or newer
+
+### Installation
+
+Install dependencies
 
 ```
 $ npm install --production
-$ npm start
+```
+
+### Run
+
+Run using [default settings](config/default.toml)
+
+```
+$ node server.js --dbs.redis="redis://127.0.0.1:6379"
+```
+
+Use custom Redis connection URL
+
+```
+$ node server.js --dbs.redis="redis://127.0.0.1:6379"
 ```
 
 Once application is started open http://127.0.0.1:3000/ for instructions and API documentation.
