@@ -54,10 +54,10 @@ $ npm install --production
 Run using [default settings](config/default.toml)
 
 ```
-$ node server.js --dbs.redis="redis://127.0.0.1:6379"
+$ node server.js
 ```
 
-Use custom Redis connection URL
+Or use custom Redis connection URL
 
 ```
 $ node server.js --dbs.redis="redis://127.0.0.1:6379"
