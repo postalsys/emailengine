@@ -307,7 +307,7 @@ There is a Prometheus output available at `/metrics` URL path of the app.
 
 That's right. The app itself (both web UI and API endpoints) does not implement any kind of authentication or ACL. Idea being that IMAP API only only handles IMAP access and everything else is left to the user as every system is different.
 
-By default IMAP API allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall to only allow your own app to access it. For web UI the suggestion is to use Nginx or Apache proxy with HTTP Basic Authentication.
+By default IMAP API allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall to only allow your own app to access it. For web UI the suggestion is to use Nginx or Apache proxy with HTTP Basic Authentication, probably for VPN addresses only.
 
 ## Future features
 
