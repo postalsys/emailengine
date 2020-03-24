@@ -98,7 +98,7 @@ class ConnectionHandler {
     }
 
     async updateConnection(account) {
-        logger.info({ msg: 'Account info updated', account });
+        logger.info({ msg: 'Account re-connect requested', account });
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
             if (accountObject.connection) {

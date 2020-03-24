@@ -487,6 +487,54 @@ const init = async () => {
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/reconnect',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call });
+
+            try {
+                return await accountObject.requestReconnect(request.payload);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+            }
+        },
+        options: {
+            description: 'Request re-connect',
+            notes: 'Requests connection to be re-connected',
+            tags: ['api', 'account'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string()
+                        .max(256)
+                        .required()
+                        .example('example')
+                        .description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    reconnect: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Only reconnect if true')
+                })
+            }
+        }
+    });
+
+    server.route({
         method: 'DELETE',
         path: '/v1/account/{account}',
 

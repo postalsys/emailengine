@@ -110,6 +110,32 @@ function showAccounts(e, state) {
                     row.appendChild(tdState);
                 }
 
+                let tdReconnect = document.createElement('td');
+                tdReconnect.classList.add('text-right');
+                let btn = document.createElement('button');
+                btn.classList.add('btn', 'btn-warning');
+                btn.textContent = 'Re-connect now';
+                tdReconnect.appendChild(btn);
+                row.appendChild(tdReconnect);
+
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    $('#accountsModal').modal('hide');
+                    showToast('Re-connect requested for ' + accounData.name || accounData.account);
+                    fetch('/v1/account/' + accounData.account + '/reconnect', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            reconnect: true
+                        })
+                    }).catch(err => {
+                        showToast(err.message);
+                        console.error(err);
+                    });
+                });
+
                 table.appendChild(row);
             }
 
