@@ -102,7 +102,9 @@ function showAccounts(e, state) {
 
                     let tdDescription = document.createElement('td');
                     let tdDescriptionCode = document.createElement('code');
-                    tdDescriptionCode.textContent = accounData.lastError.response || accounData.lastError.serverResponseCode || '';
+                    let description = accounData.lastError.response || accounData.lastError.serverResponseCode || '';
+                    tdDescriptionCode.textContent = description;
+                    tdDescriptionCode.title = description;
                     tdDescription.appendChild(tdDescriptionCode);
                     row.appendChild(tdDescription);
                 } else {
@@ -113,15 +115,16 @@ function showAccounts(e, state) {
                 let tdReconnect = document.createElement('td');
                 tdReconnect.classList.add('text-right');
                 let btn = document.createElement('button');
-                btn.classList.add('btn', 'btn-warning');
-                btn.textContent = 'Re-connect now';
+                btn.classList.add('btn', 'btn-warning', 'btn-sm');
+                btn.textContent = 'Reconnect';
+                btn.title = 'Request reconnecting IMAP client for this account';
                 tdReconnect.appendChild(btn);
                 row.appendChild(tdReconnect);
 
                 btn.addEventListener('click', e => {
                     e.preventDefault();
                     $('#accountsModal').modal('hide');
-                    showToast('Re-connect requested for ' + accounData.name || accounData.account);
+                    showToast('Reconnect requested for ' + accounData.name || accounData.account);
                     fetch('/v1/account/' + accounData.account + '/reconnect', {
                         method: 'PUT',
                         headers: {

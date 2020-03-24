@@ -14,12 +14,7 @@
 
         <link href="/static/bootstrap-4.4.1-dist/css/bootstrap.min.css" rel="stylesheet" />
         <link href="/static/css/callout.css" rel="stylesheet" />
-
-        <style>
-            footer {
-                background-color: #f5f5f5;
-            }
-        </style>
+        <link href="/static/css/imapapi.css" rel="stylesheet" />
     </head>
     <body class="d-flex flex-column h-100">
         <main role="main" class="flex-shrink-0">
@@ -303,11 +298,11 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
 
                                         <div class="form-group form-check">
                                             <input type="checkbox" class="form-check-input" id="settingsResetLoggedAccounts" />
-                                            <label class="form-check-label" for="settingsResetLoggedAccounts">Re-connect logged accounts</label>
+                                            <label class="form-check-label" for="settingsResetLoggedAccounts">Reconnect logged accounts</label>
                                             <small class="form-text text-muted"
-                                                >Mark this checkbox if you want to make sure that logged accounts are re-connected and authenticated (one time
+                                                >Mark this checkbox if you want to make sure that logged accounts are reconnected and authenticated (one time
                                                 action, checkbox state is not stored). Established connections are kept alive as long as possible so enabling
-                                                logging for existing users without forced re-connect may not give any useful info.</small
+                                                logging for existing users without forced reconnect may not give any useful info.</small
                                             >
                                         </div>
 
@@ -380,21 +375,21 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                             </button>
                         </div>
                         <div class="modal-body">
-                            <table class="table table-hover">
+                            <table class="table table-hover users-table">
                                 <thead class="thead-light">
                                     <tr>
-                                        <th>Account</th>
-                                        <th>Name</th>
-                                        <th>State</th>
-                                        <th>Description</th>
-                                        <th></th>
+                                        <th class="row-account">Account</th>
+                                        <th class="row-name">Name</th>
+                                        <th class="row-state">State</th>
+                                        <th class="row-description">Description</th>
+                                        <th class="row-btn"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="accountsTableBody"></tbody>
                             </table>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,33 @@
+footer {
+    background-color: #f5f5f5;
+}
+
+.users-table {
+    table-layout: fixed;
+    width: 100%;
+    white-space: nowrap;
+}
+
+.users-table td,
+.users-table th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Column widths are based on these cells */
+.users-table .row-account {
+    width: 15%;
+}
+.users-table .row-name {
+    width: 15%;
+}
+.users-table .row-state {
+    width: 15%;
+}
+.users-table .row-description {
+    width: 40%;
+}
+.users-table .row-btn {
+    width: 15%;
+}

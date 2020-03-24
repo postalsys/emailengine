@@ -52,7 +52,7 @@ const settingsSchema = {
             .truthy('Y', 'true', '1')
             .falsy('N', 'false', 0)
             .default(false)
-            .description('Re-connect logged accounts'),
+            .description('Reconnect logged accounts'),
         accounts: Joi.array()
             .items(Joi.string().max(256))
             .default([])
@@ -503,8 +503,8 @@ const init = async () => {
             }
         },
         options: {
-            description: 'Request re-connect',
-            notes: 'Requests connection to be re-connected',
+            description: 'Request reconnect',
+            notes: 'Requests connection to be reconnected',
             tags: ['api', 'account'],
 
             validate: {
@@ -1413,7 +1413,7 @@ const init = async () => {
                         delete logs.resetLoggedAccounts;
                         if (resetLoggedAccounts && logs.accounts && logs.accounts.length) {
                             for (let account of logs.accounts) {
-                                logger.info({ msg: 'Request re-connect for logging', account });
+                                logger.info({ msg: 'Request reconnect for logging', account });
                                 try {
                                     await call({ cmd: 'update', account });
                                 } catch (err) {
