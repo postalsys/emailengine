@@ -187,7 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({
                 webhooks: document.getElementById('settingsWebhooks').value,
                 authServer: document.getElementById('settingsAuthServer').value,
-                logs
+                logs,
+                notifyText: !!document.getElementById('settingsNotifyText').checked,
+                notifyTextSize: Number(document.getElementById('settingsNotifyTextSize').value)
             })
         })
             .then(result => {
@@ -206,11 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true&logs=true')
+    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true')
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
             document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
+
+            document.getElementById('settingsNotifyText').checked = !!(result && result.notifyText);
+            document.getElementById('settingsNotifyTextSize').value = (result && result.notifyTextSize) || '';
 
             let logs = (result && result.logs) || {};
             let maxLogLines = 'maxLogLines' in logs ? logs.maxLogLines : 10000;

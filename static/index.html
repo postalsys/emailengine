@@ -250,33 +250,61 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
 
                             <div class="tab-pane" id="settings" role="tabpanel" aria-labelledby="settings-tab">
                                 <form id="settingsForm" class="needs-validation" novalidate>
-                                    <div class="form-group">
-                                        <label for="settingsWebhooks">Webhook URL</label>
-                                        <input type="url" class="form-control" id="settingsWebhooks" required />
-                                        <div class="invalid-feedback">
-                                            Enter valid URL for the webhook
-                                        </div>
-                                        <small class="form-text text-muted"
-                                            ><strong>Required.</strong> IMAP API makes a POST request against this URL for every detected change in user's
-                                            account. This includes new messages, deleted messages and flag changes.</small
-                                        >
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="settingsAuthServer">Auth Server URL</label>
-                                        <input type="url" class="form-control" id="settingsAuthServer" />
-                                        <div class="invalid-feedback">
-                                            Enter valid URL for Auth Server
-                                        </div>
-                                        <small class="form-text text-muted"
-                                            >You can configure accounts to resolve authentication info from an authentication server instead of setting fixed
-                                            credentials. Whenever IMAP API needs to authenticate such account it makes a GET request against this URL with 2
-                                            additional query arguments - <code>account</code> as the account ID and <code>proto</code> which is either "imap" or
-                                            "smtp". Using auth server is always required for OAuth accounts.</small
-                                        >
-                                    </div>
-
                                     <div class="card card-body">
+                                        <h5 class="card-title">Webhooks</h5>
+
+                                        <div class="form-group">
+                                            <label for="settingsWebhooks">Webhook URL</label>
+                                            <input type="url" class="form-control" id="settingsWebhooks" required />
+                                            <div class="invalid-feedback">
+                                                Enter valid URL for the webhook
+                                            </div>
+                                            <small class="form-text text-muted"
+                                                ><strong>Required.</strong> IMAP API makes a POST request against this URL for every detected change in user's
+                                                account. This includes new messages, deleted messages and flag changes.</small
+                                            >
+                                        </div>
+
+                                        <div class="form-group form-check">
+                                            <input type="checkbox" class="form-check-input" id="settingsNotifyText" />
+                                            <label class="form-check-label" for="settingsNotifyText">Include text content in new email webhooks</label>
+                                            <small class="form-text text-muted"
+                                                >By default text body is not included to keep notification payload at minimum.</small
+                                            >
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsNotifyTextSize">Maximum text size</label>
+                                            <input type="number" class="form-control" id="settingsNotifyTextSize" min="0" />
+                                            <div class="invalid-feedback">
+                                                Enter valid number
+                                            </div>
+                                            <small class="form-text text-muted"
+                                                >To keep webhook size in check you can define maximum text size limit. Longer texts are cropped to fit that
+                                                size. This limit is appied per text-type, so if the limit is 1000 bytes and email has both plaintext and html
+                                                content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="card card-body mt-3">
+                                        <h5 class="card-title">Authentication</h5>
+                                        <div class="form-group">
+                                            <label for="settingsAuthServer">Auth Server URL</label>
+                                            <input type="url" class="form-control" id="settingsAuthServer" />
+                                            <div class="invalid-feedback">
+                                                Enter valid URL for Auth Server
+                                            </div>
+                                            <small class="form-text text-muted"
+                                                >You can configure accounts to resolve authentication info from an authentication server instead of setting
+                                                fixed credentials. Whenever IMAP API needs to authenticate such account it makes a GET request against this URL
+                                                with 2 additional query arguments - <code>account</code> as the account ID and <code>proto</code> which is
+                                                either "imap" or "smtp". Using auth server is always required for OAuth accounts.</small
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="card card-body mt-3">
                                         <h5 class="card-title">IMAP logs</h5>
 
                                         <p class="text-muted">

@@ -42,6 +42,13 @@ const settingsSchema = {
         .description('URL to fetch authentication data from')
         .label('AuthServer'),
 
+    notifyText: Joi.boolean()
+        .truthy('Y', 'true', '1')
+        .falsy('N', 'false', 0)
+        .description('Include message text in webhook notification'),
+
+    notifyTextSize: Joi.number().min(0),
+
     logs: Joi.object({
         all: Joi.boolean()
             .truthy('Y', 'true', '1')
