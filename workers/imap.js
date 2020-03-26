@@ -102,6 +102,12 @@ class ConnectionHandler {
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
             if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account reconnect requested'
+                });
                 await redis.hmset(accountObject.connection.getAccountKey(), {
                     state: 'connecting'
                 });
