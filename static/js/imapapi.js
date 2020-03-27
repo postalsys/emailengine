@@ -155,6 +155,9 @@ function showAccounts(e, state) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
+    const settingsNotifyText = document.getElementById('settingsNotifyText');
+    const settingsNotifyTextSize = document.getElementById('settingsNotifyTextSize');
+
     settingsForm.addEventListener('submit', e => {
         e.preventDefault();
         settingsForm.classList.add('was-validated');
@@ -188,8 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 webhooks: document.getElementById('settingsWebhooks').value,
                 authServer: document.getElementById('settingsAuthServer').value,
                 logs,
-                notifyText: !!document.getElementById('settingsNotifyText').checked,
-                notifyTextSize: Number(document.getElementById('settingsNotifyTextSize').value)
+                notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
+                notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0
             })
         })
             .then(result => {
@@ -214,8 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
             document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
 
-            document.getElementById('settingsNotifyText').checked = !!(result && result.notifyText);
-            document.getElementById('settingsNotifyTextSize').value = (result && result.notifyTextSize) || '';
+            if (settingsNotifyText) {
+                settingsNotifyText.checked = !!(result && result.notifyText);
+            }
+
+            if (settingsNotifyTextSize) {
+                settingsNotifyTextSize.value = (result && result.notifyTextSize) || '';
+            }
 
             let logs = (result && result.logs) || {};
             let maxLogLines = 'maxLogLines' in logs ? logs.maxLogLines : 10000;
