@@ -1,7 +1,7 @@
 'use strict';
 
 // This is an example authentication server
-// It provides fixed credentials foir an account called "example" and generates OAuth2 access tokens for an account called "oauth-user"
+// It provides fixed credentials for an account called "example" and generates OAuth2 access tokens for an account called "oauth-user"
 
 const Hapi = require('@hapi/hapi');
 const hapiPino = require('hapi-pino');
@@ -34,16 +34,15 @@ const init = async () => {
 
         async handler(request) {
             switch (request.query.account) {
+                // account with id "example" uses password based authentication
                 case 'example':
                     return {
                         user: 'myuser2',
                         pass: 'verysecret'
                     };
-            }
 
-            switch (request.query.account) {
+                // account with id "oauth-user" uses Oauth2 tokens
                 case 'oauth-user':
-                case 'ouath-user':
                     return {
                         user: USER_ADDRESS,
                         accessToken: await getAccessToken(USER_ADDRESS, USER_REFRESH_TOKEN)

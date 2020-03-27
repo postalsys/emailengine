@@ -269,7 +269,8 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <input type="checkbox" class="form-check-input" id="settingsNotifyText" />
                                             <label class="form-check-label" for="settingsNotifyText">Include text content in new email webhooks</label>
                                             <small class="form-text text-muted"
-                                                >By default text body is not included to keep notification payload at minimum.</small
+                                                >By default only message metadata without HTML or plaintext values is included in the webhook to keep
+                                                notification payload size at minimum. If enabled then text values are also added to the webhook.</small
                                             >
                                         </div>
 
@@ -280,9 +281,9 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 Enter valid number
                                             </div>
                                             <small class="form-text text-muted"
-                                                >To keep webhook size in check you can define maximum text size limit. Longer texts are cropped to fit that
-                                                size. This limit is appied per text-type, so if the limit is 1000 bytes and email has both plaintext and html
-                                                content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small
+                                                >To keep webhook size with text values in check you can define maximum text size limit. Longer texts are cropped
+                                                to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has both
+                                                plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small
                                             >
                                         </div>
                                     </div>
@@ -296,10 +297,14 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 Enter valid URL for Auth Server
                                             </div>
                                             <small class="form-text text-muted"
-                                                >You can configure accounts to resolve authentication info from an authentication server instead of setting
-                                                fixed credentials. Whenever IMAP API needs to authenticate such account it makes a GET request against this URL
-                                                with 2 additional query arguments - <code>account</code> as the account ID and <code>proto</code> which is
-                                                either "imap" or "smtp". Using auth server is always required for OAuth accounts.</small
+                                                >You can configure accounts to resolve authentication info from an
+                                                <a href="https://github.com/andris9/imapapi/blob/master/examples/auth-server.js" target="_blank"
+                                                    >authentication server</a
+                                                >
+                                                instead of setting fixed credentials. Whenever IMAP API needs to authenticate such account it makes a GET
+                                                request against this URL with 2 additional query arguments - <code>account</code> as the account ID and
+                                                <code>proto</code> which is either "imap" or "smtp". Using auth server is always required for OAuth
+                                                accounts.</small
                                             >
                                         </div>
                                     </div>
