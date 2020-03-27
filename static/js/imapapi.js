@@ -1,5 +1,5 @@
 'use strict';
-/* global document, fetch, $, window  */
+/* global document, fetch, $, window, moment  */
 
 function showToast(message, icon) {
     let template = `<div class="toast-header">
@@ -103,6 +103,18 @@ function showAccounts(e, state) {
                     let tdDescription = document.createElement('td');
                     let tdDescriptionCode = document.createElement('code');
                     let description = accounData.lastError.response || accounData.lastError.serverResponseCode || '';
+                    tdDescriptionCode.textContent = description;
+                    tdDescriptionCode.title = description;
+                    tdDescription.appendChild(tdDescriptionCode);
+                    row.appendChild(tdDescription);
+                } else if (accounData.syncTime) {
+                    row.appendChild(tdState);
+
+                    let tdDescription = document.createElement('td');
+                    let tdDescriptionCode = document.createElement('em');
+
+                    let description = `Last check ${moment(accounData.syncTime).fromNow()}`;
+
                     tdDescriptionCode.textContent = description;
                     tdDescriptionCode.title = description;
                     tdDescription.appendChild(tdDescriptionCode);

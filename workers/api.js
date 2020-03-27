@@ -602,6 +602,7 @@ const init = async () => {
                                 account: row[1].account,
                                 name: row[1].name,
                                 state: row[1].state,
+                                syncTime: row[1].sync,
                                 lastError: row[1].state === 'connected' ? null : parseJSON(row[1].lastErrorState)
                             }
                     )
