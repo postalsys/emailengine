@@ -113,10 +113,10 @@ function showAccounts(e, state) {
                     let tdDescription = document.createElement('td');
                     let tdDescriptionCode = document.createElement('em');
 
-                    let description = `Last check ${moment(accounData.syncTime).fromNow()}`;
+                    let description = `Last change ${moment(accounData.syncTime).fromNow()}`;
 
                     tdDescriptionCode.textContent = description;
-                    tdDescriptionCode.title = description;
+                    tdDescriptionCode.title = moment(accounData.syncTime).format('LLL');
                     tdDescription.appendChild(tdDescriptionCode);
                     row.appendChild(tdDescription);
                 } else {
