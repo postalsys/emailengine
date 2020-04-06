@@ -1,5 +1,5 @@
 'use strict';
-/* global document, fetch, $, window, moment  */
+/* global document, fetch, $, window, moment, confirm */
 
 function showToast(message, icon) {
     let template = `<div class="toast-header">
@@ -124,32 +124,82 @@ function showAccounts(e, state) {
                     row.appendChild(tdState);
                 }
 
+                let createButton = options => {
+                    let btn = document.createElement('button');
+                    btn.classList.add('btn', `btn-${options.style}`, 'btn-sm');
+                    btn.title = options.title;
+
+                    let ico = document.createElement('img');
+                    ico.alt = '';
+                    ico.setAttribute('src', `/static/icons/${options.icon}.svg`);
+                    btn.appendChild(ico);
+
+                    btn.style.marginLeft = '5px';
+
+                    return btn;
+                };
+
+                let createReconnectButton = () => {
+                    let btn = createButton({
+                        title: 'Request reconnecting IMAP client for this account',
+                        icon: 'arrow-clockwise',
+                        style: 'warning'
+                    });
+
+                    btn.addEventListener('click', e => {
+                        e.preventDefault();
+                        $('#accountsModal').modal('hide');
+                        showToast('Reconnect requested for ' + accounData.name || accounData.account);
+                        fetch('/v1/account/' + accounData.account + '/reconnect', {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                reconnect: true
+                            })
+                        }).catch(err => {
+                            showToast(err.message);
+                            console.error(err);
+                        });
+                    });
+
+                    return btn;
+                };
+
+                let createDeleteButton = () => {
+                    let btn = createButton({
+                        title: 'Request deletion of this account',
+                        icon: 'trash',
+                        style: 'danger'
+                    });
+
+                    btn.addEventListener('click', e => {
+                        e.preventDefault();
+                        if (!confirm('Are you sure?')) {
+                            return;
+                        }
+
+                        $('#accountsModal').modal('hide');
+                        showToast('Requested account deletion for ' + accounData.name || accounData.account);
+                        fetch('/v1/account/' + accounData.account, {
+                            method: 'DELETE'
+                        }).catch(err => {
+                            showToast(err.message);
+                            console.error(err);
+                        });
+                    });
+
+                    return btn;
+                };
+
                 let tdReconnect = document.createElement('td');
                 tdReconnect.classList.add('text-right');
-                let btn = document.createElement('button');
-                btn.classList.add('btn', 'btn-warning', 'btn-sm');
-                btn.textContent = 'Reconnect';
-                btn.title = 'Request reconnecting IMAP client for this account';
-                tdReconnect.appendChild(btn);
-                row.appendChild(tdReconnect);
 
-                btn.addEventListener('click', e => {
-                    e.preventDefault();
-                    $('#accountsModal').modal('hide');
-                    showToast('Reconnect requested for ' + accounData.name || accounData.account);
-                    fetch('/v1/account/' + accounData.account + '/reconnect', {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            reconnect: true
-                        })
-                    }).catch(err => {
-                        showToast(err.message);
-                        console.error(err);
-                    });
-                });
+                tdReconnect.appendChild(createReconnectButton());
+                tdReconnect.appendChild(createDeleteButton());
+
+                row.appendChild(tdReconnect);
 
                 table.appendChild(row);
             }
