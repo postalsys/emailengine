@@ -445,9 +445,10 @@ class ConnectionHandler {
 
                     if (!accountObject || !accountObject.connection) {
                         state = 'unassigned';
+                    } else {
+                        state = accountObject.connection.currentState();
                     }
 
-                    state = accountObject.connection.currentState();
                     return count(state);
                 });
 
