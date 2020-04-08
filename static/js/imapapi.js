@@ -1,5 +1,5 @@
 'use strict';
-/* global document, fetch, $, window, moment, confirm */
+/* global document, fetch, $, window, moment, confirm, encodeURIComponent */
 
 function showToast(message, icon) {
     let template = `<div class="toast-header">
@@ -150,7 +150,7 @@ function showAccounts(e, state) {
                         e.preventDefault();
                         $('#accountsModal').modal('hide');
                         showToast('Reconnect requested for ' + accounData.name || accounData.account);
-                        fetch('/v1/account/' + accounData.account + '/reconnect', {
+                        fetch('/v1/account/' + encodeURIComponent(accounData.account) + '/reconnect', {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -179,10 +179,9 @@ function showAccounts(e, state) {
                         if (!confirm('Are you sure?')) {
                             return;
                         }
-
                         $('#accountsModal').modal('hide');
                         showToast('Requested account deletion for ' + accounData.name || accounData.account);
-                        fetch('/v1/account/' + accounData.account, {
+                        fetch('/v1/account/' + encodeURIComponent(accounData.account), {
                             method: 'DELETE'
                         }).catch(err => {
                             showToast(err.message);
@@ -212,6 +211,76 @@ function showAccounts(e, state) {
             console.error(err);
             showToast(err.message);
             setTimeout(checkStatus, 5000);
+        });
+}
+
+function showAddAccount() {
+    document.getElementById('addAccountForm').classList.remove('was-validated');
+    $('#addAccountModal').modal('show');
+}
+
+function submitAddAccount() {
+    let account = {
+        account: document.getElementById('addAccountFormId').value.trim(),
+        name: document.getElementById('addAccountFormName').value.trim(),
+        imap: {
+            auth: {
+                user: document.getElementById('addAccountIMAPUser').value.trim(),
+                pass: document.getElementById('addAccountIMAPPass').value.trim()
+            },
+            host: document.getElementById('addAccountIMAPHost').value.trim(),
+            port: Number(document.getElementById('addAccountIMAPPort').value.trim()),
+            secure: document.getElementById('addAccountIMAPSecure').checked
+        },
+        smtp: document.getElementById('addAccountSMTPEnable').checked
+            ? {
+                  auth: {
+                      user: document.getElementById('addAccountSMTPUser').value.trim(),
+                      pass: document.getElementById('addAccountSMTPPass').value.trim()
+                  },
+                  host: document.getElementById('addAccountSMTPHost').value.trim(),
+                  port: Number(document.getElementById('addAccountSMTPPort').value.trim()),
+                  secure: document.getElementById('addAccountSMTPSecure').checked
+              }
+            : false
+    };
+
+    $('#addAccountModal').modal('hide');
+
+    fetch('/v1/account', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(account)
+    })
+        .then(result => {
+            return result.json();
+        })
+        .then(result => {
+            document.getElementById('addAccountFormId').value = '';
+            document.getElementById('addAccountFormName').value = '';
+            document.getElementById('addAccountIMAPUser').value = '';
+            document.getElementById('addAccountIMAPPass').value = '';
+            document.getElementById('addAccountIMAPHost').value = '';
+            document.getElementById('addAccountIMAPPort').value = '';
+            document.getElementById('addAccountIMAPSecure').checked = false;
+            document.getElementById('addAccountSMTPEnable').checked = false;
+            document.getElementById('addAccountSMTPUser').value = '';
+            document.getElementById('addAccountSMTPPass').value = '';
+            document.getElementById('addAccountSMTPHost').value = '';
+            document.getElementById('addAccountSMTPPort').value = '';
+            document.getElementById('addAccountSMTPSecure').checked = false;
+
+            if (result.error) {
+                showToast(`Failed to create an account (${result.message})`, 'alert-triangle');
+                return;
+            }
+            showToast('Account created');
+        })
+        .catch(err => {
+            console.error(err);
+            showToast(err.message);
         });
 }
 
@@ -345,6 +414,33 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let elm of document.querySelectorAll('.stats-conn-' + key)) {
             elm.addEventListener('click', e => showAccounts(e, key));
         }
+    });
+
+    document.getElementById('addAccountButton').addEventListener('click', e => {
+        e.preventDefault();
+        showAddAccount();
+    });
+
+    let addAccountSMTPEnableElm = document.getElementById('addAccountSMTPEnable');
+    let toggleAddAccountSMTPSection = () => {
+        let section = document.getElementById('addAccountSMTPSection');
+        if (addAccountSMTPEnableElm.checked) {
+            section.disabled = false;
+        } else {
+            section.disabled = true;
+        }
+    };
+    addAccountSMTPEnableElm.addEventListener('click', toggleAddAccountSMTPSection);
+
+    let addAccountForm = document.getElementById('addAccountForm');
+    addAccountForm.addEventListener('submit', e => {
+        e.preventDefault();
+        addAccountForm.classList.add('was-validated');
+        if (addAccountForm.checkValidity() === false) {
+            e.stopPropagation();
+            return;
+        }
+        submitAddAccount();
     });
 
     checkStatus();
