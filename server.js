@@ -297,6 +297,7 @@ async function onCommand(worker, message) {
         case 'getText':
         case 'getMessage':
         case 'updateMessage':
+        case 'moveMessage':
         case 'deleteMessage':
         case 'createMailbox':
         case 'deleteMailbox':
