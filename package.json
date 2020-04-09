@@ -1,7 +1,7 @@
 {
     "name": "imapapi",
     "private": true,
-    "version": "1.2.7",
+    "version": "1.2.8",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -20,10 +20,10 @@
         "@hapi/inert": "6.0.1",
         "@hapi/joi": "17.1.1",
         "@hapi/vision": "6.0.0",
-        "@popperjs/core": "2.2.1",
+        "@popperjs/core": "2.2.2",
         "bootstrap": "4.4.1",
         "bull": "3.13.0",
-        "dotenv": ".value8.2.0",
+        "dotenv": "8.2.0",
         "email-reply-parser": "1.2.2",
         "exponential-backoff": "3.0.0",
         "hapi-pino": "7.0.0",
