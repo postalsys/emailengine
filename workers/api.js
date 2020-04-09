@@ -232,8 +232,8 @@ parentPort.on('message', message => {
 
 const init = async () => {
     const server = Hapi.server({
-        port: config.api.port,
-        host: config.api.host,
+        port: (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port,
+        host: process.env.API_HOST || config.api.host,
         query: {
             parser: query => qs.parse(query, { depth: 3 })
         }

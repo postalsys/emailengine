@@ -91,6 +91,19 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ![](https://cldup.com/mK0aS_uVfQ.png)
 
+## Config mapping
+
+| Configuration option | CLI argument           | ENV value            | Default                      |
+| -------------------- | ---------------------- | -------------------- | ---------------------------- |
+| Redis connection URL | `--dbs.redis="url"`    | `REDIS_URL="url"`    | `"redis://127.0.0.1:6379/8"` |
+| Host to bind to      | `--api.host="1.2.3.4"` | `API_HOST="1.2.3.4"` | `"127.0.0.1"`                |
+| Port to bind to      | `--api.port=port`      | `API_HOST=port`      | `3000`                       |
+| Log level            | `--log.level="level"`  | `LOG_LEVEL=level`    | `"trace"`                    |
+
+> **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
+
+If available then IMAP API uses dotenv file from project root to populate environment variables.
+
 ## Example
 
 #### 1. Set up webhook target

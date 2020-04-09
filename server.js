@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 process.title = 'imapapi';
 
 // cache before wild-config
