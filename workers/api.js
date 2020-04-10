@@ -22,6 +22,11 @@ const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
+config.api = config.api || {
+    port: 3000,
+    host: '127.0.0.1'
+};
+
 // allowed configuration keys
 const settingsSchema = {
     webhooks: Joi.string()
