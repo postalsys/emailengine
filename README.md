@@ -37,7 +37,8 @@ It was closed down, so there's nothing to compare.
 
 Even though still available from Github, it has clearly been abandoned, so not going to take a deep look into it.
 
--   IMAP API has low resource requirements, you can run it basically from anywhere.
+-   Nylas Sync Engine is unmaintained (there are forks though that are kept under life support), unlike IMAP API
+-   IMAP API has way lower resource requirements, you can run it basically from anywhere.
 -   IMAP API is super easy to get started with. No need to install additional dependencies besides Redis, no need to manage Python virtual environments. Just run the app from command line and that's it.
 
 #### 3. Nylas Universal Email API
