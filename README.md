@@ -9,7 +9,7 @@ Self hosted application to access IMAP and SMTP accounts over REST. Integrate em
 
 ## Let's Go!
 
-Make sure you have latest [Node.js](https://nodejs.org/api/) installed. Run IMAP API straight from NPM without downloading or installing anything manually:
+Make sure you have latest (at least v12.16.0) [Node.js](https://nodejs.org/api/) installed. Run IMAP API straight from NPM without downloading or installing anything manually:
 
 ```
 $ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
