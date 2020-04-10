@@ -534,11 +534,19 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <div class="col-sm-2">
                                                 <input type="number" class="form-control text-right" id="addAccountIMAPPort" required />
                                             </div>
-                                            <div class="col-sm-3">
+                                            <div class="col-sm-2">
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="addAccountIMAPSecure" />
                                                     <label class="form-check-label" for="addAccountIMAPSecure">
                                                         Use TLS
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="addAccountIMAPUnauthorized" />
+                                                    <label class="form-check-label" for="addAccountIMAPUnauthorized">
+                                                        Allow self signed certificates
                                                     </label>
                                                 </div>
                                             </div>
@@ -578,11 +586,19 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 <div class="col-sm-2">
                                                     <input type="number" class="form-control text-right" id="addAccountSMTPPort" required />
                                                 </div>
-                                                <div class="col-sm-3">
+                                                <div class="col-sm-2">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" id="addAccountSMTPSecure" />
                                                         <label class="form-check-label" for="addAccountSMTPSecure">
                                                             Use TLS
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="addAccountSMTPUnauthorized" />
+                                                        <label class="form-check-label" for="addAccountSMTPUnauthorized">
+                                                            Allow self signed certificates
                                                         </label>
                                                     </div>
                                                 </div>

@@ -230,7 +230,10 @@ function submitAddAccount() {
             },
             host: document.getElementById('addAccountIMAPHost').value.trim(),
             port: Number(document.getElementById('addAccountIMAPPort').value.trim()),
-            secure: document.getElementById('addAccountIMAPSecure').checked
+            secure: document.getElementById('addAccountIMAPSecure').checked,
+            tls: {
+                rejectUnauthorized: !document.getElementById('addAccountIMAPSecure').checked
+            }
         },
         smtp: document.getElementById('addAccountSMTPEnable').checked
             ? {
@@ -240,7 +243,10 @@ function submitAddAccount() {
                   },
                   host: document.getElementById('addAccountSMTPHost').value.trim(),
                   port: Number(document.getElementById('addAccountSMTPPort').value.trim()),
-                  secure: document.getElementById('addAccountSMTPSecure').checked
+                  secure: document.getElementById('addAccountSMTPSecure').checked,
+                  tls: {
+                      rejectUnauthorized: !document.getElementById('addAccountSMTPSecure').checked
+                  }
               }
             : false
     };
