@@ -1,11 +1,21 @@
 # IMAP API
 
-Self hosted application to access IMAP and SMTP accounts over REST.
+Self hosted application to access IMAP and SMTP accounts over REST. Integrate email accounts with your service with ease!
 
 ## Use cases
 
 -   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 -   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
+
+## Let's Go!
+
+Make sure you have latest [Node.js](https://nodejs.org/api/) installed. Run IMAP API straight from NPM without downloading or installing anything manually:
+
+```
+$ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
+```
+
+Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
 
 ## Features
 
