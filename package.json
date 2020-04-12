@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node server.js",
         "test": "grunt",
-        "licenses": "npm-license-crawler --production --csv ./licenses.csv"
+        "licenses": "npm-license-crawler --production --csv ./licenses.csv",
+        "build": "pkg --out-path dist/ package.json --options max_old_space_size=4096"
     },
     "keywords": [
         "IMAP"
@@ -54,6 +55,14 @@
         "grunt": "1.1.0",
         "grunt-cli": "1.3.2",
         "grunt-eslint": "22.0.0",
-        "npm-license-crawler": "0.2.1"
+        "npm-license-crawler": "0.2.1",
+        "pkg": "^4.4.6"
+    },
+    "pkg": {
+        "scripts": "workers/**/*.js",
+        "assets": [
+            "views/**/*",
+            "static/**/*"
+        ]
     }
 }

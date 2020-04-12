@@ -1,7 +1,11 @@
 'use strict';
 
 require('dotenv').config();
-process.chdir(__dirname);
+try {
+    process.chdir(__dirname);
+} catch (err) {
+    // ignore
+}
 
 process.title = 'imapapi';
 
