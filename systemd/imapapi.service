@@ -1,0 +1,44 @@
+# Example systemd unit file for IMAP API
+
+[Unit]
+Description=IMAP API
+
+# In some platforms redis could be installed as redis-server.service
+# So make sure the service name listed here is valid
+After=redis.service
+
+[Service]
+Environment="NODE_ENV=production"
+
+# Optional. Uncomment to use a system specific configuration file outside of the IMAP API folder.
+# Configuration settings from this file are merged with default settings.
+#Environment="NODE_CONFIG_PATH=/etc/imapapi.toml"
+
+# Optional. Uncomment to override configuration values with environment variables
+#Environment="REDIS_URL=redis://127.0.0.1:6379/8"
+#Environment="API_HOST=127.0.0.1"
+#Environment="API_PORT=3000"
+#Environment="LOG_LEVEL=trace"
+
+# This is the folder where IMAP API files reside.
+# Normally this folder would be a copy from the IMAP API Github repository + `npm install --production`.
+WorkingDirectory=/home/deployer/apps/imapapi/
+
+# Use non-privileged user to run the app.
+# www-data usually already exists in the system but could be any other user as well.
+User=www-data
+Group=www-data
+
+# npm location is dependent on platform.
+# Use `which npm` to resolve actual path.
+ExecStart=/usr/bin/npm start
+ExecReload=/bin/kill -HUP $MAINPID
+
+Type=simple
+Restart=always
+RestartSec=5
+
+SyslogIdentifier=imapapi
+
+[Install]
+WantedBy=multi-user.target
