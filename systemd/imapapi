@@ -1,0 +1,17 @@
+# Example systemd unit file
+
+[Unit]
+# After=network.target
+After=redis.service
+Description=IMAP API
+
+[Service]
+Environment="NODE_ENV=production"
+WorkingDirectory=/home/deployer/apps/imapapi/
+ExecStart=/usr/bin/node /home/deployer/apps/imapapi/server.js
+Restart=on-failure
+RestartSec=5
+User=rails
+
+[Install]
+WantedBy=multi-user.target
