@@ -1,5 +1,11 @@
 # Example systemd unit file for IMAP API
 
+# Requires Node.js and Redis
+# Installation instructions for Node.js:
+#     https://nodejs.org/en/download/package-manager/
+# Install Redis on Ubuntu:
+#     https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04
+
 [Unit]
 Description=IMAP API
 
@@ -21,11 +27,13 @@ Environment="NODE_ENV=production"
 #Environment="LOG_LEVEL=trace"
 
 # This is the folder where IMAP API files reside.
-# Normally this folder would be a copy from the IMAP API Github repository + `npm install --production`.
+# Normally this folder would include a clean copy from the IMAP API Github repository + `npm install --production`.
 WorkingDirectory=/home/deployer/apps/imapapi/
 
 # Use non-privileged user to run the app.
 # www-data usually already exists in the system but could be any other user as well.
+# Make sure this user has read access to application files and, if using
+# config file at $NODE_CONFIG_PATH, then to this file as well
 User=www-data
 Group=www-data
 
