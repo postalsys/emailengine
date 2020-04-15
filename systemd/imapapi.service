@@ -35,7 +35,17 @@ Environment="NODE_ENV=production"
 
 # This is the folder where IMAP API files reside.
 # Normally this folder would include a clean copy from the IMAP API Github repository + `npm install --production`.
+# To set up:
+#     git clone git://github.com/andris9/imapapi.git
+#     cd imapapi
+#     npm install --production
 WorkingDirectory=/home/deployer/apps/imapapi/
+
+# If IMAP API files are cloned from Github then an easy way to upgrade the application would look like this:
+#    git pull origin master
+#    npm install --production
+# And then (as root or a user with sudo privileges):
+#    sudo systemctl restart imapapi
 
 # Use non-privileged user to run the app.
 # www-data usually already exists in the system but could be any other user as well.
