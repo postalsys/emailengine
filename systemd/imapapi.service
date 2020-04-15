@@ -23,6 +23,8 @@ After=redis.service
 [Service]
 Environment="NODE_ENV=production"
 
+# --- Configuration ---
+
 # Optional. Uncomment to use a system specific configuration file outside of the IMAP API folder.
 # Configuration settings from this file are merged with default settings.
 #Environment="NODE_CONFIG_PATH=/etc/imapapi.toml"
@@ -33,13 +35,14 @@ Environment="NODE_ENV=production"
 #Environment="API_PORT=3000"
 #Environment="LOG_LEVEL=trace"
 
+# --- Application ---
+
 # This is the folder where IMAP API files reside.
 # Normally this folder would include a clean copy from the IMAP API Github repository + `npm install --production`.
 # To set up:
 #     git clone git://github.com/andris9/imapapi.git
 #     cd imapapi
 #     npm install --production
-WorkingDirectory=/home/deployer/apps/imapapi/
 
 # If IMAP API files are cloned from Github then an easy way to upgrade the application would look like this:
 #    git pull origin master
@@ -47,12 +50,18 @@ WorkingDirectory=/home/deployer/apps/imapapi/
 # And then (as root or a user with sudo privileges):
 #    sudo systemctl restart imapapi
 
+WorkingDirectory=/home/deployer/apps/imapapi/
+
+# --- Service user ---
+
 # Use non-privileged user to run the app.
 # www-data usually already exists in the system but could be any other user as well.
 # Make sure this user has read access to application files and, if using
 # config file at $NODE_CONFIG_PATH, then to this file as well
 User=www-data
 Group=www-data
+
+# --- Execution ---
 
 # npm location is dependent on platform.
 # Use `which npm` to resolve actual path.
@@ -62,6 +71,8 @@ ExecReload=/bin/kill -HUP $MAINPID
 Type=simple
 Restart=always
 RestartSec=5
+
+# --- Logging ---
 
 SyslogIdentifier=imapapi
 
