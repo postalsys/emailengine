@@ -70,7 +70,6 @@ Group=www-data
 # npm location is dependent on platform.
 # Use `which npm` to resolve actual path.
 ExecStart=/usr/bin/npm start
-ExecReload=/bin/kill -HUP $MAINPID
 
 # Alternatively you can use `npx` instead of `npm`. This way you would not have to
 # manage application files or dependencies manually. For upgrading, just modify
