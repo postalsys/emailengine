@@ -340,10 +340,9 @@ That's right. The app itself (both web UI and API endpoints) does not implement 
 
 By default IMAP API allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall to only allow your own app to access it. For web UI the suggestion is to use Nginx or Apache proxy with HTTP Basic Authentication, probably for VPN addresses only.
 
-## Future features
+## Deployment
 
--   **Horizontal scaling.** Currently you can start a single instance of IMAP API application. In the future you should be able to start several and in different servers, depending on the number of accounts you need to track.
--   **MS Exchange support.** Event though the app is called IMAP API the plan is to start supporting ActiveSync as well. It does not happen any time soon though, mostly because I do not have access to a good testing environment and I'm not competent enough to set up my own Exchange system.
+See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a service and example [Nginx config file](systemd/nginx-proxy.conf) to serve IMAP API requests behind Nginx reverse proxy.
 
 ## License
 
