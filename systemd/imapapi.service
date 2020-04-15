@@ -38,6 +38,10 @@ Environment="NODE_ENV=production"
 # --- Application ---
 
 # This is the folder where IMAP API files reside.
+
+# NB! If you are using `npx` to run the application then you can ignore this section
+# and comment out `WorkingDirectory` as npx manages code files and dependencies itself.
+
 # Normally this folder would include a clean copy from the IMAP API Github repository + `npm install --production`.
 # To set up:
 #     git clone git://github.com/andris9/imapapi.git
@@ -67,6 +71,11 @@ Group=www-data
 # Use `which npm` to resolve actual path.
 ExecStart=/usr/bin/npm start
 ExecReload=/bin/kill -HUP $MAINPID
+
+# Alternatively you can use `npx` instead of `npm`. This way you would not have to
+# manage application files or dependencies manually. For upgrading, just modify
+# application version in the command and run `systemctl daemon-reload && systemctl restart imapapi`
+#ExecStart=/usr/bin/npx imapapi@1.2.13
 
 Type=simple
 Restart=always
