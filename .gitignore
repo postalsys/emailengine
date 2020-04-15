@@ -4,3 +4,4 @@ package-lock.json
 licenses.csv
 .env
 dist/
+yarn.lock

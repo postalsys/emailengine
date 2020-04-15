@@ -75,7 +75,7 @@ ExecStart=/usr/bin/npm start
 # manage application files or dependencies manually. For upgrading, just modify
 # application version in the following command and run `systemctl daemon-reload && systemctl restart imapapi`
 # NB! First start after version change is going to take some time as `npx` has to install all dependencies.
-#ExecStart=/usr/bin/npx imapapi@1.2.13
+#ExecStart=/usr/bin/npx imapapi@1.2.14
 
 Type=simple
 Restart=always

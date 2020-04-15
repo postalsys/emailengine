@@ -1,6 +1,6 @@
 {
     "name": "imapapi",
-    "version": "1.2.13",
+    "version": "1.2.14",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -23,8 +23,6 @@
         "@hapi/inert": "6.0.1",
         "@hapi/joi": "17.1.1",
         "@hapi/vision": "6.0.0",
-        "@popperjs/core": "2.3.0",
-        "bootstrap": "4.4.1",
         "bull": "3.13.0",
         "dotenv": "8.2.0",
         "email-reply-parser": "1.2.2",
@@ -38,7 +36,6 @@
         "jquery": "3.5.0",
         "libmime": "4.2.1",
         "linkifyjs": "2.1.9",
-        "momentjs": "2.0.0",
         "msgpack5": "4.2.1",
         "node-fetch": "2.6.0",
         "nodemailer": "6.4.6",
@@ -56,11 +53,12 @@
         "grunt-cli": "1.3.2",
         "grunt-eslint": "22.0.0",
         "npm-license-crawler": "0.2.1",
-        "pkg": "^4.4.7"
+        "pkg": "4.4.7"
     },
     "pkg": {
         "scripts": "workers/**/*.js",
         "assets": [
+            "node_modules/@hapi/teamwork/lib/index.js",
             "views/**/*",
             "static/**/*"
         ]
