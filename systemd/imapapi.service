@@ -6,6 +6,13 @@
 # Install Redis on Ubuntu:
 #     https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04
 
+# Copy this file to /etc/systemd/system/imapapi.service
+
+# Once set up (or service file is modified) run:
+#     systemctl daemon-reload
+#     systemctl enable imapapi
+#     systemctl restart imapapi
+
 [Unit]
 Description=IMAP API
 
