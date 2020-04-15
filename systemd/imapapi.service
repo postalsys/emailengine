@@ -8,7 +8,7 @@
 
 # Copy this file to /etc/systemd/system/imapapi.service
 
-# Once set up (or service file is modified) run:
+# Once set up (or service file is modified) run as root:
 #     systemctl daemon-reload
 #     systemctl enable imapapi
 #     systemctl restart imapapi
