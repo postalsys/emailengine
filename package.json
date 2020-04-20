@@ -31,7 +31,7 @@
         "hapi-swagger": "13.0.0",
         "he": "1.2.0",
         "html-to-text": "5.1.1",
-        "imapflow": "1.0.43",
+        "imapflow": "1.0.44",
         "ioredis": "4.16.2",
         "jquery": "3.5.0",
         "libmime": "4.2.1",
