@@ -1162,7 +1162,9 @@ const init = async () => {
                             }).label('Attachment')
                         )
                         .description('List of attachments')
-                        .label('AttachmentList')
+                        .label('AttachmentList'),
+
+                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID')
                 }).label('Message')
             }
         }
