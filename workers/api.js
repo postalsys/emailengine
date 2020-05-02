@@ -1164,7 +1164,8 @@ const init = async () => {
                         .description('List of attachments')
                         .label('AttachmentList'),
 
-                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID')
+                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                    headers: Joi.object().description('Custom Headers')
                 }).label('Message')
             }
         }

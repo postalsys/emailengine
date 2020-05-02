@@ -31,29 +31,29 @@
         "hapi-swagger": "13.0.0",
         "he": "1.2.0",
         "html-to-text": "5.1.1",
-        "imapflow": "1.0.44",
-        "ioredis": "4.16.2",
+        "imapflow": "1.0.45",
+        "ioredis": "4.16.3",
         "jquery": "3.5.0",
         "libmime": "4.2.1",
         "linkifyjs": "2.1.9",
         "msgpack5": "4.2.1",
         "node-fetch": "2.6.0",
         "nodemailer": "6.4.6",
-        "pino": "6.2.0",
+        "pino": "6.2.1",
         "prom-client": "12.0.0",
         "qs": "6.9.3",
         "restify": "8.5.1",
-        "wild-config": "1.5.0"
+        "wild-config": "1.5.1"
     },
     "devDependencies": {
         "eslint": "6.8.0",
         "eslint-config-nodemailer": "1.2.0",
-        "eslint-config-prettier": "6.10.1",
+        "eslint-config-prettier": "6.11.0",
         "grunt": "1.1.0",
         "grunt-cli": "1.3.2",
         "grunt-eslint": "22.0.0",
         "npm-license-crawler": "0.2.1",
-        "pkg": "4.4.7"
+        "pkg": "4.4.8"
     },
     "pkg": {
         "scripts": "workers/**/*.js",
