@@ -1,6 +1,6 @@
 {
     "name": "imapapi",
-    "version": "1.2.17",
+    "version": "1.2.18",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -23,7 +23,7 @@
         "@hapi/inert": "6.0.1",
         "@hapi/joi": "17.1.1",
         "@hapi/vision": "6.0.0",
-        "bull": "3.13.0",
+        "bull": "3.14.0",
         "dotenv": "8.2.0",
         "email-reply-parser": "1.2.2",
         "exponential-backoff": "3.0.0",
@@ -33,7 +33,7 @@
         "html-to-text": "5.1.1",
         "imapflow": "1.0.45",
         "ioredis": "4.16.3",
-        "jquery": "3.5.0",
+        "jquery": "3.5.1",
         "libmime": "4.2.1",
         "linkifyjs": "2.1.9",
         "msgpack5": "4.2.1",
@@ -41,12 +41,12 @@
         "nodemailer": "6.4.6",
         "pino": "6.2.1",
         "prom-client": "12.0.0",
-        "qs": "6.9.3",
+        "qs": "6.9.4",
         "restify": "8.5.1",
         "wild-config": "1.5.1"
     },
     "devDependencies": {
-        "eslint": "6.8.0",
+        "eslint": "7.0.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "6.11.0",
         "grunt": "1.1.0",
