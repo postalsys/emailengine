@@ -8,7 +8,6 @@ const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
 const { ImapFlow } = require('imapflow');
 const nodemailer = require('nodemailer');
-const qs = require('qs');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
@@ -83,9 +82,7 @@ const imapSchema = {
     auth: Joi.object({
         user: Joi.string().max(256).required().example('myuser@gmail.com').description('Account username'),
         pass: Joi.string().max(256).example('verysecret').description('Account password'),
-        accessToken: Joi.string()
-            .max(4096)
-            .description('Access Token for OAuth2')
+        accessToken: Joi.string().max(4096).description('Access Token for OAuth2')
     })
         .xor('pass', 'accessToken')
         .description('Authentication info')
@@ -113,9 +110,7 @@ const smtpSchema = {
     auth: Joi.object({
         user: Joi.string().max(256).required().example('myuser@gmail.com').description('Account username'),
         pass: Joi.string().max(256).required().example('verysecret').description('Account password'),
-        accessToken: Joi.string()
-            .max(4096)
-            .description('Access Token for OAuth2')
+        accessToken: Joi.string().max(4096).description('Access Token for OAuth2')
     })
         .xor('pass', 'accessToken')
         .description('Authentication info')
@@ -238,10 +233,7 @@ parentPort.on('message', message => {
 const init = async () => {
     const server = Hapi.server({
         port: (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port,
-        host: process.env.API_HOST || config.api.host,
-        query: {
-            parser: query => qs.parse(query, { depth: 3 })
-        }
+        host: process.env.API_HOST || config.api.host
     });
 
     const swaggerOptions = {
@@ -992,7 +984,54 @@ const init = async () => {
         },
         options: {
             description: 'List messages in a folder',
-            notes: 'Lists messages in a mailbox folder. For search query arguments use qs syntax (?search[unseen]=true)',
+            notes: 'Lists messages in a mailbox folder',
+            tags: ['api', 'message'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID').label('AccountId')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Mailbox folder path').label('Path'),
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('MessageQuery')
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/account/{account}/search',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call });
+            try {
+                return await accountObject.listMessages(Object.assign(request.query, request.payload));
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+            }
+        },
+        options: {
+            description: 'Search for messages in a folder',
+            notes: 'Filter messages from a mailbox folder by search options',
             tags: ['api', 'message'],
 
             validate: {
@@ -1015,26 +1054,79 @@ const init = async () => {
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page')
+                }),
+
+                payload: Joi.object({
                     search: Joi.object({
-                        unseen: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is unseen or not'),
-                        flagged: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is flagged or not'),
-                        answered: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is answered or not'),
-                        draft: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is a draft'),
                         seq: Joi.string().max(256).description('Sequence number range'),
-                        uid: Joi.string().max(256).description('UID range'),
-                        from: Joi.string().max(256).description('Match From: header'),
-                        to: Joi.string().max(256).description('Match To: header'),
-                        cc: Joi.string().max(256).description('Match Cc: header'),
-                        body: Joi.string().max(256).description('Match text body'),
-                        subject: Joi.string().max(256).description('Match message subject'),
+
+                        answered: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .description('Check if message is answered or not')
+                            .label('AnsweredFlag'),
+                        deleted: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .description('Check if message is marked for being deleted or not')
+                            .label('DeletedFlag'),
+                        draft: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is a draft').label('DraftFlag'),
+                        unseen: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .description('Check if message is marked as unseen or not')
+                            .label('UnseenFlag'),
+                        flagged: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .description('Check if message is flagged or not')
+                            .label('Flagged'),
+                        seen: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .description('Check if message is marked as seen or not')
+                            .label('SeenFlag'),
+
+                        from: Joi.string().max(256).description('Match From: header').label('From'),
+                        to: Joi.string().max(256).description('Match To: header').label('To'),
+                        cc: Joi.string().max(256).description('Match Cc: header').label('Cc'),
+                        bcc: Joi.string().max(256).description('Match Bcc: header').label('Bcc'),
+
+                        body: Joi.string().max(256).description('Match text body').label('MessageBody'),
+                        subject: Joi.string().max(256).description('Match message subject').label('Subject'),
+
+                        larger: Joi.number()
+                            .min(0)
+                            .max(1024 * 1024 * 1024)
+                            .description('Matches messages larger than value')
+                            .label('MessageLarger'),
+
+                        smaller: Joi.number()
+                            .min(0)
+                            .max(1024 * 1024 * 1024)
+                            .description('Matches messages smaller than value')
+                            .label('MessageSmaller'),
+
+                        uid: Joi.string().max(256).description('UID range').label('UIDRange'),
+
+                        modseq: Joi.number().min(0).description('Matches messages with modseq higher than value').label('ModseqLarger'),
+
+                        before: Joi.date().description('Matches messages received before date').label('EnvelopeBefore'),
+                        since: Joi.date().description('Matches messages received after date').label('EnvelopeSince'),
+
+                        sentBefore: Joi.date().description('Matches messages sent before date').label('HeaderBefore'),
+                        sentSince: Joi.date().description('Matches messages sent after date').label('HeaderSince'),
+
                         emailId: Joi.string().max(256).description('Match specific Gmail unique email UD'),
                         threadId: Joi.string().max(256).description('Match specific Gmail unique thread UD'),
-                        headers: Joi.object().unknown(true).description('Headers to match against')
+
+                        header: Joi.object().unknown(true).description('Headers to match against').label('Headers')
                     })
-                        .description('Optional search query to limit messages')
-                        .label('Search')
-                }).label('List')
+                        .required()
+                        .description('Search query to filter messages')
+                        .label('SearchQuery')
+                }).label('SearchQuery')
             }
         }
     });
