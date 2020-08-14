@@ -17,6 +17,15 @@ $ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
 
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
 
+## MIT-licensed version
+
+MIT-licensed version of ImapFlow is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
+
+```
+$ npm install -g @postalsys/imapapi
+$ imapapi
+```
+
 ## Features
 
 -   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings. All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
@@ -26,27 +35,6 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 -   Easy email sending. If you specify the message you are responding to or forwarding then IMAP API sets all required headers, updates references message's flags in IMAP and also uploads message to the Sent Mail folder after sending.
 -   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
 -   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
-
-## Comparison with other systems
-
-#### 1. Context.io
-
-It was closed down, so there's nothing to compare.
-
-#### 2. Nylas Sync Engine (open source version)
-
-Even though still available from Github, it has clearly been abandoned, so not going to take a deep look into it.
-
--   Nylas Sync Engine is unmaintained (there are forks though that are kept under life support), unlike IMAP API
--   IMAP API has way lower resource requirements, you can run it basically from anywhere.
--   IMAP API is super easy to get started with. No need to install additional dependencies besides Redis, no need to manage Python virtual environments. Just run the app from command line and that's it.
-
-#### 3. Nylas Universal Email API
-
--   Nylas Email API is a service while IMAP API is a self hosted application. Your data never leaves your system when using IMAP API while Nylas can not even operate without copying your customers' data and emails to their servers.
--   Nylas in general tries to do everything while IMAP API only tries to handle the hard parts.
--   Nylas supports both IMAP and Exchange while IMAP API currently supports just IMAP. This might change in the future though.
--   No rate limiting in IMAP API (IMAP calls could be rate limited by the IMAP server though)
 
 ## Usage
 
@@ -346,6 +334,6 @@ See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a se
 
 ## License
 
-Licensed under GNU Affero General Public License v3.0 or later
+Licensed under GNU Affero General Public License v3.0 or later.
 
-Commercial license available at request. Contact andris@imapapi.com for license issues.
+MIT-licensed version of ImapFlow is available for [Postal Systems subscribers](https://postalsys.com/).
