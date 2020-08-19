@@ -342,4 +342,4 @@ See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a se
 
 Licensed under GNU Affero General Public License v3.0 or later.
 
-MIT-licensed version of ImapFlow is available for [Postal Systems subscribers](https://postalsys.com/).
+MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/).
