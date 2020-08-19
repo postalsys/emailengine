@@ -3,7 +3,7 @@
 const { parentPort } = require('worker_threads');
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
-const Joi = require('@hapi/joi');
+const Joi = require('joi');
 const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
 const { ImapFlow } = require('imapflow');
@@ -1553,6 +1553,7 @@ async function getStats() {
     let stats = Object.assign(
         {
             version: packageData.version,
+            license: packageData.license,
             accounts: await redis.scard('ia:accounts')
         },
         structuredMetrics

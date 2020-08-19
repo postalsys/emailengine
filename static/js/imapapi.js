@@ -33,6 +33,10 @@ function checkStatus() {
                 elm.textContent = 'v' + result.version;
             }
 
+            for (let elm of document.querySelectorAll('.app-license')) {
+                elm.textContent = result.license;
+            }
+
             for (let elm of document.querySelectorAll('.stats-accounts')) {
                 elm.textContent = result.accounts || 0;
             }

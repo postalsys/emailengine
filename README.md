@@ -2,10 +2,19 @@
 
 Self hosted application to access IMAP and SMTP accounts over REST. Integrate email accounts with your service with ease!
 
+## Licensing
+
+Public IMAP API is licensed under AGPL. Alternative MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
+
+```
+$ npm install -g @postalsys/imapapi
+$ imapapi
+```
+
 ## Use cases
 
--   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 -   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
+-   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 
 ## Let's Go!
 
@@ -15,16 +24,13 @@ Make sure you have latest (at least v12.16.0) [Node.js](https://nodejs.org/api/)
 $ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
 ```
 
+or when running using the MIT licensed version from [Postal Systems](https://postalsys.com/)
+
+```
+$ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
+```
+
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
-
-## MIT-licensed version
-
-MIT-licensed version of ImapFlow is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
-
-```
-$ npm install -g @postalsys/imapapi
-$ imapapi
-```
 
 ## Features
 
