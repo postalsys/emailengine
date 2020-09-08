@@ -347,7 +347,9 @@ const init = async () => {
 					
 					copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
 					
-					notifyfrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso().raw(),
+					notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso().raw(),
+
+					resyncDelay: Joi.number().example(900).description('Full resync delay in seconds').default(900),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
