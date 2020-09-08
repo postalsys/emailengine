@@ -344,6 +344,10 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+					
+					copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+					
+					notifyfrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso().raw(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
