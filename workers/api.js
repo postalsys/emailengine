@@ -1183,6 +1183,12 @@ const init = async () => {
             }
         },
         options: {
+            payload: {
+                // allow message uploads up to 50MB
+                // TODO: should it be configurable instead?
+                maxBytes: 50 * 1024 * 1024
+            },
+
             description: 'Submit message for delivery',
             notes:
                 'Submit message for delivery. If reference message ID is provided then IMAP API adds all headers and flags required for a reply/forward automatically.',
