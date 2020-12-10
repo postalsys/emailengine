@@ -41,7 +41,8 @@
         "nodemailer": "6.4.13",
         "pino": "6.6.1",
         "prom-client": "12.0.0",
-        "wild-config": "1.5.1"
+        "wild-config": "1.5.1",
+		"moment": "^2.27.0"
     },
     "devDependencies": {
         "eslint": "7.10.0",
