@@ -1,5 +1,5 @@
 'use strict';
-/* global document, fetch, $, window, moment, confirm, encodeURIComponent */
+/* global document, fetch, $, window, moment, confirm */
 
 function showToast(message, icon) {
     let template = `<div class="toast-header">
@@ -25,9 +25,7 @@ function showToast(message, icon) {
 
 function checkStatus() {
     fetch('/v1/stats')
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             for (let elm of document.querySelectorAll('.app-version')) {
                 elm.textContent = 'v' + result.version;
@@ -65,9 +63,7 @@ function showAccounts(e, state) {
     }
     fetchingAccountList = true;
     fetch('/v1/accounts' + (state ? '?state=' + state : ''))
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             fetchingAccountList = false;
 
@@ -237,7 +233,8 @@ function submitAddAccount() {
             secure: document.getElementById('addAccountIMAPSecure').checked,
             tls: {
                 rejectUnauthorized: !document.getElementById('addAccountIMAPSecure').checked
-            }
+            },
+            resyncDelay: Number(document.getElementById('addAccountIMAPResyncDelay').value.trim())
         },
         smtp: document.getElementById('addAccountSMTPEnable').checked
             ? {
@@ -264,9 +261,7 @@ function submitAddAccount() {
         },
         body: JSON.stringify(account)
     })
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             document.getElementById('addAccountFormId').value = '';
             document.getElementById('addAccountFormName').value = '';
@@ -275,6 +270,7 @@ function submitAddAccount() {
             document.getElementById('addAccountIMAPHost').value = '';
             document.getElementById('addAccountIMAPPort').value = '';
             document.getElementById('addAccountIMAPSecure').checked = false;
+            document.getElementById('addAccountIMAPResyncDelay').value = '900';
             document.getElementById('addAccountSMTPEnable').checked = false;
             document.getElementById('addAccountSMTPUser').value = '';
             document.getElementById('addAccountSMTPPass').value = '';
@@ -336,9 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0
             })
         })
-            .then(result => {
-                return result.json();
-            })
+            .then(result => result.json())
             .then(result => {
                 if (result.error) {
                     showToast(`Failed to store settings (${result.message})`, 'alert-triangle');
@@ -391,9 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/v1/logs/${encodeURIComponent(account)}`, {
             method: 'GET'
         })
-            .then(result => {
-                return result.blob();
-            })
+            .then(result => result.blob())
             .then(blob => {
                 const a = document.createElement('a');
                 a.style = 'display: none';

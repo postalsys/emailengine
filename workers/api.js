@@ -21,6 +21,8 @@ const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
+const RESYNC_DELAY = 15 * 60;
+
 config.api = config.api || {
     port: 3000,
     host: '127.0.0.1'
@@ -103,7 +105,8 @@ const imapSchema = {
         minVersion: Joi.string().max(256).example('TLSv1.2').description('Minimal TLS version')
     })
         .description('Optional TLS configuration')
-        .label('TLS')
+        .label('TLS'),
+    resyncDelay: Joi.number().example(RESYNC_DELAY).description('Full resync delay in seconds').default(RESYNC_DELAY)
 };
 
 const smtpSchema = {
@@ -344,12 +347,9 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
-					
-					copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-					
-					notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso().raw(),
 
-					resyncDelay: Joi.number().example(900).description('Full resync delay in seconds').default(900),
+                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
@@ -394,6 +394,9 @@ const init = async () => {
 
                 payload: Joi.object({
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+
+                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
