@@ -796,6 +796,112 @@ const init = async () => {
     });
 
     server.route({
+        method: 'POST',
+        path: '/v1/account/{account}/message',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call });
+
+            try {
+                return await accountObject.uploadMessage(request.payload);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+            }
+        },
+        options: {
+            payload: {
+                // allow message uploads up to 50MB
+                // TODO: should it be configurable instead?
+                maxBytes: 50 * 1024 * 1024
+            },
+
+            description: 'Upload message to a folder',
+            notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
+            tags: ['api', 'mailbox'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+
+                    flags: Joi.array().items(Joi.string().max(128)).example(['\\Seen', '\\Draft']).default([]).description('Message flags').label('Flags'),
+
+                    reference: Joi.object({
+                        message: Joi.string()
+                            .base64({ paddingRequired: false, urlSafe: true })
+                            .max(256)
+                            .required()
+                            .example('AAAAAQAACnA')
+                            .description('Referenced message ID'),
+                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
+                    })
+                        .description('Message reference for a reply or a forward. This is IMAP API specific ID, not Message-ID header value.')
+                        .label('MessageReference'),
+
+                    from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
+
+                    to: Joi.array()
+                        .items(addressSchema)
+                        .description('List of addresses')
+                        .example([{ address: 'recipient@example.com' }])
+                        .label('AddressList'),
+
+                    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+
+                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+
+                    subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+
+                    text: Joi.string()
+                        .max(5 * 1024 * 1024)
+                        .example('Hello from myself!')
+                        .description('Message Text'),
+
+                    html: Joi.string()
+                        .max(5 * 1024 * 1024)
+                        .example('<p>Hello from myself!</p>')
+                        .description('Message HTML'),
+
+                    attachments: Joi.array()
+                        .items(
+                            Joi.object({
+                                filename: Joi.string().max(256).example('transparent.gif'),
+                                content: Joi.string()
+                                    .base64()
+                                    .max(5 * 1024 * 1024)
+                                    .required()
+                                    .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
+                                    .description('Base64 formatted attachment file'),
+                                contentType: Joi.string().lowercase().max(256).example('image/gif'),
+                                contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
+                                cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
+                                encoding: Joi.string().valid('base64').default('base64')
+                            }).label('Attachment')
+                        )
+                        .description('List of attachments')
+                        .label('AttachmentList'),
+
+                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                    headers: Joi.object().description('Custom Headers')
+                }).label('Message')
+            }
+        }
+    });
+
+    server.route({
         method: 'PUT',
         path: '/v1/account/{account}/message/{message}',
 
@@ -994,7 +1100,7 @@ const init = async () => {
         options: {
             description: 'List messages in a folder',
             notes: 'Lists messages in a mailbox folder',
-            tags: ['api', 'message'],
+            tags: ['api', 'mailbox'],
 
             validate: {
                 options: {
@@ -1041,7 +1147,7 @@ const init = async () => {
         options: {
             description: 'Search for messages in a folder',
             notes: 'Filter messages from a mailbox folder by search options',
-            tags: ['api', 'message'],
+            tags: ['api', 'mailbox'],
 
             validate: {
                 options: {
@@ -1225,10 +1331,10 @@ const init = async () => {
                             .description('Referenced message ID'),
                         action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
                     })
-                        .description('Message reference for reply or forward. This is IMAP API specific ID, not Message-ID header value.')
+                        .description('Message reference for a reply or a forward. This is IMAP API specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
-                    from: addressSchema.required().example([{ name: 'From Me', address: 'sender@example.com' }]),
+                    from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
 
                     to: Joi.array()
                         .items(addressSchema)
