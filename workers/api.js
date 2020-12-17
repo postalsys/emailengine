@@ -349,7 +349,7 @@ const init = async () => {
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().example('2020-01-01').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
@@ -396,7 +396,7 @@ const init = async () => {
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    notifyFrom: Joi.date().example('01-01-2020').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().example('2020-01-01').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
