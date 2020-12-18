@@ -294,6 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
     const settingsNotifyText = document.getElementById('settingsNotifyText');
     const settingsNotifyTextSize = document.getElementById('settingsNotifyTextSize');
+    const settingsWebhookEvents = document.getElementById('settingsWebhookEvents');
+    const infoEventTypes = document.getElementById('infoEventTypes');
 
     settingsForm.addEventListener('submit', e => {
         e.preventDefault();
@@ -319,18 +321,25 @@ document.addEventListener('DOMContentLoaded', () => {
             maxLogLines: Number(document.getElementById('settingsLogsMaxLogLines').value)
         };
 
+        const payload = {
+            webhooks: document.getElementById('settingsWebhooks').value,
+            logs,
+            notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
+            notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0,
+            webhookEvents: settingsWebhookEvents
+                ? settingsWebhookEvents.value
+                      .trim()
+                      .split(',')
+                      .map(entry => entry.trim())
+                : undefined
+        };
+
         fetch('/v1/settings', {
             method: 'POST', // or 'PUT'
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                webhooks: document.getElementById('settingsWebhooks').value,
-                authServer: document.getElementById('settingsAuthServer').value,
-                logs,
-                notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
-                notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0
-            })
+            body: JSON.stringify(payload)
         })
             .then(result => result.json())
             .then(result => {
@@ -346,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true')
+    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true&webhookEvents=true&eventTypes=true')
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
@@ -358,6 +367,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (settingsNotifyTextSize) {
                 settingsNotifyTextSize.value = (result && result.notifyTextSize) || '';
+            }
+
+            if (settingsWebhookEvents) {
+                settingsWebhookEvents.value = (result && result.webhookEvents && result.webhookEvents.join(', ')) || '*';
+            }
+
+            if (result.eventTypes && infoEventTypes) {
+                infoEventTypes.textContent = result.eventTypes.join(', ');
             }
 
             let logs = (result && result.logs) || {};

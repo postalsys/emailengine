@@ -310,6 +310,17 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small
                                             >
                                         </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsWebhookEvents">Events to listen</label>
+                                            <input type="text" class="form-control" id="settingsWebhookEvents"/>
+                                            <div class="invalid-feedback">
+                                                Enter valid events
+                                            </div>
+                                            <small class="form-text text-muted"
+                                                >Comma separated list of event names (case sensitive). Use <code>*</code> for all events.<br/> Available events: <em><span id="infoEventTypes"></span></em></small
+                                            >
+                                        </div>
                                     </div>
 
                                     <div class="card card-body mt-3">

@@ -16,6 +16,7 @@ const pathlib = require('path');
 const config = require('wild-config');
 const { PassThrough } = require('stream');
 const msgpack = require('msgpack5')();
+const consts = require('../lib/consts');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -37,6 +38,8 @@ const settingsSchema = {
         })
         .example('https://myservice.com/imap/webhooks')
         .description('Webhook URL'),
+
+    webhookEvents: Joi.array().items(Joi.string().max(256)),
 
     authServer: Joi.string()
         .uri({
@@ -77,7 +80,10 @@ const addressSchema = Joi.object({
 
 // generate a list of boolean values
 const settingsQuerySchema = Object.fromEntries(
-    Object.keys(settingsSchema).map(key => [key, Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false)])
+    Object.keys(Object.assign({ eventTypes: true }, settingsSchema)).map(key => [
+        key,
+        Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false)
+    ])
 );
 
 const imapSchema = {
@@ -1392,6 +1398,18 @@ const init = async () => {
             let values = {};
             for (let key of Object.keys(request.query)) {
                 if (request.query[key]) {
+                    if (key === 'eventTypes') {
+                        values[key] = Object.keys(consts)
+                            .map(key => {
+                                if (/_NOTIFY?/.test(key)) {
+                                    return consts[key];
+                                }
+                                return false;
+                            })
+                            .map(key => key);
+                        continue;
+                    }
+
                     let value = await settings.get(key);
                     values[key] = value;
                 }

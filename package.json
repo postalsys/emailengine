@@ -1,6 +1,6 @@
 {
     "name": "imapapi",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
