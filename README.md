@@ -32,6 +32,22 @@ $ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
 
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
 
+## Demo
+
+Here's a screen recording of running and using IMAP API in action.
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mDqz_GEINXY/0.jpg)](https://www.youtube.com/watch?v=mDqz_GEINXY)
+
+This video shows how to
+
+1. Start IMAP API with custom Redis connection string as an environment variable
+2. Configure webhooks destination using the web UI (webhook handling from https://webhook.site/)
+3. Create a new email account at https://ethereal.email/
+4. Open Swagger documentation page that also serves as an API playground
+5. Using the API playground to add a new IMAP/SMTP account using the id "ethereal"
+6. Check the webhook listing to see the notification about found messages from the added account (includes limited information)
+7. Using the ID from the webhook fetch all data for the message (decoded addresses, subject, text etc, also original headers as an array)
+
 ## Features
 
 -   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings. All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
