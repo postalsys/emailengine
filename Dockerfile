@@ -12,4 +12,4 @@ ENV IMAPAPI_APPDIR=/imapapi \
     CMD_ARGS=""
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD node ${IMAPAPI_APPDIR}/server.js --config=${IMAPAPI_CONFIG} ${CMD_ARGS}
+CMD node ${IMAPAPI_APPDIR}/server.js --config=${IMAPAPI_CONFIG} --api.host="0.0.0.0" ${CMD_ARGS}

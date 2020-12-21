@@ -73,7 +73,7 @@ $ docker pull andris9/imapapi
 Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
 
 ```
-$ docker run --env CMD_ARGS="\
+$ docker run -p 3000:3000 --env CMD_ARGS="\
   --dbs.redis=redis://host.docker.internal:6379/7 \
 " \
 andris9/imapapi
