@@ -60,6 +60,37 @@ This video shows how to
 
 ## Usage
 
+### Docker
+
+#### Docker Hub
+
+Pull IMAP API from Docker Hub
+
+```
+$ docker pull andris9/imapapi
+```
+
+Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
+
+```
+$ docker run --env CMD_ARGS="\
+  --dbs.redis=redis://host.docker.internal:6379/7 \
+" \
+andris9/imapapi
+```
+
+Next open http://127.0.0.1:3000 in your browser.
+
+#### Docker compose
+
+Clone this repo and in the root folder run the following to start both IMAP API and Redis containers.
+
+```
+$ docker-compose up
+```
+
+Next open http://127.0.0.1:3000 in your browser.
+
 ### Requirements
 
 -   **Redis** – any version
