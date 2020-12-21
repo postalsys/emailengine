@@ -294,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
     const settingsNotifyText = document.getElementById('settingsNotifyText');
     const settingsNotifyTextSize = document.getElementById('settingsNotifyTextSize');
+    const settingsNotifyHeaders = document.getElementById('settingsNotifyHeaders');
     const settingsWebhookEvents = document.getElementById('settingsWebhookEvents');
     const infoEventTypes = document.getElementById('infoEventTypes');
 
@@ -326,11 +327,21 @@ document.addEventListener('DOMContentLoaded', () => {
             logs,
             notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
             notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0,
+
+            notifyHeaders: settingsNotifyHeaders
+                ? settingsNotifyHeaders.value
+                      .trim()
+                      .split(',')
+                      .map(entry => entry.trim())
+                      .filter(entry => entry)
+                : undefined,
+
             webhookEvents: settingsWebhookEvents
                 ? settingsWebhookEvents.value
                       .trim()
                       .split(',')
                       .map(entry => entry.trim())
+                      .filter(entry => entry)
                 : undefined
         };
 
@@ -355,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true&webhookEvents=true&eventTypes=true')
+    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true&notifyHeaders=true&webhookEvents=true&eventTypes=true')
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
@@ -367,6 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (settingsNotifyTextSize) {
                 settingsNotifyTextSize.value = (result && result.notifyTextSize) || '';
+            }
+
+            if (settingsNotifyHeaders) {
+                settingsNotifyHeaders.value = (result && result.notifyHeaders && result.notifyHeaders.join(', ')) || '';
             }
 
             if (settingsWebhookEvents) {

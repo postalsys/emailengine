@@ -41,6 +41,8 @@ const settingsSchema = {
 
     webhookEvents: Joi.array().items(Joi.string().max(256)),
 
+    notifyHeaders: Joi.array().items(Joi.string().max(256)),
+
     authServer: Joi.string()
         .uri({
             scheme: ['http', 'https'],
@@ -145,6 +147,14 @@ const smtpSchema = {
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
+
+    logger.error({
+        msg: 'Request failed',
+        method: request.method,
+        route: request.route.path,
+        statusCode: request.response && request.response.statusCode,
+        err
+    });
 
     let error = Boom.boomify(new Error('Invalid input'), { statusCode: 400 });
     error.reformat();

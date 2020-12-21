@@ -321,6 +321,17 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 >Comma separated list of event names (case sensitive). Use <code>*</code> for all events.<br/> Available events: <em><span id="infoEventTypes"></span></em></small
                                             >
                                         </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsNotifyHeaders">Headers to include</label>
+                                            <input type="text" class="form-control" id="settingsNotifyHeaders"/>
+                                            <div class="invalid-feedback">
+                                                Enter valid headers
+                                            </div>
+                                            <small class="form-text text-muted"
+                                                >Comma separated list of header names. Use <code>*</code> for all headers or leave empty to not include headers in the webhook.</em></small
+                                            >
+                                        </div>
                                     </div>
 
                                     <div class="card card-body mt-3">
