@@ -21,13 +21,17 @@ const consts = require('../lib/consts');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
+const { getByteSize } = require('../lib/tools');
 
 const RESYNC_DELAY = 15 * 60;
+const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api = config.api || {
     port: 3000,
     host: '127.0.0.1'
 };
+
+const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
 // allowed configuration keys
 const settingsSchema = {
@@ -881,15 +885,9 @@ const init = async () => {
 
                     subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
 
-                    text: Joi.string()
-                        .max(5 * 1024 * 1024)
-                        .example('Hello from myself!')
-                        .description('Message Text'),
+                    text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
 
-                    html: Joi.string()
-                        .max(5 * 1024 * 1024)
-                        .example('<p>Hello from myself!</p>')
-                        .description('Message HTML'),
+                    html: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').description('Message HTML'),
 
                     attachments: Joi.array()
                         .items(
@@ -897,7 +895,7 @@ const init = async () => {
                                 filename: Joi.string().max(256).example('transparent.gif'),
                                 content: Joi.string()
                                     .base64()
-                                    .max(5 * 1024 * 1024)
+                                    .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
                                     .description('Base64 formatted attachment file'),
@@ -1075,7 +1073,7 @@ const init = async () => {
                     maxBytes: Joi.number()
                         .min(0)
                         .max(1024 * 1024 * 1024)
-                        .example(5 * 1024 * 1024)
+                        .example(MAX_ATTACHMENT_SIZE)
                         .description('Max length of text content'),
                     textType: Joi.string()
                         .lowercase()
@@ -1364,15 +1362,9 @@ const init = async () => {
 
                     subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
 
-                    text: Joi.string()
-                        .max(5 * 1024 * 1024)
-                        .example('Hello from myself!')
-                        .description('Message Text'),
+                    text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
 
-                    html: Joi.string()
-                        .max(5 * 1024 * 1024)
-                        .example('<p>Hello from myself!</p>')
-                        .description('Message HTML'),
+                    html: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').description('Message HTML'),
 
                     attachments: Joi.array()
                         .items(
@@ -1380,7 +1372,7 @@ const init = async () => {
                                 filename: Joi.string().max(256).example('transparent.gif'),
                                 content: Joi.string()
                                     .base64()
-                                    .max(5 * 1024 * 1024)
+                                    .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
                                     .description('Base64 formatted attachment file'),
@@ -1711,7 +1703,16 @@ async function getStats() {
     return stats;
 }
 
-init().catch(err => {
-    logger.error(err);
-    setImmediate(() => process.exit(3));
-});
+init()
+    .then(() => {
+        logger.debug({
+            msg: 'API server started',
+            port: (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port,
+            host: process.env.API_HOST || config.api.host,
+            maxSize: MAX_ATTACHMENT_SIZE
+        });
+    })
+    .catch(err => {
+        logger.error(err);
+        setImmediate(() => process.exit(3));
+    });
