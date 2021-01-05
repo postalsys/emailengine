@@ -1,5 +1,5 @@
 'use strict';
-/* global document, fetch, $, window, moment, confirm, encodeURIComponent */
+/* global document, fetch, $, window, moment, confirm */
 
 function showToast(message, icon) {
     let template = `<div class="toast-header">
@@ -25,12 +25,14 @@ function showToast(message, icon) {
 
 function checkStatus() {
     fetch('/v1/stats')
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             for (let elm of document.querySelectorAll('.app-version')) {
                 elm.textContent = 'v' + result.version;
+            }
+
+            for (let elm of document.querySelectorAll('.app-license')) {
+                elm.textContent = result.license;
             }
 
             for (let elm of document.querySelectorAll('.stats-accounts')) {
@@ -61,9 +63,7 @@ function showAccounts(e, state) {
     }
     fetchingAccountList = true;
     fetch('/v1/accounts' + (state ? '?state=' + state : ''))
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             fetchingAccountList = false;
 
@@ -233,7 +233,8 @@ function submitAddAccount() {
             secure: document.getElementById('addAccountIMAPSecure').checked,
             tls: {
                 rejectUnauthorized: !document.getElementById('addAccountIMAPSecure').checked
-            }
+            },
+            resyncDelay: Number(document.getElementById('addAccountIMAPResyncDelay').value.trim())
         },
         smtp: document.getElementById('addAccountSMTPEnable').checked
             ? {
@@ -260,9 +261,7 @@ function submitAddAccount() {
         },
         body: JSON.stringify(account)
     })
-        .then(result => {
-            return result.json();
-        })
+        .then(result => result.json())
         .then(result => {
             document.getElementById('addAccountFormId').value = '';
             document.getElementById('addAccountFormName').value = '';
@@ -271,6 +270,7 @@ function submitAddAccount() {
             document.getElementById('addAccountIMAPHost').value = '';
             document.getElementById('addAccountIMAPPort').value = '';
             document.getElementById('addAccountIMAPSecure').checked = false;
+            document.getElementById('addAccountIMAPResyncDelay').value = '900';
             document.getElementById('addAccountSMTPEnable').checked = false;
             document.getElementById('addAccountSMTPUser').value = '';
             document.getElementById('addAccountSMTPPass').value = '';
@@ -294,6 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsForm = document.getElementById('settingsForm');
     const settingsNotifyText = document.getElementById('settingsNotifyText');
     const settingsNotifyTextSize = document.getElementById('settingsNotifyTextSize');
+    const settingsNotifyHeaders = document.getElementById('settingsNotifyHeaders');
+    const settingsWebhookEvents = document.getElementById('settingsWebhookEvents');
+    const infoEventTypes = document.getElementById('infoEventTypes');
 
     settingsForm.addEventListener('submit', e => {
         e.preventDefault();
@@ -319,22 +322,37 @@ document.addEventListener('DOMContentLoaded', () => {
             maxLogLines: Number(document.getElementById('settingsLogsMaxLogLines').value)
         };
 
+        const payload = {
+            webhooks: document.getElementById('settingsWebhooks').value,
+            logs,
+            notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
+            notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0,
+
+            notifyHeaders: settingsNotifyHeaders
+                ? settingsNotifyHeaders.value
+                      .trim()
+                      .split(',')
+                      .map(entry => entry.trim())
+                      .filter(entry => entry)
+                : undefined,
+
+            webhookEvents: settingsWebhookEvents
+                ? settingsWebhookEvents.value
+                      .trim()
+                      .split(',')
+                      .map(entry => entry.trim())
+                      .filter(entry => entry)
+                : undefined
+        };
+
         fetch('/v1/settings', {
             method: 'POST', // or 'PUT'
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                webhooks: document.getElementById('settingsWebhooks').value,
-                authServer: document.getElementById('settingsAuthServer').value,
-                logs,
-                notifyText: settingsNotifyTextSize ? !!settingsNotifyText.checked : false,
-                notifyTextSize: settingsNotifyTextSize ? Number(settingsNotifyTextSize.value) : 0
-            })
+            body: JSON.stringify(payload)
         })
-            .then(result => {
-                return result.json();
-            })
+            .then(result => result.json())
             .then(result => {
                 if (result.error) {
                     showToast(`Failed to store settings (${result.message})`, 'alert-triangle');
@@ -348,7 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true')
+    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true&notifyHeaders=true&webhookEvents=true&eventTypes=true')
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
@@ -360,6 +378,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (settingsNotifyTextSize) {
                 settingsNotifyTextSize.value = (result && result.notifyTextSize) || '';
+            }
+
+            if (settingsNotifyHeaders) {
+                settingsNotifyHeaders.value = (result && result.notifyHeaders && result.notifyHeaders.join(', ')) || '';
+            }
+
+            if (settingsWebhookEvents) {
+                settingsWebhookEvents.value = (result && result.webhookEvents && result.webhookEvents.join(', ')) || '*';
+            }
+
+            if (result.eventTypes && infoEventTypes) {
+                infoEventTypes.textContent = result.eventTypes.join(', ');
             }
 
             let logs = (result && result.logs) || {};
@@ -387,9 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/v1/logs/${encodeURIComponent(account)}`, {
             method: 'GET'
         })
-            .then(result => {
-                return result.blob();
-            })
+            .then(result => result.blob())
             .then(blob => {
                 const a = document.createElement('a');
                 a.style = 'display: none';

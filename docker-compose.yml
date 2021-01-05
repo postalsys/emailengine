@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+    imapapi:
+        restart: always
+        image: andris9/imapapi
+        ports:
+            - '3000:3000'
+        depends_on:
+            - redis
+        environment:
+            CMD_ARGS: --dbs.redis=redis://redis:6379/2
+                --api.host=0.0.0.0
+    redis:
+        image: redis:alpine
+        restart: always
+        volumes:
+            - /data

@@ -2,10 +2,19 @@
 
 Self hosted application to access IMAP and SMTP accounts over REST. Integrate email accounts with your service with ease!
 
+## Licensing
+
+Public IMAP API is licensed under AGPL. Alternative MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
+
+```
+$ npm install -g @postalsys/imapapi
+$ imapapi
+```
+
 ## Use cases
 
--   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 -   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
+-   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 
 ## Let's Go!
 
@@ -15,7 +24,29 @@ Make sure you have latest (at least v12.16.0) [Node.js](https://nodejs.org/api/)
 $ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
 ```
 
+or when running using the MIT licensed version from [Postal Systems](https://postalsys.com/)
+
+```
+$ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
+```
+
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
+
+## Demo
+
+Here's a screen recording of running and using IMAP API in action.
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mDqz_GEINXY/0.jpg)](https://www.youtube.com/watch?v=mDqz_GEINXY)
+
+This video shows how to
+
+1. Start IMAP API with custom Redis connection string as an environment variable
+2. Configure webhooks destination using the web UI (webhook handling from https://webhook.site/)
+3. Create a new email account at https://ethereal.email/
+4. Open Swagger documentation page that also serves as an API playground
+5. Using the API playground to add a new IMAP/SMTP account using the id "ethereal"
+6. Check the webhook listing to see the notification about found messages from the added account (includes limited information)
+7. Using the ID from the webhook fetch all data for the message (decoded addresses, subject, text etc, also original headers as an array)
 
 ## Features
 
@@ -27,28 +58,38 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 -   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
 -   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
 
-## Comparison with other systems
-
-#### 1. Context.io
-
-It was closed down, so there's nothing to compare.
-
-#### 2. Nylas Sync Engine (open source version)
-
-Even though still available from Github, it has clearly been abandoned, so not going to take a deep look into it.
-
--   Nylas Sync Engine is unmaintained (there are forks though that are kept under life support), unlike IMAP API
--   IMAP API has way lower resource requirements, you can run it basically from anywhere.
--   IMAP API is super easy to get started with. No need to install additional dependencies besides Redis, no need to manage Python virtual environments. Just run the app from command line and that's it.
-
-#### 3. Nylas Universal Email API
-
--   Nylas Email API is a service while IMAP API is a self hosted application. Your data never leaves your system when using IMAP API while Nylas can not even operate without copying your customers' data and emails to their servers.
--   Nylas in general tries to do everything while IMAP API only tries to handle the hard parts.
--   Nylas supports both IMAP and Exchange while IMAP API currently supports just IMAP. This might change in the future though.
--   No rate limiting in IMAP API (IMAP calls could be rate limited by the IMAP server though)
-
 ## Usage
+
+### Docker
+
+#### Docker Hub
+
+Pull IMAP API from Docker Hub
+
+```
+$ docker pull andris9/imapapi
+```
+
+Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
+
+```
+$ docker run -p 3000:3000 --env CMD_ARGS="\
+  --dbs.redis=redis://host.docker.internal:6379/7 \
+" \
+andris9/imapapi
+```
+
+Next open http://127.0.0.1:3000 in your browser.
+
+#### Docker compose
+
+Clone this repo and in the root folder run the following to start both IMAP API and Redis containers.
+
+```
+$ docker-compose up
+```
+
+Next open http://127.0.0.1:3000 in your browser.
 
 ### Requirements
 
@@ -111,7 +152,8 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 | -------------------- | ---------------------- | -------------------- | ---------------------------- |
 | Redis connection URL | `--dbs.redis="url"`    | `REDIS_URL="url"`    | `"redis://127.0.0.1:6379/8"` |
 | Host to bind to      | `--api.host="1.2.3.4"` | `API_HOST="1.2.3.4"` | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`      | `API_HOST=port`      | `3000`                       |
+| Port to bind to      | `--api.port=port`      | `API_PORT=port`      | `3000`                       |
+| Max attachment size  | `--api.maxSize=5M`     | `API_MAX_SIZE=5M`    | `5M`                         |
 | Log level            | `--log.level="level"`  | `LOG_LEVEL=level`    | `"trace"`                    |
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
@@ -346,6 +388,6 @@ See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a se
 
 ## License
 
-Licensed under GNU Affero General Public License v3.0 or later
+Licensed under GNU Affero General Public License v3.0 or later.
 
-Commercial license available at request. Contact andris@imapapi.com for license issues.
+MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/).

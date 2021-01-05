@@ -24,6 +24,12 @@ notifyQueue.process('*', async job => {
         return;
     }
 
+    let webhookEvents = await settings.get('webhookEvents');
+    if (webhookEvents && !webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
+        logger.trace({ msg: 'Webhook event not in whitelist', action: 'webhook', event: job.name, account: job.data.account, webhookEvents, data: job.data });
+        return;
+    }
+
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
     if (!job.data.path) {
         // ignore non-message related events

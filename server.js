@@ -309,6 +309,7 @@ async function onCommand(worker, message) {
         case 'createMailbox':
         case 'deleteMailbox':
         case 'submitMessage':
+        case 'uploadMessage':
         case 'getAttachment': {
             if (!assigned.has(message.account)) {
                 return {
