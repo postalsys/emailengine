@@ -150,6 +150,7 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 | Configuration option | CLI argument           | ENV value            | Default                      |
 | -------------------- | ---------------------- | -------------------- | ---------------------------- |
+| IMAP Worker count    | `--workers.imap=4`     | `WORKERS_IMAP=4`     | `4`                          |
 | Redis connection URL | `--dbs.redis="url"`    | `REDIS_URL="url"`    | `"redis://127.0.0.1:6379/8"` |
 | Host to bind to      | `--api.host="1.2.3.4"` | `API_HOST="1.2.3.4"` | `"127.0.0.1"`                |
 | Port to bind to      | `--api.port=port`      | `API_PORT=port`      | `3000`                       |

@@ -1,4 +1,7 @@
 
+[workers]
+imap = 4
+
 [api]
 port = 3000
 host = "127.0.0.1" # by default API server is accessible from localhost only

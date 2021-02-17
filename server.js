@@ -18,6 +18,15 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
 const promClient = require('prom-client');
 
+const config = require('wild-config');
+
+config.workers = config.workers || {
+    imap: 4
+};
+
+const WORKERS_IMAP = Number(process.env.WORKERS_IMAP) || config.workers.imap;
+logger.debug({ msg: 'IMAP Worker Count', workersImap: WORKERS_IMAP });
+
 const metrics = {
     threadStarts: new promClient.Counter({
         name: 'thread_starts',
@@ -326,7 +335,7 @@ async function onCommand(worker, message) {
 }
 
 // multiple IMAP connection handlers
-for (let i = 0; i < 4; i++) {
+for (let i = 0; i < WORKERS_IMAP; i++) {
     spawnWorker('imap');
 }
 
