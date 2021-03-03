@@ -124,7 +124,7 @@ const imapSchema = {
 const smtpSchema = {
     auth: Joi.object({
         user: Joi.string().max(256).required().example('myuser@gmail.com').description('Account username'),
-        pass: Joi.string().max(256).required().example('verysecret').description('Account password'),
+        pass: Joi.string().max(256).example('verysecret').description('Account password'),
         accessToken: Joi.string().max(4096).description('Access Token for OAuth2')
     })
         .xor('pass', 'accessToken')
