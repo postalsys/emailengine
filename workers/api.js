@@ -956,8 +956,21 @@ const init = async () => {
                         set: Joi.array().items(Joi.string().max(128)).description('Override all flags').example(['\\Seen', '\\Flagged']).label('SetFlags')
                     })
                         .description('Flag updates')
-                        .label('FlagUpdate')
-                }).label('MessageUpdate')
+                        .label('FlagUpdate'),
+
+                    labels: Joi.object({
+                        add: Joi.array().items(Joi.string().max(128)).description('Add new labels').example(['Some label']).label('AddLabels'),
+                        delete: Joi.array().items(Joi.string().max(128)).description('Delete specific labels').example(['Some label']).label('DeleteLabels'),
+                        set: Joi.array()
+                            .items(Joi.string().max(128))
+                            .description('Override all labels')
+                            .example(['First label', 'Second label'])
+                            .label('SetLabels')
+                    })
+                        .description('Label updates')
+                        .label('LabelUpdate')
+                })
+                .label('MessageUpdate')
             }
         }
     });
