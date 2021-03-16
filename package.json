@@ -18,8 +18,8 @@
         "imapapi": "bin/imapapi.js"
     },
     "dependencies": {
-        "@hapi/boom": "9.1.1",
-        "@hapi/hapi": "20.1.0",
+        "@hapi/boom": "9.1.2",
+        "@hapi/hapi": "20.1.1",
         "@hapi/inert": "6.0.3",
         "@hapi/vision": "6.0.1",
         "bull": "3.20.1",
@@ -36,7 +36,7 @@
         "jquery": "3.6.0",
         "libmime": "5.0.0",
         "linkifyjs": "2.1.9",
-        "msgpack5": "5.2.0",
+        "msgpack5": "3.6.1",
         "node-fetch": "2.6.1",
         "nodemailer": "6.5.0",
         "pino": "6.11.2",

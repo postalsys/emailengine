@@ -375,6 +375,14 @@ const init = async () => {
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
                 }).label('CreateAccount')
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    state: Joi.string().required().valid('existing', 'new').example('new').description('Is the account new or updated existing')
+                }).label('CreateAccountReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -421,6 +429,13 @@ const init = async () => {
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
                 }).label('UpdateAccount')
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }).label('UpdateAccountReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -433,7 +448,7 @@ const init = async () => {
             let accountObject = new Account({ redis, account: request.params.account, call });
 
             try {
-                return await accountObject.requestReconnect(request.payload);
+                return { reconnect: await accountObject.requestReconnect(request.payload) };
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -460,7 +475,14 @@ const init = async () => {
 
                 payload: Joi.object({
                     reconnect: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only reconnect if true')
-                })
+                }).label('RequestReconnect')
+            },
+
+            response: {
+                schema: Joi.object({
+                    reconnect: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only reconnect if true')
+                }).label('RequestReconnectReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -496,7 +518,15 @@ const init = async () => {
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                })
+                }).label('DeleteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
+                }).label('DeleteRequestReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -559,6 +589,30 @@ const init = async () => {
                         .description('Filter accounts by state')
                         .label('AccountState')
                 }).label('AccountsFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    accounts: Joi.array().items(
+                        Joi.object({
+                            account: Joi.string().max(256).required().example('example').description('Account ID'),
+                            name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                            state: Joi.string()
+                                .required()
+                                .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                                .example('connected')
+                                .description('Account state'),
+                            syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
+                            lastError: Joi.object({
+                                response: Joi.string().example('Request to authentication server failed'),
+                                serverResponseCode: Joi.string().example('HTTPRequestError')
+                            })
+                                .allow(null)
+                                .label('AccountErrorEntry')
+                        }).label('AccountResponseItem')
+                    )
+                }).label('AccountsFilterReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -969,8 +1023,7 @@ const init = async () => {
                     })
                         .description('Label updates')
                         .label('LabelUpdate')
-                })
-                .label('MessageUpdate')
+                }).label('MessageUpdate')
             }
         }
     });
