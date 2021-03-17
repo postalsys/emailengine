@@ -650,6 +650,31 @@ const init = async () => {
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
                 })
+            },
+
+            response: {
+                schema: Joi.object({
+                    mailboxes: Joi.array().items(
+                        Joi.object({
+                            path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
+                            parentPath: Joi.string().required().example('Kalender').description('Full path to parent mailbox').label('MailboxParentPath'),
+                            name: Joi.string().required().example('Sünnipäevad').description('Maibox name').label('MailboxName'),
+                            listed: Joi.boolean().example(true).description('Was the mailbox found from the output of LIST command').label('MailboxListed'),
+                            subscribed: Joi.boolean()
+                                .example(true)
+                                .description('Was the mailbox found from the output of LSUB command')
+                                .label('MailboxSubscribed'),
+                            specialUse: Joi.string()
+                                .example('\\Sent')
+                                .valid('\\All', '\\Archive', '\\Drafts', '\\Flagged', '\\Junk', '\\Sent', '\\Trash', '\\Inbox')
+                                .description('Special use flag of the mailbox if set')
+                                .label('MailboxSpecialUse'),
+                            messages: Joi.number().example(120).description('Count of messages in mailbox').label('MailboxMessages'),
+                            uidNext: Joi.number().example(121).description('Next expected UID').label('MailboxMUidNext')
+                        }).label('MailboxResponseItem')
+                    )
+                }).label('MailboxesFilterReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -692,9 +717,18 @@ const init = async () => {
                     path: Joi.array()
                         .items(Joi.string().max(256))
                         .example(['Parent folder', 'Subfolder'])
-                        .description('Mailbox path. Array elements are joined using valid path separator')
+                        .description('Mailbox path as an array. If account is namespaced then namespace prefix is added by default.')
                         .label('MailboxPath')
                 }).label('CreateMailbox')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
+                    mailboxId: Joi.string().example('1439876283476').description('Mailbox ID (if server has support)').label('MailboxId'),
+                    created: Joi.boolean().example(true).description('Was the mailbox created')
+                }).label('CreateMailboxReponse'),
+                failAction: 'log'
             }
         }
     });
