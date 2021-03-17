@@ -770,6 +770,14 @@ const init = async () => {
                 query: Joi.object({
                     path: Joi.string().required().example('My Outdated Mail').description('Mailbox folder path to delete').label('MailboxPath')
                 }).label('DeleteMailbox')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
+                    deleted: Joi.boolean().example(true).description('Was the mailbox deleted')
+                }).label('DeleteMailboxReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -806,8 +814,14 @@ const init = async () => {
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).example('AAAAAQAACnA').required().description('Message ID')
-                })
+                }).label('RawMessageRequest')
+            } /*,
+
+            response: {
+                schema: Joi.binary().example('MIME-Version: 1.0...').description('RFC822 formatted email').label('RawMessageResponse'),
+                failAction: 'log'
             }
+            */
         }
     });
 
