@@ -246,7 +246,7 @@ parentPort.on('message', message => {
                     cmd: 'resp',
                     mid: message.mid,
                     error: err.message,
-                    cod: err.code,
+                    code: err.code,
                     statusCode: err.statusCode
                 });
             });
@@ -1012,7 +1012,20 @@ const init = async () => {
 
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers')
-                }).label('Message')
+                }).label('MessageUpload')
+            },
+
+            response: {
+                schema: Joi.object({
+                    id: Joi.string()
+                        .example('AAAAAgAACrI')
+                        .description('Message ID. NB! This and other fields might not be present if server did not provide enough information')
+                        .label('MessageAppendId'),
+                    path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
+                    uid: Joi.number().example(12345).description('UID of uploaded message'),
+                    seq: Joi.number().example(12345).description('Sequence number of uploaded message')
+                }).label('MessageUploadResponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1608,7 +1621,7 @@ const init = async () => {
             return getLogs(request.params.account);
         },
         options: {
-            description: 'Return IMAP logs for an account',
+            description: 'Return IMAP logs for an account. Output is a downloadable text file.',
             tags: ['api', 'logs'],
 
             validate: {
@@ -1670,6 +1683,33 @@ const init = async () => {
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP')
                 }).label('VerifyAccount')
+            },
+            response: {
+                schema: Joi.object({
+                    imap: Joi.object({
+                        success: Joi.boolean().example(true).description('Was IMAP account verified').label('VerifyImapSuccess'),
+                        error: Joi.string()
+                            .example('Something went wrong')
+                            .description('Error messages for IMAP verification. Only present if success=false')
+                            .label('VerifyImapError'),
+                        code: Joi.string()
+                            .example('ERR_SSL_WRONG_VERSION_NUMBER')
+                            .description('Error code. Only present if success=false')
+                            .label('VerifyImapCode')
+                    }),
+                    smtp: Joi.object({
+                        success: Joi.boolean().example(true).description('Was SMTP account verified').label('VerifySmtpSuccess'),
+                        error: Joi.string()
+                            .example('Something went wrong')
+                            .description('Error messages for SMTP verification. Only present if success=false')
+                            .label('VerifySmtpError'),
+                        code: Joi.string()
+                            .example('ERR_SSL_WRONG_VERSION_NUMBER')
+                            .description('Error code. Only present if success=false')
+                            .label('VerifySmtpCode')
+                    })
+                }).label('VerifyAccountReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1765,7 +1805,7 @@ async function verifyAccountInfo(accountData) {
             response.imap = {
                 success: false,
                 error: err.message,
-                cod: err.code,
+                code: err.code,
                 statusCode: err.statusCode
             };
         }
@@ -1781,7 +1821,7 @@ async function verifyAccountInfo(accountData) {
             response.smtp = {
                 success: false,
                 error: err.message,
-                cod: err.code,
+                code: err.code,
                 statusCode: err.statusCode
             };
         }
