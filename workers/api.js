@@ -149,51 +149,108 @@ const smtpSchema = {
         .label('TLS')
 };
 
+const attachmentSchema = Joi.object({
+    id: Joi.string().example('AAAAAgAACrIyLjI').description('Attachment ID').label('AttachmentId'),
+    contentType: Joi.string().example('image/gif').description('Mime type of the attachment'),
+    encodedSize: Joi.number().example(48).description('Encoded size of the attachment. Actual file size is usually smaller depending on the encoding'),
+    embedded: Joi.boolean().example(true).description('Is this image used in HTML img tag'),
+    inline: Joi.boolean().example(true).description('Should this file be included in the message preview somehow'),
+    contentId: Joi.string().example('<unique-image-id@localhost>').description('Usually used only for embedded images')
+});
+
+const messageEntrySchema = Joi.object({
+    id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
+    uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
+    emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
+    threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
+    date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
+    draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
+    unseen: Joi.boolean().example(true).description('Is this message unseen'),
+    flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
+    size: Joi.number().example(1040).description('Message size in bytes'),
+    subject: Joi.string().example('What a wonderful message').description('Message subject (decoded into unicode, applies to other string values as well)'),
+
+    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
+
+    to: Joi.array()
+        .items(addressSchema)
+        .description('List of addresses')
+        .example([{ address: 'recipient@example.com' }])
+        .label('AddressList'),
+
+    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+
+    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+    messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
+    inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
+
+    labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
+
+    attachments: Joi.array().items(attachmentSchema).description('List of attachments').label('AttachmentList'),
+
+    text: Joi.object({
+        id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
+        encodedSize: Joi.object({
+            plain: Joi.number().example(1013).description('How many bytes for plain text'),
+            html: Joi.number().example(1013).description('How many bytes for html content')
+        }).description('Encoded message part sizes')
+    }).label('TextInfo')
+}).label('MessageListEntry');
+
+const messageDetailsSchema = Joi.object({
+    id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
+    uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
+    emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
+    threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
+    date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
+    draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
+    unseen: Joi.boolean().example(true).description('Is this message unseen'),
+    flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
+    size: Joi.number().example(1040).description('Message size in bytes'),
+    subject: Joi.string().example('What a wonderful message').description('Message subject (decoded into unicode, applies to other string values as well)'),
+
+    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
+    sender: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
+
+    to: Joi.array()
+        .items(addressSchema)
+        .description('List of addresses')
+        .example([{ address: 'recipient@example.com' }])
+        .label('AddressList'),
+
+    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+
+    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+    messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
+    inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
+
+    flags: Joi.array().items(Joi.string().example('\\Seen')).description('IMAP flags').label('FlagList'),
+    labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
+
+    attachments: Joi.array().items(attachmentSchema).description('List of attachments').label('AttachmentList'),
+
+    headers: Joi.object()
+        .example({ from: ['From Me <sender@example.com>'], subject: ['What a wonderful message'] })
+        .description('Object where header key is object key and value is an array'),
+
+    text: Joi.object({
+        id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
+        encodedSize: Joi.object({
+            plain: Joi.number().example(1013).description('How many bytes for plain text'),
+            html: Joi.number().example(1013).description('How many bytes for html content')
+        }).description('Encoded message part sizes'),
+        plain: Joi.string().example('Hello from myself!').description('Plaintext content of the message'),
+        html: Joi.string().example('<p>Hello from myself!</p>').description('HTML content of the message'),
+        hasMore: Joi.boolean()
+            .example(false)
+            .description('If partial message content was requested then this value indicates if it includes all the content or there is more')
+    }).label('TextInfo')
+}).label('MessageListEntry');
+
 const messageListSchema = Joi.object({
     page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
     pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
-    message: Joi.array()
-        .items(
-            Joi.object({
-                id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
-                uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
-                emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
-                threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
-                date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
-                draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
-                unseen: Joi.boolean().example(true).description('Is this message unseen'),
-                flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
-                size: Joi.number().example(1040).description('Message size in bytes'),
-                subject: Joi.string()
-                    .example('What a wonderful message')
-                    .description('Message subject (decoded into unicode, applies to other string values as well)'),
-
-                from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
-
-                to: Joi.array()
-                    .items(addressSchema)
-                    .description('List of addresses')
-                    .example([{ address: 'recipient@example.com' }])
-                    .label('AddressList'),
-
-                cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-
-                bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-                messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
-                inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
-
-                labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
-
-                text: Joi.object({
-                    id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
-                    encodedSize: Joi.object({
-                        plain: Joi.number().example(1013).description('How many bytes for plain text'),
-                        html: Joi.number().example(1013).description('How many bytes for html content')
-                    }).description('Encoded message part sizes')
-                }).label('TextInfo')
-            }).label('MessageListEntry')
-        )
-        .label('PageMessages')
+    message: Joi.array().items(messageEntrySchema).label('PageMessages')
 }).label('MessageList');
 
 const failAction = async (request, h, err) => {
@@ -960,6 +1017,11 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).required().example('AAAAAQAACnA').description('Message ID')
                 })
+            },
+
+            response: {
+                schema: messageDetailsSchema,
+                failAction: 'log'
             }
         }
     });
