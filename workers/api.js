@@ -149,6 +149,53 @@ const smtpSchema = {
         .label('TLS')
 };
 
+const messageListSchema = Joi.object({
+    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+    message: Joi.array()
+        .items(
+            Joi.object({
+                id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
+                uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
+                emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
+                threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
+                date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
+                draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
+                unseen: Joi.boolean().example(true).description('Is this message unseen'),
+                flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
+                size: Joi.number().example(1040).description('Message size in bytes'),
+                subject: Joi.string()
+                    .example('What a wonderful message')
+                    .description('Message subject (decoded into unicode, applies to other string values as well)'),
+
+                from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
+
+                to: Joi.array()
+                    .items(addressSchema)
+                    .description('List of addresses')
+                    .example([{ address: 'recipient@example.com' }])
+                    .label('AddressList'),
+
+                cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+
+                bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
+                inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
+
+                labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
+
+                text: Joi.object({
+                    id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
+                    encodedSize: Joi.object({
+                        plain: Joi.number().example(1013).description('How many bytes for plain text'),
+                        html: Joi.number().example(1013).description('How many bytes for html content')
+                    }).description('Encoded message part sizes')
+                }).label('TextInfo')
+            }).label('MessageListEntry')
+        )
+        .label('PageMessages')
+}).label('MessageList');
+
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
 
@@ -1266,6 +1313,11 @@ const init = async () => {
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('MessageQuery')
+            },
+
+            response: {
+                schema: messageListSchema,
+                failAction: 'log'
             }
         }
     });
@@ -1383,6 +1435,11 @@ const init = async () => {
                         .description('Search query to filter messages')
                         .label('SearchQuery')
                 }).label('SearchQuery')
+            },
+
+            response: {
+                schema: messageListSchema,
+                failAction: 'log'
             }
         }
     });
