@@ -975,6 +975,21 @@ const init = async () => {
                         .description('Label updates')
                         .label('LabelUpdate')
                 }).label('MessageUpdate')
+            },
+            response: {
+                schema: Joi.object({
+                    flags: Joi.object({
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse'),
+                    labels: Joi.object({
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse')
+                }).label('MessageUpdateReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1016,6 +1031,15 @@ const init = async () => {
                 payload: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Target mailbox folder path')
                 }).label('MessageMove')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+                    id: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
+                    uid: Joi.number().example(12345).description('UID of moved message')
+                }).label('MessageMoveResponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1052,7 +1076,17 @@ const init = async () => {
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
-                })
+                }).label('MessageDelete')
+            },
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().example(true).description('Present if message was actualy deleted'),
+                    moved: Joi.object({
+                        destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
+                        messageId: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
+                    }).description('Present if message was moved to Trash')
+                }).label('MessageDeleteReponse'),
+                failAction: 'log'
             }
         }
     });

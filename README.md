@@ -172,7 +172,9 @@ $ imapapi --settings='{"webhooks": "https://webhook.site/14e88aea-3391-48b2-a4e6
 
 If settings object fails validation then the application does not start.
 
-## Example
+## API usage
+
+> **NB!** IMAP API uses a single connection per account against the IMAP server which means that each request must finish before next one can be issued. If you pile up a bunch of requests against the same account in parallel then requests might time out before these can be actually processed.
 
 #### 1. Set up webhook target
 
