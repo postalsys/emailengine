@@ -21,16 +21,19 @@ const consts = require('../lib/consts');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize } = require('../lib/tools');
+const { getByteSize, getDuration } = require('../lib/tools');
 
 const { settingsSchema, addressSchema, settingsQuerySchema, imapSchema, smtpSchema, messageDetailsSchema, messageListSchema } = require('../lib/schemas');
 
+const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api = config.api || {
     port: 3000,
     host: '127.0.0.1'
 };
+
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
 
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
@@ -63,7 +66,7 @@ async function call(message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, message.timeout || 10 * 1000);
+        }, message.timeout || COMMAND_TIMEOUT);
 
         callQueue.set(mid, { resolve, reject, timer });
 

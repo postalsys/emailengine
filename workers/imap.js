@@ -8,6 +8,13 @@ const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
+const config = require('wild-config');
+
+const { getDuration } = require('../lib/tools');
+
+const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+
 const DEFAULT_STATES = {
     init: 0,
     connected: 0,
@@ -509,7 +516,7 @@ class ConnectionHandler {
                 err.statusCode = 504;
                 err.code = 'Timeout';
                 reject(err);
-            }, message.timeout || 10 * 1000);
+            }, message.timeout || COMMAND_TIMEOUT);
 
             this.callQueue.set(mid, { resolve, reject, timer });
             parentPort.postMessage({

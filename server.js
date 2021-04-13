@@ -24,9 +24,14 @@ const settings = require('./lib/settings');
 
 const config = require('wild-config');
 
+const { getDuration } = require('./lib/tools');
+
 config.workers = config.workers || {
     imap: 4
 };
+
+const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
 
 let preparedSettings = false;
 const preparedSettingsString = process.env.SETTINGS || config.settings;
@@ -219,7 +224,7 @@ async function call(worker, message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, message.timeout || 10 * 1000);
+        }, message.timeout || COMMAND_TIMEOUT);
 
         callQueue.set(mid, { resolve, reject, timer });
         worker.postMessage(

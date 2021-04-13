@@ -155,6 +155,7 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 | Host to bind to      | `--api.host="1.2.3.4"`  | `API_HOST="1.2.3.4"`  | `"127.0.0.1"`                |
 | Port to bind to      | `--api.port=port`       | `API_PORT=port`       | `3000`                       |
 | Max attachment size  | `--api.maxSize=5M`      | `API_MAX_SIZE=5M`     | `5M`                         |
+| Max command duration | `--commandTimeout=10s`  | `COMMAND_TIMEOUT=10s` | `10s`                        |
 | Log level            | `--log.level="level"`   | `LOG_LEVEL=level`     | `"trace"`                    |
 | Prepared settings    | `--settings='{"JSON"}'` | `SETTINGS='{"JSON"}'` | not set                      |
 
