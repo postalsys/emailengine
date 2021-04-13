@@ -148,18 +148,29 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ## Config mapping
 
-| Configuration option | CLI argument           | ENV value            | Default                      |
-| -------------------- | ---------------------- | -------------------- | ---------------------------- |
-| IMAP Worker count    | `--workers.imap=4`     | `WORKERS_IMAP=4`     | `4`                          |
-| Redis connection URL | `--dbs.redis="url"`    | `REDIS_URL="url"`    | `"redis://127.0.0.1:6379/8"` |
-| Host to bind to      | `--api.host="1.2.3.4"` | `API_HOST="1.2.3.4"` | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`      | `API_PORT=port`      | `3000`                       |
-| Max attachment size  | `--api.maxSize=5M`     | `API_MAX_SIZE=5M`    | `5M`                         |
-| Log level            | `--log.level="level"`  | `LOG_LEVEL=level`    | `"trace"`                    |
+| Configuration option | CLI argument            | ENV value             | Default                      |
+| -------------------- | ----------------------- | --------------------- | ---------------------------- |
+| IMAP Worker count    | `--workers.imap=4`      | `WORKERS_IMAP=4`      | `4`                          |
+| Redis connection URL | `--dbs.redis="url"`     | `REDIS_URL="url"`     | `"redis://127.0.0.1:6379/8"` |
+| Host to bind to      | `--api.host="1.2.3.4"`  | `API_HOST="1.2.3.4"`  | `"127.0.0.1"`                |
+| Port to bind to      | `--api.port=port`       | `API_PORT=port`       | `3000`                       |
+| Max attachment size  | `--api.maxSize=5M`      | `API_MAX_SIZE=5M`     | `5M`                         |
+| Log level            | `--log.level="level"`   | `LOG_LEVEL=level`     | `"trace"`                    |
+| Prepared settings    | `--settings='{"JSON"}'` | `SETTINGS='{"JSON"}'` | not set                      |
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 
 If available then IMAP API uses dotenv file from project root to populate environment variables.
+
+#### Prepared settings
+
+If you do not want to update application settings via API calls then you can provide the initial settings via a command line option (`--settings`) or environment variable (`SETTINGS`). The value must be a valid JSON string that could be used against the `/settings` API endpoint. The behavior is identical to calling the same thing via API, so whatever settings are given are stored in the DB.
+
+```
+$ imapapi --settings='{"webhooks": "https://webhook.site/14e88aea-3391-48b2-a4e6-7b617280155d","webhookEvents":["messageNew"]}'
+```
+
+If settings object fails validation then the application does not start.
 
 ## Example
 

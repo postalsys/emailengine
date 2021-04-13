@@ -18,11 +18,37 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
 const promClient = require('prom-client');
 
+const Joi = require('joi');
+const { settingsSchema } = require('./lib/schemas');
+const settings = require('./lib/settings');
+
 const config = require('wild-config');
 
 config.workers = config.workers || {
     imap: 4
 };
+
+let preparedSettings = false;
+const preparedSettingsString = process.env.SETTINGS || config.settings;
+if (preparedSettingsString) {
+    // received a configuration block
+    try {
+        const { error, value } = Joi.object(settingsSchema).validate(JSON.parse(preparedSettingsString), {
+            abortEarly: false,
+            stripUnknown: true,
+            convert: true
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        preparedSettings = value;
+    } catch (err) {
+        logger.error({ msg: 'Received invalid settings string', input: preparedSettingsString, err });
+        process.exit(1);
+    }
+}
 
 const WORKERS_IMAP = Number(process.env.WORKERS_IMAP) || config.workers.imap;
 logger.debug({ msg: 'IMAP Worker Count', workersImap: WORKERS_IMAP });
@@ -334,15 +360,6 @@ async function onCommand(worker, message) {
     return 999;
 }
 
-// multiple IMAP connection handlers
-for (let i = 0; i < WORKERS_IMAP; i++) {
-    spawnWorker('imap');
-}
-
-// single worker for HTTP
-spawnWorker('api');
-spawnWorker('webhooks');
-
 let metricsResult = {};
 async function collectMetrics() {
     // reset all counters
@@ -372,10 +389,6 @@ async function collectMetrics() {
     });
 }
 
-setInterval(() => {
-    collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
-}, 5000).unref();
-
 process.on('SIGTERM', () => {
     if (closing) {
         return;
@@ -395,3 +408,37 @@ process.on('SIGINT', () => {
         process.exit();
     });
 });
+
+// START APPLICATION
+
+const startApplication = async () => {
+    if (preparedSettings) {
+        // set up configuration
+        logger.debug({ msg: 'Updating application settings', settings: preparedSettings });
+
+        for (let key of Object.keys(preparedSettings)) {
+            await settings.set(key, preparedSettings[key]);
+        }
+    }
+
+    // multiple IMAP connection handlers
+    for (let i = 0; i < WORKERS_IMAP; i++) {
+        spawnWorker('imap');
+    }
+
+    // single worker for HTTP
+    spawnWorker('api');
+    spawnWorker('webhooks');
+};
+
+startApplication()
+    .then(() => {
+        // start collecting metrics
+        setInterval(() => {
+            collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
+        }, 5000).unref();
+    })
+    .catch(err => {
+        logger.error({ msg: 'Failed to start application', err });
+        process.exit(1);
+    });

@@ -23,7 +23,8 @@ const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize } = require('../lib/tools');
 
-const RESYNC_DELAY = 15 * 60;
+const { settingsSchema, addressSchema, settingsQuerySchema, imapSchema, smtpSchema, messageDetailsSchema, messageListSchema } = require('../lib/schemas');
+
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api = config.api || {
@@ -32,226 +33,6 @@ config.api = config.api || {
 };
 
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-
-// allowed configuration keys
-const settingsSchema = {
-    webhooks: Joi.string()
-        .uri({
-            scheme: ['http', 'https'],
-            allowRelative: false
-        })
-        .example('https://myservice.com/imap/webhooks')
-        .description('Webhook URL'),
-
-    webhookEvents: Joi.array().items(Joi.string().max(256)),
-
-    notifyHeaders: Joi.array().items(Joi.string().max(256)),
-
-    authServer: Joi.string()
-        .uri({
-            scheme: ['http', 'https'],
-            allowRelative: false
-        })
-        .allow('')
-        .example('https://myservice.com/authentication')
-        .description('URL to fetch authentication data from')
-        .label('AuthServer'),
-
-    notifyText: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Include message text in webhook notification'),
-
-    notifyTextSize: Joi.number().min(0),
-
-    logs: Joi.object({
-        all: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Enable logs for all accounts'),
-        resetLoggedAccounts: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Reconnect logged accounts'),
-        accounts: Joi.array()
-            .items(Joi.string().max(256))
-            .default([])
-            .example(['account-id-1', 'account-id-2'])
-            .description('Enable logs for listed accounts')
-            .label('LoggedAccounts'),
-        maxLogLines: Joi.number().min(0).max(1000000).default(10000)
-    }).label('LogSettings')
-};
-
-const addressSchema = Joi.object({
-    name: Joi.string().max(256).example('Some Name'),
-    address: Joi.string()
-        .email({
-            ignoreLength: false
-        })
-        .example('user@example.com')
-        .required()
-}).label('Address');
-
-// generate a list of boolean values
-const settingsQuerySchema = Object.fromEntries(
-    Object.keys(Object.assign({ eventTypes: true }, settingsSchema)).map(key => [
-        key,
-        Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false)
-    ])
-);
-
-const imapSchema = {
-    auth: Joi.object({
-        user: Joi.string().max(256).required().example('myuser@gmail.com').description('Account username'),
-        pass: Joi.string().max(256).example('verysecret').description('Account password'),
-        accessToken: Joi.string().max(4096).description('Access Token for OAuth2')
-    })
-        .xor('pass', 'accessToken')
-        .description('Authentication info')
-        .label('Authentication'),
-
-    useAuthServer: Joi.boolean().example(false).description('Set to true to use authentication server instead of username/password'),
-
-    host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
-    port: Joi.number()
-        .min(1)
-        .max(64 * 1024)
-        .required()
-        .example(993)
-        .description('Service port number'),
-    secure: Joi.boolean().default(false).example(true).description('Should connection use TLS. Usually true for port 993'),
-    tls: Joi.object({
-        rejectUnauthorized: Joi.boolean().default(true).example(true).description('How to treat invalid certificates'),
-        minVersion: Joi.string().max(256).example('TLSv1.2').description('Minimal TLS version')
-    })
-        .description('Optional TLS configuration')
-        .label('TLS'),
-    resyncDelay: Joi.number().example(RESYNC_DELAY).description('Full resync delay in seconds').default(RESYNC_DELAY)
-};
-
-const smtpSchema = {
-    auth: Joi.object({
-        user: Joi.string().max(256).required().example('myuser@gmail.com').description('Account username'),
-        pass: Joi.string().max(256).example('verysecret').description('Account password'),
-        accessToken: Joi.string().max(4096).description('Access Token for OAuth2')
-    })
-        .xor('pass', 'accessToken')
-        .description('Authentication info')
-        .label('Authentication'),
-
-    useAuthServer: Joi.boolean().example(false).description('Set to true to use authentication server instead of username/password'),
-
-    host: Joi.string().hostname().required().example('smtp.gmail.com').description('Hostname to connect to'),
-    port: Joi.number()
-        .min(1)
-        .max(64 * 1024)
-        .required()
-        .example(587)
-        .description('Service port number'),
-    secure: Joi.boolean().default(false).example(false).description('Should connection use TLS. Usually true for port 465'),
-    tls: Joi.object({
-        rejectUnauthorized: Joi.boolean().default(true).example(true).description('How to treat invalid certificates'),
-        minVersion: Joi.string().max(256).example('TLSv1.2').description('Minimal TLS version')
-    })
-        .description('Optional TLS configuration')
-        .label('TLS')
-};
-
-const attachmentSchema = Joi.object({
-    id: Joi.string().example('AAAAAgAACrIyLjI').description('Attachment ID').label('AttachmentId'),
-    contentType: Joi.string().example('image/gif').description('Mime type of the attachment'),
-    encodedSize: Joi.number().example(48).description('Encoded size of the attachment. Actual file size is usually smaller depending on the encoding'),
-    embedded: Joi.boolean().example(true).description('Is this image used in HTML img tag'),
-    inline: Joi.boolean().example(true).description('Should this file be included in the message preview somehow'),
-    contentId: Joi.string().example('<unique-image-id@localhost>').description('Usually used only for embedded images')
-});
-
-const messageEntrySchema = Joi.object({
-    id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
-    uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
-    emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
-    threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
-    date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
-    draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
-    unseen: Joi.boolean().example(true).description('Is this message unseen'),
-    flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
-    size: Joi.number().example(1040).description('Message size in bytes'),
-    subject: Joi.string().example('What a wonderful message').description('Message subject (decoded into unicode, applies to other string values as well)'),
-
-    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
-
-    to: Joi.array()
-        .items(addressSchema)
-        .description('List of addresses')
-        .example([{ address: 'recipient@example.com' }])
-        .label('AddressList'),
-
-    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-
-    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-    messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
-    inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
-
-    labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
-
-    attachments: Joi.array().items(attachmentSchema).description('List of attachments').label('AttachmentList'),
-
-    text: Joi.object({
-        id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
-        encodedSize: Joi.object({
-            plain: Joi.number().example(1013).description('How many bytes for plain text'),
-            html: Joi.number().example(1013).description('How many bytes for html content')
-        }).description('Encoded message part sizes')
-    }).label('TextInfo')
-}).label('MessageListEntry');
-
-const messageDetailsSchema = Joi.object({
-    id: Joi.string().example('AAAAAgAACrI').description('Message ID').label('MessageEntryId'),
-    uid: Joi.number().example(12345).description('UID of the message').label('MessageUid'),
-    emailId: Joi.string().example('1694937972638499881').description('Globally unique ID (if server supports it)').label('MessageEmailId'),
-    threadId: Joi.string().example('1694936993596975454').description('Thread ID (if server supports it)').label('MessageThreadId'),
-    date: Joi.date().iso().example('2021-03-22T13:13:31.000Z').description('Date (internal)'),
-    draft: Joi.boolean().example(false).description('Is this message marked as a draft'),
-    unseen: Joi.boolean().example(true).description('Is this message unseen'),
-    flagged: Joi.boolean().example(true).description('Is this message marked as flagged'),
-    size: Joi.number().example(1040).description('Message size in bytes'),
-    subject: Joi.string().example('What a wonderful message').description('Message subject (decoded into unicode, applies to other string values as well)'),
-
-    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
-    sender: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
-
-    to: Joi.array()
-        .items(addressSchema)
-        .description('List of addresses')
-        .example([{ address: 'recipient@example.com' }])
-        .label('AddressList'),
-
-    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-
-    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
-    messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
-    inReplyTo: Joi.string().example('<7JBUMt0WOn+_==MOkaCOQ@mail.gmail.com>').description('Replied Message ID'),
-
-    flags: Joi.array().items(Joi.string().example('\\Seen')).description('IMAP flags').label('FlagList'),
-    labels: Joi.array().items(Joi.string().example('\\Important')).description('Gmail labels').label('LabelList'),
-
-    attachments: Joi.array().items(attachmentSchema).description('List of attachments').label('AttachmentList'),
-
-    headers: Joi.object()
-        .example({ from: ['From Me <sender@example.com>'], subject: ['What a wonderful message'] })
-        .description('Object where header key is object key and value is an array'),
-
-    text: Joi.object({
-        id: Joi.string().example('AAAAAgAACqiTkaExkaEykA').description('Pointer to message text content'),
-        encodedSize: Joi.object({
-            plain: Joi.number().example(1013).description('How many bytes for plain text'),
-            html: Joi.number().example(1013).description('How many bytes for html content')
-        }).description('Encoded message part sizes'),
-        plain: Joi.string().example('Hello from myself!').description('Plaintext content of the message'),
-        html: Joi.string().example('<p>Hello from myself!</p>').description('HTML content of the message'),
-        hasMore: Joi.boolean()
-            .example(false)
-            .description('If partial message content was requested then this value indicates if it includes all the content or there is more')
-    }).label('TextInfo')
-}).label('MessageListEntry');
-
-const messageListSchema = Joi.object({
-    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
-    message: Joi.array().items(messageEntrySchema).label('PageMessages')
-}).label('MessageList');
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
@@ -947,7 +728,7 @@ const init = async () => {
         },
         options: {
             description: 'Download attachment',
-            notes: 'Fetches attachment file as a stream',
+            notes: 'Fetches attachment file as a binary stream',
             tags: ['api', 'message'],
 
             validate: {
@@ -1740,7 +1521,8 @@ const init = async () => {
             return getLogs(request.params.account);
         },
         options: {
-            description: 'Return IMAP logs for an account. Output is a downloadable text file.',
+            description: 'Return IMAP logs for an account',
+            notes: 'Output is a downloadable text file',
             tags: ['api', 'logs'],
 
             validate: {
