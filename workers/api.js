@@ -1143,6 +1143,15 @@ const init = async () => {
                         .example('AAAAAQAACnAcdfaaN')
                         .description('Message text ID')
                 }).label('Text')
+            },
+
+            response: {
+                schema: Joi.object({
+                    plain: Joi.string().example('Hello world').description('Plaintext content'),
+                    html: Joi.string().example('<p>Hello world</p>').description('HTML content'),
+                    hasMore: Joi.boolean().example(false).description('Is the current text output capped or not')
+                }).label('TextResponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1493,6 +1502,11 @@ const init = async () => {
                 failAction,
 
                 query: Joi.object(settingsQuerySchema).label('SettingsQuery')
+            },
+
+            response: {
+                schema: Joi.object(settingsSchema).label('SettingsQueryResponse'),
+                failAction: 'log'
             }
         }
     });
