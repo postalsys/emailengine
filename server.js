@@ -13,6 +13,8 @@ process.title = 'imapapi';
 const argv = process.argv.slice(2);
 
 const logger = require('./lib/logger');
+const packageData = require('./package.json');
+
 const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
@@ -32,6 +34,8 @@ config.workers = config.workers || {
 
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
 const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+
+logger.info({ msg: 'Starting IMAP API', version: packageData.version, commandTimeout: COMMAND_TIMEOUT, config });
 
 let preparedSettings = false;
 const preparedSettingsString = process.env.SETTINGS || config.settings;
