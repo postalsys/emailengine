@@ -481,24 +481,26 @@ const init = async () => {
 
             response: {
                 schema: Joi.object({
-                    accounts: Joi.array().items(
-                        Joi.object({
-                            account: Joi.string().max(256).required().example('example').description('Account ID'),
-                            name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
-                            state: Joi.string()
-                                .required()
-                                .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
-                                .example('connected')
-                                .description('Account state'),
-                            syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
-                            lastError: Joi.object({
-                                response: Joi.string().example('Request to authentication server failed'),
-                                serverResponseCode: Joi.string().example('HTTPRequestError')
-                            })
-                                .allow(null)
-                                .label('AccountErrorEntry')
-                        }).label('AccountResponseItem')
-                    )
+                    accounts: Joi.array()
+                        .items(
+                            Joi.object({
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                                state: Joi.string()
+                                    .required()
+                                    .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                                    .example('connected')
+                                    .description('Account state'),
+                                syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
+                                lastError: Joi.object({
+                                    response: Joi.string().example('Request to authentication server failed'),
+                                    serverResponseCode: Joi.string().example('HTTPRequestError')
+                                })
+                                    .allow(null)
+                                    .label('AccountErrorEntry')
+                            }).label('AccountResponseItem')
+                        )
+                        .label('AccountEntries')
                 }).label('AccountsFilterReponse'),
                 failAction: 'log'
             }
@@ -1427,11 +1429,11 @@ const init = async () => {
                         .items(addressSchema)
                         .description('List of addresses')
                         .example([{ address: 'recipient@example.com' }])
-                        .label('AddressList'),
+                        .label('ToAddressList'),
 
-                    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    cc: Joi.array().items(addressSchema).description('List of addresses').label('CcAddressList'),
 
-                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('BccAddressList'),
 
                     subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
 
@@ -1460,7 +1462,15 @@ const init = async () => {
 
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers')
-                }).label('Message')
+                }).label('SubmitMessage')
+            },
+
+            response: {
+                schema: Joi.object({
+                    response: Joi.string().example('250 2.0.0 OK  1618577221 l6sm992285lfp.13 - gsmtp').description('Response from SMTP server'),
+                    messageId: Joi.string().example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>').description('Message-ID header value')
+                }).label('SubmitMessageResponse'),
+                failAction: 'log'
             }
         }
     });
@@ -1560,6 +1570,13 @@ const init = async () => {
                 failAction,
 
                 payload: Joi.object(settingsSchema).label('Settings')
+            },
+
+            response: {
+                schema: Joi.object({ updated: Joi.array().items(Joi.string().example('notifyHeaders')).description('List of updated setting keys') }).label(
+                    'SettingsResponse'
+                ),
+                failAction: 'log'
             }
         }
     });
@@ -1600,7 +1617,25 @@ const init = async () => {
         },
         options: {
             description: 'Return server stats',
-            tags: ['api', 'stats']
+            tags: ['api', 'stats'],
+
+            response: {
+                schema: Joi.object({
+                    version: Joi.string().example(packageData.version).description('IMAP API version number'),
+                    license: Joi.string().example(packageData.license).description('IMAP API license'),
+                    accounts: Joi.number().example(26).description('Number of registered accounts'),
+                    connections: Joi.object({
+                        init: Joi.number().example(2).description('Accounts not yet initialized'),
+                        connected: Joi.number().example(8).description('Successfully connected accounts'),
+                        connecting: Joi.number().example(7).description('Connection is being established'),
+                        authenticationError: Joi.number().example(3).description('Authentication failed'),
+                        connectError: Joi.number().example(5).description('Connection failed due to technical error'),
+                        unset: Joi.number().example(0).description('Accounts without valid IMAP settings'),
+                        disconnected: Joi.number().example(1).description('IMAP connection was closed')
+                    }).description('Counts of accounts in different connection states')
+                }).label('SettingsResponse'),
+                failAction: 'log'
+            }
         }
     });
 

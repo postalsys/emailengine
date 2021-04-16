@@ -5,3 +5,4 @@ licenses.csv
 .env
 dist/
 yarn.lock
+swagger.json

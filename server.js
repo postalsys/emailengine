@@ -26,16 +26,40 @@ const settings = require('./lib/settings');
 
 const config = require('wild-config');
 
-const { getDuration } = require('./lib/tools');
+const { getDuration, getByteSize } = require('./lib/tools');
+
+// Most of the config setup is for logs
+const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.workers = config.workers || {
     imap: 4
 };
 
-const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+config.dbs = config.dbs || {
+    redis: 'redis://127.0.0.1:6379/8'
+};
 
-logger.info({ msg: 'Starting IMAP API', version: packageData.version, commandTimeout: COMMAND_TIMEOUT, config });
+config.log = config.log || {
+    level: 'trace'
+};
+
+config.api = config.api || {
+    port: 3000,
+    host: '127.0.0.1'
+};
+
+config.api.maxSize = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+config.commandTimeout = COMMAND_TIMEOUT;
+config.dbs.redis = process.env.REDIS_URL || config.dbs.redis;
+config.settings = process.env.SETTINGS || config.setting;
+config.workers.imap = Number(process.env.WORKERS_IMAP) || config.workers.imap;
+config.api.port = (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port;
+config.api.host = process.env.API_HOST || config.api.host;
+config.log.level = process.env.LOG_LEVEL || config.log.level;
+
+logger.info({ msg: 'Starting IMAP API', version: packageData.version, config });
 
 let preparedSettings = false;
 const preparedSettingsString = process.env.SETTINGS || config.settings;

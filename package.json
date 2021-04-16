@@ -1,13 +1,13 @@
 {
     "name": "imapapi",
-    "version": "1.5.2",
+    "version": "1.5.3",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
         "test": "grunt",
         "licenses": "npm-license-crawler --production --csv ./licenses.csv",
-        "build": "pkg --out-path dist/ package.json --options max_old_space_size=4096"
+        "swagger": "./getswagger.sh"
     },
     "keywords": [
         "IMAP"
@@ -27,7 +27,7 @@
         "email-reply-parser": "1.2.6",
         "exponential-backoff": "3.1.0",
         "hapi-pino": "8.3.0",
-        "hapi-swagger": "14.1.0",
+        "hapi-swagger": "14.1.1",
         "he": "1.2.0",
         "html-to-text": "7.0.0",
         "imapflow": "1.0.56",
@@ -50,8 +50,7 @@
         "grunt": "1.3.0",
         "grunt-cli": "1.4.2",
         "grunt-eslint": "23.0.0",
-        "npm-license-crawler": "0.2.1",
-        "pkg": "4.5.1"
+        "npm-license-crawler": "0.2.1"
     },
     "pkg": {
         "scripts": "workers/**/*.js",
