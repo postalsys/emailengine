@@ -32,6 +32,10 @@ $ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
 
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
 
+## Documentation
+
+-   [API Reference](https://imapapi.com/api.html)
+
 ## Demo
 
 Here's a screen recording of running and using IMAP API in action.
