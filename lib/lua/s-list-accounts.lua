@@ -29,7 +29,7 @@ for index, account in ipairs(list) do
 
         if shouldSkip == 0 then
             -- enough entries skipped, can use
-            if #result < total then
+            if #result < count then
                 -- now we can actually use this record
                 result[#result + 1] = redis.call("HGETALL", "iad:" .. account);
             else
