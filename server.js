@@ -61,6 +61,11 @@ config.log.level = process.env.LOG_LEVEL || config.log.level;
 
 logger.info({ msg: 'Starting IMAP API', version: packageData.version, config });
 
+const NO_ACTIVE_HANDLER_RESP = {
+    error: 'No active handler for requested account. Try again later.',
+    statusCode: 503
+};
+
 let preparedSettings = false;
 const preparedSettingsString = process.env.SETTINGS || config.settings;
 if (preparedSettingsString) {
@@ -380,10 +385,7 @@ async function onCommand(worker, message) {
         case 'uploadMessage':
         case 'getAttachment': {
             if (!assigned.has(message.account)) {
-                return {
-                    error: 'No active connection to requested account. Try again later.',
-                    statusCode: 503
-                };
+                return NO_ACTIVE_HANDLER_RESP;
             }
 
             let assignedWorker = assigned.get(message.account);

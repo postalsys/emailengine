@@ -48,9 +48,9 @@ const failAction = async (request, h, err) => {
         err
     });
 
-    let error = Boom.boomify(new Error('Invalid input'), { statusCode: 400 });
-    error.reformat();
-    error.output.payload.fields = details; // Add custom key
+    let message = 'Invalid input';
+    let error = Boom.boomify(new Error(message), { statusCode: 400 });
+    error.output.payload.fields = details;
     throw error;
 };
 
@@ -235,7 +235,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -288,7 +292,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -341,7 +349,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -388,7 +400,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -453,7 +469,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
 
@@ -520,7 +540,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
 
@@ -582,7 +606,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
 
@@ -636,7 +664,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
 
@@ -685,7 +717,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -728,7 +764,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -770,7 +810,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -825,7 +869,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -938,7 +986,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1012,7 +1064,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1062,7 +1118,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1109,7 +1169,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1173,7 +1237,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1225,7 +1293,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1347,7 +1419,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1383,7 +1459,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {
@@ -1394,8 +1474,7 @@ const init = async () => {
             },
 
             description: 'Submit message for delivery',
-            notes:
-                'Submit message for delivery. If reference message ID is provided then IMAP API adds all headers and flags required for a reply/forward automatically.',
+            notes: 'Submit message for delivery. If reference message ID is provided then IMAP API adds all headers and flags required for a reply/forward automatically.',
             tags: ['api', 'submit'],
 
             validate: {
@@ -1650,7 +1729,11 @@ const init = async () => {
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
-                throw Boom.boomify(err, { statusCode: err.statusCode || 500, decorate: { code: err.code } });
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
             }
         },
         options: {

@@ -25,6 +25,11 @@ const DEFAULT_STATES = {
     disconnected: 0
 };
 
+const NO_ACTIVE_HANDLER_RESP = {
+    error: 'No active handler for requested account. Try again later.',
+    statusCode: 503
+};
+
 class ConnectionHandler {
     constructor() {
         this.callQueue = new Map();
@@ -125,16 +130,12 @@ class ConnectionHandler {
 
     async listMessages(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.listMessages(message);
@@ -142,16 +143,12 @@ class ConnectionHandler {
 
     async buildContacts(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.buildContacts(message);
@@ -159,16 +156,12 @@ class ConnectionHandler {
 
     async getText(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.getText(message.text, message.options);
@@ -176,16 +169,12 @@ class ConnectionHandler {
 
     async getMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.getMessage(message.message, message.options);
@@ -193,16 +182,12 @@ class ConnectionHandler {
 
     async updateMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.updateMessage(message.message, message.updates);
@@ -210,16 +195,12 @@ class ConnectionHandler {
 
     async moveMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.moveMessage(message.message, message.target);
@@ -227,16 +208,12 @@ class ConnectionHandler {
 
     async deleteMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.deleteMessage(message.message);
@@ -244,16 +221,12 @@ class ConnectionHandler {
 
     async submitMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.submitMessage(message.data);
@@ -261,16 +234,12 @@ class ConnectionHandler {
 
     async uploadMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.uploadMessage(message.data);
@@ -278,16 +247,12 @@ class ConnectionHandler {
 
     async createMailbox(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         return await accountData.connection.createMailbox(message.path);
@@ -295,32 +260,24 @@ class ConnectionHandler {
 
     async deleteMailbox(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
         return await accountData.connection.deleteMailbox(message.path);
     }
 
     async getRawMessage(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
         let stream = new MessagePortWritable(message.port);
 
@@ -343,16 +300,12 @@ class ConnectionHandler {
 
     async getAttachment(message) {
         if (!this.accounts.has(message.account)) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            return {
-                error: 'No active handler for requested account. Try again later.'
-            };
+            return NO_ACTIVE_HANDLER_RESP;
         }
 
         let stream = new MessagePortWritable(message.port);
