@@ -62,7 +62,7 @@ function showAccounts(e, state) {
         return;
     }
     fetchingAccountList = true;
-    fetch('/v1/accounts' + (state ? '?state=' + state : ''))
+    fetch('/v1/accounts?page=0&pageSize=1000' + (state ? '&state=' + state : ''))
         .then(result => result.json())
         .then(result => {
             fetchingAccountList = false;

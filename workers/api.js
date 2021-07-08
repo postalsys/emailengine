@@ -261,7 +261,7 @@ const init = async () => {
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    notifyFrom: Joi.date().example('2020-01-01').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
@@ -320,7 +320,7 @@ const init = async () => {
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    notifyFrom: Joi.date().example('2020-01-01').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
@@ -441,30 +441,9 @@ const init = async () => {
 
         async handler(request) {
             try {
-                let accounts = await redis.smembers('ia:accounts');
-                let getStates = redis.pipeline();
-                for (let account of accounts) {
-                    getStates = getStates.hgetall(`iad:${account}`);
-                }
+                let accountObject = new Account({ redis, account: request.params.account, call });
 
-                let results = await getStates.exec();
-                let accountList = results
-                    .map(
-                        row =>
-                            row &&
-                            row[1] && {
-                                account: row[1].account,
-                                name: row[1].name,
-                                state: row[1].state,
-                                syncTime: row[1].sync,
-                                lastError: row[1].state === 'connected' ? null : parseJSON(row[1].lastErrorState)
-                            }
-                    )
-                    .filter(row => row)
-                    .filter(row => !request.query.state || request.query.state === row.state)
-                    .sort((a, b) => a.account.toLowerCase().localeCompare(b.account.toLowerCase()));
-
-                return { accounts: accountList };
+                return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -491,6 +470,14 @@ const init = async () => {
                 failAction,
 
                 query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     state: Joi.string()
                         .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
@@ -501,6 +488,10 @@ const init = async () => {
 
             response: {
                 schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
                     accounts: Joi.array()
                         .items(
                             Joi.object({
@@ -522,6 +513,83 @@ const init = async () => {
                         )
                         .label('AccountEntries')
                 }).label('AccountsFilterReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call });
+            try {
+                let accountData = await accountObject.loadAccountData();
+                console.log(accountData);
+
+                // remove secrets
+                for (let type of ['imap', 'smtp']) {
+                    if (accountData[type] && accountData[type].auth) {
+                        for (let key of ['pass', 'accessToken']) {
+                            if (key in accountData[type].auth) {
+                                accountData[type].auth[key] = '******';
+                            }
+                        }
+                    }
+                }
+
+                let result = {};
+
+                for (let key of ['account', 'name', 'copy', 'notifyFrom', 'imap', 'smtp']) {
+                    if (key in accountData) {
+                        result[key] = accountData[key];
+                    }
+                }
+
+                return result;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Get account info',
+            notes: 'Returns stored information about the account. Passwords are not included.',
+            tags: ['api', 'account'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+
+                    name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+
+                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
+
+                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPInfo'),
+
+                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPInfo')
+                }).label('AccountResponse'),
                 failAction: 'log'
             }
         }
