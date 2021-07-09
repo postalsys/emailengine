@@ -1,6 +1,6 @@
 # IMAP API
 
-Self hosted application to access IMAP and SMTP accounts over REST. Integrate email accounts with your service with ease!
+Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
 ## Licensing
 
