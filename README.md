@@ -42,7 +42,7 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 
 Here's a screen recording of running and using IMAP API in action.
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/mDqz_GEINXY/0.jpg)](https://www.youtube.com/watch?v=mDqz_GEINXY)
+[![Using IMAP API](https://img.youtube.com/vi/shHZHowVnYw/0.jpg)](https://www.youtube.com/watch?v=shHZHowVnYw)
 
 This video shows how to
 
