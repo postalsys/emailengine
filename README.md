@@ -154,17 +154,18 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ## Config mapping
 
-| Configuration option | CLI argument            | ENV value               | Default                      |
-| -------------------- | ----------------------- | ----------------------- | ---------------------------- |
-| IMAP Worker count    | `--workers.imap=4`      | `WORKERS_IMAP=4`        | `4`                          |
-| Redis connection URL | `--dbs.redis="url"`     | `REDIS_URL="url"`       | `"redis://127.0.0.1:6379/8"` |
-| Host to bind to      | `--api.host="1.2.3.4"`  | `API_HOST="1.2.3.4"`    | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`       | `API_PORT=port`         | `3000`                       |
-| Max attachment size  | `--api.maxSize=5M`      | `API_MAX_SIZE=5M`       | `5M`                         |
-| Max command duration | `--commandTimeout=10s`  | `COMMAND_TIMEOUT=10s`   | `10s`                        |
-| Log level            | `--log.level="level"`   | `LOG_LEVEL=level`       | `"trace"`                    |
-| Prepared settings    | `--settings='{"JSON"}'` | `SETTINGS='{"JSON"}'`   | not set                      |
-| Encryption secret    | `--secret='****'`       | `IMAPAPI_SECRET="****"` | not set                      |
+| Configuration option | CLI argument                 | ENV value                   | Default                      |
+| -------------------- | ---------------------------- | --------------------------- | ---------------------------- |
+| IMAP Worker count    | `--workers.imap=4`           | `WORKERS_IMAP=4`            | `4`                          |
+| Redis connection URL | `--dbs.redis="url"`          | `REDIS_URL="url"`           | `"redis://127.0.0.1:6379/8"` |
+| Host to bind to      | `--api.host="1.2.3.4"`       | `API_HOST="1.2.3.4"`        | `"127.0.0.1"`                |
+| Port to bind to      | `--api.port=port`            | `API_PORT=port`             | `3000`                       |
+| Max attachment size  | `--api.maxSize=5M`           | `API_MAX_SIZE=5M`           | `5M`                         |
+| Max command duration | `--commandTimeout=10s`       | `COMMAND_TIMEOUT=10s`       | `10s`                        |
+| Log level            | `--log.level="level"`        | `LOG_LEVEL=level`           | `"trace"`                    |
+| Prepared settings    | `--settings='{"JSON"}'`      | `SETTINGS='{"JSON"}'`       | not set                      |
+| Encryption secret    | `--secret='****'`            | `IMAPAPI_SECRET="****"`     | not set                      |
+| Local addresses      | `--localAddresses='ip1,ip2'` | `LOCAL_ADDRESSES="ip1,ip2"` | default interface            |
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 
@@ -183,6 +184,18 @@ If settings object fails validation then the application does not start.
 #### Encryption secret
 
 By default account passwords are stored as cleartext in Redis. You can set an encryption secret that will be used to encrypt these passwords.
+
+#### Local addresses
+
+If your server has multiple IP addresses/interfaces available then you can provide a comma separated list of these IP addresses for IMAP API to bound to when making outbound connections.
+
+This is mostly useful if you are making a large amount of connections and might get rate limited by destination server based on your IP address. Using multiple local addresses allows to distribute separate connections between separate IP addresses. An address is selected randomly from the list whenever making a new IMAP connection.
+
+```
+$ imapapi --localAddresses="192.168.1.176,192.168.1.177,192.168.1.178"
+```
+
+If those interfaces aren't actually available then TCP connections will fail, so check the logs.
 
 ## API usage
 

@@ -9,12 +9,37 @@ const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
 const config = require('wild-config');
+const net = require('net');
 
 const { getDuration } = require('../lib/tools');
 
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
 const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
 const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.secret;
+
+const LOCAL_ADDRESSES = []
+    .concat(process.env.LOCAL_ADDRESSES || config.localAddresses || [])
+    .flatMap(addr => {
+        if (Array.isArray(addr)) {
+            return addr;
+        }
+        if (typeof addr !== 'string') {
+            return false;
+        }
+        try {
+            // try if JSON
+            return JSON.parse(addr);
+        } catch (err) {
+            return addr.split(/[,\s;]+/);
+        }
+    })
+    .map(addr => {
+        if (typeof addr === 'string') {
+            return addr.trim();
+        }
+        return false;
+    })
+    .filter(addr => addr && net.isIP(addr));
 
 const DEFAULT_STATES = {
     init: 0,
@@ -83,7 +108,8 @@ class ConnectionHandler {
             accountObject,
             redis,
             notifyQueue,
-            accountLogger: await this.getAccountLogger(account)
+            accountLogger: await this.getAccountLogger(account),
+            localAddresses: LOCAL_ADDRESSES
         });
 
         let accountData = await accountObject.loadAccountData();
