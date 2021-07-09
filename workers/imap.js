@@ -14,6 +14,7 @@ const { getDuration } = require('../lib/tools');
 
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
 const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.secret;
 
 const DEFAULT_STATES = {
     init: 0,
@@ -73,7 +74,8 @@ class ConnectionHandler {
 
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
-        let accountObject = new Account({ redis, account });
+
+        let accountObject = new Account({ redis, account, secret: ENCRYPT_PASSWORD });
 
         this.accounts.set(account, accountObject);
         accountObject.connection = new Connection({

@@ -32,6 +32,8 @@ $ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
 
 Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
 
+> **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping IMAP API output to it: `imapapi | pino-pretty`
+
 ## Documentation
 
 -   [API Reference](https://imapapi.com/api.html)
@@ -152,16 +154,17 @@ Once application is started open http://127.0.0.1:3000/ for instructions and API
 
 ## Config mapping
 
-| Configuration option | CLI argument            | ENV value             | Default                      |
-| -------------------- | ----------------------- | --------------------- | ---------------------------- |
-| IMAP Worker count    | `--workers.imap=4`      | `WORKERS_IMAP=4`      | `4`                          |
-| Redis connection URL | `--dbs.redis="url"`     | `REDIS_URL="url"`     | `"redis://127.0.0.1:6379/8"` |
-| Host to bind to      | `--api.host="1.2.3.4"`  | `API_HOST="1.2.3.4"`  | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`       | `API_PORT=port`       | `3000`                       |
-| Max attachment size  | `--api.maxSize=5M`      | `API_MAX_SIZE=5M`     | `5M`                         |
-| Max command duration | `--commandTimeout=10s`  | `COMMAND_TIMEOUT=10s` | `10s`                        |
-| Log level            | `--log.level="level"`   | `LOG_LEVEL=level`     | `"trace"`                    |
-| Prepared settings    | `--settings='{"JSON"}'` | `SETTINGS='{"JSON"}'` | not set                      |
+| Configuration option | CLI argument            | ENV value               | Default                      |
+| -------------------- | ----------------------- | ----------------------- | ---------------------------- |
+| IMAP Worker count    | `--workers.imap=4`      | `WORKERS_IMAP=4`        | `4`                          |
+| Redis connection URL | `--dbs.redis="url"`     | `REDIS_URL="url"`       | `"redis://127.0.0.1:6379/8"` |
+| Host to bind to      | `--api.host="1.2.3.4"`  | `API_HOST="1.2.3.4"`    | `"127.0.0.1"`                |
+| Port to bind to      | `--api.port=port`       | `API_PORT=port`         | `3000`                       |
+| Max attachment size  | `--api.maxSize=5M`      | `API_MAX_SIZE=5M`       | `5M`                         |
+| Max command duration | `--commandTimeout=10s`  | `COMMAND_TIMEOUT=10s`   | `10s`                        |
+| Log level            | `--log.level="level"`   | `LOG_LEVEL=level`       | `"trace"`                    |
+| Prepared settings    | `--settings='{"JSON"}'` | `SETTINGS='{"JSON"}'`   | not set                      |
+| Encryption secret    | `--secret='****'`       | `IMAPAPI_SECRET="****"` | not set                      |
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 
@@ -176,6 +179,10 @@ $ imapapi --settings='{"webhooks": "https://webhook.site/14e88aea-3391-48b2-a4e6
 ```
 
 If settings object fails validation then the application does not start.
+
+#### Encryption secret
+
+By default account passwords are stored as cleartext in Redis. You can set an encryption secret that will be used to encrypt these passwords.
 
 ## API usage
 

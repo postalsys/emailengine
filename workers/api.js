@@ -34,8 +34,8 @@ config.api = config.api || {
 };
 
 const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
-
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.secret;
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
@@ -226,7 +226,7 @@ const init = async () => {
         path: '/v1/account',
 
         async handler(request) {
-            let accountObject = new Account({ redis, call });
+            let accountObject = new Account({ redis, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 let result = await accountObject.create(request.payload);
@@ -284,7 +284,7 @@ const init = async () => {
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.update(request.payload);
@@ -341,7 +341,7 @@ const init = async () => {
         path: '/v1/account/{account}/reconnect',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return { reconnect: await accountObject.requestReconnect(request.payload) };
@@ -392,7 +392,7 @@ const init = async () => {
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.delete();
@@ -441,7 +441,7 @@ const init = async () => {
 
         async handler(request) {
             try {
-                let accountObject = new Account({ redis, account: request.params.account, call });
+                let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
                 return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
             } catch (err) {
@@ -523,10 +523,9 @@ const init = async () => {
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
             try {
                 let accountData = await accountObject.loadAccountData();
-                console.log(accountData);
 
                 // remove secrets
                 for (let type of ['imap', 'smtp']) {
@@ -586,9 +585,9 @@ const init = async () => {
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
-                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPInfo'),
+                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
 
-                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPInfo')
+                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTP')
                 }).label('AccountResponse'),
                 failAction: 'log'
             }
@@ -600,7 +599,7 @@ const init = async () => {
         path: '/v1/account/{account}/mailboxes',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return { mailboxes: await accountObject.getMailboxListing() };
@@ -666,7 +665,7 @@ const init = async () => {
         path: '/v1/account/{account}/mailbox',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.createMailbox(request.payload.path);
@@ -724,7 +723,7 @@ const init = async () => {
         path: '/v1/account/{account}/mailbox',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.deleteMailbox(request.query.path);
@@ -777,7 +776,7 @@ const init = async () => {
         path: '/v1/account/{account}/message/{message}/source',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.getRawMessage(request.params.message);
@@ -824,7 +823,7 @@ const init = async () => {
         path: '/v1/account/{account}/attachment/{attachment}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.getAttachment(request.params.attachment);
@@ -870,7 +869,7 @@ const init = async () => {
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.getMessage(request.params.message, request.query);
@@ -929,7 +928,7 @@ const init = async () => {
         path: '/v1/account/{account}/message',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.uploadMessage(request.payload);
@@ -1046,7 +1045,7 @@ const init = async () => {
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.updateMessage(request.params.message, request.payload);
@@ -1124,7 +1123,7 @@ const init = async () => {
         path: '/v1/account/{account}/message/{message}/move',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.moveMessage(request.params.message, request.payload);
@@ -1178,7 +1177,7 @@ const init = async () => {
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.deleteMessage(request.params.message);
@@ -1229,7 +1228,7 @@ const init = async () => {
         path: '/v1/account/{account}/text/{text}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.getText(request.params.text, request.query);
@@ -1298,7 +1297,7 @@ const init = async () => {
         path: '/v1/account/{account}/messages',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
             try {
                 return await accountObject.listMessages(request.query);
             } catch (err) {
@@ -1354,7 +1353,7 @@ const init = async () => {
         path: '/v1/account/{account}/search',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
             try {
                 return await accountObject.listMessages(Object.assign(request.query, request.payload));
             } catch (err) {
@@ -1480,7 +1479,7 @@ const init = async () => {
         path: '/v1/account/{account}/contacts',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
             try {
                 return await accountObject.buildContacts();
             } catch (err) {
@@ -1519,7 +1518,7 @@ const init = async () => {
         path: '/v1/account/{account}/submit',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call });
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: ENCRYPT_PASSWORD });
 
             try {
                 return await accountObject.submitMessage(request.payload);
