@@ -202,13 +202,13 @@ If those interfaces aren't actually available then TCP connections will fail, so
 
 By default when IMAP API is sending an email to SMTP it uses local hostname in the SMTP greeting. This hostname is resolved by `os.hostname()`. Sometimes hostname is using invalid format (eg. `Servername_local` as undersore is not actually allowed) and depending on the SMTP server it might reject such connection.
 
-To overcome you can set the local hostname to be used by appending to hostname to IP address, separated by pipe symbol
+To overcome you can set the local hostname to use by appending the hostname to the IP address, separated by pipe symbol
 
 ```
 $ imapapi --localAddresses="ip1|hostname1,ip2|hostname2,ip3|hostname3"
 ```
 
-For example when using AWS you can use he private interface but set a public hostname
+For example when using AWS you can use the private interface IP but set a public hostname.
 
 ```
 $ imapapi --localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
