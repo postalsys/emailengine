@@ -950,9 +950,9 @@ const init = async () => {
                 maxBytes: 50 * 1024 * 1024
             },
 
-            description: 'Upload message to a folder',
+            description: 'Upload message',
             notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
-            tags: ['api', 'mailbox'],
+            tags: ['api', 'message'],
 
             validate: {
                 options: {
@@ -1314,7 +1314,7 @@ const init = async () => {
         options: {
             description: 'List messages in a folder',
             notes: 'Lists messages in a mailbox folder',
-            tags: ['api', 'mailbox'],
+            tags: ['api', 'message'],
 
             validate: {
                 options: {
@@ -1368,9 +1368,9 @@ const init = async () => {
             }
         },
         options: {
-            description: 'Search for messages in a folder',
-            notes: 'Filter messages from a mailbox folder by search options',
-            tags: ['api', 'mailbox'],
+            description: 'Search for messages',
+            notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific foldera and not for the entire account.',
+            tags: ['api', 'message'],
 
             validate: {
                 options: {

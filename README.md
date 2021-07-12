@@ -2,6 +2,27 @@
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
+## Use cases
+
+-   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
+-   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
+
+## Demo
+
+Here's a screen recording of running and using IMAP API in action.
+
+[![Using IMAP API](https://img.youtube.com/vi/shHZHowVnYw/0.jpg)](https://www.youtube.com/watch?v=shHZHowVnYw)
+
+This video shows how to
+
+1. Install and start IMAP API
+2. Configure webhooks destination using the web UI (webhook handling from https://webhook.site/)
+3. Create a new email account at https://ethereal.email/
+4. Open Swagger documentation page that also serves as an API playground
+5. Using the API playground to add a new IMAP/SMTP account using the id "example"
+6. Check the webhook listing to see the notification about found messages from the added account (includes limited information)
+7. Using the ID from the webhook fetch all data for the message (decoded addresses, subject, text etc, also original headers as an array)
+
 ## Licensing
 
 Public IMAP API is licensed under AGPL. Alternative MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
@@ -10,11 +31,6 @@ Public IMAP API is licensed under AGPL. Alternative MIT-licensed version of IMAP
 $ npm install -g @postalsys/imapapi
 $ imapapi
 ```
-
-## Use cases
-
--   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
--   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
 
 ## Let's Go!
 
@@ -38,31 +54,16 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 
 -   [API Reference](https://imapapi.com/api.html)
 
-## Demo
-
-Here's a screen recording of running and using IMAP API in action.
-
-[![Using IMAP API](https://img.youtube.com/vi/shHZHowVnYw/0.jpg)](https://www.youtube.com/watch?v=shHZHowVnYw)
-
-This video shows how to
-
-1. Start IMAP API with custom Redis connection string as an environment variable
-2. Configure webhooks destination using the web UI (webhook handling from https://webhook.site/)
-3. Create a new email account at https://ethereal.email/
-4. Open Swagger documentation page that also serves as an API playground
-5. Using the API playground to add a new IMAP/SMTP account using the id "ethereal"
-6. Check the webhook listing to see the notification about found messages from the added account (includes limited information)
-7. Using the ID from the webhook fetch all data for the message (decoded addresses, subject, text etc, also original headers as an array)
-
 ## Features
 
 -   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings. All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
--   Partial text download. You can obviously download the entire rfc822 formatted raw message but it might be easier to use provided paging and message details. This also allows to specifiy maximum size for downloaded text content. Sometimes automated cron scripts etc send emails with 10+MB text so to avoid downloading that stuff IMAP API allows to set max cap size for text.
 -   Whenever something happens on tracked accounts IMAP API posts notification over a webhook. This includes new messages, deleted messages and message flag changes.
 -   No data ever leaves your system
 -   Easy email sending. If you specify the message you are responding to or forwarding then IMAP API sets all required headers, updates references message's flags in IMAP and also uploads message to the Sent Mail folder after sending.
 -   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
 -   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
+-   Partial text download. You can obviously download the entire rfc822 formatted raw message but it might be easier to use provided paging and message details. This also allows to specifiy maximum size for downloaded text content. Sometimes automated cron scripts etc send emails with 10+MB text so to avoid downloading that stuff IMAP API allows to set max cap size for text.
+-   If you are running into IP based rate limiting then IMAP API can make use of network multiple interfaces to make connections from different IP addresses.
 
 ## Usage
 
