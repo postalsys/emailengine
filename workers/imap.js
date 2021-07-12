@@ -24,6 +24,10 @@ const LOCAL_ADDRESSES = []
             return addr;
         }
 
+        if (typeof addr === 'object' && addr && typeof addr.address === 'string') {
+            return addr;
+        }
+
         if (typeof addr !== 'string') {
             return false;
         }
@@ -32,6 +36,9 @@ const LOCAL_ADDRESSES = []
     })
     .filter(addr => addr)
     .map(addr => {
+        if (typeof addr === 'object') {
+            return addr;
+        }
         let [address, name] = addr.split('|').map(part => part.trim());
         return { address, name };
     })
