@@ -1967,18 +1967,6 @@ async function verifyAccountInfo(accountData) {
     return response;
 }
 
-function parseJSON(value) {
-    if (!value || typeof value !== 'string') {
-        return null;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch (err) {
-        return { error: err.message };
-    }
-}
-
 async function getStats() {
     const structuredMetrics = await call({ cmd: 'structuredMetrics' });
 

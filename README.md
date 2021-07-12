@@ -63,7 +63,7 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 -   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
 -   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
 -   Partial text download. You can obviously download the entire rfc822 formatted raw message but it might be easier to use provided paging and message details. This also allows to specifiy maximum size for downloaded text content. Sometimes automated cron scripts etc send emails with 10+MB text so to avoid downloading that stuff IMAP API allows to set max cap size for text.
--   If you are running into IP based rate limiting then IMAP API can make use of network multiple interfaces to make connections from different IP addresses.
+-   If you are running into IP based rate limiting then IMAP API can make use of multiple local network interfaces to make connections from different IP addresses.
 
 ## Usage
 
@@ -197,6 +197,24 @@ $ imapapi --localAddresses="192.168.1.176,192.168.1.177,192.168.1.178"
 ```
 
 If those interfaces aren't actually available then TCP connections will fail, so check the logs.
+
+**Local addresses and SMTP**
+
+By default when IMAP API is sending an email to SMTP it uses local hostname in the SMTP greeting. This hostname is resolved by `os.hostname()`. Sometimes hostname is using invalid format (eg. `Servername_local` as undersore is not actually allowed) and depending on the SMTP server it might reject such connection.
+
+To overcome you can set the local hostname to be used by appending to hostname to IP address, separated by pipe symbol
+
+```
+$ imapapi --localAddresses="ip1|hostname1,ip2|hostname2,ip3|hostname3"
+```
+
+For example when using AWS you can use he private interface but set a public hostname
+
+```
+$ imapapi --localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
+```
+
+So in general the hostname shoud be whatever the public interface IP (this is what the SMTP server sees) resolves to.
 
 ## API usage
 

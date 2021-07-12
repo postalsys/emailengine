@@ -23,23 +23,19 @@ const LOCAL_ADDRESSES = []
         if (Array.isArray(addr)) {
             return addr;
         }
+
         if (typeof addr !== 'string') {
             return false;
         }
-        try {
-            // try if JSON
-            return JSON.parse(addr);
-        } catch (err) {
-            return addr.split(/[,\s;]+/);
-        }
+
+        return addr.split(/[,;]+/).map(part => part.trim());
     })
+    .filter(addr => addr)
     .map(addr => {
-        if (typeof addr === 'string') {
-            return addr.trim();
-        }
-        return false;
+        let [address, name] = addr.split('|').map(part => part.trim());
+        return { address, name };
     })
-    .filter(addr => addr && net.isIP(addr));
+    .filter(addr => addr && addr.address && net.isIP(addr.address));
 
 const DEFAULT_STATES = {
     init: 0,
