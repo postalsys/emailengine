@@ -1,5 +1,7 @@
 'use strict';
 
+const { parentPort } = require('worker_threads');
+
 const fetch = require('node-fetch');
 const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
@@ -9,6 +11,15 @@ const he = require('he');
 
 function getAccountKey(account) {
     return `iad:${account}`;
+}
+
+async function metrics(key, method, ...args) {
+    parentPort.postMessage({
+        cmd: 'metrics',
+        key,
+        method,
+        args
+    });
 }
 
 notifyQueue.process('*', async job => {
@@ -64,11 +75,23 @@ notifyQueue.process('*', async job => {
             body: JSON.stringify(job.data),
             headers
         });
+
         if (!res.ok) {
             throw new Error(`Invalid response: ${res.status} ${res.statusText}`);
         }
+
+        metrics('webhooks', 'inc', {
+            event: job.name,
+            status: 'success'
+        });
     } catch (err) {
         logger.error({ msg: 'Failed posting webhook', webhooks, event: job.name, err });
+
+        metrics('webhooks', 'inc', {
+            event: job.name,
+            status: 'fail'
+        });
+
         throw err;
     }
 });

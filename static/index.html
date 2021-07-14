@@ -67,15 +67,40 @@
                         <div class="tab-content mt-4">
                             <div class="tab-pane active" id="home" role="tabpanel" aria-labelledby="home-tab">
                                 <p>
-                                    IMAP API is a self hosted server application for accessing IMAP accounts over REST API. IMAP API connects to user's IMAP
+                                    IMAP API is a self hosted headless email client for accessing IMAP accounts over REST API. IMAP API connects to user's IMAP
                                     account, translates API requests to IMAP and also sends webhooks for changes like new or deleted emails.
                                 </p>
 
-                                <div class="bd-callout bd-callout-info">
-                                    <p>
-                                        IMAP API stores only the minimal amount of data required to keep mailbox state in sync. Email contents are not sent to
-                                        any external provider and are not stored.
-                                    </p>
+                                <div class="row">
+
+                                    <div class="col-sm-3">
+                                        <div class="bd-callout bd-callout-info text-center">
+                                            <h4 class="stats-counter-events_messageNew" title="New messages found today"></h4>
+                                            <div class="small-text">New messages</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <div class="bd-callout bd-callout-info text-center">
+                                            <h4 class="stats-counter-events_messageDeleted" title="Deleted messages found today"></h4>
+                                            <div class="small-text">Deleted messages</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <div class="bd-callout bd-callout-success text-center">
+                                            <h4 class="stats-counter-webhooks_success" title="Number of webhooks successfully sent today"></h4>
+                                            <div class="small-text">Webhooks sent</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <div class="bd-callout bd-callout-danger text-center">
+                                            <h4 class="stats-counter-webhooks_fail" title="Number of webhooks that failed today"></h4>
+                                            <div class="small-text">Webhooks failed</div>
+                                        </div>
+                                    </div>
+
                                 </div>
 
                                 <div class="table-responsive">
@@ -149,7 +174,7 @@
                             </div>
 
                             <div class="tab-pane" id="docs" role="tabpanel" aria-labelledby="docs-tab">
-                                <div class="bd-callout bd-callout-warning">
+                                <div class="bd-callout bd-callout-warning text-center">
                                     <p>
                                         API documentation for IMAP API is available as <a href="/docs" target="_blank" class="btn btn-success">Swagger docs</a>
                                     </p>

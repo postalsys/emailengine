@@ -24,7 +24,12 @@ function showToast(message, icon) {
 }
 
 function checkStatus() {
-    fetch('/v1/stats')
+    // calculate seconds from the start of current day (in local time)
+    let now = new Date();
+    let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let seconds = Math.max(Math.ceil((now.getTime() - today.getTime()) / 1000), 1);
+
+    fetch(`/v1/stats?seconds=${seconds}`)
         .then(result => result.json())
         .then(result => {
             for (let elm of document.querySelectorAll('.app-version')) {
@@ -44,6 +49,12 @@ function checkStatus() {
                     elm.textContent = (result.connections && result.connections[key]) || 0;
                 }
             });
+
+            for (let key of ['events:messageNew', 'events:messageDeleted', 'webhooks:success', 'webhooks:fail', 'apiCall:success', 'apiCall:fail']) {
+                for (let elm of document.querySelectorAll('.stats-counter-' + key.replace(/:/g, '_'))) {
+                    elm.textContent = (result.counters && result.counters[key]) || 0;
+                }
+            }
 
             setTimeout(checkStatus, 5000);
         })

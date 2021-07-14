@@ -27,6 +27,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 
 const { getDuration, getByteSize } = require('./lib/tools');
+const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 // Most of the config setup is for logs
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
@@ -112,6 +113,18 @@ const metrics = {
         name: 'imap_connections',
         help: 'Current IMAP connection state',
         labelNames: ['status']
+    }),
+
+    webhooks: new promClient.Counter({
+        name: 'webhooks',
+        help: 'Webhooks sent',
+        labelNames: ['status', 'event']
+    }),
+
+    events: new promClient.Counter({
+        name: 'events',
+        help: 'Events fired',
+        labelNames: ['event']
     })
 };
 
@@ -212,11 +225,73 @@ let spawnWorker = type => {
         }
 
         switch (message.cmd) {
-            case 'metrics':
+            case 'metrics': {
+                let statUpdateKey = false;
+
+                switch (message.key) {
+                    // gather for dashboard counter
+                    case 'webhooks': {
+                        let { status } = message.args[0] || {};
+                        statUpdateKey = `${message.key}:${status}`;
+                        break;
+                    }
+
+                    case 'events': {
+                        let { event } = message.args[0] || {};
+                        switch (event) {
+                            case MESSAGE_NEW_NOTIFY:
+                            case MESSAGE_DELETED_NOTIFY:
+                            case CONNECT_ERROR_NOTIFY:
+                                statUpdateKey = `${message.key}:${event}`;
+                                break;
+                        }
+                        break;
+                    }
+
+                    case 'apiCall': {
+                        let { statusCode } = message.args[0] || {};
+                        let success = statusCode >= 200 && statusCode < 300;
+                        statUpdateKey = `${message.key}:${success ? 'success' : 'fail'}`;
+                        break;
+                    }
+                }
+
+                if (statUpdateKey) {
+                    // increment counter in redis
+
+                    let now = new Date();
+
+                    // we keep a separate hash value for each ISO day
+                    let dateStr = `${now
+                        .toISOString()
+                        .substr(0, 10)
+                        .replace(/[^0-9]+/g, '')}`;
+
+                    // hash key for bucket
+                    let timeStr = `${now
+                        .toISOString()
+                        // bucket includes 1 minute
+                        .substr(0, 16)
+                        .replace(/[^0-9]+/g, '')}`;
+
+                    let hkey = `stats:${statUpdateKey}:${dateStr}`;
+
+                    redis
+                        .multi()
+                        .hincrby(hkey, timeStr, 1)
+                        .sadd('stats:keys', statUpdateKey)
+                        // keep alive at most 2 days
+                        .expire(hkey, MAX_DAYS_STATS + 1 * 24 * 3600)
+                        .exec()
+                        .catch(() => false);
+                }
+
                 if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
                     metrics[message.key][message.method](...message.args);
                 }
+
                 return;
+            }
 
             case 'settings':
                 availableIMAPWorkers.forEach(worker => {
@@ -471,7 +546,7 @@ startApplication()
         // start collecting metrics
         setInterval(() => {
             collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
-        }, 5000).unref();
+        }, 1000).unref();
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });

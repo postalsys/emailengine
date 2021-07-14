@@ -21,7 +21,7 @@ const consts = require('../lib/consts');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues } = require('../lib/tools');
 
 const { settingsSchema, addressSchema, settingsQuerySchema, imapSchema, smtpSchema, messageDetailsSchema, messageListSchema } = require('../lib/schemas');
 
@@ -1758,12 +1758,32 @@ const init = async () => {
         method: 'GET',
         path: '/v1/stats',
 
-        async handler() {
-            return await getStats();
+        async handler(request) {
+            return await getStats(request.query.seconds);
         },
         options: {
             description: 'Return server stats',
             tags: ['api', 'stats'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    seconds: Joi.number()
+                        .empty('')
+                        .min(0)
+                        .max(consts.MAX_DAYS_STATS * 24 * 3600)
+                        .default(3600)
+                        .example(3600)
+                        .description('Duration for counters')
+                        .label('CounterSeconds')
+                }).label('ServerStats')
+            },
 
             response: {
                 schema: Joi.object({
@@ -1778,7 +1798,10 @@ const init = async () => {
                         connectError: Joi.number().example(5).description('Connection failed due to technical error'),
                         unset: Joi.number().example(0).description('Accounts without valid IMAP settings'),
                         disconnected: Joi.number().example(1).description('IMAP connection was closed')
-                    }).description('Counts of accounts in different connection states')
+                    })
+                        .description('Counts of accounts in different connection states')
+                        .label('ConnectionsStats'),
+                    counters: Joi.object().label('CounterStats')
                 }).label('SettingsResponse'),
                 failAction: 'log'
             }
@@ -1967,14 +1990,17 @@ async function verifyAccountInfo(accountData) {
     return response;
 }
 
-async function getStats() {
+async function getStats(seconds) {
     const structuredMetrics = await call({ cmd: 'structuredMetrics' });
+
+    let counters = await getCounterValues(redis, seconds);
 
     let stats = Object.assign(
         {
             version: packageData.version,
             license: packageData.license,
-            accounts: await redis.scard('ia:accounts')
+            accounts: await redis.scard('ia:accounts'),
+            counters
         },
         structuredMetrics
     );

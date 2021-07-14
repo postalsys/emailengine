@@ -1,7 +1,7 @@
 /* Bootstrap 4 Callouts pulled from https://v4-alpha.getbootstrap.com/assets/css/docs.min.css */
 
 .bd-callout {
-    padding: 1.25rem;
+    padding: 1.25rem 0.25rem;
     margin-top: 1.25rem;
     margin-bottom: 1.25rem;
     border: 1px solid #eee;
@@ -42,10 +42,22 @@
     color: #f0ad4e;
 }
 
+.bd-callout-success {
+    border-left-color: #155724;
+}
+
+.bd-callout-success h4 {
+    color: #155724;
+}
+
 .bd-callout-danger {
     border-left-color: #d9534f;
 }
 
 .bd-callout-danger h4 {
     color: #d9534f;
+}
+
+.bd-callout .small-text {
+    font-size: 0.8rem;
 }
