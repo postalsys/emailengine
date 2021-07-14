@@ -59,7 +59,7 @@ config.api.port = (process.env.API_PORT && Number(process.env.API_PORT)) || conf
 config.api.host = process.env.API_HOST || config.api.host;
 config.log.level = process.env.LOG_LEVEL || config.log.level;
 
-logger.info({ msg: 'Starting IMAP API', version: packageData.version, config });
+logger.info({ msg: 'Starting IMAP API', version: packageData.version });
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
