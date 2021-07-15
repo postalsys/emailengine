@@ -23,7 +23,17 @@ const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize, getDuration, getCounterValues } = require('../lib/tools');
 
-const { settingsSchema, addressSchema, settingsQuerySchema, imapSchema, smtpSchema, messageDetailsSchema, messageListSchema } = require('../lib/schemas');
+const {
+    settingsSchema,
+    addressSchema,
+    settingsQuerySchema,
+    imapSchema,
+    smtpSchema,
+    messageDetailsSchema,
+    messageListSchema,
+    mailboxesSchema,
+    shortMailboxesSchema
+} = require('../lib/schemas');
 
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
@@ -260,6 +270,8 @@ const init = async () => {
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
 
+                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
@@ -318,6 +330,8 @@ const init = async () => {
 
                 payload: Joi.object({
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+
+                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
@@ -635,25 +649,7 @@ const init = async () => {
 
             response: {
                 schema: Joi.object({
-                    mailboxes: Joi.array().items(
-                        Joi.object({
-                            path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
-                            parentPath: Joi.string().required().example('Kalender').description('Full path to parent mailbox').label('MailboxParentPath'),
-                            name: Joi.string().required().example('Sünnipäevad').description('Maibox name').label('MailboxName'),
-                            listed: Joi.boolean().example(true).description('Was the mailbox found from the output of LIST command').label('MailboxListed'),
-                            subscribed: Joi.boolean()
-                                .example(true)
-                                .description('Was the mailbox found from the output of LSUB command')
-                                .label('MailboxSubscribed'),
-                            specialUse: Joi.string()
-                                .example('\\Sent')
-                                .valid('\\All', '\\Archive', '\\Drafts', '\\Flagged', '\\Junk', '\\Sent', '\\Trash', '\\Inbox')
-                                .description('Special use flag of the mailbox if set')
-                                .label('MailboxSpecialUse'),
-                            messages: Joi.number().example(120).description('Count of messages in mailbox').label('MailboxMessages'),
-                            uidNext: Joi.number().example(121).description('Next expected UID').label('MailboxMUidNext')
-                        }).label('MailboxResponseItem')
-                    )
+                    mailboxes: mailboxesSchema
                 }).label('MailboxesFilterReponse'),
                 failAction: 'log'
             }
@@ -1840,6 +1836,7 @@ const init = async () => {
                 failAction,
 
                 payload: Joi.object({
+                    mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP')
                 }).label('VerifyAccount')
@@ -1867,7 +1864,8 @@ const init = async () => {
                             .example('ERR_SSL_WRONG_VERSION_NUMBER')
                             .description('Error code. Only present if success=false')
                             .label('VerifySmtpCode')
-                    })
+                    }),
+                    mailboxes: shortMailboxesSchema
                 }).label('VerifyAccountReponse'),
                 failAction: 'log'
             }
@@ -1945,22 +1943,44 @@ async function verifyAccountInfo(accountData) {
             let imapClient = new ImapFlow(
                 Object.assign(
                     {
-                        verifyOnly: true
+                        verifyOnly: true,
+                        includeMailboxes: accountData.mailboxes
                     },
                     accountData.imap
                 )
             );
 
-            await new Promise((resolve, reject) => {
+            let mailboxes = await new Promise((resolve, reject) => {
                 imapClient.on('error', err => {
                     reject(err);
                 });
-                imapClient.connect().then(resolve).catch(reject);
+                imapClient
+                    .connect()
+                    .then(() => resolve(imapClient._mailboxList))
+                    .catch(reject);
             });
 
             response.imap = {
                 success: !!imapClient.authenticated
             };
+
+            if (accountData.mailboxes && mailboxes && mailboxes.length) {
+                // format mailbox listing
+                let mailboxList = [];
+                for (let entry of mailboxes) {
+                    let mailbox = {};
+                    Object.keys(entry).forEach(key => {
+                        if (['path', 'specialUse', 'name', 'listed', 'subscribed', 'delimiter'].includes(key)) {
+                            mailbox[key] = entry[key];
+                        }
+                    });
+                    if (mailbox.delimiter && mailbox.path.indexOf(mailbox.delimiter) >= 0) {
+                        mailbox.parentPath = mailbox.path.substr(0, mailbox.path.lastIndexOf(mailbox.delimiter));
+                    }
+                    mailboxList.push(mailbox);
+                }
+                response.mailboxes = mailboxList;
+            }
         } catch (err) {
             response.imap = {
                 success: false,
