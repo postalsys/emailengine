@@ -67,6 +67,35 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 
 ## Usage
 
+### Requirements
+
+-   **Redis** – any version
+-   **Node.js** - v12.16.0 or newer
+
+### Installation
+
+Install dependencies
+
+```
+$ npm install --production
+```
+
+### Run
+
+Run using [default settings](config/default.toml)
+
+```
+$ node server.js
+```
+
+Or use custom Redis connection URL
+
+```
+$ node server.js --dbs.redis="redis://127.0.0.1:6379"
+```
+
+Once application is started open http://127.0.0.1:3000/ for instructions and API documentation.
+
 ### Docker
 
 #### Docker Hub
@@ -97,35 +126,6 @@ $ docker-compose up
 ```
 
 Next open http://127.0.0.1:3000 in your browser.
-
-### Requirements
-
--   **Redis** – any version
--   **Node.js** - v12.16.0 or newer
-
-### Installation
-
-Install dependencies
-
-```
-$ npm install --production
-```
-
-### Run
-
-Run using [default settings](config/default.toml)
-
-```
-$ node server.js
-```
-
-Or use custom Redis connection URL
-
-```
-$ node server.js --dbs.redis="redis://127.0.0.1:6379"
-```
-
-Once application is started open http://127.0.0.1:3000/ for instructions and API documentation.
 
 ## Screenshots
 
@@ -278,6 +278,8 @@ $ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d
 
 Now whenever something happens you get a notification. If this is not enought then you can perform normal operations with the IMAP account as well.
 
+See the entire API reference [here](https://imapapi.com/api.html).
+
 #### List some messages
 
 IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
@@ -371,6 +373,7 @@ curl -XPOST "localhost:3000/v1/account/example/submit" -H "content-type: applica
 
 -   IMAP API uploads sent message to Sent Mail folder (if the folder can be detected automatically)
 -   IMAP API does not upload to Sent Mail folder when the account is Gmail/GSuite as Gmail does this automatically
+-   If account is created with `copy: false` option, then emails are not copied to Sent Mail folder
 
 ## Using OAuth2
 
@@ -424,14 +427,6 @@ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '
 }
 ```
 
-## API
-
-Entire API descripion is available in the application as a swagger page.
-
-## Monitoring
-
-There is a Prometheus output available at `/metrics` URL path of the app.
-
 ## App access
 
 **There is no authentication?**
@@ -443,6 +438,14 @@ By default IMAP API allows connections only from localhost. To change this eithe
 ## Deployment
 
 See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a service and example [Nginx config file](systemd/nginx-proxy.conf) to serve IMAP API requests behind Nginx reverse proxy.
+
+## Monitoring
+
+There is a Prometheus output available at `/metrics` URL path of the app.
+
+## Changelog
+
+Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/imapapi).
 
 ## License
 
