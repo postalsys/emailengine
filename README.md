@@ -131,7 +131,7 @@ Next open http://127.0.0.1:3000 in your browser.
 
 **1. General overview**
 
-![](https://cldup.com/byNCV6brIO.png)
+![](https://cldup.com/s3Vz9pwoIi.png)
 
 **2. Account states**
 
