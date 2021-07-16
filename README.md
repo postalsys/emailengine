@@ -2,6 +2,18 @@
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
+## Quickstart
+
+1. Install Node.js and Redis
+2. Install and run IMAP API
+
+```
+$ npm install -g imapapi
+$ imapapi
+```
+
+3. Open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser
+
 ## Use cases
 
 -   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)

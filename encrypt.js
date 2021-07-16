@@ -22,7 +22,7 @@ async function processSecret(value) {
     let lastErr = false;
     let decrypted = value;
 
-    for (let password of DECRYPT_PASSWRODS) {
+    for (let password of DECRYPT_PASSWRODS.concat(ENCRYPT_PASSWORD || [])) {
         try {
             decrypted = decrypt(value, password);
             if (password === ENCRYPT_PASSWORD) {
