@@ -1,6 +1,6 @@
 {
     "name": "imapapi",
-    "version": "1.7.0",
+    "version": "1.7.1",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -23,7 +23,7 @@
         "@hapi/hapi": "20.1.5",
         "@hapi/inert": "6.0.3",
         "@hapi/vision": "6.1.0",
-        "bull": "3.25.1",
+        "bull": "3.26.0",
         "dotenv": "10.0.0",
         "email-reply-parser": "1.2.6",
         "exponential-backoff": "3.1.0",
