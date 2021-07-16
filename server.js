@@ -29,10 +29,7 @@ const config = require('wild-config');
 const { getDuration, getByteSize } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
-// Most of the config setup is for logs
-const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
-const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+config.service = config.service || {};
 
 config.workers = config.workers || {
     imap: 4
@@ -51,10 +48,12 @@ config.api = config.api || {
     host: '127.0.0.1'
 };
 
+const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+
 config.api.maxSize = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-config.commandTimeout = COMMAND_TIMEOUT;
 config.dbs.redis = process.env.REDIS_URL || config.dbs.redis;
-config.settings = process.env.SETTINGS || config.setting;
 config.workers.imap = Number(process.env.WORKERS_IMAP) || config.workers.imap;
 config.api.port = (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port;
 config.api.host = process.env.API_HOST || config.api.host;

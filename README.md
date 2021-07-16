@@ -155,18 +155,19 @@ Next open http://127.0.0.1:3000 in your browser.
 
 ## Config mapping
 
-| Configuration option | CLI argument                 | ENV value                   | Default                      |
-| -------------------- | ---------------------------- | --------------------------- | ---------------------------- |
-| IMAP Worker count    | `--workers.imap=4`           | `WORKERS_IMAP=4`            | `4`                          |
-| Redis connection URL | `--dbs.redis="url"`          | `REDIS_URL="url"`           | `"redis://127.0.0.1:6379/8"` |
-| Host to bind to      | `--api.host="1.2.3.4"`       | `API_HOST="1.2.3.4"`        | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`            | `API_PORT=port`             | `3000`                       |
-| Max attachment size  | `--api.maxSize=5M`           | `API_MAX_SIZE=5M`           | `5M`                         |
-| Max command duration | `--commandTimeout=10s`       | `COMMAND_TIMEOUT=10s`       | `10s`                        |
-| Log level            | `--log.level="level"`        | `LOG_LEVEL=level`           | `"trace"`                    |
-| Prepared settings    | `--settings='{"JSON"}'`      | `SETTINGS='{"JSON"}'`       | not set                      |
-| Encryption secret    | `--secret='****'`            | `IMAPAPI_SECRET="****"`     | not set                      |
-| Local addresses      | `--localAddresses='ip1,ip2'` | `LOCAL_ADDRESSES="ip1,ip2"` | default interface            |
+| Configuration option | CLI argument                         | ENV value                   | Default                      |
+| -------------------- | ------------------------------------ | --------------------------- | ---------------------------- |
+| IMAP Worker count    | `--workers.imap=4`                   | `WORKERS_IMAP=4`            | `4`                          |
+| Redis connection URL | `--dbs.redis="url"`                  | `REDIS_URL="url"`           | `"redis://127.0.0.1:6379/8"` |
+| Host to bind to      | `--api.host="1.2.3.4"`               | `API_HOST="1.2.3.4"`        | `"127.0.0.1"`                |
+| Port to bind to      | `--api.port=port`                    | `API_PORT=port`             | `3000`                       |
+| Max attachment size  | `--api.maxSize=5M`                   | `API_MAX_SIZE=5M`           | `5M`                         |
+| Max command duration | `--service.commandTimeout=10s`       | `COMMAND_TIMEOUT=10s`       | `10s`                        |
+| Log level            | `--log.level="level"`                | `LOG_LEVEL=level`           | `"trace"`                    |
+| Prepared settings    | `--settings='{"JSON"}'`              | `SETTINGS='{"JSON"}'`       | not set                      |
+| Encryption secret    | `--service.secret="****"`            | `IMAPAPI_SECRET="****"`     | not set                      |
+| Local addresses      | `--service.localAddresses="ip1,ip2"` | `LOCAL_ADDRESSES="ip1,ip2"` | default interface            |
+| API Basic Auth       | `--api.auth="user:pass"`             | `IMAPAPI_AUTH="user:pass"`  | not set                      |
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 
@@ -186,6 +187,12 @@ If settings object fails validation then the application does not start.
 
 By default account passwords are stored as cleartext in Redis. You can set an encryption secret that will be used to encrypt these passwords.
 
+```
+$ imapapi --service.secret="secret_encryption_key"
+```
+
+> **NB!** Once you have selected an encryption key you have to continue using it
+
 #### Local addresses
 
 If your server has multiple IP addresses/interfaces available then you can provide a comma separated list of these IP addresses for IMAP API to bound to when making outbound connections.
@@ -193,7 +200,7 @@ If your server has multiple IP addresses/interfaces available then you can provi
 This is mostly useful if you are making a large amount of connections and might get rate limited by destination server based on your IP address. Using multiple local addresses allows to distribute separate connections between separate IP addresses. An address is selected randomly from the list whenever making a new IMAP connection.
 
 ```
-$ imapapi --localAddresses="192.168.1.176,192.168.1.177,192.168.1.178"
+$ imapapi --service.localAddresses="192.168.1.176,192.168.1.177,192.168.1.178"
 ```
 
 If those interfaces aren't actually available then TCP connections will fail, so check the logs.
@@ -205,16 +212,24 @@ By default when IMAP API is sending an email to SMTP it uses local hostname in t
 To overcome you can set the local hostname to use by appending the hostname to the IP address, separated by pipe symbol
 
 ```
-$ imapapi --localAddresses="ip1|hostname1,ip2|hostname2,ip3|hostname3"
+$ imapapi --service.localAddresses="ip1|hostname1,ip2|hostname2,ip3|hostname3"
 ```
 
 For example when using AWS you can use the private interface IP but set a public hostname.
 
 ```
-$ imapapi --localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
+$ imapapi --service.localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
 ```
 
 So in general the hostname shoud be whatever the public interface IP (this is what the SMTP server sees) resolves to.
+
+#### Authentication
+
+IMAP API supports Basic Auth with a single user. This is a convenience option only, for any kind of production use you should implement your own user management and limit access with a firewall to trusted machines only.
+
+```
+$ imapapi --api.auth="user:password"
+```
 
 ## API usage
 

@@ -3,6 +3,7 @@
 const { parentPort } = require('worker_threads');
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
+const BasicAuth = require('@hapi/basic');
 const Joi = require('joi');
 const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
@@ -21,7 +22,7 @@ const consts = require('../lib/consts');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getAuthSettings } = require('../lib/tools');
 
 const {
     settingsSchema,
@@ -43,9 +44,12 @@ config.api = config.api || {
     host: '127.0.0.1'
 };
 
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+config.service = config.service || {};
+
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.secret;
+const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
+const IMAPAPI_AUTH = getAuthSettings(process.env.IMAPAPI_AUTH || config.api.auth);
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
@@ -174,6 +178,26 @@ const init = async () => {
             }
         }
     };
+
+    const validateBasicAuth = async (request, username, password, h) => {
+        if (!IMAPAPI_AUTH.enabled) {
+            return { credentials: null, isValid: true };
+        }
+
+        if (username.trim() !== IMAPAPI_AUTH.user || password !== IMAPAPI_AUTH.pass) {
+            return { credentials: null, isValid: false };
+        }
+
+        return { isValid: true, credentials: { id: username } };
+    };
+
+    if (IMAPAPI_AUTH.enabled) {
+        // setup basic auth
+        await server.register(BasicAuth);
+
+        server.auth.strategy('simple', 'basic', { validate: validateBasicAuth });
+        server.auth.default('simple');
+    }
 
     await server.register({
         plugin: hapiPino,

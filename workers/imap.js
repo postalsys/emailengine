@@ -13,12 +13,15 @@ const net = require('net');
 
 const { getDuration } = require('../lib/tools');
 
+config.service = config.service || {};
+
 const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
-const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.secret;
+
+const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
 
 const LOCAL_ADDRESSES = []
-    .concat(process.env.LOCAL_ADDRESSES || config.localAddresses || [])
+    .concat(process.env.LOCAL_ADDRESSES || config.service.localAddresses || [])
     .flatMap(addr => {
         if (Array.isArray(addr)) {
             return addr;
