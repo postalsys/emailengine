@@ -193,6 +193,14 @@ $ imapapi --service.secret="secret_encryption_key"
 
 > **NB!** Once you have selected an encryption key you have to continue using it
 
+Secret key only applies to new accounts or account updates. To convert existing accounts into encrypted accounts or change the encryption key you can use the ecryption tool
+
+```
+$ imapapi encrypt --service.secret="new_secret" --decrypt="old-secret"
+```
+
+This command encrypts all account passwords with `"new_secret"`. If the account password was already encrypted then uses `"old_secret"` to decrypt the encrypted values before encrypting these with the new secret.
+
 #### Local addresses
 
 If your server has multiple IP addresses/interfaces available then you can provide a comma separated list of these IP addresses for IMAP API to bound to when making outbound connections.
