@@ -40,6 +40,12 @@ function checkStatus() {
                 elm.textContent = result.license;
             }
 
+            if (!/\bMIT\b/.test(result.license)) {
+                for (let elm of document.querySelectorAll('.no-mit-license')) {
+                    elm.classList.remove('d-none');
+                }
+            }
+
             for (let elm of document.querySelectorAll('.stats-accounts')) {
                 elm.textContent = result.accounts || 0;
             }
