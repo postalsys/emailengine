@@ -95,13 +95,17 @@ async function call(message, transferList) {
     });
 }
 
-async function metrics(key, method, ...args) {
-    parentPort.postMessage({
-        cmd: 'metrics',
-        key,
-        method,
-        args
-    });
+async function metrics(logger, key, method, ...args) {
+    try {
+        parentPort.postMessage({
+            cmd: 'metrics',
+            key,
+            method,
+            args
+        });
+    } catch (err) {
+        logger.error({ msg: 'Failed to post metrics to parent', err });
+    }
 }
 
 async function notify(cmd, data) {
@@ -222,7 +226,7 @@ const init = async () => {
             // only log API calls
             return;
         }
-        metrics('apiCall', 'inc', {
+        metrics(logger, 'apiCall', 'inc', {
             method: request.method,
             route: request.route.path,
             statusCode: request.response && request.response.statusCode

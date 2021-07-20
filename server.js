@@ -59,7 +59,7 @@ config.api.port = (process.env.API_PORT && Number(process.env.API_PORT)) || conf
 config.api.host = process.env.API_HOST || config.api.host;
 config.log.level = process.env.LOG_LEVEL || config.log.level;
 
-logger.info({ msg: 'Starting IMAP API', version: packageData.version });
+logger.info({ msg: 'Starting IMAP API', version: packageData.version, node: process.versions.node });
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
@@ -135,10 +135,48 @@ let assigning = false;
 
 let unassigned = false;
 let assigned = new Map();
+let unassignCounter = new Map();
 let workerAssigned = new WeakMap();
 
 let workers = new Map();
 let availableIMAPWorkers = new Set();
+
+let countUnassignment = async account => {
+    if (!unassignCounter.has(account)) {
+        unassignCounter.set(account, []);
+    }
+    let arr = unassignCounter.get(account);
+    arr.push(Date.now());
+
+    if (arr.length > 10) {
+        arr = arr.slice(-10);
+        unassignCounter.set(account, arr);
+    }
+
+    let delay = 0;
+    if (arr.length === 1) {
+        delay = 0;
+    } else {
+        let lastDelay = arr[arr.length - 1] - arr[arr.length - 2];
+        // if last delay was longer than a minute, then reset
+        if (lastDelay >= 60 * 1000) {
+            delay = 0;
+        } else {
+            delay = Math.min(Math.ceil(lastDelay * 1.5), 60 * 1000);
+        }
+    }
+
+    if (delay) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return true;
+    } else {
+        return false;
+    }
+};
+
+let clearUnassignmentCounter = account => {
+    unassignCounter.delete(account);
+};
 
 let spawnWorker = type => {
     if (closing) {
@@ -166,7 +204,20 @@ let spawnWorker = type => {
         if (workerAssigned.has(worker)) {
             workerAssigned.get(worker).forEach(account => {
                 assigned.delete(account);
-                unassigned.add(account);
+                let shouldReassign = false;
+                countUnassignment(account)
+                    .then(sr => {
+                        shouldReassign = sr;
+                    })
+                    .catch(() => {
+                        shouldReassign = true;
+                    })
+                    .finally(() => {
+                        unassigned.add(account);
+                        if (shouldReassign) {
+                            assignAccounts().catch(err => logger.error(err));
+                        }
+                    });
             });
             workerAssigned.delete(worker);
         }
@@ -424,6 +475,7 @@ async function onCommand(worker, message) {
 
         case 'delete':
             unassigned.delete(message.account); // if set
+            clearUnassignmentCounter(message.account);
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 if (workerAssigned.has(assignedWorker)) {

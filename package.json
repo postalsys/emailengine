@@ -12,13 +12,21 @@
     "keywords": [
         "IMAP"
     ],
-    "author": "Andris Reinman",
+    "author": "Postal Systems OU",
     "license": "AGPL-3.0-or-later",
     "bin": {
         "imapapi": "bin/imapapi.js"
     },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/postalsys/imapapi.git"
+    },
+    "bugs": {
+        "url": "https://github.com/postalsys/imapapi/issues"
+    },
+    "homepage": "https://imapapi.com/",
     "dependencies": {
-        "@hapi/basic": "^6.0.0",
+        "@hapi/basic": "6.0.0",
         "@hapi/boom": "9.1.3",
         "@hapi/hapi": "20.1.5",
         "@hapi/inert": "6.0.3",
@@ -45,7 +53,7 @@
         "wild-config": "1.5.1"
     },
     "devDependencies": {
-        "eslint": "7.30.0",
+        "eslint": "7.31.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",

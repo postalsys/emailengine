@@ -13,13 +13,17 @@ function getAccountKey(account) {
     return `iad:${account}`;
 }
 
-async function metrics(key, method, ...args) {
-    parentPort.postMessage({
-        cmd: 'metrics',
-        key,
-        method,
-        args
-    });
+async function metrics(logger, key, method, ...args) {
+    try {
+        parentPort.postMessage({
+            cmd: 'metrics',
+            key,
+            method,
+            args
+        });
+    } catch (err) {
+        logger.error({ msg: 'Failed to post metrics to parent', err });
+    }
 }
 
 notifyQueue.process('*', async job => {
@@ -80,14 +84,14 @@ notifyQueue.process('*', async job => {
             throw new Error(`Invalid response: ${res.status} ${res.statusText}`);
         }
 
-        metrics('webhooks', 'inc', {
+        metrics(logger, 'webhooks', 'inc', {
             event: job.name,
             status: 'success'
         });
     } catch (err) {
         logger.error({ msg: 'Failed posting webhook', webhooks, event: job.name, err });
 
-        metrics('webhooks', 'inc', {
+        metrics(logger, 'webhooks', 'inc', {
             event: job.name,
             status: 'fail'
         });
