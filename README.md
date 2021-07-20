@@ -84,6 +84,8 @@ Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for W
 -   **Redis** – any version
 -   **Node.js** - v12.16.0 or newer
 
+> **NB!** Try to keep the latency between IMAP API and Redis as low as possible, best if these would run in the same machine or at least in the same DC. IMAP API runs a separate Redis command for each message in a folder when syncing messages, so if the latency is not low then it takes a long time to sync a folder with a lot of messages,
+
 ### Installation
 
 Install dependencies
