@@ -110,37 +110,6 @@ $ node server.js --dbs.redis="redis://127.0.0.1:6379"
 
 Once application is started open http://127.0.0.1:3000/ for instructions and API documentation.
 
-### Docker
-
-#### Docker Hub
-
-Pull IMAP API from Docker Hub
-
-```
-$ docker pull andris9/imapapi
-```
-
-Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
-
-```
-$ docker run -p 3000:3000 --env CMD_ARGS="\
-  --dbs.redis=redis://host.docker.internal:6379/7 \
-" \
-andris9/imapapi
-```
-
-Next open http://127.0.0.1:3000 in your browser.
-
-#### Docker compose
-
-Clone this repo and in the root folder run the following to start both IMAP API and Redis containers.
-
-```
-$ docker-compose up
-```
-
-Next open http://127.0.0.1:3000 in your browser.
-
 ## Screenshots
 
 **1. General overview**
@@ -466,15 +435,44 @@ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d '
 
 ## App access
 
-**There is no authentication?**
-
-That's right. The app itself (both web UI and API endpoints) does not implement any kind of authentication or ACL. Idea being that IMAP API only only handles IMAP access and everything else is left to the user as every system is different.
-
-By default IMAP API allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall to only allow your own app to access it. For web UI the suggestion is to use Nginx or Apache proxy with HTTP Basic Authentication, probably for VPN addresses only.
+By default IMAP API allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall to only allow trusted sources.
 
 ## Deployment
 
+### SystemD
+
 See example [systemd unit file](systemd/imapapi.service) ro run IMAP API as a service and example [Nginx config file](systemd/nginx-proxy.conf) to serve IMAP API requests behind Nginx reverse proxy.
+
+### Docker
+
+#### Docker Hub
+
+Pull IMAP API from Docker Hub
+
+```
+$ docker pull andris9/imapapi
+```
+
+Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
+
+```
+$ docker run -p 3000:3000 --env CMD_ARGS="\
+  --dbs.redis=redis://host.docker.internal:6379/7 \
+" \
+andris9/imapapi
+```
+
+Next open http://127.0.0.1:3000 in your browser.
+
+#### Docker compose
+
+Clone this repo and in the root folder run the following to start both IMAP API and Redis containers.
+
+```
+$ docker-compose up
+```
+
+Next open http://127.0.0.1:3000 in your browser.
 
 ## Monitoring
 
