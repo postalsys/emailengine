@@ -183,7 +183,7 @@ const init = async () => {
         }
     };
 
-    const validateBasicAuth = async (request, username, password, h) => {
+    const validateBasicAuth = async (request, username, password /*, h*/) => {
         if (!IMAPAPI_AUTH.enabled) {
             return { credentials: null, isValid: true };
         }
@@ -570,7 +570,7 @@ const init = async () => {
                 let accountData = await accountObject.loadAccountData();
 
                 // remove secrets
-                for (let type of ['imap', 'smtp']) {
+                for (let type of ['imap', 'smtp', 'oauth2']) {
                     if (accountData[type] && accountData[type].auth) {
                         for (let key of ['pass', 'accessToken']) {
                             if (key in accountData[type].auth) {
@@ -582,7 +582,7 @@ const init = async () => {
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'copy', 'notifyFrom', 'imap', 'smtp']) {
+                for (let key of ['account', 'name', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
@@ -1666,6 +1666,13 @@ const init = async () => {
                     }
 
                     let value = await settings.get(key);
+
+                    if (settings.encryptedKeys.includes(key)) {
+                        // do not reveal secret values
+                        // instead show boolean value true if value is set, or false if it's not
+                        value = value ? true : false;
+                    }
+
                     values[key] = value;
                 }
             }

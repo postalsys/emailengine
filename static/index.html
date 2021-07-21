@@ -19,13 +19,11 @@
     <body class="d-flex flex-column h-100">
         <main role="main" class="flex-shrink-0">
             <div class="container mt-4">
-                <div id="toastContainer" style="position: absolute; top: 50px; right: 50px; min-width: 250px;"></div>
+                <div id="toastContainer" style="position: absolute; top: 50px; right: 50px; min-width: 250px"></div>
 
-                <img src="/static/logo.png" style="display: block; float: left; margin: 10px 10px 0 0;" />
+                <img src="/static/logo.png" style="display: block; float: left; margin: 10px 10px 0 0" />
 
-                <h1>
-                    IMAP API
-                </h1>
+                <h1>IMAP API</h1>
 
                 <div class="row mt-4">
                     <div class="col-12 col-sm-12 col-md-12 col-lg-8">
@@ -72,7 +70,6 @@
                                 </p>
 
                                 <div class="row">
-
                                     <div class="col-sm-3">
                                         <div class="bd-callout bd-callout-info text-center">
                                             <h4 class="stats-counter-events_messageNew" title="New messages found today"></h4>
@@ -100,7 +97,6 @@
                                             <div class="small-text">Webhooks failed</div>
                                         </div>
                                     </div>
-
                                 </div>
 
                                 <div class="table-responsive">
@@ -150,9 +146,7 @@
                                     </table>
                                 </div>
 
-                                <p class="mt-3">
-                                    IMAP API allows you to:
-                                </p>
+                                <p class="mt-3">IMAP API allows you to:</p>
 
                                 <ul>
                                     <li>
@@ -175,11 +169,21 @@
 
                             <div class="tab-pane" id="docs" role="tabpanel" aria-labelledby="docs-tab">
                                 <div class="bd-callout bd-callout-info">
-                                    <p style="margin: 1rem;">
+                                    <p style="margin: 1rem">
                                         <a href="/docs" target="_blank" class="btn btn-primary">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right-square" viewBox="0 0 16 16">
-                                                <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm4.5 5.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z"/>
-                                            </svg> 
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="16"
+                                                height="16"
+                                                fill="currentColor"
+                                                class="bi bi-arrow-right-square"
+                                                viewBox="0 0 16 16"
+                                            >
+                                                <path
+                                                    fill-rule="evenodd"
+                                                    d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm4.5 5.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z"
+                                                />
+                                            </svg>
 
                                             API Reference
                                         </a>
@@ -311,9 +315,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group">
                                             <label for="settingsWebhooks">Webhook URL</label>
                                             <input type="url" class="form-control" id="settingsWebhooks" required />
-                                            <div class="invalid-feedback">
-                                                Enter valid URL for the webhook
-                                            </div>
+                                            <div class="invalid-feedback">Enter valid URL for the webhook</div>
                                             <small class="form-text text-muted"
                                                 ><strong>Required.</strong> IMAP API makes a POST request against this URL for every detected change in user's
                                                 account. This includes new messages, deleted messages and flag changes.</small
@@ -332,9 +334,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group">
                                             <label for="settingsNotifyTextSize">Maximum text size</label>
                                             <input type="number" class="form-control" id="settingsNotifyTextSize" min="0" />
-                                            <div class="invalid-feedback">
-                                                Enter valid number
-                                            </div>
+                                            <div class="invalid-feedback">Enter valid number</div>
                                             <small class="form-text text-muted"
                                                 >To keep webhook size with text values in check you can define maximum text size limit. Longer texts are cropped
                                                 to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has both
@@ -344,23 +344,21 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
 
                                         <div class="form-group">
                                             <label for="settingsWebhookEvents">Events to listen</label>
-                                            <input type="text" class="form-control" id="settingsWebhookEvents"/>
-                                            <div class="invalid-feedback">
-                                                Enter valid events
-                                            </div>
+                                            <input type="text" class="form-control" id="settingsWebhookEvents" />
+                                            <div class="invalid-feedback">Enter valid events</div>
                                             <small class="form-text text-muted"
-                                                >Comma separated list of event names (case sensitive). Use <code>*</code> for all events.<br/> Available events: <em><span id="infoEventTypes"></span></em></small
-                                            >
+                                                >Comma separated list of event names (case sensitive). Use <code>*</code> for all events.<br />
+                                                Available events: <em><span id="infoEventTypes"></span></em
+                                            ></small>
                                         </div>
 
                                         <div class="form-group">
                                             <label for="settingsNotifyHeaders">Headers to include</label>
-                                            <input type="text" class="form-control" id="settingsNotifyHeaders"/>
-                                            <div class="invalid-feedback">
-                                                Enter valid headers
-                                            </div>
+                                            <input type="text" class="form-control" id="settingsNotifyHeaders" />
+                                            <div class="invalid-feedback">Enter valid headers</div>
                                             <small class="form-text text-muted"
-                                                >Comma separated list of header names. Use <code>*</code> for all headers or leave empty to not include headers in the webhook.</em></small
+                                                >Comma separated list of header names. Use <code>*</code> for all headers or leave empty to not include headers
+                                                in the webhook.</small
                                             >
                                         </div>
                                     </div>
@@ -370,9 +368,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group">
                                             <label for="settingsAuthServer">Auth Server URL</label>
                                             <input type="url" class="form-control" id="settingsAuthServer" />
-                                            <div class="invalid-feedback">
-                                                Enter valid URL for Auth Server
-                                            </div>
+                                            <div class="invalid-feedback">Enter valid URL for Auth Server</div>
                                             <small class="form-text text-muted"
                                                 >You can configure accounts to resolve authentication info from an
                                                 <a href="https://github.com/postalsys/imapapi/blob/master/examples/auth-server.js" target="_blank"
@@ -380,8 +376,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 >
                                                 instead of setting fixed credentials. Whenever IMAP API needs to authenticate such account it makes a GET
                                                 request against this URL with 2 additional query arguments - <code>account</code> as the account ID and
-                                                <code>proto</code> which is either "imap" or "smtp". Using auth server is always required for OAuth
-                                                accounts.</small
+                                                <code>proto</code> which is either "imap" or "smtp". Recommended when using OAuth accounts.</small
                                             >
                                         </div>
                                     </div>
@@ -419,12 +414,47 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group">
                                             <label for="settingsLogsMaxLogLines">Maximum lines of logs to store</label>
                                             <input type="number" class="form-control" id="settingsLogsMaxLogLines" min="0" max="1000000" />
-                                            <div class="invalid-feedback">
-                                                Enter valid number between 0 and 1000000
-                                            </div>
+                                            <div class="invalid-feedback">Enter valid number between 0 and 1000000</div>
                                             <small class="form-text text-muted"
                                                 >Logs are stored in Redis which in other words means RAM, so it might not be a good idea to store too much data
                                                 in it</small
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="card card-body mt-3 mb-3">
+                                        <h5 class="card-title">Gmail Oauth2</h5>
+
+                                        <p class="text-muted">
+                                            It is recommended to use a custom
+                                            <a href="https://github.com/postalsys/imapapi#to-use-authentication-server" target="_blank"
+                                                >authentication server</a
+                                            >
+                                            when dealing with Oauth2 accounts. If you are only dealing with some specific Gmail accounts, then you can use the
+                                            built in OAuth2 support by filling the following values.
+                                        </p>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailClientId">Client Id</label>
+                                            <input type="text" class="form-control" id="settingsGmailClientId" />
+                                            <div class="invalid-feedback">Enter valid client id</div>
+                                            <small class="form-text text-muted">Oauth2 client id.</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailClientSecret">Client Secret</label>
+                                            <input type="text" class="form-control" id="settingsGmailClientSecret" />
+                                            <div class="invalid-feedback">Enter valid client id</div>
+                                            <small class="form-text text-muted">Oauth2 client secret.</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailRedirectUrl">Callback URL</label>
+                                            <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
+                                            <div class="invalid-feedback">Enter valid URL for the callback</div>
+                                            <small class="form-text text-muted"
+                                                >Redirect URL to receive the OAuth2 tokens from Google. Must point to IMAP API and end with
+                                                <code>/oauth</code></small
                                             >
                                         </div>
                                     </div>
@@ -445,9 +475,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                     <div class="form-group">
                                         <label for="logsAccount">Account ID</label>
                                         <input type="text" class="form-control" id="logsAccount" required />
-                                        <div class="invalid-feedback">
-                                            Enter valid account ID
-                                        </div>
+                                        <div class="invalid-feedback">Enter valid account ID</div>
                                     </div>
 
                                     <div class="mt-3">
@@ -499,8 +527,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <th class="row-name">Name</th>
                                         <th class="row-state">State</th>
                                         <th class="row-description">Info</th>
-                                        <th class="row-btn">
-                                        </th>
+                                        <th class="row-btn"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="accountsTableBody"></tbody>
@@ -598,17 +625,13 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <div class="col-sm-2">
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="addAccountIMAPSecure" />
-                                                    <label class="form-check-label" for="addAccountIMAPSecure">
-                                                        Use TLS
-                                                    </label>
+                                                    <label class="form-check-label" for="addAccountIMAPSecure"> Use TLS </label>
                                                 </div>
                                             </div>
                                             <div class="col-sm-4">
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="addAccountIMAPUnauthorized" />
-                                                    <label class="form-check-label" for="addAccountIMAPUnauthorized">
-                                                        Allow self signed certificates
-                                                    </label>
+                                                    <label class="form-check-label" for="addAccountIMAPUnauthorized"> Allow self signed certificates </label>
                                                 </div>
                                             </div>
                                         </div>
@@ -657,9 +680,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 <div class="col-sm-2">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" id="addAccountSMTPSecure" />
-                                                        <label class="form-check-label" for="addAccountSMTPSecure">
-                                                            Use TLS
-                                                        </label>
+                                                        <label class="form-check-label" for="addAccountSMTPSecure"> Use TLS </label>
                                                     </div>
                                                 </div>
                                                 <div class="col-sm-4">

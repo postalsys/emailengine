@@ -359,7 +359,11 @@ document.addEventListener('DOMContentLoaded', () => {
                       .split(',')
                       .map(entry => entry.trim())
                       .filter(entry => entry)
-                : undefined
+                : undefined,
+
+            gmailClientId: document.getElementById('settingsGmailClientId').value,
+            gmailClientSecret: document.getElementById('settingsGmailClientSecret').value,
+            gmailRedirectUrl: document.getElementById('settingsGmailRedirectUrl').value
         };
 
         fetch('/v1/settings', {
@@ -383,11 +387,32 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    fetch('/v1/settings?webhooks=true&authServer=true&logs=true&notifyText=true&notifyTextSize=true&notifyHeaders=true&webhookEvents=true&eventTypes=true')
+    let keysToFetch = [
+        'webhooks',
+        'authServer',
+        'logs',
+        'notifyText',
+        'notifyTextSize',
+        'notifyHeaders',
+        'webhookEvents',
+        'eventTypes',
+        'gmailClientId',
+        'gmailClientSecret',
+        'gmailRedirectUrl'
+    ];
+
+    fetch(`/v1/settings?${keysToFetch.map(key => `${key}=true`).join('&')}`)
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
             document.getElementById('settingsAuthServer').value = (result && result.authServer) || '';
+
+            document.getElementById('settingsGmailClientId').value = (result && result.gmailClientId) || '';
+            document.getElementById('settingsGmailClientSecret').value = '';
+            if (result.gmailClientSecret) {
+                document.getElementById('settingsGmailClientSecret').placeholder = '(client secret is set but not disclosed)';
+            }
+            document.getElementById('settingsGmailRedirectUrl').value = (result && result.gmailRedirectUrl) || window.location.origin + '/oauth';
 
             if (settingsNotifyText) {
                 settingsNotifyText.checked = !!(result && result.notifyText);
