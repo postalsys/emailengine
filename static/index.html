@@ -592,56 +592,73 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             SMTP</a
                                         >
                                     </li>
+                                    <li class="nav-item">
+                                        <a
+                                            class="nav-link"
+                                            id="add-account-oauth2-tab"
+                                            data-toggle="tab"
+                                            href="#add-account-oauth2"
+                                            role="tab"
+                                            aria-controls="docs"
+                                            aria-selected="false"
+                                        >
+                                            Oauth2</a
+                                        >
+                                    </li>
                                 </ul>
 
                                 <div class="tab-content mt-4">
                                     <div class="tab-pane active" id="add-account-imap" role="tabpanel" aria-labelledby="add-account-imap-imap">
-                                        <div class="form-group row">
-                                            <label for="addAccountIMAPUser" class="col-sm-2 col-form-label">Username</label>
-                                            <div class="col-sm-10">
-                                                <input type="text" class="form-control" id="addAccountIMAPUser" required />
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group row">
-                                            <label for="addAccountIMAPPass" class="col-sm-2 col-form-label">Password</label>
-                                            <div class="col-sm-10">
-                                                <input type="password" class="form-control" id="addAccountIMAPPass" required />
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group row">
-                                            <label for="addAccountIMAPHost" class="col-sm-2 col-form-label">Hostname</label>
-                                            <div class="col-sm-10">
-                                                <input type="text" class="form-control" id="addAccountIMAPHost" required />
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group row">
-                                            <label for="addAccountIMAPPort" class="col-sm-2 col-form-label">Port</label>
-                                            <div class="col-sm-2">
-                                                <input type="number" class="form-control text-right" id="addAccountIMAPPort" required />
-                                            </div>
-                                            <div class="col-sm-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="addAccountIMAPSecure" />
-                                                    <label class="form-check-label" for="addAccountIMAPSecure"> Use TLS </label>
+                                        <fieldset id="addAccountIMAPSection">
+                                            <div class="form-group row">
+                                                <label for="addAccountIMAPUser" class="col-sm-2 col-form-label">Username</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" id="addAccountIMAPUser" required />
                                                 </div>
                                             </div>
-                                            <div class="col-sm-4">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="addAccountIMAPUnauthorized" />
-                                                    <label class="form-check-label" for="addAccountIMAPUnauthorized"> Allow self signed certificates </label>
+
+                                            <div class="form-group row">
+                                                <label for="addAccountIMAPPass" class="col-sm-2 col-form-label">Password</label>
+                                                <div class="col-sm-10">
+                                                    <input type="password" class="form-control" id="addAccountIMAPPass" required />
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div class="form-group row">
-                                            <label for="addAccountIMAPResyncDelay" class="col-sm-2 col-form-label">Resync delay</label>
-                                            <div class="col-sm-2">
-                                                <input type="number" class="form-control text-right" id="addAccountIMAPResyncDelay" value="900" required />
+                                            <div class="form-group row">
+                                                <label for="addAccountIMAPHost" class="col-sm-2 col-form-label">Hostname</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" id="addAccountIMAPHost" required />
+                                                </div>
                                             </div>
-                                        </div>
+
+                                            <div class="form-group row">
+                                                <label for="addAccountIMAPPort" class="col-sm-2 col-form-label">Port</label>
+                                                <div class="col-sm-2">
+                                                    <input type="number" class="form-control text-right" id="addAccountIMAPPort" required />
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="addAccountIMAPSecure" />
+                                                        <label class="form-check-label" for="addAccountIMAPSecure"> Use TLS </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-4">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="addAccountIMAPUnauthorized" />
+                                                        <label class="form-check-label" for="addAccountIMAPUnauthorized">
+                                                            Allow self signed certificates
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group row">
+                                                <label for="addAccountIMAPResyncDelay" class="col-sm-2 col-form-label">Resync delay</label>
+                                                <div class="col-sm-2">
+                                                    <input type="number" class="form-control text-right" id="addAccountIMAPResyncDelay" value="900" required />
+                                                </div>
+                                            </div>
+                                        </fieldset>
                                     </div>
 
                                     <div class="tab-pane" id="add-account-smtp" role="tabpanel" aria-labelledby="add-account-smtp-tab">
@@ -693,6 +710,22 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                                 </div>
                                             </div>
                                         </fieldset>
+                                    </div>
+
+                                    <div class="tab-pane" id="add-account-oauth2" role="tabpanel" aria-labelledby="add-account-oauth2-tab">
+                                        <div class="form-group form-check">
+                                            <input type="checkbox" class="form-check-input" id="AddAccountOauth2Enable" />
+                                            <label class="form-check-label" for="AddAccountOauth2Enable">Set up Oauth2 account for both IMAP and SMTP</label>
+                                        </div>
+                                        <fieldset id="addAccountOauth2Section" disabled>
+                                            <div class="form-group row">
+                                                <label for="addAccountOauth2User" class="col-sm-2 col-form-label">Username</label>
+                                                <div class="col-sm-10">
+                                                    <input type="text" class="form-control" id="addAccountOauth2User" required />
+                                                </div>
+                                            </div>
+                                        </fieldset>
+                                        <p><strong>NB!</strong> Currently only Gmail/Gsuite Oauth2 accounts are supported.</p>
                                     </div>
                                 </div>
                             </div>

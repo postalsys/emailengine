@@ -117,6 +117,7 @@ class ConnectionHandler {
             accountLogger: await this.getAccountLogger(account),
             localAddresses: LOCAL_ADDRESSES
         });
+        accountObject.logger = accountObject.connection.logger;
 
         let accountData = await accountObject.loadAccountData();
 

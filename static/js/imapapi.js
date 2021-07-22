@@ -237,33 +237,45 @@ function showAddAccount() {
 }
 
 function submitAddAccount() {
+    let isOauthAccount = document.getElementById('AddAccountOauth2Enable').checked;
+
     let account = {
         account: document.getElementById('addAccountFormId').value.trim(),
         name: document.getElementById('addAccountFormName').value.trim(),
-        imap: {
-            auth: {
-                user: document.getElementById('addAccountIMAPUser').value.trim(),
-                pass: document.getElementById('addAccountIMAPPass').value.trim()
-            },
-            host: document.getElementById('addAccountIMAPHost').value.trim(),
-            port: Number(document.getElementById('addAccountIMAPPort').value.trim()),
-            secure: document.getElementById('addAccountIMAPSecure').checked,
-            tls: {
-                rejectUnauthorized: !document.getElementById('addAccountIMAPSecure').checked
-            },
-            resyncDelay: Number(document.getElementById('addAccountIMAPResyncDelay').value.trim())
-        },
-        smtp: document.getElementById('addAccountSMTPEnable').checked
+        imap: !isOauthAccount
             ? {
                   auth: {
-                      user: document.getElementById('addAccountSMTPUser').value.trim(),
-                      pass: document.getElementById('addAccountSMTPPass').value.trim()
+                      user: document.getElementById('addAccountIMAPUser').value.trim(),
+                      pass: document.getElementById('addAccountIMAPPass').value.trim()
                   },
-                  host: document.getElementById('addAccountSMTPHost').value.trim(),
-                  port: Number(document.getElementById('addAccountSMTPPort').value.trim()),
-                  secure: document.getElementById('addAccountSMTPSecure').checked,
+                  host: document.getElementById('addAccountIMAPHost').value.trim(),
+                  port: Number(document.getElementById('addAccountIMAPPort').value.trim()),
+                  secure: document.getElementById('addAccountIMAPSecure').checked,
                   tls: {
-                      rejectUnauthorized: !document.getElementById('addAccountSMTPSecure').checked
+                      rejectUnauthorized: !document.getElementById('addAccountIMAPSecure').checked
+                  },
+                  resyncDelay: Number(document.getElementById('addAccountIMAPResyncDelay').value.trim())
+              }
+            : false,
+        smtp:
+            document.getElementById('addAccountSMTPEnable').checked && !isOauthAccount
+                ? {
+                      auth: {
+                          user: document.getElementById('addAccountSMTPUser').value.trim(),
+                          pass: document.getElementById('addAccountSMTPPass').value.trim()
+                      },
+                      host: document.getElementById('addAccountSMTPHost').value.trim(),
+                      port: Number(document.getElementById('addAccountSMTPPort').value.trim()),
+                      secure: document.getElementById('addAccountSMTPSecure').checked,
+                      tls: {
+                          rejectUnauthorized: !document.getElementById('addAccountSMTPSecure').checked
+                      }
+                  }
+                : false,
+        oauth2: isOauthAccount
+            ? {
+                  auth: {
+                      user: document.getElementById('addAccountOauth2User').value.trim()
                   }
               }
             : false
@@ -280,6 +292,7 @@ function submitAddAccount() {
     })
         .then(result => result.json())
         .then(result => {
+            // reset all fields
             document.getElementById('addAccountFormId').value = '';
             document.getElementById('addAccountFormName').value = '';
             document.getElementById('addAccountIMAPUser').value = '';
@@ -295,10 +308,34 @@ function submitAddAccount() {
             document.getElementById('addAccountSMTPPort').value = '';
             document.getElementById('addAccountSMTPSecure').checked = false;
 
+            document.getElementById('AddAccountOauth2Enable').checked = false;
+
+            document.getElementById('add-account-imap-tab').classList.remove('disabled');
+            document.getElementById('add-account-smtp-tab').classList.remove('disabled');
+
+            // select imap tab by default
+            document.getElementById('add-account-oauth2-tab').classList.remove('active');
+            document.getElementById('add-account-smtp-tab').classList.remove('active');
+            document.getElementById('add-account-imap-tab').classList.add('disabled');
+            document.getElementById('add-account-oauth2').classList.remove('active');
+            document.getElementById('add-account-smtp').classList.remove('active');
+            document.getElementById('add-account-imap').classList.add('disabled');
+
+            document.getElementById('addAccountIMAPSection').disabled = false;
+            document.getElementById('addAccountSMTPSection').disabled = true;
+            document.getElementById('addAccountOauth2Section').disabled = true;
+
             if (result.error) {
                 showToast(`Failed to create an account (${result.message})`, 'alert-triangle');
                 return;
             }
+
+            if (result.redirect) {
+                // Most probably Oauth2 redirect
+                window.location = result.redirect;
+                return;
+            }
+
             showToast('Account created');
         })
         .catch(err => {
@@ -507,6 +544,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     addAccountSMTPEnableElm.addEventListener('click', toggleAddAccountSMTPSection);
+
+    let addAccountOauth2EnableElm = document.getElementById('AddAccountOauth2Enable');
+    let toggleAddAccountOauth2Tabs = () => {
+        if (addAccountOauth2EnableElm.checked) {
+            document.getElementById('add-account-imap-tab').classList.add('disabled');
+            document.getElementById('add-account-smtp-tab').classList.add('disabled');
+
+            // force imap/smtp fieldsets to disabled, otherwise form does not pass validation
+            document.getElementById('addAccountIMAPSection').disabled = true;
+            document.getElementById('addAccountSMTPSection').disabled = true;
+            document.getElementById('addAccountOauth2Section').disabled = false;
+        } else {
+            document.getElementById('add-account-imap-tab').classList.remove('disabled');
+            document.getElementById('add-account-smtp-tab').classList.remove('disabled');
+
+            document.getElementById('addAccountIMAPSection').disabled = false;
+            toggleAddAccountSMTPSection();
+            document.getElementById('addAccountOauth2Section').disabled = true;
+        }
+    };
+    addAccountOauth2EnableElm.addEventListener('click', toggleAddAccountOauth2Tabs);
 
     let addAccountForm = document.getElementById('addAccountForm');
     addAccountForm.addEventListener('submit', e => {
