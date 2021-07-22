@@ -382,6 +382,44 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                     </div>
 
                                     <div class="card card-body mt-3">
+                                        <h5 class="card-title">Oauth2 <span class="text-muted">(Gmail only)</span></h5>
+
+                                        <p class="text-muted">
+                                            It is recommended to use a custom
+                                            <a href="https://github.com/postalsys/imapapi#to-use-authentication-server" target="_blank"
+                                                >authentication server</a
+                                            >
+                                            when dealing with Oauth2 accounts. If you are only dealing with some specific Gmail accounts, then you can use the
+                                            built in OAuth2 support by filling the following values.
+                                        </p>
+
+                                        <p>You OAuth2 project must have the following scope enabled: <strong>&quot;https://mail.google.com/&quot;</strong></p>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailClientId">Client Id</label>
+                                            <input type="text" class="form-control" id="settingsGmailClientId" />
+                                            <div class="invalid-feedback">Enter valid client id</div>
+                                            <small class="form-text text-muted">Oauth2 client id.</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailClientSecret">Client Secret</label>
+                                            <input type="text" class="form-control" id="settingsGmailClientSecret" />
+                                            <div class="invalid-feedback">Enter valid client id</div>
+                                            <small class="form-text text-muted">Oauth2 client secret.</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="settingsGmailRedirectUrl">Callback URL</label>
+                                            <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
+                                            <div class="invalid-feedback">Enter valid URL for the callback</div>
+                                            <small class="form-text text-muted"
+                                                >Redirect URL for OAuth2. Must point to your IMAP API installation and end with <code>/oauth</code></small
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="card card-body mt-3">
                                         <h5 class="card-title">IMAP logs</h5>
 
                                         <p class="text-muted">
@@ -418,43 +456,6 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <small class="form-text text-muted"
                                                 >Logs are stored in Redis which in other words means RAM, so it might not be a good idea to store too much data
                                                 in it</small
-                                            >
-                                        </div>
-                                    </div>
-
-                                    <div class="card card-body mt-3 mb-3">
-                                        <h5 class="card-title">Gmail Oauth2</h5>
-
-                                        <p class="text-muted">
-                                            It is recommended to use a custom
-                                            <a href="https://github.com/postalsys/imapapi#to-use-authentication-server" target="_blank"
-                                                >authentication server</a
-                                            >
-                                            when dealing with Oauth2 accounts. If you are only dealing with some specific Gmail accounts, then you can use the
-                                            built in OAuth2 support by filling the following values.
-                                        </p>
-
-                                        <div class="form-group">
-                                            <label for="settingsGmailClientId">Client Id</label>
-                                            <input type="text" class="form-control" id="settingsGmailClientId" />
-                                            <div class="invalid-feedback">Enter valid client id</div>
-                                            <small class="form-text text-muted">Oauth2 client id.</small>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="settingsGmailClientSecret">Client Secret</label>
-                                            <input type="text" class="form-control" id="settingsGmailClientSecret" />
-                                            <div class="invalid-feedback">Enter valid client id</div>
-                                            <small class="form-text text-muted">Oauth2 client secret.</small>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="settingsGmailRedirectUrl">Callback URL</label>
-                                            <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
-                                            <div class="invalid-feedback">Enter valid URL for the callback</div>
-                                            <small class="form-text text-muted"
-                                                >Redirect URL to receive the OAuth2 tokens from Google. Must point to IMAP API and end with
-                                                <code>/oauth</code></small
                                             >
                                         </div>
                                     </div>
