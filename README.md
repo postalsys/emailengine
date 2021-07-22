@@ -393,6 +393,8 @@ In any case, your OAuth2 application for Gmail must support the following scope:
 
 Gmail requires security auditing if you are using restricted Oauth2 scopes for public accounts but for internal accounts (eg. accounts in your own GSuite organization) and test accounts (up to 100 pre-defined accounts) you do not need any permissions.
 
+Instructions for setting up OAuth2 with IMAP API can be found [here](https://blog.imapapi.com/setting-up-gmail-oauth2-for-imap-api/).
+
 #### To use authentication server:
 
 -   You must set `useAuthServer:true` flag for the account settings and not set `auth` value
