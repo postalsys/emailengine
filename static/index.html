@@ -384,16 +384,13 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                     <div class="card card-body mt-3">
                                         <h5 class="card-title">Oauth2 <span class="text-muted">(Gmail only)</span></h5>
 
-                                        <p class="text-muted">
-                                            It is recommended to use a custom
-                                            <a href="https://github.com/postalsys/imapapi#to-use-authentication-server" target="_blank"
-                                                >authentication server</a
-                                            >
-                                            when dealing with Oauth2 accounts. If you are only dealing with some specific Gmail accounts, then you can use the
-                                            built in OAuth2 support by filling the following values.
+                                        <p>
+                                            <small class="text-muted">
+                                                You OAuth2 project must have the following scope enabled:
+                                                <strong>&quot;https://mail.google.com/&quot;</strong>.<br />
+                                                Setting these values allows you to use the Oauth2 tab in the "Add account" form.
+                                            </small>
                                         </p>
-
-                                        <p>You OAuth2 project must have the following scope enabled: <strong>&quot;https://mail.google.com/&quot;</strong></p>
 
                                         <div class="form-group">
                                             <label for="settingsGmailClientId">Client Id</label>
@@ -422,9 +419,12 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                     <div class="card card-body mt-3">
                                         <h5 class="card-title">IMAP logs</h5>
 
-                                        <p class="text-muted">
-                                            In case there are issues syncing some specific accounts you can turn on IMAP logging. This stores all IMAP traffic
-                                            except user credentials and message content for selected accounts. You can then download these logs for inspection.
+                                        <p>
+                                            <small class="text-muted">
+                                                In case there are issues syncing some specific accounts you can turn on IMAP logging. This stores all IMAP
+                                                traffic except user credentials and message content for selected accounts. You can then download these logs for
+                                                inspection.
+                                            </small>
                                         </p>
 
                                         <div class="form-group form-check">
