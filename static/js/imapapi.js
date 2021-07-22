@@ -316,10 +316,11 @@ function submitAddAccount() {
             // select imap tab by default
             document.getElementById('add-account-oauth2-tab').classList.remove('active');
             document.getElementById('add-account-smtp-tab').classList.remove('active');
-            document.getElementById('add-account-imap-tab').classList.add('disabled');
+            document.getElementById('add-account-imap-tab').classList.add('active');
+
             document.getElementById('add-account-oauth2').classList.remove('active');
             document.getElementById('add-account-smtp').classList.remove('active');
-            document.getElementById('add-account-imap').classList.add('disabled');
+            document.getElementById('add-account-imap').classList.add('active');
 
             document.getElementById('addAccountIMAPSection').disabled = false;
             document.getElementById('addAccountSMTPSection').disabled = true;

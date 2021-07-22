@@ -121,10 +121,8 @@ class ConnectionHandler {
 
         let accountData = await accountObject.loadAccountData();
 
-        if (accountData.state === 'connected') {
-            await redis.hmset(accountObject.connection.getAccountKey(), {
-                state: 'connecting'
-            });
+        if (accountData.state) {
+            await redis.hset(accountObject.connection.getAccountKey(), 'state', accountData.state);
         }
 
         // do not wait before returning as it may take forever

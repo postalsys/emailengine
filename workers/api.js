@@ -697,9 +697,15 @@ const init = async () => {
                 // remove secrets
                 for (let type of ['imap', 'smtp', 'oauth2']) {
                     if (accountData[type] && accountData[type].auth) {
-                        for (let key of ['pass', 'accessToken']) {
+                        for (let key of ['pass', 'accessToken', 'refreshToken']) {
                             if (key in accountData[type].auth) {
                                 accountData[type].auth[key] = '******';
+                            }
+                        }
+                    } else if (accountData[type]) {
+                        for (let key of ['accessToken', 'refreshToken']) {
+                            if (key in accountData[type]) {
+                                accountData[type][key] = '******';
                             }
                         }
                     }

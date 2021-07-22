@@ -122,6 +122,7 @@ async function main() {
             }
 
             let changes = false;
+
             for (let subKey of ['pass', 'accessToken', 'refreshToken']) {
                 if (accountData[key].auth && accountData[key].auth[subKey]) {
                     try {
@@ -132,6 +133,20 @@ async function main() {
                         }
                     } catch (err) {
                         console.error(`Could not process "${key}.auth.${subKey}" for ${account}. Check decryption secrets.`);
+                    }
+                }
+            }
+
+            for (let subKey of ['accessToken', 'refreshToken']) {
+                if (accountData[key] && accountData[key][subKey]) {
+                    try {
+                        let value = await processSecret(accountData[key][subKey]);
+                        if (value !== accountData[key][subKey]) {
+                            accountData[key][subKey] = value;
+                            changes = true;
+                        }
+                    } catch (err) {
+                        console.error(`Could not process "${key}.${subKey}" for ${account}. Check decryption secrets.`);
                     }
                 }
             }
