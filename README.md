@@ -383,9 +383,15 @@ curl -XPOST "localhost:3000/v1/account/example/submit" -H "content-type: applica
 
 ## Using OAuth2
 
-IMAP API does not manage OAuth2 access tokens, you have to provide these yourself. This means that every time IMAP API needs to authenticate an OAuth2 account, it makes a HTTP request to your authentication server. This server is responsible of respoding with a valid access token.
+Recommended approach for OAuth2 would be to manage access tokens outside of IMAP API by running an authentication server. In this case whenever IMAP API needs to authenticate an OAuth2 account, it makes a HTTP request to that authentication server. This server is responsible of respoding with a valid access token for IMAP API to use.
 
 You can find an example authentication server implementation from [examples/auth-server.js](examples/auth-server.js).
+
+Alternatively, for Gmail only, you can use IMAP API as the OAuth2 handler. In this case you would have to provide OAuth2 client id and client secret to IMAP API (see Oauth2 section in the Settings page) and then, when adding new accounts, use the Oauth2 option instead of manually specifying IMAP and SMTP settings.
+
+In any case, your OAuth2 application for Gmail must support the following scope: `"https://mail.google.com/"`.
+
+Gmail requires security auditing if you are using restricted Oauth2 scopes for public accounts but for internal accounts (eg. accounts in your own GSuite organization) and test accounts (up to 100 pre-defined accounts) you do not need any permissions.
 
 #### To use authentication server:
 

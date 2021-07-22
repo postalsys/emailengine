@@ -12,17 +12,18 @@ process.title = 'imapapi-encrypt';
 const { redis } = require('./lib/db');
 const config = require('wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
+const { encryptedKeys } = require('./lib/settings');
 
 config.service = config.service || {};
 
 const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
-const DECRYPT_PASSWRODS = [].concat(config.decrypt || []);
+const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
 async function processSecret(value) {
     let lastErr = false;
     let decrypted = value;
 
-    for (let password of DECRYPT_PASSWRODS.concat(ENCRYPT_PASSWORD || [])) {
+    for (let password of DECRYPT_PASSWORDS) {
         try {
             decrypted = decrypt(value, password);
             if (password === ENCRYPT_PASSWORD) {
@@ -38,6 +39,17 @@ async function processSecret(value) {
     let parsed = parseEncryptedData(decrypted);
     if (parsed.format !== 'cleartext') {
         // was not able to decrypt
+
+        if (ENCRYPT_PASSWORD) {
+            try {
+                decrypted = decrypt(value, ENCRYPT_PASSWORD);
+                // did not throw, so the value is already encrypted with the new password
+                return value;
+            } catch (err) {
+                // ignore
+            }
+        }
+
         throw lastErr || new Error('Could not decrypt encrypted password');
     }
 
@@ -53,7 +65,7 @@ async function processSecret(value) {
 async function main() {
     console.error('IMAP API account encryption tool');
 
-    if (!ENCRYPT_PASSWORD && !DECRYPT_PASSWRODS.length) {
+    if (!ENCRYPT_PASSWORD && !DECRYPT_PASSWORDS.length) {
         console.error('Usage:');
         console.error('  imapapi encrypt --dbs.redis="redis://url" --service.secret="new-pass" --decrypt="old-pass"');
         console.error('Where');
@@ -65,6 +77,24 @@ async function main() {
         return;
     }
 
+    // convert settings
+    for (let key of encryptedKeys) {
+        let value = await redis.hget('settings', key);
+        if (value && typeof value === 'string') {
+            try {
+                let updated = await processSecret(value);
+                if (updated !== value) {
+                    await redis.hset('settings', key, updated);
+                    console.log(`${key}: Updated setting value`);
+                }
+            } catch (err) {
+                console.error(`${key}: Failed to process setting value`);
+                console.error(err);
+            }
+        }
+    }
+
+    let updatedAccounts = 0;
     let accounts = await redis.smembers('ia:accounts');
     for (let account of accounts) {
         let accountData = await redis.hgetall(`iad:${account}`);
@@ -74,7 +104,7 @@ async function main() {
 
         let updates = {};
         let updated = false;
-        for (let key of ['imap', 'smtp']) {
+        for (let key of ['imap', 'smtp', 'oauth2']) {
             if (!accountData[key]) {
                 continue;
             }
@@ -92,7 +122,8 @@ async function main() {
             }
 
             let changes = false;
-            for (let subKey of ['pass', 'accessToken']) {
+
+            for (let subKey of ['pass', 'accessToken', 'refreshToken']) {
                 if (accountData[key].auth && accountData[key].auth[subKey]) {
                     try {
                         let value = await processSecret(accountData[key].auth[subKey]);
@@ -102,6 +133,20 @@ async function main() {
                         }
                     } catch (err) {
                         console.error(`Could not process "${key}.auth.${subKey}" for ${account}. Check decryption secrets.`);
+                    }
+                }
+            }
+
+            for (let subKey of ['accessToken', 'refreshToken']) {
+                if (accountData[key] && accountData[key][subKey]) {
+                    try {
+                        let value = await processSecret(accountData[key][subKey]);
+                        if (value !== accountData[key][subKey]) {
+                            accountData[key][subKey] = value;
+                            changes = true;
+                        }
+                    } catch (err) {
+                        console.error(`Could not process "${key}.${subKey}" for ${account}. Check decryption secrets.`);
                     }
                 }
             }
@@ -119,10 +164,11 @@ async function main() {
             } else {
                 console.log(`${account}: Unexpected response from DB: ${result}`);
             }
-        } else {
-            console.log(`${account}: not changed`);
+            updatedAccounts++;
         }
     }
+
+    console.log(`Updated ${updatedAccounts}/${accounts.length} accounts`);
 }
 
 main()
