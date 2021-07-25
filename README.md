@@ -486,6 +486,10 @@ Next open http://127.0.0.1:3000 in your browser.
 
 There is a Prometheus output available at `/metrics` URL path of the app.
 
+## Security and Data compliance
+
+[Read here](https://blog.imapapi.com/data-compliance/).
+
 ## Changelog
 
 Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/imapapi).
