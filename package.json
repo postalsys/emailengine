@@ -1,6 +1,6 @@
 {
     "name": "imapapi",
-    "version": "1.8.0",
+    "version": "1.8.1",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -37,10 +37,10 @@
         "exponential-backoff": "3.1.0",
         "google-auth-library": "^7.3.0",
         "hapi-pino": "8.3.0",
-        "hapi-swagger": "14.2.1",
+        "hapi-swagger": "14.2.3",
         "he": "1.2.0",
         "html-to-text": "8.0.0",
-        "imapflow": "1.0.60",
+        "imapflow": "1.0.63",
         "ioredis": "4.27.6",
         "joi": "17.4.1",
         "jquery": "3.6.0",
