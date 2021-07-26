@@ -2,10 +2,17 @@
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
+## Use cases
+
+-   Syncing users' emails to your service and sending out emails on behalf of your users
+-   Integrating your app with a specific email account, eg. your support email
+-   Monitor INBOX and Junk folder of some test email account to see where the emails you send out end up in
+-   Lightweight webmail and mobile email apps that do not want to process IMAP and MIME
+
 ## Quickstart
 
 1. Install Node.js and Redis
-2. Install and run IMAP API
+2. Install and run IMAP API:
 
 ```
 $ npm install -g imapapi
@@ -14,14 +21,9 @@ $ imapapi
 
 3. Open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser
 
-## Use cases
-
--   Syncing users' emails into your service and sending out emails on behalf of your users (helpdesk software etc.)
--   Email applications (lightweight webmail and mobile apps etc. that do not want to process IMAP and MIME)
+> **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping IMAP API output to it: `imapapi | pino-pretty`
 
 ## Demo
-
-Here's a screen recording of running and using IMAP API in action.
 
 [![Using IMAP API](https://img.youtube.com/vi/shHZHowVnYw/0.jpg)](https://www.youtube.com/watch?v=shHZHowVnYw)
 
@@ -35,106 +37,27 @@ This video shows how to
 6. Check the webhook listing to see the notification about found messages from the added account (includes limited information)
 7. Using the ID from the webhook fetch all data for the message (decoded addresses, subject, text etc, also original headers as an array)
 
-## Licensing
-
-Public IMAP API is licensed under AGPL. Alternative MIT-licensed version of IMAP API is available for [Postal Systems subscribers](https://postalsys.com/). You can install it as `@postalsys/imapapi` from the Postal Systems private registry.
-
-```
-$ npm install -g @postalsys/imapapi
-$ imapapi
-```
-
-## Let's Go!
-
-Make sure you have latest (at least v12.16.0) [Node.js](https://nodejs.org/api/) installed. Run IMAP API straight from NPM without downloading or installing anything manually:
-
-```
-$ npx imapapi --dbs.redis="redis://127.0.0.1:6379"
-```
-
-or when running using the MIT licensed version from [Postal Systems](https://postalsys.com/)
-
-```
-$ npx -p @postalsys/imapapi imapapi --dbs.redis="redis://127.0.0.1:6379"
-```
-
-Next open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser for Web UI and documentation.
-
-> **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping IMAP API output to it: `imapapi | pino-pretty`
-
-## Documentation
-
--   [API Reference](https://imapapi.com/api.html)
-
 ## Features
 
--   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings. All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
+-   IMAP API allows simple access to IMAP accounts via REST based API. No need to know IMAP or MIME internals, you get a "normal" API with paged message listings.
+-   All text (that is subjects, email addresses, text and html content etc) is utf-8. Attachments are automatically decoded to binary representation.
 -   Whenever something happens on tracked accounts IMAP API posts notification over a webhook. This includes new messages, deleted messages and message flag changes.
--   No data ever leaves your system
 -   Easy email sending. If you specify the message you are responding to or forwarding then IMAP API sets all required headers, updates references message's flags in IMAP and also uploads message to the Sent Mail folder after sending.
--   IMAP API is a rather thin wrapper over IMAP. This means it does not have a storage of its own. It also means that if the IMAP connection is currently not open, you get a gateway error as a result of your API request.
--   IMAP API keeps a single persistent IMAP connection open against every registered user account. To stop syncing you must remove the account from IMAP API. This is different from some webmail implementations where connections are kept open during user session only.
--   Partial text download. You can obviously download the entire rfc822 formatted raw message but it might be easier to use provided paging and message details. This also allows to specifiy maximum size for downloaded text content. Sometimes automated cron scripts etc send emails with 10+MB text so to avoid downloading that stuff IMAP API allows to set max cap size for text.
+-   No data ever leaves your system (read about data and security compliance [here](https://blog.imapapi.com/data-compliance/))
 -   If you are running into IP based rate limiting then IMAP API can make use of multiple local network interfaces to make connections from different IP addresses.
 
-## Usage
-
-### Requirements
+## Requirements
 
 -   **Redis** – any version
 -   **Node.js** - v12.16.0 or newer
 
 > **NB!** Try to keep the latency between IMAP API and Redis as low as possible, best if these would run in the same machine or at least in the same DC. IMAP API runs a separate Redis command for each message in a folder when syncing messages, so if the latency is not low then it takes a long time to sync a folder with a lot of messages,
 
-### Installation
+## Documentation
 
-Install dependencies
-
-```
-$ npm install --production
-```
-
-### Run
-
-Run using [default settings](config/default.toml)
-
-```
-$ node server.js
-```
-
-Or use custom Redis connection URL
-
-```
-$ node server.js --dbs.redis="redis://127.0.0.1:6379"
-```
-
-Once application is started open http://127.0.0.1:3000/ for instructions and API documentation.
-
-## Screenshots
-
-**1. General overview**
-
-![](https://cldup.com/s3Vz9pwoIi.png)
-
-**2. Account states**
-
-![](https://cldup.com/F2G4m3FWUT.png)
-
-**3. Documentation**
-
-![](https://cldup.com/foHXymkVBw.png)
-
-**4. Settings**
-
-![](https://cldup.com/aZj55OpeCl.png)
-
-**5. Download stored logs**
-
-![](https://cldup.com/AqFCHZbVvL.png)
-
-**6. Swagger**
-
-![](https://cldup.com/mK0aS_uVfQ.png)
+-   [API Reference](https://imapapi.com/api.html)
+-   [Blog posts](https://blog.imapapi.com/tag/imap-api/)
+-   For Postman you can import OpenAPI specification [here](https://imapapi.com/swagger.json).
 
 ## Config mapping
 
@@ -176,13 +99,19 @@ $ imapapi --service.secret="secret_encryption_key"
 
 > **NB!** Once you have selected an encryption key you have to continue using it
 
-Secret key only applies to new accounts or account updates. To convert existing accounts into encrypted accounts or change the encryption key you can use the ecryption tool
+Secret key only applies to new accounts or account updates. To convert existing accounts into encrypted accounts or change the encryption key you can use the ecryption tool:
 
 ```
 $ imapapi encrypt --service.secret="new_secret" --decrypt="old-secret"
 ```
 
 This command encrypts all account passwords with `"new_secret"`. If the account password was already encrypted then uses `"old_secret"` to decrypt the encrypted values before encrypting these with the new secret.
+
+To disable encryption entirely run the tool without new encryption key:
+
+```
+$ imapapi encrypt --decrypt="old-secret"
+```
 
 #### Local addresses
 
@@ -222,15 +151,39 @@ IMAP API supports Basic Auth with a single user. This is a convenience option on
 $ imapapi --api.auth="user:password"
 ```
 
-## API usage
+## Screenshots
 
-> **NB!** IMAP API uses a single connection per account against the IMAP server which means that each request must finish before next one can be issued. If you pile up a bunch of requests against the same account in parallel then requests might time out before these can be actually processed.
+**1. General overview**
 
-#### 1. Set up webhook target
+![](https://cldup.com/s3Vz9pwoIi.png)
 
-Open the <em>Settings</em> tab and set an URL for webhooks. Whenever something happens with any of the tracked email accounts you get a notification to this URL.
+**2. Account states**
 
-For example if flags are updated for a message you'd get a notification that looks like this:
+![](https://cldup.com/F2G4m3FWUT.png)
+
+**3. Documentation**
+
+![](https://cldup.com/foHXymkVBw.png)
+
+**4. Settings**
+
+![](https://cldup.com/aZj55OpeCl.png)
+
+**5. Download stored logs**
+
+![](https://cldup.com/AqFCHZbVvL.png)
+
+**6. Swagger**
+
+![](https://cldup.com/mK0aS_uVfQ.png)
+
+## Webhooks
+
+IMAP API sends webhooks to a predefined URL whenever something happens on an account.
+
+Easiest way to set it up would be to use the built in [web interface](http://127.0.0.1:3000). Open the <em>Settings</em> tab and set an URL for webhooks. You can also select specific events to listen for.
+
+For example if flags are updated for a message you'd get a POST notification that looks like this:
 
 ```json
 {
@@ -249,9 +202,13 @@ For example if flags are updated for a message you'd get a notification that loo
 }
 ```
 
-#### 2. Register an email account with IMAP API
+## API usage examples
 
-You need IMAP and SMTP settings and also provide some kind of an identification string value for this account. You can use the same IDs as your main system or generate some unique ones. This value is later needed to identify this account and to perform operations on it.
+> See the entire API Reference [here](https://imapapi.com/api.html)
+
+### Register an email account with IMAP API
+
+When registering a new account you have to provide an unique account ID for it. This could be any text identifer, even an email address.
 
 > **NB!** Trying to create a new account with the same ID updates the existing account.
 
@@ -280,13 +237,9 @@ $ curl -XPOST "localhost:3000/v1/account" -H "content-type: application/json" -d
 }'
 ```
 
-#### 3. That's about it to get started
+> This example uses a Gmail account but in reality it might be difficult to get past Gmail's security restrictions. In this case use [OAuth2](https://blog.imapapi.com/setting-up-gmail-oauth2-for-imap-api/) instead of password authentication.
 
-Now whenever something happens you get a notification. If this is not enought then you can perform normal operations with the IMAP account as well.
-
-See the entire API reference [here](https://imapapi.com/api.html).
-
-#### List some messages
+### List some messages
 
 IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
 
@@ -336,7 +289,7 @@ When fetching next page, add `page` query argument to the URL. Pages are zero in
 $ curl -XGET "localhost:3000/v1/account/example/messages?path=INBOX&page=5"
 ```
 
-#### Send an email
+### Send an email
 
 The following is an example of how to send a reply. In this case you should specify a reference message you are replying to (NB! this message must exist). Use the "id" from message listing as the "reference.message" value.
 
@@ -494,7 +447,7 @@ There is a Prometheus output available at `/metrics` URL path of the app.
 
 Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/imapapi).
 
-## License
+## Licensing
 
 Licensed under GNU Affero General Public License v3.0 or later.
 
