@@ -79,6 +79,12 @@ This video shows how to
 
 If available then IMAP API uses dotenv file from project root to populate environment variables.
 
+#### Redis connection
+
+```
+$ imapapi --dbs.redis="redis://127.0.0.1:6379/8"
+```
+
 #### Prepared settings
 
 If you do not want to update application settings via API calls then you can provide the initial settings via a command line option (`--settings`) or environment variable (`SETTINGS`). The value must be a valid JSON string that could be used against the `/settings` API endpoint. The behavior is identical to calling the same thing via API, so whatever settings are given are stored in the DB.
