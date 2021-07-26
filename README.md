@@ -6,7 +6,7 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 
 -   Syncing users' emails to your service and sending out emails on behalf of your users
 -   Integrating your app with a specific email account, eg. your support email
--   Monitor INBOX and Junk folder of some test email account to see where the emails you send out end up in
+-   [Monitor INBOX and Junk folders](https://blog.imapapi.com/measuging-inbox-spam-placement/) of a test email account to see where the emails you send out end up in
 -   Lightweight webmail and mobile email apps that do not want to process IMAP and MIME
 
 ## Quickstart
