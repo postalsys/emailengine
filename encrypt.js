@@ -7,7 +7,7 @@ try {
     // ignore
 }
 
-process.title = 'imapapi-encrypt';
+process.title = 'emailengine-encrypt';
 
 const { redis } = require('./lib/db');
 const config = require('wild-config');
@@ -16,7 +16,7 @@ const { encryptedKeys } = require('./lib/settings');
 
 config.service = config.service || {};
 
-const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
+const ENCRYPT_PASSWORD = process.env.EENGINE_SECRET || config.service.secret;
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
 async function processSecret(value) {
@@ -63,11 +63,11 @@ async function processSecret(value) {
 }
 
 async function main() {
-    console.error('IMAP API account encryption tool');
+    console.error('EmailEngine account encryption tool');
 
     if (!ENCRYPT_PASSWORD && !DECRYPT_PASSWORDS.length) {
         console.error('Usage:');
-        console.error('  imapapi encrypt --dbs.redis="redis://url" --service.secret="new-pass" --decrypt="old-pass"');
+        console.error('  emailengine encrypt --dbs.redis="redis://url" --service.secret="new-pass" --decrypt="old-pass"');
         console.error('Where');
         console.error(' --dbs.redis is a Redis configuration URL');
         console.error(' --service.secret is the secret value to use for encryption.');

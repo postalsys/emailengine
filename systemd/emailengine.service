@@ -1,4 +1,4 @@
-# Example systemd unit file for IMAP API
+# Example systemd unit file for EmailEngine
 
 # Requires Node.js and Redis
 # Installation instructions for Node.js:
@@ -6,15 +6,15 @@
 # Install Redis on Ubuntu:
 #     https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04
 
-# Copy this file to /etc/systemd/system/imapapi.service
+# Copy this file to /etc/systemd/system/emailengine.service
 
 # Once set up (or service file is modified) run as root:
 #     systemctl daemon-reload
-#     systemctl enable imapapi
-#     systemctl restart imapapi
+#     systemctl enable emailengine
+#     systemctl restart emailengine
 
 [Unit]
-Description=IMAP API
+Description=EmailEngine
 
 # In some platforms redis could be installed as redis-server.service
 # So make sure the service name listed here is valid
@@ -25,36 +25,36 @@ Environment="NODE_ENV=production"
 
 # --- Configuration ---
 
-# Optional. Uncomment to use a system specific configuration file outside of the IMAP API folder.
+# Optional. Uncomment to use a system specific configuration file outside of the EmailEngine folder.
 # Configuration settings from this file are merged with default settings.
-#Environment="NODE_CONFIG_PATH=/etc/imapapi.toml"
+#Environment="NODE_CONFIG_PATH=/etc/emailengine.toml"
 
 # Optional. Uncomment to override configuration values with environment variables
-#Environment="REDIS_URL=redis://127.0.0.1:6379/8"
-#Environment="API_HOST=127.0.0.1"
-#Environment="API_PORT=3000"
-#Environment="LOG_LEVEL=trace"
+#Environment="EENGINE_REDIS=redis://127.0.0.1:6379/8"
+#Environment="EENGINE_HOST=127.0.0.1"
+#Environment="EENGINE_PORT=3000"
+#Environment="EENGINE_LOG_LEVEL=trace"
 
 # --- Application ---
 
-# This is the folder where IMAP API files reside.
+# This is the folder where EmailEngine files reside.
 
 # NB! If you are using `npx` to run the application then you can ignore this section
 # and comment out `WorkingDirectory` as npx manages code files and dependencies itself.
 
-# Normally this folder would include a clean copy from the IMAP API Github repository + `npm install --production`.
+# Normally this folder would include a clean copy from the EmailEngine Github repository + `npm install --production`.
 # To set up:
-#     git clone git://github.com/postalsys/imapapi.git
-#     cd imapapi
+#     git clone git://github.com/postalsys/emailengine.git
+#     cd emailengine
 #     npm install --production
 
-# If IMAP API files are cloned from Github then an easy way to upgrade the application would look like this:
+# If EmailEngine files are cloned from Github then an easy way to upgrade the application would look like this:
 #    git pull origin master
 #    npm install --production
 # And then (as root or a user with sudo privileges):
-#    sudo systemctl restart imapapi
+#    sudo systemctl restart emailengine
 
-WorkingDirectory=/home/deployer/apps/imapapi/
+WorkingDirectory=/home/deployer/apps/emailengine/
 
 # --- Service user ---
 
@@ -73,9 +73,9 @@ ExecStart=/usr/bin/npm start
 
 # Alternatively you can use `npx` instead of `npm`. This way you would not have to
 # manage application files or dependencies manually. For upgrading, just modify
-# application version in the following command and run `systemctl daemon-reload && systemctl restart imapapi`
+# application version in the following command and run `systemctl daemon-reload && systemctl restart emailengine`
 # NB! First start after version change is going to take some time as `npx` has to install all dependencies.
-#ExecStart=/usr/bin/npx imapapi@1.2.14
+#ExecStart=/usr/bin/npx emailengine@1.2.14
 
 Type=simple
 Restart=always
@@ -83,7 +83,7 @@ RestartSec=5
 
 # --- Logging ---
 
-SyslogIdentifier=imapapi
+SyslogIdentifier=emailengine
 
 [Install]
 WantedBy=multi-user.target

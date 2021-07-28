@@ -1,8 +1,8 @@
 version: '3.7'
 services:
-    imapapi:
+    emailengine:
         restart: always
-        image: andris9/imapapi
+        image: andris9/emailengine
         ports:
             - '3000:3000'
         depends_on:
