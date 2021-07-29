@@ -17,7 +17,7 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 2. Install and run EmailEngine:
 
 ```
-$ npm install -g emailengine
+$ npm install -g @andris/emailengine
 $ emailengine
 ```
 

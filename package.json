@@ -1,5 +1,5 @@
 {
-    "name": "emailengine",
+    "name": "@andris/emailengine",
     "version": "1.8.2",
     "description": "Email Sync Engine",
     "main": "server.js",
