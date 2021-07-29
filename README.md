@@ -57,9 +57,9 @@ This video shows how to
 
 ## Documentation
 
--   [API Reference](https://emailengine.app/api.html)
--   [Blog posts](https://docs.emailengine.app/tag/imap-api/)
--   For Postman you can import OpenAPI specification [here](https://emailengine.app/swagger.json).
+-   [API Reference](https://api.emailengine.app/)
+-   [Blog posts](https://docs.emailengine.app/tag/email-engine/)
+-   For Postman you can import OpenAPI specification [here](https://api.emailengine.app/swagger.json).
 
 ## Config mapping
 
@@ -212,7 +212,7 @@ For example if flags are updated for a message you'd get a POST notification tha
 
 ## API usage examples
 
-> See the entire API Reference [here](https://emailengine.app/api.html)
+> See the entire API Reference [here](https://api.emailengine.app/)
 
 ### Register an email account with EmailEngine
 
