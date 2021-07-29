@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "1.8.2",
+    "version": "1.9.0",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -31,13 +31,13 @@
         "@hapi/hapi": "20.1.5",
         "@hapi/inert": "6.0.3",
         "@hapi/vision": "6.1.0",
-        "bull": "3.26.0",
+        "bull": "3.27.0",
         "dotenv": "10.0.0",
         "email-reply-parser": "1.2.6",
         "exponential-backoff": "3.1.0",
         "google-auth-library": "^7.3.0",
         "hapi-pino": "8.3.0",
-        "hapi-swagger": "14.2.3",
+        "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.0.0",
         "imapflow": "1.0.65",
