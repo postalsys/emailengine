@@ -455,7 +455,7 @@ There is a Prometheus output available at `/metrics` URL path of the app.
 
 ## Changelog
 
-Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/emailengine).
+Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/emailengine-app).
 
 ## Licensing
 
