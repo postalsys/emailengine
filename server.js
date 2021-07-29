@@ -7,7 +7,7 @@ try {
     // ignore
 }
 
-process.title = 'imapapi';
+process.title = 'emailengine';
 
 // cache before wild-config
 const argv = process.argv.slice(2);
@@ -48,18 +48,18 @@ config.api = config.api || {
     host: '127.0.0.1'
 };
 
-const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
+const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
-config.api.maxSize = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-config.dbs.redis = process.env.REDIS_URL || config.dbs.redis;
-config.workers.imap = Number(process.env.WORKERS_IMAP) || config.workers.imap;
-config.api.port = (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port;
-config.api.host = process.env.API_HOST || config.api.host;
-config.log.level = process.env.LOG_LEVEL || config.log.level;
+config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
+config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap;
+config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
+config.api.host = process.env.EENGINE_HOST || config.api.host;
+config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
-logger.info({ msg: 'Starting IMAP API', version: packageData.version, node: process.versions.node });
+logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
@@ -67,7 +67,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 };
 
 let preparedSettings = false;
-const preparedSettingsString = process.env.SETTINGS || config.settings;
+const preparedSettingsString = process.env.EENGINE_SETTINGS || config.settings;
 if (preparedSettingsString) {
     // received a configuration block
     try {
@@ -88,8 +88,8 @@ if (preparedSettingsString) {
     }
 }
 
-const WORKERS_IMAP = Number(process.env.WORKERS_IMAP) || config.workers.imap;
-logger.debug({ msg: 'IMAP Worker Count', workersImap: WORKERS_IMAP });
+const EENGINE_WORKERS = Number(process.env.EENGINE_WORKERS) || config.workers.imap;
+logger.debug({ msg: 'IMAP Worker Count', workersImap: EENGINE_WORKERS });
 
 const metrics = {
     threadStarts: new promClient.Counter({
@@ -382,7 +382,7 @@ async function call(worker, message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, message.timeout || COMMAND_TIMEOUT);
+        }, message.timeout || EENGINE_TIMEOUT);
 
         callQueue.set(mid, { resolve, reject, timer });
         worker.postMessage(
@@ -583,7 +583,7 @@ const startApplication = async () => {
     }
 
     // multiple IMAP connection handlers
-    for (let i = 0; i < WORKERS_IMAP; i++) {
+    for (let i = 0; i < EENGINE_WORKERS; i++) {
         spawnWorker('imap');
     }
 

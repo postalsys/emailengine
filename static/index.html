@@ -3,8 +3,8 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="IMAP API Homepage" />
-        <title>IMAP API</title>
+        <meta name="description" content="EmailEngine Homepage" />
+        <title>EmailEngine</title>
 
         <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
         <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
@@ -14,16 +14,16 @@
 
         <link href="/static/bootstrap-4.6.0-dist/css/bootstrap.min.css" rel="stylesheet" />
         <link href="/static/css/callout.css" rel="stylesheet" />
-        <link href="/static/css/imapapi.css" rel="stylesheet" />
+        <link href="/static/css/emailengine.css" rel="stylesheet" />
     </head>
     <body class="d-flex flex-column h-100">
         <main role="main" class="flex-shrink-0">
             <div class="container mt-4">
                 <div id="toastContainer" style="position: absolute; top: 50px; right: 50px; min-width: 250px"></div>
 
-                <img src="/static/logo.png" style="display: block; float: left; margin: 10px 10px 0 0" />
+                <img src="/static/logo.png" style="display: block; float: left; margin: 10px 10px 0 0; max-width: 32px; max-height: 32px" />
 
-                <h1>IMAP API</h1>
+                <h1>EmailEngine</h1>
 
                 <div class="row mt-4">
                     <div class="col-12 col-sm-12 col-md-12 col-lg-8">
@@ -65,8 +65,8 @@
                         <div class="tab-content mt-4">
                             <div class="tab-pane active" id="home" role="tabpanel" aria-labelledby="home-tab">
                                 <p>
-                                    IMAP API is a self hosted headless email client for accessing IMAP accounts over REST API. IMAP API connects to user's IMAP
-                                    account, translates API requests to IMAP and also sends webhooks for changes like new or deleted emails.
+                                    EmailEngine is a self hosted headless email client for accessing IMAP accounts over REST API. EmailEngine connects to user's
+                                    IMAP account, translates API requests to IMAP and also sends webhooks for changes like new or deleted emails.
                                 </p>
 
                                 <div class="row">
@@ -146,22 +146,22 @@
                                     </table>
                                 </div>
 
-                                <p class="mt-3">IMAP API allows you to:</p>
+                                <p class="mt-3">EmailEngine allows you to:</p>
 
                                 <ul>
                                     <li>
                                         List folders and messages in a user's email account
-                                        <span class="text-muted">– IMAP API provides an easy to use paging and sorts newer messages first</span>
+                                        <span class="text-muted">– EmailEngine provides an easy to use paging and sorts newer messages first</span>
                                     </li>
                                     <li>
                                         Track changes in user's email account
-                                        <span class="text-muted">– IMAP API uses webhooks to notify your application</span>
+                                        <span class="text-muted">– EmailEngine uses webhooks to notify your application</span>
                                     </li>
                                     <li>
                                         Send out emails on behalf of the user
                                         <span class="text-muted"
-                                            >– IMAP API sets all required headers and message flags when replying or forwarding a message and also uploads the
-                                            message to the Sent Mail folder</span
+                                            >– EmailEngine sets all required headers and message flags when replying or forwarding a message and also uploads
+                                            the message to the Sent Mail folder</span
                                         >
                                     </li>
                                 </ul>
@@ -220,7 +220,7 @@
 }</pre
                                 >
 
-                                <h5 class="mt-4">2. Register an email account with IMAP API</h5>
+                                <h5 class="mt-4">2. Register an email account with EmailEngine</h5>
                                 <p>
                                     You need IMAP and SMTP settings and also provide some kind of an identification string value for this account. You can use
                                     the same IDs as your main system or generate some unique ones. This value is later needed to identify this account and to
@@ -261,7 +261,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                 <h5 class="mt-4">Bonus! List some messages</h5>
 
                                 <p>
-                                    IMAP API returns paged results, newer messages first. So to get the first page or in other words the newest messages in a
+                                    EmailEngine returns paged results, newer messages first. So to get the first page or in other words the newest messages in a
                                     mailbox folder you can do it like this (notice the "example" id string that we set earlier in the request URL):
                                 </p>
 
@@ -287,7 +287,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
       "to": [
         {
           "name": "",
-          "address": "andris@imapapi.com"
+          "address": "andris@emailengine.app"
         }
       ],
       "messageId": "<0ebdd7b084794911b03986c827128f1b@example.com>",
@@ -314,11 +314,11 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
 
                                         <div class="form-group">
                                             <label for="settingsWebhooks">Webhook URL</label>
-                                            <input type="url" class="form-control" id="settingsWebhooks" required />
+                                            <input type="url" class="form-control" id="settingsWebhooks" />
                                             <div class="invalid-feedback">Enter valid URL for the webhook</div>
                                             <small class="form-text text-muted"
-                                                ><strong>Required.</strong> IMAP API makes a POST request against this URL for every detected change in user's
-                                                account. This includes new messages, deleted messages and flag changes.</small
+                                                >EmailEngine makes a POST request against this URL for every detected change in user's account. This includes
+                                                new messages, deleted messages and flag changes.</small
                                             >
                                         </div>
 
@@ -371,10 +371,10 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <div class="invalid-feedback">Enter valid URL for Auth Server</div>
                                             <small class="form-text text-muted"
                                                 >You can configure accounts to resolve authentication info from an
-                                                <a href="https://github.com/postalsys/imapapi/blob/master/examples/auth-server.js" target="_blank"
+                                                <a href="https://github.com/postalsys/emailengine/blob/master/examples/auth-server.js" target="_blank"
                                                     >authentication server</a
                                                 >
-                                                instead of setting fixed credentials. Whenever IMAP API needs to authenticate such account it makes a GET
+                                                instead of setting fixed credentials. Whenever EmailEngine needs to authenticate such account it makes a GET
                                                 request against this URL with 2 additional query arguments - <code>account</code> as the account ID and
                                                 <code>proto</code> which is either "imap" or "smtp". Recommended when using OAuth accounts.</small
                                             >
@@ -411,7 +411,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                             <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
                                             <div class="invalid-feedback">Enter valid URL for the callback</div>
                                             <small class="form-text text-muted"
-                                                >Redirect URL for OAuth2. Must point to your IMAP API installation and end with <code>/oauth</code></small
+                                                >Redirect URL for OAuth2. Must point to your EmailEngine installation and end with <code>/oauth</code></small
                                             >
                                         </div>
                                     </div>
@@ -430,7 +430,7 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
                                         <div class="form-group form-check">
                                             <input type="checkbox" class="form-check-input" id="settingsLogsAll" />
                                             <label class="form-check-label" for="settingsLogsAll">Store IMAP logs for all accounts</label>
-                                            <small class="form-text text-muted">Not recommended if IMAP API tracks large number of accounts</small>
+                                            <small class="form-text text-muted">Not recommended if EmailEngine tracks large number of accounts</small>
                                         </div>
 
                                         <div class="form-group">
@@ -495,16 +495,16 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
             <div class="container">
                 <div class="row">
                     <div class="col-sm-8">
-                        <a href="https://imapapi.com" target="_blank">IMAP API</a>
+                        <a href="https://emailengine.app" target="_blank">EmailEngine</a>
                         <span class="text-muted app-version"></span> |
                         <span class="text-muted">&copy; 2020-2021</span>
-                        <a class="text-muted" href="mailto:andris@imapapi.com" target="_blank">Andris Reinman</a> |
+                        <a class="text-muted" href="mailto:andris@emailengine.app" target="_blank">Andris Reinman</a> |
                         <span class="text-muted">Licensed under </span><span class="text-muted app-license"></span>
                     </div>
                 </div>
                 <div class="row no-mit-license d-none">
                     <div class="col-sm-8 text-muted">
-                        Postal Systems subscribers can <a href="https://postalsys.com/plans">upgrade IMAP API</a> to use MIT license instead.
+                        Postal Systems subscribers can <a href="https://postalsys.com/plans">upgrade EmailEngine</a> to use MIT license instead.
                     </div>
                 </div>
             </div>
@@ -745,6 +745,6 @@ $ curl -XPOST "<span class="domainName">localhost:3000</span>/v1/account" -H "co
         <script src="/static/js/popper.min.js"></script>
         <script src="/static/bootstrap-4.6.0-dist/js/bootstrap.min.js"></script>
         <script src="/static/js/moment-with-locales-2.24.0.min.js"></script>
-        <script src="/static/js/imapapi.js"></script>
+        <script src="/static/js/emailengine.js"></script>
     </body>
 </html>

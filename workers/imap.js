@@ -15,13 +15,13 @@ const { getDuration } = require('../lib/tools');
 
 config.service = config.service || {};
 
-const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
-const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
+const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const ENCRYPT_PASSWORD = process.env.EENGINE_SECRET || config.service.secret;
 
-const LOCAL_ADDRESSES = []
-    .concat(process.env.LOCAL_ADDRESSES || config.service.localAddresses || [])
+const EENGINE_ADDRESSES = []
+    .concat(process.env.EENGINE_ADDRESSES || config.service.localAddresses || [])
     .flatMap(addr => {
         if (Array.isArray(addr)) {
             return addr;
@@ -115,7 +115,7 @@ class ConnectionHandler {
             redis,
             notifyQueue,
             accountLogger: await this.getAccountLogger(account),
-            localAddresses: LOCAL_ADDRESSES
+            localAddresses: EENGINE_ADDRESSES
         });
         accountObject.logger = accountObject.connection.logger;
 
@@ -502,7 +502,7 @@ class ConnectionHandler {
                 err.statusCode = 504;
                 err.code = 'Timeout';
                 reject(err);
-            }, message.timeout || COMMAND_TIMEOUT);
+            }, message.timeout || EENGINE_TIMEOUT);
 
             this.callQueue.set(mid, { resolve, reject, timer });
             parentPort.postMessage({

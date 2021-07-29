@@ -1,5 +1,5 @@
 {
-    "name": "imapapi",
+    "name": "emailengine-app",
     "version": "1.8.2",
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -15,16 +15,16 @@
     "author": "Postal Systems OU",
     "license": "AGPL-3.0-or-later",
     "bin": {
-        "imapapi": "bin/imapapi.js"
+        "emailengine": "bin/emailengine.js"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/postalsys/imapapi.git"
+        "url": "git+https://github.com/postalsys/emailengine.git"
     },
     "bugs": {
-        "url": "https://github.com/postalsys/imapapi/issues"
+        "url": "https://github.com/postalsys/emailengine/issues"
     },
-    "homepage": "https://imapapi.com/",
+    "homepage": "https://emailengine.app/",
     "dependencies": {
         "@hapi/basic": "6.0.0",
         "@hapi/boom": "9.1.3",

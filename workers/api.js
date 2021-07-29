@@ -39,7 +39,7 @@ const {
     shortMailboxesSchema
 } = require('../lib/schemas');
 
-const DEFAULT_COMMAND_TIMEOUT = 10 * 1000;
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api = config.api || {
@@ -49,10 +49,10 @@ config.api = config.api || {
 
 config.service = config.service || {};
 
-const COMMAND_TIMEOUT = getDuration(process.env.COMMAND_TIMEOUT || config.service.commandTimeout) || DEFAULT_COMMAND_TIMEOUT;
-const MAX_ATTACHMENT_SIZE = getByteSize(process.env.API_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-const ENCRYPT_PASSWORD = process.env.IMAPAPI_SECRET || config.service.secret;
-const IMAPAPI_AUTH = getAuthSettings(process.env.IMAPAPI_AUTH || config.api.auth);
+const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+const ENCRYPT_PASSWORD = process.env.EENGINE_SECRET || config.service.secret;
+const EENGINE_AUTH = getAuthSettings(process.env.EENGINE_AUTH || config.api.auth);
 
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
@@ -83,7 +83,7 @@ async function call(message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
-        }, message.timeout || COMMAND_TIMEOUT);
+        }, message.timeout || EENGINE_TIMEOUT);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -179,8 +179,8 @@ const getOAuth2Client = async () => {
 
 const init = async () => {
     const server = Hapi.server({
-        port: (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port,
-        host: process.env.API_HOST || config.api.host
+        port: (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port,
+        host: process.env.EENGINE_HOST || config.api.host
     });
 
     const swaggerOptions = {
@@ -192,28 +192,28 @@ const init = async () => {
         grouping: 'tags',
 
         info: {
-            title: 'IMAP API',
+            title: 'EmailEngine',
             version: packageData.version,
             contact: {
                 name: 'Andris Reinman',
-                email: 'andris@imapapi.com'
+                email: 'andris@emailengine.app'
             }
         }
     };
 
     const validateBasicAuth = async (request, username, password /*, h*/) => {
-        if (!IMAPAPI_AUTH.enabled) {
+        if (!EENGINE_AUTH.enabled) {
             return { credentials: null, isValid: true };
         }
 
-        if (username.trim() !== IMAPAPI_AUTH.user || password !== IMAPAPI_AUTH.pass) {
+        if (username.trim() !== EENGINE_AUTH.user || password !== EENGINE_AUTH.pass) {
             return { credentials: null, isValid: false };
         }
 
         return { isValid: true, credentials: { id: username } };
     };
 
-    if (IMAPAPI_AUTH.enabled) {
+    if (EENGINE_AUTH.enabled) {
         // setup basic auth
         await server.register(BasicAuth);
 
@@ -1135,7 +1135,7 @@ const init = async () => {
                             .description('Referenced message ID'),
                         action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
                     })
-                        .description('Message reference for a reply or a forward. This is IMAP API specific ID, not Message-ID header value.')
+                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
                     from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
@@ -1696,7 +1696,7 @@ const init = async () => {
             },
 
             description: 'Submit message for delivery',
-            notes: 'Submit message for delivery. If reference message ID is provided then IMAP API adds all headers and flags required for a reply/forward automatically.',
+            notes: 'Submit message for delivery. If reference message ID is provided then EmailEngine adds all headers and flags required for a reply/forward automatically.',
             tags: ['api', 'submit'],
 
             validate: {
@@ -1721,7 +1721,7 @@ const init = async () => {
                             .description('Referenced message ID'),
                         action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
                     })
-                        .description('Message reference for a reply or a forward. This is IMAP API specific ID, not Message-ID header value.')
+                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
                     from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
@@ -1949,8 +1949,8 @@ const init = async () => {
 
             response: {
                 schema: Joi.object({
-                    version: Joi.string().example(packageData.version).description('IMAP API version number'),
-                    license: Joi.string().example(packageData.license).description('IMAP API license'),
+                    version: Joi.string().example(packageData.version).description('EmailEngine version number'),
+                    license: Joi.string().example(packageData.license).description('EmailEngine license'),
                     accounts: Joi.number().example(26).description('Number of registered accounts'),
                     connections: Joi.object({
                         init: Joi.number().example(2).description('Accounts not yet initialized'),
@@ -2198,8 +2198,8 @@ init()
     .then(() => {
         logger.debug({
             msg: 'API server started',
-            port: (process.env.API_PORT && Number(process.env.API_PORT)) || config.api.port,
-            host: process.env.API_HOST || config.api.host,
+            port: (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port,
+            host: process.env.EENGINE_HOST || config.api.host,
             maxSize: MAX_ATTACHMENT_SIZE
         });
     })

@@ -4,7 +4,7 @@
 function showToast(message, icon) {
     let template = `<div class="toast-header">
     <img src="/static/icons/${icon ? icon : 'info'}.svg" class="rounded mr-2">
-    <strong class="mr-auto">IMAP API</strong>
+    <strong class="mr-auto">EmailEngine</strong>
     <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
       <span aria-hidden="true">&times;</span>
     </button>

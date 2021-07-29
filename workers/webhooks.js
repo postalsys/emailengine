@@ -35,7 +35,7 @@ notifyQueue.process('*', async job => {
     }
     let webhooks = await settings.get('webhooks');
     if (!webhooks) {
-        logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
+        // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
         return;
     }
 
@@ -53,7 +53,7 @@ notifyQueue.process('*', async job => {
 
     let headers = {
         'Content-Type': 'application/json',
-        'User-Agent': `${packageData.name}/${packageData.version} (+https://imapapi.com)`
+        'User-Agent': `${packageData.name}/${packageData.version} (+https://emailengine.app)`
     };
 
     let parsed = new URL(webhooks);
@@ -81,7 +81,9 @@ notifyQueue.process('*', async job => {
         });
 
         if (!res.ok) {
-            throw new Error(`Invalid response: ${res.status} ${res.statusText}`);
+            let err = new Error(`Invalid response: ${res.status} ${res.statusText}`);
+            err.status = res.status;
+            throw err;
         }
 
         metrics(logger, 'webhooks', 'inc', {
@@ -89,6 +91,13 @@ notifyQueue.process('*', async job => {
             status: 'success'
         });
     } catch (err) {
+        if (err.status === 410 || err.status === 404) {
+            // disable webhook
+            logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, err });
+            await settings.set('webhooks', '');
+            return;
+        }
+
         logger.error({ msg: 'Failed posting webhook', webhooks, event: job.name, err });
 
         metrics(logger, 'webhooks', 'inc', {

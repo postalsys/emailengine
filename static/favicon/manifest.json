@@ -1,6 +1,6 @@
 {
-    "name": "imapapi",
-    "short_name": "imapapi",
+    "name": "emailengine",
+    "short_name": "emailengine",
     "icons": [
         {
             "src": "/static/favicon/android-chrome-192x192.png",
