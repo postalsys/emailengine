@@ -8,7 +8,25 @@ services:
         depends_on:
             - redis
         environment:
-            CMD_ARGS: --dbs.redis=redis://redis:6379/2
+            # Configuration to EmailEngine can be passed via environment variables
+            # For full list see https://github.com/postalsys/emailengine#config-mapping
+
+            # Settings to write to v1/settings on startup (https://api.emailengine.app/#operation/postV1Settings)
+            # The following value is a YAML block scalar string, so make it sure it is properly indented
+            EENGINE_SETTINGS: >
+                {
+                    "webhooks": "https://webhook.site/f6a00604-7407-4f40-9a8e-ab68a31a3503",
+                    "webhookEvents": [
+                        "messageNew", "messageDeleted"
+                    ]
+                }
+            # Encryption secret
+            EENGINE_SECRET: 'secret'
+            # Database connection URL
+            EENGINE_REDIS: 'redis://redis:6379/2'
+            # Additional command line arguments
+            CMD_ARGS: ''
+
     redis:
         image: redis:alpine
         restart: always
