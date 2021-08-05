@@ -35,7 +35,7 @@
         "dotenv": "10.0.0",
         "email-reply-parser": "1.2.6",
         "exponential-backoff": "3.1.0",
-        "google-auth-library": "7.4.1",
+        "google-auth-library": "7.5.0",
         "hapi-pino": "8.3.0",
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
@@ -52,6 +52,7 @@
         "nodemailer": "6.6.3",
         "pino": "6.13.0",
         "prom-client": "13.1.0",
+        "punycode": "2.1.1",
         "wild-config": "1.5.1"
     },
     "devDependencies": {

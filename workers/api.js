@@ -1370,7 +1370,7 @@ const init = async () => {
                     deleted: Joi.boolean().example(true).description('Present if message was actualy deleted'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
-                        messageId: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
+                        message: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
                     }).description('Present if message was moved to Trash')
                 }).label('MessageDeleteReponse'),
                 failAction: 'log'
