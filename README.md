@@ -350,11 +350,11 @@ Recommended approach for OAuth2 would be to manage access tokens outside of Emai
 
 You can find an example authentication server implementation from [examples/auth-server.js](examples/auth-server.js).
 
-Alternatively, for Gmail only, you can use EmailEngine as the OAuth2 handler. In this case you would have to provide OAuth2 client id and client secret to EmailEngine (see Oauth2 section in the Settings page) and then, when adding new accounts, use the Oauth2 option instead of manually specifying IMAP and SMTP settings.
+Alternatively, for Gmail only, you can use EmailEngine as the OAuth2 handler. In this case you would have to provide OAuth2 client id and client secret to EmailEngine (see OAuth2 section in the Settings page) and then, when adding new accounts, use the OAuth2 option instead of manually specifying IMAP and SMTP settings.
 
 In any case, your OAuth2 application for Gmail must support the following scope: `"https://mail.google.com/"`.
 
-Gmail requires security auditing if you are using restricted Oauth2 scopes for public accounts but for internal accounts (eg. accounts in your own GSuite organization) and test accounts (up to 100 pre-defined accounts) you do not need any permissions.
+Gmail requires security auditing if you are using restricted OAuth2 scopes for public accounts but for internal accounts (eg. accounts in your own GSuite organization) and test accounts (up to 100 pre-defined accounts) you do not need any permissions.
 
 Instructions for setting up OAuth2 with EmailEngine can be found [here](https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/).
 

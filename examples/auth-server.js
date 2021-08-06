@@ -41,7 +41,7 @@ const init = async () => {
                         pass: 'verysecret'
                     };
 
-                // account with id "oauth-user" uses Oauth2 tokens
+                // account with id "oauth-user" uses OAuth2 tokens
                 case 'oauth-user':
                     return {
                         user: USER_ADDRESS,

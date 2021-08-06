@@ -170,7 +170,7 @@ const getOAuth2Client = async () => {
     };
 
     if (!keys.clientId || !keys.clientSecret || !keys.redirectUrl) {
-        let error = Boom.boomify(new Error('Oauth2 credentials not set up'), { statusCode: 400 });
+        let error = Boom.boomify(new Error('OAuth2 credentials not set up'), { statusCode: 400 });
         throw error;
     }
 
@@ -318,14 +318,40 @@ const init = async () => {
                 throw error;
             }
 
-            accountData.oauth2 = Object.assign(accountData.oauth2 || {}, {
-                provider: 'gmail',
-                accessToken: r.tokens.access_token,
-                refreshToken: r.tokens.refresh_token,
-                expires: r.tokens.expiry_date,
-                scope: r.tokens.scope,
-                tokenType: r.tokens.token_type
-            });
+            // retrieve account email address as this is the username for IMAP/SMTP
+            oAuth2Client.setCredentials(r.tokens);
+            let profileRes;
+            try {
+                profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
+            } catch (err) {
+                if (err.response && err.response.data && err.response.data.error) {
+                    let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
+                    throw error;
+                }
+                throw err;
+            }
+
+            if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
+                let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                throw error;
+            }
+
+            accountData.oauth2 = Object.assign(
+                accountData.oauth2 || {},
+                {
+                    provider: 'gmail',
+                    accessToken: r.tokens.access_token,
+                    refreshToken: r.tokens.refresh_token,
+                    expires: new Date(r.tokens.expiry_date),
+                    scope: r.tokens.scope,
+                    tokenType: r.tokens.token_type
+                },
+                {
+                    auth: {
+                        user: profileRes.data.emailAddress
+                    }
+                }
+            );
 
             let accountObject = new Account({ redis, call, secret: ENCRYPT_PASSWORD });
             let result = await accountObject.create(accountData);
@@ -333,7 +359,7 @@ const init = async () => {
             return h.redirect(`/#account:created=${result.account}`);
         },
         options: {
-            description: 'Oauth2 response endpoint',
+            description: 'OAuth2 response endpoint',
 
             validate: {
                 options: {
@@ -344,10 +370,10 @@ const init = async () => {
                 failAction,
 
                 query: Joi.object({
-                    state: Joi.string().max(1024).example('account:add:12345').description('Oauth2 state info'),
-                    code: Joi.string().max(1024).example('67890...').description('Oauth2 setup code'),
-                    scope: Joi.string().max(1024).example('https://mail.google.com/').description('Oauth2 scopes'),
-                    error: Joi.string().max(1024).example('access_denied').description('Oauth2 scopes')
+                    state: Joi.string().max(1024).example('account:add:12345').description('OAuth2 state info'),
+                    code: Joi.string().max(1024).example('67890...').description('OAuth2 setup code'),
+                    scope: Joi.string().max(1024).example('https://mail.google.com/').description('OAuth2 scopes'),
+                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 scopes')
                 }).label('CreateAccount')
             }
         }
@@ -361,13 +387,14 @@ const init = async () => {
             let accountObject = new Account({ redis, call, secret: ENCRYPT_PASSWORD });
 
             try {
-                if (request.payload.oauth2) {
-                    // redirect to Oauth2 consent screen
+                if (request.payload.oauth2 && request.payload.oauth2.authorize) {
+                    // redirect to OAuth2 consent screen
 
                     const oAuth2Client = await getOAuth2Client();
 
                     let nonce = crypto.randomBytes(12).toString('hex');
 
+                    delete request.payload.oauth2.authorize; // do not store this property
                     // store account data
                     await redis
                         .multi()
@@ -378,11 +405,9 @@ const init = async () => {
                     // Generate the url that will be used for the consent dialog.
                     const authorizeUrl = oAuth2Client.generateAuthUrl({
                         access_type: 'offline',
-                        scope: ['https://mail.google.com/', 'https://www.googleapis.com/auth/userinfo.profile'],
+                        scope: ['https://mail.google.com/'],
                         state: `account:add:${nonce}`,
-                        login_hint: request.payload.oauth2.auth.user,
-                        prompt: 'consent',
-                        include_granted_scopes: true
+                        prompt: 'consent'
                     });
 
                     return {
@@ -430,7 +455,7 @@ const init = async () => {
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
 
-                    oauth2: Joi.object(oauth2Schema).allow(false).description('Oauth2 configuration').label('Oauth2')
+                    oauth2: oauth2Schema.allow(false).description('OAuth2 configuration').label('OAuth2')
                 }).label('CreateAccount')
             },
 
@@ -702,7 +727,9 @@ const init = async () => {
                                 accountData[type].auth[key] = '******';
                             }
                         }
-                    } else if (accountData[type]) {
+                    }
+
+                    if (accountData[type]) {
                         for (let key of ['accessToken', 'refreshToken']) {
                             if (key in accountData[type]) {
                                 accountData[type][key] = '******';
