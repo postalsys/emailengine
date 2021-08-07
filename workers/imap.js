@@ -12,13 +12,13 @@ const config = require('wild-config');
 const net = require('net');
 
 const { getDuration } = require('../lib/tools');
+const getSecret = require('../lib/get-secret');
 
 config.service = config.service || {};
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
-const ENCRYPT_PASSWORD = process.env.EENGINE_SECRET || config.service.secret;
 
 const EENGINE_ADDRESSES = []
     .concat(process.env.EENGINE_ADDRESSES || config.service.localAddresses || [])
@@ -106,7 +106,7 @@ class ConnectionHandler {
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
 
-        let accountObject = new Account({ redis, account, secret: ENCRYPT_PASSWORD });
+        let accountObject = new Account({ redis, account, secret: await getSecret() });
 
         this.accounts.set(account, accountObject);
         accountObject.connection = new Connection({

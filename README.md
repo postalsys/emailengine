@@ -123,6 +123,24 @@ To disable encryption entirely run the tool without new encryption key:
 $ emailengine encrypt --decrypt="old-secret"
 ```
 
+#### Encryption secret from Vault
+
+EmailEngine is able to read encryption secret from [Vault](https://www.vaultproject.io/). In this case you have to provide Vault information as environment variables and EmailEngine fetches encryption secret from Vault on startup.
+
+EmailEngine uses AppRole authentication method.
+
+The following environment variables must be set:
+
+-   `VAULT_ADDR` is the URL of the Vault server, for example `"http://127.0.0.1:8200"`
+-   `VAULT_ROLE_ID` is the AppRole role ID, eg `"887e1fdf-0d40-28e9-8d80-fd39b76dfe05"`
+-   `VAULT_SECRET_ID` is the AppRole secret, eg `"fe75beb8-c9cd-33b9-2d03-fcbd982b1f26"`
+-   `VAULT_PATH` is the kv path to read from, eg. `"secret/data/emailengine"`
+-   `VAULT_KEY` is an optional key to fetch from the Vault path, defaults to `"secret"`
+
+Here's an example of `VAULT_PATH=secret/data/emailengine` and `VAULT_KEY=secret` (encryption secret resolves into "saladus2"):
+
+![](https://cldup.com/-Uu3DRyLOu.png)
+
 #### Local addresses
 
 If your server has multiple IP addresses/interfaces available then you can provide a comma separated list of these IP addresses for EmailEngine to bound to when making outbound connections.

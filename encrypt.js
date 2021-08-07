@@ -13,20 +13,18 @@ const { redis } = require('./lib/db');
 const config = require('wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
+const getSecret = require('./lib/get-secret');
 
-config.service = config.service || {};
-
-const ENCRYPT_PASSWORD = process.env.EENGINE_SECRET || config.service.secret;
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
-async function processSecret(value) {
+async function processSecret(value, encryptSecret) {
     let lastErr = false;
     let decrypted = value;
 
     for (let password of DECRYPT_PASSWORDS) {
         try {
             decrypted = decrypt(value, password);
-            if (password === ENCRYPT_PASSWORD) {
+            if (password === encryptSecret) {
                 // nothing was changed
                 return value;
             }
@@ -39,10 +37,9 @@ async function processSecret(value) {
     let parsed = parseEncryptedData(decrypted);
     if (parsed.format !== 'cleartext') {
         // was not able to decrypt
-
-        if (ENCRYPT_PASSWORD) {
+        if (encryptSecret) {
             try {
-                decrypted = decrypt(value, ENCRYPT_PASSWORD);
+                decrypted = decrypt(value, encryptSecret);
                 // did not throw, so the value is already encrypted with the new password
                 return value;
             } catch (err) {
@@ -53,9 +50,9 @@ async function processSecret(value) {
         throw lastErr || new Error('Could not decrypt encrypted password');
     }
 
-    if (ENCRYPT_PASSWORD) {
+    if (encryptSecret) {
         // encrypt
-        return encrypt(decrypted, ENCRYPT_PASSWORD);
+        return encrypt(decrypted, encryptSecret);
     }
 
     // return plaintext
@@ -65,7 +62,9 @@ async function processSecret(value) {
 async function main() {
     console.error('EmailEngine account encryption tool');
 
-    if (!ENCRYPT_PASSWORD && !DECRYPT_PASSWORDS.length) {
+    const encryptSecret = await getSecret();
+
+    if (!encryptSecret && !DECRYPT_PASSWORDS.length) {
         console.error('Usage:');
         console.error('  emailengine encrypt --dbs.redis="redis://url" --service.secret="new-pass" --decrypt="old-pass"');
         console.error('Where');
@@ -82,7 +81,7 @@ async function main() {
         let value = await redis.hget('settings', key);
         if (value && typeof value === 'string') {
             try {
-                let updated = await processSecret(value);
+                let updated = await processSecret(value, encryptSecret);
                 if (updated !== value) {
                     await redis.hset('settings', key, updated);
                     console.log(`${key}: Updated setting value`);
@@ -126,7 +125,7 @@ async function main() {
             for (let subKey of ['pass', 'accessToken', 'refreshToken']) {
                 if (accountData[key].auth && accountData[key].auth[subKey]) {
                     try {
-                        let value = await processSecret(accountData[key].auth[subKey]);
+                        let value = await processSecret(accountData[key].auth[subKey], encryptSecret);
                         if (value !== accountData[key].auth[subKey]) {
                             accountData[key].auth[subKey] = value;
                             changes = true;
@@ -140,7 +139,7 @@ async function main() {
             for (let subKey of ['accessToken', 'refreshToken']) {
                 if (accountData[key] && accountData[key][subKey]) {
                     try {
-                        let value = await processSecret(accountData[key][subKey]);
+                        let value = await processSecret(accountData[key][subKey], encryptSecret);
                         if (value !== accountData[key][subKey]) {
                             accountData[key][subKey] = value;
                             changes = true;
