@@ -25,6 +25,7 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 
 const config = require('wild-config');
+const getSecret = require('./lib/get-secret');
 
 const { getDuration, getByteSize } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
@@ -581,6 +582,9 @@ const startApplication = async () => {
             await settings.set(key, preparedSettings[key]);
         }
     }
+
+    // renew encryiption secret, if needed
+    await getSecret();
 
     // multiple IMAP connection handlers
     for (let i = 0; i < EENGINE_WORKERS; i++) {
