@@ -81,7 +81,7 @@ This video shows how to
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 
-If available then EmailEngine uses dotenv file from project root to populate environment variables.
+If available then EmailEngine uses dotenv file from current working directory to populate environment variables.
 
 #### Redis connection
 
@@ -97,49 +97,27 @@ If you do not want to update application settings via API calls then you can pro
 $ emailengine --settings='{"webhooks": "https://webhook.site/14e88aea-3391-48b2-a4e6-7b617280155d","webhookEvents":["messageNew"]}'
 ```
 
+When using Docker Compose where environment variables are defined in YAML format, you can use the following environment variable for prepared settings:
+
+```yaml
+EENGINE_SETTINGS: >
+    {
+        "webhooks": "https://webhook.site/f6a00604-7407-4f40-9a8e-ab68a31a3503",
+        "webhookEvents": [
+            "messageNew", "messageDeleted"
+        ]
+    }
+```
+
 If settings object fails validation then the application does not start.
 
 #### Encryption secret
 
 By default account passwords are stored as cleartext in Redis. You can set an encryption secret that will be used to encrypt these passwords.
 
-```
-$ emailengine --service.secret="secret_encryption_key"
-```
+See the documentation for encryption [here](https://docs.emailengine.app/enabling-secret-encryption/).
 
-> **NB!** Once you have selected an encryption key you have to continue using it
-
-Secret key only applies to new accounts or account updates. To convert existing accounts into encrypted accounts or change the encryption key you can use the ecryption tool:
-
-```
-$ emailengine encrypt --service.secret="new_secret" --decrypt="old-secret"
-```
-
-This command encrypts all account passwords with `"new_secret"`. If the account password was already encrypted then uses `"old_secret"` to decrypt the encrypted values before encrypting these with the new secret.
-
-To disable encryption entirely run the tool without new encryption key:
-
-```
-$ emailengine encrypt --decrypt="old-secret"
-```
-
-#### Encryption secret from Vault
-
-EmailEngine is able to read encryption secret from [Vault](https://www.vaultproject.io/). In this case you have to provide Vault information as environment variables and EmailEngine fetches encryption secret from Vault on startup. Also do not use the `--service.secret` argument or `EENGINE_SECRET` variable as these would be overriden by the secret from Vault.
-
-EmailEngine uses AppRole authentication method.
-
-The following environment variables must be set:
-
--   `VAULT_ADDR` is the URL of the Vault server, for example `"http://127.0.0.1:8200"`
--   `VAULT_ROLE_ID` is the application's AppRole role ID, eg `"887e1fdf-0d40-28e9-8d80-fd39b76dfe05"`
--   `VAULT_SECRET_ID` is the application's AppRole secret, eg `"fe75beb8-c9cd-33b9-2d03-fcbd982b1f26"`
--   `VAULT_PATH` is the kv path to read from, eg. `"secret/data/emailengine"`
--   `VAULT_KEY` is an optional key to fetch from the Vault path, defaults to `"secret"`
-
-Here's an example of `VAULT_PATH=secret/data/emailengine` and `VAULT_KEY=secret` (encryption secret resolves into "saladus2"):
-
-![](https://cldup.com/-Uu3DRyLOu.png)
+> EmailEngine is also able to use [Vault](https://www.vaultproject.io/) to store the encryption secret. See Vault usage docs [here](https://docs.emailengine.app/enabling-secret-encryption/#using-vault)
 
 #### Local addresses
 
