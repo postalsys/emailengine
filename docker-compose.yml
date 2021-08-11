@@ -23,16 +23,14 @@ services:
                         "messageNew", "messageDeleted"
                     ]
                 }
-            # Port for API and web interface
-            EENGINE_PORT: 3000
+
             # Encryption secret
             EENGINE_SECRET: 'secret'
             # Database connection URL
             EENGINE_REDIS: 'redis://redis:6379/2'
-            # Password for SMTP clients (username is account ID)
+            # Password for SMTP message submission clients (username is account ID)
             EENGINE_SMTP_SECRET: 'passw0rd'
-            # Port for SMTP submission server
-            EENGINE_SMTP_PORT: 2525
+
             # Additional command line arguments
             CMD_ARGS: ''
 
