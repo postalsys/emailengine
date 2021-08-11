@@ -25,6 +25,8 @@ const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_S
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host;
 const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
 
+const ACCOUNT_CACHE = new WeakMap();
+
 let callQueue = new Map();
 let mids = 0;
 
@@ -91,18 +93,22 @@ async function onAuth(auth, session) {
     try {
         accountData = await accountObject.loadAccountData();
     } catch (err) {
-        if (err.output && err.output.statusCode === 404) {
-            // account not found
-            throw err;
+        let respErr = new Error('Failed to authenticate user');
+
+        if (!err.output || err.output.statusCode !== 404) {
+            // only log non-obvious errors
+            logger.error({ msg: 'Failed to load account data', account: auth.username, err });
+            respErr.statusCode = 454;
         }
-        logger.error({ msg: 'Failed to load account data', account: auth.username, err });
-        throw new Error('Failed to authenticate user');
+
+        throw respErr;
     }
+
     if (!accountData) {
         throw new Error('Failed to authenticate user');
     }
 
-    session.accountObject = accountObject;
+    ACCOUNT_CACHE.set(session, accountObject);
     return { user: accountData.account };
 }
 
@@ -143,6 +149,13 @@ async function init() {
                 err.responseCode = 552;
                 return callback(err);
             }
+            let accountObject = ACCOUNT_CACHE.get(session);
+            if (!accountObject) {
+                err = new Error('Faild to get account data');
+                err.responseCode = 451;
+                return callback(err);
+            }
+
             let message = Buffer.concat(chunks, chunklen);
 
             let payload = {
@@ -153,7 +166,7 @@ async function init() {
                 raw: message
             };
 
-            session.accountObject
+            accountObject
                 .submitMessage(payload)
                 .then(res => {
                     metrics(logger, 'events', 'inc', {
