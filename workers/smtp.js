@@ -52,6 +52,19 @@ async function call(message, transferList) {
     });
 }
 
+async function metrics(logger, key, method, ...args) {
+    try {
+        parentPort.postMessage({
+            cmd: 'metrics',
+            key,
+            method,
+            args
+        });
+    } catch (err) {
+        logger.error({ msg: 'Failed to post metrics to parent', err });
+    }
+}
+
 const smtpLogger = {};
 for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
     smtpLogger[level] = (data, message, ...args) => {
@@ -143,10 +156,17 @@ async function init() {
             session.accountObject
                 .submitMessage(payload)
                 .then(res => {
+                    metrics(logger, 'events', 'inc', {
+                        event: 'smtpSubmitSuccess'
+                    });
+
                     logger.info({ msg: 'Message submitted', account: session.user, response: res.response });
                     callback(null, `Remote response: ${res.response}`);
                 })
                 .catch(err => {
+                    metrics(logger, 'events', 'inc', {
+                        event: 'smtpSubmitFail'
+                    });
                     logger.error({ msg: 'Failed to submit message', account: session.user, err });
                     callback(err);
                 });

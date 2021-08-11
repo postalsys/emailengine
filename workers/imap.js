@@ -410,10 +410,6 @@ class ConnectionHandler {
 
     // message that expects a response
     async onCommand(message) {
-        if (message && !['countConnections'].includes(message.cmd)) {
-            logger.info(message);
-        }
-
         switch (message.cmd) {
             case 'assign':
                 return await this.assignConnection(message.account);
