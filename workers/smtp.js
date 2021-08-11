@@ -137,7 +137,7 @@ async function init() {
                     from: session.envelope.mailFrom.address,
                     to: session.envelope.rcptTo.map(entry => entry.address)
                 },
-                raw: message.toString('base64')
+                raw: message
             };
 
             session.accountObject

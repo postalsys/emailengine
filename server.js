@@ -518,7 +518,17 @@ async function onCommand(worker, message) {
             }
 
             let assignedWorker = assigned.get(message.account);
-            return await call(assignedWorker, message, message.port ? [message.port] : []);
+
+            let transferList = [];
+            if (['getRawMessage', 'getAttachment'].includes(message.cmd) && message.port) {
+                transferList.push(message.port);
+            }
+
+            if (message.cmd === 'submitMessage' && Buffer.isBuffer(message.raw)) {
+                transferList.push(message.raw);
+            }
+
+            return await call(assignedWorker, message, transferList);
         }
     }
     return 999;
