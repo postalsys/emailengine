@@ -55,6 +55,9 @@ const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.servic
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 const EENGINE_AUTH = getAuthSettings(process.env.EENGINE_AUTH || config.api.auth);
 
+const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
+const API_HOST = process.env.EENGINE_HOST || config.api.host;
+
 const failAction = async (request, h, err) => {
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
 
@@ -1752,7 +1755,14 @@ const init = async () => {
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
-                    from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
+                    envelope: Joi.object({
+                        from: Joi.string().email().allow('').example('sender@example.com'),
+                        to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
+                    })
+                        .description('Optional SMTP envelope. If not set then derived from message headers.')
+                        .label('SMTPEnvelope'),
+
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
 
                     to: Joi.array()
                         .items(addressSchema)
@@ -1763,6 +1773,15 @@ const init = async () => {
                     cc: Joi.array().items(addressSchema).description('List of addresses').label('CcAddressList'),
 
                     bcc: Joi.array().items(addressSchema).description('List of addresses').label('BccAddressList'),
+
+                    raw: Joi.string()
+                        .base64()
+                        .max(MAX_ATTACHMENT_SIZE)
+                        .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
+                        .description(
+                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                        )
+                        .label('RFC822Raw'),
 
                     subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
 
@@ -1791,7 +1810,12 @@ const init = async () => {
 
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers')
-                }).label('SubmitMessage')
+                })
+                    .oxor('raw', 'html')
+                    .oxor('raw', 'text')
+                    .oxor('raw', 'text')
+                    .oxor('raw', 'attachments')
+                    .label('SubmitMessage')
             },
 
             response: {
@@ -2226,8 +2250,8 @@ init()
     .then(() => {
         logger.debug({
             msg: 'API server started',
-            port: (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port,
-            host: process.env.EENGINE_HOST || config.api.host,
+            port: API_PORT,
+            host: API_HOST,
             maxSize: MAX_ATTACHMENT_SIZE
         });
     })
