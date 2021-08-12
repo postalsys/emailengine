@@ -3,7 +3,7 @@ const { parentPort } = require('worker_threads');
 const { Connection } = require('../lib/connection');
 const { Account } = require('../lib/account');
 const logger = require('../lib/logger');
-const { redis, notifyQueue } = require('../lib/db');
+const { redis, notifyQueue, submitQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
@@ -115,6 +115,7 @@ class ConnectionHandler {
             accountObject,
             redis,
             notifyQueue,
+            submitQueue,
             accountLogger: await this.getAccountLogger(account),
             localAddresses: EENGINE_ADDRESSES
         });

@@ -7,6 +7,7 @@ const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
 const logger = require('../lib/logger');
 const packageData = require('../package.json');
+const { EMAIL_SENT_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 function getAccountKey(account) {
@@ -28,6 +29,7 @@ async function metrics(logger, key, method, ...args) {
 
 notifyQueue.process('*', async job => {
     // validate if we should even process this webhook
+
     let accountExists = await redis.exists(getAccountKey(job.data.account));
     if (!accountExists) {
         logger.debug({ msg: 'Account is not enabled', action: 'webhook', event: job.name, account: job.data.account });
@@ -46,7 +48,7 @@ notifyQueue.process('*', async job => {
     }
 
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
-    if (!job.data.path) {
+    if (!job.data.path && ![EMAIL_SENT_NOTIFY].includes(job.name)) {
         // ignore non-message related events
         return;
     }

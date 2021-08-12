@@ -1809,7 +1809,9 @@ const init = async () => {
                         .label('AttachmentList'),
 
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().description('Custom Headers')
+                    headers: Joi.object().description('Custom Headers'),
+
+                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso()
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -1821,7 +1823,9 @@ const init = async () => {
             response: {
                 schema: Joi.object({
                     response: Joi.string().example('250 2.0.0 OK  1618577221 l6sm992285lfp.13 - gsmtp').description('Response from SMTP server'),
-                    messageId: Joi.string().example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>').description('Message-ID header value')
+                    messageId: Joi.string().example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>').description('Message-ID header value'),
+                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Scheduled send time'),
+                    queueId: Joi.string().example('d41f0423195f271f').description('Queue identifier for scheduled email')
                 }).label('SubmitMessageResponse'),
                 failAction: 'log'
             }

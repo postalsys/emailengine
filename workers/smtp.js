@@ -5,11 +5,12 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
-const { redis } = require('../lib/db');
+const { redis, submitQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
+const msgpack = require('msgpack5')();
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -170,6 +171,24 @@ async function init() {
             accountObject
                 .submitMessage(payload)
                 .then(res => {
+                    if (res.sendAt) {
+                        // queued for later
+                        metrics(logger, 'events', 'inc', {
+                            event: 'smtpSubmitQueued'
+                        });
+
+                        logger.info({
+                            msg: 'Message queued',
+                            account: session.user,
+                            messageId: res.messageId,
+                            sendAt: res.sendAt,
+                            queueId: res.queueId
+                        });
+
+                        return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
+                    }
+
+                    // normal result
                     metrics(logger, 'events', 'inc', {
                         event: 'smtpSubmitSuccess'
                     });
@@ -202,6 +221,37 @@ async function init() {
         });
     });
 }
+
+submitQueue.process('*', async job => {
+    let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
+
+    let queueEntry;
+    try {
+        queueEntry = msgpack.decode(queueEntryBuf);
+    } catch (err) {
+        logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
+        return;
+    }
+
+    if (!queueEntry) {
+        //could be expired?
+        return false;
+    }
+
+    let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
+
+    queueEntry.prepared = true;
+
+    let res = await accountObject.submitMessage(queueEntry);
+
+    try {
+        await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+    } catch (err) {
+        logger.error({ msg: 'Failed to remove delayed queue entry', account: queueEntry.account, queueId: job.data.qId, err });
+    }
+
+    logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, res });
+});
 
 async function onCommand(command) {
     logger.debug({ msg: 'Unhandled command', command });
