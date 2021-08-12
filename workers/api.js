@@ -2249,10 +2249,11 @@ async function getStats(seconds) {
 init()
     .then(() => {
         logger.debug({
-            msg: 'API server started',
+            msg: 'Started API server thread',
             port: API_PORT,
             host: API_HOST,
-            maxSize: MAX_ATTACHMENT_SIZE
+            maxSize: MAX_ATTACHMENT_SIZE,
+            version: packageData.version
         });
     })
     .catch(err => {

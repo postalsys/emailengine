@@ -192,7 +192,8 @@ let spawnWorker = type => {
 
     let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), {
         argv,
-        env: SHARE_ENV
+        env: SHARE_ENV,
+        trackUnmanagedFds: true
     });
     metrics.threadStarts.inc();
 

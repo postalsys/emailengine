@@ -7,6 +7,7 @@ const { redis, notifyQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
+const packageData = require('../package.json');
 
 const config = require('wild-config');
 const net = require('net');
@@ -522,7 +523,7 @@ class ConnectionHandler {
 let connectionHandler = new ConnectionHandler();
 
 async function main() {
-    logger.info({ msg: 'Started worker thread' });
+    logger.info({ msg: 'Started IMAP worker thread', version: packageData.version });
     await connectionHandler.init();
 }
 

@@ -108,3 +108,5 @@ notifyQueue.process('*', async job => {
         throw err;
     }
 });
+
+logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });

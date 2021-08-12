@@ -9,6 +9,7 @@ const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
+const packageData = require('../package.json');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -249,9 +250,10 @@ parentPort.on('message', message => {
 init()
     .then(() => {
         logger.debug({
-            msg: 'SMTP server started',
+            msg: 'Started SMTP server thread',
             port: SMTP_PORT,
-            host: SMTP_HOST
+            host: SMTP_HOST,
+            version: packageData.version
         });
     })
     .catch(err => {
