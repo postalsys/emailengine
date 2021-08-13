@@ -48,7 +48,7 @@ notifyQueue.process('*', async job => {
     }
 
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
-    if (!job.data.path && ![EMAIL_SENT_NOTIFY, EMAIL_BOUNCE_NOTIFY].includes(job.name)) {
+    if (!job.data.path && ![EMAIL_SENT_NOTIFY, EMAIL_BOUNCE_NOTIFY].includes(job.data.event)) {
         // ignore non-message related events
         return;
     }
