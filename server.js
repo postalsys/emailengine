@@ -53,8 +53,6 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
-const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || (config.smtp && config.smtp.secret);
-
 config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
 config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap;
@@ -512,6 +510,7 @@ async function onCommand(worker, message) {
         case 'createMailbox':
         case 'deleteMailbox':
         case 'submitMessage':
+        case 'queueMessage':
         case 'uploadMessage':
         case 'getAttachment': {
             if (!assigned.has(message.account)) {
@@ -525,7 +524,7 @@ async function onCommand(worker, message) {
                 transferList.push(message.port);
             }
 
-            if (message.cmd === 'submitMessage' && Buffer.isBuffer(message.raw)) {
+            if (['submitMessage', 'queueMessage'].includes(message.cmd) && typeof message.raw === 'object') {
                 transferList.push(message.raw);
             }
 
@@ -607,10 +606,7 @@ const startApplication = async () => {
     // single worker for HTTP
     spawnWorker('api');
     spawnWorker('webhooks');
-
-    if (SMTP_SECRET) {
-        spawnWorker('smtp');
-    }
+    spawnWorker('smtp');
 };
 
 startApplication()

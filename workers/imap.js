@@ -267,6 +267,19 @@ class ConnectionHandler {
         return await accountData.connection.submitMessage(message.data);
     }
 
+    async queueMessage(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.queueMessage(message.data);
+    }
+
     async uploadMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -458,6 +471,9 @@ class ConnectionHandler {
             case 'submitMessage':
                 return await this.submitMessage(message);
 
+            case 'queueMessage':
+                return await this.queueMessage(message);
+
             case 'uploadMessage':
                 return await this.uploadMessage(message);
 
@@ -558,7 +574,10 @@ parentPort.on('message', message => {
                 });
             })
             .catch(err => {
-                logger.error(Object.assign(message, { err }));
+                if (message.message && message.message.data && message.message.data.raw) {
+                    message.message.data.raw = message.message.data.raw.length;
+                }
+                logger.error(Object.assign({ msg: 'Command failed' }, message, { err }));
                 parentPort.postMessage({
                     cmd: 'resp',
                     mid: message.mid,

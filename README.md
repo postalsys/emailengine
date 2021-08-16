@@ -65,19 +65,45 @@ This video shows how to
 
 ## Config mapping
 
+#### General settings
+
 | Configuration option | CLI argument                         | ENV value                     | Default                      |
 | -------------------- | ------------------------------------ | ----------------------------- | ---------------------------- |
 | IMAP Worker count    | `--workers.imap=4`                   | `EENGINE_WORKERS=4`           | `4`                          |
 | Redis connection URL | `--dbs.redis="url"`                  | `EENGINE_REDIS="url"`         | `"redis://127.0.0.1:6379/8"` |
-| Host to bind to      | `--api.host="1.2.3.4"`               | `EENGINE_HOST="1.2.3.4"`      | `"127.0.0.1"`                |
-| Port to bind to      | `--api.port=port`                    | `EENGINE_PORT=port`           | `3000`                       |
-| Max attachment size  | `--api.maxSize=5M`                   | `EENGINE_MAX_SIZE=5M`         | `5M`                         |
-| Max command duration | `--service.commandTimeout=10s`       | `EENGINE_TIMEOUT=10s`         | `10s`                        |
-| Log level            | `--log.level="level"`                | `EENGINE_LOG_LEVEL=level`     | `"trace"`                    |
 | Prepared settings    | `--settings='{"JSON"}'`              | `EENGINE_SETTINGS='{"JSON"}'` | not set                      |
 | Encryption secret    | `--service.secret="****"`            | `EENGINE_SECRET="****"`       | not set                      |
 | Local addresses      | `--service.localAddresses="ip1,ip2"` | `EENGINE_ADDRESSES="ip1,ip2"` | default interface            |
-| API Basic Auth       | `--api.auth="user:pass"`             | `EENGINE_AUTH="user:pass"`    | not set                      |
+| Max command duration | `--service.commandTimeout=10s`       | `EENGINE_TIMEOUT=10s`         | `10s`                        |
+| Log level            | `--log.level="level"`                | `EENGINE_LOG_LEVEL=level`     | `"trace"`                    |
+
+#### API server settings
+
+| Configuration option | CLI argument             | ENV value                  | Default       |
+| -------------------- | ------------------------ | -------------------------- | ------------- |
+| Host to bind to      | `--api.host="1.2.3.4"`   | `EENGINE_HOST="1.2.3.4"`   | `"127.0.0.1"` |
+| Port to bind to      | `--api.port=port`        | `EENGINE_PORT=port`        | `3000`        |
+| Max attachment size  | `--api.maxSize=5M`       | `EENGINE_MAX_SIZE=5M`      | `5M`          |
+| API Basic Auth       | `--api.auth="user:pass"` | `EENGINE_AUTH="user:pass"` | not set       |
+
+#### SMTP server settings
+
+> SMTP server is **only enabled if SMTP password is set**.
+
+When authenticating via SMTP use the account Id as the username and SMTP password as the password to send emails using the selected account.
+
+| Configuration option | CLI argument            | ENV value                     | Default       |
+| -------------------- | ----------------------- | ----------------------------- | ------------- |
+| SMTP password        | `--smtp.secret=pass`    | `EENGINE_SMTP_SECRET=pass`    | not set       |
+| Host to bind to      | `--smtp.host="1.2.3.4"` | `EENGINE_SMTP_HOST="1.2.3.4"` | `"127.0.0.1"` |
+| Port to bind to      | `--smtp.port=port`      | `EENGINE_SMTP_PORT=port`      | `2525`        |
+| Behind HAProxy       | `--smtp.proxy=true`     | `EENGINE_SMTP_PROXY=true`     | `false`       |
+
+When sending emails via SMTP you can use the following headers
+
+-   **X-EE-Send-At: timestamp** to schedule sending to a future time. This matches `sendAt` property of the [POST /submit](https://api.emailengine.app/#operation/postV1AccountAccountSubmit) API endpoint.
+
+---
 
 > **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
 

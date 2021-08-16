@@ -5,12 +5,14 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
-const { redis, submitQueue } = require('../lib/db');
+const { redis, submitQueue, notifyQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
+
+const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -23,9 +25,12 @@ const MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
-const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || config.smtp.port;
-const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host;
+
+const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || config.smtp.port || 2525;
+const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
 const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
+const SMTP_PROXY =
+    /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_SMTP_PROXY) || config.smtp.proxy === true || /^\s*(true|y|yes|1)\s*$/i.test(config.smtp.proxy);
 
 const ACCOUNT_CACHE = new WeakMap();
 
@@ -67,6 +72,35 @@ async function metrics(logger, key, method, ...args) {
     } catch (err) {
         logger.error({ msg: 'Failed to post metrics to parent', err });
     }
+}
+
+async function notify(account, event, data) {
+    metrics(logger, 'events', 'inc', {
+        event
+    });
+
+    let payload = {
+        account,
+        date: new Date().toISOString()
+    };
+
+    if (event) {
+        payload.event = event;
+    }
+
+    if (data) {
+        payload.data = data;
+    }
+
+    await notifyQueue.add(event, payload, {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 5,
+        backoff: {
+            type: 'exponential',
+            delay: 2000
+        }
+    });
 }
 
 const smtpLogger = {};
@@ -115,13 +149,18 @@ async function onAuth(auth, session) {
 }
 
 async function init() {
+    if (!SMTP_SECRET) {
+        return;
+    }
+
     let serverOptions = {
         disabledCommands: ['STARTTLS'],
         allowInsecureAuth: true,
         logger: smtpLogger,
         disableReverseLookup: true,
         banner: 'EmailEngine MSA',
-        size: MAX_SIZE
+        size: MAX_SIZE,
+        useProxy: SMTP_PROXY
     };
 
     serverOptions.onAuth = (auth, session, callback) => {
@@ -169,32 +208,22 @@ async function init() {
             };
 
             accountObject
-                .submitMessage(payload)
+                .queueMessage(payload)
                 .then(res => {
-                    if (res.sendAt) {
-                        // queued for later
-                        metrics(logger, 'events', 'inc', {
-                            event: 'smtpSubmitQueued'
-                        });
-
-                        logger.info({
-                            msg: 'Message queued',
-                            account: session.user,
-                            messageId: res.messageId,
-                            sendAt: res.sendAt,
-                            queueId: res.queueId
-                        });
-
-                        return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
-                    }
-
-                    // normal result
+                    // queued for later
                     metrics(logger, 'events', 'inc', {
-                        event: 'smtpSubmitSuccess'
+                        event: 'smtpSubmitQueued'
                     });
 
-                    logger.info({ msg: 'Message submitted', account: session.user, response: res.response });
-                    callback(null, `Remote response: ${res.response}`);
+                    logger.info({
+                        msg: 'Message queued',
+                        account: session.user,
+                        messageId: res.messageId,
+                        sendAt: res.sendAt,
+                        queueId: res.queueId
+                    });
+
+                    return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
                 })
                 .catch(err => {
                     metrics(logger, 'events', 'inc', {
@@ -240,17 +269,38 @@ submitQueue.process('*', async job => {
 
     let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
 
-    queueEntry.prepared = true;
-
     let res = await accountObject.submitMessage(queueEntry);
 
-    try {
-        await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
-    } catch (err) {
-        logger.error({ msg: 'Failed to remove delayed queue entry', account: queueEntry.account, queueId: job.data.qId, err });
-    }
+    logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, messageId: job.data.messageId, res });
+});
 
-    logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, res });
+submitQueue.on('completed', async job => {
+    if (job.data && job.data.account && job.data.qId) {
+        try {
+            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+        } catch (err) {
+            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+        }
+    }
+});
+
+submitQueue.on('failed', async job => {
+    if (job.finishedOn) {
+        // this was final attempt, remove it
+        if (job.data && job.data.account && job.data.qId) {
+            try {
+                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            } catch (err) {
+                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+            }
+            // report as failed
+            await notify(job.data.account, EMAIL_FAILED_NOTIFY, {
+                messageId: job.data.messageId,
+                queueId: job.data.qId,
+                error: job.stacktrace && job.stacktrace[0] && job.stacktrace[0].split('\n').shift()
+            });
+        }
+    }
 });
 
 async function onCommand(command) {
