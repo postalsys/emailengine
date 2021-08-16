@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "1.10.1",
+    "version": "1.11.0",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -35,7 +35,7 @@
         "dotenv": "10.0.0",
         "email-reply-parser": "1.2.6",
         "exponential-backoff": "3.1.0",
-        "google-auth-library": "7.5.0",
+        "google-auth-library": "7.6.1",
         "hapi-pino": "8.3.0",
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
@@ -53,7 +53,7 @@
         "node-vault": "0.9.22",
         "nodemailer": "6.6.3",
         "pino": "6.13.0",
-        "prom-client": "13.1.0",
+        "prom-client": "13.2.0",
         "punycode": "2.1.1",
         "smtp-server": "^3.9.0",
         "uuid": "^8.3.2",
