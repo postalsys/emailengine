@@ -1,7 +1,7 @@
 'use strict';
 
 const { parentPort } = require('worker_threads');
-
+const config = require('wild-config');
 const fetch = require('node-fetch');
 const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
@@ -9,6 +9,12 @@ const logger = require('../lib/logger');
 const packageData = require('../package.json');
 const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
 const he = require('he');
+
+config.queues = config.queues || {
+    notify: 1
+};
+
+const NOTIFY_QC = (process.env.EENGINE_NOTIFY_QC && Number(process.env.EENGINE_NOTIFY_QC)) || config.queues.notify || 1;
 
 function getAccountKey(account) {
     return `iad:${account}`;
@@ -27,7 +33,7 @@ async function metrics(logger, key, method, ...args) {
     }
 }
 
-notifyQueue.process('*', async job => {
+notifyQueue.process('*', NOTIFY_QC, async job => {
     // validate if we should even process this webhook
 
     let accountExists = await redis.exists(getAccountKey(job.data.account));

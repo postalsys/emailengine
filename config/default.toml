@@ -1,6 +1,12 @@
 
 [workers]
 imap = 4
+webhooks = 1
+
+[queues]
+# concurrency values
+submit=1
+notify=1
 
 [service]
 #commandTimeout = "10s" # how much time to wait until IMAP command is deemed as failed

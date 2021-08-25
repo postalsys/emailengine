@@ -33,7 +33,8 @@ const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERRO
 config.service = config.service || {};
 
 config.workers = config.workers || {
-    imap: 4
+    imap: 4,
+    webhooks: 1
 };
 
 config.dbs = config.dbs || {
@@ -55,7 +56,10 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
-config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap;
+
+config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap || 4;
+config.workers.webhooks = Number(process.env.EENGINE_WORKERS_WEBHOOKS) || config.workers.webhooks || 1;
+
 config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
 config.api.host = process.env.EENGINE_HOST || config.api.host;
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
@@ -89,8 +93,8 @@ if (preparedSettingsString) {
     }
 }
 
-const EENGINE_WORKERS = Number(process.env.EENGINE_WORKERS) || config.workers.imap;
-logger.debug({ msg: 'IMAP Worker Count', workersImap: EENGINE_WORKERS });
+logger.debug({ msg: 'IMAP Worker Count', workersImap: config.workers.imap });
+logger.debug({ msg: 'Webhooks Worker Count', workersWebhooks: config.workers.webhooks });
 
 const metrics = {
     threadStarts: new promClient.Counter({
@@ -229,7 +233,7 @@ let spawnWorker = type => {
         }
 
         // spawning a new worker trigger reassign
-        logger.error({ msg: 'Worker exited', exitCode });
+        logger.error({ msg: 'Worker exited', exitCode, type });
         setTimeout(() => spawnWorker(type), 1000);
     });
 
@@ -599,13 +603,17 @@ const startApplication = async () => {
     await getSecret();
 
     // multiple IMAP connection handlers
-    for (let i = 0; i < EENGINE_WORKERS; i++) {
+    for (let i = 0; i < config.workers.imap; i++) {
         spawnWorker('imap');
     }
 
     // single worker for HTTP
     spawnWorker('api');
-    spawnWorker('webhooks');
+
+    for (let i = 0; i < config.workers.webhooks; i++) {
+        spawnWorker('webhooks');
+    }
+
     spawnWorker('smtp');
 };
 

@@ -19,12 +19,18 @@ config.smtp = config.smtp || {
     host: '127.0.0.1'
 };
 
+config.queues = config.queues || {
+    submit: 1
+};
+
 config.service = config.service || {};
 
 const MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
+const SUBMIT_QC = (process.env.EENGINE_SUBMIT_QC && Number(process.env.EENGINE_SUBMIT_QC)) || config.queues.submit || 1;
 
 const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || config.smtp.port || 2525;
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
@@ -251,7 +257,7 @@ async function init() {
     });
 }
 
-submitQueue.process('*', async job => {
+submitQueue.process('*', SUBMIT_QC, async job => {
     let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
 
     let queueEntry;

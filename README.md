@@ -76,6 +76,7 @@ This video shows how to
 | Local addresses      | `--service.localAddresses="ip1,ip2"` | `EENGINE_ADDRESSES="ip1,ip2"` | default interface            |
 | Max command duration | `--service.commandTimeout=10s`       | `EENGINE_TIMEOUT=10s`         | `10s`                        |
 | Log level            | `--log.level="level"`                | `EENGINE_LOG_LEVEL=level`     | `"trace"`                    |
+| Webhook Worker count | `--workers.webhooks=1`               | `EENGINE_WORKERS_WEBHOOKS=1`  | `1`                          |
 
 #### API server settings
 
@@ -102,6 +103,17 @@ When authenticating via SMTP use the account Id as the username and SMTP passwor
 When sending emails via SMTP you can use the following headers
 
 -   **X-EE-Send-At: timestamp** to schedule sending to a future time. This matches `sendAt` property of the [POST /submit](https://api.emailengine.app/#operation/postV1AccountAccountSubmit) API endpoint.
+
+#### Queue settings
+
+By default a queue worker process processes a single job at a time. If your queues are processed too slowly you can increase the concurrency counters. Downside is that events aren't processed in correct order anymore, so increase these values only when you do not care about ordering too much.
+
+If you also increase worker count value then job processors count equals worker count \* concurrency count.
+
+| Configuration option       | CLI argument        | ENV value             | Default |
+| -------------------------- | ------------------- | --------------------- | ------- |
+| Webhooks concurrency count | `--queues.notify=1` | `EENGINE_NOTIFY_QC=1` | `1`     |
+| Submit concurrency count   | `--queues.submit=1` | `EENGINE_SUBMIT_QC=1` | `1`     |
 
 ---
 
