@@ -129,6 +129,12 @@ const metrics = {
         name: 'events',
         help: 'Events fired',
         labelNames: ['event']
+    }),
+
+    webhook_req: new promClient.Histogram({
+        name: 'webhook_req',
+        help: 'Duration of webhook requests',
+        buckets: [1, 150, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 30000]
     })
 };
 
@@ -289,6 +295,10 @@ let spawnWorker = type => {
                     case 'webhooks': {
                         let { status } = message.args[0] || {};
                         statUpdateKey = `${message.key}:${status}`;
+                        break;
+                    }
+
+                    case 'webhook_req': {
                         break;
                     }
 

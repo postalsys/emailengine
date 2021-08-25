@@ -81,12 +81,22 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
         headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
     }
 
+    let start = Date.now();
+    let duration;
     try {
-        let res = await fetch(parsed.toString(), {
-            method: 'post',
-            body: JSON.stringify(job.data),
-            headers
-        });
+        let res;
+
+        try {
+            res = await fetch(parsed.toString(), {
+                method: 'post',
+                body: JSON.stringify(job.data),
+                headers
+            });
+            duration = Date.now() - start;
+        } catch (err) {
+            duration = Date.now() - start;
+            throw err;
+        }
 
         if (!res.ok) {
             let err = new Error(`Invalid response: ${res.status} ${res.statusText}`);
@@ -114,6 +124,10 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
         });
 
         throw err;
+    } finally {
+        if (duration) {
+            metrics(logger, 'webhook_req', 'observe', duration);
+        }
     }
 });
 
