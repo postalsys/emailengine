@@ -89,13 +89,14 @@ This video shows how to
 
 #### SMTP server settings
 
-> SMTP server is **only enabled if SMTP password is set**.
+> SMTP server is disabled by default
 
 When authenticating via SMTP use the account Id as the username and SMTP password as the password to send emails using the selected account.
 
 | Configuration option | CLI argument            | ENV value                     | Default       |
 | -------------------- | ----------------------- | ----------------------------- | ------------- |
-| SMTP password        | `--smtp.secret=pass`    | `EENGINE_SMTP_SECRET=pass`    | not set       |
+| SMTP enabled         | `--smtp.enabled=true`   | `EENGINE_SMTP_ENABLED=true`   | `false`       |
+| SMTP password        | `--smtp.secret=pass`    | `EENGINE_SMTP_SECRET=pass`    | `""`          |
 | Host to bind to      | `--smtp.host="1.2.3.4"` | `EENGINE_SMTP_HOST="1.2.3.4"` | `"127.0.0.1"` |
 | Port to bind to      | `--smtp.port=port`      | `EENGINE_SMTP_PORT=port`      | `2525`        |
 | Behind HAProxy       | `--smtp.proxy=true`     | `EENGINE_SMTP_PROXY=true`     | `false`       |
@@ -103,6 +104,18 @@ When authenticating via SMTP use the account Id as the username and SMTP passwor
 When sending emails via SMTP you can use the following headers
 
 -   **X-EE-Send-At: timestamp** to schedule sending to a future time. This matches `sendAt` property of the [POST /submit](https://api.emailengine.app/#operation/postV1AccountAccountSubmit) API endpoint.
+
+#### Bull Arena settings
+
+[Arena](https://github.com/bee-queue/arena) is a web based UI for Bull.js (the queue system EmailEngine internally uses)
+
+> Arena server is disabled by default
+
+| Configuration option | CLI argument             | ENV value                      | Default       |
+| -------------------- | ------------------------ | ------------------------------ | ------------- |
+| Arena enabled        | `--arena.enabled=true`   | `EENGINE_ARENA_ENABLED=true`   | `false`       |
+| Host to bind to      | `--arena.host="1.2.3.4"` | `EENGINE_ARENA_HOST="1.2.3.4"` | `"127.0.0.1"` |
+| Port to bind to      | `--arena.port=port`      | `EENGINE_ARENA_PORT=port`      | `3001`        |
 
 #### Queue settings
 
@@ -171,7 +184,7 @@ If those interfaces aren't actually available then TCP connections will fail, so
 
 **Local addresses and SMTP**
 
-By default when EmailEngine is sending an email to SMTP it uses local hostname in the SMTP greeting. This hostname is resolved by `os.hostname()`. Sometimes hostname is using invalid format (eg. `Servername_local` as undersore is not actually allowed) and depending on the SMTP server it might reject such connection.
+By default when EmailEngine is sending an email to SMTP it uses local hostname in the SMTP greeting. This hostname is resolved by `os.hostname()`. Sometimes hostname is using invalid format (eg. `Servername_local` as undersore is not actually allowed) and depending on the SMTP MSA server it might reject such connection.
 
 To overcome you can set the local hostname to use by appending the hostname to the IP address, separated by pipe symbol
 
@@ -185,7 +198,7 @@ For example when using AWS you can use the private interface IP but set a public
 $ emailengine --service.localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
 ```
 
-So in general the hostname shoud be whatever the public interface IP (this is what the SMTP server sees) resolves to.
+So in general the hostname shoud be whatever the public interface IP (this is what the SMTP MSA server sees) resolves to.
 
 #### Authentication
 
@@ -478,6 +491,19 @@ $ docker-compose up
 ```
 
 Next open http://127.0.0.1:3000 in your browser.
+
+## Resolving issues with Redis
+
+EmailEngine is using Redis as it's data store. Redis stores everything in RAM so if something weird happens, EmailEngine could flood Redis and make the app unusable once there is no available space left.
+
+First thing to do is to check what is actually going on. EmailEngine provides a few tools for that:
+
+1. Check Bull queues in Redis. You can use the built in [Arena UI](#bull-arena-settings) to view the state of the queues (Arena is not enabled by default)
+2. Scan the used keyspace. EmailEngine provides a tool that groups keys by type. Run it like this (use the same config for DB as you are using for the main app):
+
+```
+$ emailengine scan > keyspace.csv
+```
 
 ## Monitoring
 

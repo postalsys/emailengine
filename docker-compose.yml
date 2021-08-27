@@ -6,6 +6,8 @@ services:
         ports:
             # API and web interface
             - '3000:3000'
+            # Bull UI
+            - '3001:3001'
             # SMTP for message submission
             - '2525:2525'
         depends_on:
@@ -28,8 +30,12 @@ services:
             EENGINE_SECRET: 'secret'
             # Database connection URL
             EENGINE_REDIS: 'redis://redis:6379/2'
+            # Enable SMTP server for local submission
+            EENGINE_SMTP_ENABLED: 'true'
             # Password for SMTP message submission clients (username is account ID)
             EENGINE_SMTP_SECRET: 'passw0rd'
+            # Enable Bull UI server for debugging
+            EENGINE_ARENA_ENABLED: 'true'
 
             # Additional command line arguments
             CMD_ARGS: ''

@@ -34,7 +34,8 @@ config.service = config.service || {};
 
 config.workers = config.workers || {
     imap: 4,
-    webhooks: 1
+    webhooks: 1,
+    submit: 1
 };
 
 config.dbs = config.dbs || {
@@ -50,6 +51,20 @@ config.api = config.api || {
     host: '127.0.0.1'
 };
 
+config.smtp = config.smtp || {
+    enabled: false,
+    port: 2525,
+    host: '127.0.0.1',
+    secret: '',
+    proxy: false
+};
+
+config.arena = config.arena || {
+    enabled: false,
+    port: 2525,
+    host: '127.0.0.1'
+};
+
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
@@ -59,10 +74,19 @@ config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
 
 config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap || 4;
 config.workers.webhooks = Number(process.env.EENGINE_WORKERS_WEBHOOKS) || config.workers.webhooks || 1;
+config.workers.submit = Number(process.env.EENGINE_WORKERS_SUBMIT) || config.workers.submit || 1;
 
 config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
 config.api.host = process.env.EENGINE_HOST || config.api.host;
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
+
+const SMTP_ENABLED = process.env.EENGINE_SMTP_ENABLED
+    ? /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_SMTP_ENABLED)
+    : config.smtp.enabled === true || /^\s*(true|y|yes|1)\s*$/i.test(config.smtp.enabled);
+
+const ARENA_ENABLED = process.env.EENGINE_ARENA_ENABLED
+    ? /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_ARENA_ENABLED)
+    : config.arena.enabled === true || /^\s*(true|y|yes|1)\s*$/i.test(config.arena.enabled);
 
 logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
 
@@ -95,6 +119,7 @@ if (preparedSettingsString) {
 
 logger.debug({ msg: 'IMAP Worker Count', workersImap: config.workers.imap });
 logger.debug({ msg: 'Webhooks Worker Count', workersWebhooks: config.workers.webhooks });
+logger.debug({ msg: 'Submission Worker Count', workersWebhooks: config.workers.submit });
 
 const metrics = {
     threadStarts: new promClient.Counter({
@@ -134,7 +159,7 @@ const metrics = {
     webhook_req: new promClient.Histogram({
         name: 'webhook_req',
         help: 'Duration of webhook requests',
-        buckets: [1, 150, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 30000]
+        buckets: [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 60 * 1000]
     })
 };
 
@@ -617,14 +642,26 @@ const startApplication = async () => {
         spawnWorker('imap');
     }
 
-    // single worker for HTTP
-    spawnWorker('api');
-
     for (let i = 0; i < config.workers.webhooks; i++) {
         spawnWorker('webhooks');
     }
 
-    spawnWorker('smtp');
+    for (let i = 0; i < config.workers.submit; i++) {
+        spawnWorker('submit');
+    }
+
+    if (SMTP_ENABLED) {
+        // single SMTP interface worker
+        spawnWorker('smtp');
+    }
+
+    if (ARENA_ENABLED) {
+        // single Bull UI interface worker
+        spawnWorker('arena');
+    }
+
+    // single worker for HTTP
+    spawnWorker('api');
 };
 
 startApplication()
