@@ -4,8 +4,6 @@
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
-> **EmailEngine** was previously known as **IMAP API**
-
 ## Use cases
 
 -   Syncing users' emails to your service and sending out emails on behalf of your users
@@ -16,10 +14,12 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 ## Quickstart
 
 1. Install Node.js and Redis
-2. Install and run EmailEngine:
+2. Install and run EmailEngine from the Postal System's NPM registry (sign up for an account [here](https://postalsys.com/join)):
 
 ```
-$ npm install -g emailengine-app
+$ npm set @postalsys:registry https://registry.postalsys.com
+$ npm adduser --registry=https://registry.postalsys.com --scope=@postalsys
+$ npm install -g @postalsys/emailengine-app
 $ emailengine
 ```
 

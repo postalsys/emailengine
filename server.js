@@ -27,7 +27,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize } = require('./lib/tools');
+const { getDuration, getByteSize, selectRendezvousNode } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 config.service = config.service || {};
@@ -239,9 +239,12 @@ let spawnWorker = type => {
         availableIMAPWorkers.delete(worker);
 
         if (workerAssigned.has(worker)) {
-            workerAssigned.get(worker).forEach(account => {
+            let accountList = workerAssigned.get(worker);
+            workerAssigned.delete(worker);
+            accountList.forEach(account => {
                 assigned.delete(account);
                 let shouldReassign = false;
+                // graceful reconnect
                 countUnassignment(account)
                     .then(sr => {
                         shouldReassign = sr;
@@ -256,7 +259,6 @@ let spawnWorker = type => {
                         }
                     });
             });
-            workerAssigned.delete(worker);
         }
 
         if (closing) {
@@ -455,33 +457,22 @@ async function assignAccounts() {
             return;
         }
 
-        let workerIterator = availableIMAPWorkers.values();
-        let getNextWorker = () => {
-            let next = workerIterator.next();
-            if (next.done) {
-                if (!availableIMAPWorkers.size) {
-                    return false;
-                }
-                workerIterator = availableIMAPWorkers.values();
-                return workerIterator.next().value;
-            } else {
-                return next.value;
-            }
-        };
-
         for (let account of unassigned) {
-            let worker = getNextWorker();
-            if (!worker) {
+            if (!availableIMAPWorkers.size) {
                 // out of workers
                 break;
             }
 
+            let worker = selectRendezvousNode(account, Array.from(availableIMAPWorkers));
+
             if (!workerAssigned.has(worker)) {
                 workerAssigned.set(worker, new Set());
             }
+
             workerAssigned.get(worker).add(account);
             assigned.set(account, worker);
             unassigned.delete(account);
+
             await call(worker, {
                 cmd: 'assign',
                 account
@@ -521,6 +512,10 @@ async function onCommand(worker, message) {
                 let assignedWorker = assigned.get(message.account);
                 if (workerAssigned.has(assignedWorker)) {
                     workerAssigned.get(assignedWorker).delete(message.account);
+                    if (!workerAssigned.get(assignedWorker).size) {
+                        // last item in the worker accounts
+                        workerAssigned.delete(assignedWorker);
+                    }
                 }
 
                 call(assignedWorker, message)
