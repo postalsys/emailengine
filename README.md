@@ -13,17 +13,22 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 
 ## Quickstart
 
-1. Install Node.js and Redis
-2. Install and run EmailEngine from the Postal System's NPM registry (sign up for an account [here](https://postalsys.com/join)):
+1. Install [Node.js](https://nodejs.org/en/) and [Redis](https://redis.io/)
+2. Set up Postal System's NPM registry (sign up for an account [here](https://postalsys.com/join))
 
 ```
 $ npm set @postalsys:registry https://registry.postalsys.com
 $ npm adduser --registry=https://registry.postalsys.com --scope=@postalsys
+```
+
+3. Install and run EmailEngine
+
+```
 $ npm install -g @postalsys/emailengine-app
 $ emailengine
 ```
 
-3. Open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser
+4. Open [http://127.0.0.1:3000/](http://127.0.0.1:3000/) in your browser
 
 > **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping EmailEngine output to it: `emailengine | pino-pretty`
 
