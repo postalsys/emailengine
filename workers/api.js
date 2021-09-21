@@ -1366,7 +1366,7 @@ const init = async () => {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return await accountObject.deleteMessage(request.params.message);
+                return await accountObject.deleteMessage(request.params.message, request.query.force);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -1391,9 +1391,24 @@ const init = async () => {
                 },
                 failAction,
 
+                query: Joi.object({
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Delete message even if not in Trash')
+                        .label('ForceDelete')
+                }).label('MessageDeleteQuery'),
+
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
-                    message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
+                    message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Delete message even if not in Trash')
+                        .label('ForceDelete')
                 }).label('MessageDelete')
             },
             response: {

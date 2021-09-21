@@ -67,13 +67,5 @@
         "grunt": "1.4.1",
         "grunt-cli": "1.4.3",
         "grunt-eslint": "23.0.0"
-    },
-    "pkg": {
-        "scripts": "workers/**/*.js",
-        "assets": [
-            "node_modules/@hapi/teamwork/lib/index.js",
-            "views/**/*",
-            "static/**/*"
-        ]
     }
 }

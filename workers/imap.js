@@ -251,7 +251,7 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.deleteMessage(message.message);
+        return await accountData.connection.deleteMessage(message.message, message.force);
     }
 
     async submitMessage(message) {
