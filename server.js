@@ -81,13 +81,8 @@ config.api.host = process.env.EENGINE_HOST || config.api.host;
 
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
-const SMTP_ENABLED = process.env.EENGINE_SMTP_ENABLED
-    ? /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_SMTP_ENABLED)
-    : config.smtp.enabled === true || /^\s*(true|y|yes|1)\s*$/i.test(config.smtp.enabled);
-
-const ARENA_ENABLED = process.env.EENGINE_ARENA_ENABLED
-    ? /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_ARENA_ENABLED)
-    : config.arena.enabled === true || /^\s*(true|y|yes|1)\s*$/i.test(config.arena.enabled);
+const SMTP_ENABLED = 'EENGINE_SMTP_ENABLED' in process.env ? getBoolean(process.env.EENGINE_SMTP_ENABLED) : getBoolean(config.smtp.enabled);
+const ARENA_ENABLED = 'EENGINE_ARENA_ENABLED' in process.env ? getBoolean(process.env.EENGINE_ARENA_ENABLED) : getBoolean(config.arena.enabled);
 
 logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
 

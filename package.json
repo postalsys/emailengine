@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node server.js",
         "test": "grunt",
-        "swagger": "./getswagger.sh"
+        "swagger": "./getswagger.sh",
+        "build-dist": "pkg package.json"
     },
     "keywords": [
         "IMAP"
@@ -41,7 +42,7 @@
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.0.0",
-        "imapflow": "1.0.69",
+        "imapflow": "1.0.70",
         "ioredis": "4.27.9",
         "joi": "17.4.2",
         "jquery": "3.6.0",
@@ -66,6 +67,23 @@
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",
         "grunt-cli": "1.4.3",
-        "grunt-eslint": "23.0.0"
+        "grunt-eslint": "23.0.0",
+        "pkg": "^5.3.2"
+    },
+    "pkg": {
+        "scripts": [
+            "workers/**/*.js"
+        ],
+        "assets": [
+            "static/**/*",
+            "views/**/*",
+            "lib/lua/**/*",
+            "node_modules/bull/lib/commands/**/*",
+            "node_modules/swagger-ui-dist/**/*"
+        ],
+        "_targets": [
+            "node16-macos-x64"
+        ],
+        "outputPath": "dist"
     }
 }

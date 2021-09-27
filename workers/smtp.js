@@ -7,7 +7,7 @@ const { SMTPServer } = require('smtp-server');
 const util = require('util');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
-const { getDuration } = require('../lib/tools');
+const { getDuration, getBoolean } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
 
@@ -26,12 +26,10 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
-const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || config.smtp.port || 2525;
+const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || Number(config.smtp.port) || 2525;
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
 const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
-const SMTP_PROXY = process.env.EENGINE_SMTP_PROXY
-    ? /^\s*(true|y|yes|1)\s*$/i.test(process.env.EENGINE_SMTP_PROXY)
-    : config.smtp.proxy === true || /^\s*(true|y|yes|1)\s*$/i.test(config.smtp.proxy);
+const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
 const ACCOUNT_CACHE = new WeakMap();
 

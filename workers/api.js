@@ -199,8 +199,8 @@ const init = async () => {
             title: 'EmailEngine',
             version: packageData.version,
             contact: {
-                name: 'Andris Reinman',
-                email: 'andris@emailengine.app'
+                name: 'Postal Systems OÜ',
+                email: 'info@emailengine.app'
             }
         }
     };
@@ -259,7 +259,7 @@ const init = async () => {
         method: 'GET',
         path: '/',
         handler: {
-            file: pathlib.join(__dirname, '..', 'static', 'index.html')
+            file: { path: pathlib.join(__dirname, '..', 'static', 'index.html'), confine: false }
         }
     });
 
@@ -267,7 +267,7 @@ const init = async () => {
         method: 'GET',
         path: '/favicon.ico',
         handler: {
-            file: pathlib.join(__dirname, '..', 'static', 'favicon.ico')
+            file: { path: pathlib.join(__dirname, '..', 'static', 'favicon.ico'), confine: false }
         }
     });
 
