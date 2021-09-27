@@ -12,10 +12,16 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const net = require('net');
 
-const { getDuration } = require('../lib/tools');
+const { getDuration, getBoolean } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 
 config.service = config.service || {};
+
+config.log = config.log || {
+    raw: false
+};
+
+const EENGINE_LOG_RAW = 'EENGINE_LOG_RAW' in process.env ? getBoolean(process.env.EENGINE_LOG_RAW) : getBoolean(config.log.raw);
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
@@ -117,7 +123,8 @@ class ConnectionHandler {
             notifyQueue,
             submitQueue,
             accountLogger: await this.getAccountLogger(account),
-            localAddresses: EENGINE_ADDRESSES
+            localAddresses: EENGINE_ADDRESSES,
+            logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;
 

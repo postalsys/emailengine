@@ -27,7 +27,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, selectRendezvousNode } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, selectRendezvousNode } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 config.service = config.service || {};
@@ -78,6 +78,7 @@ config.workers.submit = Number(process.env.EENGINE_WORKERS_SUBMIT) || config.wor
 
 config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
 config.api.host = process.env.EENGINE_HOST || config.api.host;
+
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
 const SMTP_ENABLED = process.env.EENGINE_SMTP_ENABLED

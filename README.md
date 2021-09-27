@@ -84,6 +84,7 @@ This video shows how to
 | Local addresses      | `--service.localAddresses="ip1,ip2"` | `EENGINE_ADDRESSES="ip1,ip2"` | default interface            |
 | Max command duration | `--service.commandTimeout=10s`       | `EENGINE_TIMEOUT=10s`         | `10s`                        |
 | Log level            | `--log.level="level"`                | `EENGINE_LOG_LEVEL=level`     | `"trace"`                    |
+| Log raw data         | `--log.raw=false`                    | `EENGINE_LOG_RAW=false`       | `false`                      |
 | Webhook Worker count | `--workers.webhooks=1`               | `EENGINE_WORKERS_WEBHOOKS=1`  | `1`                          |
 
 #### API server settings

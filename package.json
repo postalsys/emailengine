@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "1.14.1",
+    "version": "1.14.2",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -41,7 +41,7 @@
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.0.0",
-        "imapflow": "1.0.68",
+        "imapflow": "1.0.69",
         "ioredis": "4.27.9",
         "joi": "17.4.2",
         "jquery": "3.6.0",
@@ -52,8 +52,8 @@
         "msgpack5": "5.3.2",
         "node-fetch": "2.6.1",
         "node-vault": "0.9.22",
-        "nodemailer": "6.6.3",
-        "pino": "6.13.2",
+        "nodemailer": "6.6.5",
+        "pino": "6.13.3",
         "prom-client": "14.0.0",
         "punycode": "2.1.1",
         "smtp-server": "3.9.0",
