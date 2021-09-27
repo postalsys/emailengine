@@ -37,9 +37,6 @@ services:
             # Enable Bull UI server for debugging
             EENGINE_ARENA_ENABLED: 'true'
 
-            # Additional command line arguments
-            CMD_ARGS: ''
-
     redis:
         image: redis:alpine
         restart: always

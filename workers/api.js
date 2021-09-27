@@ -2023,6 +2023,8 @@ const init = async () => {
                     version: Joi.string().example(packageData.version).description('EmailEngine version number'),
                     license: Joi.string().example(packageData.license).description('EmailEngine license'),
                     accounts: Joi.number().example(26).description('Number of registered accounts'),
+                    node: Joi.string().example('16.10.0').description('Node.js Version'),
+                    redis: Joi.string().example('6.2.4').description('Redis Version'),
                     connections: Joi.object({
                         init: Joi.number().example(2).description('Accounts not yet initialized'),
                         connected: Joi.number().example(8).description('Successfully connected accounts'),
@@ -2252,11 +2254,30 @@ async function getStats(seconds) {
 
     let counters = await getCounterValues(redis, seconds);
 
+    let redisVersion;
+
+    try {
+        let redisInfo = await redis.info('server');
+        if (!redisInfo || typeof redisInfo !== 'string') {
+            throw new Error('Failed to fetch Redis INFO');
+        }
+        let m = redisInfo.match(/redis_version:([\d.]+)/);
+        if (!m) {
+            throw new Error('Failed to fetch version from Redis INFO');
+        }
+        redisVersion = m[1];
+    } catch (err) {
+        // ignore
+        redisVersion = err.message;
+    }
+
     let stats = Object.assign(
         {
             version: packageData.version,
             license: packageData.license,
             accounts: await redis.scard('ia:accounts'),
+            node: process.versions.node,
+            redis: redisVersion,
             counters
         },
         structuredMetrics

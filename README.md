@@ -63,7 +63,9 @@ This video shows how to
 -   **Redis** – any version
 -   **Node.js** - v12.16.0 or newer
 
-> **NB!** Try to keep the latency between EmailEngine and Redis as low as possible, best if these would run in the same machine or at least in the same DC. EmailEngine runs a separate Redis command for each message in a folder when syncing messages, so if the latency is not low then it takes a long time to sync a folder with a lot of messages,
+There is no official [Redis](https://redis.io/) release for Windows but you can use an alternative like [Memurai](https://www.memurai.com/).
+
+> **Tip!** Try to keep the latency between EmailEngine and Redis as low as possible, best if these would run in the same machine or at least in the same DC. EmailEngine runs a separate Redis command for each message in a folder when syncing messages, so if the latency is not low then it takes a long time to sync a folder with a lot of messages,
 
 ## Documentation
 
@@ -483,10 +485,7 @@ $ docker pull andris9/emailengine
 Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
 
 ```
-$ docker run -p 3000:3000 --env CMD_ARGS="\
-  --dbs.redis=redis://host.docker.internal:6379/7 \
-" \
-andris9/emailengine
+$ docker run -p 3000:3000 --env EENGINE_REDIS="redis://host.docker.internal:6379/7" andris9/emailengine
 ```
 
 Next open http://127.0.0.1:3000 in your browser.
