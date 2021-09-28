@@ -2278,6 +2278,7 @@ async function getStats(seconds) {
             accounts: await redis.scard('ia:accounts'),
             node: process.versions.node,
             redis: redisVersion,
+            imapflow: ImapFlow.version || 'please upgrade',
             counters
         },
         structuredMetrics
