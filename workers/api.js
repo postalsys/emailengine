@@ -187,6 +187,18 @@ const init = async () => {
         host: process.env.EENGINE_HOST || config.api.host
     });
 
+    server.ext('onPreHandler', async (request, h) => {
+        logger.debug({
+            msg: 'request onPreHandler',
+            action: 'onPreHandler',
+            method: request.method,
+            path: request.path,
+            account: request.params && request.params.account
+        });
+
+        return h.continue;
+    });
+
     const swaggerOptions = {
         swaggerUI: true,
         swaggerUIPath: '/swagger/',
