@@ -517,6 +517,41 @@ $ emailengine scan > keyspace.csv
 
 There is a Prometheus output available at `/metrics` URL path of the app.
 
+## Log analysis
+
+EmailEngine logs all it's output to stdin in [Pino](https://github.com/pinojs/pino) format. Pino in general is meant to be machine readable so for humans it seems quite messy to understand what is actually going on. Luckily there are multiple tools to make it more easily processable.
+
+### pino-pretty
+
+As the name says [pino-pretty](https://github.com/pinojs/pino-pretty) makes the logs prettier and thus easier to read.
+
+```
+$ npm install -g pino-pretty
+$ emailengine | pino-pretty
+```
+
+### pino-gelf
+
+It is possible to stream all logs directly to Graylog using [pino-gelf](https://github.com/pinojs/pino-gelf).
+
+```
+$ npm install -g pino-pretty
+$ emailengine | pino-gelf log -h graylog.server.com
+```
+
+### IMAP transactions
+
+Sometimes it is important to understand what kind of traffic is exactly exchanged between the client and the server. By default EmailEngine does show IMAP logs but these are logical not actual logs. It means that these log lines are post processed (passwords and long strings are removed) and might appear out of order in some cases.
+
+For debugging it might be important to see the actual logs so EmailEngine allows to enable raw logging using either the `EENGINE_LOG_RAW=true` environment variable or `--log.raw=true` argument. This way EmailEngine includes all data read from and written to socket in base64 format. This is quite unreadable for humans but you can use [eerawlog](https://github.com/postalsys/eerawlog) tool to make it readable.
+
+```
+$ npm install eerawlog -g
+$ EENGINE_LOG_RAW=true emailengine | eerawlog
+```
+
+![](https://cldup.com/0z5i7LU-_A.png)
+
 ## Security and Data compliance
 
 [Read here](https://docs.emailengine.app/data-compliance/).
