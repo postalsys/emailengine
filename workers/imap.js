@@ -162,9 +162,7 @@ class ConnectionHandler {
                     cid: accountObject.connection.cid,
                     msg: 'Account reconnect requested'
                 });
-                await redis.hmset(accountObject.connection.getAccountKey(), {
-                    state: 'connecting'
-                });
+                await redis.hset(accountObject.connection.getAccountKey(), 'state', 'connecting');
                 await accountObject.connection.reconnect(true);
             }
         }
