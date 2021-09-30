@@ -73,77 +73,9 @@ There is no official [Redis](https://redis.io/) release for Windows but you can 
 -   [Blog posts](https://docs.emailengine.app/tag/email-engine/)
 -   For Postman you can import OpenAPI specification [here](https://api.emailengine.app/swagger.json).
 
-## Config mapping
+## Configuring EmailEngine
 
-#### General settings
-
-| Configuration option | CLI argument                         | ENV value                     | Default                      |
-| -------------------- | ------------------------------------ | ----------------------------- | ---------------------------- |
-| IMAP Worker count    | `--workers.imap=4`                   | `EENGINE_WORKERS=4`           | `4`                          |
-| Redis connection URL | `--dbs.redis="url"`                  | `EENGINE_REDIS="url"`         | `"redis://127.0.0.1:6379/8"` |
-| Prepared settings    | `--settings='{"JSON"}'`              | `EENGINE_SETTINGS='{"JSON"}'` | not set                      |
-| Encryption secret    | `--service.secret="****"`            | `EENGINE_SECRET="****"`       | not set                      |
-| Local addresses      | `--service.localAddresses="ip1,ip2"` | `EENGINE_ADDRESSES="ip1,ip2"` | default interface            |
-| Max command duration | `--service.commandTimeout=10s`       | `EENGINE_TIMEOUT=10s`         | `10s`                        |
-| Log level            | `--log.level="level"`                | `EENGINE_LOG_LEVEL=level`     | `"trace"`                    |
-| Log raw data         | `--log.raw=false`                    | `EENGINE_LOG_RAW=false`       | `false`                      |
-| Webhook Worker count | `--workers.webhooks=1`               | `EENGINE_WORKERS_WEBHOOKS=1`  | `1`                          |
-
-#### API server settings
-
-| Configuration option | CLI argument             | ENV value                  | Default       |
-| -------------------- | ------------------------ | -------------------------- | ------------- |
-| Host to bind to      | `--api.host="1.2.3.4"`   | `EENGINE_HOST="1.2.3.4"`   | `"127.0.0.1"` |
-| Port to bind to      | `--api.port=port`        | `EENGINE_PORT=port`        | `3000`        |
-| Max attachment size  | `--api.maxSize=5M`       | `EENGINE_MAX_SIZE=5M`      | `5M`          |
-| API Basic Auth       | `--api.auth="user:pass"` | `EENGINE_AUTH="user:pass"` | not set       |
-
-#### SMTP server settings
-
-> SMTP server is disabled by default
-
-When authenticating via SMTP use the account Id as the username and SMTP password as the password to send emails using the selected account.
-
-| Configuration option | CLI argument            | ENV value                     | Default       |
-| -------------------- | ----------------------- | ----------------------------- | ------------- |
-| SMTP enabled         | `--smtp.enabled=true`   | `EENGINE_SMTP_ENABLED=true`   | `false`       |
-| SMTP password        | `--smtp.secret=pass`    | `EENGINE_SMTP_SECRET=pass`    | `""`          |
-| Host to bind to      | `--smtp.host="1.2.3.4"` | `EENGINE_SMTP_HOST="1.2.3.4"` | `"127.0.0.1"` |
-| Port to bind to      | `--smtp.port=port`      | `EENGINE_SMTP_PORT=port`      | `2525`        |
-| Behind HAProxy       | `--smtp.proxy=true`     | `EENGINE_SMTP_PROXY=true`     | `false`       |
-
-When sending emails via SMTP you can use the following headers
-
--   **X-EE-Send-At: timestamp** to schedule sending to a future time. This matches `sendAt` property of the [POST /submit](https://api.emailengine.app/#operation/postV1AccountAccountSubmit) API endpoint.
-
-#### Bull Arena settings
-
-[Arena](https://github.com/bee-queue/arena) is a web based UI for Bull.js (the queue system EmailEngine internally uses)
-
-> Arena server is disabled by default
-
-| Configuration option | CLI argument             | ENV value                      | Default       |
-| -------------------- | ------------------------ | ------------------------------ | ------------- |
-| Arena enabled        | `--arena.enabled=true`   | `EENGINE_ARENA_ENABLED=true`   | `false`       |
-| Host to bind to      | `--arena.host="1.2.3.4"` | `EENGINE_ARENA_HOST="1.2.3.4"` | `"127.0.0.1"` |
-| Port to bind to      | `--arena.port=port`      | `EENGINE_ARENA_PORT=port`      | `3001`        |
-
-#### Queue settings
-
-By default a queue worker process processes a single job at a time. If your queues are processed too slowly you can increase the concurrency counters. Downside is that events aren't processed in correct order anymore, so increase these values only when you do not care about ordering too much.
-
-If you also increase worker count value then job processors count equals worker count \* concurrency count.
-
-| Configuration option       | CLI argument        | ENV value             | Default |
-| -------------------------- | ------------------- | --------------------- | ------- |
-| Webhooks concurrency count | `--queues.notify=1` | `EENGINE_NOTIFY_QC=1` | `1`     |
-| Submit concurrency count   | `--queues.submit=1` | `EENGINE_SUBMIT_QC=1` | `1`     |
-
----
-
-> **NB!** environment variables override CLI arguments. CLI arguments override configuration file values.
-
-If available then EmailEngine uses dotenv file from current working directory to populate environment variables.
+See the documentation for configuring EmailEngine [here](https://emailengine.app/configuration).
 
 #### Redis connection
 
