@@ -406,31 +406,7 @@ See example [systemd unit file](systemd/emailengine.service) ro run EmailEngine 
 
 ### Docker
 
-#### Docker Hub
-
-Pull EmailEngine from Docker Hub
-
-```
-$ docker pull andris9/emailengine
-```
-
-Run the app and provide connection URL to Redis (this example assumes that Redis is running in host machine):
-
-```
-$ docker run -p 3000:3000 --env EENGINE_REDIS="redis://host.docker.internal:6379/7" andris9/emailengine
-```
-
-Next open http://127.0.0.1:3000 in your browser.
-
-#### Docker compose
-
-Clone this repo and in the root folder run the following to start both EmailEngine and Redis containers.
-
-```
-$ docker-compose up
-```
-
-Next open http://127.0.0.1:3000 in your browser.
+See the documentation for using EmailEngine with Docker [here](https://emailengine.app/docker).
 
 ## Resolving issues with Redis
 
