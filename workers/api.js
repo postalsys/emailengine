@@ -285,6 +285,14 @@ const init = async () => {
 
     server.route({
         method: 'GET',
+        path: '/licenses.html',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/static/{file*}',
         handler: {
             directory: {

@@ -7,7 +7,8 @@
         "start": "node server.js",
         "test": "grunt",
         "swagger": "./getswagger.sh",
-        "build-dist": "pkg package.json"
+        "build-dist": "npm run licenses && pkg package.json",
+        "licenses": "license-report --only=prod --output=html --config license-report-config.json > static/licenses.html"
     },
     "keywords": [
         "IMAP"
@@ -68,7 +69,8 @@
         "grunt": "1.4.1",
         "grunt-cli": "1.4.3",
         "grunt-eslint": "23.0.0",
-        "pkg": "^5.3.2"
+        "license-report": "4.5.0",
+        "pkg": "5.3.2"
     },
     "pkg": {
         "scripts": [
