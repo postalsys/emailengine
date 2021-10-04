@@ -85,63 +85,15 @@ $ emailengine --dbs.redis="redis://127.0.0.1:6379/8"
 
 #### Prepared settings
 
-If you do not want to update application settings via API calls then you can provide the initial settings via a command line option (`--settings`) or environment variable (`EENGINE_SETTINGS`). The value must be a valid JSON string that could be used against the `/settings` API endpoint. The behavior is identical to calling the same thing via API, so whatever settings are given are stored in the DB.
-
-```
-$ emailengine --settings='{"webhooks": "https://webhook.site/14e88aea-3391-48b2-a4e6-7b617280155d","webhookEvents":["messageNew"]}'
-```
-
-When using Docker Compose where environment variables are defined in YAML format, you can use the following environment variable for prepared settings:
-
-```yaml
-EENGINE_SETTINGS: >
-    {
-        "webhooks": "https://webhook.site/f6a00604-7407-4f40-9a8e-ab68a31a3503",
-        "webhookEvents": [
-            "messageNew", "messageDeleted"
-        ]
-    }
-```
-
-If settings object fails validation then the application does not start.
+Read [here](https://emailengine.app/prepared-settings)
 
 #### Encryption secret
 
-By default account passwords are stored as cleartext in Redis. You can set an encryption secret that will be used to encrypt these passwords.
-
-See the documentation for encryption [here](https://docs.emailengine.app/enabling-secret-encryption/).
-
-> EmailEngine is also able to use [Vault](https://www.vaultproject.io/) to store the encryption secret. See Vault usage docs [here](https://docs.emailengine.app/enabling-secret-encryption/#using-vault)
+Read [here](https://docs.emailengine.app/enabling-secret-encryption/)
 
 #### Local addresses
 
-If your server has multiple IP addresses/interfaces available then you can provide a comma separated list of these IP addresses for EmailEngine to bound to when making outbound connections.
-
-This is mostly useful if you are making a large amount of connections and might get rate limited by destination server based on your IP address. Using multiple local addresses allows to distribute separate connections between separate IP addresses. An address is selected randomly from the list whenever making a new IMAP connection.
-
-```
-$ emailengine --service.localAddresses="192.168.1.176,192.168.1.177,192.168.1.178"
-```
-
-If those interfaces aren't actually available then TCP connections will fail, so check the logs.
-
-**Local addresses and SMTP**
-
-By default when EmailEngine is sending an email to SMTP it uses local hostname in the SMTP greeting. This hostname is resolved by `os.hostname()`. Sometimes hostname is using invalid format (eg. `Servername_local` as undersore is not actually allowed) and depending on the SMTP MSA server it might reject such connection.
-
-To overcome you can set the local hostname to use by appending the hostname to the IP address, separated by pipe symbol
-
-```
-$ emailengine --service.localAddresses="ip1|hostname1,ip2|hostname2,ip3|hostname3"
-```
-
-For example when using AWS you can use the private interface IP but set a public hostname.
-
-```
-$ emailengine --service.localAddresses="172.31.1.2|ec2-18-194-1-2.eu-central-1.compute.amazonaws.com"
-```
-
-So in general the hostname shoud be whatever the public interface IP (this is what the SMTP MSA server sees) resolves to.
+Read [here](https://emailengine.app/local-addresses)
 
 #### Authentication
 
@@ -402,7 +354,7 @@ By default EmailEngine allows connections only from localhost. To change this ei
 
 ### SystemD
 
-See example [systemd unit file](systemd/emailengine.service) ro run EmailEngine as a service and example [Nginx config file](systemd/nginx-proxy.conf) to serve EmailEngine requests behind Nginx reverse proxy.
+Read about running EmailEngine as a SystemD service [here](https://emailengine.app/system-d-service)
 
 ### Docker
 
@@ -427,38 +379,7 @@ There is a Prometheus output available at `/metrics` URL path of the app.
 
 ## Log analysis
 
-EmailEngine logs all it's output to stdin in [Pino](https://github.com/pinojs/pino) format. Pino in general is meant to be machine readable so for humans it seems quite messy to understand what is actually going on. Luckily there are multiple tools to make it more easily processable.
-
-### pino-pretty
-
-As the name says [pino-pretty](https://github.com/pinojs/pino-pretty) makes the logs prettier and thus easier to read.
-
-```
-$ npm install -g pino-pretty
-$ emailengine | pino-pretty
-```
-
-### pino-gelf
-
-It is possible to stream all logs directly to Graylog using [pino-gelf](https://github.com/pinojs/pino-gelf).
-
-```
-$ npm install -g pino-pretty
-$ emailengine | pino-gelf log -h graylog.server.com
-```
-
-### IMAP transactions
-
-Sometimes it is important to understand what kind of traffic is exactly exchanged between the client and the server. By default EmailEngine does show IMAP logs but these are logical not actual logs. It means that these log lines are post processed (passwords and long strings are removed) and might appear out of order in some cases.
-
-For debugging it might be important to see the actual logs so EmailEngine allows to enable raw logging using either the `EENGINE_LOG_RAW=true` environment variable or `--log.raw=true` argument. This way EmailEngine includes all data read from and written to socket in base64 format. This is quite unreadable for humans but you can use [eerawlog](https://github.com/postalsys/eerawlog) tool to make it readable.
-
-```
-$ npm install eerawlog -g
-$ EENGINE_LOG_RAW=true emailengine | eerawlog
-```
-
-![](https://cldup.com/0z5i7LU-_A.png)
+Read about logging options [here](https://emailengine.app/logging)
 
 ## Security and Data compliance
 
