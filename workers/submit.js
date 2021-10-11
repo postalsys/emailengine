@@ -91,10 +91,10 @@ async function notify(account, event, data) {
     await notifyQueue.add(event, payload, {
         removeOnComplete: true,
         removeOnFail: true,
-        attempts: 5,
+        attempts: 10,
         backoff: {
             type: 'exponential',
-            delay: 2000
+            delay: 5000
         }
     });
 }
