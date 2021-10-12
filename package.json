@@ -7,8 +7,9 @@
         "start": "node server.js",
         "test": "grunt",
         "swagger": "./getswagger.sh",
-        "build-dist": "npm run licenses && pkg package.json",
-        "licenses": "license-report --only=prod --output=html --config license-report-config.json > static/licenses.html"
+        "build-dist": "npm run licenses && npm run licenses-text && pkg package.json",
+        "licenses": "license-report --only=prod --output=html --config license-report-config.json > static/licenses.html",
+        "licenses-text": "license-report --only=prod --output=table --config license-report-config.json > licenses.txt"
     },
     "keywords": [
         "IMAP"
@@ -60,7 +61,8 @@
         "punycode": "2.1.1",
         "smtp-server": "3.9.0",
         "uuid": "8.3.2",
-        "wild-config": "1.5.1"
+        "wild-config": "1.5.1",
+        "yargs": "^17.2.1"
     },
     "devDependencies": {
         "eslint": "8.0.0",
@@ -81,7 +83,9 @@
             "views/**/*",
             "lib/lua/**/*",
             "node_modules/bull/lib/commands/**/*",
-            "node_modules/swagger-ui-dist/**/*"
+            "node_modules/swagger-ui-dist/**/*",
+            "licenses.txt",
+            "LICENSE.txt"
         ],
         "_targets": [
             "node16-macos-x64"
