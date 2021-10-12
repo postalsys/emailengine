@@ -35,6 +35,14 @@ Later, when you want to upgrade, just run the installation command from step 2. 
 
 > **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping EmailEngine output to it: `emailengine | pino-pretty`
 
+## Version and license
+
+Run the following command to see the version and license information both for EmailEngine and for the included modules.
+
+```
+$ emailengine license
+```
+
 ## Demo
 
 [![Using EmailEngine](https://img.youtube.com/vi/shHZHowVnYw/0.jpg)](https://www.youtube.com/watch?v=shHZHowVnYw)

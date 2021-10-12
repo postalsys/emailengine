@@ -1,0 +1,37 @@
+name                 license type        link                                                                          installed version  author
+----                 ------------        ----                                                                          -----------------  ------
+@hapi/basic          BSD-3-Clause        git://github.com/hapijs/basic.git                                             6.0.0              n/a
+@hapi/boom           BSD-3-Clause        git://github.com/hapijs/boom.git                                              9.1.4              n/a
+@hapi/hapi           BSD-3-Clause        git://github.com/hapijs/hapi.git                                              20.2.1             n/a
+@hapi/inert          BSD-3-Clause        git+https://github.com/hapijs/inert.git                                       6.0.4              n/a
+@hapi/vision         BSD-3-Clause        git://github.com/hapijs/vision.git                                            6.1.0              n/a
+bull                 MIT                 git://github.com/OptimalBits/bull.git                                         3.29.2             OptimalBits
+bull-arena           MIT                 git+https://github.com/bee-queue/arena.git                                    3.29.3             Mixmax
+dotenv               BSD-2-Clause        git://github.com/motdotla/dotenv.git                                          10.0.0             n/a
+email-reply-parser   MIT                 https://registry.npmjs.org/email-reply-parser/-/email-reply-parser-1.2.6.tgz  1.2.6              Crisp IM SARL
+exponential-backoff  Apache-2.0          git+https://github.com/coveo/exponential-backoff.git                          3.1.0              Sami Sayegh
+express              MIT                 git+https://github.com/expressjs/express.git                                  4.17.1             TJ Holowaychuk
+google-auth-library  Apache-2.0          git+https://github.com/googleapis/google-auth-library-nodejs.git              7.10.0             Google Inc.
+hapi-pino            MIT                 git+https://github.com/pinojs/hapi-pino.git                                   8.5.0              David Mark Clements
+hapi-swagger         MIT                 git://github.com/glennjones/hapi-swagger.git                                  14.2.4             Glenn Jones
+he                   MIT                 git+https://github.com/mathiasbynens/he.git                                   1.2.0              Mathias Bynens
+html-to-text         MIT                 git://github.com/html-to-text/node-html-to-text.git                           8.0.0              Malte Legenhausen
+imapflow             MIT                 git+https://github.com/postalsys/imapflow.git                                 1.0.74             Postal Systems OÜ
+ioredis              MIT                 git://github.com/luin/ioredis.git                                             4.27.11            luin
+joi                  BSD-3-Clause        git://github.com/sideway/joi.git                                              17.4.2             n/a
+jquery               MIT                 git+https://github.com/jquery/jquery.git                                      3.6.0              OpenJS Foundation and other contributors
+libmime              MIT                 git://github.com/andris9/libmime.git                                          5.0.0              Andris Reinman
+linkifyjs            MIT                 git+https://github.com/SoapBox/linkifyjs.git                                  2.1.9              Hypercontext
+mailparser           MIT                 git+https://github.com/nodemailer/mailparser.git                              3.3.3              Andris Reinman
+mailsplit            (MIT OR EUPL-1.1+)  git+https://github.com/andris9/mailsplit.git                                  5.2.0              Andris Reinman
+msgpack5             MIT                 git://github.com/mcollina/msgpack5.git                                        5.3.2              Matteo collina
+node-fetch           MIT                 git+https://github.com/bitinn/node-fetch.git                                  2.6.1              David Frank
+node-vault           MIT                 git://github.com/kr1sp1n/node-vault.git                                       0.9.22             kr1sp1n
+nodemailer           MIT                 git+https://github.com/nodemailer/nodemailer.git                              6.7.0              Andris Reinman
+pino                 MIT                 git+https://github.com/pinojs/pino.git                                        6.13.3             Matteo Collina
+prom-client          Apache-2.0          git+ssh://git@github.com/siimon/prom-client.git                               14.0.0             Simon Nyberg
+punycode             MIT                 git+https://github.com/bestiejs/punycode.js.git                               2.1.1              Mathias Bynens
+smtp-server          MIT                 git://github.com/andris9/smtp-server.git                                      3.9.0              Andris Reinman
+uuid                 MIT                 git+https://github.com/uuidjs/uuid.git                                        8.3.2              n/a
+wild-config          MIT                 git+https://github.com/wildduck-email/wild-config.git                         1.5.1              Andris Reinman
+yargs                MIT                 git+https://github.com/yargs/yargs.git                                        17.2.1             n/a
