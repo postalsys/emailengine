@@ -41,6 +41,7 @@
         "exponential-backoff": "3.1.0",
         "express": "4.17.1",
         "google-auth-library": "7.10.0",
+        "handlebars": "^4.7.7",
         "hapi-pino": "8.5.0",
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",

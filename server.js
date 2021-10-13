@@ -539,7 +539,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'Failed to clear existing license', err });
+                logger.fatal({ msg: 'Failed to remove existing license', err });
                 return false;
             }
         }
@@ -746,6 +746,13 @@ startApplication()
         setInterval(() => {
             collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
         }, 1000).unref();
+
+        setInterval(() => {
+            if (!licenseInfo.active) {
+                logger.info({ msg: 'No active license, shutting down after 15 minutes of activity' });
+                process.exit(0);
+            }
+        }, 15 * 60 * 1000).unref();
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });

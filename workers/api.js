@@ -20,6 +20,7 @@ const { PassThrough } = require('stream');
 const msgpack = require('msgpack5')();
 const { OAuth2Client } = require('google-auth-library');
 const consts = require('../lib/consts');
+const handlebars = require('handlebars');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -27,6 +28,8 @@ const settings = require('../lib/settings');
 const { getByteSize, getDuration, getCounterValues, getAuthSettings } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
+
+const routesUi = require('../lib/routes-ui');
 
 const {
     settingsSchema,
@@ -2256,6 +2259,29 @@ const init = async () => {
             }
         }
     });
+
+    // Web UI routes
+
+    server.views({
+        engines: {
+            hbs: handlebars
+        },
+        relativeTo: pathlib.join(__dirname, '..'),
+        path: './views',
+        layout: 'error',
+        layoutPath: './views/layout',
+        partialsPath: './views/partials',
+
+        context(request) {
+            return {
+                values: request.payload || {},
+                errors: (request.error && request.error.details) || {},
+                pendingMessages: request.pendingMessages
+            };
+        }
+    });
+
+    routesUi(server);
 
     server.route({
         method: 'GET',
