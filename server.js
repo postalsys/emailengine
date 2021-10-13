@@ -19,6 +19,7 @@ const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
 const promClient = require('prom-client');
+const fs = require('fs').promises;
 
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
@@ -27,7 +28,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, selectRendezvousNode } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 config.service = config.service || {};
@@ -89,6 +90,12 @@ logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: p
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
     statusCode: 503
+};
+
+const licenseInfo = {
+    active: false,
+    details: false,
+    type: packageData.license
 };
 
 let preparedSettings = false;
@@ -496,6 +503,47 @@ async function onCommand(worker, message) {
             return { connections };
         }
 
+        case 'license':
+            return licenseInfo;
+
+        case 'updateLicense': {
+            try {
+                const licenseFile = message.license;
+                let license = await checkLicense(licenseFile);
+                if (!license) {
+                    throw new Error('Failed to verify provided license');
+                }
+
+                logger.info({ msg: 'Loaded license', license, source: config.licensePath });
+
+                await redis.hset('settings', 'license', licenseFile);
+
+                licenseInfo.active = true;
+                licenseInfo.details = license;
+                licenseInfo.type = 'EmailEngine License';
+
+                return licenseInfo;
+            } catch (err) {
+                logger.fatal({ msg: 'Failed to verify provided license', source: config.licensePath, err });
+                return false;
+            }
+        }
+
+        case 'removeLicense': {
+            try {
+                await redis.hdel('settings', 'license');
+
+                licenseInfo.active = false;
+                licenseInfo.details = false;
+                licenseInfo.type = packageData.license;
+
+                return licenseInfo;
+            } catch (err) {
+                logger.fatal({ msg: 'Failed to clear existing license', err });
+                return false;
+            }
+        }
+
         case 'new':
             unassigned.add(message.account);
             assignAccounts().catch(err => logger.error(err));
@@ -616,6 +664,43 @@ process.on('SIGINT', () => {
 // START APPLICATION
 
 const startApplication = async () => {
+    if (config.licensePath) {
+        try {
+            let stat = await fs.stat(config.licensePath);
+            if (!stat.isFile()) {
+                throw new Error(`Provided license is not a regular file`);
+            }
+            const licenseFile = await fs.readFile(config.licensePath, 'utf-8');
+            let license = await checkLicense(licenseFile);
+            if (!license) {
+                throw new Error('Failed to verify provided license');
+            }
+            logger.info({ msg: 'Loaded license', license, source: config.licensePath });
+            await redis.hset('settings', 'license', licenseFile);
+        } catch (err) {
+            logger.fatal({ msg: 'Failed to verify provided license', source: config.licensePath, err });
+            return process.exit(13);
+        }
+    }
+
+    let licenseFile = await redis.hget('settings', 'license');
+    if (licenseFile) {
+        try {
+            let license = await checkLicense(licenseFile);
+            if (!license) {
+                throw new Error('Failed to verify provided license');
+            }
+            licenseInfo.active = true;
+            licenseInfo.details = license;
+            licenseInfo.type = 'EmailEngine License';
+            if (!config.licensePath) {
+                logger.info({ msg: 'Loaded license', license, source: 'DB' });
+            }
+        } catch (err) {
+            logger.fatal({ msg: 'Failed to verify stored license', content: licenseFile, err });
+        }
+    }
+
     if (preparedSettings) {
         // set up configuration
         logger.debug({ msg: 'Updating application settings', settings: preparedSettings });

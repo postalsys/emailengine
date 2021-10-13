@@ -38,7 +38,8 @@ const {
     messageDetailsSchema,
     messageListSchema,
     mailboxesSchema,
-    shortMailboxesSchema
+    shortMailboxesSchema,
+    licenseSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -2126,6 +2127,131 @@ const init = async () => {
                     }),
                     mailboxes: shortMailboxesSchema
                 }).label('VerifyAccountReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/license',
+
+        async handler() {
+            try {
+                const licenseInfo = await call({ cmd: 'license' });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to load license info');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Request license info',
+            notes: 'Get active license information',
+            tags: ['api', 'license'],
+
+            response: {
+                schema: licenseSchema.label('LicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/license',
+
+        async handler() {
+            try {
+                const licenseInfo = await call({ cmd: 'removeLicense' });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to clear license info');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove license',
+            notes: 'Remove registered active license',
+            tags: ['api', 'license'],
+
+            response: {
+                schema: Joi.object({
+                    active: Joi.boolean().example(false),
+                    details: Joi.boolean().example(false),
+                    type: Joi.string().example('AGPL-3.0-or-later')
+                }).label('EmtpyLicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/license',
+
+        async handler(request) {
+            try {
+                const licenseInfo = await call({ cmd: 'updateLicense', license: request.payload.license });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to update license. Check license file contents.');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Register a license',
+            notes: 'Set up a license for EmailEngine to unlock all features',
+            tags: ['api', 'license'],
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object({
+                    license: Joi.string().max(1024).required().example('-----BEGIN LICENSE-----\r\n...').description('License file')
+                }).label('RegisterLicense')
+            },
+
+            response: {
+                schema: licenseSchema.label('LicenseReponse'),
                 failAction: 'log'
             }
         }
