@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "1.14.6",
+    "version": "1.14.7",
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
@@ -44,7 +44,7 @@
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.0.0",
-        "imapflow": "1.0.74",
+        "imapflow": "1.0.75",
         "ioredis": "4.27.11",
         "joi": "17.4.2",
         "jquery": "3.6.0",
