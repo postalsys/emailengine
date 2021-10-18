@@ -1,22 +1,33 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-4">
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">Webhooks</h1>
 </div>
+
+<p class="mb-4">Webhooks allow EmailEngine to notify you about changes on registered email accounts.</p>
 
 <form method="post" action="/config/webhooks">
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
     <div class="card">
         <div class="card-header">
-            Webhook URL
+            General Settings
         </div>
         <div class="card-body">
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="webhooks_enabled" name="webhooksEnabled" {{#if
+                    values.webhooksEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="webhooks_enabled">Webhooks are enabled</label>
+                <small class="form-text text-muted">Webhooks are automatically disabled if registered webhook URL
+                    responds with a 404 or 410 response code.</small>
+            </div>
+
             <div class="form-group">
                 <label for="settingsWebhooks">Webhook URL</label>
-                <input type="url" class="form-control" id="settingsWebhooks" name="settingsWebhooks" />
+                <input type="url" class="form-control" id="settingsWebhooks" name="settingsWebhooks"
+                    value="{{values.webhooks}}" />
                 <div class="invalid-feedback">Enter valid URL for the webhook</div>
                 <small class="form-text text-muted">EmailEngine makes a POST request with a JSON payload against this
-                    URL
-                    whenever an event happens you are subscribed to. Leave empty to disable notifications.</small>
+                    URL.</small>
             </div>
         </div>
     </div>
@@ -27,6 +38,9 @@
             Events
         </div>
         <div class="card-body">
+            <p>Select all the events you want to receive webhook notifications for. You should avoid selecting all the
+                events if you have a lot of accounts registered or you might fill the event queue in memory.</p>
+
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all" data-target="event-type" id="notify_all"
                     name="notify[all]" />
@@ -38,64 +52,69 @@
                 <div>
                     <input type="checkbox" class="form-check-input event-type" id="notify_{{name}}"
                         name="notify[{{name}}]" />
-                    <label class="form-check-label" for="notify_{{name}}">{{description}}</label>
+                    <label class="form-check-label" for="notify_{{name}}"
+                        title="&quot;{{name}}&quot;">{{description}}</label>
                 </div>
                 {{/each}}
             </div>
         </div>
     </div>
 
-
-
-    <div class="card mt-4 card-body">
-        <h5 class="card-title">Headers to include</h5>
-
-        <div class="form-group form-check">
-            <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
-                name="headersAll" />
-            <label class="form-check-label" for="headers_all">All Headers</label>
-
+    <div class="card mt-4">
+        <div class="card-header">
+            Headers to include
         </div>
+        <div class="card-body">
 
-        <div class="form-group">
-            <label for="settingsNotifyHeaders">Selected headers</label>
-            <textarea class="form-control header-list" id="settingsNotifyHeaders" name="settingsNotifyHeaders" rows="3"
-                placeholder="MIME-Version"></textarea>
-            <div class="invalid-feedback">Enter valid headers</div>
-            <small class="form-text text-muted">Enter one header key per line. Leave empty to not include headers in
-                the webhook.</small>
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
+                    name="headersAll" />
+                <label class="form-check-label" for="headers_all">All Headers</label>
+
+            </div>
+
+            <div class="form-group">
+                <label for="settingsNotifyHeaders">Selected headers</label>
+                <textarea class="form-control header-list" id="settingsNotifyHeaders" name="settingsNotifyHeaders"
+                    rows="3" placeholder="MIME-Version"></textarea>
+                <div class="invalid-feedback">Enter valid headers</div>
+                <small class="form-text text-muted">Enter one header key per line. Leave empty to not include headers in
+                    the webhook.</small>
+            </div>
         </div>
-
     </div>
 
-    <div class="card mt-4 mb-4 card-body">
-        <h5 class="card-title">Text content</h5>
-
-        <div class="form-group form-check">
-            <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
-                id="settingsNotifyText" name="settingsNotifyText" />
-            <label class="form-check-label" for="settingsNotifyText">Include text content in new email
-                webhooks</label>
-            <small class="form-text text-muted">By default only message metadata without HTML or plaintext values is
-                included in the webhook to keep
-                notification payload size at minimum. If enabled then text values are also added to the
-                webhook.</small>
+    <div class="card mt-4 mb-4">
+        <div class="card-header">
+            Text content
         </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
+                    id="settingsNotifyText" name="settingsNotifyText" />
+                <label class="form-check-label" for="settingsNotifyText">Include text content in new email
+                    webhooks</label>
+                <small class="form-text text-muted">By default only message metadata without HTML or plaintext values is
+                    included in the webhook to keep
+                    notification payload size at minimum. If enabled then text values are also added to the
+                    webhook.</small>
+            </div>
 
-        <div class="form-group">
-            <label for="settingsNotifyTextSize">Maximum text size</label>
-            <input type="number" class="form-control text-list" id="settingsNotifyTextSize" min="0"
-                name="settingsNotifyTextSize" />
-            <div class="invalid-feedback">Enter valid number</div>
-            <small class="form-text text-muted">To keep webhook size with text values in check you can define
-                maximum
-                text
-                size limit. Longer texts are cropped
-                to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has
-                both
-                plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small>
+            <div class="form-group">
+                <label for="settingsNotifyTextSize">Maximum text size</label>
+                <input type="number" class="form-control text-list" id="settingsNotifyTextSize" min="0"
+                    name="settingsNotifyTextSize" />
+                <div class="invalid-feedback">Enter valid number</div>
+                <small class="form-text text-muted">To keep webhook size with text values in check you can define
+                    maximum
+                    text
+                    size limit. Longer texts are cropped
+                    to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has
+                    both
+                    plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small>
+            </div>
+
         </div>
-
     </div>
 
 
