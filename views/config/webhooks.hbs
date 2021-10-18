@@ -17,7 +17,7 @@
                 <input type="checkbox" class="form-check-input" id="webhooks_enabled" name="webhooksEnabled" {{#if
                     values.webhooksEnabled}}checked{{/if}} />
                 <label class="form-check-label" for="webhooks_enabled">Webhooks are enabled</label>
-                <small class="form-text text-muted">Webhooks are automatically disabled if registered webhook URL
+                <small class="form-text text-muted">Webhooks are automatically disabled if the registered webhook URL
                     responds with a 404 or 410 response code.</small>
             </div>
 
@@ -31,7 +31,6 @@
             </div>
         </div>
     </div>
-
 
     <div class="card mt-4">
         <div class="card-header">
@@ -66,6 +65,10 @@
         </div>
         <div class="card-body">
 
+            <p>By default EmailEngine includes envelope specific data like sender and recipient addresses or Message-ID
+                value in the webhook payload. If needed you can configure EmailEngine to include the contents of other
+                header keys as well.</p>
+
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
                     name="headersAll" />
@@ -89,15 +92,17 @@
             Text content
         </div>
         <div class="card-body">
+
+            <p>By default only message metadata without any text content is included in the webhook payload for new
+                emails. If needed you can configure EmailEngine to include plaintext and HTML content in the payload as
+                well.</p>
+
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
                     id="settingsNotifyText" name="settingsNotifyText" />
                 <label class="form-check-label" for="settingsNotifyText">Include text content in new email
                     webhooks</label>
-                <small class="form-text text-muted">By default only message metadata without HTML or plaintext values is
-                    included in the webhook to keep
-                    notification payload size at minimum. If enabled then text values are also added to the
-                    webhook.</small>
+
             </div>
 
             <div class="form-group">
@@ -115,6 +120,15 @@
             </div>
 
         </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
     </div>
 
 
