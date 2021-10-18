@@ -1,0 +1,144 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Webhooks</h1>
+</div>
+
+<form method="post" action="/config/webhooks">
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    <div class="card">
+        <div class="card-header">
+            Webhook URL
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="settingsWebhooks">Webhook URL</label>
+                <input type="url" class="form-control" id="settingsWebhooks" name="settingsWebhooks" />
+                <div class="invalid-feedback">Enter valid URL for the webhook</div>
+                <small class="form-text text-muted">EmailEngine makes a POST request with a JSON payload against this
+                    URL
+                    whenever an event happens you are subscribed to. Leave empty to disable notifications.</small>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card mt-4">
+        <div class="card-header">
+            Events
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input or-else-all" data-target="event-type" id="notify_all"
+                    name="notify[all]" />
+                <label class="form-check-label" for="notify_all">All events</label>
+            </div>
+
+            <div class="form-group form-check">
+                {{#each notificationTypes}}
+                <div>
+                    <input type="checkbox" class="form-check-input event-type" id="notify_{{name}}"
+                        name="notify[{{name}}]" />
+                    <label class="form-check-label" for="notify_{{name}}">{{description}}</label>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="card mt-4 card-body">
+        <h5 class="card-title">Headers to include</h5>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
+                name="headersAll" />
+            <label class="form-check-label" for="headers_all">All Headers</label>
+
+        </div>
+
+        <div class="form-group">
+            <label for="settingsNotifyHeaders">Selected headers</label>
+            <textarea class="form-control header-list" id="settingsNotifyHeaders" name="settingsNotifyHeaders" rows="3"
+                placeholder="MIME-Version"></textarea>
+            <div class="invalid-feedback">Enter valid headers</div>
+            <small class="form-text text-muted">Enter one header key per line. Leave empty to not include headers in
+                the webhook.</small>
+        </div>
+
+    </div>
+
+    <div class="card mt-4 mb-4 card-body">
+        <h5 class="card-title">Text content</h5>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
+                id="settingsNotifyText" name="settingsNotifyText" />
+            <label class="form-check-label" for="settingsNotifyText">Include text content in new email
+                webhooks</label>
+            <small class="form-text text-muted">By default only message metadata without HTML or plaintext values is
+                included in the webhook to keep
+                notification payload size at minimum. If enabled then text values are also added to the
+                webhook.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="settingsNotifyTextSize">Maximum text size</label>
+            <input type="number" class="form-control text-list" id="settingsNotifyTextSize" min="0"
+                name="settingsNotifyTextSize" />
+            <div class="invalid-feedback">Enter valid number</div>
+            <small class="form-text text-muted">To keep webhook size with text values in check you can define
+                maximum
+                text
+                size limit. Longer texts are cropped
+                to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has
+                both
+                plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small>
+        </div>
+
+    </div>
+
+
+</form>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let toggleAllElements = (allElementsElm, otherElements, direction) => {
+            if (!allElementsElm || !otherElements) {
+                return
+            }
+
+            let allSelected = allElementsElm.checked;
+            for (let elm of otherElements) {
+                elm.disabled = direction ? allSelected : !allSelected;
+            }
+        };
+
+        let allElementsElms = document.querySelectorAll('.or-else-all');
+        for (let allElementsElm of allElementsElms) {
+
+            let otherElements;
+            let direction = allElementsElm && allElementsElm.dataset.reverse === 'true' ? false : true
+
+            if (allElementsElm && allElementsElm.dataset.target) {
+                otherElements = document.querySelectorAll(`.${allElementsElm.dataset.target.trim()}`);
+            }
+
+            if (!otherElements) {
+                continue
+            }
+
+            for (let elm of [allElementsElm].concat(Array.from(otherElements))) {
+                elm.addEventListener('change', () => toggleAllElements(allElementsElm, otherElements, direction))
+                elm.addEventListener('click', () => toggleAllElements(allElementsElm, otherElements, direction))
+            }
+
+            if (allElementsElm) {
+                toggleAllElements(allElementsElm, otherElements, direction);
+            }
+        }
+    })
+
+</script>

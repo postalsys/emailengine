@@ -31,6 +31,8 @@
     "dependencies": {
         "@hapi/basic": "6.0.0",
         "@hapi/boom": "9.1.4",
+        "@hapi/cookie": "^11.0.2",
+        "@hapi/crumb": "^8.0.1",
         "@hapi/hapi": "20.2.1",
         "@hapi/inert": "6.0.4",
         "@hapi/vision": "6.1.0",

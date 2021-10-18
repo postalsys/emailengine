@@ -3,6 +3,8 @@
 const { parentPort } = require('worker_threads');
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
+const Cookie = require('@hapi/cookie');
+const Crumb = require('@hapi/crumb');
 const BasicAuth = require('@hapi/basic');
 const Joi = require('joi');
 const logger = require('../lib/logger');
@@ -25,7 +27,7 @@ const handlebars = require('handlebars');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getAuthSettings } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getAuthSettings, flash } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -63,6 +65,7 @@ const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) 
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
 const failAction = async (request, h, err) => {
+    console.log('swswwwww');
     let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
 
     logger.error({
@@ -446,6 +449,7 @@ const init = async () => {
                 let result = await accountObject.create(request.payload);
                 return result;
             } catch (err) {
+                console.error(err);
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -456,10 +460,15 @@ const init = async () => {
                 throw error;
             }
         },
+
         options: {
             description: 'Register new account',
             notes: 'Registers new IMAP account to be synced',
             tags: ['api', 'account'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -522,6 +531,10 @@ const init = async () => {
             notes: 'Updates account information',
             tags: ['api', 'account'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -581,6 +594,10 @@ const init = async () => {
             notes: 'Requests connection to be reconnected',
             tags: ['api', 'account'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -632,6 +649,10 @@ const init = async () => {
             notes: 'Stop syncing IMAP account and delete cached values',
             tags: ['api', 'account'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -680,6 +701,10 @@ const init = async () => {
             description: 'List accounts',
             notes: 'Lists registered accounts',
             tags: ['api', 'account'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -791,6 +816,10 @@ const init = async () => {
             notes: 'Returns stored information about the account. Passwords are not included.',
             tags: ['api', 'account'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -848,6 +877,10 @@ const init = async () => {
             notes: 'Lists all available mailboxes',
             tags: ['api', 'mailbox'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -895,6 +928,10 @@ const init = async () => {
             description: 'Create mailbox',
             notes: 'Create new mailbox folder',
             tags: ['api', 'mailbox'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -954,6 +991,10 @@ const init = async () => {
             notes: 'Delete existing mailbox folder',
             tags: ['api', 'mailbox'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1006,6 +1047,10 @@ const init = async () => {
             notes: 'Fetches raw message as a stream',
             tags: ['api', 'message'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1053,6 +1098,10 @@ const init = async () => {
             notes: 'Fetches attachment file as a binary stream',
             tags: ['api', 'message'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1098,6 +1147,10 @@ const init = async () => {
             description: 'Get message information',
             notes: 'Returns details of a specific message. By default text content is not included, use textType value to force retrieving text',
             tags: ['api', 'message'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1163,6 +1216,10 @@ const init = async () => {
             description: 'Upload message',
             notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
             tags: ['api', 'message'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1275,6 +1332,10 @@ const init = async () => {
             notes: 'Update message information. Mainly this means changing message flag values',
             tags: ['api', 'message'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1353,6 +1414,10 @@ const init = async () => {
             notes: 'Move message to another folder',
             tags: ['api', 'message'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1406,6 +1471,10 @@ const init = async () => {
             description: 'Delete message',
             notes: 'Move message to Trash or delete it if already in Trash',
             tags: ['api', 'message'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1472,6 +1541,10 @@ const init = async () => {
             description: 'Retrieve message text',
             notes: 'Retrieves message text',
             tags: ['api', 'message'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1541,6 +1614,10 @@ const init = async () => {
             notes: 'Lists messages in a mailbox folder',
             tags: ['api', 'message'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1596,6 +1673,10 @@ const init = async () => {
             description: 'Search for messages',
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific foldera and not for the entire account.',
             tags: ['api', 'message'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1723,6 +1804,10 @@ const init = async () => {
             notes: 'Builds a contact listings from email addresses. For larger mailboxes this could take a lot of time.',
             tags: [/*'api', */ 'experimental'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1768,6 +1853,10 @@ const init = async () => {
             description: 'Submit message for delivery',
             notes: 'Submit message for delivery. If reference message ID is provided then EmailEngine adds all headers and flags required for a reply/forward automatically.',
             tags: ['api', 'submit'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -1909,6 +1998,10 @@ const init = async () => {
             notes: 'List setting values for specific keys',
             tags: ['api', 'settings'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1964,6 +2057,10 @@ const init = async () => {
             notes: 'Set setting values for specific keys',
             tags: ['api', 'settings'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1996,6 +2093,10 @@ const init = async () => {
             notes: 'Output is a downloadable text file',
             tags: ['api', 'logs'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -2021,6 +2122,10 @@ const init = async () => {
         options: {
             description: 'Return server stats',
             tags: ['api', 'stats'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -2089,6 +2194,10 @@ const init = async () => {
             description: 'Verify IMAP and SMTP settings',
             notes: 'Checks if can connect and authenticate using provided account info',
             tags: ['api', 'account'],
+
+            plugins: {
+                crumb: false
+            },
 
             validate: {
                 options: {
@@ -2164,6 +2273,10 @@ const init = async () => {
             notes: 'Get active license information',
             tags: ['api', 'license'],
 
+            plugins: {
+                crumb: false
+            },
+
             response: {
                 schema: licenseSchema.label('LicenseReponse'),
                 failAction: 'log'
@@ -2199,6 +2312,10 @@ const init = async () => {
             description: 'Remove license',
             notes: 'Remove registered active license',
             tags: ['api', 'license'],
+
+            plugins: {
+                crumb: false
+            },
 
             response: {
                 schema: Joi.object({
@@ -2240,6 +2357,10 @@ const init = async () => {
             notes: 'Set up a license for EmailEngine to unlock all features',
             tags: ['api', 'license'],
 
+            plugins: {
+                crumb: false
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -2262,15 +2383,36 @@ const init = async () => {
 
     // Web UI routes
 
+    await server.register(Cookie);
+
+    await server.register({
+        plugin: Crumb,
+
+        // plugin options
+        options: {
+            cookieOptions: {
+                isSecure: false
+            }
+        }
+    });
+
+    server.ext('onRequest', (request, h) => {
+        request.flash = async message => await flash(redis, request, message);
+        return h.continue;
+    });
+
     server.views({
         engines: {
             hbs: handlebars
         },
+
         relativeTo: pathlib.join(__dirname, '..'),
         path: './views',
         layout: 'error',
         layoutPath: './views/layout',
         partialsPath: './views/partials',
+
+        isCached: false,
 
         context(request) {
             return {

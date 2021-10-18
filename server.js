@@ -92,6 +92,8 @@ const NO_ACTIVE_HANDLER_RESP = {
     statusCode: 503
 };
 
+const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
+
 const licenseInfo = {
     active: false,
     details: false,
@@ -180,6 +182,8 @@ let workerAssigned = new WeakMap();
 let workers = new Map();
 let availableIMAPWorkers = new Set();
 
+let suspendedWorkerTypes = new Set();
+
 let countUnassignment = async account => {
     if (!unassignCounter.has(account)) {
         unassignCounter.set(account, []);
@@ -219,6 +223,10 @@ let clearUnassignmentCounter = account => {
 
 let spawnWorker = type => {
     if (closing) {
+        return;
+    }
+
+    if (suspendedWorkerTypes.has(type)) {
         return;
     }
 
@@ -269,7 +277,12 @@ let spawnWorker = type => {
         }
 
         // spawning a new worker trigger reassign
-        logger.error({ msg: 'Worker exited', exitCode, type });
+        if (suspendedWorkerTypes.has(type)) {
+            logger.info({ msg: 'Worker thread closed', exitCode, type });
+        } else {
+            logger.error({ msg: 'Worker exited', exitCode, type });
+        }
+
         setTimeout(() => spawnWorker(type), 1000);
     });
 
@@ -486,6 +499,47 @@ async function assignAccounts() {
     }
 }
 
+let licenseCheckTimer = false;
+let checkActiveLicense = () => {
+    clearTimeout(licenseCheckTimer);
+    if (!licenseInfo.active && !suspendedWorkerTypes.size) {
+        logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+
+        for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
+            suspendedWorkerTypes.add(type);
+            if (workers.has(type)) {
+                for (let worker of workers.get(type).values()) {
+                    worker.terminate();
+                }
+            }
+        }
+    } else {
+        if (licenseInfo.active && suspendedWorkerTypes.size) {
+            // re-enable missing workers
+            for (let type of suspendedWorkerTypes) {
+                suspendedWorkerTypes.delete(type);
+                switch (type) {
+                    case 'smtp':
+                        if (SMTP_ENABLED) {
+                            // single SMTP interface worker
+                            spawnWorker('smtp');
+                        }
+                        break;
+                    default:
+                        if (config.workers && config.workers[type]) {
+                            for (let i = 0; i < config.workers[type]; i++) {
+                                spawnWorker(type);
+                            }
+                        }
+                }
+            }
+        }
+
+        licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+        licenseCheckTimer.unref();
+    }
+};
+
 async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
@@ -504,6 +558,9 @@ async function onCommand(worker, message) {
         }
 
         case 'license':
+            if (!licenseInfo.active && suspendedWorkerTypes.size) {
+                return Object.assign({}, licenseInfo, { suspended: true });
+            }
             return licenseInfo;
 
         case 'updateLicense': {
@@ -521,6 +578,9 @@ async function onCommand(worker, message) {
                 licenseInfo.active = true;
                 licenseInfo.details = license;
                 licenseInfo.type = 'EmailEngine License';
+
+                // re-enable workers
+                checkActiveLicense();
 
                 return licenseInfo;
             } catch (err) {
@@ -747,12 +807,8 @@ startApplication()
             collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
         }, 1000).unref();
 
-        setInterval(() => {
-            if (!licenseInfo.active) {
-                logger.info({ msg: 'No active license, shutting down after 15 minutes of activity' });
-                process.exit(0);
-            }
-        }, 15 * 60 * 1000).unref();
+        licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+        licenseCheckTimer.unref();
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });

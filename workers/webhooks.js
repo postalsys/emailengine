@@ -7,7 +7,7 @@ const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
 const logger = require('../lib/logger');
 const packageData = require('../package.json');
-const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
+//const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 config.queues = config.queues || {
@@ -54,10 +54,12 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
     }
 
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
+    /*
     if (!job.data.path && ![EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY].includes(job.data.event)) {
         // ignore non-message related events
         return;
     }
+    */
 
     let headers = {
         'Content-Type': 'application/json',
