@@ -2397,6 +2397,7 @@ const init = async () => {
         isCached: false,
 
         context(request) {
+            console.log(request.pendingMessages);
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
@@ -2404,6 +2405,32 @@ const init = async () => {
             };
         }
     });
+
+    const preResponse = async (request, h) => {
+        const response = request.response;
+        console.log('!!!!!!!');
+
+        console.log(request.url, request.method);
+
+        if (!response.isBoom) {
+            return h.continue;
+        }
+
+        // Replace error with friendly HTML
+
+        const error = response;
+        const ctx = {
+            message: error.output.statusCode === 404 ? 'page not found' : 'something went wrong'
+        };
+
+        return h
+            .view('error', ctx, {
+                layout: 'app'
+            })
+            .code(error.output.statusCode);
+    };
+
+    server.ext('onPreResponse', preResponse);
 
     routesUi(server);
 
