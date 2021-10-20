@@ -23,7 +23,7 @@
 
             <div class="form-group">
                 <label for="settingsWebhooks">Webhook URL</label>
-                <input type="url" class="form-control" id="settingsWebhooks" name="settingsWebhooks"
+                <input type="url" class="form-control" id="settingsWebhooks" name="webhooks"
                     value="{{values.webhooks}}" />
                 <div class="invalid-feedback">Enter valid URL for the webhook</div>
                 <small class="form-text text-muted">EmailEngine makes a POST request with a JSON payload against this
@@ -41,16 +41,17 @@
                 events if you have a lot of accounts registered or you might fill the event queue in memory.</p>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input or-else-all" data-target="event-type" id="notify_all"
-                    name="notify[all]" />
-                <label class="form-check-label" for="notify_all">All events</label>
+                <input type="checkbox" class="form-check-input or-else-all" data-target="event-type" id="notifyAll"
+                    name="notifyAll" {{#if values.notifyAll}}checked{{/if}} />
+                <label class="form-check-label" for="notifyAll">All
+                    events</label>
             </div>
 
             <div class="form-group form-check">
                 {{#each notificationTypes}}
                 <div>
                     <input type="checkbox" class="form-check-input event-type" id="notify_{{name}}"
-                        name="notify[{{name}}]" />
+                        name="notify_{{name}}" {{#if checked}}checked{{/if}}>
                     <label class="form-check-label" for="notify_{{name}}"
                         title="&quot;{{name}}&quot;">{{description}}</label>
                 </div>
@@ -71,15 +72,15 @@
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
-                    name="headersAll" />
+                    name="headersAll" {{#if values.headersAll}}checked{{/if}} />
                 <label class="form-check-label" for="headers_all">All Headers</label>
 
             </div>
 
             <div class="form-group">
                 <label for="settingsNotifyHeaders">Selected headers</label>
-                <textarea class="form-control header-list" id="settingsNotifyHeaders" name="settingsNotifyHeaders"
-                    rows="3" placeholder="MIME-Version"></textarea>
+                <textarea class="form-control header-list" id="settingsNotifyHeaders" name="notifyHeaders" rows="3"
+                    placeholder="MIME-Version">{{values.notifyHeaders}}</textarea>
                 <div class="invalid-feedback">Enter valid headers</div>
                 <small class="form-text text-muted">Enter one header key per line. Leave empty to not include headers in
                     the webhook.</small>
@@ -99,7 +100,7 @@
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
-                    id="settingsNotifyText" name="settingsNotifyText" />
+                    id="settingsNotifyText" name="notifyText" {{#if values.notifyText}}checked{{/if}} />
                 <label class="form-check-label" for="settingsNotifyText">Include text content in new email
                     webhooks</label>
 
@@ -108,7 +109,7 @@
             <div class="form-group">
                 <label for="settingsNotifyTextSize">Maximum text size</label>
                 <input type="number" class="form-control text-list" id="settingsNotifyTextSize" min="0"
-                    name="settingsNotifyTextSize" />
+                    name="notifyTextSize" value="{{values.notifyTextSize}}" />
                 <div class="invalid-feedback">Enter valid number</div>
                 <small class="form-text text-muted">To keep webhook size with text values in check you can define
                     maximum

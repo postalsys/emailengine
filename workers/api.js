@@ -27,7 +27,7 @@ const handlebars = require('handlebars');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getAuthSettings, flash } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getAuthSettings, flash, failAction } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -63,24 +63,6 @@ const EENGINE_AUTH = getAuthSettings(process.env.EENGINE_AUTH || config.api.auth
 
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
-
-const failAction = async (request, h, err) => {
-    console.log('swswwwww');
-    let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
-
-    logger.error({
-        msg: 'Request failed',
-        method: request.method,
-        route: request.route.path,
-        statusCode: request.response && request.response.statusCode,
-        err
-    });
-
-    let message = 'Invalid input';
-    let error = Boom.boomify(new Error(message), { statusCode: 400 });
-    error.output.payload.fields = details;
-    throw error;
-};
 
 let callQueue = new Map();
 let mids = 0;
