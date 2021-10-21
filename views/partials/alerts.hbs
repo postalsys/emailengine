@@ -23,3 +23,11 @@
     </button>
 </div>
 {{/if}}
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            $('.alert-dismissible').alert('close');
+        }, 15 * 1000);
+    });
+</script>

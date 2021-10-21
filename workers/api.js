@@ -431,7 +431,6 @@ const init = async () => {
                 let result = await accountObject.create(request.payload);
                 return result;
             } catch (err) {
-                console.error(err);
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2396,22 +2395,18 @@ const init = async () => {
 
         isCached: false,
 
-        context(request) {
-            console.log(request.pendingMessages);
+        async context(request) {
+            const pendingMessages = await flash(redis, request);
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
-                pendingMessages: request.pendingMessages
+                pendingMessages
             };
         }
     });
 
     const preResponse = async (request, h) => {
         const response = request.response;
-        console.log('!!!!!!!');
-
-        console.log(request.url, request.method);
-
         if (!response.isBoom) {
             return h.continue;
         }
