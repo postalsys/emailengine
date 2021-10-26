@@ -2407,6 +2407,7 @@ const init = async () => {
 
     const preResponse = async (request, h) => {
         const response = request.response;
+
         if (!response.isBoom) {
             return h.continue;
         }

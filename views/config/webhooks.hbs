@@ -13,19 +13,40 @@
         </div>
         <div class="card-body">
 
+            {{#if values.webhooksEnabled}}
+
+            <div class="alert alert-success" role="alert">
+                Webhooks are currently <strong>enabled</strong>.
+            </div>
+
+            {{else}}
+
+            <div class="alert alert-warning" role="alert">
+                Webhooks are currently <strong>disbled</strong>.
+            </div>
+
+            {{/if}}
+
+
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input" id="webhooks_enabled" name="webhooksEnabled" {{#if
-                    values.webhooksEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="webhooks_enabled">Webhooks are enabled</label>
+                <input type="checkbox"
+                    class="form-check-input webhooks-status {{#if errors.webhooksEnabled}}is-invalid{{/if}}"
+                    id="webhooks_enabled" name="webhooksEnabled" {{#if values.webhooksEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="webhooks_enabled">Enable webhooks</label>
+                {{#if errors.webhooksEnabled}}
+                <span class="invalid-feedback">{{errors.webhooksEnabled}}</span>
+                {{/if}}
                 <small class="form-text text-muted">Webhooks are automatically disabled if the registered webhook URL
                     responds with a 404 or 410 response code.</small>
             </div>
 
             <div class="form-group">
                 <label for="settingsWebhooks">Webhook URL</label>
-                <input type="url" class="form-control" id="settingsWebhooks" name="webhooks"
-                    value="{{values.webhooks}}" />
-                <div class="invalid-feedback">Enter valid URL for the webhook</div>
+                <input type="url" class="form-control or-else-all {{#if errors.webhooks}}is-invalid{{/if}}"
+                    data-target="webhooks-status" id="settingsWebhooks" name="webhooks" value="{{values.webhooks}}" />
+                {{#if errors.webhooks}}
+                <span class="invalid-feedback">{{errors.webhooks}}</span>
+                {{/if}}
                 <small class="form-text text-muted">EmailEngine makes a POST request with a JSON payload against this
                     URL.</small>
             </div>
@@ -41,19 +62,23 @@
                 events if you have a lot of accounts registered or you might fill the event queue in memory.</p>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input or-else-all" data-target="event-type" id="notifyAll"
-                    name="notifyAll" {{#if values.notifyAll}}checked{{/if}} />
+                <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyAll}}is-invalid{{/if}}"
+                    data-target="event-type" id="notifyAll" name="notifyAll" {{#if values.notifyAll}}checked{{/if}} />
                 <label class="form-check-label" for="notifyAll">All
                     events</label>
+                {{#if errors.notifyAll}}
+                <span class="invalid-feedback">{{errors.notifyAll}}</span>
+                {{/if}}
             </div>
 
             <div class="form-group form-check">
                 {{#each notificationTypes}}
                 <div>
-                    <input type="checkbox" class="form-check-input event-type" id="notify_{{name}}"
-                        name="notify_{{name}}" {{#if checked}}checked{{/if}}>
+                    <input type="checkbox" class="form-check-input event-type {{#if error}}is-invalid{{/if}}"
+                        id="notify_{{name}}" name="notify_{{name}}" {{#if checked}}checked{{/if}}>
                     <label class="form-check-label" for="notify_{{name}}"
                         title="&quot;{{name}}&quot;">{{description}}</label>
+                    {{#if error}}<span class="invalid-feedback">{{error}}</span>{{/if}}
                 </div>
                 {{/each}}
             </div>
@@ -71,17 +96,23 @@
                 header keys as well.</p>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input or-else-all" data-target="header-list" id="headers_all"
-                    name="headersAll" {{#if values.headersAll}}checked{{/if}} />
+                <input type="checkbox" class="form-check-input or-else-all {{#if errors.headersAll}}is-invalid{{/if}}"
+                    data-target="header-list" id="headers_all" name="headersAll" {{#if
+                    values.headersAll}}checked{{/if}} />
                 <label class="form-check-label" for="headers_all">All Headers</label>
-
+                {{#if errors.headersAll}}
+                <span class="invalid-feedback">{{errors.headersAll}}</span>
+                {{/if}}
             </div>
 
             <div class="form-group">
                 <label for="settingsNotifyHeaders">Selected headers</label>
-                <textarea class="form-control header-list" id="settingsNotifyHeaders" name="notifyHeaders" rows="3"
+                <textarea class="form-control header-list {{#if errors.notifyHeaders}}is-invalid{{/if}}"
+                    id="settingsNotifyHeaders" name="notifyHeaders" rows="3"
                     placeholder="MIME-Version">{{values.notifyHeaders}}</textarea>
-                <div class="invalid-feedback">Enter valid headers</div>
+                {{#if errors.notifyHeaders}}
+                <span class="invalid-feedback">{{errors.notifyHeaders}}</span>
+                {{/if}}
                 <small class="form-text text-muted">Enter one header key per line. Leave empty to not include headers in
                     the webhook.</small>
             </div>
@@ -99,25 +130,27 @@
                 well.</p>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input or-else-all" data-target="text-list" data-reverse="true"
-                    id="settingsNotifyText" name="notifyText" {{#if values.notifyText}}checked{{/if}} />
+                <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyText}}is-invalid{{/if}}"
+                    data-target="text-list" data-reverse="true" id="settingsNotifyText" name="notifyText" {{#if
+                    values.notifyText}}checked{{/if}} />
                 <label class="form-check-label" for="settingsNotifyText">Include text content in new email
                     webhooks</label>
-
+                {{#if errors.notifyText}}
+                <span class="invalid-feedback">{{errors.notifyText}}</span>
+                {{/if}}
             </div>
 
             <div class="form-group">
                 <label for="settingsNotifyTextSize">Maximum text size</label>
-                <input type="number" class="form-control text-list" id="settingsNotifyTextSize" min="0"
-                    name="notifyTextSize" value="{{values.notifyTextSize}}" />
-                <div class="invalid-feedback">Enter valid number</div>
+                <input type="number" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
+                    id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}" />
+                {{#if errors.notifyTextSize}}
+                <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
+                {{/if}}
                 <small class="form-text text-muted">To keep webhook size with text values in check you can define
-                    maximum
-                    text
-                    size limit. Longer texts are cropped
-                    to fit that size. This limit is applied per text-type, so if the limit is 1000 bytes and email has
-                    both
-                    plaintext and html content, then you get 1000 bytes of plaintext and 1000 bytes of HTML.</small>
+                    maximum text size limit. Longer texts are cropped to fit that size. This limit is applied per
+                    text-type, so if the limit is 1000 bytes and email has both plaintext and html content, then you get
+                    1000 bytes of plaintext and 1000 bytes of HTML.</small>
             </div>
 
         </div>
@@ -134,45 +167,3 @@
 
 
 </form>
-
-<script>
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-        let toggleAllElements = (allElementsElm, otherElements, direction) => {
-            if (!allElementsElm || !otherElements) {
-                return
-            }
-
-            let allSelected = allElementsElm.checked;
-            for (let elm of otherElements) {
-                elm.disabled = direction ? allSelected : !allSelected;
-            }
-        };
-
-        let allElementsElms = document.querySelectorAll('.or-else-all');
-        for (let allElementsElm of allElementsElms) {
-
-            let otherElements;
-            let direction = allElementsElm && allElementsElm.dataset.reverse === 'true' ? false : true
-
-            if (allElementsElm && allElementsElm.dataset.target) {
-                otherElements = document.querySelectorAll(`.${allElementsElm.dataset.target.trim()}`);
-            }
-
-            if (!otherElements) {
-                continue
-            }
-
-            for (let elm of [allElementsElm].concat(Array.from(otherElements))) {
-                elm.addEventListener('change', () => toggleAllElements(allElementsElm, otherElements, direction))
-                elm.addEventListener('click', () => toggleAllElements(allElementsElm, otherElements, direction))
-            }
-
-            if (allElementsElm) {
-                toggleAllElements(allElementsElm, otherElements, direction);
-            }
-        }
-    })
-
-</script>
