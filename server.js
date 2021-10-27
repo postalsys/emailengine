@@ -165,6 +165,12 @@ const metrics = {
         name: 'webhook_req',
         help: 'Duration of webhook requests',
         buckets: [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 60 * 1000]
+    }),
+
+    queues: new promClient.Gauge({
+        name: 'queue_size',
+        help: 'Queue size',
+        labelNames: ['queue']
     })
 };
 
@@ -540,9 +546,25 @@ let checkActiveLicense = () => {
     }
 };
 
+async function updateQueueCounters() {
+    for (let queue of ['notify', 'submit']) {
+        const [resActive, resDelayed] = await redis.multi().llen(`bull:${queue}:active`).zcard(`bull:${queue}:delayed`).exec();
+        console.log(resActive, resDelayed);
+        if (resActive[0] || resDelayed[0]) {
+            // counting failed
+            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed });
+            return false;
+        }
+
+        metrics.queues.set({ queue: `${queue}_active` }, Number(resActive[1]) || 0);
+        metrics.queues.set({ queue: `${queue}_delayed` }, Number(resDelayed[1]) || 0);
+    }
+}
+
 async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
+            await updateQueueCounters();
             return promClient.register.metrics();
 
         case 'structuredMetrics': {

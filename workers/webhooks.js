@@ -34,8 +34,10 @@ async function metrics(logger, key, method, ...args) {
 }
 
 notifyQueue.process('*', NOTIFY_QC, async job => {
-    // validate if we should even process this webhook
+    // do not process active jobs, use it for debugging only
+    //return new Promise((resolve, reject) => {});
 
+    // validate if we should even process this webhook
     let accountExists = await redis.exists(getAccountKey(job.data.account));
     if (!accountExists) {
         logger.debug({ msg: 'Account is not enabled', action: 'webhook', event: job.name, account: job.data.account });

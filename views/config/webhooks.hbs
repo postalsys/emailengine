@@ -1,5 +1,17 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">Webhooks</h1>
+    <h1 class="h3 mb-0 text-gray-800">Webhooks
+
+        {{#if values.webhooksEnabled}}
+
+        <span class="badge badge-success">enabled</span>
+
+        {{else}}
+
+        <span class="badge badge-warning">disabled</span>
+
+        {{/if}}
+
+    </h1>
 </div>
 
 <p class="mb-4">Webhooks allow EmailEngine to notify you about changes on registered email accounts.</p>
@@ -13,19 +25,7 @@
         </div>
         <div class="card-body">
 
-            {{#if values.webhooksEnabled}}
 
-            <div class="alert alert-success" role="alert">
-                Webhooks are currently <strong>enabled</strong>.
-            </div>
-
-            {{else}}
-
-            <div class="alert alert-warning" role="alert">
-                Webhooks are currently <strong>disbled</strong>.
-            </div>
-
-            {{/if}}
 
 
             <div class="form-group form-check">
