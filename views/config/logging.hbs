@@ -1,0 +1,156 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">Logging</h1>
+</div>
+
+<p class="mb-4">
+    You can store all IMAP and SMTP traffic except user credentials and message content for selected accounts. You can
+    then download these logs for inspection. Account logging is not enabled by default.
+</p>
+
+<form method="post" action="/config/logging">
+    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+
+    <div class="card mb-4">
+        <div class="card-header">
+            General Settings
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input or-else-all {{#if errors.all}}is-invalid{{/if}}"
+                    data-target="log-list" id="settingsLogsAll" name="all" {{#if values.all}}checked{{/if}} />
+                <label class="form-check-label" for="settingsLogsAll">Store logs for all accounts</label>
+                {{#if errors.all}}
+                <span class="invalid-feedback">{{errors.all}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Not recommended if EmailEngine tracks large number of
+                    accounts</small>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Dropdown Card Example -->
+    <div class="card mb-4">
+        <!-- Card Header - Dropdown -->
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            Store logs for specific accounts
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Account actions:</div>
+                    <a class="dropdown-item log-list" href="#" id="request-reconnect">Trigger reconnect for listed
+                        accounts</a>
+                </div>
+            </div>
+        </div>
+        <!-- Card Body -->
+        <div class="card-body">
+
+            <div class="form-group">
+                <textarea class="form-control log-list {{#if errors.accounts}}is-invalid{{/if}}"
+                    id="settingsLogsAccounts" name="accounts" rows="3">{{values.accounts}}</textarea>
+                {{#if errors.accounts}}
+                <span class="invalid-feedback">{{errors.accounts}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Enter one account ID per line</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            General Settings
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="settingsLogsMaxLogLines">Maximum lines of logs to store</label>
+                <input type="number" class="form-control {{#if errors.maxLogLines}}is-invalid{{/if}}"
+                    id="settingsLogsMaxLogLines" min="0" max="10000000" name="maxLogLines"
+                    value="{{values.maxLogLines}}" />
+                {{#if errors.maxLogLines}}
+                <span class="invalid-feedback">{{errors.maxLogLines}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Logs are stored in Redis which in other words means RAM, so it might
+                    not be a good idea to store too much data in it</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-arrow-right"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+<div class="modal fade" id="loadingWait" data-backdrop="static" data-keyboard="false" tabindex="-1"
+    aria-labelledby="loadingWaitLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                        aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="modal-footer d-none">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const reloadAccounts = async () => {
+            const accounts = document.getElementById('settingsLogsAccounts').value.trim().split(/\r?\n/).map(line => line.trim()).filter(line => line);
+
+            const res = await fetch('/config/logging/reconnect', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    accounts
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        $('#loadingWait').on('shown.bs.modal', () => {
+            document.querySelector('#loadingWait .modal-footer').classList.add('d-none');
+            reloadAccounts().then(data => {
+                console.log(data);
+
+                $('#loadingWait').modal('hide');
+            }).catch(err => {
+                document.querySelector('#loadingWait .modal-body').textContent = err.message
+                document.querySelector('#loadingWait .modal-footer').classList.remove('d-none');
+            });
+        })
+
+        const requestReconnectElm = document.getElementById('request-reconnect');
+        requestReconnectElm.addEventListener('click', e => {
+            e.preventDefault();
+            if (requestReconnectElm.classList.contains('disabled')) {
+                return;
+            }
+
+            $('#loadingWait').modal('show');
+        });
+    })
+</script>

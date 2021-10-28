@@ -447,9 +447,7 @@ const init = async () => {
             notes: 'Registers new IMAP account to be synced',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -512,9 +510,7 @@ const init = async () => {
             notes: 'Updates account information',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -575,9 +571,7 @@ const init = async () => {
             notes: 'Requests connection to be reconnected',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -630,9 +624,7 @@ const init = async () => {
             notes: 'Stop syncing IMAP account and delete cached values',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -683,9 +675,7 @@ const init = async () => {
             notes: 'Lists registered accounts',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -797,10 +787,6 @@ const init = async () => {
             notes: 'Returns stored information about the account. Passwords are not included.',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -858,10 +844,6 @@ const init = async () => {
             notes: 'Lists all available mailboxes',
             tags: ['api', 'mailbox'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -910,9 +892,7 @@ const init = async () => {
             notes: 'Create new mailbox folder',
             tags: ['api', 'mailbox'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -972,9 +952,7 @@ const init = async () => {
             notes: 'Delete existing mailbox folder',
             tags: ['api', 'mailbox'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1028,10 +1006,6 @@ const init = async () => {
             notes: 'Fetches raw message as a stream',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1079,10 +1053,6 @@ const init = async () => {
             notes: 'Fetches attachment file as a binary stream',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1128,10 +1098,6 @@ const init = async () => {
             description: 'Get message information',
             notes: 'Returns details of a specific message. By default text content is not included, use textType value to force retrieving text',
             tags: ['api', 'message'],
-
-            plugins: {
-                crumb: false
-            },
 
             validate: {
                 options: {
@@ -1198,9 +1164,7 @@ const init = async () => {
             notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1313,9 +1277,7 @@ const init = async () => {
             notes: 'Update message information. Mainly this means changing message flag values',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1395,9 +1357,7 @@ const init = async () => {
             notes: 'Move message to another folder',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1453,9 +1413,7 @@ const init = async () => {
             notes: 'Move message to Trash or delete it if already in Trash',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1522,10 +1480,6 @@ const init = async () => {
             description: 'Retrieve message text',
             notes: 'Retrieves message text',
             tags: ['api', 'message'],
-
-            plugins: {
-                crumb: false
-            },
 
             validate: {
                 options: {
@@ -1595,10 +1549,6 @@ const init = async () => {
             notes: 'Lists messages in a mailbox folder',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1655,9 +1605,7 @@ const init = async () => {
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific foldera and not for the entire account.',
             tags: ['api', 'message'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1785,10 +1733,6 @@ const init = async () => {
             notes: 'Builds a contact listings from email addresses. For larger mailboxes this could take a lot of time.',
             tags: [/*'api', */ 'experimental'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1835,9 +1779,7 @@ const init = async () => {
             notes: 'Submit message for delivery. If reference message ID is provided then EmailEngine adds all headers and flags required for a reply/forward automatically.',
             tags: ['api', 'submit'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -1979,10 +1921,6 @@ const init = async () => {
             notes: 'List setting values for specific keys',
             tags: ['api', 'settings'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -2038,9 +1976,7 @@ const init = async () => {
             notes: 'Set setting values for specific keys',
             tags: ['api', 'settings'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -2074,10 +2010,6 @@ const init = async () => {
             notes: 'Output is a downloadable text file',
             tags: ['api', 'logs'],
 
-            plugins: {
-                crumb: false
-            },
-
             validate: {
                 options: {
                     stripUnknown: false,
@@ -2100,13 +2032,10 @@ const init = async () => {
         async handler(request) {
             return await getStats(request.query.seconds);
         },
+
         options: {
             description: 'Return server stats',
             tags: ['api', 'stats'],
-
-            plugins: {
-                crumb: false
-            },
 
             validate: {
                 options: {
@@ -2176,9 +2105,7 @@ const init = async () => {
             notes: 'Checks if can connect and authenticate using provided account info',
             tags: ['api', 'account'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -2254,10 +2181,6 @@ const init = async () => {
             notes: 'Get active license information',
             tags: ['api', 'license'],
 
-            plugins: {
-                crumb: false
-            },
-
             response: {
                 schema: licenseSchema.label('LicenseReponse'),
                 failAction: 'log'
@@ -2294,9 +2217,7 @@ const init = async () => {
             notes: 'Remove registered active license',
             tags: ['api', 'license'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             response: {
                 schema: Joi.object({
@@ -2338,9 +2259,7 @@ const init = async () => {
             notes: 'Set up a license for EmailEngine to unlock all features',
             tags: ['api', 'license'],
 
-            plugins: {
-                crumb: false
-            },
+            plugins: {},
 
             validate: {
                 options: {
@@ -2369,10 +2288,18 @@ const init = async () => {
     await server.register({
         plugin: Crumb,
 
-        // plugin options
         options: {
             cookieOptions: {
                 isSecure: false
+            },
+
+            skip: (request /*, h*/) => {
+                if (request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+                    // No CSRF for API calls?
+                    return true;
+                }
+
+                return false;
             }
         }
     });
@@ -2389,7 +2316,7 @@ const init = async () => {
 
         relativeTo: pathlib.join(__dirname, '..'),
         path: './views',
-        layout: 'error',
+        layout: 'app',
         layoutPath: './views/layout',
         partialsPath: './views/partials',
 
@@ -2419,6 +2346,10 @@ const init = async () => {
             message: error.output.statusCode === 404 ? 'page not found' : 'something went wrong'
         };
 
+        if (error.output && error.output.payload) {
+            request.errorInfo = error.output.payload;
+        }
+
         return h
             .view('error', ctx, {
                 layout: 'app'
@@ -2428,7 +2359,7 @@ const init = async () => {
 
     server.ext('onPreResponse', preResponse);
 
-    routesUi(server);
+    routesUi(server, call);
 
     server.route({
         method: 'GET',

@@ -10,7 +10,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allSelected = allElementsElm.getAttribute('type') === 'checkbox' ? allElementsElm.checked : !allElementsElm.value.trim();
         for (let elm of otherElements) {
-            elm.disabled = direction ? allSelected : !allSelected;
+            console.log(elm);
+
+            if (elm.classList.contains('dropdown-item')) {
+                if (direction && allSelected) {
+                    elm.classList.add('disabled');
+                } else {
+                    elm.classList.remove('disabled');
+                }
+            } else {
+                elm.disabled = direction ? allSelected : !allSelected;
+            }
         }
     };
 
