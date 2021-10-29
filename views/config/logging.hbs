@@ -12,7 +12,8 @@
 
     <div class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            General settings
+            <h6 class="m-0 font-weight-bold text-primary">
+                General settings</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -31,7 +32,6 @@
             </div>
         </div>
         <div class="card-body">
-
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.all}}is-invalid{{/if}}"
                     data-target="log-list" id="settingsLogsAll" name="all" {{#if values.all}}checked{{/if}} />
@@ -44,6 +44,9 @@
             </div>
 
             <div class="form-group">
+
+                <label for="settingsLogsAccounts">Store IMAP logs for the following accounts</label>
+
                 <textarea class="form-control log-list {{#if errors.accounts}}is-invalid{{/if}}"
                     id="settingsLogsAccounts" name="accounts" rows="3">{{values.accounts}}</textarea>
                 {{#if errors.accounts}}
@@ -53,7 +56,7 @@
             </div>
 
             <div class="form-group">
-                <label for="settingsLogsMaxLogLines">Maximum lines of logs to store</label>
+                <label for="settingsLogsMaxLogLines">Maximum lines of logs to store per account</label>
                 <input type="number" class="form-control {{#if errors.maxLogLines}}is-invalid{{/if}}"
                     id="settingsLogsMaxLogLines" min="0" max="10000000" name="maxLogLines"
                     value="{{values.maxLogLines}}" />
