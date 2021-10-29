@@ -1,6 +1,28 @@
-/* global document */
+/* global document, window, $ */
 
 'use strict';
+
+window.showToast = (message, icon) => {
+    let template = `<div class="toast-header">
+    <img src="/static/icons/${icon ? icon : 'info'}.svg" class="rounded mr-2">
+    <strong class="mr-auto">EmailEngine</strong>
+    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="toast-body"></div>`;
+
+    let toast = document.createElement('div');
+    toast.classList.add('toast', 'show', 'fade');
+    toast.dataset.delay = '5000';
+    toast.dataset.autohide = 'true';
+
+    toast.innerHTML = template;
+    toast.querySelector('.toast-body').textContent = message;
+    document.getElementById('toastContainer').appendChild(toast);
+
+    $(toast).toast('show');
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     let toggleAllElements = (allElementsElm, otherElements, direction) => {
@@ -10,8 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allSelected = allElementsElm.getAttribute('type') === 'checkbox' ? allElementsElm.checked : !allElementsElm.value.trim();
         for (let elm of otherElements) {
-            console.log(elm);
-
             if (elm.classList.contains('dropdown-item')) {
                 if (direction && allSelected) {
                     elm.classList.add('disabled');

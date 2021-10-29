@@ -71,7 +71,7 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
 
     let headers = {
         'Content-Type': 'application/json',
-        'User-Agent': `${packageData.name}/${packageData.version} (+https://emailengine.app)`
+        'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`
     };
 
     let parsed = new URL(webhooks);
