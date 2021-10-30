@@ -4,19 +4,87 @@
 
 <p class="mb-4">Configure OAuth2 settings for supported services.</p>
 
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-pills mb-4">
     <li class="nav-item">
-        <a class="nav-link active" href="/config/oauth/gmail">Gmail</a>
+        <a class="nav-link {{#if activeGmail}}active{{/if}}" href="/config/oauth">Gmail</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{#if activeOutlook}}active{{/if}} disabled" href="/config/oauth/outlook">Outlook</a>
     </li>
 </ul>
 
 <div class="card mb-4">
-    <div class="card-header py-3">
+    <a href="#requirements" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+        aria-expanded="true" aria-controls="requirements">
         <h6 class="m-0 font-weight-bold text-primary">Requirements</h6>
-    </div>
-    <div class="card-body">
-        <p>Your OAuth2 project must have the following scope enabled: <code>"https://mail.google.com/"</code>. This is a
-            restricted scope, for external facing services a security audit <a
-                href="https://support.google.com/cloud/answer/9110914">might be required</a>.</p>
+    </a>
+    <div class="collapse" id="requirements">
+        <div class="card-body">
+            <p>Your OAuth2 project must have the following scope enabled: <code>"https://mail.google.com/"</code>. This
+                is a
+                restricted scope, for external facing services a security audit <a
+                    href="https://support.google.com/cloud/answer/9110914">might be required</a>.</p>
+        </div>
     </div>
 </div>
+
+<form method="post" action="/config/webhooks">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" name="provider" value="{{values.provider}}">
+
+    <div class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+        </div>
+
+        <div class="card-body">
+
+            <p>The following values are needed when renewing an access token with a refresh token.</p>
+
+            <div class="form-group">
+                <label for="settingsGmailClientId">Client Id</label>
+                <input type="text" class="form-control" id="settingsGmailClientId" />
+                <div class="invalid-feedback">Enter valid client id</div>
+                <small class="form-text text-muted">OAuth2 client id.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="settingsGmailClientSecret">Client Secret</label>
+                <input type="text" class="form-control" id="settingsGmailClientSecret" />
+                <div class="invalid-feedback">Enter valid client id</div>
+                <small class="form-text text-muted">OAuth2 client secret.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Provisioning</h6>
+        </div>
+
+        <div class="card-body">
+
+            <p>If you want EmailEngine to provision OAuth2 access you need to set up a callback flow.</p>
+
+            <div class="form-group">
+                <label for="settingsGmailRedirectUrl">Callback URL</label>
+                <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
+                <div class="invalid-feedback">Enter valid URL for the callback</div>
+                <small class="form-text text-muted">Optional redirect URL for OAuth2. Must point to your EmailEngine
+                    installation
+                    and end with <code>/oauth</code>. Only needed if you use EmailEngine to request OAuth
+                    access.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+</form>
