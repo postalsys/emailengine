@@ -29,7 +29,6 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@hapi/basic": "6.0.0",
         "@hapi/boom": "9.1.4",
         "@hapi/cookie": "11.0.2",
         "@hapi/crumb": "8.0.1",
@@ -44,6 +43,7 @@
         "express": "4.17.1",
         "google-auth-library": "7.10.1",
         "handlebars": "4.7.7",
+        "hapi-auth-bearer-token": "^8.0.0",
         "hapi-pino": "8.5.0",
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
