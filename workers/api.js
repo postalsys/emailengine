@@ -217,7 +217,7 @@ const init = async () => {
         validate: async (request, token /*, h*/) => {
             let tokenData;
             try {
-                tokenData = await tokens.get(token);
+                tokenData = await tokens.get(token, false, { log: true, remoteAddress: request.app.ip });
             } catch (err) {
                 return {
                     isValid: false,

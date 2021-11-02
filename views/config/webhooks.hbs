@@ -16,7 +16,7 @@
 
 <p class="mb-4">Webhooks allow EmailEngine to notify you about changes on registered email accounts.</p>
 
-<form method="post" action="/config/webhooks">
+<form method="post" action="/admin/config/webhooks">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card">
@@ -189,7 +189,7 @@
         const sendTestPayload = async () => {
             const webhooks = document.getElementById('settingsWebhooks').value.trim();
 
-            const res = await fetch('/config/webhooks/test', {
+            const res = await fetch('/admin/config/webhooks/test', {
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({

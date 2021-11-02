@@ -7,7 +7,7 @@
     then download these logs for inspection. Account logging is not enabled by default.
 </p>
 
-<form method="post" action="/config/logging">
+<form method="post" action="/admin/config/logging">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
     <div class="card mb-4">
@@ -87,7 +87,7 @@
         const reloadAccounts = async () => {
             const accounts = document.getElementById('settingsLogsAccounts').value.trim().split(/\r?\n/).map(line => line.trim()).filter(line => line);
 
-            const res = await fetch('/config/logging/reconnect', {
+            const res = await fetch('/admin/config/logging/reconnect', {
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({
