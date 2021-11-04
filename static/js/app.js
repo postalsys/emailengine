@@ -109,4 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!clip) {
         console.log('Can not set up clipboard');
     }
+
+    $('.tooltip-elm').tooltip('enable');
 });

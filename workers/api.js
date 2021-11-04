@@ -2800,10 +2800,14 @@ const init = async () => {
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
+
+            const licenseInfo = await call({ cmd: 'license' });
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
-                pendingMessages
+                pendingMessages,
+                licenseInfo
             };
         }
     });

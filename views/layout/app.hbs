@@ -275,6 +275,27 @@
                     <div id="toastContainer"
                         style="position: fixed; top: 50px; right: 50px; min-width: 250px; z-index: 10000;"></div>
 
+                    {{#unless licenseInfo.active}}
+                    {{#unless hideLicenseWarning}}
+                    <div class="card border-left-danger shadow mb-4">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        License key missing</div>
+                                    <p>In order to use all the features of EmailEngine you need to provide a valid
+                                        license key. You can set up the key <a href="/admin/config/license">here</a>.
+                                    </p>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-key fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/unless}}
+                    {{/unless}}
+
                     {{> alerts}}
 
                     {{{content}}}
@@ -289,7 +310,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Your Website 2021</span>
+                        <span>Copyright &copy; Postal Systems OÜ 2021</span>
                     </div>
                 </div>
             </footer>
