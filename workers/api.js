@@ -200,6 +200,8 @@ const init = async () => {
 
         grouping: 'tags',
 
+        //auth: 'api-token',
+
         info: {
             title: 'EmailEngine',
             version: packageData.version,
@@ -207,7 +209,17 @@ const init = async () => {
                 name: 'Postal Systems OÜ',
                 email: 'info@emailengine.app'
             }
-        }
+        },
+
+        securityDefinitions: {
+            bearerAuth: {
+                type: 'apiKey',
+                //scheme: 'bearer',
+                name: 'access_token',
+                in: 'query'
+            }
+        },
+        security: [{ bearerAuth: [] }]
     };
 
     await server.register(AuthBearer);
