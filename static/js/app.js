@@ -1,4 +1,4 @@
-/* global document, window, $ */
+/* global document, window, $, ClipboardJS */
 
 'use strict';
 
@@ -104,4 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateRelativeTimes();
     setInterval(updateRelativeTimes, 15 * 1000);
+
+    let clip = new ClipboardJS('.copy-btn');
+    if (!clip) {
+        console.log('Can not set up clipboard');
+    }
 });

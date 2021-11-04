@@ -750,17 +750,17 @@ const startApplication = async () => {
         try {
             let stat = await fs.stat(config.licensePath);
             if (!stat.isFile()) {
-                throw new Error(`Provided license is not a regular file`);
+                throw new Error(`Provided license key is not a regular file`);
             }
             const licenseFile = await fs.readFile(config.licensePath, 'utf-8');
             let license = await checkLicense(licenseFile);
             if (!license) {
-                throw new Error('Failed to verify provided license');
+                throw new Error('Failed to verify provided license key');
             }
-            logger.info({ msg: 'Loaded license', license, source: config.licensePath });
+            logger.info({ msg: 'Loaded license key', license, source: config.licensePath });
             await redis.hset('settings', 'license', licenseFile);
         } catch (err) {
-            logger.fatal({ msg: 'Failed to verify provided license', source: config.licensePath, err });
+            logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
             return process.exit(13);
         }
     }
@@ -770,17 +770,21 @@ const startApplication = async () => {
         try {
             let license = await checkLicense(licenseFile);
             if (!license) {
-                throw new Error('Failed to verify provided license');
+                throw new Error('Failed to verify provided license key');
             }
             licenseInfo.active = true;
             licenseInfo.details = license;
             licenseInfo.type = 'EmailEngine License';
             if (!config.licensePath) {
-                logger.info({ msg: 'Loaded license', license, source: 'DB' });
+                logger.info({ msg: 'Loaded license', license, source: 'db' });
             }
         } catch (err) {
-            logger.fatal({ msg: 'Failed to verify stored license', content: licenseFile, err });
+            logger.fatal({ msg: 'Failed to verify stored license key', content: licenseFile, err });
         }
+    }
+
+    if (!licenseInfo.active) {
+        logger.fatal({ msg: 'No active license key provided. Running in limited mode.' });
     }
 
     if (preparedSettings) {

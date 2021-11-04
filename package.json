@@ -6,6 +6,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
+        "dev": "node server --dbs.redis='redis://127.0.0.1/9' | pino-pretty",
         "test": "grunt",
         "swagger": "./getswagger.sh",
         "build-dist": "npm run licenses && npm run licenses-text && pkg package.json",
@@ -76,6 +77,7 @@
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
         "license-report": "4.5.0",
+        "pino-pretty": "^7.1.0",
         "pkg": "5.3.3"
     },
     "pkg": {
