@@ -1,4 +1,4 @@
-/* global document, window, $, ClipboardJS */
+/* global document, window, $, ClipboardJS, FileReader */
 
 'use strict';
 
@@ -111,4 +111,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     $('.tooltip-elm').tooltip('enable');
+
+    function dropfile(elm, file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            elm.value = (e.target.result || '').trim();
+            elm.focus();
+            elm.select();
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    for (let elm of document.querySelectorAll('.droptxt')) {
+        elm.addEventListener('dragenter', () => {
+            elm.classList.add('dragover');
+        });
+
+        elm.addEventListener('dragleave', () => {
+            elm.classList.remove('dragover');
+        });
+
+        elm.addEventListener('drop', e => {
+            e.preventDefault();
+            elm.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            dropfile(elm, file);
+        });
+
+        elm.addEventListener('click', () => {
+            elm.focus();
+            elm.select();
+        });
+    }
 });

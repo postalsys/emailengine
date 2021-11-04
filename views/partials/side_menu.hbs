@@ -29,9 +29,11 @@
             <a class="collapse-item {{#if menuConfigLicense}}active{{/if}}" href="/admin/config/license">
                 <div style="display: flex; justify-content: space-between;">
                     <div>License</div>
+                    {{#unless licenseInfo.active}}
                     <div><i class="fas fa-fw fa-exclamation-triangle tooltip-elm" data-toggle="tooltip"
                             data-placement="top" title="License not activated"></i>
                     </div>
+                    {{/unless}}
                 </div>
             </a>
         </div>

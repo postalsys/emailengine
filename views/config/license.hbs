@@ -1,0 +1,46 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">License</h1>
+</div>
+
+<p class="mb-4">
+    Postal Systems' subscribers can provision license keys in the <a href="https://postalsys.com/licenses">License
+        central</a>. A valid license key is required to unlock all the features of EmailEngine.
+</p>
+
+
+<div class="card mb-4">
+    <a href="#setupKey" class="d-block card-header py-3 {{#if licenseInfo.active}} collapsed{{/if}}"
+        data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupKey">
+        <h6 class="m-0 font-weight-bold text-primary">Register a license key</h6>
+    </a>
+    <div class="collapse {{#unless licenseInfo.active}} show{{/unless}}" id="setupKey">
+        <div class="card-body">
+            <form method="post" action="/admin/config/license">
+                <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+                <div class="form-group">
+
+                    <label for="licenseTextElement">License key</label>
+
+                    <textarea class="form-control droptxt {{#if errors.license}}is-invalid{{/if}}"
+                        id="licenseTextElement" name="accounts" rows="9" spellcheck="false"
+                        placeholder="-----BEGIN LICENSE-----" required>{{values.license}}</textarea>
+                    {{#if errors.license}}
+                    <span class="invalid-feedback">{{errors.license}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Paste or drag a license key file to this text box</small>
+                </div>
+
+                <div class="mb-4">
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-key"></i>
+                        </span>
+                        <span class="text">Register</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
