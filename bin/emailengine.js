@@ -24,29 +24,45 @@ if (process.argv[2] === 'encrypt') {
             return process.exit(1);
         }
 
-        console.error('EmailEngine License');
-        console.error('===================');
-        console.log(`EmailEngine v${packageData.version}`);
-        console.error(`(c) 2020-2021 Postal Systems`);
-        console.error(`${packageData.license}, full text follows`);
-        console.error('');
-
-        console.error(license.toString().trim());
-
-        console.error('');
-
-        fs.readFile(pathlib.join(__dirname, '..', 'licenses.txt'), (err, data) => {
+        fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
             if (err) {
                 console.error('Failed to load license information');
                 console.error(err);
                 return process.exit(1);
             }
 
-            console.error('Included Modules');
-            console.error('================');
+            console.error('EmailEngine License');
+            console.error('===================');
 
-            console.error(data.toString().trim());
-            process.exit();
+            console.log(`EmailEngine v${packageData.version}`);
+            console.error(`(c) 2020-2021 Postal Systems`);
+            console.error(`${packageData.license}, full text follows`);
+            console.error('');
+
+            console.error('-'.repeat(78));
+            console.error(license.toString().trim());
+
+            console.error('');
+            console.error('-'.repeat(78));
+            console.error('');
+
+            console.error(licenseComm.toString().trim());
+            console.error('-'.repeat(78));
+            console.error('');
+
+            fs.readFile(pathlib.join(__dirname, '..', 'licenses.txt'), (err, data) => {
+                if (err) {
+                    console.error('Failed to load license information');
+                    console.error(err);
+                    return process.exit(1);
+                }
+
+                console.error('Included Modules');
+                console.error('================');
+
+                console.error(data.toString().trim());
+                process.exit();
+            });
         });
     });
 } else {

@@ -399,6 +399,4 @@ Changelog is available for Postal Systems subscribers [here](https://postalsys.c
 
 ## Licensing
 
-Licensed under GNU Affero General Public License v3.0 or later.
-
-MIT-licensed version of EmailEngine is available for [Postal Systems subscribers](https://postalsys.com/).
+Dual licensed under [GNU Affero General Public License v3.0](./LICENSE.txt) or later and the [EmailEngine License](./LICENSE_EMAILENGINE.txt).

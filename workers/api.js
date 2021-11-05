@@ -189,6 +189,8 @@ const init = async () => {
             request.app.ip = request.info.remoteAddress;
         }
 
+        request.app.licenseInfo = await call({ cmd: 'license' });
+
         return h.continue;
     });
 
@@ -310,6 +312,22 @@ const init = async () => {
         path: '/licenses.html',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/LICENSE.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE.txt'), confine: false }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/LICENSE_EMAILENGINE.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
         }
     });
 
@@ -2746,7 +2764,11 @@ const init = async () => {
                 failAction,
 
                 payload: Joi.object({
-                    license: Joi.string().max(1024).required().example('-----BEGIN LICENSE-----\r\n...').description('License file')
+                    license: Joi.string()
+                        .max(10 * 1024)
+                        .required()
+                        .example('-----BEGIN LICENSE-----\r\n...')
+                        .description('License file')
                 }).label('RegisterLicense')
             },
 
@@ -2801,13 +2823,11 @@ const init = async () => {
         async context(request) {
             const pendingMessages = await flash(redis, request);
 
-            const licenseInfo = await call({ cmd: 'license' });
-
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
-                licenseInfo
+                licenseInfo: request.app.licenseInfo
             };
         }
     });
