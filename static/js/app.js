@@ -143,4 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elm.select();
         });
     }
+
+    for (let elm of document.querySelectorAll('.cur-base-url')) {
+        let origin = elm.dataset.origin || window.location.origin;
+        if (elm.getAttribute('type') === 'text') {
+            elm.value = origin;
+        } else {
+            elm.textContent = origin;
+        }
+    }
 });

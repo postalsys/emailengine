@@ -35,6 +35,25 @@
 </div>
 
 
+<div class="card mt-4 mb-4">
+    <div class="card-body">
+        <p>In order to make API requests you either have to use the <code>Authorization</code> Bearer header or the
+            <code>
+            access_token</code> query parameter.
+        </p>
+
+        <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
+$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
+
+        <div>
+            <small>
+                <code>&lt;token&gt;</code> is the full access token string without any quoting
+            </small>
+        </div>
+
+    </div>
+</div>
+
 <div class="modal fade" id="deleteToken" tabindex="-1" aria-labelledby="deleteTokenLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
