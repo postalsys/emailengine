@@ -92,7 +92,7 @@
                                 <a class="dropdown-item {{#if menuPassword}}active{{/if}}"
                                     href="/admin/account/password">
                                     <i class="fas fa-user-shield fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Password
+                                    Account password
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="/admin/account/logout">
@@ -122,8 +122,16 @@
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         License key missing</div>
                                     <p>In order to use all the features of EmailEngine you need to provide a valid
-                                        license key. You can set up the key <a href="/admin/config/license">here</a>.
+                                        license key.
                                     </p>
+                                    <div>
+                                        <a href="/admin/config/license" class="btn btn-primary btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                            <span class="text">Register a license</span>
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-key fa-2x text-gray-300"></i>
@@ -142,9 +150,15 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         Authentication not enabled</div>
-                                    <p>Please enabe authentication for this service <a
-                                            href="/admin/account/password">here</a>.
-                                    </p>
+                                    <p>Please enable authentication for EmailEngine by setting an account password.</p>
+                                    <div>
+                                        <a href="/admin/account/password" class="btn btn-primary btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                            <span class="text">Enable authenction</span>
+                                        </a>
+                                    </div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-user-shield fa-2x text-gray-300"></i>
