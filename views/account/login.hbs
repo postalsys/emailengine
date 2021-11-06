@@ -1,0 +1,41 @@
+<div class="text-center">
+    <h1 class="h4 text-gray-900 mb-4">Authentication required</h1>
+</div>
+<form class="user" method="post" action="/admin/login">
+    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+
+    <div class="form-group">
+        <input type="text" class="form-control form-control-user {{#if errors.username}}is-invalid{{/if}}"
+            id="exampleInputEmail" name="username" aria-describedby="emailHelp" placeholder="Username…"
+            value="{{values.username}}">
+        {{#if errors.username}}
+        <span class="invalid-feedback">{{errors.username}}</span>
+        {{/if}}
+    </div>
+    <div class="form-group">
+        <input type="password" class="form-control form-control-user {{#if errors.password}}is-invalid{{/if}}"
+            id="exampleInputPassword" name="password" placeholder="Password…">
+        {{#if errors.password}}
+        <span class="invalid-feedback">{{errors.password}}</span>
+        {{/if}}
+    </div>
+
+    <div class="form-group">
+        <div class="custom-control custom-checkbox small">
+            <input type="checkbox" class="custom-control-input {{#if errors.remember}}is-invalid{{/if}}"
+                id="customCheck" name="remember" {{#if values.remember}}checked{{/if}}>
+            <label class="custom-control-label" for="customCheck">Remember
+                Me</label>
+            {{#if errors.remember}}
+            <span class="invalid-feedback">{{errors.remember}}</span>
+            {{/if}}
+        </div>
+    </div>
+    <a href="index.html" class="btn btn-primary btn-user btn-block">
+        Login
+    </a>
+</form>
+<hr>
+<div class="text-center">
+    <a class="small" href="https://docs.emailengine.app/" target="_blank">Forgot Password?</a>
+</div>

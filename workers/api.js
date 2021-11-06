@@ -226,6 +226,7 @@ const init = async () => {
 
     await server.register(AuthBearer);
 
+    // Authentication for API calls
     server.auth.strategy('api-token', 'bearer-access-token', {
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
@@ -260,6 +261,43 @@ const init = async () => {
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }
     });
+
+    // needed for auth session and flash messages
+    await server.register(Cookie);
+
+    // Authentication for admin pages
+    console.log('COOKIE SETTINGS', {
+        name: 'ee',
+        password: await settings.get('cookiePassword'),
+        isSecure: false
+    });
+    server.auth.strategy('session', 'cookie', {
+        cookie: {
+            name: 'ee',
+            password: await settings.get('cookiePassword'),
+            isSecure: false
+        },
+        redirectTo: '/admin/login',
+        validateFunc: async (request, session) => {
+            const authData = await settings.get('authData');
+            if (!authData) {
+                return { valid: true, credentials: { enabled: false } };
+            }
+
+            const account = authData.user === session.user;
+
+            if (!account) {
+                return { valid: false };
+            }
+
+            return { valid: true, credentials: { enabled: true, user: authData.user }, artifacts: authData };
+        }
+    });
+
+    const authData = await settings.get('authData');
+    if (authData) {
+        server.auth.default('session');
+    }
 
     await server.register({
         plugin: hapiPino,
@@ -304,6 +342,9 @@ const init = async () => {
         path: '/favicon.ico',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'favicon.ico'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -312,6 +353,9 @@ const init = async () => {
         path: '/licenses.html',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -320,6 +364,9 @@ const init = async () => {
         path: '/LICENSE.txt',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'LICENSE.txt'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -328,6 +375,9 @@ const init = async () => {
         path: '/LICENSE_EMAILENGINE.txt',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -338,6 +388,9 @@ const init = async () => {
             directory: {
                 path: pathlib.join(__dirname, '..', 'static')
             }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -439,7 +492,9 @@ const init = async () => {
                     scope: Joi.string().max(1024).example('https://mail.google.com/').description('OAuth2 scopes'),
                     error: Joi.string().max(1024).example('access_denied').description('OAuth2 scopes')
                 }).label('CreateAccount')
-            }
+            },
+
+            auth: false
         }
     });
 
@@ -2781,8 +2836,6 @@ const init = async () => {
 
     // Web UI routes
 
-    await server.register(Cookie);
-
     await server.register({
         plugin: Crumb,
 
@@ -2802,7 +2855,7 @@ const init = async () => {
         }
     });
 
-    server.ext('onRequest', (request, h) => {
+    server.ext('onRequest', async (request, h) => {
         request.flash = async message => await flash(redis, request, message);
         return h.continue;
     });
@@ -2823,11 +2876,14 @@ const init = async () => {
         async context(request) {
             const pendingMessages = await flash(redis, request);
 
+            console.log('SESSION', request.session);
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
-                licenseInfo: request.app.licenseInfo
+                licenseInfo: request.app.licenseInfo,
+                authenticated: request.session && request.session.user
             };
         }
     });
@@ -2867,6 +2923,8 @@ const init = async () => {
             // API path
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }
+
+        console.error(error);
 
         return h
             .view('error', ctx, {

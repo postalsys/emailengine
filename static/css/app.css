@@ -6,3 +6,9 @@
 .dragover {
     box-shadow: 2px 2px #888888;
 }
+
+.bg-login-page-image {
+    background: url(/static/logo_wide.png);
+    background-position: center;
+    background-size: cover;
+}

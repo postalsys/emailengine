@@ -20,6 +20,7 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
+const crypto = require('crypto');
 
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
@@ -798,6 +799,13 @@ const startApplication = async () => {
 
     // renew encryiption secret, if needed
     await getSecret();
+
+    // ensure password for cookie based auth
+    let cookiePassword = await settings.get('cookiePassword');
+    if (!cookiePassword) {
+        cookiePassword = crypto.randomBytes(32).toString('base64');
+        await settings.set('cookiePassword', cookiePassword);
+    }
 
     // multiple IMAP connection handlers
     for (let i = 0; i < config.workers.imap; i++) {
