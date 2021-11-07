@@ -270,8 +270,11 @@ const init = async () => {
         cookie: {
             name: 'ee',
             password: await settings.get('cookiePassword'),
-            isSecure: false
+            isSecure: false,
+            path: '/',
+            clearInvalid: true
         },
+        appendNext: true,
         redirectTo: '/admin/login',
         validateFunc: async (request, session) => {
             const authData = await settings.get('authData');
@@ -2877,12 +2880,14 @@ const init = async () => {
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
+            const authData = await settings.get('authData');
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
-                authEnabled: !!((await settings.get('authData')) || {}).password
+                authEnabled: !!(authData && authData.password),
+                authData
             };
         }
     });

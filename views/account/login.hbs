@@ -3,6 +3,7 @@
 </div>
 <form class="user" method="post" action="/admin/login">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="next" value="{{values.next}}" />
 
     <div class="form-group">
         <input type="text" class="form-control form-control-user {{#if errors.username}}is-invalid{{/if}}"
