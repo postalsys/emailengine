@@ -266,11 +266,6 @@ const init = async () => {
     await server.register(Cookie);
 
     // Authentication for admin pages
-    console.log('COOKIE SETTINGS', {
-        name: 'ee',
-        password: await settings.get('cookiePassword'),
-        isSecure: false
-    });
     server.auth.strategy('session', 'cookie', {
         cookie: {
             name: 'ee',
@@ -2887,7 +2882,7 @@ const init = async () => {
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
-                authenticated: request.session && request.session.user
+                authEnabled: !!((await settings.get('authData')) || {}).password
             };
         }
     });
@@ -2928,7 +2923,7 @@ const init = async () => {
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }
 
-        console.error(error);
+        logger.error({ path: request.path, method: request.method, err: error });
 
         return h
             .view('error', ctx, {

@@ -95,7 +95,7 @@
                                     Account password
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="/admin/account/logout">
+                                <a class="dropdown-item" href="/admin/logout">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
                                 </a>
@@ -142,7 +142,7 @@
                     {{/unless}}
                     {{/unless}}
 
-                    {{#unless authenticated}}
+                    {{#unless authEnabled}}
                     {{#unless disableAuthWarning}}
                     <div class="card border-left-danger shadow mb-4">
                         <div class="card-body">

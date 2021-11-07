@@ -550,7 +550,6 @@ let checkActiveLicense = () => {
 async function updateQueueCounters() {
     for (let queue of ['notify', 'submit']) {
         const [resActive, resDelayed] = await redis.multi().llen(`bull:${queue}:active`).zcard(`bull:${queue}:delayed`).exec();
-        console.log(resActive, resDelayed);
         if (resActive[0] || resDelayed[0]) {
             // counting failed
             logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed });
