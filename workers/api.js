@@ -290,7 +290,14 @@ const init = async () => {
                 return { valid: false };
             }
 
-            return { valid: true, credentials: { enabled: true, user: authData.user }, artifacts: authData };
+            return {
+                valid: true,
+                credentials: {
+                    enabled: true,
+                    user: authData.user
+                },
+                artifacts: authData
+            };
         }
     });
 
@@ -2875,9 +2882,6 @@ const init = async () => {
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
-
-            console.log('SESSION', request.session);
-
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
