@@ -13,22 +13,28 @@
     </li>
 </ul>
 
-<div class="card mb-4">
-    <a href="#requirements" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
-        aria-expanded="true" aria-controls="requirements">
-        <h6 class="m-0 font-weight-bold text-primary">Requirements</h6>
-    </a>
-    <div class="collapse" id="requirements">
-        <div class="card-body">
-            <p>Your OAuth2 project must have the following scope enabled: <code>"https://mail.google.com/"</code>. This
-                is a
-                restricted scope, for external facing services a security audit <a
-                    href="https://support.google.com/cloud/answer/9110914">might be required</a>.</p>
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                {{#if activeGmail}}
+                <p>Your OAuth2 project <strong>must</strong> have the following scope enabled:
+                    <code>"https://mail.google.com/"</code>.<br />
+                    Read about setting up the OAuth2 project in Google Cloud from <a
+                        href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
+                </p>
+                {{/if}}
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
         </div>
     </div>
 </div>
 
-<form method="post" action="/admin/config/webhooks">
+<form method="post" action="/admin/config/oauth">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{values.provider}}">
 
@@ -42,16 +48,25 @@
             <p>The following values are needed when renewing an access token with a refresh token.</p>
 
             <div class="form-group">
-                <label for="settingsGmailClientId">Client Id</label>
-                <input type="text" class="form-control" id="settingsGmailClientId" />
-                <div class="invalid-feedback">Enter valid client id</div>
+                <label for="clientId">Client Id</label>
+                <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
+                    name="clientId" value="{{values.clientId}}" placeholder="Enter client ID…" />
+                {{#if errors.clientId}}
+                <span class="invalid-feedback">{{errors.clientId}}</span>
+                {{/if}}
                 <small class="form-text text-muted">OAuth2 client id.</small>
             </div>
 
             <div class="form-group">
-                <label for="settingsGmailClientSecret">Client Secret</label>
-                <input type="text" class="form-control" id="settingsGmailClientSecret" />
-                <div class="invalid-feedback">Enter valid client id</div>
+                <label for="clientSecret">Client Secret</label>
+
+                <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
+                    name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
+                    placeholder="Client secret is set but not shown…" {{else}} placeholder="Enter client secret…"
+                    {{/if}} />
+                {{#if errors.clientSecret}}
+                <span class="invalid-feedback">{{errors.clientSecret}}</span>
+                {{/if}}
                 <small class="form-text text-muted">OAuth2 client secret.</small>
             </div>
 
@@ -68,12 +83,14 @@
             <p>If you want EmailEngine to provision OAuth2 access you need to set up a callback flow.</p>
 
             <div class="form-group">
-                <label for="settingsGmailRedirectUrl">Callback URL</label>
-                <input type="url" class="form-control" id="settingsGmailRedirectUrl" />
-                <div class="invalid-feedback">Enter valid URL for the callback</div>
+                <label for="redirectUrl">Callback URL</label>
+                <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
+                    name="redirectUrl" value="{{values.redirectUrl}}" />
+                {{#if errors.redirectUrl}}
+                <span class="invalid-feedback">{{errors.redirectUrl}}</span>
+                {{/if}}
                 <small class="form-text text-muted">Optional redirect URL for OAuth2. Must point to your EmailEngine
-                    installation
-                    and end with <code>/oauth</code>. Only needed if you use EmailEngine to request OAuth
+                    installation and end with <code>/oauth</code>. Only needed if you use EmailEngine to request OAuth
                     access.</small>
             </div>
         </div>
