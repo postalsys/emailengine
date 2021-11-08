@@ -307,9 +307,9 @@ const init = async () => {
     await server.register({
         plugin: hapiPino,
         options: {
-            instance: logger.child({ component: 'api' }),
+            instance: logger.child({ component: 'api' }, { redact: ['req.headers.authorization', 'req.headers.cookie'] }),
             // Redact Authorization headers, see https://getpino.io/#/docs/redaction
-            redact: ['req.headers.authorization']
+            redact: ['req.headers.authorization', 'req.headers.cookie']
         }
     });
 

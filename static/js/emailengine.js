@@ -1,6 +1,8 @@
 'use strict';
 /* global document, fetch, $, window, moment, confirm */
 
+const ACCESS_TOKEN = '6801f553b401df7c420ad1a9fad24d3e77ad429b032bfb54952a9e409dfe711b';
+
 function showToast(message, icon) {
     let template = `<div class="toast-header">
     <img src="/static/icons/${icon ? icon : 'info'}.svg" class="rounded mr-2">
@@ -29,7 +31,11 @@ function checkStatus() {
     let today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let seconds = Math.max(Math.ceil((now.getTime() - today.getTime()) / 1000), 1);
 
-    fetch(`/v1/stats?seconds=${seconds}`)
+    fetch(`/v1/stats?seconds=${seconds}`, {
+        headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`
+        }
+    })
         .then(result => result.json())
         .then(result => {
             for (let elm of document.querySelectorAll('.app-version')) {
@@ -79,7 +85,11 @@ function showAccounts(e, state) {
         return;
     }
     fetchingAccountList = true;
-    fetch('/v1/accounts?page=0&pageSize=1000' + (state ? '&state=' + state : ''))
+    fetch('/v1/accounts?page=0&pageSize=1000' + (state ? '&state=' + state : ''), {
+        headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`
+        }
+    })
         .then(result => result.json())
         .then(result => {
             fetchingAccountList = false;
@@ -170,7 +180,8 @@ function showAccounts(e, state) {
                         fetch('/v1/account/' + encodeURIComponent(accounData.account) + '/reconnect', {
                             method: 'PUT',
                             headers: {
-                                'Content-Type': 'application/json'
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${ACCESS_TOKEN}`
                             },
                             body: JSON.stringify({
                                 reconnect: true
@@ -199,7 +210,10 @@ function showAccounts(e, state) {
                         $('#accountsModal').modal('hide');
                         showToast('Requested account deletion for ' + accounData.name || accounData.account);
                         fetch('/v1/account/' + encodeURIComponent(accounData.account), {
-                            method: 'DELETE'
+                            method: 'DELETE',
+                            headers: {
+                                Authorization: `Bearer ${ACCESS_TOKEN}`
+                            }
                         }).catch(err => {
                             showToast(err.message);
                             console.error(err);
@@ -285,7 +299,8 @@ function submitAddAccount() {
     fetch('/v1/account', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${ACCESS_TOKEN}`
         },
         body: JSON.stringify(account)
     })
@@ -406,7 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/v1/settings', {
             method: 'POST', // or 'PUT'
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${ACCESS_TOKEN}`
             },
             body: JSON.stringify(payload)
         })
@@ -438,7 +454,11 @@ document.addEventListener('DOMContentLoaded', () => {
         'gmailRedirectUrl'
     ];
 
-    fetch(`/v1/settings?${keysToFetch.map(key => `${key}=true`).join('&')}`)
+    fetch(`/v1/settings?${keysToFetch.map(key => `${key}=true`).join('&')}`, {
+        headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`
+        }
+    })
         .then(result => result.json())
         .then(result => {
             document.getElementById('settingsWebhooks').value = (result && result.webhooks) || '';
@@ -494,7 +514,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const account = document.getElementById('logsAccount').value.trim();
         fetch(`/v1/logs/${encodeURIComponent(account)}`, {
-            method: 'GET'
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${ACCESS_TOKEN}`
+            }
         })
             .then(result => result.blob())
             .then(blob => {

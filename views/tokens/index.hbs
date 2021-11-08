@@ -36,21 +36,26 @@
 
 
 <div class="card mt-4 mb-4">
-    <div class="card-body">
-        <p>In order to make API requests you either have to use the <code>Authorization</code> Bearer header or the
-            <code>
-            access_token</code> query parameter.
-        </p>
+    <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+        aria-expanded="true" aria-controls="showHelp">
+        <h6 class="m-0 font-weight-bold text-primary">Usage instructions</h6>
+    </a>
+    <div class="collapse" id="showHelp">
+        <div class="card-body">
+            <p>In order to make API requests you either have to use the <code>Authorization</code> Bearer header
+                (preferred) or the <code>access_token</code> query parameter. Avoid using the query parameter as it is
+                not redacted from the HTTP access logs.
+            </p>
 
-        <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
+            <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
 $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
 
-        <div>
-            <small>
+            <hr>
+            <div class="text-muted">
                 <code>&lt;token&gt;</code> is the full access token string without any quoting
-            </small>
-        </div>
+            </div>
 
+        </div>
     </div>
 </div>
 
