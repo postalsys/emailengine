@@ -282,14 +282,15 @@ function submitAddAccount() {
                       port: Number(document.getElementById('addAccountSMTPPort').value.trim()),
                       secure: document.getElementById('addAccountSMTPSecure').checked,
                       tls: {
-                          rejectUnauthorized: !document.getElementById('addAccountSMTPSecure').checked
+                          rejectUnauthorized: !document.getElementById('addAccountSMTPUnauthorized').checked
                       }
                   }
                 : false,
         oauth2: isOauthAccount
             ? {
                   // ask for the redirection link to the authorization page
-                  authorize: true
+                  authorize: true,
+                  provider: document.getElementById('addAccountOAuth2Provider').value.trim()
               }
             : false
     };

@@ -20,6 +20,7 @@ const crypto = require('crypto');
 const { PassThrough } = require('stream');
 const msgpack = require('msgpack5')();
 const { OAuth2Client } = require('google-auth-library');
+const msal = require('@azure/msal-node');
 const consts = require('../lib/consts');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -158,19 +159,57 @@ parentPort.on('message', message => {
     }
 });
 
-const getOAuth2Client = async () => {
-    let keys = {
-        clientId: await settings.get('gmailClientId'),
-        clientSecret: await settings.get('gmailClientSecret'),
-        redirectUrl: await settings.get('gmailRedirectUrl')
-    };
+const getOAuth2Client = async provider => {
+    switch (provider) {
+        case 'gmail': {
+            let keys = {
+                clientId: await settings.get('gmailClientId'),
+                clientSecret: await settings.get('gmailClientSecret'),
+                redirectUrl: await settings.get('gmailRedirectUrl')
+            };
 
-    if (!keys.clientId || !keys.clientSecret || !keys.redirectUrl) {
-        let error = Boom.boomify(new Error('OAuth2 credentials not set up'), { statusCode: 400 });
-        throw error;
+            if (!keys.clientId || !keys.clientSecret || !keys.redirectUrl) {
+                let error = Boom.boomify(new Error('OAuth2 credentials not set up for Gmail'), { statusCode: 400 });
+                throw error;
+            }
+
+            return new OAuth2Client(keys.clientId, keys.clientSecret, keys.redirectUrl);
+        }
+
+        case 'outlook': {
+            let authority = await settings.get('outlookAuthority');
+
+            let keys = {
+                auth: {
+                    clientId: await settings.get('outlookClientId'),
+                    authority: authority ? `https://login.microsoftonline.com/${authority}` : false,
+                    clientSecret: await settings.get('outlookClientSecret')
+                },
+                system: {
+                    loggerOptions: {
+                        loggerCallback(loglevel, message, containsPii) {
+                            logger.info({ msg: message, loglevel, containsPii });
+                        },
+                        piiLoggingEnabled: false,
+                        logLevel: msal.LogLevel.Verbose
+                    }
+                }
+            };
+
+            if (!keys.auth.clientId || !keys.auth.clientSecret || !keys.auth.authority) {
+                let error = Boom.boomify(new Error('OAuth2 credentials not set up for Outlook'), { statusCode: 400 });
+                throw error;
+            }
+
+            return new msal.ConfidentialClientApplication(keys);
+        }
+
+        default: {
+            console.log('IUNKNWON', provider);
+            let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
+            throw error;
+        }
     }
-
-    return new OAuth2Client(keys.clientId, keys.clientSecret, keys.redirectUrl);
 };
 
 const init = async () => {
@@ -817,8 +856,7 @@ const init = async () => {
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
                     // redirect to OAuth2 consent screen
 
-                    const oAuth2Client = await getOAuth2Client();
-
+                    const oAuth2Client = await getOAuth2Client(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
                     delete request.payload.oauth2.authorize; // do not store this property
@@ -830,12 +868,31 @@ const init = async () => {
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
-                    const authorizeUrl = oAuth2Client.generateAuthUrl({
-                        access_type: 'offline',
-                        scope: ['https://mail.google.com/'],
-                        state: `account:add:${nonce}`,
-                        prompt: 'consent'
-                    });
+                    let authorizeUrl;
+                    switch (request.payload.oauth2.provider) {
+                        case 'gmail':
+                            authorizeUrl = oAuth2Client.generateAuthUrl({
+                                access_type: 'offline',
+                                scope: ['https://mail.google.com/'],
+                                state: `account:add:${nonce}`,
+                                prompt: 'consent'
+                            });
+
+                            break;
+                        case 'outlook':
+                            authorizeUrl = await oAuth2Client.getAuthCodeUrl({
+                                scopes: ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send'],
+                                redirectUri: await settings.get('outlookRedirectUrl'),
+                                state: `account:add:${nonce}`
+                            });
+                            break;
+                        default: {
+                            let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
+                            throw error;
+                        }
+                    }
+
+                    console.log('URL', authorizeUrl);
 
                     return {
                         redirect: authorizeUrl
