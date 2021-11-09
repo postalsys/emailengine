@@ -9,7 +9,7 @@
         <a class="nav-link {{#if activeGmail}}active{{/if}}" href="/admin/config/oauth">Gmail</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{#if activeOutlook}}active{{/if}} disabled" href="/admin/config/oauth/outlook">Outlook</a>
+        <a class="nav-link {{#if activeOutlook}}active{{/if}}" href="/admin/config/oauth/outlook">Outlook</a>
     </li>
 </ul>
 
@@ -23,6 +23,12 @@
                     <code>"https://mail.google.com/"</code>.<br />
                     Read about setting up the OAuth2 project in Google Cloud from <a
                         href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
+                </p>
+                {{/if}}
+
+                {{#if activeOutlook}}
+                <p>Your OAuth2 project <strong>must</strong> have the following scopes enabled:
+                    <code>"IMAP.AccessAsUser.All"</code>, <code>"SMTP.Send"</code>, <code>"offline_access"</code>.
                 </p>
                 {{/if}}
 
@@ -48,7 +54,15 @@
             <p>The following values are needed when renewing an access token with a refresh token.</p>
 
             <div class="form-group">
-                <label for="clientId">Client Id</label>
+                <label for="clientId">
+                    {{#if activeGmail}}
+                    Client Id
+                    {{/if}}
+
+                    {{#if activeOutlook}}
+                    Application Id
+                    {{/if}}
+                </label>
                 <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
                     name="clientId" value="{{values.clientId}}" placeholder="Enter client ID…" />
                 {{#if errors.clientId}}
@@ -69,6 +83,20 @@
                 {{/if}}
                 <small class="form-text text-muted">OAuth2 client secret.</small>
             </div>
+
+            {{#if activeOutlook}}
+            <div class="form-group">
+                <label for="authority">Supported account types</label>
+
+                <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="clientSecret"
+                    name="authority" value="{{values.authority}}" />
+                {{#if errors.authority}}
+                <span class="invalid-feedback">{{errors.authority}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Supported account types. Usually "consumers" for Microsoft accounts,
+                    "organizations" for Organisation accounts only and "common" for both type of accounts.</small>
+            </div>
+            {{/if}}
 
         </div>
     </div>
