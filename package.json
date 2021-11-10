@@ -30,7 +30,6 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@azure/msal-node": "1.3.3",
         "@hapi/boom": "9.1.4",
         "@hapi/cookie": "11.0.2",
         "@hapi/crumb": "8.0.1",

@@ -20,11 +20,12 @@ const crypto = require('crypto');
 const { PassThrough } = require('stream');
 const msgpack = require('msgpack5')();
 const { OAuth2Client } = require('google-auth-library');
-const msal = require('@azure/msal-node');
+const { OutlookOauth } = require('../lib/outlook-oauth');
 const consts = require('../lib/consts');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
+const fetch = require('node-fetch');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -51,6 +52,7 @@ const {
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
 config.api = config.api || {
     port: 3000,
@@ -178,34 +180,24 @@ const getOAuth2Client = async provider => {
 
         case 'outlook': {
             let authority = await settings.get('outlookAuthority');
+            let clientId = await settings.get('outlookClientId');
+            let clientSecret = await settings.get('outlookClientSecret');
+            let redirectUrl = await settings.get('outlookRedirectUrl');
 
-            let keys = {
-                auth: {
-                    clientId: await settings.get('outlookClientId'),
-                    authority: authority ? `https://login.microsoftonline.com/${authority}` : false,
-                    clientSecret: await settings.get('outlookClientSecret')
-                },
-                system: {
-                    loggerOptions: {
-                        loggerCallback(loglevel, message, containsPii) {
-                            logger.info({ msg: message, loglevel, containsPii });
-                        },
-                        piiLoggingEnabled: false,
-                        logLevel: msal.LogLevel.Verbose
-                    }
-                }
-            };
-
-            if (!keys.auth.clientId || !keys.auth.clientSecret || !keys.auth.authority) {
+            if (!clientId || !clientSecret || !authority || !redirectUrl) {
                 let error = Boom.boomify(new Error('OAuth2 credentials not set up for Outlook'), { statusCode: 400 });
                 throw error;
             }
 
-            return new msal.ConfidentialClientApplication(keys);
+            return new OutlookOauth({
+                authority,
+                clientId,
+                clientSecret,
+                redirectUrl
+            });
         }
 
         default: {
-            console.log('IUNKNWON', provider);
             let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
             throw error;
         }
@@ -442,8 +434,6 @@ const init = async () => {
         method: 'GET',
         path: '/oauth',
         async handler(request, h) {
-            const oAuth2Client = await getOAuth2Client();
-
             if (request.query.error) {
                 let error = Boom.boomify(new Error(`Oauth failed: ${request.query.error}`), { statusCode: 400 });
                 throw error;
@@ -473,46 +463,96 @@ const init = async () => {
                 throw error;
             }
 
-            const r = await oAuth2Client.getToken(request.query.code);
-            if (!r || !r.tokens) {
-                let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
-                throw error;
-            }
+            console.log('ACCOUNT DATA', accountData);
 
-            // retrieve account email address as this is the username for IMAP/SMTP
-            oAuth2Client.setCredentials(r.tokens);
-            let profileRes;
-            try {
-                profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
-            } catch (err) {
-                if (err.response && err.response.data && err.response.data.error) {
-                    let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
-                    throw error;
-                }
-                throw err;
-            }
+            const provider = accountData.oauth2.provider;
 
-            if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
-                let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                throw error;
-            }
+            const oAuth2Client = await getOAuth2Client(provider);
 
-            accountData.oauth2 = Object.assign(
-                accountData.oauth2 || {},
-                {
-                    provider: 'gmail',
-                    accessToken: r.tokens.access_token,
-                    refreshToken: r.tokens.refresh_token,
-                    expires: new Date(r.tokens.expiry_date),
-                    scope: r.tokens.scope,
-                    tokenType: r.tokens.token_type
-                },
-                {
-                    auth: {
-                        user: profileRes.data.emailAddress
+            switch (provider) {
+                case 'gmail': {
+                    const r = await oAuth2Client.getToken(request.query.code);
+                    if (!r || !r.tokens) {
+                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+                        throw error;
                     }
+
+                    // retrieve account email address as this is the username for IMAP/SMTP
+                    oAuth2Client.setCredentials(r.tokens);
+                    let profileRes;
+                    try {
+                        profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
+                    } catch (err) {
+                        if (err.response && err.response.data && err.response.data.error) {
+                            let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
+                            throw error;
+                        }
+                        throw err;
+                    }
+
+                    if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.oauth2 = Object.assign(
+                        accountData.oauth2 || {},
+                        {
+                            provider,
+                            accessToken: r.tokens.access_token,
+                            refreshToken: r.tokens.refresh_token,
+                            expires: new Date(r.tokens.expiry_date),
+                            scope: r.tokens.scope,
+                            tokenType: r.tokens.token_type
+                        },
+                        {
+                            auth: {
+                                user: profileRes.data.emailAddress
+                            }
+                        }
+                    );
+                    break;
                 }
-            );
+
+                case 'outlook': {
+                    const clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64').toString()) : false;
+
+                    if (!clientInfo || !clientInfo.preferred_username) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    const r = await oAuth2Client.getToken(request.query.code);
+                    if (!r || !r.access_token) {
+                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.name = accountData.name || clientInfo.name || '';
+
+                    accountData.oauth2 = Object.assign(
+                        accountData.oauth2 || {},
+                        {
+                            provider,
+                            accessToken: r.access_token,
+                            refreshToken: r.refresh_token,
+                            expires: new Date(Date.now() + r.expires_in * 1000),
+                            scope: OUTLOOK_SCOPES,
+                            tokenType: r.token_type
+                        },
+                        {
+                            auth: {
+                                user: clientInfo.preferred_username
+                            }
+                        }
+                    );
+                    break;
+                }
+
+                default: {
+                    throw new Error('FUTURE FEATURE 2');
+                }
+            }
 
             let accountObject = new Account({ redis, call, secret: await getSecret() });
             let result = await accountObject.create(accountData);
@@ -534,7 +574,8 @@ const init = async () => {
                     state: Joi.string().max(1024).example('account:add:12345').description('OAuth2 state info'),
                     code: Joi.string().max(1024).example('67890...').description('OAuth2 setup code'),
                     scope: Joi.string().max(1024).example('https://mail.google.com/').description('OAuth2 scopes'),
-                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 scopes')
+                    client_info: Joi.string().base64({ urlSafe: true, paddingRequired: false }).description('Outlook client info'),
+                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 Error')
                 }).label('CreateAccount')
             },
 
@@ -880,9 +921,7 @@ const init = async () => {
 
                             break;
                         case 'outlook':
-                            authorizeUrl = await oAuth2Client.getAuthCodeUrl({
-                                scopes: ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send'],
-                                redirectUri: await settings.get('outlookRedirectUrl'),
+                            authorizeUrl = oAuth2Client.generateAuthUrl({
                                 state: `account:add:${nonce}`
                             });
                             break;
