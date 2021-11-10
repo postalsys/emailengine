@@ -19,13 +19,11 @@ const config = require('wild-config');
 const crypto = require('crypto');
 const { PassThrough } = require('stream');
 const msgpack = require('msgpack5')();
-const { OAuth2Client } = require('google-auth-library');
-const { OutlookOauth } = require('../lib/outlook-oauth');
+const { getOAuth2Client } = require('../lib/oauth');
 const consts = require('../lib/consts');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
-const fetch = require('node-fetch');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -160,49 +158,6 @@ parentPort.on('message', message => {
             });
     }
 });
-
-const getOAuth2Client = async provider => {
-    switch (provider) {
-        case 'gmail': {
-            let keys = {
-                clientId: await settings.get('gmailClientId'),
-                clientSecret: await settings.get('gmailClientSecret'),
-                redirectUrl: await settings.get('gmailRedirectUrl')
-            };
-
-            if (!keys.clientId || !keys.clientSecret || !keys.redirectUrl) {
-                let error = Boom.boomify(new Error('OAuth2 credentials not set up for Gmail'), { statusCode: 400 });
-                throw error;
-            }
-
-            return new OAuth2Client(keys.clientId, keys.clientSecret, keys.redirectUrl);
-        }
-
-        case 'outlook': {
-            let authority = await settings.get('outlookAuthority');
-            let clientId = await settings.get('outlookClientId');
-            let clientSecret = await settings.get('outlookClientSecret');
-            let redirectUrl = await settings.get('outlookRedirectUrl');
-
-            if (!clientId || !clientSecret || !authority || !redirectUrl) {
-                let error = Boom.boomify(new Error('OAuth2 credentials not set up for Outlook'), { statusCode: 400 });
-                throw error;
-            }
-
-            return new OutlookOauth({
-                authority,
-                clientId,
-                clientSecret,
-                redirectUrl
-            });
-        }
-
-        default: {
-            let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
-            throw error;
-        }
-    }
-};
 
 const init = async () => {
     const server = Hapi.server({
@@ -463,8 +418,6 @@ const init = async () => {
                 throw error;
             }
 
-            console.log('ACCOUNT DATA', accountData);
-
             const provider = accountData.oauth2.provider;
 
             const oAuth2Client = await getOAuth2Client(provider);
@@ -537,7 +490,7 @@ const init = async () => {
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: OUTLOOK_SCOPES,
+                            scope: r.scope ? r.scope.split(/\s+/) : OUTLOOK_SCOPES,
                             tokenType: r.token_type
                         },
                         {
@@ -930,8 +883,6 @@ const init = async () => {
                             throw error;
                         }
                     }
-
-                    console.log('URL', authorizeUrl);
 
                     return {
                         redirect: authorizeUrl
