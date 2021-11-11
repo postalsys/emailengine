@@ -110,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Can not set up clipboard');
     }
 
-    $('.tooltip-elm').tooltip('enable');
+    // enable tooltips
+    $('[data-toggle="tooltip"]').tooltip();
 
     function dropfile(elm, file) {
         const reader = new FileReader();

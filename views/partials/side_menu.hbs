@@ -13,7 +13,24 @@
     System
 </div>
 
-<!-- Nav Item - Pages Collapse Menu -->
+<li class="nav-item {{#if menuSwagger}}active{{/if}}">
+    <a class="nav-link" href="/admin/swagger">
+        <i class="fas fa-fw fa-file-code"></i>
+        <span>API Reference</span></a>
+</li>
+
+<li class="nav-item {{#if menuTokens}}active{{/if}}">
+    <a class="nav-link" href="/admin/tokens">
+        <i class="fas fa-fw fa-key"></i>
+        <span>Access tokens</span></a>
+</li>
+
+<li class="nav-item {{#if menuAccounts}}active{{/if}}">
+    <a class="nav-link" href="/admin/accounts">
+        <i class="fas fa-fw fa-users"></i>
+        <span>Registered accounts</span></a>
+</li>
+
 <li class="nav-item">
     <a class="nav-link {{#unless menuConfig}}collapsed{{/unless}}" href="#" data-toggle="collapse"
         data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
@@ -38,18 +55,6 @@
             </a>
         </div>
     </div>
-</li>
-
-<li class="nav-item {{#if menuTokens}}active{{/if}}">
-    <a class="nav-link" href="/admin/tokens">
-        <i class="fas fa-fw fa-key"></i>
-        <span>Access Tokens</span></a>
-</li>
-
-<li class="nav-item {{#if menuSwagger}}active{{/if}}">
-    <a class="nav-link" href="/admin/swagger">
-        <i class="fas fa-fw fa-file-code"></i>
-        <span>API Reference</span></a>
 </li>
 
 <!-- Nav Item - Utilities Collapse Menu -->

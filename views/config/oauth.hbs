@@ -19,17 +19,22 @@
             <div class="col mr-2">
 
                 {{#if activeGmail}}
-                <p>Your OAuth2 project <strong>must</strong> have the following scope enabled:
-                    <code>"https://mail.google.com/"</code>.<br />
-                    Read about setting up the OAuth2 project in Google Cloud from <a
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"https://mail.google.com/"</code>
+                </ul>
+                <div>Read about setting up the OAuth2 project in Google Cloud from <a
                         href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
-                </p>
+                </div>
                 {{/if}}
 
                 {{#if activeOutlook}}
-                <p>Your OAuth2 project <strong>must</strong> have the following scopes enabled:
-                    <code>"IMAP.AccessAsUser.All"</code>, <code>"SMTP.Send"</code>, <code>"offline_access"</code>.
-                </p>
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"IMAP.AccessAsUser.All"</code>
+                    <li><code>"SMTP.Send"</code>
+                    <li><code>"offline_access"</code>
+                </ul>
                 {{/if}}
 
             </div>
@@ -93,8 +98,10 @@
                 {{#if errors.authority}}
                 <span class="invalid-feedback">{{errors.authority}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Supported account types. Usually "consumers" for Microsoft accounts,
-                    "organizations" for Organisation accounts only and "common" for both type of accounts.</small>
+                <small class="form-text text-muted">Supported account types. Usually "consumers" for Microsoft
+                    accounts,
+                    "organizations" for Organisation accounts only and "common" for both type of
+                    accounts.</small>
             </div>
             {{/if}}
 
@@ -117,8 +124,10 @@
                 {{#if errors.redirectUrl}}
                 <span class="invalid-feedback">{{errors.redirectUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Optional redirect URL for OAuth2. Must point to your EmailEngine
-                    installation and end with <code>/oauth</code>. Only needed if you use EmailEngine to request OAuth
+                <small class="form-text text-muted">Optional redirect URL for OAuth2. Must point to your
+                    EmailEngine
+                    installation and end with <code>/oauth</code>. Only needed if you use EmailEngine to request
+                    OAuth
                     access.</small>
             </div>
         </div>

@@ -64,6 +64,7 @@
         "nodemailer": "6.7.0",
         "pino": "7.1.0",
         "prom-client": "14.0.1",
+        "psl": "^1.8.0",
         "punycode": "2.1.1",
         "smtp-server": "3.9.0",
         "uuid": "8.3.2",

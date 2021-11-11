@@ -18,16 +18,22 @@
     {{#each tokenList}}
     <div class="list-group-item">
         <div class="d-flex w-100">
-            <h6 class="flex-fill align-self-center">{{description}}</h6>
-            <small class="align-self-center">
-                {{#if access.timeStr}}
-                Last used: <span class="relative-time" data-time="{{access.timeStr}}">{{access.timeStr}}</span>
-                {{else}}
-                <span>Never used</span>
-                {{/if}}
-            </small>
+            <div class="flex-fill align-self-center">
+                <div>{{description}}</div>
+
+                <small class="align-self-center">
+                    {{#if access.timeStr}}
+                    Last used: <span class="relative-time" data-time="{{access.timeStr}}">{{access.timeStr}}</span>
+                    {{else}}
+                    <span>Never used</span>
+                    {{/if}}
+                </small>
+            </div>
+
             <div class="ml-2 align-self-center">
-                <button type="button" class="btn btn-danger btn-sm delete-token-btn" data-token="{{id}}">Delete</button>
+                <button type="button" class="btn btn-danger btn-circle btn-sm delete-token-btn" data-token="{{id}}"
+                    data-toggle="tooltip" data-placement="top" title="Delete this token"><i
+                        class="fas fa-trash-alt"></i></button>
             </div>
         </div>
     </div>
@@ -42,9 +48,9 @@
     </a>
     <div class="collapse" id="showHelp">
         <div class="card-body">
-            <p>In order to make API requests you either have to use the <code>Authorization</code> Bearer header
+            <p>In order to make API requests you either have to use the <code>Authorization: Bearer</code> header
                 (preferred) or the <code>access_token</code> query parameter. Avoid using the query parameter as it is
-                not redacted from the HTTP access logs.
+                not redacted from the HTTP logs.
             </p>
 
             <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"

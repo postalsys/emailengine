@@ -52,6 +52,14 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
+const REDACTED_KEYS = [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'err._original',
+    'err._original.oauth2.accessToken',
+    'err._original.oauth2.refreshToken'
+];
+
 config.api = config.api || {
     port: 3000,
     host: '127.0.0.1',
@@ -293,9 +301,9 @@ const init = async () => {
     await server.register({
         plugin: hapiPino,
         options: {
-            instance: logger.child({ component: 'api' }, { redact: ['req.headers.authorization', 'req.headers.cookie'] }),
+            instance: logger.child({ component: 'api' }, { redact: REDACTED_KEYS }),
             // Redact Authorization headers, see https://getpino.io/#/docs/redaction
-            redact: ['req.headers.authorization', 'req.headers.cookie']
+            redact: REDACTED_KEYS
         }
     });
 
@@ -617,7 +625,7 @@ const init = async () => {
 
             response: {
                 schema: Joi.object({
-                    token: Joi.string().length(64).hex().required().example('123456').description('Access Token')
+                    token: Joi.string().length(64).hex().required().example('123456').description('Access token')
                 }).label('CreateTokenReponse'),
                 failAction: 'log'
             }
@@ -663,7 +671,7 @@ const init = async () => {
                 failAction,
 
                 params: Joi.object({
-                    token: Joi.string().length(64).hex().required().example('123456').description('Access Token')
+                    token: Joi.string().length(64).hex().required().example('123456').description('Access token')
                 }).label('DeleteTokenRequest')
             },
 
