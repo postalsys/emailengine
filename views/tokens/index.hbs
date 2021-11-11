@@ -19,7 +19,15 @@
     <div class="list-group-item">
         <div class="d-flex w-100">
             <div class="flex-fill align-self-center">
-                <div>{{description}}</div>
+                <div>{{description}}
+
+                    {{#if scopes}}
+                    <small>
+                        ( {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}} )
+                    </small>
+                    {{/if}}
+
+                </div>
 
                 <small class="align-self-center">
                     {{#if access.timeStr}}
@@ -48,13 +56,22 @@
     </a>
     <div class="collapse" id="showHelp">
         <div class="card-body">
-            <p>In order to make API requests you either have to use the <code>Authorization: Bearer</code> header
+            <p>In order to make API requests you either have to use the
+                <code>Authorization: Bearer</code> header
                 (preferred) or the <code>access_token</code> query parameter. Avoid using the query parameter as it is
                 not redacted from the HTTP logs.
             </p>
 
             <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
 $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
+
+            <p>Prometheus endpoint at <code>/metrics</code> also requires an authorization token. Use the following
+                configuration for setting up the token for a scraping endpoint:
+            </p>
+
+            <pre>authorization:
+  type: Bearer
+  credentials: &lt;token&gt;</pre>
 
             <hr>
             <div class="text-muted">

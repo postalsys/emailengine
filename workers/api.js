@@ -52,6 +52,8 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
+const SCOPES = ['api', 'metrics'];
+
 const REDACTED_KEYS = [
     'req.headers.authorization',
     'req.headers.cookie',
@@ -224,6 +226,18 @@ const init = async () => {
     server.auth.strategy('api-token', 'bearer-access-token', {
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
+            let scope = false;
+            let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
+            if (tags.includes('api')) {
+                scope = 'api';
+            } else {
+                for (let tag of tags) {
+                    if (/^scope:/.test(tag)) {
+                        scope = tag.substr('scope:'.length);
+                    }
+                }
+            }
+
             let tokenData;
             try {
                 tokenData = await tokens.get(token, false, { log: true, remoteAddress: request.app.ip });
@@ -232,6 +246,23 @@ const init = async () => {
                     isValid: false,
                     credentials: {},
                     artifacts: { err: err.message }
+                };
+            }
+
+            if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
+                // failed scope validation
+                logger.error({
+                    msg: 'Trying to use invalid scope for a token',
+                    tokenAccount: tokenData.account,
+                    tokenId: tokenData.id,
+                    requestedScope: scope,
+                    tokenScopes: tokenData.scopes
+                });
+
+                return {
+                    isValid: false,
+                    credentials: { token },
+                    artifacts: { err: 'Unauthorized scope' }
                 };
             }
 
@@ -2521,6 +2552,11 @@ const init = async () => {
             let updated = [];
             for (let key of Object.keys(request.payload)) {
                 switch (key) {
+                    case 'serviceUrl': {
+                        let url = new URL(request.payload.serviceUrl);
+                        request.payload.serviceUrl = url.origin;
+                        break;
+                    }
                     case 'logs': {
                         let logs = request.payload.logs;
                         let resetLoggedAccounts = logs.resetLoggedAccounts;
@@ -2999,11 +3035,19 @@ const init = async () => {
     server.route({
         method: 'GET',
         path: '/metrics',
+
         async handler(request, h) {
             const renderedMetrics = await call({ cmd: 'metrics' });
             const response = h.response('success');
             response.type('text/plain');
             return renderedMetrics;
+        },
+        options: {
+            tags: ['scope:metrics'],
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            }
         }
     });
 

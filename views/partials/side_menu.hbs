@@ -1,6 +1,6 @@
 <!-- Nav Item - Dashboard -->
-<li class="nav-item active">
-    <a class="nav-link" href="/">
+<li class="nav-item {{#if menuDashboard}}active{{/if}}">
+    <a class="nav-link" href="/admin">
         <i class="fas fa-fw fa-tachometer-alt"></i>
         <span>Dashboard</span></a>
 </li>
@@ -40,6 +40,7 @@
     <div id="collapseTwo" class="collapse {{#if menuConfig}}show{{/if}}" aria-labelledby="headingTwo"
         data-parent="#accordionSidebar">
         <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item {{#if menuConfigService}}active{{/if}}" href="/admin/config/service">Service</a>
             <a class="collapse-item {{#if menuConfigWebhooks}}active{{/if}}" href="/admin/config/webhooks">Webhooks</a>
             <a class="collapse-item {{#if menuConfigLogging}}active{{/if}}" href="/admin/config/logging">Logging</a>
             <a class="collapse-item {{#if menuConfigOauth}}active{{/if}}" href="/admin/config/oauth">OAuth2</a>

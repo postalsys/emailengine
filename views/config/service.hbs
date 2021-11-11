@@ -1,0 +1,45 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">Service</h1>
+</div>
+
+<form method="post" action="/admin/config/service">
+    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+
+    <div class="card mb-4 mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="settingsServiceUrl">Service URL</label>
+                <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
+                    id="settingsServiceUrl" name="serviceUrl" value="{{values.serviceUrl}}" />
+                {{#if errors.serviceUrl}}
+                <span class="invalid-feedback">{{errors.serviceUrl}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Base URL for EmailEngine without the path part.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let urlElm = document.getElementById('settingsServiceUrl');
+        if (!urlElm.value.trim()) {
+            urlElm.value = window.location.origin
+        }
+
+    })
+</script>
