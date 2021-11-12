@@ -52,8 +52,6 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
-const SCOPES = ['api', 'metrics'];
-
 const REDACTED_KEYS = [
     'req.headers.authorization',
     'req.headers.cookie',
