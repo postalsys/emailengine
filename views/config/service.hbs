@@ -19,6 +19,16 @@
                 {{/if}}
                 <small class="form-text text-muted">Base URL for EmailEngine without the path part.</small>
             </div>
+
+            <div class="form-group">
+                <label for="settingsServiceSecret">Service secret</label>
+                <input type="text" class="form-control {{#if errors.serviceSecret}}is-invalid{{/if}}"
+                    id="settingsServiceSecret" name="serviceSecret" value="{{values.serviceSecret}}" />
+                {{#if errors.serviceSecret}}
+                <span class="invalid-feedback">{{errors.serviceSecret}}</span>
+                {{/if}}
+                <small class="form-text text-muted">HMAC secret for signing public requests</small>
+            </div>
         </div>
     </div>
 
