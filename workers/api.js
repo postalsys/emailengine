@@ -2994,7 +2994,10 @@ const init = async () => {
 
         const error = response;
         const ctx = {
-            message: error.output.statusCode === 404 ? 'page not found' : 'something went wrong'
+            message:
+                error.output.statusCode === 404
+                    ? 'page not found'
+                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong'
         };
 
         if (error.output && error.output.payload) {
@@ -3023,7 +3026,7 @@ const init = async () => {
 
         return h
             .view('error', ctx, {
-                layout: 'app'
+                layout: 'public'
             })
             .code(error.output.statusCode);
     };
