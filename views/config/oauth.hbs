@@ -105,30 +105,15 @@
             </div>
             {{/if}}
 
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Provisioning</h6>
-        </div>
-
-        <div class="card-body">
-
-            <p>If you want EmailEngine to provision OAuth2 access you need to set up a callback flow.</p>
-
             <div class="form-group">
-                <label for="redirectUrl">Callback URL</label>
+                <label for="redirectUrl">Redirect URL</label>
                 <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
                     name="redirectUrl" value="{{values.redirectUrl}}" />
                 {{#if errors.redirectUrl}}
                 <span class="invalid-feedback">{{errors.redirectUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Optional redirect URL for OAuth2. Must point to your
-                    EmailEngine
-                    installation and end with <code>/oauth</code>. Only needed if you use EmailEngine to request
-                    OAuth
-                    access.</small>
+                <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow
+                    then set it to <code>{{defaultRedirectUrl}}</code></small>
             </div>
         </div>
     </div>

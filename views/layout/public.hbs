@@ -20,6 +20,10 @@
     <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
     <link href="/static/css/app.css" rel="stylesheet">
 
+    {{#if httpRedirectUrl}}
+    <meta http-equiv="refresh" content="0;URL='{{httpRedirectUrl}}'" />
+    {{/if}}
+
 </head>
 
 <body class="bg-gradient-primary">

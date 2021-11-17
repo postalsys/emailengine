@@ -56,7 +56,7 @@ function checkStatus() {
                 elm.textContent = result.accounts || 0;
             }
 
-            ['connecting', 'connected', 'authenticationError', 'connectError'].forEach(key => {
+            ['connecting', 'syncing', 'connected', 'authenticationError', 'connectError'].forEach(key => {
                 for (let elm of document.querySelectorAll('.stats-conn-' + key)) {
                     elm.textContent = (result.connections && result.connections[key]) || 0;
                 }
@@ -547,7 +547,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elm.addEventListener('click', e => showAccounts(e, false));
     }
 
-    ['connecting', 'connected', 'authenticationError', 'connectError'].forEach(key => {
+    ['connecting', 'syncing', 'connected', 'authenticationError', 'connectError'].forEach(key => {
         for (let elm of document.querySelectorAll('.stats-conn-' + key)) {
             elm.addEventListener('click', e => showAccounts(e, key));
         }

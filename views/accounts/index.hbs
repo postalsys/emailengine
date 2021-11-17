@@ -33,9 +33,15 @@
                     <td><strong>{{name}}</strong></td>
 
                     <td>
+                        {{#if type.icon}}
+                        <i class="{{type.icon}} fa-fw"
+                            title="{{type.name}}{{#if type.comment}} ({{type.comment}}){{/if}}" data-toggle="tooltip"
+                            data-placement="top"></i>
+                        {{else}}
                         {{type.name}}
                         {{#if type.comment}}
                         <span class="text-muted">({{type.comment}})</span>
+                        {{/if}}
                         {{/if}}
                     </td>
 
@@ -109,8 +115,13 @@
                 <input type="hidden" name="crumb" value="{{crumb}}">
                 <div class="modal-body">
                     <div class="form-group">
+                        <label for="account-id" class="col-form-label">Full name:</label>
+                        <input type="text" class="form-control" id="account-name" name="name" placeholder="John Smith…">
+                    </div>
+                    <div class="form-group">
                         <label for="account-id" class="col-form-label">Account ID:</label>
-                        <input type="text" class="form-control" id="account-id" name="account" required>
+                        <input type="text" class="form-control" id="account-id" name="account" placeholder="johnsmith"
+                            required>
                     </div>
                 </div>
                 <div class="modal-footer">

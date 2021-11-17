@@ -53,11 +53,8 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
 const REDACTED_KEYS = [
-    'req.headers.authorization',
-    'req.headers.cookie',
-    'err._original',
-    'err._original.oauth2.accessToken',
-    'err._original.oauth2.refreshToken'
+    'req.headers.authorization'
+    //'req.headers.cookie'
 ];
 
 config.api = config.api || {
@@ -455,6 +452,11 @@ const init = async () => {
                 throw error;
             }
 
+            const accountMeta = accountData._meta || {};
+            delete accountData._meta;
+
+            const redirectUrl = accountMeta.redirectUrl;
+
             const provider = accountData.oauth2.provider;
 
             const oAuth2Client = await getOAuth2Client(provider);
@@ -547,7 +549,14 @@ const init = async () => {
             let accountObject = new Account({ redis, call, secret: await getSecret() });
             let result = await accountObject.create(accountData);
 
-            return h.redirect(`/#account:created=${result.account}`);
+            // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
+            return h.view(
+                'redirect',
+                { httpRedirectUrl: redirectUrl ? redirectUrl : `/#account:created=${result.account}` },
+                {
+                    layout: 'public'
+                }
+            );
         },
         options: {
             description: 'OAuth2 response endpoint',
@@ -1218,7 +1227,7 @@ const init = async () => {
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     state: Joi.string()
-                        .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                        .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
                         .description('Filter accounts by state')
                         .label('AccountState')
@@ -1238,7 +1247,7 @@ const init = async () => {
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                                 state: Joi.string()
                                     .required()
-                                    .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                                    .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                                     .example('connected')
                                     .description('Account state'),
                                 syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
