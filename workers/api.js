@@ -24,6 +24,7 @@ const consts = require('../lib/consts');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
+const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -2932,6 +2933,89 @@ const init = async () => {
 
             response: {
                 schema: licenseSchema.label('LicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/autoconfig',
+
+        async handler(request) {
+            try {
+                let serverSettings = await autodetectImapSettings(request.query.email);
+                return serverSettings;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                return { imap: false, smtp: false, _source: 'unknown' };
+            }
+        },
+
+        options: {
+            description: 'Discover Email settings',
+            notes: 'Try to discover IMAP and SMTP settings for an email account',
+            tags: ['api', 'settings'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    email: Joi.string()
+                        .email()
+                        .required()
+                        .example('sender@example.com')
+                        .description('Email address to discover email settings for')
+                        .label('EmailAddress')
+                }).label('AutodiscoverQuery')
+            },
+
+            response: {
+                schema: Joi.object({
+                    imap: Joi.object({
+                        auth: Joi.object({
+                            user: Joi.string().max(256).example('myuser@gmail.com').description('Account username')
+                        }).label('DetectedAuthenticationInfo'),
+
+                        host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
+                        port: Joi.number()
+                            .min(1)
+                            .max(64 * 1024)
+                            .required()
+                            .example(993)
+                            .description('Service port number'),
+                        secure: Joi.boolean().default(false).example(true).description('Should connection use TLS. Usually true for port 993')
+                    }).label('ResolvedServerSettings'),
+                    smtp: Joi.object({
+                        auth: Joi.object({
+                            user: Joi.string().max(256).example('myuser@gmail.com').description('Account username')
+                        }).label('DetectedAuthenticationInfo'),
+
+                        host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
+                        port: Joi.number()
+                            .min(1)
+                            .max(64 * 1024)
+                            .required()
+                            .example(993)
+                            .description('Service port number'),
+                        secure: Joi.boolean().default(false).example(true).description('Should connection use TLS. Usually true for port 993')
+                    }).label('DiscoveredServerSettings'),
+                    _source: Joi.string().example('srv').description('Source for the detected info')
+                }).label('DiscoveredEmailSettings'),
                 failAction: 'log'
             }
         }
