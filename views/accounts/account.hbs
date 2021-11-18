@@ -1,4 +1,54 @@
-<div><a href="{{values.next}}" class="btn btn-primary btn-sm"><i class="fas fa-arrow-left"></i> back</a></div>
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+        Registered accounts
+    </h1>
+</div>
 
-<p>
-    future feature</p>
+<div class="mt-4 row">
+    <div class="col-8">
+        <dl class="row">
+
+            {{#if account.account}}
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">{{account.account}}</dd>
+            {{/if}}
+
+            {{#if account.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{account.name}}</dd>
+            {{/if}}
+
+            {{#if account.email}}
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">{{account.email}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">Account type</dt>
+            <dd class="col-sm-9">
+                {{#if account.type.icon}}
+                <i class="{{account.type.icon}} fa-fw"></i>
+                {{/if}}
+
+                {{account.type.name}}
+
+                {{#if account.type.comment}}
+                <span class="text-muted">({{account.type.comment}})</span>
+                {{/if}}
+
+            </dd>
+
+            <dt class="col-sm-3">State</dt>
+            <dd class="col-sm-9">
+                <span class="badge badge-pill badge-{{account.stateLabel.type}}" style="cursor:default;" {{#if
+                    account.stateLabel.error}}data-toggle="tooltip" data-placement="top"
+                    title="{{account.stateLabel.error}}" {{/if}}>
+
+                    {{#if account.stateLabel.spinner}}
+                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    {{/if}}
+
+                    {{account.stateLabel.name}}</span>
+            </dd>
+        </dl>
+    </div>
+</div>
