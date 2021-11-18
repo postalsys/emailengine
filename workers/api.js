@@ -28,7 +28,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo, isEmail } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -487,6 +487,8 @@ const init = async () => {
                         throw error;
                     }
 
+                    accountData.email = accountData.email || (isEmail(profileRes.data.emailAddress) ? profileRes.data.emailAddress : '');
+
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
@@ -521,6 +523,7 @@ const init = async () => {
                     }
 
                     accountData.name = accountData.name || clientInfo.name || '';
+                    accountData.email = accountData.email || (isEmail(clientInfo.preferred_username) ? clientInfo.preferred_username : '');
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -973,6 +976,7 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
@@ -1043,6 +1047,7 @@ const init = async () => {
 
                 payload: Joi.object({
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
@@ -1245,6 +1250,7 @@ const init = async () => {
                             Joi.object({
                                 account: Joi.string().max(256).required().example('example').description('Account ID'),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                                email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
                                 state: Joi.string()
                                     .required()
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
@@ -1296,7 +1302,7 @@ const init = async () => {
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
+                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
@@ -1342,6 +1348,7 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),

@@ -125,7 +125,7 @@
                     <span class="text">Test settings</span>
                 </button>
 
-                <button type="submit" id="submit-settings-btn" class="btn btn-primary btn-icon-split" disabled>
+                <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split" disabled>
                     <span class="icon text-white-50">
                         <i class="fas fa-arrow-right"></i>
                     </span>
@@ -214,11 +214,17 @@
                 iconElm.classList.add(success ? 'fa-check-circle' : 'fa-times-circle');
                 btnElm.disabled = false;
                 submitElm.disabled = !success;
+                if (submitElm.disabled) {
+                    submitElm.classList.replace('btn-primary', 'btn-secondary');
+                } else {
+                    submitElm.classList.replace('btn-secondary', 'btn-primary');
+                }
             } else {
                 iconElm.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-question-circle');
                 iconElm.classList.add('fa-spinner', 'fa-spin');
                 btnElm.disabled = true;
                 submitElm.disabled = true;
+                submitElm.classList.replace('btn-primary', 'btn-secondary');
             }
         }
 
