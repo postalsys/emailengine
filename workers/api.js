@@ -9,7 +9,6 @@ const Joi = require('joi');
 const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
 const { ImapFlow } = require('imapflow');
-const nodemailer = require('nodemailer');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
@@ -29,7 +28,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -3195,81 +3194,6 @@ function getLogs(account) {
         });
 
     return passThrough;
-}
-
-async function verifyAccountInfo(accountData) {
-    let response = {};
-
-    if (accountData.imap) {
-        try {
-            let imapClient = new ImapFlow(
-                Object.assign(
-                    {
-                        verifyOnly: true,
-                        includeMailboxes: accountData.mailboxes
-                    },
-                    accountData.imap
-                )
-            );
-
-            let mailboxes = await new Promise((resolve, reject) => {
-                imapClient.on('error', err => {
-                    reject(err);
-                });
-                imapClient
-                    .connect()
-                    .then(() => resolve(imapClient._mailboxList))
-                    .catch(reject);
-            });
-
-            response.imap = {
-                success: !!imapClient.authenticated
-            };
-
-            if (accountData.mailboxes && mailboxes && mailboxes.length) {
-                // format mailbox listing
-                let mailboxList = [];
-                for (let entry of mailboxes) {
-                    let mailbox = {};
-                    Object.keys(entry).forEach(key => {
-                        if (['path', 'specialUse', 'name', 'listed', 'subscribed', 'delimiter'].includes(key)) {
-                            mailbox[key] = entry[key];
-                        }
-                    });
-                    if (mailbox.delimiter && mailbox.path.indexOf(mailbox.delimiter) >= 0) {
-                        mailbox.parentPath = mailbox.path.substr(0, mailbox.path.lastIndexOf(mailbox.delimiter));
-                    }
-                    mailboxList.push(mailbox);
-                }
-                response.mailboxes = mailboxList;
-            }
-        } catch (err) {
-            response.imap = {
-                success: false,
-                error: err.message,
-                code: err.code,
-                statusCode: err.statusCode
-            };
-        }
-    }
-
-    if (accountData.smtp) {
-        try {
-            let smtpClient = nodemailer.createTransport(Object.assign({}, accountData.smtp));
-            response.smtp = {
-                success: await smtpClient.verify()
-            };
-        } catch (err) {
-            response.smtp = {
-                success: false,
-                error: err.message,
-                code: err.code,
-                statusCode: err.statusCode
-            };
-        }
-    }
-
-    return response;
 }
 
 async function getStats(seconds) {

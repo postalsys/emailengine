@@ -3,31 +3,44 @@
     <input type="hidden" name="data" value="{{values.data}}">
     <input type="hidden" name="sig" value="{{values.sig}}">
 
-    <div class="form-group">
-        <label for="email">Email address</label>
-        <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email" name="email"
-            value="{{values.email}}" required />
-        {{#if errors.email}}
-        <span class="invalid-feedback">{{errors.email}}</span>
-        {{/if}}
-        <small class="form-text text-muted">Enter your email address</small>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm">
+
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email"
+                        name="email" value="{{values.email}}" required />
+                    {{#if errors.email}}
+                    <span class="invalid-feedback">{{errors.email}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Enter your email address</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control {{#if errors.password}}is-invalid{{/if}}" id="password"
+                        name="password" value="{{values.password}}" required />
+                    {{#if errors.password}}
+                    <span class="invalid-feedback">{{errors.password}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Enter your account password</small>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="row mt-3">
+            <div class="col-sm">
+
+                <button type="submit" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-arrow-right"></i>
+                    </span>
+                    <span class="text">Continue</span>
+                </button>
+            </div>
+        </div>
     </div>
-
-    <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" class="form-control {{#if errors.password}}is-invalid{{/if}}" id="password"
-            name="password" value="{{values.password}}" required />
-        {{#if errors.password}}
-        <span class="invalid-feedback">{{errors.password}}</span>
-        {{/if}}
-        <small class="form-text text-muted">Enter your account password</small>
-    </div>
-
-    <button type="submit" class="btn btn-primary btn-icon-split">
-        <span class="icon text-white-50">
-            <i class="fas fa-arrow-right"></i>
-        </span>
-        <span class="text">Next</span>
-    </button>
-
 </form>

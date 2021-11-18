@@ -1,1 +1,286 @@
-future feature
+<form method="post" id="settings-form" action="/accounts/new/imap/server">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="data" value="{{values.data}}">
+    <input type="hidden" name="sig" value="{{values.sig}}">
+    <input type="hidden" name="email" value="{{values.email}}">
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm">
+                <h6>IMAP</h6>
+
+                <div class="form-group">
+                    <label for="imap_auth_user">Username</label>
+                    <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
+                        id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
+                        autocomplete="off" required />
+                    {{#if errors.imap_auth_user}}
+                    <span class="invalid-feedback">{{errors.imap_auth_user}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="imap_auth_pass">Password</label>
+                    <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
+                        id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
+                        autocomplete="off" required />
+                    {{#if errors.imap_auth_pass}}
+                    <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="imap_host">Hostname</label>
+                    <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}"
+                        data-lpignore="true" autocomplete="off" id="imap_host" name="imap_host"
+                        value="{{values.imap_host}}" required />
+                    {{#if errors.imap_host}}
+                    <span class="invalid-feedback">{{errors.imap_host}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="imap_port">Port</label>
+                    <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}"
+                        data-lpignore="true" autocomplete="off" id="imap_port" name="imap_port"
+                        value="{{values.imap_port}}" required />
+                    {{#if errors.imap_port}}
+                    <span class="invalid-feedback">{{errors.imap_port}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
+                        data-target="header-list" id="imap_secure" name="imap_secure" {{#if
+                        values.imap_secure}}checked{{/if}} />
+                    <label class="form-check-label" for="imap_secure">Use TLS</label>
+                    {{#if errors.imap_secure}}
+                    <span class="invalid-feedback">{{errors.imap_secure}}</span>
+                    {{/if}}
+                </div>
+
+            </div>
+            <div class="col-sm">
+                <h6>SMTP</h6>
+
+                <div class="form-group">
+                    <label for="smtp_auth_user">Username</label>
+                    <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
+                        id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
+                        autocomplete="off" required />
+                    {{#if errors.smtp_auth_user}}
+                    <span class="invalid-feedback">{{errors.smtp_auth_user}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="smtp_auth_pass">Password</label>
+                    <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
+                        id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
+                        autocomplete="off" required />
+                    {{#if errors.smtp_auth_pass}}
+                    <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="smtp_host">Hostname</label>
+                    <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}"
+                        data-lpignore="true" autocomplete="off" id="smtp_host" name="smtp_host"
+                        value="{{values.smtp_host}}" required />
+                    {{#if errors.smtp_host}}
+                    <span class="invalid-feedback">{{errors.smtp_host}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group">
+                    <label for="smtp_port">Port</label>
+                    <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}"
+                        data-lpignore="true" autocomplete="off" id="smtp_port" name="smtp_port"
+                        value="{{values.smtp_port}}" required />
+                    {{#if errors.smtp_port}}
+                    <span class="invalid-feedback">{{errors.smtp_port}}</span>
+                    {{/if}}
+                </div>
+
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
+                        data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
+                        values.smtp_secure}}checked{{/if}} />
+                    <label class="form-check-label" for="smtp_secure">Use TLS</label>
+                    {{#if errors.smtp_secure}}
+                    <span class="invalid-feedback">{{errors.smtp_secure}}</span>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-sm">
+
+                <button type="button" id="test-settings-btn" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-question-circle"></i>
+                    </span>
+                    <span class="text">Test settings</span>
+                </button>
+
+                <button type="submit" id="submit-settings-btn" class="btn btn-primary btn-icon-split" disabled>
+                    <span class="icon text-white-50">
+                        <i class="fas fa-arrow-right"></i>
+                    </span>
+                    <span class="text">Continue</span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="modal fade" id="testResponseModal" tabindex="-1" aria-labelledby="testResponseModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testResponseModalLabel">Test failed</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Failed to validate provided email server settings.</p>
+                <dl class="row" id="test-errors-list"></dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let formTested = false;
+        let formTesting = false;
+
+        let myForm = document.getElementById('settings-form');
+        let btnElm = document.getElementById('test-settings-btn');
+        let iconElm = document.querySelector('#test-settings-btn i');
+        let submitElm = document.getElementById('submit-settings-btn')
+        let errorsListElm = document.getElementById('test-errors-list')
+
+        let addErrorRow = (type, text) => {
+            let keyElm = document.createElement('dt')
+            let valueElm = document.createElement('dd')
+
+            keyElm.classList.add('col-sm-2');
+            valueElm.classList.add('col-sm-10', 'text-danger');
+
+            keyElm.textContent = type;
+            valueElm.textContent = text;
+
+            errorsListElm.appendChild(keyElm);
+            errorsListElm.appendChild(valueElm);
+        }
+
+        let showErrorPopup = (data) => {
+            data = data || {}
+            console.log(data)
+
+            errorsListElm.innerHTML = '';
+
+            if (data.error) {
+                addErrorRow('General error', data.error.message || data.error)
+            } else {
+                if (!data.imap || !data.imap.success) {
+                    let error = data.imap && data.imap.error || 'Failed to validate IMAP server settings'
+                    addErrorRow('IMAP', error);
+                }
+
+                if (!data.smtp || !data.smtp.success) {
+                    let error = data.smtp && data.smtp.error || 'Failed to validate SMTP server settings'
+                    addErrorRow('SMTP', error);
+                }
+            }
+
+            $('#testResponseModal').modal('show');
+        }
+
+        let toggleSpinner = (enabled, success) => {
+
+            if (enabled) {
+                iconElm.classList.remove('fa-spinner', 'fa-spin', 'fa-question-circle', 'fa-check-circle', 'fa-times-circle');
+                iconElm.classList.add(success ? 'fa-check-circle' : 'fa-times-circle');
+                btnElm.disabled = false;
+                submitElm.disabled = !success;
+            } else {
+                iconElm.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-question-circle');
+                iconElm.classList.add('fa-spinner', 'fa-spin');
+                btnElm.disabled = true;
+                submitElm.disabled = true;
+            }
+        }
+
+        let testSettings = async () => {
+            let formData = new FormData(myForm);
+            let body = {}
+            for (var pair of formData.entries()) {
+                body[pair[0]] = pair[1];
+            }
+
+            const res = await fetch('/accounts/new/imap/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            return data;
+        }
+
+        let runTest = () => {
+            if (formTesting) {
+                return;
+            }
+            formTesting = true;
+
+            toggleSpinner(false);
+            testSettings().then(data => {
+                formTesting = false;
+
+                if (data.imap && data.imap.success && data.smtp && data.smtp.success) {
+                    toggleSpinner(true, true);
+                    // everything checks out!
+                    formTested = true;
+                } else {
+                    toggleSpinner(true, false);
+                    formTested = false;
+                    showErrorPopup(data);
+                }
+            }).catch(err => {
+                formTesting = false;
+                toggleSpinner(true, false);
+                formTested = false;
+                showErrorPopup({ error: err });
+            });
+        }
+
+        btnElm.addEventListener('click', () => {
+            runTest();
+        });
+
+        myForm.addEventListener('submit', e => {
+            if (formTested) {
+                return;
+            }
+            e.preventDefault();
+            runTest();
+        });
+
+    })
+</script>
