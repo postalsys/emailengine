@@ -52,3 +52,148 @@
         </dl>
     </div>
 </div>
+
+<div class="row">
+
+
+    {{#if account.oauth2}}
+    <div class="col-lg-6">
+
+
+        <div class="card mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Oauth2</h6>
+            </div>
+            <div class="card-body">
+
+                <dl class="row">
+
+                    {{#if account.oauth2.provider}}
+                    <dt class="col-sm-3">Provider</dt>
+                    <dd class="col-sm-9">{{account.type.comment}}</dd>
+                    {{/if}}
+
+                    {{#if account.oauth2.auth.user}}
+                    <dt class="col-sm-3">Username</dt>
+                    <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+                    {{/if}}
+
+                    {{#if account.oauth2.expiresStr}}
+                    <dt class="col-sm-3">Token</dt>
+                    <dd class="col-sm-9">Refreshes <span class="relative-time"
+                            data-time="{{account.oauth2.expiresStr}}">{{account.oauth2.expiresStr}}</span></dd>
+                    {{/if}}
+
+
+                    {{#if account.oauth2.scopes}}
+                    <dt class="col-sm-3">Scopes</dt>
+                    <dd class="col-sm-9">
+                        <div>
+                            {{#each account.oauth2.scopes}}
+                            <div><code>{{this}}</code></div>
+                            {{/each}}
+                        </div>
+                    </dd>
+                    {{/if}}
+
+                </dl>
+
+            </div>
+        </div>
+
+
+    </div>
+    {{/if}}
+
+
+
+    {{#if account.imap}}
+    <div class="col-lg-6">
+
+        <div class="card mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+            </div>
+            <div class="card-body">
+
+                <dl class="row">
+
+                    {{#if account.imap.auth.user}}
+                    <dt class="col-sm-3">Username</dt>
+                    <dd class="col-sm-9">{{account.imap.auth.user}}</dd>
+                    {{/if}}
+
+                    {{#if account.imap.auth.pass}}
+                    <dt class="col-sm-3">Password</dt>
+                    <dd class="col-sm-9">*******</dd>
+                    {{/if}}
+
+                    {{#if account.imap.host}}
+                    <dt class="col-sm-3">Hostname</dt>
+                    <dd class="col-sm-9">{{account.imap.host}}</dd>
+                    {{/if}}
+
+                    {{#if account.imap.port}}
+                    <dt class="col-sm-3">Port</dt>
+                    <dd class="col-sm-9">{{account.imap.port}}</dd>
+                    {{/if}}
+
+
+                    <dt class="col-sm-3">TLS</dt>
+                    <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}</dd>
+
+                </dl>
+
+            </div>
+        </div>
+
+    </div>
+    {{/if}}
+
+
+
+
+
+    {{#if account.smtp}}
+    <div class="col-lg-6">
+
+        <div class="card mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
+            </div>
+            <div class="card-body">
+
+                <dl class="row">
+
+                    {{#if account.smtp.auth.user}}
+                    <dt class="col-sm-3">Username</dt>
+                    <dd class="col-sm-9">{{account.smtp.auth.user}}</dd>
+                    {{/if}}
+
+                    {{#if account.smtp.auth.pass}}
+                    <dt class="col-sm-3">Password</dt>
+                    <dd class="col-sm-9">*******</dd>
+                    {{/if}}
+
+                    {{#if account.smtp.host}}
+                    <dt class="col-sm-3">Hostname</dt>
+                    <dd class="col-sm-9">{{account.smtp.host}}</dd>
+                    {{/if}}
+
+                    {{#if account.smtp.port}}
+                    <dt class="col-sm-3">Port</dt>
+                    <dd class="col-sm-9">{{account.smtp.port}}</dd>
+                    {{/if}}
+
+                    <dt class="col-sm-3">TLS</dt>
+                    <dd class="col-sm-9">{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}</dd>
+                </dl>
+
+            </div>
+        </div>
+
+    </div>
+    {{/if}}
+
+
+</div>
