@@ -3,6 +3,7 @@
     <input type="hidden" name="data" value="{{values.data}}">
     <input type="hidden" name="sig" value="{{values.sig}}">
     <input type="hidden" name="email" value="{{values.email}}">
+    <input type="hidden" name="name" value="{{values.name}}">
 
     <div class="container">
         <div class="row">
@@ -53,7 +54,12 @@
                     <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
                         data-target="header-list" id="imap_secure" name="imap_secure" {{#if
                         values.imap_secure}}checked{{/if}} />
-                    <label class="form-check-label" for="imap_secure">Use TLS</label>
+                    <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover"
+                        data-trigger="focus" title="TLS for IMAP"
+                        data-content="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                            class="fas fa-question-circle"></i></a>
+                    <label class="form-check-label" for="imap_secure">Use TLS
+                    </label>
                     {{#if errors.imap_secure}}
                     <span class="invalid-feedback">{{errors.imap_secure}}</span>
                     {{/if}}
@@ -107,7 +113,12 @@
                     <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
                         data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
                         values.smtp_secure}}checked{{/if}} />
-                    <label class="form-check-label" for="smtp_secure">Use TLS</label>
+                    <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover"
+                        data-trigger="focus" title="TLS for SMTP"
+                        data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                            class="fas fa-question-circle"></i></a>
+                    <label class="form-check-label" for="smtp_secure">Use TLS
+                    </label>
                     {{#if errors.smtp_secure}}
                     <span class="invalid-feedback">{{errors.smtp_secure}}</span>
                     {{/if}}
@@ -287,6 +298,43 @@
             e.preventDefault();
             runTest();
         });
+
+        const checkPort = (proto) => {
+            let portNr = Number(document.getElementById(`${proto}_port`).value);
+            console.log(proto, portNr)
+            switch (proto) {
+                case 'imap':
+                    if (portNr === 993) {
+                        // enable TLS checkbox
+                        document.getElementById(`${proto}_secure`).checked = true;
+                    }
+                    if (portNr === 110) {
+                        // enable TLS checkbox
+                        document.getElementById(`${proto}_secure`).checked = false;
+                    }
+                    break;
+                case 'smtp':
+                    if (portNr === 465) {
+                        // enable TLS checkbox
+                        document.getElementById(`${proto}_secure`).checked = true;
+                    }
+                    if (portNr === 25 || portNr === 587) {
+                        // enable TLS checkbox
+                        document.getElementById(`${proto}_secure`).checked = false;
+                    }
+                    break;
+            }
+        }
+
+        let imapPortElm = document.getElementById('imap_port');
+        let smtpPortElm = document.getElementById('smtp_port');
+
+        imapPortElm.addEventListener('change', () => checkPort('imap'));
+        imapPortElm.addEventListener('click', () => checkPort('imap'));
+        imapPortElm.addEventListener('keyup', () => checkPort('imap'));
+        smtpPortElm.addEventListener('change', () => checkPort('smtp'));
+        smtpPortElm.addEventListener('click', () => checkPort('smtp'));
+        smtpPortElm.addEventListener('keyup', () => checkPort('smtp'));
 
     })
 </script>

@@ -56,7 +56,21 @@
 
         <div class="card-body">
 
-            <p>The following values are needed when renewing an access token with a refresh token.</p>
+            <p>Setting up OAuth2 credentials allows to refresh expired access tokens.</p>
+
+            <div class="form-group form-check">
+                <input type="checkbox"
+                    class="form-check-input webhooks-status {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
+                    id="webhooks_enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
+                <label class="form-check-label" for="webhooks_enabled">Enable OAuth2 support for
+                    {{providerName}}</label>
+                {{#if errors.oauth2Enabled}}
+                <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled then <em>"{{providerName}}"</em> is shown as an account
+                    type option when adding an
+                    account.</small>
+            </div>
 
             <div class="form-group">
                 <label for="clientId">

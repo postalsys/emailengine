@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // enable tooltips
     $('[data-toggle="tooltip"]').tooltip();
+    $('[data-toggle="popover"]').popover();
 
     function dropfile(elm, file) {
         const reader = new FileReader();

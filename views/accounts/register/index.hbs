@@ -15,6 +15,7 @@
     </form>
 </div>
 
+{{#if gmailEnabled}}
 <div class="mb-3">
     <form method="post" action="/accounts/new">
         <input type="hidden" name="crumb" value="{{crumb}}">
@@ -27,7 +28,9 @@
         </button>
     </form>
 </div>
+{{/if}}
 
+{{#if outlookEnabled}}
 <div class="mb-3">
     <form method="post" action="/accounts/new">
         <input type="hidden" name="crumb" value="{{crumb}}">
@@ -39,3 +42,4 @@
         </button>
     </form>
 </div>
+{{/if}}

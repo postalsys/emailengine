@@ -44,8 +44,8 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
         return;
     }
 
-    let webhooksDisabled = await settings.get('webhooksDisabled');
-    if (webhooksDisabled) {
+    let webhooksEnabled = await settings.get('webhooksEnabled');
+    if (!webhooksEnabled) {
         return;
     }
 
@@ -122,7 +122,7 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
         if (err.status === 410 || err.status === 404) {
             // disable webhook
             logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, err });
-            await settings.set('webhooksDisabled', true);
+            await settings.set('webhooksEnabled', false);
             return;
         }
 

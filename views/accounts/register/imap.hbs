@@ -8,9 +8,19 @@
             <div class="col-sm">
 
                 <div class="form-group">
+                    <label for="name">Your name</label>
+                    <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
+                        value="{{values.name}}" />
+                    {{#if errors.name}}
+                    <span class="invalid-feedback">{{errors.name}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Enter your full name</small>
+                </div>
+
+                <div class="form-group">
                     <label for="email">Email address</label>
                     <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email"
-                        name="email" value="{{values.email}}" required />
+                        name="email" value="{{values.email}}" autofocus required />
                     {{#if errors.email}}
                     <span class="invalid-feedback">{{errors.email}}</span>
                     {{/if}}
