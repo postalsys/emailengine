@@ -1,6 +1,6 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
-        Registered accounts
+        <small><a href="/admin/accounts"><i class="fas fa-arrow-left fa-fw"></i></a></small> Registered accounts
     </h1>
 </div>
 
@@ -77,13 +77,6 @@
                     <dt class="col-sm-3">Username</dt>
                     <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
                     {{/if}}
-
-                    {{#if account.oauth2.expiresStr}}
-                    <dt class="col-sm-3">Token</dt>
-                    <dd class="col-sm-9">Refreshes <span class="relative-time"
-                            data-time="{{account.oauth2.expiresStr}}">{{account.oauth2.expiresStr}}</span></dd>
-                    {{/if}}
-
 
                     {{#if account.oauth2.scopes}}
                     <dt class="col-sm-3">Scopes</dt>

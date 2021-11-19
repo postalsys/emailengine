@@ -8,14 +8,17 @@
 </div>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">Registered accounts</h1>
+    <h1 class="h3 mb-0 text-gray-800">
+        <small><i class="fas fa-users fa-fw"></i></small>
+        Registered accounts
+    </h1>
 </div>
 
 {{#if accounts}}
 <div class="card mt-4 mb-4">
 
     <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-hover">
             <thead class="">
                 <tr>
                     <th scope="col">ID</th>
@@ -23,48 +26,59 @@
                     <th scope="col">Email</th>
                     <th scope="col">Type</th>
                     <th scope="col">Status</th>
-                    <th scope="col">&nbsp;</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each accounts}}
                 <tr>
-                    <td>{{account}}</td>
-                    <td><strong>{{name}}</strong></td>
-                    <td>{{email}}</td>
-
-                    <td>
-                        {{#if type.icon}}
-                        <i class="{{type.icon}} fa-fw"
-                            title="{{type.name}}{{#if type.comment}} ({{type.comment}}){{/if}}" data-toggle="tooltip"
-                            data-placement="top"></i>
-                        {{else}}
-                        {{type.name}}
-                        {{#if type.comment}}
-                        <span class="text-muted">({{type.comment}})</span>
-                        {{/if}}
-                        {{/if}}
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+                            {{account}}
+                        </div>
+                    </td>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a><strong>{{name}}</strong>
+                        </div>
+                    </td>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>{{email}}
+                        </div>
                     </td>
 
-                    <td><span class="badge badge-pill badge-{{stateLabel.type}}" style="cursor:default;" {{#if
-                            stateLabel.error}}data-toggle="tooltip" data-placement="top" title="{{stateLabel.error}}"
-                            {{/if}}>
-
-                            {{#if stateLabel.spinner}}
-                            <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+                            {{#if type.icon}}
+                            <i class="{{type.icon}} fa-fw"
+                                title="{{type.name}}{{#if type.comment}} ({{type.comment}}){{/if}}"
+                                data-toggle="tooltip" data-placement="top"></i>
+                            {{else}}
+                            {{type.name}}
+                            {{#if type.comment}}
+                            <span class="text-muted">({{type.comment}})</span>
                             {{/if}}
-
-                            {{stateLabel.name}}</span>
+                            {{/if}}
+                        </div>
                     </td>
 
-                    </td>
-                    <td style="text-align: right;">
-                        <a href="/admin/accounts/{{account}}" class="btn btn-info btn-circle btn-sm">
-                            <i class="fas fa-user-edit"></i>
-                        </a>
-                    </td>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a><span
+                                class="badge badge-pill badge-{{stateLabel.type}}" style="cursor:default;" {{#if
+                                stateLabel.error}}data-toggle="tooltip" data-placement="top"
+                                title="{{stateLabel.error}}" {{/if}}>
 
+                                {{#if stateLabel.spinner}}
+                                <i class="fas fa-spinner fa-spin fa-fw"></i>
+                                {{/if}}
+
+                                {{stateLabel.name}}</span>
+                        </div>
+                    </td>
                 </tr>
                 {{/each}}
             </tbody>
