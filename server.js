@@ -185,6 +185,7 @@ let unassigned = false;
 let assigned = new Map();
 let unassignCounter = new Map();
 let workerAssigned = new WeakMap();
+let onlineWorkers = new WeakSet();
 
 let workers = new Map();
 let availableIMAPWorkers = new Set();
@@ -250,7 +251,12 @@ let spawnWorker = type => {
 
     workers.get(type).add(worker);
 
+    worker.on('online', () => {
+        onlineWorkers.add(worker);
+    });
+
     worker.on('exit', exitCode => {
+        onlineWorkers.delete(worker);
         metrics.threadStops.inc();
 
         workers.get(type).delete(worker);
@@ -414,6 +420,15 @@ let spawnWorker = type => {
                     worker.postMessage(message);
                 });
                 return;
+
+            case 'change':
+                // forward all state changes to the API worker
+                for (let worker of workers.get('api')) {
+                    if (onlineWorkers.has(worker)) {
+                        worker.postMessage(message);
+                    }
+                }
+                break;
         }
 
         switch (type) {

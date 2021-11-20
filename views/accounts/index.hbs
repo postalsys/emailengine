@@ -65,18 +65,20 @@
                         </div>
                     </td>
 
-                    <td class="p-0">
+                    <td class="p-0" style="width: 150px;">
                         <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a><span
-                                class="badge badge-pill badge-{{stateLabel.type}}" style="cursor:default;" {{#if
-                                stateLabel.error}}data-toggle="tooltip" data-placement="top"
-                                title="{{stateLabel.error}}" {{/if}}>
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+
+                            <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
+                                data-account="{{account}}" style="cursor:default;" data-toggle="tooltip"
+                                data-placement="top" {{#if stateLabel.error}} title="{{stateLabel.error}}" {{/if}}>
 
                                 {{#if stateLabel.spinner}}
                                 <i class="fas fa-spinner fa-spin fa-fw"></i>
                                 {{/if}}
 
                                 {{stateLabel.name}}</span>
+
                         </div>
                     </td>
                 </tr>

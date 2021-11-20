@@ -197,7 +197,6 @@
 
         let showErrorPopup = (data) => {
             data = data || {}
-            console.log(data)
 
             errorsListElm.innerHTML = '';
 
@@ -301,7 +300,6 @@
 
         const checkPort = (proto) => {
             let portNr = Number(document.getElementById(`${proto}_port`).value);
-            console.log(proto, portNr)
             switch (proto) {
                 case 'imap':
                     if (portNr === 993) {

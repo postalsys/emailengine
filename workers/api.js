@@ -16,7 +16,7 @@ const packageData = require('../package.json');
 const pathlib = require('path');
 const config = require('wild-config');
 const crypto = require('crypto');
-const { PassThrough } = require('stream');
+const { PassThrough, Transform, finished } = require('stream');
 const msgpack = require('msgpack5')();
 const { getOAuth2Client } = require('../lib/oauth');
 const consts = require('../lib/consts');
@@ -52,10 +52,7 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
 
-const REDACTED_KEYS = [
-    'req.headers.authorization'
-    //'req.headers.cookie'
-];
+const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
 config.api = config.api || {
     port: 3000,
@@ -72,6 +69,39 @@ const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) 
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
 const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
+
+let registeredPublishers = new Set();
+
+class ResponseStream extends Transform {
+    constructor() {
+        super();
+        registeredPublishers.add(this);
+    }
+
+    setCompressor(compressor) {
+        this._compressor = compressor;
+    }
+
+    sendMessage(payload) {
+        let sendData = JSON.stringify(payload);
+        this.write('event: message\ndata:' + sendData + '\n\n');
+        this._compressor.flush();
+    }
+
+    finalize() {
+        registeredPublishers.delete(this);
+    }
+
+    _transform(data, encoding, done) {
+        this.push(data);
+        done();
+    }
+
+    _flush(done) {
+        this.finalize();
+        done();
+    }
+}
 
 let callQueue = new Map();
 let mids = 0;
@@ -124,6 +154,18 @@ async function onCommand(command) {
     logger.debug({ msg: 'Unhandled command', command });
 }
 
+function publishChangeEvent(data) {
+    let { account, type, key, payload } = data;
+
+    for (let stream of registeredPublishers) {
+        try {
+            stream.sendMessage({ account, type, key, payload });
+        } catch (err) {
+            logger.error({ msg: 'Failed to publish change event', err, account, type, key, payload });
+        }
+    }
+}
+
 parentPort.on('message', message => {
     if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
         let { resolve, reject, timer } = callQueue.get(message.mid);
@@ -161,6 +203,10 @@ parentPort.on('message', message => {
                     statusCode: err.statusCode
                 });
             });
+    }
+
+    if (message && message.cmd === 'change') {
+        publishChangeEvent(message);
     }
 });
 
@@ -3082,7 +3128,6 @@ const init = async () => {
 
     const preResponse = async (request, h) => {
         const response = request.response;
-
         if (!response.isBoom) {
             return h.continue;
         }
@@ -3129,6 +3174,16 @@ const init = async () => {
     };
 
     server.ext('onPreResponse', preResponse);
+
+    server.route({
+        method: 'GET',
+        path: '/admin/changes',
+        async handler(request, h) {
+            request.app.stream = new ResponseStream();
+            finished(request.app.stream, err => request.app.stream.finalize(err));
+            return h.response(request.app.stream).type('text/event-stream');
+        }
+    });
 
     routesUi(server, call);
 

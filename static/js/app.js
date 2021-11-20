@@ -1,4 +1,4 @@
-/* global document, window, $, ClipboardJS, FileReader */
+/* global document, window, $, ClipboardJS, FileReader, EventSource */
 
 'use strict';
 
@@ -154,4 +154,109 @@ document.addEventListener('DOMContentLoaded', () => {
             elm.textContent = origin;
         }
     }
+
+    function updateStateIndicators(data) {
+        let { account, key: state, payload } = data;
+        let error = payload && payload.error;
+
+        let stateLabel;
+
+        switch (state) {
+            case 'init':
+                stateLabel = {
+                    type: 'info',
+                    name: 'Initializing'
+                };
+                break;
+            case 'connecting':
+                stateLabel = {
+                    type: 'info',
+                    name: 'Connecting'
+                };
+                break;
+            case 'syncing':
+                stateLabel = {
+                    type: 'info',
+                    name: 'Syncing',
+                    spinner: true
+                };
+                break;
+            case 'connected':
+                stateLabel = {
+                    type: 'success',
+                    name: 'Connected'
+                };
+                break;
+            case ('authenticationError', 'connectError'):
+                stateLabel = {
+                    type: 'danger',
+                    name: 'Failed',
+                    error: error ? error.response : false
+                };
+                break;
+            case 'unset':
+            case 'disconnected':
+                stateLabel = {
+                    type: 'warning',
+                    name: 'Disconnected'
+                };
+                break;
+            default:
+                stateLabel = {
+                    type: 'secondary',
+                    name: 'N/A'
+                };
+                break;
+        }
+
+        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-account="${account}"]`)) {
+            console.log(stateInfoElm, stateLabel);
+            for (let val of stateInfoElm.classList.values()) {
+                if (/^badge-/.test(val) && val !== 'badge-pill') {
+                    stateInfoElm.classList.remove(val);
+                }
+            }
+
+            stateInfoElm.classList.add(`badge-${stateLabel.type}`);
+
+            stateInfoElm.innerHTML = '';
+            if (stateLabel.spinner) {
+                let spinnerElm = document.createElement('i');
+                spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
+                let textElm = document.createElement('span');
+                textElm.textContent = ' ' + stateLabel.name;
+                stateInfoElm.appendChild(spinnerElm);
+                stateInfoElm.appendChild(textElm);
+            } else {
+                stateInfoElm.textContent = stateLabel.name;
+            }
+            if (stateLabel.error) {
+                stateInfoElm.title = stateLabel.error;
+            } else {
+                stateInfoElm.title = '';
+            }
+        }
+    }
+
+    const evtSource = new EventSource('/admin/changes');
+    evtSource.onmessage = function (e) {
+        let data;
+        try {
+            data = JSON.parse(e.data);
+        } catch (err) {
+            // ignore?
+            console.error('Failed to process event', e.data, err);
+        }
+        console.log(data);
+        switch (data && data.type) {
+            case 'state':
+                console.log('running update');
+                updateStateIndicators(data);
+                break;
+        }
+    };
+
+    evtSource.onerror = function (e) {
+        console.log('EventSource failed.', e);
+    };
 });
