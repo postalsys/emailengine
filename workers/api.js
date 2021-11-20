@@ -16,8 +16,7 @@ const packageData = require('../package.json');
 const pathlib = require('path');
 const config = require('wild-config');
 const crypto = require('crypto');
-const { PassThrough, Transform, finished } = require('stream');
-const msgpack = require('msgpack5')();
+const { Transform, finished } = require('stream');
 const { getOAuth2Client } = require('../lib/oauth');
 const consts = require('../lib/consts');
 const handlebars = require('handlebars');
@@ -28,7 +27,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo, isEmail } = require('../lib/tools');
+const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -1027,6 +1026,8 @@ const init = async () => {
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
@@ -1098,6 +1099,8 @@ const init = async () => {
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
@@ -1397,6 +1400,8 @@ const init = async () => {
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
@@ -2617,21 +2622,6 @@ const init = async () => {
                         request.payload.serviceUrl = url.origin;
                         break;
                     }
-                    case 'logs': {
-                        let logs = request.payload.logs;
-                        let resetLoggedAccounts = logs.resetLoggedAccounts;
-                        delete logs.resetLoggedAccounts;
-                        if (resetLoggedAccounts && logs.accounts && logs.accounts.length) {
-                            for (let account of logs.accounts) {
-                                logger.info({ msg: 'Request reconnect for logging', account });
-                                try {
-                                    await call({ cmd: 'update', account });
-                                } catch (err) {
-                                    logger.error({ action: 'request_reconnect', account, err });
-                                }
-                            }
-                        }
-                    }
                 }
 
                 await settings.set(key, request.payload[key]);
@@ -2678,7 +2668,7 @@ const init = async () => {
         path: '/v1/logs/{account}',
 
         async handler(request) {
-            return getLogs(request.params.account);
+            return getLogs(redis, request.params.account);
         },
         options: {
             description: 'Return IMAP logs for an account',
@@ -3216,47 +3206,6 @@ const init = async () => {
 
     await server.start();
 };
-
-function getLogs(account) {
-    let logKey = `iam:${account}:g`;
-    let passThrough = new PassThrough();
-
-    redis
-        .lrangeBuffer(logKey, 0, -1)
-        .then(rows => {
-            if (!rows || !Array.isArray(rows) || !rows.length) {
-                return passThrough.end(`No logs found for ${account}\n`);
-            }
-            let processNext = () => {
-                if (!rows.length) {
-                    return passThrough.end();
-                }
-
-                let row = rows.shift();
-                let entry;
-                try {
-                    entry = msgpack.decode(row);
-                } catch (err) {
-                    entry = { error: err.stack };
-                }
-
-                if (entry) {
-                    if (!passThrough.write(JSON.stringify(entry) + '\n')) {
-                        return passThrough.once('drain', processNext);
-                    }
-                }
-
-                setImmediate(processNext);
-            };
-
-            processNext();
-        })
-        .catch(err => {
-            passThrough.end(`\nFailed to process logs\n${err.stack}\n`);
-        });
-
-    return passThrough;
-}
 
 async function getStats(seconds) {
     const structuredMetrics = await call({ cmd: 'structuredMetrics' });

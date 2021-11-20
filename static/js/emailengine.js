@@ -378,17 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let logs = {
             all: !!document.getElementById('settingsLogsAll').checked,
-            accounts: Array.from(
-                new Set(
-                    document
-                        .getElementById('settingsLogsAccounts')
-                        .value.trim()
-                        .split(/\r?\n/)
-                        .map(a => a.trim())
-                        .filter(a => a)
-                )
-            ),
-            resetLoggedAccounts: !!document.getElementById('settingsResetLoggedAccounts').checked,
             maxLogLines: Number(document.getElementById('settingsLogsMaxLogLines').value)
         };
 

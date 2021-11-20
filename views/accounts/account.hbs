@@ -4,39 +4,51 @@
     </h1>
 </div>
 
-<div class="mt-4">
+<div class="card mb-4">
+    <div class="card-body">
 
-    <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-        <div class="btn-group mr-2" role="group" aria-label="First group">
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2" role="group" aria-label="First group">
 
 
-            <button type="button" class="btn btn-light">
-                <i class="fas fa-user-edit fa-fw"></i> Edit
-            </button>
+                <button type="button" class="btn btn-light">
+                    <i class="fas fa-user-edit fa-fw"></i> Edit
+                </button>
 
-            <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal">
-                <i class="fas fa-trash-alt fa-fw"></i> Delete
-            </button>
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
 
-            <button type="button" class="btn btn-light" id="request-reconnect">
-                <i class="fas fa-sync-alt fa-fw" id="reconnect-icon"></i> Reconnect
-            </button>
+                <button type="button" class="btn btn-light" id="request-reconnect">
+                    <i class="fas fa-sync-alt fa-fw" id="reconnect-icon"></i> Reconnect
+                </button>
 
-            <button type="button" class="btn btn-light">
-                <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
-            </button>
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt" download>
+                    <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
+                </a>
 
+            </div>
         </div>
-    </div>
-</div>
 
-<div class="mt-4 row">
-    <div class="col-8">
+
         <dl class="row">
 
             {{#if account.account}}
             <dt class="col-sm-3">ID</dt>
-            <dd class="col-sm-9">{{account.account}}</dd>
+            <dd class="col-sm-9">
+                <strong>{{account.account}}</strong>
+
+                <span class="badge badge-pill badge-{{account.stateLabel.type}} state-info"
+                    data-account="{{account.account}}" style="cursor:default;" data-toggle="popover"
+                    data-trigger="hover" {{#if account.stateLabel.error}}title="Connection error"
+                    data-content="{{account.stateLabel.error}}" {{/if}}>
+
+                    {{#if account.stateLabel.spinner}}
+                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    {{/if}}
+
+                    {{account.stateLabel.name}}</span>
+            </dd>
             {{/if}}
 
             {{#if account.name}}
@@ -60,163 +72,169 @@
                 {{#if account.type.comment}}
                 <span class="text-muted">({{account.type.comment}})</span>
                 {{/if}}
-
             </dd>
 
-            <dt class="col-sm-3">State</dt>
+            <dt class="col-sm-3">Recent logs</dt>
             <dd class="col-sm-9">
-                <span class="badge badge-pill badge-{{account.stateLabel.type}} state-info"
-                    data-account="{{account.account}}" style="cursor:default;" data-toggle="popover"
-                    data-trigger="hover" {{#if account.stateLabel.error}}title="Connection error"
-                    data-content="{{account.stateLabel.error}}" {{/if}}>
+                {{#if logs.all}}
+                <div>
+                    Enabled by default for all accounts
+                </div>
+                {{else}}
 
-                    {{#if account.stateLabel.spinner}}
-                    <i class="fas fa-spinner fa-spin fa-fw"></i>
-                    {{/if}}
+                <div class="dropdown">
+                    <div class="dropdown-toggle" role="button" id="logs-info" data-toggle="dropdown"
+                        aria-expanded="false" data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
+                        <span id="logs-info-label">{{#if account.logs}}Enabled{{else}}Disabled{{/if}}</span>
+                    </div>
 
-                    {{account.stateLabel.name}}</span>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                        <a class="dropdown-item" href="#" id="toggle-logs">{{#if
+                            account.logs}}Disable{{else}}Enable{{/if}}</a>
+                        <a class="dropdown-item" href="#" id="flush-logs">Flush stored logs</a>
+                    </div>
+                </div>
+
+                {{/if}}
+                <div>
+                    <small>Logging is session based so account reconnect is required for logging changes to take into
+                        effect</small>
+                </div>
             </dd>
         </dl>
+
     </div>
 </div>
 
-<div class="row">
 
+{{#if account.oauth2}}
 
-    {{#if account.oauth2}}
-    <div class="col-lg-6">
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Oauth2</h6>
+    </div>
+    <div class="card-body">
 
+        <dl class="row">
 
-        <div class="card mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Oauth2</h6>
-            </div>
-            <div class="card-body">
+            {{#if account.oauth2.provider}}
+            <dt class="col-sm-3">Provider</dt>
+            <dd class="col-sm-9">{{account.type.comment}}</dd>
+            {{/if}}
 
-                <dl class="row">
+            {{#if account.oauth2.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            {{/if}}
 
-                    {{#if account.oauth2.provider}}
-                    <dt class="col-sm-3">Provider</dt>
-                    <dd class="col-sm-9">{{account.type.comment}}</dd>
-                    {{/if}}
+            {{#if account.oauth2.scopes}}
+            <dt class="col-sm-3">Scopes</dt>
+            <dd class="col-sm-9">
+                <div>
+                    {{#each account.oauth2.scopes}}
+                    <div><code>{{this}}</code></div>
+                    {{/each}}
+                </div>
+            </dd>
+            {{/if}}
 
-                    {{#if account.oauth2.auth.user}}
-                    <dt class="col-sm-3">Username</dt>
-                    <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
-                    {{/if}}
-
-                    {{#if account.oauth2.scopes}}
-                    <dt class="col-sm-3">Scopes</dt>
-                    <dd class="col-sm-9">
-                        <div>
-                            {{#each account.oauth2.scopes}}
-                            <div><code>{{this}}</code></div>
-                            {{/each}}
-                        </div>
-                    </dd>
-                    {{/if}}
-
-                </dl>
-
-            </div>
-        </div>
-
+        </dl>
 
     </div>
-    {{/if}}
-
-
-
-    {{#if account.imap}}
-    <div class="col-lg-6">
-
-        <div class="card mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
-            </div>
-            <div class="card-body">
-
-                <dl class="row">
-
-                    {{#if account.imap.auth.user}}
-                    <dt class="col-sm-3">Username</dt>
-                    <dd class="col-sm-9">{{account.imap.auth.user}}</dd>
-                    {{/if}}
-
-                    {{#if account.imap.auth.pass}}
-                    <dt class="col-sm-3">Password</dt>
-                    <dd class="col-sm-9">*******</dd>
-                    {{/if}}
-
-                    {{#if account.imap.host}}
-                    <dt class="col-sm-3">Hostname</dt>
-                    <dd class="col-sm-9">{{account.imap.host}}</dd>
-                    {{/if}}
-
-                    {{#if account.imap.port}}
-                    <dt class="col-sm-3">Port</dt>
-                    <dd class="col-sm-9">{{account.imap.port}}</dd>
-                    {{/if}}
-
-
-                    <dt class="col-sm-3">TLS</dt>
-                    <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}</dd>
-
-                </dl>
-
-            </div>
-        </div>
-
-    </div>
-    {{/if}}
-
-
-
-
-
-    {{#if account.smtp}}
-    <div class="col-lg-6">
-
-        <div class="card mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
-            </div>
-            <div class="card-body">
-
-                <dl class="row">
-
-                    {{#if account.smtp.auth.user}}
-                    <dt class="col-sm-3">Username</dt>
-                    <dd class="col-sm-9">{{account.smtp.auth.user}}</dd>
-                    {{/if}}
-
-                    {{#if account.smtp.auth.pass}}
-                    <dt class="col-sm-3">Password</dt>
-                    <dd class="col-sm-9">*******</dd>
-                    {{/if}}
-
-                    {{#if account.smtp.host}}
-                    <dt class="col-sm-3">Hostname</dt>
-                    <dd class="col-sm-9">{{account.smtp.host}}</dd>
-                    {{/if}}
-
-                    {{#if account.smtp.port}}
-                    <dt class="col-sm-3">Port</dt>
-                    <dd class="col-sm-9">{{account.smtp.port}}</dd>
-                    {{/if}}
-
-                    <dt class="col-sm-3">TLS</dt>
-                    <dd class="col-sm-9">{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}</dd>
-                </dl>
-
-            </div>
-        </div>
-
-    </div>
-    {{/if}}
-
-
 </div>
+
+
+
+{{/if}}
+
+
+
+{{#if account.imap}}
+
+
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+
+            {{#if account.imap.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.imap.auth.user}}</dd>
+            {{/if}}
+
+            {{#if account.imap.auth.pass}}
+            <dt class="col-sm-3">Password</dt>
+            <dd class="col-sm-9">*******</dd>
+            {{/if}}
+
+            {{#if account.imap.host}}
+            <dt class="col-sm-3">Hostname</dt>
+            <dd class="col-sm-9">{{account.imap.host}}</dd>
+            {{/if}}
+
+            {{#if account.imap.port}}
+            <dt class="col-sm-3">Port</dt>
+            <dd class="col-sm-9">{{account.imap.port}}</dd>
+            {{/if}}
+
+
+            <dt class="col-sm-3">TLS</dt>
+            <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            </dd>
+
+        </dl>
+
+    </div>
+</div>
+
+{{/if}}
+
+
+{{#if account.smtp}}
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+
+            {{#if account.smtp.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.smtp.auth.user}}</dd>
+            {{/if}}
+
+            {{#if account.smtp.auth.pass}}
+            <dt class="col-sm-3">Password</dt>
+            <dd class="col-sm-9">*******</dd>
+            {{/if}}
+
+            {{#if account.smtp.host}}
+            <dt class="col-sm-3">Hostname</dt>
+            <dd class="col-sm-9">{{account.smtp.host}}</dd>
+            {{/if}}
+
+            {{#if account.smtp.port}}
+            <dt class="col-sm-3">Port</dt>
+            <dd class="col-sm-9">{{account.smtp.port}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">TLS</dt>
+            <dd class="col-sm-9">{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            </dd>
+        </dl>
+
+    </div>
+</div>
+
+
+{{/if}}
+
+
+
 
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -228,7 +246,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the account for {{account.name}}? This action is not recoverable.</p>
+                <p>Are you sure you want to delete the account for {{account.name}}? This action is not
+                    recoverable.</p>
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/accounts/{{account.account}}/delete">
@@ -289,5 +308,89 @@
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
         });
+
+        const toggleLogs = async () => {
+            const account = document.getElementById('account-id').value.trim();
+
+            let current = document.getElementById('logs-info').dataset.logs;
+            let toggled = current === 'enabled' ? false : true;
+
+            const res = await fetch(`/admin/accounts/${account}/logs`, {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    enabled: toggled
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            if (data.enabled) {
+                // mark as enabled
+                document.getElementById('logs-info-label').textContent = 'Enabled';
+                document.getElementById('logs-info').dataset.logs = 'enabled'
+                document.getElementById('toggle-logs').textContent = 'Disable';
+            } else {
+                // mark as disabled
+                document.getElementById('logs-info-label').textContent = 'Disabled';
+                document.getElementById('logs-info').dataset.logs = 'disabled'
+                document.getElementById('toggle-logs').textContent = 'Enable';
+            }
+            return data;
+        }
+
+        let togglingLogs = false;
+        document.getElementById('toggle-logs').addEventListener('click', e => {
+            e.preventDefault();
+            if (togglingLogs) {
+                return
+            }
+            togglingLogs = true;
+
+            toggleLogs().then(data => {
+                togglingLogs = false;
+                showToast(data.error ? data.error : (data.success ? 'Logging settings updated' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                togglingLogs = false;
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+
+        const flushLogs = async () => {
+            const account = document.getElementById('account-id').value.trim();
+
+            const res = await fetch(`/admin/accounts/${account}/logs-flush`, {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            return data;
+        }
+
+        let flushingLogs = false;
+        document.getElementById('flush-logs').addEventListener('click', e => {
+            e.preventDefault();
+            if (flushingLogs) {
+                return
+            }
+            flushingLogs = true;
+
+            flushLogs().then(data => {
+                flushingLogs = false;
+                showToast(data.error ? data.error : (data.success ? 'Stored logs were flushed' : 'Failed to flush logs'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                togglinflushingLogsgLogs = false;
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        })
+
     })
 </script>

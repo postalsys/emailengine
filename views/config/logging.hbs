@@ -15,25 +15,8 @@
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
     <div class="card mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">
-                General settings</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Account actions:</div>
-                    <a class="dropdown-item log-list" href="#" id="request-reconnect">
-                        <i class="fas fa-sync fa-sm"></i>
-                        <span>Trigger reconnect for listed
-                            accounts</span>
-                    </a>
-
-                </div>
-            </div>
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -45,18 +28,6 @@
                 {{/if}}
                 <small class="form-text text-muted">Not recommended if EmailEngine tracks large number of
                     accounts</small>
-            </div>
-
-            <div class="form-group">
-
-                <label for="settingsLogsAccounts">Store IMAP logs for the following accounts</label>
-
-                <textarea class="form-control log-list {{#if errors.accounts}}is-invalid{{/if}}"
-                    id="settingsLogsAccounts" name="accounts" rows="3">{{values.accounts}}</textarea>
-                {{#if errors.accounts}}
-                <span class="invalid-feedback">{{errors.accounts}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Enter one account ID per line</small>
             </div>
 
             <div class="form-group">
@@ -83,42 +54,3 @@
     </div>
 
 </form>
-
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        const reloadAccounts = async () => {
-            const accounts = document.getElementById('settingsLogsAccounts').value.trim().split(/\r?\n/).map(line => line.trim()).filter(line => line);
-
-            const res = await fetch('/admin/config/logging/reconnect', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    accounts
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-
-            return data;
-        }
-
-        const requestReconnectElm = document.getElementById('request-reconnect');
-        requestReconnectElm.addEventListener('click', e => {
-            e.preventDefault();
-            if (requestReconnectElm.classList.contains('disabled')) {
-                return;
-            }
-
-            reloadAccounts().then(data => {
-                showToast(data.error ? data.error : (data.success ? 'Account reconnections requested' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
-        });
-    })
-</script>
