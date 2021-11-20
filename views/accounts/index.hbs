@@ -65,21 +65,18 @@
                         </div>
                     </td>
 
-                    <td class="p-0" style="width: 150px;">
-                        <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+                    <td style="width: 120px;">
 
-                            <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
-                                data-account="{{account}}" style="cursor:default;" data-toggle="tooltip"
-                                data-placement="top" {{#if stateLabel.error}} title="{{stateLabel.error}}" {{/if}}>
+                        <span class="badge badge-pill badge-{{stateLabel.type}} state-info" data-account="{{account}}"
+                            style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
+                            stateLabel.error}}title="Connection error" data-content="{{stateLabel.error}}" {{/if}}>
 
-                                {{#if stateLabel.spinner}}
-                                <i class="fas fa-spinner fa-spin fa-fw"></i>
-                                {{/if}}
+                            {{#if stateLabel.spinner}}
+                            <i class="fas fa-spinner fa-spin fa-fw"></i>
+                            {{/if}}
 
-                                {{stateLabel.name}}</span>
+                            {{stateLabel.name}}</span>
 
-                        </div>
                     </td>
                 </tr>
                 {{/each}}

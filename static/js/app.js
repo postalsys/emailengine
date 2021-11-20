@@ -230,10 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 stateInfoElm.textContent = stateLabel.name;
             }
+
             if (stateLabel.error) {
-                stateInfoElm.title = stateLabel.error;
+                stateInfoElm.title = 'Connection error';
+                stateInfoElm.dataset.content = stateLabel.error;
+                $(stateInfoElm).popover('enable');
             } else {
                 stateInfoElm.title = '';
+                stateInfoElm.dataset.content = '';
+                $(stateInfoElm).popover('disable');
             }
         }
     }

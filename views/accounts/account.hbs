@@ -66,8 +66,9 @@
             <dt class="col-sm-3">State</dt>
             <dd class="col-sm-9">
                 <span class="badge badge-pill badge-{{account.stateLabel.type}} state-info"
-                    data-account="{{account.account}}" style="cursor:default;" data-toggle="tooltip"
-                    data-placement="top" {{#if account.stateLabel.error}}title="{{account.stateLabel.error}}" {{/if}}>
+                    data-account="{{account.account}}" style="cursor:default;" data-toggle="popover"
+                    data-trigger="hover" {{#if account.stateLabel.error}}title="Connection error"
+                    data-content="{{account.stateLabel.error}}" {{/if}}>
 
                     {{#if account.stateLabel.spinner}}
                     <i class="fas fa-spinner fa-spin fa-fw"></i>
