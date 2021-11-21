@@ -13,10 +13,12 @@
 
     <div class="card mb-4">
         <div class="card-body">
+
             <div class="form-group">
                 <label for="settingsServiceUrl">Service URL</label>
                 <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
-                    id="settingsServiceUrl" name="serviceUrl" value="{{values.serviceUrl}}" />
+                    id="settingsServiceUrl" name="serviceUrl" value="{{values.serviceUrl}}" data-lpignore="true"
+                    autocomplete="off" />
                 {{#if errors.serviceUrl}}
                 <span class="invalid-feedback">{{errors.serviceUrl}}</span>
                 {{/if}}
@@ -25,12 +27,38 @@
 
             <div class="form-group">
                 <label for="settingsServiceSecret">Service secret</label>
-                <input type="text" class="form-control {{#if errors.serviceSecret}}is-invalid{{/if}}"
-                    id="settingsServiceSecret" name="serviceSecret" value="{{values.serviceSecret}}" />
+
+                <div class="input-group">
+                    <input type="password" class="form-control {{#if errors.serviceSecret}}is-invalid{{/if}}"
+                        id="settingsServiceSecret" name="serviceSecret" value="{{values.serviceSecret}}"
+                        data-lpignore="true" autocomplete="off" />
+
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="button" id="showServiceSecret"><i
+                                class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+
                 {{#if errors.serviceSecret}}
                 <span class="invalid-feedback">{{errors.serviceSecret}}</span>
                 {{/if}}
                 <small class="form-text text-muted">HMAC secret for signing public requests</small>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
+                    disabled />
+                <label class="form-check-label" for="encryption">Field level encryption
+
+                    <span class="badge badge-{{#if encryption}}success{{else}}warning{{/if}}">{{#if
+                        encryption}}enabled{{else}}disabled{{/if}}</span>
+
+                </label>
+                <small class="form-text text-muted">Encryption settings can not be changed runtime. Set
+                    <code>EENGINE_SECRET</code>
+                    environment variable when starting EmailEngine to enable encryption. Read more <a
+                        href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank">from the
+                        documentation</a>.</small>
             </div>
         </div>
     </div>
@@ -45,3 +73,20 @@
     </div>
 
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let showBt = document.getElementById('showServiceSecret');
+        let serviceSecretElm = document.getElementById('settingsServiceSecret');
+
+        let showSecret = () => {
+            let current = serviceSecretElm.getAttribute('type')
+            serviceSecretElm.setAttribute('type', current === 'text' ? 'password' : 'text');
+            showBt.blur()
+        }
+
+        showBt.addEventListener('click', showSecret);
+
+    })
+</script>

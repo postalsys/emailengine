@@ -404,6 +404,9 @@ const init = async () => {
         path: '/',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'index.html'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -3111,7 +3114,8 @@ const init = async () => {
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
                 authEnabled: !!(authData && authData.password),
-                authData
+                authData,
+                packageData
             };
         }
     });

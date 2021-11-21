@@ -6,10 +6,16 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
+    <meta name="description" content="EmailEngine Homepage" />
+    <meta name="author" content="Postal Systems OÜ">
 
     <title>EmailEngine{{#if pageTitle}} – {{pageTitle}}{{/if}}</title>
+
+    <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
+    <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/static/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+    <link rel="manifest" href="/static/favicon/manifest.json" />
+    <link rel="icon" href="/favicon.ico" />
 
     <!-- Custom fonts for this template-->
     <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -32,7 +38,7 @@
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
             <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
                 <div class="sidebar-brand-icon">
                     <img src="/static/logo_transparent_small.png" width="32" height="32">
                 </div>
@@ -189,7 +195,9 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Postal Systems OÜ 2021</span>
+                        <a href="{{packageData.homepage}}" target="_blank">EmailEngine</a> v{{packageData.version}}.
+                        <span class="text-muted">&copy; 2020-2021</span>
+                        <a class="text-muted" href="mailto:info@postalsys.com" target="_blank">Postal Systems OÜ</a>
                     </div>
                 </div>
             </footer>
@@ -205,26 +213,6 @@
     <a class="scroll-to-top rounded" href="#page-top">
         <i class="fas fa-angle-up"></i>
     </a>
-
-    <!-- Logout Modal-->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="login.html">Logout</a>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Bootstrap core JavaScript-->
     <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>

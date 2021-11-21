@@ -60,10 +60,9 @@
             <p>Setting up OAuth2 credentials allows to refresh expired access tokens.</p>
 
             <div class="form-group form-check">
-                <input type="checkbox"
-                    class="form-check-input webhooks-status {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
-                    id="webhooks_enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
-                <label class="form-check-label" for="webhooks_enabled">Enable OAuth2 support for
+                <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
+                    id="oauth2Enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
+                <label class="form-check-label" for="oauth2Enabled">Enable OAuth2 support for
                     {{providerName}}</label>
                 {{#if errors.oauth2Enabled}}
                 <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
