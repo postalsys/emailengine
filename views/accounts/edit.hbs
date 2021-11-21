@@ -1,0 +1,205 @@
+{{> accounts_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
+        <li class="breadcrumb-item"><a href="/admin/accounts/{{account}}">{{account}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+
+<form method="post" action="/admin/accounts/{{account}}/edit">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+
+    <div class="card mb-4">
+
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Account</h6>
+        </div>
+
+        <div class="card-body">
+
+            <div class="form-group">
+                <label for="name">Full name</label>
+                <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
+                    value="{{values.name}}" />
+                {{#if errors.name}}
+                <span class="invalid-feedback">{{errors.name}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Full name of the user</small>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Email</label>
+                <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email" name="email"
+                    value="{{values.email}}" />
+                {{#if errors.email}}
+                <span class="invalid-feedback">{{errors.email}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Email address of the user</small>
+            </div>
+
+        </div>
+    </div>
+
+    {{#if values.imap}}
+    <input type="hidden" name="imap" value="on">
+
+    <div class="card mb-4">
+
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+        </div>
+
+        <div class="card-body">
+
+            <div class="form-group">
+                <label for="imap_auth_user">Username</label>
+                <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
+                    id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
+                    autocomplete="off" required />
+                {{#if errors.imap_auth_user}}
+                <span class="invalid-feedback">{{errors.imap_auth_user}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="imap_auth_pass">Password</label>
+                <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
+                    id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
+                    autocomplete="off" />
+                {{#if errors.imap_auth_pass}}
+                <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Only set if you want to change current IMAP password</small>
+            </div>
+
+            <div class="form-group">
+                <label for="imap_host">Hostname</label>
+                <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="imap_host" name="imap_host" value="{{values.imap_host}}" required />
+                {{#if errors.imap_host}}
+                <span class="invalid-feedback">{{errors.imap_host}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="imap_port">Port</label>
+                <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="imap_port" name="imap_port" value="{{values.imap_port}}" required />
+                {{#if errors.imap_port}}
+                <span class="invalid-feedback">{{errors.imap_port}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
+                    data-target="header-list" id="imap_secure" name="imap_secure" {{#if
+                    values.imap_secure}}checked{{/if}} />
+                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
+                    title="TLS for IMAP"
+                    data-content="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                        class="fas fa-question-circle"></i></a>
+                <label class="form-check-label" for="imap_secure">Use TLS
+                </label>
+                {{#if errors.imap_secure}}
+                <span class="invalid-feedback">{{errors.imap_secure}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="imap_resyncDelay">Resync delay</label>
+                <input type="number" class="form-control {{#if errors.imap_resyncDelay}}is-invalid{{/if}}"
+                    data-lpignore="true" autocomplete="off" id="imap_resyncDelay" name="imap_resyncDelay"
+                    value="{{values.imap_resyncDelay}}" />
+                {{#if errors.imap_resyncDelay}}
+                <span class="invalid-feedback">{{errors.imap_resyncDelay}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Keep empty for default</small>
+            </div>
+
+        </div>
+    </div>
+    {{/if}}
+
+    {{#if values.smtp}}
+    <input type="hidden" name="smtp" value="on">
+
+    <div class="card mb-4">
+
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
+        </div>
+
+        <div class="card-body">
+
+            <h6>SMTP</h6>
+
+            <div class="form-group">
+                <label for="smtp_auth_user">Username</label>
+                <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
+                    id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
+                    autocomplete="off" required />
+                {{#if errors.smtp_auth_user}}
+                <span class="invalid-feedback">{{errors.smtp_auth_user}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="smtp_auth_pass">Password</label>
+                <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
+                    id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
+                    autocomplete="off" />
+                {{#if errors.smtp_auth_pass}}
+                <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Only set if you want to change current SMTP password</small>
+            </div>
+
+            <div class="form-group">
+                <label for="smtp_host">Hostname</label>
+                <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="smtp_host" name="smtp_host" value="{{values.smtp_host}}" required />
+                {{#if errors.smtp_host}}
+                <span class="invalid-feedback">{{errors.smtp_host}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="smtp_port">Port</label>
+                <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="smtp_port" name="smtp_port" value="{{values.smtp_port}}" required />
+                {{#if errors.smtp_port}}
+                <span class="invalid-feedback">{{errors.smtp_port}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
+                    data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
+                    values.smtp_secure}}checked{{/if}} />
+                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
+                    title="TLS for SMTP"
+                    data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                        class="fas fa-question-circle"></i></a>
+                <label class="form-check-label" for="smtp_secure">Use TLS
+                </label>
+                {{#if errors.smtp_secure}}
+                <span class="invalid-feedback">{{errors.smtp_secure}}</span>
+                {{/if}}
+            </div>
+
+        </div>
+    </div>
+    {{/if}}
+
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-user-alt"></i>
+            </span>
+            <span class="text">Update account</span>
+        </button>
+    </div>
+</form>

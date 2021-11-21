@@ -7,12 +7,7 @@
     </button>
 </div>
 
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><i class="fas fa-users fa-fw"></i></small>
-        Registered accounts
-    </h1>
-</div>
+{{> accounts_header}}
 
 {{#if accounts}}
 <div class="card mt-4 mb-4">
@@ -21,11 +16,21 @@
         <table class="table table-hover">
             <thead class="">
                 <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">Status</th>
+                    <th class="p-0">
+                        <div class="p-2">ID</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Name</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Email</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Type</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Status</div>
+                    </th>
                 </tr>
             </thead>
 
@@ -65,18 +70,22 @@
                         </div>
                     </td>
 
-                    <td style="width: 120px;">
+                    <td style="width: 120px;" class="p-0">
+                        <div class="position-relative  p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link">
 
-                        <span class="badge badge-pill badge-{{stateLabel.type}} state-info" data-account="{{account}}"
-                            style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
-                            stateLabel.error}}title="Connection error" data-content="{{stateLabel.error}}" {{/if}}>
+                                <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
+                                    data-account="{{account}}" style="cursor:default;" data-toggle="popover"
+                                    data-trigger="hover" {{#if stateLabel.error}}title="Connection error"
+                                    data-content="{{stateLabel.error}}" {{/if}}>
 
-                            {{#if stateLabel.spinner}}
-                            <i class="fas fa-spinner fa-spin fa-fw"></i>
-                            {{/if}}
+                                    {{#if stateLabel.spinner}}
+                                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                                    {{/if}}
 
-                            {{stateLabel.name}}</span>
-
+                                    {{stateLabel.name}}</span>
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {{/each}}
@@ -141,11 +150,20 @@
                         <label for="account-id" class="col-form-label">Account ID:</label>
                         <input type="text" class="form-control" id="account-id" name="account" placeholder="johnsmith"
                             required>
+                        <small class="form-text text-muted">If an account with the same ID already exists, it's setting
+                            will be updated</small>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Go to setup form</button>
+
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </span>
+                        <span class="text">Continue</span>
+                    </button>
+
                 </div>
             </form>
         </div>

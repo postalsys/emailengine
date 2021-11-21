@@ -209,36 +209,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
 
-        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-account="${account}"]`)) {
-            console.log(stateInfoElm, stateLabel);
-            for (let val of stateInfoElm.classList.values()) {
-                if (/^badge-/.test(val) && val !== 'badge-pill') {
-                    stateInfoElm.classList.remove(val);
+        let stateInfoElms = document.querySelectorAll(`.state-info[data-account="${account}"]`);
+        if (stateInfoElms.length) {
+            for (let stateInfoElm of stateInfoElms) {
+                for (let val of stateInfoElm.classList.values()) {
+                    if (/^badge-/.test(val) && val !== 'badge-pill') {
+                        stateInfoElm.classList.remove(val);
+                    }
                 }
-            }
 
-            stateInfoElm.classList.add(`badge-${stateLabel.type}`);
+                stateInfoElm.classList.add(`badge-${stateLabel.type}`);
 
-            stateInfoElm.innerHTML = '';
-            if (stateLabel.spinner) {
-                let spinnerElm = document.createElement('i');
-                spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
-                let textElm = document.createElement('span');
-                textElm.textContent = ' ' + stateLabel.name;
-                stateInfoElm.appendChild(spinnerElm);
-                stateInfoElm.appendChild(textElm);
-            } else {
-                stateInfoElm.textContent = stateLabel.name;
-            }
+                stateInfoElm.innerHTML = '';
+                if (stateLabel.spinner) {
+                    let spinnerElm = document.createElement('i');
+                    spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
+                    let textElm = document.createElement('span');
+                    textElm.textContent = ' ' + stateLabel.name;
+                    stateInfoElm.appendChild(spinnerElm);
+                    stateInfoElm.appendChild(textElm);
+                } else {
+                    stateInfoElm.textContent = stateLabel.name;
+                }
 
-            if (stateLabel.error) {
-                stateInfoElm.title = 'Connection error';
-                stateInfoElm.dataset.content = stateLabel.error;
-                $(stateInfoElm).popover('enable');
-            } else {
-                stateInfoElm.title = '';
-                stateInfoElm.dataset.content = '';
-                $(stateInfoElm).popover('disable');
+                if (stateLabel.error) {
+                    stateInfoElm.title = 'Connection error';
+                    stateInfoElm.dataset.content = stateLabel.error;
+                    $(stateInfoElm).popover('enable');
+                } else {
+                    stateInfoElm.title = '';
+                    stateInfoElm.dataset.content = '';
+                    $(stateInfoElm).popover('disable');
+                }
             }
         }
     }
@@ -252,10 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // ignore?
             console.error('Failed to process event', e.data, err);
         }
-        console.log(data);
         switch (data && data.type) {
             case 'state':
-                console.log('running update');
                 updateStateIndicators(data);
                 break;
         }

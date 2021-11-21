@@ -6,13 +6,12 @@
     </h1>
 </div>
 
+<p class="mb-4">General settings for EmailEngine.</p>
+
 <form method="post" action="/admin/config/service">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
-    <div class="card mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
-        </div>
+    <div class="card mb-4">
         <div class="card-body">
             <div class="form-group">
                 <label for="settingsServiceUrl">Service URL</label>
@@ -46,14 +45,3 @@
     </div>
 
 </form>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        let urlElm = document.getElementById('settingsServiceUrl');
-        if (!urlElm.value.trim()) {
-            urlElm.value = window.location.origin
-        }
-
-    })
-</script>

@@ -1,8 +1,11 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><a href="/admin/accounts"><i class="fas fa-arrow-left fa-fw"></i></a></small> Registered accounts
-    </h1>
-</div>
+{{> accounts_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{account.account}}</li>
+    </ol>
+</nav>
 
 <div class="card mb-4">
     <div class="card-body">
@@ -11,9 +14,9 @@
             <div class="btn-group mr-2" role="group" aria-label="First group">
 
 
-                <button type="button" class="btn btn-light">
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit">
                     <i class="fas fa-user-edit fa-fw"></i> Edit
-                </button>
+                </a>
 
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal">
                     <i class="fas fa-trash-alt fa-fw"></i> Delete
@@ -232,9 +235,6 @@
 
 
 {{/if}}
-
-
-
 
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">

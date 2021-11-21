@@ -1,35 +1,16 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><a href="/admin/tokens"><i class="fas fa-arrow-left fa-fw"></i></a></small>
-        Access tokens
-    </h1>
-</div>
+{{> tokens_header}}
 
-<p>
-    To access EmailEngine API you need to authenticate your API requests with an access token.
-</p>
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/tokens">Access tokens</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Create new</li>
+    </ol>
+</nav>
 
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
-    <div class="card mt-4 mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Provision a new Access token</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Webhook actions:</div>
-                    <a class="dropdown-item webhooks-status" href="#" id="test-payload-btn">
-                        <i class="fas fa-cloud-upload-alt fa-sm"></i> <span>Send test webhook</span>
-                    </a>
-
-                </div>
-            </div>
-        </div>
+    <div class="card mb-4">
 
         <div class="card-body">
 
@@ -84,7 +65,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-key"></i>
             </span>
-            <span class="text">Generate</span>
+            <span class="text">Generate a token</span>
         </button>
     </div>
 </form>
