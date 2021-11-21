@@ -15,7 +15,13 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 
 > This example assumes that [Redis](https://redis.io/) is installed locally and does not require any authentication. See [docs](https://emailengine.app/configuration#redis) for other options.
 
-1. Download EmailEngine from the [homepage](https://emailengine.app/#downloads)
+1. Download EmailEngine for your OS:
+
+    - [MacOS](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.pkg)
+    - [Linux](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.tar.gz)
+    - [Window](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.exe)
+    - Docker: `docker pull andris9/emailengine:v2`
+
 2. Open http://127.0.0.1:3000 in your browser
 
 Later, when you want to upgrade, just download the newer version and restart the _emailengine_ service.

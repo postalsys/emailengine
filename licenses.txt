@@ -20,6 +20,7 @@ hapi-pino               MIT                 git+https://github.com/pinojs/hapi-p
 hapi-swagger            MIT                 git://github.com/glennjones/hapi-swagger.git                                  14.2.4             Glenn Jones
 he                      MIT                 git+https://github.com/mathiasbynens/he.git                                   1.2.0              Mathias Bynens
 html-to-text            MIT                 git://github.com/html-to-text/node-html-to-text.git                           8.1.0              Malte Legenhausen
+humanize                n/a                 git://github.com/taijinlee/humanize.git                                       0.0.9              Tai-Jin Lee
 imapflow                MIT                 git+https://github.com/postalsys/imapflow.git                                 1.0.76             Postal Systems OÜ
 ioredis                 MIT                 git://github.com/luin/ioredis.git                                             4.28.0             luin
 joi                     BSD-3-Clause        git://github.com/sideway/joi.git                                              17.4.2             n/a
