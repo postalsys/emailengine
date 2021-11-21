@@ -8,7 +8,6 @@ const Crumb = require('@hapi/crumb');
 const Joi = require('joi');
 const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
-const { ImapFlow } = require('imapflow');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
@@ -27,7 +26,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
+const { getByteSize, getDuration, getStats, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -2703,7 +2702,7 @@ const init = async () => {
         path: '/v1/stats',
 
         async handler(request) {
-            return await getStats(request.query.seconds);
+            return await getStats(redis, call, request.query.seconds);
         },
 
         options: {
@@ -3210,44 +3209,6 @@ const init = async () => {
 
     await server.start();
 };
-
-async function getStats(seconds) {
-    const structuredMetrics = await call({ cmd: 'structuredMetrics' });
-
-    let counters = await getCounterValues(redis, seconds);
-
-    let redisVersion;
-
-    try {
-        let redisInfo = await redis.info('server');
-        if (!redisInfo || typeof redisInfo !== 'string') {
-            throw new Error('Failed to fetch Redis INFO');
-        }
-        let m = redisInfo.match(/redis_version:([\d.]+)/);
-        if (!m) {
-            throw new Error('Failed to fetch version from Redis INFO');
-        }
-        redisVersion = m[1];
-    } catch (err) {
-        // ignore
-        redisVersion = err.message;
-    }
-
-    let stats = Object.assign(
-        {
-            version: packageData.version,
-            license: packageData.license,
-            accounts: await redis.scard('ia:accounts'),
-            node: process.versions.node,
-            redis: redisVersion,
-            imapflow: ImapFlow.version || 'please upgrade',
-            counters
-        },
-        structuredMetrics
-    );
-
-    return stats;
-}
 
 init()
     .then(() => {

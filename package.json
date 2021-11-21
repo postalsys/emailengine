@@ -50,6 +50,7 @@
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.1.0",
+        "humanize": "^0.0.9",
         "imapflow": "1.0.76",
         "ioredis": "4.28.0",
         "joi": "17.4.2",
