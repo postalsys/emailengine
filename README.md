@@ -17,9 +17,9 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 
 1. Download EmailEngine for your OS:
 
-    - [MacOS](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.pkg)
-    - [Linux](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.tar.gz)
-    - [Window](https://github.com/postalsys/emailengine/releases/download/v2.0.0-beta.01/emailengine.exe)
+    - [MacOS](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.pkg)
+    - [Linux](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.tar.gz)
+    - [Window](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.exe)
     - Docker: `docker pull andris9/emailengine:v2`
 
 2. Open http://127.0.0.1:3000 in your browser
@@ -27,6 +27,14 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 Later, when you want to upgrade, just download the newer version and restart the _emailengine_ service.
 
 > **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping EmailEngine output to it: `emailengine | pino-pretty`
+
+## Screenshots
+
+![](https://cldup.com/dC_4_suWrh.png)
+
+![](https://cldup.com/KibGXRw8Mm.png)
+
+![](https://cldup.com/mCxzWWjcLL.png)
 
 ## Version and license
 
