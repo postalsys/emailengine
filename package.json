@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.0.0-beta.01",
+    "version": "2.0.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -50,7 +50,7 @@
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.1.0",
-        "humanize": "^0.0.9",
+        "humanize": "0.0.9",
         "imapflow": "1.0.76",
         "ioredis": "4.28.0",
         "joi": "17.4.2",
@@ -65,12 +65,12 @@
         "nodemailer": "6.7.1",
         "pino": "7.4.0",
         "prom-client": "14.0.1",
-        "psl": "^1.8.0",
+        "psl": "1.8.0",
         "punycode": "2.1.1",
         "smtp-server": "3.9.0",
         "uuid": "8.3.2",
         "wild-config": "1.5.1",
-        "xml2js": "^0.4.23",
+        "xml2js": "0.4.23",
         "yargs": "17.2.1"
     },
     "devDependencies": {
