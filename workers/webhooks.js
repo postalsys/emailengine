@@ -7,7 +7,7 @@ const { redis, notifyQueue } = require('../lib/db');
 const settings = require('../lib/settings');
 const logger = require('../lib/logger');
 const packageData = require('../package.json');
-const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
+//const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 config.queues = config.queues || {
@@ -34,13 +34,21 @@ async function metrics(logger, key, method, ...args) {
 }
 
 notifyQueue.process('*', NOTIFY_QC, async job => {
-    // validate if we should even process this webhook
+    // do not process active jobs, use it for debugging only
+    //return new Promise((resolve, reject) => {});
 
+    // validate if we should even process this webhook
     let accountExists = await redis.exists(getAccountKey(job.data.account));
     if (!accountExists) {
         logger.debug({ msg: 'Account is not enabled', action: 'webhook', event: job.name, account: job.data.account });
         return;
     }
+
+    let webhooksEnabled = await settings.get('webhooksEnabled');
+    if (!webhooksEnabled) {
+        return;
+    }
+
     let webhooks = await settings.get('webhooks');
     if (!webhooks) {
         // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
@@ -54,14 +62,16 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
     }
 
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
+    /*
     if (!job.data.path && ![EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY].includes(job.data.event)) {
         // ignore non-message related events
         return;
     }
+    */
 
     let headers = {
         'Content-Type': 'application/json',
-        'User-Agent': `${packageData.name}/${packageData.version} (+https://emailengine.app)`
+        'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`
     };
 
     let parsed = new URL(webhooks);
@@ -112,7 +122,7 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
         if (err.status === 410 || err.status === 404) {
             // disable webhook
             logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, err });
-            await settings.set('webhooks', '');
+            await settings.set('webhooksEnabled', false);
             return;
         }
 

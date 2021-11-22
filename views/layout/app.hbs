@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="EmailEngine Homepage" />
+    <meta name="author" content="Postal Systems OÜ">
+
+    <title>EmailEngine{{#if pageTitle}} – {{pageTitle}}{{/if}}</title>
+
+    <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
+    <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/static/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+    <link rel="manifest" href="/static/favicon/manifest.json" />
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- Custom fonts for this template-->
+    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="/static/css/app.css" rel="stylesheet">
+
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
+                <div class="sidebar-brand-icon">
+                    <img src="/static/logo_transparent_small.png" width="32" height="32">
+                </div>
+                <div class="sidebar-brand-text mx-3">EmailEngine</div>
+            </a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            {{>side_menu}}
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                {{#if menuSwagger}}
+
+                {{{content}}}
+
+                {{else}}
+
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+
+
+
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{#if authData.user}}
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{authData.user}}</span>
+                                {{/if}}
+                                <img class="img-profile rounded-circle" src="/static/undraw_profile.svg">
+                            </a>
+
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item {{#if menuPassword}}active{{/if}}"
+                                    href="/admin/account/password">
+                                    <i class="fas fa-user-shield fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Account password
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="/admin/logout">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Logout
+                                </a>
+                            </div>
+                        </li>
+
+                    </ul>
+
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+                    <div id="toastContainer"
+                        style="position: fixed; top: 50px; right: 50px; min-width: 250px; z-index: 10000;"></div>
+
+                    {{#unless licenseInfo.active}}
+                    {{#unless hideLicenseWarning}}
+                    <div class="card border-left-danger shadow mb-4">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        License key missing</div>
+                                    <p>In order to use all the features of EmailEngine you need to provide a valid
+                                        license key.
+                                    </p>
+                                    <div>
+                                        <a href="/admin/config/license" class="btn btn-primary btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                            <span class="text">Register a license</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-key fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/unless}}
+                    {{/unless}}
+
+                    {{#unless authEnabled}}
+                    {{#unless disableAuthWarning}}
+                    <div class="card border-left-danger shadow mb-4">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                        Authentication not enabled</div>
+                                    <p>Please enable authentication for EmailEngine by setting an account password.</p>
+                                    <div>
+                                        <a href="/admin/account/password" class="btn btn-primary btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-arrow-right"></i>
+                                            </span>
+                                            <span class="text">Enable authenction</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-user-shield fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {{/unless}}
+                    {{/unless}}
+
+                    {{> alerts}}
+
+                    {{{content}}}
+
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <a href="{{packageData.homepage}}" target="_blank">EmailEngine</a> v{{packageData.version}}.
+                        <span class="text-muted">&copy; 2020-2021</span>
+                        <a class="text-muted" href="mailto:info@postalsys.com" target="_blank">Postal Systems OÜ</a>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+            {{/if}}
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+    <script src="/static/bootstrap-4.6.0-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="/static/vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="/static/js/sb-admin-2.min.js"></script>
+
+    <script src="/static/vendor/chart.js/Chart.min.js"></script>
+    <script src="/static/js/clipboard.min.js"></script>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>

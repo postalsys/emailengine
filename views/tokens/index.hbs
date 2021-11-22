@@ -1,0 +1,126 @@
+<div class="float-right">
+    <a href="/admin/tokens/new" class="btn btn-primary btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Create new</span>
+    </a>
+</div>
+
+{{> tokens_header}}
+
+<p>
+    To access EmailEngine API you need to authenticate your API requests with an access token.
+</p>
+
+<div class="list-group mt-4">
+    {{#unless tokenList}}
+    <div class="list-group-item">
+        No access tokens have been provisioned. Generate a new token <a href="/admin/tokens/new">here</a>.
+    </div>
+    {{/unless}}
+    {{#each tokenList}}
+    <div class="list-group-item">
+        <div class="d-flex w-100">
+            <div class="flex-fill align-self-center">
+                <div>{{description}}
+
+                    {{#if scopes}}
+                    <small>
+                        ( {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}} )
+                    </small>
+                    {{/if}}
+
+                </div>
+
+                <small class="align-self-center">
+                    {{#if access.timeStr}}
+                    Last used: <span class="relative-time" data-time="{{access.timeStr}}">{{access.timeStr}}</span>
+                    {{else}}
+                    <span>Never used</span>
+                    {{/if}}
+                </small>
+            </div>
+
+            <div class="ml-2 align-self-center">
+                <button type="button" class="btn btn-danger btn-circle btn-sm delete-token-btn" data-token="{{id}}"
+                    data-toggle="tooltip" data-placement="top" title="Delete this token"><i
+                        class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+    </div>
+    {{/each}}
+</div>
+
+
+<div class="card mt-4 mb-4">
+    <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+        aria-expanded="true" aria-controls="showHelp">
+        <h6 class="m-0 font-weight-bold text-primary">Usage instructions</h6>
+    </a>
+    <div class="collapse" id="showHelp">
+        <div class="card-body">
+            <p>In order to make API requests you either have to use the
+                <code>Authorization: Bearer</code> header
+                (preferred) or the <code>access_token</code> query parameter. Avoid using the query parameter as it is
+                not redacted from the HTTP logs.
+            </p>
+
+            <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
+$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
+
+            <p>Prometheus endpoint at <code>/metrics</code> also requires an authorization token. Use the following
+                configuration for setting up the token for a scraping endpoint:
+            </p>
+
+            <pre>authorization:
+  type: Bearer
+  credentials: &lt;token&gt;</pre>
+
+            <hr>
+            <div class="text-muted">
+                <code>&lt;token&gt;</code> is the full access token string without any quoting
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteToken" tabindex="-1" aria-labelledby="deleteTokenLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteTokenLabel">Delete token</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this token? This action can not be reversed.
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/tokens/delete">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" id="token-delete" name="token" value="">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        for (let elm of document.querySelectorAll('.delete-token-btn')) {
+            elm.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('token-delete').value = elm.dataset.token;
+                $('#deleteToken').modal('show');
+            });
+        }
+
+    });
+</script>

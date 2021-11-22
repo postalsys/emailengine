@@ -1,0 +1,122 @@
+<div class="container mt-4">
+    <img src="/static/logo.png"
+        style="display: block; float: left; margin: 10px 10px 0 0; max-width: 32px; max-height: 32px" />
+
+    <h1>EmailEngine</h1>
+
+    <div class="row mt-4">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+
+            <div class="card border-left-primary shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Accounts total</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.accounts}}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Accounts active</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.connectedAccounts}}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{#each counterList}}
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-{{color}} shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                {{title}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{value}}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-{{icon}} fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Webhooks queue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
+                                <span title="Queue entries total" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.notify.total}}</span> /
+                                <span title="Delayed queue entries" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.notify.delayed}}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Submission queue</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
+                                <span title="Queue entries total" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.submit.total}}</span> /
+                                <span title="Delayed queue entries" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.submit.delayed}}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="mb-4">
+        <h6>Software Versions</h6>
+        <ul class="list-group">
+            <li class="list-group-item">EmailEngine v{{packageData.version}}</li>
+            <li class="list-group-item">Node.js v{{stats.node}}</li>
+            <li class="list-group-item">Redis v{{stats.redis}}</li>
+            <li class="list-group-item">ImapFlow v{{stats.imapflow}}</li>
+        </ul>
+    </div>
+</div>

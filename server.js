@@ -19,6 +19,8 @@ const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis } = require('./lib/db');
 const promClient = require('prom-client');
+const fs = require('fs').promises;
+const crypto = require('crypto');
 
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
@@ -27,7 +29,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, selectRendezvousNode } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 config.service = config.service || {};
@@ -89,6 +91,14 @@ logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: p
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
     statusCode: 503
+};
+
+const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
+
+const licenseInfo = {
+    active: false,
+    details: false,
+    type: packageData.license
 };
 
 let preparedSettings = false;
@@ -156,6 +166,12 @@ const metrics = {
         name: 'webhook_req',
         help: 'Duration of webhook requests',
         buckets: [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 60 * 1000]
+    }),
+
+    queues: new promClient.Gauge({
+        name: 'queue_size',
+        help: 'Queue size',
+        labelNames: ['queue']
     })
 };
 
@@ -169,9 +185,12 @@ let unassigned = false;
 let assigned = new Map();
 let unassignCounter = new Map();
 let workerAssigned = new WeakMap();
+let onlineWorkers = new WeakSet();
 
 let workers = new Map();
 let availableIMAPWorkers = new Set();
+
+let suspendedWorkerTypes = new Set();
 
 let countUnassignment = async account => {
     if (!unassignCounter.has(account)) {
@@ -215,6 +234,10 @@ let spawnWorker = type => {
         return;
     }
 
+    if (suspendedWorkerTypes.has(type)) {
+        return;
+    }
+
     if (!workers.has(type)) {
         workers.set(type, new Set());
     }
@@ -228,7 +251,12 @@ let spawnWorker = type => {
 
     workers.get(type).add(worker);
 
+    worker.on('online', () => {
+        onlineWorkers.add(worker);
+    });
+
     worker.on('exit', exitCode => {
+        onlineWorkers.delete(worker);
         metrics.threadStops.inc();
 
         workers.get(type).delete(worker);
@@ -262,7 +290,12 @@ let spawnWorker = type => {
         }
 
         // spawning a new worker trigger reassign
-        logger.error({ msg: 'Worker exited', exitCode, type });
+        if (suspendedWorkerTypes.has(type)) {
+            logger.info({ msg: 'Worker thread closed', exitCode, type });
+        } else {
+            logger.error({ msg: 'Worker exited', exitCode, type });
+        }
+
         setTimeout(() => spawnWorker(type), 1000);
     });
 
@@ -387,6 +420,15 @@ let spawnWorker = type => {
                     worker.postMessage(message);
                 });
                 return;
+
+            case 'change':
+                // forward all state changes to the API worker
+                for (let worker of workers.get('api')) {
+                    if (onlineWorkers.has(worker)) {
+                        worker.postMessage(message);
+                    }
+                }
+                break;
         }
 
         switch (type) {
@@ -479,9 +521,65 @@ async function assignAccounts() {
     }
 }
 
+let licenseCheckTimer = false;
+let checkActiveLicense = () => {
+    clearTimeout(licenseCheckTimer);
+    if (!licenseInfo.active && !suspendedWorkerTypes.size) {
+        logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+
+        for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
+            suspendedWorkerTypes.add(type);
+            if (workers.has(type)) {
+                for (let worker of workers.get(type).values()) {
+                    worker.terminate();
+                }
+            }
+        }
+    } else {
+        if (licenseInfo.active && suspendedWorkerTypes.size) {
+            // re-enable missing workers
+            for (let type of suspendedWorkerTypes) {
+                suspendedWorkerTypes.delete(type);
+                switch (type) {
+                    case 'smtp':
+                        if (SMTP_ENABLED) {
+                            // single SMTP interface worker
+                            spawnWorker('smtp');
+                        }
+                        break;
+                    default:
+                        if (config.workers && config.workers[type]) {
+                            for (let i = 0; i < config.workers[type]; i++) {
+                                spawnWorker(type);
+                            }
+                        }
+                }
+            }
+        }
+
+        licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+        licenseCheckTimer.unref();
+    }
+};
+
+async function updateQueueCounters() {
+    for (let queue of ['notify', 'submit']) {
+        const [resActive, resDelayed] = await redis.multi().llen(`bull:${queue}:active`).zcard(`bull:${queue}:delayed`).exec();
+        if (resActive[0] || resDelayed[0]) {
+            // counting failed
+            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed });
+            return false;
+        }
+
+        metrics.queues.set({ queue: `${queue}_active` }, Number(resActive[1]) || 0);
+        metrics.queues.set({ queue: `${queue}_delayed` }, Number(resDelayed[1]) || 0);
+    }
+}
+
 async function onCommand(worker, message) {
     switch (message.cmd) {
         case 'metrics':
+            await updateQueueCounters();
             return promClient.register.metrics();
 
         case 'structuredMetrics': {
@@ -494,6 +592,53 @@ async function onCommand(worker, message) {
                 }
             }
             return { connections };
+        }
+
+        case 'license':
+            if (!licenseInfo.active && suspendedWorkerTypes.size) {
+                return Object.assign({}, licenseInfo, { suspended: true });
+            }
+            return licenseInfo;
+
+        case 'updateLicense': {
+            try {
+                const licenseFile = message.license;
+                let license = await checkLicense(licenseFile);
+                if (!license) {
+                    throw new Error('Failed to verify provided license');
+                }
+
+                logger.info({ msg: 'Loaded license', license, source: config.licensePath });
+
+                await redis.hset('settings', 'license', licenseFile);
+
+                licenseInfo.active = true;
+                licenseInfo.details = license;
+                licenseInfo.type = 'EmailEngine License';
+
+                // re-enable workers
+                checkActiveLicense();
+
+                return licenseInfo;
+            } catch (err) {
+                logger.fatal({ msg: 'Failed to verify provided license', source: config.licensePath, err });
+                return false;
+            }
+        }
+
+        case 'removeLicense': {
+            try {
+                await redis.hdel('settings', 'license');
+
+                licenseInfo.active = false;
+                licenseInfo.details = false;
+                licenseInfo.type = packageData.license;
+
+                return licenseInfo;
+            } catch (err) {
+                logger.fatal({ msg: 'Failed to remove existing license', err });
+                return false;
+            }
         }
 
         case 'new':
@@ -616,6 +761,47 @@ process.on('SIGINT', () => {
 // START APPLICATION
 
 const startApplication = async () => {
+    if (config.licensePath) {
+        try {
+            let stat = await fs.stat(config.licensePath);
+            if (!stat.isFile()) {
+                throw new Error(`Provided license key is not a regular file`);
+            }
+            const licenseFile = await fs.readFile(config.licensePath, 'utf-8');
+            let license = await checkLicense(licenseFile);
+            if (!license) {
+                throw new Error('Failed to verify provided license key');
+            }
+            logger.info({ msg: 'Loaded license key', license, source: config.licensePath });
+            await redis.hset('settings', 'license', licenseFile);
+        } catch (err) {
+            logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
+            return process.exit(13);
+        }
+    }
+
+    let licenseFile = await redis.hget('settings', 'license');
+    if (licenseFile) {
+        try {
+            let license = await checkLicense(licenseFile);
+            if (!license) {
+                throw new Error('Failed to verify provided license key');
+            }
+            licenseInfo.active = true;
+            licenseInfo.details = license;
+            licenseInfo.type = 'EmailEngine License';
+            if (!config.licensePath) {
+                logger.info({ msg: 'Loaded license', license, source: 'db' });
+            }
+        } catch (err) {
+            logger.fatal({ msg: 'Failed to verify stored license key', content: licenseFile, err });
+        }
+    }
+
+    if (!licenseInfo.active) {
+        logger.fatal({ msg: 'No active license key provided. Running in limited mode.' });
+    }
+
     if (preparedSettings) {
         // set up configuration
         logger.debug({ msg: 'Updating application settings', settings: preparedSettings });
@@ -627,6 +813,13 @@ const startApplication = async () => {
 
     // renew encryiption secret, if needed
     await getSecret();
+
+    // ensure password for cookie based auth
+    let cookiePassword = await settings.get('cookiePassword');
+    if (!cookiePassword) {
+        cookiePassword = crypto.randomBytes(32).toString('base64');
+        await settings.set('cookiePassword', cookiePassword);
+    }
 
     // multiple IMAP connection handlers
     for (let i = 0; i < config.workers.imap; i++) {
@@ -661,6 +854,9 @@ startApplication()
         setInterval(() => {
             collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
         }, 1000).unref();
+
+        licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+        licenseCheckTimer.unref();
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });

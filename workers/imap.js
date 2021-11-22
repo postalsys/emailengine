@@ -12,7 +12,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const net = require('net');
 
-const { getDuration, getBoolean } = require('../lib/tools');
+const { getDuration, getBoolean, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 
 config.service = config.service || {};
@@ -132,6 +132,7 @@ class ConnectionHandler {
 
         if (accountData.state) {
             await redis.hset(accountObject.connection.getAccountKey(), 'state', accountData.state);
+            await emitChangeEvent(this.logger, account, 'state', accountData.state);
         }
 
         // do not wait before returning as it may take forever
@@ -162,7 +163,10 @@ class ConnectionHandler {
                     cid: accountObject.connection.cid,
                     msg: 'Account reconnect requested'
                 });
-                await redis.hset(accountObject.connection.getAccountKey(), 'state', 'connecting');
+
+                let state = 'connecting';
+                await redis.hset(accountObject.connection.getAccountKey(), 'state', state);
+                await emitChangeEvent(this.logger, account, 'state', state);
                 await accountObject.connection.reconnect(true);
             }
         }

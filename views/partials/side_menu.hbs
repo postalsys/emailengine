@@ -1,0 +1,59 @@
+<!-- Nav Item - Dashboard -->
+<li class="nav-item {{#if menuDashboard}}active{{/if}}">
+    <a class="nav-link" href="/admin">
+        <i class="fas fa-fw fa-tachometer-alt"></i>
+        <span>Dashboard</span></a>
+</li>
+
+<!-- Divider -->
+<hr class="sidebar-divider">
+
+<!-- Heading -->
+<div class="sidebar-heading">
+    System
+</div>
+
+<li class="nav-item {{#if menuSwagger}}active{{/if}}">
+    <a class="nav-link" href="/admin/swagger">
+        <i class="fas fa-fw fa-file-code"></i>
+        <span>API Reference</span></a>
+</li>
+
+<li class="nav-item {{#if menuTokens}}active{{/if}}">
+    <a class="nav-link" href="/admin/tokens">
+        <i class="fas fa-fw fa-key"></i>
+        <span>Access tokens</span></a>
+</li>
+
+<li class="nav-item {{#if menuAccounts}}active{{/if}}">
+    <a class="nav-link" href="/admin/accounts">
+        <i class="fas fa-fw fa-users"></i>
+        <span>Accounts</span></a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link {{#unless menuConfig}}collapsed{{/unless}}" href="#" data-toggle="collapse"
+        data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+        <i class="fas fa-fw fa-cog"></i>
+        <span>Configuration</span>
+    </a>
+    <div id="collapseTwo" class="collapse {{#if menuConfig}}show{{/if}}" aria-labelledby="headingTwo"
+        data-parent="#accordionSidebar">
+        <div class="bg-white py-2 collapse-inner rounded">
+            <a class="collapse-item {{#if menuConfigService}}active{{/if}}" href="/admin/config/service">Service</a>
+            <a class="collapse-item {{#if menuConfigWebhooks}}active{{/if}}" href="/admin/config/webhooks">Webhooks</a>
+            <a class="collapse-item {{#if menuConfigLogging}}active{{/if}}" href="/admin/config/logging">Logging</a>
+            <a class="collapse-item {{#if menuConfigOauth}}active{{/if}}" href="/admin/config/oauth">OAuth2</a>
+            <a class="collapse-item {{#if menuConfigLicense}}active{{/if}}" href="/admin/config/license">
+                <div style="display: flex; justify-content: space-between;">
+                    <div>License key</div>
+                    {{#unless licenseInfo.active}}
+                    <div><i class="fas fa-fw fa-exclamation-triangle tooltip-elm" data-toggle="tooltip"
+                            data-placement="top" title="License not activated"></i>
+                    </div>
+                    {{/unless}}
+                </div>
+            </a>
+        </div>
+    </div>
+</li>

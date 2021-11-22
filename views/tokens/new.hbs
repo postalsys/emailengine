@@ -1,0 +1,195 @@
+{{> tokens_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/tokens">Access tokens</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Create new</li>
+    </ol>
+</nav>
+
+<form method="post" id="token-form" action="/admin/tokens/new">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <div class="card mb-4">
+
+        <div class="card-body">
+
+            <div class="form-group">
+                <label for="description">Description</label>
+
+                <input type="text" class="form-control" id="description" name="description"
+                    value="{{values.description}}" required />
+
+                {{#if errors.description}}
+                <span class="invalid-feedback">{{errors.description}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">This description is shown when listing active tokens.</small>
+            </div>
+
+
+            <h6>Allowed scopes</h6>
+
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input or-else-all scope-entry" data-target="scope-list"
+                            id="scopesAll" data-scope="*" name="scopesAll" {{#if values.scopesAll}}checked{{/if}} />
+                        <label class="form-check-label" for="scopesAll">All
+                            scopes</label>
+                    </div>
+                </li>
+
+                <li class="list-group-item">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesAPI"
+                            name="scopesAPI" data-scope="api" {{#if values.scopesAPI}}checked{{/if}} />
+                        <label class="form-check-label" for="scopesAPI">API</label>
+                    </div>
+                </li>
+
+                <li class="list-group-item">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesMetrics"
+                            name="scopesMetrics" data-scope="metrics" {{#if values.scopesMetrics}}checked{{/if}} />
+                        <label class="form-check-label" for="scopesMetrics">Metrics</label>
+                    </div>
+                </li>
+            </ul>
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-key"></i>
+            </span>
+            <span class="text">Generate a token</span>
+        </button>
+    </div>
+</form>
+
+<div class="modal fade" id="showToken" data-backdrop="static" data-keyboard="false" tabindex="-1"
+    aria-labelledby="showTokenLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="showTokenLabel">Access tokens</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="showTokenLoader">
+
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                            aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                    </div>
+
+                </div>
+                <div id="showTokenContent" class="d-none">
+
+                    <div>Access token:</div>
+                    <div>
+
+                        <div class="input-group">
+                            <input type="text" id="showTokenValue" class="form-control bg-light border-0 small"
+                                aria-label="Search" aria-describedby="basic-addon2" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
+                                    data-clipboard-target="#showTokenValue">
+                                    <i class="fas fa-copy fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div id="showTokenError" class="d-none alert alert-danger"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let showTokenValueElm = document.getElementById('showTokenValue');
+
+        showTokenValueElm.addEventListener('click', () => {
+            showTokenValueElm.focus();
+            showTokenValueElm.select();
+        })
+
+        document.getElementById('token-form').addEventListener('submit', e => {
+            e.preventDefault()
+
+            let crumb = document.getElementById('crumb').value;
+            let description = document.getElementById('description').value.trim();
+            document.getElementById('description').value = description
+
+            let scopes = [];
+            let scopeElms = document.querySelectorAll('.scope-entry');
+            for (let elm of scopeElms) {
+                if (elm.checked && !elm.disabled) {
+                    scopes.push(elm.dataset.scope);
+                }
+            }
+
+            if (scopes.includes('*')) {
+                scopes = ['*'];
+            }
+
+            let wasShown = false;
+
+            $('#showToken').on('hidden.bs.modal', function (event) {
+                document.getElementById('showTokenLoader').classList.remove('d-none');
+                document.getElementById('showTokenContent').classList.add('d-none');
+                document.getElementById('showTokenError').classList.add('d-none');
+                showTokenValueElm.value = '';
+
+                if (wasShown) {
+                    location.assign("/admin/tokens");
+                }
+            });
+
+            document.getElementById('showTokenLoader').classList.remove('d-none');
+            document.getElementById('showTokenContent').classList.add('d-none');
+            document.getElementById('showTokenError').classList.add('d-none');
+            $('#showToken').modal('show');
+
+            fetch('/admin/tokens/new', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    description,
+                    scopes
+                })
+            }).then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json()
+            }).then(data => {
+                document.getElementById('showTokenLoader').classList.add('d-none');
+                document.getElementById('showTokenContent').classList.remove('d-none');
+                document.getElementById('showTokenError').classList.add('d-none');
+                showTokenValueElm.value = data.token;
+
+                wasShown = true
+            }).catch(err => {
+                document.getElementById('showTokenLoader').classList.add('d-none');
+                document.getElementById('showTokenContent').classList.add('d-none');
+                document.getElementById('showTokenError').classList.remove('d-none');
+
+                document.getElementById('showTokenError').textContent = err.message;
+            });
+        });
+    })
+</script>

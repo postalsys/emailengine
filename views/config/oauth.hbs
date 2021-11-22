@@ -1,0 +1,143 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+
+        <small><i class="fas fa-cog fa-fw"></i></small>
+        OAuth2
+    </h1>
+</div>
+
+<p class="mb-4">Configure OAuth2 settings for supported services.</p>
+
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link {{#if activeGmail}}active{{/if}}" href="/admin/config/oauth">Gmail</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{#if activeOutlook}}active{{/if}}" href="/admin/config/oauth/outlook">Outlook</a>
+    </li>
+</ul>
+
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                {{#if activeGmail}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"https://mail.google.com/"</code>
+                </ul>
+                <div>Read about setting up the OAuth2 project in Google Cloud from <a
+                        href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
+                </div>
+                {{/if}}
+
+                {{#if activeOutlook}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"IMAP.AccessAsUser.All"</code>
+                    <li><code>"SMTP.Send"</code>
+                    <li><code>"offline_access"</code>
+                </ul>
+                {{/if}}
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="/admin/config/oauth">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" name="provider" value="{{values.provider}}">
+
+    <div class="card mb-4">
+
+        <div class="card-body">
+
+            <p>Setting up OAuth2 credentials allows to refresh expired access tokens.</p>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
+                    id="oauth2Enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
+                <label class="form-check-label" for="oauth2Enabled">Enable OAuth2 support for
+                    {{providerName}}</label>
+                {{#if errors.oauth2Enabled}}
+                <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled then <em>"{{providerName}}"</em> is shown as an account
+                    type option when adding an
+                    account.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="clientId">
+                    {{#if activeGmail}}
+                    Client Id
+                    {{/if}}
+
+                    {{#if activeOutlook}}
+                    Application Id
+                    {{/if}}
+                </label>
+                <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
+                    name="clientId" value="{{values.clientId}}" placeholder="Enter client ID…" />
+                {{#if errors.clientId}}
+                <span class="invalid-feedback">{{errors.clientId}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OAuth2 client id.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="clientSecret">Client Secret</label>
+
+                <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
+                    name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
+                    placeholder="Client secret is set but not shown…" {{else}} placeholder="Enter client secret…"
+                    {{/if}} />
+                {{#if errors.clientSecret}}
+                <span class="invalid-feedback">{{errors.clientSecret}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OAuth2 client secret.</small>
+            </div>
+
+            {{#if activeOutlook}}
+            <div class="form-group">
+                <label for="authority">Supported account types</label>
+
+                <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="clientSecret"
+                    name="authority" value="{{values.authority}}" />
+                {{#if errors.authority}}
+                <span class="invalid-feedback">{{errors.authority}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Supported account types. Usually "consumers" for Microsoft
+                    accounts,
+                    "organizations" for Organisation accounts only and "common" for both type of
+                    accounts.</small>
+            </div>
+            {{/if}}
+
+            <div class="form-group">
+                <label for="redirectUrl">Redirect URL</label>
+                <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
+                    name="redirectUrl" value="{{values.redirectUrl}}" />
+                {{#if errors.redirectUrl}}
+                <span class="invalid-feedback">{{errors.redirectUrl}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow
+                    then set it to <code>{{defaultRedirectUrl}}</code></small>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+</form>

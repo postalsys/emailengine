@@ -3,12 +3,11 @@
 const { parentPort } = require('worker_threads');
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
-const BasicAuth = require('@hapi/basic');
+const Cookie = require('@hapi/cookie');
+const Crumb = require('@hapi/crumb');
 const Joi = require('joi');
 const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
-const { ImapFlow } = require('imapflow');
-const nodemailer = require('nodemailer');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
@@ -16,17 +15,22 @@ const packageData = require('../package.json');
 const pathlib = require('path');
 const config = require('wild-config');
 const crypto = require('crypto');
-const { PassThrough } = require('stream');
-const msgpack = require('msgpack5')();
-const { OAuth2Client } = require('google-auth-library');
+const { Transform, finished } = require('stream');
+const { getOAuth2Client } = require('../lib/oauth');
 const consts = require('../lib/consts');
+const handlebars = require('handlebars');
+const AuthBearer = require('hapi-auth-bearer-token');
+const tokens = require('../lib/tokens');
+const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getCounterValues, getAuthSettings } = require('../lib/tools');
+const { getByteSize, getDuration, getStats, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
+
+const routesUi = require('../lib/routes-ui');
 
 const {
     settingsSchema,
@@ -38,42 +42,64 @@ const {
     messageDetailsSchema,
     messageListSchema,
     mailboxesSchema,
-    shortMailboxesSchema
+    shortMailboxesSchema,
+    licenseSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
+
+const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
 config.api = config.api || {
     port: 3000,
-    host: '127.0.0.1'
+    host: '127.0.0.1',
+    proxy: false
 };
 
 config.service = config.service || {};
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-const EENGINE_AUTH = getAuthSettings(process.env.EENGINE_AUTH || config.api.auth);
 
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
-const failAction = async (request, h, err) => {
-    let details = (err.details || []).map(detail => ({ message: detail.message, key: detail.context.key }));
+const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
 
-    logger.error({
-        msg: 'Request failed',
-        method: request.method,
-        route: request.route.path,
-        statusCode: request.response && request.response.statusCode,
-        err
-    });
+let registeredPublishers = new Set();
 
-    let message = 'Invalid input';
-    let error = Boom.boomify(new Error(message), { statusCode: 400 });
-    error.output.payload.fields = details;
-    throw error;
-};
+class ResponseStream extends Transform {
+    constructor() {
+        super();
+        registeredPublishers.add(this);
+    }
+
+    setCompressor(compressor) {
+        this._compressor = compressor;
+    }
+
+    sendMessage(payload) {
+        let sendData = JSON.stringify(payload);
+        this.write('event: message\ndata:' + sendData + '\n\n');
+        this._compressor.flush();
+    }
+
+    finalize() {
+        registeredPublishers.delete(this);
+    }
+
+    _transform(data, encoding, done) {
+        this.push(data);
+        done();
+    }
+
+    _flush(done) {
+        this.finalize();
+        done();
+    }
+}
 
 let callQueue = new Map();
 let mids = 0;
@@ -126,6 +152,18 @@ async function onCommand(command) {
     logger.debug({ msg: 'Unhandled command', command });
 }
 
+function publishChangeEvent(data) {
+    let { account, type, key, payload } = data;
+
+    for (let stream of registeredPublishers) {
+        try {
+            stream.sendMessage({ account, type, key, payload });
+        } catch (err) {
+            logger.error({ msg: 'Failed to publish change event', err, account, type, key, payload });
+        }
+    }
+}
+
 parentPort.on('message', message => {
     if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
         let { resolve, reject, timer } = callQueue.get(message.mid);
@@ -164,22 +202,11 @@ parentPort.on('message', message => {
                 });
             });
     }
-});
 
-const getOAuth2Client = async () => {
-    let keys = {
-        clientId: await settings.get('gmailClientId'),
-        clientSecret: await settings.get('gmailClientSecret'),
-        redirectUrl: await settings.get('gmailRedirectUrl')
-    };
-
-    if (!keys.clientId || !keys.clientSecret || !keys.redirectUrl) {
-        let error = Boom.boomify(new Error('OAuth2 credentials not set up'), { statusCode: 400 });
-        throw error;
+    if (message && message.cmd === 'change') {
+        publishChangeEvent(message);
     }
-
-    return new OAuth2Client(keys.clientId, keys.clientSecret, keys.redirectUrl);
-};
+});
 
 const init = async () => {
     const server = Hapi.server({
@@ -187,14 +214,17 @@ const init = async () => {
         host: process.env.EENGINE_HOST || config.api.host
     });
 
-    server.ext('onPreHandler', async (request, h) => {
-        logger.debug({
-            msg: 'request onPreHandler',
-            action: 'onPreHandler',
-            method: request.method,
-            path: request.path,
-            account: request.params && request.params.account
-        });
+    server.ext('onRequest', async (request, h) => {
+        if (API_PROXY) {
+            // check for IP from the Forwarded-For header
+            const xFF = request.headers['x-forwarded-for'];
+            request.app.ip = xFF ? xFF.split(',')[0] : request.info.remoteAddress;
+        } else {
+            // use socket address
+            request.app.ip = request.info.remoteAddress;
+        }
+
+        request.app.licenseInfo = await call({ cmd: 'license' });
 
         return h.continue;
     });
@@ -207,6 +237,8 @@ const init = async () => {
 
         grouping: 'tags',
 
+        //auth: 'api-token',
+
         info: {
             title: 'EmailEngine',
             version: packageData.version,
@@ -214,35 +246,134 @@ const init = async () => {
                 name: 'Postal Systems OÜ',
                 email: 'info@emailengine.app'
             }
-        }
+        },
+
+        securityDefinitions: {
+            bearerAuth: {
+                type: 'apiKey',
+                //scheme: 'bearer',
+                name: 'access_token',
+                in: 'query'
+            }
+        },
+        security: [{ bearerAuth: [] }]
     };
 
-    const validateBasicAuth = async (request, username, password /*, h*/) => {
-        if (!EENGINE_AUTH.enabled) {
-            return { credentials: null, isValid: true };
+    await server.register(AuthBearer);
+
+    // Authentication for API calls
+    server.auth.strategy('api-token', 'bearer-access-token', {
+        allowQueryToken: true, // optional, false by default
+        validate: async (request, token /*, h*/) => {
+            let scope = false;
+            let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
+            if (tags.includes('api')) {
+                scope = 'api';
+            } else {
+                for (let tag of tags) {
+                    if (/^scope:/.test(tag)) {
+                        scope = tag.substr('scope:'.length);
+                    }
+                }
+            }
+
+            let tokenData;
+            try {
+                tokenData = await tokens.get(token, false, { log: true, remoteAddress: request.app.ip });
+            } catch (err) {
+                return {
+                    isValid: false,
+                    credentials: {},
+                    artifacts: { err: err.message }
+                };
+            }
+
+            if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
+                // failed scope validation
+                logger.error({
+                    msg: 'Trying to use invalid scope for a token',
+                    tokenAccount: tokenData.account,
+                    tokenId: tokenData.id,
+                    requestedScope: scope,
+                    tokenScopes: tokenData.scopes
+                });
+
+                return {
+                    isValid: false,
+                    credentials: { token },
+                    artifacts: { err: 'Unauthorized scope' }
+                };
+            }
+
+            if (tokenData.account) {
+                // account token
+                if (!request.params || request.params.account !== tokenData.account) {
+                    logger.error({
+                        msg: 'Trying to use invalid account for a token',
+                        tokenAccount: tokenData.account,
+                        tokenId: tokenData.id,
+                        account: (request.params && request.params.account) || null
+                    });
+                    return {
+                        isValid: false,
+                        credentials: { token },
+                        artifacts: { err: 'Unauthorized account' }
+                    };
+                }
+            }
+
+            return { isValid: true, credentials: { token }, artifacts: tokenData };
         }
+    });
 
-        if (username.trim() !== EENGINE_AUTH.user || password !== EENGINE_AUTH.pass) {
-            return { credentials: null, isValid: false };
+    // needed for auth session and flash messages
+    await server.register(Cookie);
+
+    // Authentication for admin pages
+    server.auth.strategy('session', 'cookie', {
+        cookie: {
+            name: 'ee',
+            password: await settings.get('cookiePassword'),
+            isSecure: false,
+            path: '/',
+            clearInvalid: true
+        },
+        appendNext: true,
+        redirectTo: '/admin/login',
+        validateFunc: async (request, session) => {
+            const authData = await settings.get('authData');
+            if (!authData) {
+                return { valid: true, credentials: { enabled: false } };
+            }
+
+            const account = authData.user === session.user;
+
+            if (!account) {
+                return { valid: false };
+            }
+
+            return {
+                valid: true,
+                credentials: {
+                    enabled: true,
+                    user: authData.user
+                },
+                artifacts: authData
+            };
         }
+    });
 
-        return { isValid: true, credentials: { id: username } };
-    };
-
-    if (EENGINE_AUTH.enabled) {
-        // setup basic auth
-        await server.register(BasicAuth);
-
-        server.auth.strategy('simple', 'basic', { validate: validateBasicAuth });
-        server.auth.default('simple');
+    const authData = await settings.get('authData');
+    if (authData) {
+        server.auth.default('session');
     }
 
     await server.register({
         plugin: hapiPino,
         options: {
-            instance: logger.child({ component: 'api' }),
+            instance: logger.child({ component: 'api' }, { redact: REDACTED_KEYS }),
             // Redact Authorization headers, see https://getpino.io/#/docs/redaction
-            redact: ['req.headers.authorization']
+            redact: REDACTED_KEYS
         }
     });
 
@@ -272,6 +403,9 @@ const init = async () => {
         path: '/',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'index.html'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -280,6 +414,9 @@ const init = async () => {
         path: '/favicon.ico',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'favicon.ico'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -288,6 +425,31 @@ const init = async () => {
         path: '/licenses.html',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
+        },
+        options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/LICENSE.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE.txt'), confine: false }
+        },
+        options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/LICENSE_EMAILENGINE.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -298,6 +460,9 @@ const init = async () => {
             directory: {
                 path: pathlib.join(__dirname, '..', 'static')
             }
+        },
+        options: {
+            auth: false
         }
     });
 
@@ -305,8 +470,6 @@ const init = async () => {
         method: 'GET',
         path: '/oauth',
         async handler(request, h) {
-            const oAuth2Client = await getOAuth2Client();
-
             if (request.query.error) {
                 let error = Boom.boomify(new Error(`Oauth failed: ${request.query.error}`), { statusCode: 400 });
                 throw error;
@@ -336,51 +499,114 @@ const init = async () => {
                 throw error;
             }
 
-            const r = await oAuth2Client.getToken(request.query.code);
-            if (!r || !r.tokens) {
-                let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
-                throw error;
-            }
+            const accountMeta = accountData._meta || {};
+            delete accountData._meta;
 
-            // retrieve account email address as this is the username for IMAP/SMTP
-            oAuth2Client.setCredentials(r.tokens);
-            let profileRes;
-            try {
-                profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
-            } catch (err) {
-                if (err.response && err.response.data && err.response.data.error) {
-                    let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
-                    throw error;
-                }
-                throw err;
-            }
+            const redirectUrl = accountMeta.redirectUrl;
 
-            if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
-                let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                throw error;
-            }
+            const provider = accountData.oauth2.provider;
 
-            accountData.oauth2 = Object.assign(
-                accountData.oauth2 || {},
-                {
-                    provider: 'gmail',
-                    accessToken: r.tokens.access_token,
-                    refreshToken: r.tokens.refresh_token,
-                    expires: new Date(r.tokens.expiry_date),
-                    scope: r.tokens.scope,
-                    tokenType: r.tokens.token_type
-                },
-                {
-                    auth: {
-                        user: profileRes.data.emailAddress
+            const oAuth2Client = await getOAuth2Client(provider);
+
+            switch (provider) {
+                case 'gmail': {
+                    const r = await oAuth2Client.getToken(request.query.code);
+                    if (!r || !r.tokens) {
+                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+                        throw error;
                     }
+
+                    // retrieve account email address as this is the username for IMAP/SMTP
+                    oAuth2Client.setCredentials(r.tokens);
+                    let profileRes;
+                    try {
+                        profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
+                    } catch (err) {
+                        if (err.response && err.response.data && err.response.data.error) {
+                            let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
+                            throw error;
+                        }
+                        throw err;
+                    }
+
+                    if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.email = accountData.email || (isEmail(profileRes.data.emailAddress) ? profileRes.data.emailAddress : '');
+
+                    accountData.oauth2 = Object.assign(
+                        accountData.oauth2 || {},
+                        {
+                            provider,
+                            accessToken: r.tokens.access_token,
+                            refreshToken: r.tokens.refresh_token,
+                            expires: new Date(r.tokens.expiry_date),
+                            scope: r.tokens.scope,
+                            tokenType: r.tokens.token_type
+                        },
+                        {
+                            auth: {
+                                user: profileRes.data.emailAddress
+                            }
+                        }
+                    );
+                    break;
                 }
-            );
+
+                case 'outlook': {
+                    const clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64').toString()) : false;
+
+                    if (!clientInfo || !clientInfo.preferred_username) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    const r = await oAuth2Client.getToken(request.query.code);
+                    if (!r || !r.access_token) {
+                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.name = accountData.name || clientInfo.name || '';
+                    accountData.email = accountData.email || (isEmail(clientInfo.preferred_username) ? clientInfo.preferred_username : '');
+
+                    accountData.oauth2 = Object.assign(
+                        accountData.oauth2 || {},
+                        {
+                            provider,
+                            accessToken: r.access_token,
+                            refreshToken: r.refresh_token,
+                            expires: new Date(Date.now() + r.expires_in * 1000),
+                            scope: r.scope ? r.scope.split(/\s+/) : OUTLOOK_SCOPES,
+                            tokenType: r.token_type
+                        },
+                        {
+                            auth: {
+                                user: clientInfo.preferred_username
+                            }
+                        }
+                    );
+                    break;
+                }
+
+                default: {
+                    throw new Error('FUTURE FEATURE 2');
+                }
+            }
 
             let accountObject = new Account({ redis, call, secret: await getSecret() });
             let result = await accountObject.create(accountData);
 
-            return h.redirect(`/#account:created=${result.account}`);
+            // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
+            return h.view(
+                'redirect',
+                { httpRedirectUrl: redirectUrl ? redirectUrl : `/#account:created=${result.account}` },
+                {
+                    layout: 'public'
+                }
+            );
         },
         options: {
             description: 'OAuth2 response endpoint',
@@ -397,8 +623,314 @@ const init = async () => {
                     state: Joi.string().max(1024).example('account:add:12345').description('OAuth2 state info'),
                     code: Joi.string().max(1024).example('67890...').description('OAuth2 setup code'),
                     scope: Joi.string().max(1024).example('https://mail.google.com/').description('OAuth2 scopes'),
-                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 scopes')
+                    client_info: Joi.string().base64({ urlSafe: true, paddingRequired: false }).description('Outlook client info'),
+                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 Error')
                 }).label('CreateAccount')
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/token',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                let token = await tokens.provision(Object.assign({}, request.payload, { remoteAddress: request.app.ip }));
+
+                return { token };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Provision an access token',
+            notes: 'Provisions a new access token for an account',
+            tags: ['api', 'token'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+
+                    description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
+
+                    metadata: Joi.string()
+                        .empty('')
+                        .max(1024 * 1024)
+                        .custom((value, helpers) => {
+                            try {
+                                // check if parsing fails
+                                JSON.parse(value);
+                                return value;
+                            } catch (err) {
+                                return helpers.message('Metadata must be a valid JSON string');
+                            }
+                        })
+                        .example('{"example": "value"}')
+                        .description('Related metadata in JSON format')
+                        .label('JsonMetaData'),
+
+                    ip: Joi.string()
+                        .empty('')
+                        .trim()
+                        .ip({
+                            version: ['ipv4', 'ipv6'],
+                            cidr: 'forbidden'
+                        })
+                        .example('127.0.0.1')
+                        .description('IP address of the requestor')
+                }).label('CreateToken')
+            },
+
+            response: {
+                schema: Joi.object({
+                    token: Joi.string().length(64).hex().required().example('123456').description('Access token')
+                }).label('CreateTokenReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/token/{token}',
+
+        async handler(request) {
+            try {
+                return { deleted: await tokens.delete(request.params.token, { remoteAddress: request.app.ip }) };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove a token',
+            notes: 'Delete an access token',
+            tags: ['api', 'token'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    token: Joi.string().length(64).hex().required().example('123456').description('Access token')
+                }).label('DeleteTokenRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
+                }).label('DeleteTokenRequestReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/tokens',
+
+        async handler() {
+            try {
+                return { tokens: await tokens.list() };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List root tokens',
+            notes: 'Lists access tokens registered for root access',
+            tags: ['api', 'token'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction
+            },
+
+            response: {
+                schema: Joi.object({
+                    tokens: Joi.array()
+                        .items(
+                            Joi.object({
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
+                                metadata: Joi.string()
+                                    .empty('')
+                                    .max(1024 * 1024)
+                                    .custom((value, helpers) => {
+                                        try {
+                                            // check if parsing fails
+                                            JSON.parse(value);
+                                            return value;
+                                        } catch (err) {
+                                            return helpers.message('Metadata must be a valid JSON string');
+                                        }
+                                    })
+                                    .example('{"example": "value"}')
+                                    .description('Related metadata in JSON format')
+                                    .label('JsonMetaData'),
+                                ip: Joi.string()
+                                    .empty('')
+                                    .trim()
+                                    .ip({
+                                        version: ['ipv4', 'ipv6'],
+                                        cidr: 'forbidden'
+                                    })
+                                    .example('127.0.0.1')
+                                    .description('IP address of the requestor')
+                            }).label('AccountResponseItem')
+                        )
+                        .label('AccountEntries')
+                }).label('AccountsFilterReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/tokens/account/{account}',
+
+        async handler(request) {
+            try {
+                return { tokens: await tokens.list(request.params.account) };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List account tokens',
+            notes: 'Lists access tokens registered for an account',
+            tags: ['api', 'token'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    tokens: Joi.array()
+                        .items(
+                            Joi.object({
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
+                                metadata: Joi.string()
+                                    .empty('')
+                                    .max(1024 * 1024)
+                                    .custom((value, helpers) => {
+                                        try {
+                                            // check if parsing fails
+                                            JSON.parse(value);
+                                            return value;
+                                        } catch (err) {
+                                            return helpers.message('Metadata must be a valid JSON string');
+                                        }
+                                    })
+                                    .example('{"example": "value"}')
+                                    .description('Related metadata in JSON format')
+                                    .label('JsonMetaData'),
+                                ip: Joi.string()
+                                    .empty('')
+                                    .trim()
+                                    .ip({
+                                        version: ['ipv4', 'ipv6'],
+                                        cidr: 'forbidden'
+                                    })
+                                    .example('127.0.0.1')
+                                    .description('IP address of the requestor')
+                            }).label('AccountResponseItem')
+                        )
+                        .label('AccountEntries')
+                }).label('AccountsFilterReponse'),
+                failAction: 'log'
             }
         }
     });
@@ -414,8 +946,7 @@ const init = async () => {
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
                     // redirect to OAuth2 consent screen
 
-                    const oAuth2Client = await getOAuth2Client();
-
+                    const oAuth2Client = await getOAuth2Client(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
                     delete request.payload.oauth2.authorize; // do not store this property
@@ -427,12 +958,27 @@ const init = async () => {
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
-                    const authorizeUrl = oAuth2Client.generateAuthUrl({
-                        access_type: 'offline',
-                        scope: ['https://mail.google.com/'],
-                        state: `account:add:${nonce}`,
-                        prompt: 'consent'
-                    });
+                    let authorizeUrl;
+                    switch (request.payload.oauth2.provider) {
+                        case 'gmail':
+                            authorizeUrl = oAuth2Client.generateAuthUrl({
+                                access_type: 'offline',
+                                scope: ['https://mail.google.com/'],
+                                state: `account:add:${nonce}`,
+                                prompt: 'consent'
+                            });
+
+                            break;
+                        case 'outlook':
+                            authorizeUrl = oAuth2Client.generateAuthUrl({
+                                state: `account:add:${nonce}`
+                            });
+                            break;
+                        default: {
+                            let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
+                            throw error;
+                        }
+                    }
 
                     return {
                         redirect: authorizeUrl
@@ -452,10 +998,18 @@ const init = async () => {
                 throw error;
             }
         },
+
         options: {
             description: 'Register new account',
             notes: 'Registers new IMAP account to be synced',
             tags: ['api', 'account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -469,10 +1023,13 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
@@ -518,6 +1075,13 @@ const init = async () => {
             notes: 'Updates account information',
             tags: ['api', 'account'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -532,10 +1096,13 @@ const init = async () => {
 
                 payload: Joi.object({
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
@@ -576,6 +1143,13 @@ const init = async () => {
             description: 'Request reconnect',
             notes: 'Requests connection to be reconnected',
             tags: ['api', 'account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -628,6 +1202,13 @@ const init = async () => {
             notes: 'Stop syncing IMAP account and delete cached values',
             tags: ['api', 'account'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -677,6 +1258,13 @@ const init = async () => {
             notes: 'Lists registered accounts',
             tags: ['api', 'account'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -695,7 +1283,7 @@ const init = async () => {
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     state: Joi.string()
-                        .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                        .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
                         .description('Filter accounts by state')
                         .label('AccountState')
@@ -713,9 +1301,10 @@ const init = async () => {
                             Joi.object({
                                 account: Joi.string().max(256).required().example('example').description('Account ID'),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
+                                email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
                                 state: Joi.string()
                                     .required()
-                                    .valid('init', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                                    .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                                     .example('connected')
                                     .description('Account state'),
                                 syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
@@ -764,7 +1353,7 @@ const init = async () => {
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
+                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
@@ -787,6 +1376,11 @@ const init = async () => {
             notes: 'Returns stored information about the account. Passwords are not included.',
             tags: ['api', 'account'],
 
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -805,8 +1399,11 @@ const init = async () => {
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
@@ -843,6 +1440,11 @@ const init = async () => {
             description: 'List mailboxes',
             notes: 'Lists all available mailboxes',
             tags: ['api', 'mailbox'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -891,6 +1493,13 @@ const init = async () => {
             description: 'Create mailbox',
             notes: 'Create new mailbox folder',
             tags: ['api', 'mailbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -950,6 +1559,13 @@ const init = async () => {
             notes: 'Delete existing mailbox folder',
             tags: ['api', 'mailbox'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1002,6 +1618,11 @@ const init = async () => {
             notes: 'Fetches raw message as a stream',
             tags: ['api', 'message'],
 
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1049,6 +1670,11 @@ const init = async () => {
             notes: 'Fetches attachment file as a binary stream',
             tags: ['api', 'message'],
 
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1094,6 +1720,11 @@ const init = async () => {
             description: 'Get message information',
             notes: 'Returns details of a specific message. By default text content is not included, use textType value to force retrieving text',
             tags: ['api', 'message'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1159,6 +1790,13 @@ const init = async () => {
             description: 'Upload message',
             notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
             tags: ['api', 'message'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1271,6 +1909,13 @@ const init = async () => {
             notes: 'Update message information. Mainly this means changing message flag values',
             tags: ['api', 'message'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1349,6 +1994,13 @@ const init = async () => {
             notes: 'Move message to another folder',
             tags: ['api', 'message'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1402,6 +2054,13 @@ const init = async () => {
             description: 'Delete message',
             notes: 'Move message to Trash or delete it if already in Trash',
             tags: ['api', 'message'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1468,6 +2127,11 @@ const init = async () => {
             description: 'Retrieve message text',
             notes: 'Retrieves message text',
             tags: ['api', 'message'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1537,6 +2201,11 @@ const init = async () => {
             notes: 'Lists messages in a mailbox folder',
             tags: ['api', 'message'],
 
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1592,6 +2261,13 @@ const init = async () => {
             description: 'Search for messages',
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific foldera and not for the entire account.',
             tags: ['api', 'message'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1765,6 +2441,13 @@ const init = async () => {
             notes: 'Submit message for delivery. If reference message ID is provided then EmailEngine adds all headers and flags required for a reply/forward automatically.',
             tags: ['api', 'submit'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1905,6 +2588,11 @@ const init = async () => {
             notes: 'List setting values for specific keys',
             tags: ['api', 'settings'],
 
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -1931,20 +2619,10 @@ const init = async () => {
             let updated = [];
             for (let key of Object.keys(request.payload)) {
                 switch (key) {
-                    case 'logs': {
-                        let logs = request.payload.logs;
-                        let resetLoggedAccounts = logs.resetLoggedAccounts;
-                        delete logs.resetLoggedAccounts;
-                        if (resetLoggedAccounts && logs.accounts && logs.accounts.length) {
-                            for (let account of logs.accounts) {
-                                logger.info({ msg: 'Request reconnect for logging', account });
-                                try {
-                                    await call({ cmd: 'update', account });
-                                } catch (err) {
-                                    logger.error({ action: 'request_reconnect', account, err });
-                                }
-                            }
-                        }
+                    case 'serviceUrl': {
+                        let url = new URL(request.payload.serviceUrl);
+                        request.payload.serviceUrl = url.origin;
+                        break;
                     }
                 }
 
@@ -1959,6 +2637,13 @@ const init = async () => {
             description: 'Set setting values',
             notes: 'Set setting values for specific keys',
             tags: ['api', 'settings'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -1985,12 +2670,17 @@ const init = async () => {
         path: '/v1/logs/{account}',
 
         async handler(request) {
-            return getLogs(request.params.account);
+            return getLogs(redis, request.params.account);
         },
         options: {
             description: 'Return IMAP logs for an account',
             notes: 'Output is a downloadable text file',
             tags: ['api', 'logs'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -2012,11 +2702,17 @@ const init = async () => {
         path: '/v1/stats',
 
         async handler(request) {
-            return await getStats(request.query.seconds);
+            return await getStats(redis, call, request.query.seconds);
         },
+
         options: {
             description: 'Return server stats',
             tags: ['api', 'stats'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
 
             validate: {
                 options: {
@@ -2086,6 +2782,13 @@ const init = async () => {
             notes: 'Checks if can connect and authenticate using provided account info',
             tags: ['api', 'account'],
 
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
             validate: {
                 options: {
                     stripUnknown: false,
@@ -2133,12 +2836,366 @@ const init = async () => {
 
     server.route({
         method: 'GET',
+        path: '/v1/license',
+
+        async handler() {
+            try {
+                const licenseInfo = await call({ cmd: 'license' });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to load license info');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Request license info',
+            notes: 'Get active license information',
+            tags: ['api', 'license'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            response: {
+                schema: licenseSchema.label('LicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/license',
+
+        async handler() {
+            try {
+                const licenseInfo = await call({ cmd: 'removeLicense' });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to clear license info');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove license',
+            notes: 'Remove registered active license',
+            tags: ['api', 'license'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            response: {
+                schema: Joi.object({
+                    active: Joi.boolean().example(false),
+                    details: Joi.boolean().example(false),
+                    type: Joi.string().example('AGPL-3.0-or-later')
+                }).label('EmtpyLicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/license',
+
+        async handler(request) {
+            try {
+                const licenseInfo = await call({ cmd: 'updateLicense', license: request.payload.license });
+                if (!licenseInfo) {
+                    let err = new Error('Failed to update license. Check license file contents.');
+                    err.statusCode = 403;
+                    throw err;
+                }
+                return licenseInfo;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Register a license',
+            notes: 'Set up a license for EmailEngine to unlock all features',
+            tags: ['api', 'license'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object({
+                    license: Joi.string()
+                        .max(10 * 1024)
+                        .required()
+                        .example('-----BEGIN LICENSE-----\r\n...')
+                        .description('License file')
+                }).label('RegisterLicense')
+            },
+
+            response: {
+                schema: licenseSchema.label('LicenseReponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/autoconfig',
+
+        async handler(request) {
+            try {
+                let serverSettings = await autodetectImapSettings(request.query.email);
+                return serverSettings;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                return { imap: false, smtp: false, _source: 'unknown' };
+            }
+        },
+
+        options: {
+            description: 'Discover Email settings',
+            notes: 'Try to discover IMAP and SMTP settings for an email account',
+            tags: ['api', 'settings'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    email: Joi.string()
+                        .email()
+                        .required()
+                        .example('sender@example.com')
+                        .description('Email address to discover email settings for')
+                        .label('EmailAddress')
+                }).label('AutodiscoverQuery')
+            },
+
+            response: {
+                schema: Joi.object({
+                    imap: Joi.object({
+                        auth: Joi.object({
+                            user: Joi.string().max(256).example('myuser@gmail.com').description('Account username')
+                        }).label('DetectedAuthenticationInfo'),
+
+                        host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
+                        port: Joi.number()
+                            .min(1)
+                            .max(64 * 1024)
+                            .required()
+                            .example(993)
+                            .description('Service port number'),
+                        secure: Joi.boolean().default(false).example(true).description('Should connection use TLS. Usually true for port 993')
+                    }).label('ResolvedServerSettings'),
+                    smtp: Joi.object({
+                        auth: Joi.object({
+                            user: Joi.string().max(256).example('myuser@gmail.com').description('Account username')
+                        }).label('DetectedAuthenticationInfo'),
+
+                        host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
+                        port: Joi.number()
+                            .min(1)
+                            .max(64 * 1024)
+                            .required()
+                            .example(993)
+                            .description('Service port number'),
+                        secure: Joi.boolean().default(false).example(true).description('Should connection use TLS. Usually true for port 993')
+                    }).label('DiscoveredServerSettings'),
+                    _source: Joi.string().example('srv').description('Source for the detected info')
+                }).label('DiscoveredEmailSettings'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    // Web UI routes
+
+    await server.register({
+        plugin: Crumb,
+
+        options: {
+            cookieOptions: {
+                isSecure: false
+            },
+
+            skip: (request /*, h*/) => {
+                if (request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+                    // No CSRF for API calls?
+                    return true;
+                }
+
+                return false;
+            }
+        }
+    });
+
+    server.ext('onRequest', async (request, h) => {
+        request.flash = async message => await flash(redis, request, message);
+        return h.continue;
+    });
+
+    server.views({
+        engines: {
+            hbs: handlebars
+        },
+
+        relativeTo: pathlib.join(__dirname, '..'),
+        path: './views',
+        layout: 'app',
+        layoutPath: './views/layout',
+        partialsPath: './views/partials',
+
+        isCached: false,
+
+        async context(request) {
+            const pendingMessages = await flash(redis, request);
+            const authData = await settings.get('authData');
+            return {
+                values: request.payload || {},
+                errors: (request.error && request.error.details) || {},
+                pendingMessages,
+                licenseInfo: request.app.licenseInfo,
+                authEnabled: !!(authData && authData.password),
+                authData,
+                packageData
+            };
+        }
+    });
+
+    const preResponse = async (request, h) => {
+        const response = request.response;
+        if (!response.isBoom) {
+            return h.continue;
+        }
+
+        // Replace error with friendly HTML
+
+        const error = response;
+        const ctx = {
+            message:
+                error.output.statusCode === 404
+                    ? 'page not found'
+                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong'
+        };
+
+        if (error.output && error.output.payload) {
+            request.errorInfo = error.output.payload;
+        }
+
+        if (error.output && error.output.statusCode === 401 && error.output.headers && /^Bearer/.test(error.output.headers['WWW-Authenticate'])) {
+            // bearer auth failed
+            return h
+                .response({ statusCode: 401, error: 'Unauthorized', message: error.message })
+                .header('WWW-Authenticate', error.output.headers['WWW-Authenticate'])
+                .code(error.output.statusCode);
+        }
+
+        if (request.errorInfo && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+            // JSON response for API requests
+            return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
+        }
+
+        if (/^\/v1\//.test(request.path)) {
+            // API path
+            return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
+        }
+
+        logger.error({ path: request.path, method: request.method, err: error });
+
+        return h
+            .view('error', ctx, {
+                layout: 'public'
+            })
+            .code(error.output.statusCode);
+    };
+
+    server.ext('onPreResponse', preResponse);
+
+    server.route({
+        method: 'GET',
+        path: '/admin/changes',
+        async handler(request, h) {
+            request.app.stream = new ResponseStream();
+            finished(request.app.stream, err => request.app.stream.finalize(err));
+            return h.response(request.app.stream).type('text/event-stream');
+        }
+    });
+
+    routesUi(server, call);
+
+    server.route({
+        method: 'GET',
         path: '/metrics',
+
         async handler(request, h) {
             const renderedMetrics = await call({ cmd: 'metrics' });
             const response = h.response('success');
             response.type('text/plain');
             return renderedMetrics;
+        },
+        options: {
+            tags: ['scope:metrics'],
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            }
         }
     });
 
@@ -2152,160 +3209,6 @@ const init = async () => {
 
     await server.start();
 };
-
-function getLogs(account) {
-    let logKey = `iam:${account}:g`;
-    let passThrough = new PassThrough();
-
-    redis
-        .lrangeBuffer(logKey, 0, -1)
-        .then(rows => {
-            if (!rows || !Array.isArray(rows) || !rows.length) {
-                return passThrough.end(`No logs found for ${account}\n`);
-            }
-            let processNext = () => {
-                if (!rows.length) {
-                    return passThrough.end();
-                }
-
-                let row = rows.shift();
-                let entry;
-                try {
-                    entry = msgpack.decode(row);
-                } catch (err) {
-                    entry = { error: err.stack };
-                }
-
-                if (entry) {
-                    if (!passThrough.write(JSON.stringify(entry) + '\n')) {
-                        return passThrough.once('drain', processNext);
-                    }
-                }
-
-                setImmediate(processNext);
-            };
-
-            processNext();
-        })
-        .catch(err => {
-            passThrough.end(`\nFailed to process logs\n${err.stack}\n`);
-        });
-
-    return passThrough;
-}
-
-async function verifyAccountInfo(accountData) {
-    let response = {};
-
-    if (accountData.imap) {
-        try {
-            let imapClient = new ImapFlow(
-                Object.assign(
-                    {
-                        verifyOnly: true,
-                        includeMailboxes: accountData.mailboxes
-                    },
-                    accountData.imap
-                )
-            );
-
-            let mailboxes = await new Promise((resolve, reject) => {
-                imapClient.on('error', err => {
-                    reject(err);
-                });
-                imapClient
-                    .connect()
-                    .then(() => resolve(imapClient._mailboxList))
-                    .catch(reject);
-            });
-
-            response.imap = {
-                success: !!imapClient.authenticated
-            };
-
-            if (accountData.mailboxes && mailboxes && mailboxes.length) {
-                // format mailbox listing
-                let mailboxList = [];
-                for (let entry of mailboxes) {
-                    let mailbox = {};
-                    Object.keys(entry).forEach(key => {
-                        if (['path', 'specialUse', 'name', 'listed', 'subscribed', 'delimiter'].includes(key)) {
-                            mailbox[key] = entry[key];
-                        }
-                    });
-                    if (mailbox.delimiter && mailbox.path.indexOf(mailbox.delimiter) >= 0) {
-                        mailbox.parentPath = mailbox.path.substr(0, mailbox.path.lastIndexOf(mailbox.delimiter));
-                    }
-                    mailboxList.push(mailbox);
-                }
-                response.mailboxes = mailboxList;
-            }
-        } catch (err) {
-            response.imap = {
-                success: false,
-                error: err.message,
-                code: err.code,
-                statusCode: err.statusCode
-            };
-        }
-    }
-
-    if (accountData.smtp) {
-        try {
-            let smtpClient = nodemailer.createTransport(Object.assign({}, accountData.smtp));
-            response.smtp = {
-                success: await smtpClient.verify()
-            };
-        } catch (err) {
-            response.smtp = {
-                success: false,
-                error: err.message,
-                code: err.code,
-                statusCode: err.statusCode
-            };
-        }
-    }
-
-    return response;
-}
-
-async function getStats(seconds) {
-    const structuredMetrics = await call({ cmd: 'structuredMetrics' });
-
-    let counters = await getCounterValues(redis, seconds);
-
-    let redisVersion;
-
-    try {
-        let redisInfo = await redis.info('server');
-        if (!redisInfo || typeof redisInfo !== 'string') {
-            throw new Error('Failed to fetch Redis INFO');
-        }
-        let m = redisInfo.match(/redis_version:([\d.]+)/);
-        if (!m) {
-            throw new Error('Failed to fetch version from Redis INFO');
-        }
-        redisVersion = m[1];
-    } catch (err) {
-        // ignore
-        redisVersion = err.message;
-    }
-
-    let stats = Object.assign(
-        {
-            version: packageData.version,
-            license: packageData.license,
-            accounts: await redis.scard('ia:accounts'),
-            node: process.versions.node,
-            redis: redisVersion,
-            imapflow: ImapFlow.version || 'please upgrade',
-            counters
-        },
-        structuredMetrics
-    );
-
-    return stats;
-}
 
 init()
     .then(() => {

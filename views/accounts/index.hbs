@@ -1,0 +1,185 @@
+<div class="float-right">
+    <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal" data-target="#addAccount">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Add an account</span>
+    </button>
+</div>
+
+{{> accounts_header}}
+
+{{#if accounts}}
+<div class="card mt-4 mb-4">
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="">
+                <tr>
+                    <th class="p-0">
+                        <div class="p-2">ID</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Name</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Email</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Type</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Status</div>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each accounts}}
+                <tr>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+                            {{account}}
+                        </div>
+                    </td>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a><strong>{{name}}</strong>
+                        </div>
+                    </td>
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>{{email}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
+                            {{#if type.icon}}
+                            <i class="{{type.icon}} fa-fw"
+                                title="{{type.name}}{{#if type.comment}} ({{type.comment}}){{/if}}"
+                                data-toggle="tooltip" data-placement="top"></i>
+                            {{else}}
+                            {{type.name}}
+                            {{#if type.comment}}
+                            <span class="text-muted">({{type.comment}})</span>
+                            {{/if}}
+                            {{/if}}
+                        </div>
+                    </td>
+
+                    <td style="width: 120px;" class="p-0">
+                        <div class="position-relative  p-2">
+                            <a href="/admin/accounts/{{account}}" class="stretched-link">
+
+                                <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
+                                    data-account="{{account}}" style="cursor:default;" data-toggle="popover"
+                                    data-trigger="hover" {{#if stateLabel.error}}title="Connection error"
+                                    data-content="{{stateLabel.error}}" {{/if}}>
+
+                                    {{#if stateLabel.spinner}}
+                                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                                    {{/if}}
+
+                                    {{stateLabel.name}}</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    {{#if showPaging}}
+    <div class="card-footer">
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+
+                {{#if prevPage}}
+                <li class="page-item"><a class="page-link" href="{{prevPage}}">Previous</a></li>
+                {{else}}
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                {{/if}}
+
+                {{#each pageLinks}}
+                <li class="page-item {{#if active}}active{{/if}}"><a class="page-link" href="{{url}}">{{title}}</a>
+                </li>
+                {{/each}}
+
+                {{#if nextPage}}
+                <li class="page-item"><a class="page-link" href="{{nextPage}}">Next</a></li>
+                {{else}}
+                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+                {{/if}}
+
+            </ul>
+        </nav>
+    </div>
+    {{/if}}
+</div>
+{{else}}
+<div class="list-group mt-4 mb-4">
+    <div class="list-group-item">
+        No accounts have been registered yet.
+    </div>
+</div>
+{{/if}}
+
+
+<div class="modal fade" id="addAccount" tabindex="-1" aria-labelledby="addAccountLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAccountLabel">Add an account</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="/admin/accounts/new">
+                <input type="hidden" name="crumb" value="{{crumb}}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="account-name" class="col-form-label">Full name:</label>
+                        <input type="text" class="form-control" id="account-name" name="name" placeholder="John Smith…">
+                    </div>
+                    <div class="form-group">
+                        <label for="account-id" class="col-form-label">Account ID:</label>
+                        <input type="text" class="form-control" id="account-id" name="account" placeholder="johnsmith"
+                            required>
+                        <small class="form-text text-muted">If an account with the same ID already exists, it's setting
+                            will be updated</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </span>
+                        <span class="text">Continue</span>
+                    </button>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        $('#addAccount').on('shown.bs.modal', function (event) {
+            document.getElementById('account-name').focus();
+            document.getElementById('account-name').select();
+        });
+
+        $('#addAccount').on('hidden.bs.modal', function (event) {
+            document.getElementById('account-name').value = '';
+            document.getElementById('account-id').value = '';
+        })
+    });
+</script>

@@ -30,7 +30,7 @@ const init = async () => {
 
     server.route({
         method: 'GET',
-        path: '/credentials',
+        path: '/password',
 
         async handler(request) {
             switch (request.query.account) {
@@ -54,7 +54,7 @@ const init = async () => {
     });
 
     await server.start();
-    console.log('Authentication Server URL: %s/credentials', server.info.uri);
+    console.log('Authentication Server URL: %s/password', server.info.uri);
 };
 
 // The following crux re-uses OAuth2 token generation from the Nodemailer package.

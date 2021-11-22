@@ -1,0 +1,33 @@
+{{#each pendingMessages}}
+<div class="alert mt2 alert-{{#if type}}{{type}}{{else}}danger{{/if}} alert-dismissible fade show alert-flush"
+    role="alert">
+    <div class="text-center">
+        {{#if title}}
+        <strong>{{title}}</strong>
+        {{/if}} {{message}}
+    </div>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{{/each}} {{#if alert}}
+<div class="alert mt2 alert-{{#if alert.type}}{{alert.type}}{{else}}danger{{/if}} alert-dismissible fade show alert-flush"
+    role="alert">
+    <div class="text-center">
+        {{#if alert.title}}
+        <strong>{{alert.title}}</strong>
+        {{/if}} {{alert.message}}
+    </div>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{{/if}}
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            $('.alert-dismissible').alert('close');
+        }, 15 * 1000);
+    });
+</script>
