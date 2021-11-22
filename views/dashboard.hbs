@@ -71,8 +71,12 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Webhooks queue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.queues.notify.total}} /
-                                {{stats.queues.notify.delayed}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
+                                <span title="Queue entries total" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.notify.total}}</span> /
+                                <span title="Delayed queue entries" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.notify.delayed}}</span>
+                            </div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
@@ -89,8 +93,12 @@
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Submission queue</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.queues.submit.total}} /
-                                {{stats.queues.submit.delayed}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
+                                <span title="Queue entries total" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.submit.total}}</span> /
+                                <span title="Delayed queue entries" data-toggle="tooltip"
+                                    data-placement="top">{{stats.queues.submit.delayed}}</span>
+                            </div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-sync-alt fa-2x text-gray-300"></i>

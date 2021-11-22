@@ -187,7 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: 'Connected'
                 };
                 break;
-            case ('authenticationError', 'connectError'):
+            case 'authenticationError':
+            case 'connectError':
                 stateLabel = {
                     type: 'danger',
                     name: 'Failed',
