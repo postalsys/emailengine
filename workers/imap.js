@@ -10,7 +10,6 @@ const msgpack = require('msgpack5')();
 const packageData = require('../package.json');
 
 const config = require('wild-config');
-const net = require('net');
 
 const { getDuration, getBoolean, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
@@ -22,37 +21,8 @@ config.log = config.log || {
 };
 
 const EENGINE_LOG_RAW = 'EENGINE_LOG_RAW' in process.env ? getBoolean(process.env.EENGINE_LOG_RAW) : getBoolean(config.log.raw);
-
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
-
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
-
-const EENGINE_ADDRESSES = []
-    .concat(process.env.EENGINE_ADDRESSES || config.service.localAddresses || [])
-    .flatMap(addr => {
-        if (Array.isArray(addr)) {
-            return addr;
-        }
-
-        if (typeof addr === 'object' && addr && typeof addr.address === 'string') {
-            return addr;
-        }
-
-        if (typeof addr !== 'string') {
-            return false;
-        }
-
-        return addr.split(/[,;]+/).map(part => part.trim());
-    })
-    .filter(addr => addr)
-    .map(addr => {
-        if (typeof addr === 'object') {
-            return addr;
-        }
-        let [address, name] = addr.split('|').map(part => part.trim());
-        return { address, name };
-    })
-    .filter(addr => addr && addr.address && net.isIP(addr.address));
 
 const DEFAULT_STATES = {
     init: 0,
@@ -123,7 +93,6 @@ class ConnectionHandler {
             notifyQueue,
             submitQueue,
             accountLogger: await this.getAccountLogger(account),
-            localAddresses: EENGINE_ADDRESSES,
             logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;

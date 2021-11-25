@@ -1,0 +1,274 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+
+        <small><i class="fas fa-network-wired fa-fw"></i></small>
+        Network
+    </h1>
+</div>
+
+<p class="mb-4">Manage available IP addresses.</p>
+
+<form method="post" action="/admin/config/network">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <div class="card mb-4 mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Default IP-address selection strategy</h6>
+        </div>
+        <div class="card-body">
+            Here you can choose how EmailEngine selects a local IP address from the address pool when creating a
+            connection to a server.
+            <em>Dedicated</em> means that the same account gets always the same IP address from the IP pool.
+            <em>Random</em> means that each connection gets a random IP address assigned from the pool. <em>Server
+                default</em> means that EmailEngine does not select a local address for the connection.
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Protocol</th>
+                    <th>Strategy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>IMAP</td>
+                    <td>
+                        <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
+                            errors.imapStrategy}}is-invalid{{/if}}>
+                            {{#each imapStrategies}}
+                            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
+                            {{/each}}
+                        </select>
+                        {{#if errors.imapStrategy}}
+                        <span class="invalid-feedback">{{errors.imapStrategy}}</span>
+                        {{/if}}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>SMTP</td>
+                    <td>
+                        <select class="custom-select custom-select-sm" name="smtpStrategy" {{#if
+                            errors.smtpStrategy}}is-invalid{{/if}}>
+
+                            {{#each smtpStrategies}}
+                            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
+                            {{/each}}
+
+                        </select>
+                        {{#if errors.smtpStrategy}}
+                        <span class="invalid-feedback">{{errors.smtpStrategy}}</span>
+                        {{/if}}
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card mb-4 mt-4">
+        <div class="card-header py-3 d-flex justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary align-self-center">Allowed IP addresses</h6>
+            <div class="align-self-center"><button class="btn btn-primary" id="reload-btn">
+                    <i class="fa fa-sync-alt fa-fw"></i>
+                    Reload</button></div>
+        </div>
+        <div class="card-body">
+            Mark all addresses that can be used with <em>Dedicated</em> and <em>Random</em> strategies.
+        </div>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="checkbox-all">&nbsp;
+                        </div>
+                    </th>
+                    <th>
+                        Local address
+                    </th>
+                    <th>
+                        Public address
+                    </th>
+                    <th colspan="2">
+                        Name
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each addresses}}
+                <tr>
+                    <td>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input checkbox-entry" data-ip="{{localAddress}}"
+                                name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
+                        </div>
+                    </td>
+                    <td>{{localAddress}}
+
+                        {{#if notice}}<i class="fas fa-exclamation-triangle" data-placement="top" data-toggle="popover"
+                            data-trigger="hover" data-content="{{notice}}" title="Address warning"></i>{{/if}}
+                        <div class="float-right">
+                            {{#if defaultInterface}}<span class="badge badge-light">default</span>{{/if}}
+                        </div>
+                    </td>
+                    <td>{{ip}}</td>
+                    <td>
+                        {{name}}
+                    </td>
+                    <td>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                                aria-labelledby="dropdownMenuLink">
+                                <div class="dropdown-header">Address actions:</div>
+                                <a class="dropdown-item address-action-delete" data-toggle="modal"
+                                    data-target="#deleteAddress" href="#" data-address="{{localAddress}}">
+                                    <i class="fas fa-trash-alt fa-sm"></i> <span>Remove from the list</span>
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+
+<div class="modal fade" id="deleteAddress" tabindex="-1" aria-labelledby="deleteAddressLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAddressLabel">Delete address</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this local address? When you reload and the address is found it is
+                relisted.
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/config/network/delete">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" name="localAddress" value="">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let reloadBtn = document.getElementById('reload-btn');
+        let reloadBtnIcon = document.querySelector('#reload-btn i');
+
+        const requestReload = async () => {
+            const res = await fetch('/admin/config/network/reload', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value
+                })
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+
+        let loading = false;
+        let reloadAddresses = () => {
+            if (loading) {
+                return
+            }
+            loading = true
+            reloadBtnIcon.classList.add('fa-spin');
+            reloadBtn.disabled = true;
+
+            requestReload().then(data => {
+                loading = false
+                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtn.disabled = false;
+                if (data.error) {
+                    showToast('Failed to send payload', 'alert-triangle')
+                    return;
+                }
+                console.log(data);
+                window.location.reload();
+            }).catch(err => {
+                loading = false
+                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtn.disabled = false;
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            });
+        }
+
+        reloadBtn.addEventListener('click', reloadAddresses);
+
+
+        let updateAllCheckboxes = () => {
+            let state = document.getElementById('checkbox-all').checked;
+
+            for (let elm of document.querySelectorAll('.checkbox-entry')) {
+                elm.checked = state
+            }
+        }
+
+        let checkCheckboxes = elm => {
+            let allChecked = true;
+            for (let elm of document.querySelectorAll('.checkbox-entry')) {
+                if (!elm.checked) {
+                    allChecked = false
+                }
+            }
+            document.getElementById('checkbox-all').checked = allChecked;
+        }
+
+        document.getElementById('checkbox-all').addEventListener('click', updateAllCheckboxes);
+        document.getElementById('checkbox-all').addEventListener('change', updateAllCheckboxes);
+
+        for (let elm of document.querySelectorAll('.checkbox-entry')) {
+            elm.addEventListener('click', checkCheckboxes);
+            elm.addEventListener('change', checkCheckboxes);
+        }
+
+        checkCheckboxes()
+
+
+        $('#deleteAddress').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget) // Button that triggered the modal
+            var address = button.data('address') // Extract info from data-* attributes
+            // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+            // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+            var modal = $(this)
+            modal.find('.modal-title').text('Delete ' + address)
+            modal.find('.modal-footer input[name=localAddress]').val(address)
+        })
+    });
+</script>

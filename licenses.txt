@@ -22,7 +22,7 @@ he                      MIT                 git+https://github.com/mathiasbynens
 html-to-text            MIT                 git://github.com/html-to-text/node-html-to-text.git                           8.1.0              Malte Legenhausen
 humanize                n/a                 git://github.com/taijinlee/humanize.git                                       0.0.9              Tai-Jin Lee
 imapflow                MIT                 git+https://github.com/postalsys/imapflow.git                                 1.0.76             Postal Systems OÜ
-ioredis                 MIT                 git://github.com/luin/ioredis.git                                             4.28.0             luin
+ioredis                 MIT                 git://github.com/luin/ioredis.git                                             4.28.1             luin
 joi                     BSD-3-Clause        git://github.com/sideway/joi.git                                              17.4.2             n/a
 jquery                  MIT                 git+https://github.com/jquery/jquery.git                                      3.6.0              OpenJS Foundation and other contributors
 libmime                 MIT                 git://github.com/andris9/libmime.git                                          5.0.0              Andris Reinman
@@ -30,12 +30,13 @@ linkifyjs               MIT                 git+https://github.com/SoapBox/linki
 mailparser              MIT                 git+https://github.com/nodemailer/mailparser.git                              3.4.0              Andris Reinman
 mailsplit               (MIT OR EUPL-1.1+)  git+https://github.com/andris9/mailsplit.git                                  5.3.1              Andris Reinman
 msgpack5                MIT                 git://github.com/mcollina/msgpack5.git                                        5.3.2              Matteo collina
-node-fetch              MIT                 git+https://github.com/bitinn/node-fetch.git                                  2.6.1              David Frank
+node-fetch              MIT                 git+https://github.com/bitinn/node-fetch.git                                  2.6.6              David Frank
 node-vault              MIT                 git://github.com/kr1sp1n/node-vault.git                                       0.9.22             kr1sp1n
 nodemailer              MIT                 git+https://github.com/nodemailer/nodemailer.git                              6.7.1              Andris Reinman
-pino                    MIT                 git+https://github.com/pinojs/pino.git                                        7.3.0              Matteo Collina
+pino                    MIT                 git+https://github.com/pinojs/pino.git                                        7.4.1              Matteo Collina
 prom-client             Apache-2.0          git+ssh://git@github.com/siimon/prom-client.git                               14.0.1             Simon Nyberg
 psl                     MIT                 git+ssh://git@github.com/lupomontero/psl.git                                  1.8.0              Lupo Montero
+pubface                 MIT                 https://github.com/postalsys/pubface/issues                                   1.0.1              Postal Systems OÜ
 punycode                MIT                 git+https://github.com/bestiejs/punycode.js.git                               2.1.1              Mathias Bynens
 smtp-server             MIT                 git://github.com/andris9/smtp-server.git                                      3.9.0              Andris Reinman
 uuid                    MIT                 git+https://github.com/uuidjs/uuid.git                                        8.3.2              n/a
