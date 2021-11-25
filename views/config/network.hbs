@@ -13,14 +13,49 @@
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Proxy</h6>
+        </div>
+        <div class="card-body">
+            <p>Here you can configure a default proxy for all email server connections. EmailEngine supports HTTP
+                CONNECT and SOCKS (both 4 and 5) proxies.</p>
+
+            <div class="form-group form-check">
+                <input type="checkbox"
+                    class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
+                    id="proxy_enabled" name="proxyEnabled" {{#if values.proxyEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="proxy_enabled">Enable proxy for all accounts</label>
+                {{#if errors.proxyEnabled}}
+                <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Each account can have it's own proxy configuration as well.</small>
+
+            </div>
+
+            <div class="form-group">
+                <label for="proxyUrl">Proxy URL</label>
+                <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
+                    id="proxyUrl" placeholder="socks://localhost:1080" value="{{values.proxyUrl}}" name="proxyUrl"
+                    data-target="proxy-status">
+                {{#if errors.proxyUrl}}
+                <span class="invalid-feedback">{{errors.proxyUrl}}</span>
+                {{/if}}
+                <small id="passwordHelpBlock" class="form-text text-muted">Proxy URL must start with http://, https://,
+                    socks://, socks4:// or socks5://</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 mt-4">
+        <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Default IP-address selection strategy</h6>
         </div>
         <div class="card-body">
-            Here you can choose how EmailEngine selects a local IP address from the address pool when creating a
-            connection to a server.
-            <em>Dedicated</em> means that the same account gets always the same IP address from the IP pool.
-            <em>Random</em> means that each connection gets a random IP address assigned from the pool. <em>Server
-                default</em> means that EmailEngine does not select a local address for the connection.
+            <p>If your server can use multiple local IP addresses you can choose how EmailEngine selects such an address
+                address from the address pool when creating a connection to an email server.</p>
+            <p><em>Dedicated</em> means that the same account gets always the same IP address from the IP pool.
+                <em>Random</em> means that each connection gets a random IP address assigned from the pool. <em>Server
+                    default</em> means that EmailEngine does not select a local address for the connection.
+            </p>
         </div>
 
         <table class="table">
