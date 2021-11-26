@@ -39,6 +39,19 @@
                 <small class="form-text text-muted">Email address of the user</small>
             </div>
 
+            <div class="form-group">
+                <label for="proxy">Proxy URL</label>
+                <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
+                    placeholder="socks://localhost:1080" value="{{values.proxy}}" name="proxy"
+                    data-target="proxy-status">
+                {{#if errors.proxy}}
+                <span class="invalid-feedback">{{errors.proxy}}</span>
+                {{/if}}
+                <small id="passwordHelpBlock" class="form-text text-muted">Fill this if you want to use a custom proxy
+                    for this account. Proxy URL must start with http://, https://,
+                    socks://, socks4:// or socks5://</small>
+            </div>
+
         </div>
     </div>
 

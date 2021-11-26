@@ -1032,6 +1032,8 @@ const init = async () => {
 
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
+                    proxy: settingsSchema.proxyUrl,
+
                     imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
@@ -1105,8 +1107,13 @@ const init = async () => {
 
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
 
-                    imap: Joi.object(imapSchema).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
-                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP')
+                    proxy: settingsSchema.proxyUrl,
+
+                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
+
+                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
+
+                    oauth2: oauth2Schema.allow(false).description('OAuth2 configuration').label('OAuth2')
                 }).label('UpdateAccount')
             },
 
@@ -1405,6 +1412,8 @@ const init = async () => {
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
 
                     notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
+
+                    proxy: settingsSchema.proxyUrl,
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
 
@@ -2800,7 +2809,8 @@ const init = async () => {
                 payload: Joi.object({
                     mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
-                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP')
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
+                    proxy: settingsSchema.proxyUrl
                 }).label('VerifyAccount')
             },
             response: {
