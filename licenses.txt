@@ -21,7 +21,7 @@ hapi-swagger            MIT                 git://github.com/glennjones/hapi-swa
 he                      MIT                 git+https://github.com/mathiasbynens/he.git                                   1.2.0              Mathias Bynens
 html-to-text            MIT                 git://github.com/html-to-text/node-html-to-text.git                           8.1.0              Malte Legenhausen
 humanize                n/a                 git://github.com/taijinlee/humanize.git                                       0.0.9              Tai-Jin Lee
-imapflow                MIT                 git+https://github.com/postalsys/imapflow.git                                 1.0.76             Postal Systems OÜ
+imapflow                MIT                 git+https://github.com/postalsys/imapflow.git                                 1.0.77             Postal Systems OÜ
 ioredis                 MIT                 git://github.com/luin/ioredis.git                                             4.28.1             luin
 joi                     BSD-3-Clause        git://github.com/sideway/joi.git                                              17.4.2             n/a
 jquery                  MIT                 git+https://github.com/jquery/jquery.git                                      3.6.0              OpenJS Foundation and other contributors
@@ -32,7 +32,7 @@ mailsplit               (MIT OR EUPL-1.1+)  git+https://github.com/andris9/mails
 msgpack5                MIT                 git://github.com/mcollina/msgpack5.git                                        5.3.2              Matteo collina
 node-fetch              MIT                 git+https://github.com/bitinn/node-fetch.git                                  2.6.6              David Frank
 node-vault              MIT                 git://github.com/kr1sp1n/node-vault.git                                       0.9.22             kr1sp1n
-nodemailer              MIT                 git+https://github.com/nodemailer/nodemailer.git                              6.7.1              Andris Reinman
+nodemailer              MIT                 git+https://github.com/nodemailer/nodemailer.git                              6.7.2              Andris Reinman
 pino                    MIT                 git+https://github.com/pinojs/pino.git                                        7.4.1              Matteo Collina
 prom-client             Apache-2.0          git+ssh://git@github.com/siimon/prom-client.git                               14.0.1             Simon Nyberg
 psl                     MIT                 git+ssh://git@github.com/lupomontero/psl.git                                  1.8.0              Lupo Montero
