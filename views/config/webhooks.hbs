@@ -128,7 +128,7 @@
                 <label for="settingsNotifyHeaders">Selected headers</label>
                 <textarea class="form-control header-list {{#if errors.notifyHeaders}}is-invalid{{/if}}"
                     id="settingsNotifyHeaders" name="notifyHeaders" rows="3"
-                    placeholder="MIME-Version">{{values.notifyHeaders}}</textarea>
+                    placeholder="For example &quot;MIME-Version&quot;">{{values.notifyHeaders}}</textarea>
                 {{#if errors.notifyHeaders}}
                 <span class="invalid-feedback">{{errors.notifyHeaders}}</span>
                 {{/if}}

@@ -1,0 +1,37 @@
+{{#each addresses}}
+<tr>
+    <td>
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input checkbox-entry" data-ip="{{localAddress}}"
+                name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
+        </div>
+    </td>
+    <td>{{localAddress}}
+
+        {{#if notice}}<i class="fas fa-exclamation-triangle" data-placement="top" data-toggle="popover"
+            data-trigger="hover" data-content="{{notice}}" title="Address warning"></i>{{/if}}
+        <div class="float-right">
+            {{#if defaultInterface}}<span class="badge badge-light">default</span>{{/if}}
+        </div>
+    </td>
+    <td>{{ip}}</td>
+    <td>
+        {{name}}
+    </td>
+    <td>
+        <div class="dropdown no-arrow">
+            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                <div class="dropdown-header">Address actions:</div>
+                <a class="dropdown-item address-action-delete" data-toggle="modal" data-target="#deleteAddress" href="#"
+                    data-address="{{localAddress}}">
+                    <i class="fas fa-trash-alt fa-sm"></i> <span>Delete this address</span>
+                </a>
+            </div>
+        </div>
+    </td>
+</tr>
+{{/each}}

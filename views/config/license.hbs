@@ -101,7 +101,8 @@
 
                     <textarea class="form-control droptxt {{#if errors.license}}is-invalid{{/if}}"
                         id="licenseTextElement" name="license" rows="9" spellcheck="false"
-                        placeholder="-----BEGIN LICENSE-----" required>{{values.license}}</textarea>
+                        placeholder="Starts with &quot;-----BEGIN LICENSE-----&quot;…"
+                        required>{{values.license}}</textarea>
                     {{#if errors.license}}
                     <span class="invalid-feedback">{{errors.license}}</span>
                     {{/if}}

@@ -42,8 +42,8 @@
             <div class="form-group">
                 <label for="proxy">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
-                    placeholder="socks://localhost:1080" value="{{values.proxy}}" name="proxy"
-                    data-target="proxy-status">
+                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;…" value="{{values.proxy}}"
+                    name="proxy" data-target="proxy-status">
                 {{#if errors.proxy}}
                 <span class="invalid-feedback">{{errors.proxy}}</span>
                 {{/if}}

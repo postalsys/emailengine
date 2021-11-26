@@ -34,8 +34,8 @@
             <div class="form-group">
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
-                    id="proxyUrl" placeholder="socks://localhost:1080" value="{{values.proxyUrl}}" name="proxyUrl"
-                    data-target="proxy-status">
+                    id="proxyUrl" placeholder="Connection URL like &quot;socks://localhost:1080&quot;…"
+                    value="{{values.proxyUrl}}" name="proxyUrl" data-target="proxy-status">
                 {{#if errors.proxyUrl}}
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
                 {{/if}}
@@ -107,7 +107,7 @@
             <h6 class="m-0 font-weight-bold text-primary align-self-center">Allowed IP addresses</h6>
             <div class="align-self-center"><button class="btn btn-primary" id="reload-btn">
                     <i class="fa fa-sync-alt fa-fw"></i>
-                    Reload</button></div>
+                    Scan addresses</button></div>
         </div>
         <div class="card-body">
             Mark all addresses that can be used with <em>Dedicated</em> and <em>Random</em> strategies.
@@ -131,45 +131,8 @@
                     </th>
                 </tr>
             </thead>
-            <tbody>
-                {{#each addresses}}
-                <tr>
-                    <td>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input checkbox-entry" data-ip="{{localAddress}}"
-                                name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
-                        </div>
-                    </td>
-                    <td>{{localAddress}}
-
-                        {{#if notice}}<i class="fas fa-exclamation-triangle" data-placement="top" data-toggle="popover"
-                            data-trigger="hover" data-content="{{notice}}" title="Address warning"></i>{{/if}}
-                        <div class="float-right">
-                            {{#if defaultInterface}}<span class="badge badge-light">default</span>{{/if}}
-                        </div>
-                    </td>
-                    <td>{{ip}}</td>
-                    <td>
-                        {{name}}
-                    </td>
-                    <td>
-                        <div class="dropdown no-arrow">
-                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                                aria-labelledby="dropdownMenuLink">
-                                <div class="dropdown-header">Address actions:</div>
-                                <a class="dropdown-item address-action-delete" data-toggle="modal"
-                                    data-target="#deleteAddress" href="#" data-address="{{localAddress}}">
-                                    <i class="fas fa-trash-alt fa-sm"></i> <span>Remove from the list</span>
-                                </a>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                {{/each}}
+            <tbody id="address-list">
+                {{>address_list}}
             </tbody>
 
         </table>
@@ -199,8 +162,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this local address? When you reload and the address is found it is
-                relisted.
+                Are you sure you want to delete this local address? When you later rescan addresses and the address is
+                found it gets re-added to the list.
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/config/network/delete">
@@ -214,6 +177,11 @@
         </div>
     </div>
 </div>
+
+
+<script id="address-list-template" type="text/x-handlebars-template">
+{{{addressListTemplate}}}
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -236,6 +204,47 @@
             return data;
         }
 
+        let updateAllCheckboxes = () => {
+            let state = document.getElementById('checkbox-all').checked;
+
+            for (let elm of document.querySelectorAll('.checkbox-entry')) {
+                elm.checked = state
+            }
+        }
+
+        let checkCheckboxes = elm => {
+            let allChecked = true;
+            for (let elm of document.querySelectorAll('#address-list .checkbox-entry')) {
+                if (!elm.checked) {
+                    allChecked = false
+                }
+            }
+            document.getElementById('checkbox-all').checked = allChecked;
+        }
+
+        document.getElementById('checkbox-all').addEventListener('click', updateAllCheckboxes);
+        document.getElementById('checkbox-all').addEventListener('change', updateAllCheckboxes);
+
+        for (let elm of document.querySelectorAll('#address-list .checkbox-entry')) {
+            elm.addEventListener('click', checkCheckboxes);
+            elm.addEventListener('change', checkCheckboxes);
+        }
+
+        checkCheckboxes()
+
+        const addressListTemplate = Handlebars.compile(document.getElementById('address-list-template').innerHTML);
+
+        let redrawAddressList = data => {
+            let html = addressListTemplate(data);
+            document.getElementById('address-list').innerHTML = html;
+
+            for (let elm of document.querySelectorAll('#address-list .checkbox-entry')) {
+                elm.addEventListener('click', checkCheckboxes);
+                elm.addEventListener('change', checkCheckboxes);
+            }
+
+            checkCheckboxes();
+        }
 
         let loading = false;
         let reloadAddresses = () => {
@@ -254,8 +263,11 @@
                     showToast('Failed to send payload', 'alert-triangle')
                     return;
                 }
-                console.log(data);
-                window.location.reload();
+
+                if (data.addresses) {
+                    redrawAddressList(data);
+                }
+
             }).catch(err => {
                 loading = false
                 reloadBtnIcon.classList.remove('fa-spin');
@@ -266,35 +278,9 @@
 
         reloadBtn.addEventListener('click', reloadAddresses);
 
-
-        let updateAllCheckboxes = () => {
-            let state = document.getElementById('checkbox-all').checked;
-
-            for (let elm of document.querySelectorAll('.checkbox-entry')) {
-                elm.checked = state
-            }
+        if (!document.querySelectorAll('#address-list .checkbox-entry').length) {
+            reloadAddresses();
         }
-
-        let checkCheckboxes = elm => {
-            let allChecked = true;
-            for (let elm of document.querySelectorAll('.checkbox-entry')) {
-                if (!elm.checked) {
-                    allChecked = false
-                }
-            }
-            document.getElementById('checkbox-all').checked = allChecked;
-        }
-
-        document.getElementById('checkbox-all').addEventListener('click', updateAllCheckboxes);
-        document.getElementById('checkbox-all').addEventListener('change', updateAllCheckboxes);
-
-        for (let elm of document.querySelectorAll('.checkbox-entry')) {
-            elm.addEventListener('click', checkCheckboxes);
-            elm.addEventListener('change', checkCheckboxes);
-        }
-
-        checkCheckboxes()
-
 
         $('#deleteAddress').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget) // Button that triggered the modal
@@ -302,7 +288,7 @@
             // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
             // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
             var modal = $(this)
-            modal.find('.modal-title').text('Delete ' + address)
+            modal.find('.modal-title').text(`Delete ${address}?`)
             modal.find('.modal-footer input[name=localAddress]').val(address)
         })
     });
