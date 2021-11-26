@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -62,7 +62,7 @@
         "msgpack5": "5.3.2",
         "node-fetch": "2.6.6",
         "node-vault": "0.9.22",
-        "nodemailer": "6.7.1",
+        "nodemailer": "6.7.2",
         "pino": "7.4.1",
         "prom-client": "14.0.1",
         "psl": "1.8.0",
