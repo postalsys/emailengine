@@ -50,19 +50,7 @@ if (process.argv[2] === 'encrypt') {
             console.error('-'.repeat(78));
             console.error('');
 
-            fs.readFile(pathlib.join(__dirname, '..', 'licenses.txt'), (err, data) => {
-                if (err) {
-                    console.error('Failed to load license information');
-                    console.error(err);
-                    return process.exit(1);
-                }
-
-                console.error('Included Modules');
-                console.error('================');
-
-                console.error(data.toString().trim());
-                process.exit();
-            });
+            process.exit();
         });
     });
 } else {
