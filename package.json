@@ -94,7 +94,8 @@
             "lib/lua/**/*",
             "node_modules/bull/lib/commands/**/*",
             "node_modules/swagger-ui-dist/**/*",
-            "LICENSE.txt"
+            "LICENSE.txt",
+            "LICENSE_EMAILENGINE.txt"
         ],
         "_targets": [
             "node16-macos-x64"
