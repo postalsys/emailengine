@@ -2,9 +2,11 @@
 
 # EmailEngine Email API
 
-> **NB** This is about the version 2 of EmailEngine. If you are looking for the previous version, you can find it [here](https://github.com/postalsys/emailengine/tree/v1).
+> **NB** This is the version 2 of EmailEngine. If you are looking for the previous version, you can find it [here](https://github.com/postalsys/emailengine/tree/v1).
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
+
+Documentation and details: [EmailEngine.app](https://emailengine.app/)
 
 ## Use cases
 
