@@ -602,7 +602,7 @@ const init = async () => {
             // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
             return h.view(
                 'redirect',
-                { httpRedirectUrl: redirectUrl ? redirectUrl : `/#account:created=${result.account}` },
+                { httpRedirectUrl: redirectUrl ? redirectUrl : `/admin/accounts/${result.account}` },
                 {
                     layout: 'public'
                 }

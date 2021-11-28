@@ -31,6 +31,22 @@
                 </a>
 
             </div>
+
+            {{#if oauth2ProviderEnabled}}
+            <div class="btn-group mr-2" role="group" aria-label="Second group">
+                <form method="post" action="/accounts/new">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" name="type" value="{{account.oauth2.provider}}">
+                    <input type="hidden" name="data" value="{{accountForm.data}}">
+                    <input type="hidden" name="sig" value="{{accountForm.signature}}">
+                    <button type="submit" class="btn btn-light">
+                        {{#if account.type.icon}}
+                        <i class="{{account.type.icon}} fa-fw"></i>
+                        {{/if}} Renew grant
+                    </button>
+                </form>
+            </div>
+            {{/if}}
         </div>
 
 
@@ -142,6 +158,8 @@
             {{/if}}
 
         </dl>
+
+
 
     </div>
 </div>
