@@ -2,6 +2,12 @@
 
 # EmailEngine Email API
 
+---
+
+> **NB!** Version 1 of EmailEngine has been discontinued. Check out the [EmailEngine's homepage](https://emailengine.app) for version 2 and newer.
+
+---
+
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
 ## Use cases
