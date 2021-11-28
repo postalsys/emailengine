@@ -74,6 +74,20 @@ class ResponseStream extends Transform {
     constructor() {
         super();
         registeredPublishers.add(this);
+        this.periodicKeepAliveTimer = false;
+        this.updateTimer();
+    }
+
+    updateTimer() {
+        clearTimeout(this.periodicKeepAliveTimer);
+        this.periodicKeepAliveTimer = setTimeout(() => {
+            this.write(': still here\n\n');
+            if (this._compressor) {
+                this._compressor.flush();
+            }
+            this.updateTimer();
+        }, 90 * 1000);
+        this.periodicKeepAliveTimer.unref();
     }
 
     setCompressor(compressor) {
@@ -83,10 +97,14 @@ class ResponseStream extends Transform {
     sendMessage(payload) {
         let sendData = JSON.stringify(payload);
         this.write('event: message\ndata:' + sendData + '\n\n');
-        this._compressor.flush();
+        if (this._compressor) {
+            this._compressor.flush();
+        }
+        this.updateTimer();
     }
 
     finalize() {
+        clearTimeout(this.periodicKeepAliveTimer);
         registeredPublishers.delete(this);
     }
 
@@ -3184,7 +3202,19 @@ const init = async () => {
         async handler(request, h) {
             request.app.stream = new ResponseStream();
             finished(request.app.stream, err => request.app.stream.finalize(err));
-            return h.response(request.app.stream).type('text/event-stream');
+            setImmediate(() => {
+                try {
+                    request.app.stream.write(`: EmailEngine v${packageData.version}\n\n`);
+                } catch (err) {
+                    // ignore
+                }
+            });
+            return h
+                .response(request.app.stream)
+                .header('X-Accel-Buffering', 'no')
+                .header('Connection', 'keep-alive')
+                .header('Cache-Control', 'no-cache')
+                .type('text/event-stream');
         }
     });
 
