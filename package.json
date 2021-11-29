@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.1.5",
+    "version": "2.1.6",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -59,9 +59,9 @@
         "mailsplit": "5.3.1",
         "msgpack5": "5.3.2",
         "node-fetch": "2.6.6",
-        "node-vault": "0.5.10",
+        "node-vault": "0.9.22",
         "nodemailer": "6.7.2",
-        "pino": "7.4.1",
+        "pino": "7.5.0",
         "prom-client": "14.0.1",
         "psl": "1.8.0",
         "pubface": "1.0.2",
@@ -82,7 +82,7 @@
         "grunt-eslint": "24.0.0",
         "license-checker": "25.0.1",
         "pino-pretty": "7.2.0",
-        "pkg": "5.4.1"
+        "pkg": "5.5.1"
     },
     "pkg": {
         "scripts": [

@@ -29,7 +29,7 @@ const settings = require('./lib/settings');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense, emitChangeEvent } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 
 config.service = config.service || {};
