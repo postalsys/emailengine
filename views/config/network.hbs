@@ -27,7 +27,7 @@
                 {{#if errors.proxyEnabled}}
                 <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Each account can have it's own proxy configuration as well.</small>
+                <small class="form-text text-muted">Each account can have its own proxy configuration as well.</small>
 
             </div>
 
@@ -50,9 +50,9 @@
             <h6 class="m-0 font-weight-bold text-primary">Default IP-address selection strategy</h6>
         </div>
         <div class="card-body">
-            <p>If your server can use multiple local IP addresses you can choose how EmailEngine selects such an address
-                address from the address pool when creating a connection to an email server.</p>
-            <p><em>Dedicated</em> means that the same account gets always the same IP address from the IP pool.
+            <p>If your server can use multiple local IP addresses, you can choose how EmailEngine selects such an
+                address from the address pool when connecting to an email server.</p>
+            <p><em>Dedicated</em> means that the same account always gets the same IP address from the IP pool.
                 <em>Random</em> means that each connection gets a random IP address assigned from the pool. <em>Server
                     default</em> means that EmailEngine does not select a local address for the connection.
             </p>
@@ -110,7 +110,7 @@
                     Scan addresses</button></div>
         </div>
         <div class="card-body">
-            Mark all addresses that can be used with <em>Dedicated</em> and <em>Random</em> strategies.
+            Mark all addresses that EmailEngine can use with <em>Dedicated</em> and <em>Random</em> strategies.
         </div>
         <table class="table table-hover">
             <thead>

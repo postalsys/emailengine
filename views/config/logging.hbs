@@ -23,8 +23,8 @@
                 {{#if errors.all}}
                 <span class="invalid-feedback">{{errors.all}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Not recommended if EmailEngine tracks large number of
-                    accounts</small>
+                <small class="form-text text-muted">It is not recommended if EmailEngine tracks a large number of
+                    accounts.</small>
             </div>
 
             <div class="form-group">
@@ -35,8 +35,9 @@
                 {{#if errors.maxLogLines}}
                 <span class="invalid-feedback">{{errors.maxLogLines}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Logs are stored in Redis which in other words means RAM, so it might
-                    not be a good idea to store too much data in it</small>
+                <small class="form-text text-muted">Logs are stored in Redis, which in other words means RAM, so it
+                    might
+                    not be a good idea to store too much data in it.</small>
             </div>
         </div>
     </div>

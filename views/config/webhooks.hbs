@@ -78,7 +78,7 @@
         </div>
         <div class="card-body">
             <p>Select the event types you want to receive webhook notifications for. You should avoid selecting all the
-                events if you have a lot of accounts registered or you might fill the event queue in memory.</p>
+                events if you have a lot of accounts registered, or you might fill the event queue in memory.</p>
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyAll}}is-invalid{{/if}}"
@@ -110,8 +110,8 @@
         </div>
         <div class="card-body">
 
-            <p>By default EmailEngine includes envelope specific data like sender and recipient addresses or Message-ID
-                value in the webhook payload. If needed you can configure EmailEngine to include the contents of other
+            <p>By default, EmailEngine includes envelope-specific data like sender and recipient addresses or Message-ID
+                values in the webhook payload. If needed, you can configure EmailEngine to include the contents of other
                 header keys as well.</p>
 
             <div class="form-group form-check">
@@ -144,8 +144,8 @@
         </div>
         <div class="card-body">
 
-            <p>By default only message metadata without any text content is included in the webhook payload for new
-                emails. If needed you can configure EmailEngine to include plaintext and HTML content in the payload as
+            <p>By default, only message metadata without any text content is included in the webhook payload for new
+                emails. If needed, you can configure EmailEngine to include plaintext and HTML content in the payload as
                 well.</p>
 
             <div class="form-group form-check">
@@ -166,10 +166,10 @@
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">To keep webhook size with text values in check you can define
-                    maximum text size limit. Longer texts are cropped to fit that size. This limit is applied per
-                    text-type, so if the limit is 1000 bytes and email has both plaintext and html content, then you get
-                    1000 bytes of plaintext and 1000 bytes of HTML.</small>
+                <small class="form-text text-muted">To keep webhook size with text values in check, you can define the
+                    maximum text size limit. Longer texts are cropped to fit that size. This limit is applied per text
+                    type, so if the limit is 1000 bytes and email has both plaintext and HTML content, you get 1000
+                    bytes of plaintext and 1000 bytes of HTML.</small>
             </div>
 
         </div>

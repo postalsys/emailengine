@@ -57,7 +57,7 @@
 
         <div class="card-body">
 
-            <p>Setting up OAuth2 credentials allows to refresh expired access tokens.</p>
+            <p>Setting up OAuth2 credentials allows refreshing expired access tokens.</p>
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
@@ -67,7 +67,7 @@
                 {{#if errors.oauth2Enabled}}
                 <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled then <em>"{{providerName}}"</em> is shown as an account
+                <small class="form-text text-muted">If enabled, then <em>"{{providerName}}"</em> is shown as an account
                     type option when adding an
                     account.</small>
             </div>
@@ -126,7 +126,7 @@
                 {{#if errors.redirectUrl}}
                 <span class="invalid-feedback">{{errors.redirectUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow
+                <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow,
                     then set it to <code>{{defaultRedirectUrl}}</code></small>
             </div>
         </div>
