@@ -1,0 +1,66 @@
+emailengine [command] [options]
+
+EmailEngine is the self-hosted service that allows you to access any email
+account using an easy-to-use REST API.
+
+Commands:
+  emailengine                   Run the application
+  emailengine help              Show this information
+  emailengine license           Show license information
+  emailengine scan              Scan keyspace in Redis and display results in
+                                the CSV format
+  emailengine encrypt           Migrate field level encryption. Depending on the
+                                options either enables, disables or re-encrypts
+                                using the new secret
+  emailengine tokens [command]  Manage access tokens
+
+Options:
+  -h, --help     Show help 
+  -l, --license  Show license information
+  
+  General options:
+  --dbs.redis               Database connection URL                      [string]
+  --workers.imap            IMAP Worker count               [number] [default: 4]
+  --settings                Prepared settings                       [json-string]
+  --service.secret          Encryption secret                            [string]
+  --service.commandTimeout  Max command duration [number/string] [default: "10s"]
+  --log.level               Log level                 [string] [default: "trace"]
+  --log.raw                 Log raw data               [boolean] [default: false]
+  --workers.webhooks        Webhook Worker count            [number] [default: 1]
+
+  API options:
+  --api.host                Host to bind to       [string] [default: "127.0.0.1"]
+  --api.port                Port to bind to              [number] [default: 3000]
+  --api.maxSize             Max attachment size     [number/string] [default: 5M]
+
+  Background tasks:
+  --queues.notify           Webhooks concurrency count      [number] [default: 1]
+  --queues.submit           Submit concurrency count        [number] [default: 1]
+
+  Submission SMTP server:
+  --smtp.enabled     Is SMTP submission server enabled [boolean] [default: false]
+  --smtp.secret      SMTP password for all accounts                      [string]
+  --smtp.host        Host to bind to              [string] [default: "127.0.0.1"]
+  --smtp.port        Port to bind to                     [number] [default: 2525]
+  --smtp.proxy       Is the SMTP server hehind HAProxy [boolean] [default: false]
+
+  Bull-UI options:
+  --arena.enabled        Is Bull-UI web server enabled [boolean] [default: false]
+  --arena.host           Host to bind to          [string] [default: "127.0.0.1"]
+  --smtp.port            Port to bind to                 [number] [default: 3001]
+
+"emailengine encrypt" additional options:
+  --decrypt  Old secret for decrypting (can be issued multiple times)    [string]
+
+Token management commands
+  emailengine tokens issue   Issues a new token
+    --description, -d        Token description                           [string]
+    --scope, -s              Requested scope              [string] [default: "*"]
+    --account, -a            Optional account identifier                 [string]
+
+  emailengine tokens export  Exports token data
+    --token, -t              Access token                                [string]
+
+  emailengine tokens import  Imports token data
+    --token, -t              Exported token                              [string]
+  

@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.1.6",
+    "version": "2.2.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -41,7 +41,7 @@
         "dotenv": "10.0.0",
         "exponential-backoff": "3.1.0",
         "express": "4.17.1",
-        "google-auth-library": "7.10.2",
+        "google-auth-library": "7.10.3",
         "handlebars": "4.7.7",
         "hapi-auth-bearer-token": "8.0.0",
         "hapi-pino": "9.0.0",
@@ -50,18 +50,19 @@
         "html-to-text": "8.1.0",
         "humanize": "0.0.9",
         "imapflow": "1.0.78",
-        "ioredis": "4.28.1",
-        "joi": "17.4.2",
+        "ioredis": "4.28.2",
+        "joi": "17.5.0",
         "jquery": "3.6.0",
         "libmime": "5.0.0",
         "linkifyjs": "2.1.9",
         "mailparser": "3.4.0",
         "mailsplit": "5.3.1",
+        "minimist": "1.2.5",
         "msgpack5": "5.3.2",
         "node-fetch": "2.6.6",
         "node-vault": "0.9.22",
         "nodemailer": "6.7.2",
-        "pino": "7.5.0",
+        "pino": "7.5.1",
         "prom-client": "14.0.1",
         "psl": "1.8.0",
         "pubface": "1.0.2",
@@ -71,10 +72,10 @@
         "uuid": "8.3.2",
         "wild-config": "1.5.1",
         "xml2js": "0.4.23",
-        "yargs": "17.2.1"
+        "yargs": "17.3.0"
     },
     "devDependencies": {
-        "eslint": "8.3.0",
+        "eslint": "8.4.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",
@@ -95,7 +96,8 @@
             "node_modules/bull/lib/commands/**/*",
             "node_modules/swagger-ui-dist/**/*",
             "LICENSE.txt",
-            "LICENSE_EMAILENGINE.txt"
+            "LICENSE_EMAILENGINE.txt",
+            "help.txt"
         ],
         "_targets": [
             "node16-macos-x64"

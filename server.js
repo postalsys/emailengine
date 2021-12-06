@@ -25,12 +25,14 @@ const crypto = require('crypto');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
+const tokens = require('./lib/tokens');
 
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
 const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
+const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
 
@@ -119,6 +121,20 @@ if (preparedSettingsString) {
         preparedSettings = value;
     } catch (err) {
         logger.error({ msg: 'Received invalid settings string', input: preparedSettingsString, err });
+        process.exit(1);
+    }
+}
+
+let preparedToken = false;
+const preparedTokenString = process.env.EENGINE_PREPARED_TOKEN || config.preparedToken;
+if (preparedTokenString) {
+    try {
+        preparedToken = msgpack.decode(Buffer.from(preparedTokenString, 'base64url'));
+        if (!preparedToken || !/^[0-9a-f]{64}$/i.test(preparedToken.id)) {
+            throw new Error('Invalid token format');
+        }
+    } catch (err) {
+        logger.error({ msg: 'Received invalid token string', input: preparedTokenString, err });
         process.exit(1);
     }
 }
@@ -841,6 +857,19 @@ const startApplication = async () => {
 
         for (let key of Object.keys(preparedSettings)) {
             await settings.set(key, preparedSettings[key]);
+        }
+    }
+
+    if (preparedToken) {
+        try {
+            let imported = await tokens.setRawData(preparedToken);
+            if (imported) {
+                logger.debug({ msg: 'Imported prepared token', token: preparedToken.id });
+            } else {
+                logger.debug({ msg: 'Skipped prepared token', token: preparedToken.id });
+            }
+        } catch (err) {
+            logger.error({ msg: 'Failed to import token', token: preparedToken.id });
         }
     }
 
