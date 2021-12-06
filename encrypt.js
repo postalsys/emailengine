@@ -7,8 +7,6 @@ try {
     // ignore
 }
 
-process.title = 'emailengine-encrypt';
-
 const { redis } = require('./lib/db');
 const config = require('wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');

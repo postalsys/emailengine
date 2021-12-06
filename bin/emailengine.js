@@ -25,11 +25,13 @@ if (!cmd) {
 
 switch (cmd) {
     case 'encrypt':
+        process.title = 'emailengine-encrypt';
         // encrypt account passwords
         require('../encrypt');
         break;
 
     case 'scan':
+        process.title = 'emailengine-scan';
         // Scan Redis keys
         require('../scan');
         break;
