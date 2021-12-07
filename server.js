@@ -504,6 +504,7 @@ async function call(worker, message, transferList) {
             let err = new Error('Timeout waiting for command response [T1]');
             err.statusCode = 504;
             err.code = 'Timeout';
+            err.payload = message;
             reject(err);
         }, message.timeout || EENGINE_TIMEOUT);
 
