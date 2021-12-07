@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -35,9 +35,9 @@
         "@hapi/hapi": "20.2.1",
         "@hapi/inert": "6.0.4",
         "@hapi/vision": "6.1.0",
-        "@hapipal/hecks": "^3.0.0",
+        "@hapipal/hecks": "3.0.0",
         "@phc/pbkdf2": "1.1.14",
-        "bull": "4.1.1",
+        "bull": "3.29.3",
         "bull-arena": "3.29.3",
         "dotenv": "10.0.0",
         "exponential-backoff": "3.1.0",
@@ -76,7 +76,7 @@
         "yargs": "17.3.0"
     },
     "devDependencies": {
-        "eslint": "8.4.0",
+        "eslint": "8.4.1",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",

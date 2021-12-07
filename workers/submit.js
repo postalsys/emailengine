@@ -11,7 +11,7 @@ const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
 
-const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
+const { EMAIL_FAILED_NOTIFY, QUEUE_REMOVE_AFTER } = require('../lib/consts');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -89,8 +89,8 @@ async function notify(account, event, data) {
     }
 
     await notifyQueue.add(event, payload, {
-        removeOnComplete: true,
-        removeOnFail: true,
+        removeOnComplete: QUEUE_REMOVE_AFTER,
+        removeOnFail: QUEUE_REMOVE_AFTER,
         attempts: 10,
         backoff: {
             type: 'exponential',
@@ -117,12 +117,26 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 
 submitQueue.process('*', SUBMIT_QC, async job => {
     let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
+    if (!queueEntryBuf) {
+        // nothing to do here
+        try {
+            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+        } catch (err) {
+            // ignore
+        }
+        return;
+    }
 
     let queueEntry;
     try {
         queueEntry = msgpack.decode(queueEntryBuf);
     } catch (err) {
         logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
+        try {
+            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+        } catch (err) {
+            // ignore
+        }
         return;
     }
 

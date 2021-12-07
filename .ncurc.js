@@ -5,6 +5,8 @@ module.exports = {
         'node-fetch',
         // Documentation required to use linkify-html package for latest versions but the package was not found.
         // Remove once resolved
-        'linkifyjs'
+        'linkifyjs',
+        // has some breaking changes regarding compatibility with bull-arena
+        'bull'
     ]
 };
