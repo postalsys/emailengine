@@ -19,11 +19,6 @@ host = "127.0.0.1" # by default API server is accessible from localhost only
 maxSize = "5M" # maximum size of an attachment when submitting or uploading messages
 #auth = "user:pass" # If set then uses Basic Auth
 
-[arena]
-enabled = false
-port = 3001
-host = "127.0.0.1"
-
 [smtp]
 enabled = false
 port = 2525

@@ -63,12 +63,6 @@ config.smtp = config.smtp || {
     proxy: false
 };
 
-config.arena = config.arena || {
-    enabled: false,
-    port: 2525,
-    host: '127.0.0.1'
-};
-
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
@@ -86,7 +80,6 @@ config.api.host = process.env.EENGINE_HOST || config.api.host;
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
 const SMTP_ENABLED = 'EENGINE_SMTP_ENABLED' in process.env ? getBoolean(process.env.EENGINE_SMTP_ENABLED) : getBoolean(config.smtp.enabled);
-const ARENA_ENABLED = 'EENGINE_ARENA_ENABLED' in process.env ? getBoolean(process.env.EENGINE_ARENA_ENABLED) : getBoolean(config.arena.enabled);
 
 logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
 
@@ -508,7 +501,7 @@ async function call(worker, message, transferList) {
         let mid = `${Date.now()}:${++mids}`;
 
         let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response');
+            let err = new Error('Timeout waiting for command response [T1]');
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
@@ -899,11 +892,6 @@ const startApplication = async () => {
     if (SMTP_ENABLED) {
         // single SMTP interface worker
         spawnWorker('smtp');
-    }
-
-    if (ARENA_ENABLED) {
-        // single Bull UI interface worker
-        spawnWorker('arena');
     }
 
     // single worker for HTTP

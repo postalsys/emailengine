@@ -38,7 +38,7 @@ async function call(message, transferList) {
         let mid = `${Date.now()}:${++mids}`;
 
         let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response');
+            let err = new Error('Timeout waiting for command response [T5]');
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);

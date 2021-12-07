@@ -103,12 +103,23 @@ switch (cmd) {
                 case 'issue':
                     {
                         let allowedScopes = ['*', 'api', 'metrics'];
-                        let scope = (argv.scope || argv.s || '*').toString().toLowerCase();
-                        if (!allowedScopes.includes(scope)) {
-                            console.error(`Unknown scope: ${scope}`);
-                            console.log(`Allowed scopes: "${allowedScopes.join('", "')}"`);
-                            process.exit(1);
+                        let scopes = []
+                            .concat(argv.scope || [])
+                            .concat(argv.s || [])
+                            .map(entry => (entry || '').toString().toLowerCase());
+
+                        if (!scopes.length) {
+                            scopes = ['*'];
                         }
+
+                        for (let scope of scopes) {
+                            if (!allowedScopes.includes(scope)) {
+                                console.error(`Unknown scope: ${scope}`);
+                                console.log(`Allowed scopes: "${allowedScopes.join('", "')}"`);
+                                process.exit(1);
+                            }
+                        }
+
                         let description = (argv.description || argv.d || '').toString();
                         if (!description) {
                             description = `Generated at ${new Date().toISOString()}`;
@@ -118,7 +129,7 @@ switch (cmd) {
                             .provision({
                                 account,
                                 description,
-                                scopes: [scope],
+                                scopes,
                                 nolog: true
                             })
                             .then(token => {

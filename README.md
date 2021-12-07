@@ -86,7 +86,7 @@ EmailEngine is using Redis as it's data store. Redis stores everything in RAM so
 
 First thing to do is to check what is actually going on. EmailEngine provides a few tools for that:
 
-1. Check Bull queues in Redis. You can use the built in [Arena UI](#bull-arena-settings) to view the state of the queues (Arena is not enabled by default). Open [http://127.0.0.1:3001/](http://127.0.0.1:3001/) in your browser to see the queues.
+1. Check Bull queues in Redis. You can use the built in Bull Arena UI to view the state of the queues. Open [http://127.0.0.1:3000/admin/arena](http://127.0.0.1:3000/admin/arena) in your browser to see the queues.
 2. Scan the used keyspace. EmailEngine provides a tool that groups keys by type. Run it like this (use the same config for DB as you are using for the main app):
 
 ```

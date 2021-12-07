@@ -44,11 +44,6 @@ Options:
   --smtp.port        Port to bind to                     [number] [default: 2525]
   --smtp.proxy       Is the SMTP server hehind HAProxy [boolean] [default: false]
 
-  Bull-UI options:
-  --arena.enabled        Is Bull-UI web server enabled [boolean] [default: false]
-  --arena.host           Host to bind to          [string] [default: "127.0.0.1"]
-  --smtp.port            Port to bind to                 [number] [default: 3001]
-
 "emailengine encrypt" additional options:
   --decrypt  Old secret for decrypting (can be issued multiple times)    [string]
 

@@ -35,6 +35,7 @@
         "@hapi/hapi": "20.2.1",
         "@hapi/inert": "6.0.4",
         "@hapi/vision": "6.1.0",
+        "@hapipal/hecks": "^3.0.0",
         "@phc/pbkdf2": "1.1.14",
         "bull": "4.1.1",
         "bull-arena": "3.29.3",

@@ -23,7 +23,10 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
-const { redis } = require('../lib/db');
+const Hecks = require('@hapipal/hecks');
+const { arenaExpress } = require('../lib/arena-express');
+
+const { redis, REDIS_CONF } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize, getDuration, getStats, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
@@ -127,7 +130,7 @@ async function call(message, transferList) {
         let mid = `${Date.now()}:${++mids}`;
 
         let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response');
+            let err = new Error('Timeout waiting for command response [T2]');
             err.statusCode = 504;
             err.code = 'Timeout';
             reject(err);
@@ -229,7 +232,11 @@ parentPort.on('message', message => {
 const init = async () => {
     const server = Hapi.server({
         port: (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port,
-        host: process.env.EENGINE_HOST || config.api.host
+        host: process.env.EENGINE_HOST || config.api.host,
+
+        router: {
+            stripTrailingSlash: true
+        }
     });
 
     server.ext('onRequest', async (request, h) => {
@@ -249,9 +256,9 @@ const init = async () => {
 
     const swaggerOptions = {
         swaggerUI: true,
-        swaggerUIPath: '/swagger/',
+        swaggerUIPath: '/admin/iframe/swagger/',
         documentationPage: true,
-        documentationPath: '/docs',
+        documentationPath: '/admin/iframe/docs',
 
         grouping: 'tags',
 
@@ -3104,8 +3111,9 @@ const init = async () => {
             },
 
             skip: (request /*, h*/) => {
-                if (request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
-                    // No CSRF for API calls?
+                let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
+
+                if (tags.includes('api') || tags.includes('metrics') || tags.includes('external')) {
                     return true;
                 }
 
@@ -3219,6 +3227,25 @@ const init = async () => {
     });
 
     routesUi(server, call);
+
+    // Bull-UI
+    const arenaBasePath = '/admin/iframe/arena';
+    await server.register(Hecks);
+    server.route({
+        method: '*',
+        path: `${arenaBasePath}/{expressPath*}`,
+        options: {
+            tags: ['external'],
+            //auth: false,
+            handler: {
+                express: arenaExpress(REDIS_CONF, arenaBasePath)
+            },
+            state: {
+                parse: true,
+                failAction: 'error'
+            }
+        }
+    });
 
     server.route({
         method: 'GET',

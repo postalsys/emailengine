@@ -34,8 +34,6 @@ services:
             EENGINE_SMTP_ENABLED: 'true'
             # Password for SMTP message submission clients (username is account ID)
             EENGINE_SMTP_SECRET: 'passw0rd'
-            # Enable Bull UI server for debugging
-            EENGINE_ARENA_ENABLED: 'true'
 
     redis:
         image: redis:alpine
