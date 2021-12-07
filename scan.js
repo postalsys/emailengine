@@ -4,12 +4,14 @@
 
 const config = require('wild-config');
 const Redis = require('ioredis');
+const redisUrl = require('./lib/redis-url');
 
 config.dbs = config.dbs || {
     redis: 'redis://127.0.0.1:6379/8'
 };
 
-const REDIS_CONF = process.env.EENGINE_REDIS || config.dbs.redis;
+const redisConf = process.env.EENGINE_REDIS || config.dbs.redis;
+const REDIS_CONF = typeof redisConf === 'string' ? redisUrl(redisConf) : redisConf;
 
 const redis = new Redis(REDIS_CONF);
 
