@@ -6,7 +6,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server --dbs.redis='redis://127.0.0.1/9' | pino-pretty",
+        "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' | pino-pretty",
         "test": "grunt",
         "swagger": "./getswagger.sh",
         "build-dist": "npm run licenses && rm -rf node_modules package-lock.json && npm install --production && npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
