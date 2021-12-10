@@ -201,7 +201,18 @@ let availableIMAPWorkers = new Set();
 
 let suspendedWorkerTypes = new Set();
 
-let countUnassignment = async account => {
+const postMessage = (worker, payload, ignoreOffline) => {
+    if (!onlineWorkers.has(worker)) {
+        if (ignoreOffline) {
+            return false;
+        }
+        throw new Error('Requested worker thread not available');
+    }
+
+    return worker.postMessage(payload);
+};
+
+const countUnassignment = async account => {
     if (!unassignCounter.has(account)) {
         unassignCounter.set(account, []);
     }
@@ -228,18 +239,18 @@ let countUnassignment = async account => {
 
     await redis.hset(`iad:${account}`, 'state', 'disconnected');
     for (let worker of workers.get('api')) {
-        if (onlineWorkers.has(worker)) {
-            try {
-                worker.postMessage({
-                    cmd: 'change',
-                    account,
-                    type: 'state',
-                    key: 'disconnected',
-                    payload: null
-                });
-            } catch (err) {
-                logger.error({ msg: 'Failed to post state change to child', err });
-            }
+        let callPayload = {
+            cmd: 'change',
+            account,
+            type: 'state',
+            key: 'disconnected',
+            payload: null
+        };
+
+        try {
+            postMessage(worker, callPayload, true);
+        } catch (err) {
+            logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
         }
     }
 
@@ -351,27 +362,31 @@ let spawnWorker = type => {
         if (message.cmd === 'call' && message.mid) {
             return onCommand(worker, message.message)
                 .then(response => {
+                    let callPayload = {
+                        cmd: 'resp',
+                        mid: message.mid,
+                        response
+                    };
+
                     try {
-                        worker.postMessage({
-                            cmd: 'resp',
-                            mid: message.mid,
-                            response
-                        });
+                        postMessage(worker, callPayload);
                     } catch (err) {
-                        logger.error({ msg: 'Failed to post state change to child', err });
+                        logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
                     }
                 })
                 .catch(err => {
+                    let callPayload = {
+                        cmd: 'resp',
+                        mid: message.mid,
+                        error: err.message,
+                        code: err.code,
+                        statusCode: err.statusCode
+                    };
+
                     try {
-                        worker.postMessage({
-                            cmd: 'resp',
-                            mid: message.mid,
-                            error: err.message,
-                            code: err.code,
-                            statusCode: err.statusCode
-                        });
+                        postMessage(worker, callPayload);
                     } catch (err) {
-                        logger.error({ msg: 'Failed to post state change to child', err });
+                        logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
                     }
                 });
         }
@@ -452,9 +467,9 @@ let spawnWorker = type => {
             case 'settings':
                 availableIMAPWorkers.forEach(worker => {
                     try {
-                        worker.postMessage(message);
+                        postMessage(worker, message);
                     } catch (err) {
-                        logger.error({ msg: 'Failed to post state change to child', err });
+                        logger.error({ msg: 'Failed to post command to child', worker: worker.threadId, callPayload: message, err });
                     }
                 });
                 return;
@@ -462,12 +477,10 @@ let spawnWorker = type => {
             case 'change':
                 // forward all state changes to the API worker
                 for (let worker of workers.get('api')) {
-                    if (onlineWorkers.has(worker)) {
-                        try {
-                            worker.postMessage(message);
-                        } catch (err) {
-                            logger.error({ msg: 'Failed to post state change to child', err });
-                        }
+                    try {
+                        postMessage(worker, message, true);
+                    } catch (err) {
+                        logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload: message, err });
                     }
                 }
                 break;
@@ -509,14 +522,21 @@ async function call(worker, message, transferList) {
         }, message.timeout || EENGINE_TIMEOUT);
 
         callQueue.set(mid, { resolve, reject, timer });
-        worker.postMessage(
-            {
-                cmd: 'call',
-                mid,
-                message
-            },
-            transferList
-        );
+
+        try {
+            postMessage(
+                worker,
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            callQueue.delete(mid);
+            return reject(err);
+        }
     });
 }
 

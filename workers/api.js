@@ -3238,7 +3238,7 @@ const init = async () => {
             tags: ['external'],
             //auth: false,
             handler: {
-                express: arenaExpress(REDIS_CONF, arenaBasePath)
+                express: arenaExpress(Object.assign({ connectionName: `${REDIS_CONF.connectionName}[arena]` }, REDIS_CONF), arenaBasePath)
             },
             state: {
                 parse: true,
