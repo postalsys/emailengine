@@ -79,7 +79,12 @@ config.api.host = process.env.EENGINE_HOST || config.api.host;
 
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
+// legacy options, will be removed
 const SMTP_ENABLED = 'EENGINE_SMTP_ENABLED' in process.env ? getBoolean(process.env.EENGINE_SMTP_ENABLED) : getBoolean(config.smtp.enabled);
+const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
+const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || Number(config.smtp.port) || 2525;
+const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
+const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
 logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
 
@@ -874,6 +879,42 @@ const startApplication = async () => {
         }
     }
 
+    // prepare some required configuration values
+    let existingSmtpEnabled = await settings.get('smtpServerEnabled');
+    if (existingSmtpEnabled === null) {
+        await settings.set('smtpServerEnabled', !!SMTP_ENABLED);
+    }
+
+    let existingSecret = await settings.get('smtpServerPassword');
+    if (existingSecret === null) {
+        await settings.set('smtpServerPassword', SMTP_SECRET || crypto.randomBytes(16).toString('hex'));
+    }
+
+    let existingSmtpAuthEnabled = await settings.get('smtpServerAuthEnabled');
+    if (existingSmtpAuthEnabled === null && (existingSecret || existingSecret === null)) {
+        await settings.set('smtpServerAuthEnabled', true);
+    }
+
+    let existingSmtpPort = await settings.get('smtpServerPort');
+    if (existingSmtpPort === null) {
+        await settings.set('smtpServerPort', SMTP_PORT);
+    }
+
+    let existingSmtpHost = await settings.get('smtpServerHost');
+    if (existingSmtpHost === null) {
+        await settings.set('smtpServerHost', SMTP_HOST);
+    }
+
+    let existingSmtpProxy = await settings.get('smtpServerProxy');
+    if (existingSmtpProxy === null) {
+        await settings.set('smtpServerProxy', SMTP_PROXY);
+    }
+
+    let existinServiceSecret = await settings.get('serviceSecret');
+    if (existinServiceSecret === null) {
+        await settings.set('serviceSecret', crypto.randomBytes(16).toString('hex'));
+    }
+
     if (preparedToken) {
         try {
             let imported = await tokens.setRawData(preparedToken);
@@ -910,7 +951,7 @@ const startApplication = async () => {
         spawnWorker('submit');
     }
 
-    if (SMTP_ENABLED) {
+    if (await settings.get('smtpServerEnabled')) {
         // single SMTP interface worker
         spawnWorker('smtp');
     }

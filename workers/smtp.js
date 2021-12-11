@@ -10,6 +10,9 @@ const { Account } = require('../lib/account');
 const { getDuration, getBoolean } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
+const { Splitter, Joiner } = require('mailsplit');
+const { HeadersRewriter } = require('../lib/headers-rewriter');
+const settings = require('../lib/settings');
 
 config.smtp = config.smtp || {
     enabled: false,
@@ -90,7 +93,16 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 }
 
 async function onAuth(auth, session) {
-    if (SMTP_SECRET && auth.password !== SMTP_SECRET) {
+    if (!session.eeAuthEnabled) {
+        throw new Error('Authentication not enabled');
+    }
+
+    let smtpPassword = await settings.get('smtpServerPassword');
+    if (smtpPassword === null && SMTP_SECRET) {
+        smtpPassword = SMTP_SECRET;
+    }
+
+    if (auth.password !== smtpPassword) {
         throw new Error('Failed to authenticate user');
     }
 
@@ -118,7 +130,58 @@ async function onAuth(auth, session) {
     return { user: accountData.account };
 }
 
+function processMessage(stream, session, meta) {
+    meta = meta || {};
+    const splitter = new Splitter();
+    const joiner = new Joiner();
+
+    const headersRewriter = new HeadersRewriter(async headers => {
+        let requestedAccount = headers.getFirst('x-ee-account');
+        headers.remove('x-ee-account');
+        if (requestedAccount) {
+            meta.requestedAccount = requestedAccount;
+        }
+    });
+
+    stream.once('error', err => joiner.emit('error', err));
+    headersRewriter.once('error', err => joiner.emit('error', err));
+
+    return stream.pipe(splitter).pipe(headersRewriter).pipe(joiner);
+}
+
+async function checkAccountData(session, messageMeta) {
+    let accountObject;
+
+    if (!session.eeAuthEnabled && messageMeta.requestedAccount) {
+        // load account data
+        let accountObject = new Account({ account: messageMeta.requestedAccount, redis, call, secret: await getSecret() });
+        let accountData;
+        try {
+            // throws if unknown user
+            accountData = await accountObject.loadAccountData();
+            if (accountData) {
+                ACCOUNT_CACHE.set(session, accountObject);
+                logger.error({ msg: 'Resolving requested account', account: messageMeta.requestedAccount });
+            }
+        } catch (err) {
+            logger.error({ msg: 'Failed resolving requested account', account: messageMeta.requestedAccount, err });
+        }
+    } else {
+        accountObject = ACCOUNT_CACHE.get(session);
+    }
+
+    if (!accountObject) {
+        let err = new Error('Failed to load account');
+        err.responseCode = 451;
+        throw err;
+    }
+
+    return accountObject;
+}
+
 async function init() {
+    let server;
+
     let serverOptions = {
         disabledCommands: ['STARTTLS'],
         allowInsecureAuth: true,
@@ -129,15 +192,45 @@ async function init() {
         useProxy: SMTP_PROXY
     };
 
+    // check and update authentication settings on connection
+    serverOptions.onConnect = (session, callback) => {
+        settings
+            .get('smtpServerAuthEnabled')
+            .then(authEnabled => {
+                if (authEnabled === null && SMTP_SECRET) {
+                    authEnabled = true;
+                }
+
+                if (authEnabled && server.options.disabledCommands.includes('AUTH')) {
+                    let disabledCommands = new Set(server.options.disabledCommands);
+                    disabledCommands.delete('AUTH');
+                    server.options.disabledCommands = Array.from(disabledCommands);
+                    logger.info({ msg: 'Enabled authentication for the SMTP server', disabledCommands: server.options.disabledCommands });
+                } else if (!authEnabled && !server.options.disabledCommands.includes('AUTH')) {
+                    server.options.disabledCommands.push('AUTH');
+                    logger.info({ msg: 'Disabled authentication for the SMTP server', disabledCommands: server.options.disabledCommands });
+                }
+
+                session.eeAuthEnabled = !!authEnabled;
+                callback();
+            })
+            .catch(err => {
+                callback(err);
+            });
+    };
+
     serverOptions.onAuth = (auth, session, callback) => {
         onAuth(auth, session)
             .then(res => callback(null, res))
             .catch(err => callback(err));
     };
 
-    serverOptions.onData = (stream, session, callback) => {
+    serverOptions.onData = (rawStream, session, callback) => {
         let chunks = [];
         let chunklen = 0;
+
+        let messageMeta = {};
+        let stream = processMessage(rawStream, session, messageMeta);
 
         stream.on('readable', () => {
             let chunk;
@@ -156,52 +249,50 @@ async function init() {
                 err.responseCode = 552;
                 return callback(err);
             }
-            let accountObject = ACCOUNT_CACHE.get(session);
-            if (!accountObject) {
-                err = new Error('Faild to get account data');
-                err.responseCode = 451;
-                return callback(err);
-            }
 
-            let message = Buffer.concat(chunks, chunklen);
+            checkAccountData(session, messageMeta)
+                .then(accountObject => {
+                    let message = Buffer.concat(chunks, chunklen);
 
-            let payload = {
-                envelope: {
-                    from: session.envelope.mailFrom.address,
-                    to: session.envelope.rcptTo.map(entry => entry.address)
-                },
-                raw: message
-            };
+                    let payload = {
+                        envelope: {
+                            from: session.envelope.mailFrom.address,
+                            to: session.envelope.rcptTo.map(entry => entry.address)
+                        },
+                        raw: message
+                    };
 
-            accountObject
-                .queueMessage(payload)
-                .then(res => {
-                    // queued for later
-                    metrics(logger, 'events', 'inc', {
-                        event: 'smtpSubmitQueued'
-                    });
+                    accountObject
+                        .queueMessage(payload)
+                        .then(res => {
+                            // queued for later
+                            metrics(logger, 'events', 'inc', {
+                                event: 'smtpSubmitQueued'
+                            });
 
-                    logger.info({
-                        msg: 'Message queued',
-                        account: session.user,
-                        messageId: res.messageId,
-                        sendAt: res.sendAt,
-                        queueId: res.queueId
-                    });
+                            logger.info({
+                                msg: 'Message queued',
+                                account: session.user,
+                                messageId: res.messageId,
+                                sendAt: res.sendAt,
+                                queueId: res.queueId
+                            });
 
-                    return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
+                            return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
+                        })
+                        .catch(err => {
+                            metrics(logger, 'events', 'inc', {
+                                event: 'smtpSubmitFail'
+                            });
+                            logger.error({ msg: 'Failed to submit message', account: session.user, err });
+                            callback(err);
+                        });
                 })
-                .catch(err => {
-                    metrics(logger, 'events', 'inc', {
-                        event: 'smtpSubmitFail'
-                    });
-                    logger.error({ msg: 'Failed to submit message', account: session.user, err });
-                    callback(err);
-                });
+                .catch(err => callback(err));
         });
     };
 
-    const server = new SMTPServer(serverOptions);
+    server = new SMTPServer(serverOptions);
 
     return await new Promise((resolve, reject) => {
         server.once('error', err => reject(err));

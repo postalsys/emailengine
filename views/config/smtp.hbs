@@ -1,0 +1,158 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+
+        <small><i class="fas fa-server fa-fw"></i></small>
+        SMTP Server
+
+        {{#if values.webhooksEnabled}}
+
+        <span class="badge badge-success">enabled</span>
+
+        {{else}}
+
+        <span class="badge badge-warning">disabled</span>
+
+        {{/if}}
+    </h1>
+</div>
+
+<p class="mb-4">EmailEngine allows submitting email messages for delivery using the <a
+        href="https://api.emailengine.app/#tag/submit" target="_blank">submission API
+        endpoint</a> or the
+    built-in SMTP server. On this page, you can configure the settings of the SMTP server.</p>
+
+
+<form method="post" action="/admin/config/stmp">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <div class="card mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Server settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                    name="enabled" {{#if values.enabled}}checked{{/if}} />
+                <label class="form-check-label" for="enabled">Enable SMTP Server</label>
+                {{#if errors.enabled}}
+                <span class="invalid-feedback">{{errors.enabled}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="port">SMTP port</label>
+
+                <input type="number" class="form-control or-else-all {{#if errors.port}}is-invalid{{/if}}" id="port"
+                    name="port" value="{{values.port}}" />
+
+                {{#if errors.port}}
+                <span class="invalid-feedback">{{errors.port}}</span>
+                {{/if}}
+                <small class="form-text text-muted">The port number to bound to. Port numbers lower than 1024 might not
+                    be allowed.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="host">SMTP host</label>
+
+                <input type="text" class="form-control or-else-all {{#if errors.host}}is-invalid{{/if}}" id="host"
+                    name="host" value="{{values.host}}" />
+
+                {{#if errors.host}}
+                <span class="invalid-feedback">{{errors.host}}</span>
+                {{/if}}
+                <small class="form-text text-muted">IP address to bind to. Use "0.0.0.0" to listen on all
+                    interfaces.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
+                    name="proxy" {{#if values.proxy}}checked{{/if}} />
+                <label class="form-check-label" for="proxy">Enable PROXY protocol</label>
+                {{#if errors.proxy}}
+                <span class="invalid-feedback">{{errors.proxy}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Use this if your SMTP server is proxied by HAProxy using the
+                    <code>send-proxy</code> option.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Authentication settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.authEnabled}}is-invalid{{/if}}"
+                    id="authEnabled" name="authEnabled" {{#if values.authEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="authEnabled">Enable authentication</label>
+                {{#if errors.authEnabled}}
+                <span class="invalid-feedback">{{errors.authEnabled}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <label for="password">SMTP password</label>
+
+                <div class="input-group">
+                    <input type="password" class="form-control {{#if errors.password}}is-invalid{{/if}}" id="password"
+                        name="password" value="{{values.password}}" data-lpignore="true" autocomplete="off" />
+
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-primary" type="button" id="showPassword"><i
+                                class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+
+                {{#if errors.password}}
+                <span class="invalid-feedback">{{errors.password}}</span>
+                {{/if}}
+                <small class="form-text text-muted">All SMTP accounts share the same password. Username is the account
+                    Id.</small>
+            </div>
+
+            <div class="mb-3">If authentication is disabled, then the all messages must include a special header
+                <code>X-EE-Account</code> that identifies the
+                account to be used for sending.
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <pre style="margin: 0; padding: 0;"><small>Subject: ...
+X-EE-Account: myaccount</small></pre>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="mb-4 mt-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let showBt = document.getElementById('showPassword');
+        let serviceSecretElm = document.getElementById('password');
+
+        let showSecret = () => {
+            let current = serviceSecretElm.getAttribute('type')
+            serviceSecretElm.setAttribute('type', current === 'text' ? 'password' : 'text');
+            showBt.blur()
+        }
+
+        showBt.addEventListener('click', showSecret);
+
+    })
+</script>
