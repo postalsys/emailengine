@@ -91,7 +91,6 @@
 
             <div class="form-group">
                 <label for="smtpServerPassword">SMTP password</label>
-
                 <div class="input-group">
                     <input type="password" class="form-control {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
                         id="smtpServerPassword" name="smtpServerPassword" value="{{values.smtpServerPassword}}"
@@ -110,22 +109,25 @@
                     Id.</small>
             </div>
         </div>
-        <div class="card-footer">
-            <div class="mb-3">If authentication is disabled, then the all messages must include a special header
-                <code>X-EE-Account</code> that identifies the
-                account to be used for sending.
-            </div>
-
-            <div class="card">
-                <div class="card-body">
-                    <pre style="margin: 0; padding: 0;"><small>Subject: ...
-X-EE-Account: myaccount</small></pre>
-                </div>
-            </div>
-        </div>
 
     </div>
 
+    <div class="card mt-4 mb-4">
+        <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+            aria-expanded="true" aria-controls="showHelp">
+            <h6 class="m-0 font-weight-bold text-primary">Authentication instructions</h6>
+        </a>
+        <div class="collapse" id="showHelp">
+            <div class="card-body">
+                <p>If authentication is <strong>enabled</strong> then SMTP username is the account ID you want to send
+                    mail as.</p>
+
+                <p>If authentication is <strong>disabled</strong>, then the all messages must include a special header
+                    <code>X-EE-Account</code> that identifies the account to be used for sending.
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="mb-4 mt-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
