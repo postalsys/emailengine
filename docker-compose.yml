@@ -21,7 +21,7 @@ services:
                 {
                     "smtpServerEnabled": true,
                     "smtpServerPort": 2525,
-                    "smtpServerPort": "0.0.0.0",
+                    "smtpServerHost": "0.0.0.0",
                     "smtpServerAuthEnabled": true,
                     "smtpServerPassword": "passw0rd"
                 }

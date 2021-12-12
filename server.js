@@ -874,6 +874,11 @@ async function collectMetrics() {
     if (workers.has('imap')) {
         let imapWorkers = workers.get('imap');
         for (let imapWorker of imapWorkers) {
+            if (!availableIMAPWorkers.has(imapWorker)) {
+                // worker not available yet
+                continue;
+            }
+
             try {
                 let workerStats = await call(imapWorker, { cmd: 'countConnections' });
                 Object.keys(workerStats || {}).forEach(status => {
