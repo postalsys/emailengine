@@ -120,3 +120,37 @@
         </ul>
     </div>
 </div>
+
+<input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let sendBrowserInfo = async () => {
+            let timezone = false;
+            try {
+                timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            } catch (err) {
+                console.error(err);
+            }
+
+            try {
+                const res = await fetch('/admin/config/browser', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        serviceUrl: window.location.origin || false,
+                        timezone: timezone || false,
+                        language: navigator.language || false
+                    })
+                });
+                if (!res.ok) {
+                    console.error('Failed to post browser info');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        sendBrowserInfo().catch(err => console.error(err))
+    });
+</script>

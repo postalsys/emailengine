@@ -246,6 +246,86 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatSmtpState(state, payload) {
+        switch (state) {
+            case 'suspended':
+            case 'exited':
+            case 'disabled':
+                return {
+                    type: 'warning',
+                    name: state
+                };
+
+            case 'spawning':
+            case 'initializing':
+                return {
+                    type: 'info',
+                    name: state,
+                    spinner: true
+                };
+
+            case 'listening':
+                return {
+                    type: 'success',
+                    name: state
+                };
+
+            case 'failed':
+                return {
+                    type: 'danger',
+                    name: state,
+                    error: (payload && payload.error && payload.error.message) || null
+                };
+
+            default:
+                return {
+                    type: 'secondary',
+                    name: 'N/A'
+                };
+        }
+    }
+
+    function updateSmtpStateIndicators(data) {
+        let { key: state, payload } = data;
+
+        let stateLabel = formatSmtpState(state, payload);
+
+        let stateInfoElms = document.querySelectorAll(`.state-info[data-type="smtp"]`);
+        if (stateInfoElms.length) {
+            for (let stateInfoElm of stateInfoElms) {
+                for (let val of stateInfoElm.classList.values()) {
+                    if (/^badge-/.test(val) && val !== 'badge-pill') {
+                        stateInfoElm.classList.remove(val);
+                    }
+                }
+
+                stateInfoElm.classList.add(`badge-${stateLabel.type}`);
+
+                stateInfoElm.innerHTML = '';
+                if (stateLabel.spinner) {
+                    let spinnerElm = document.createElement('i');
+                    spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
+                    let textElm = document.createElement('span');
+                    textElm.textContent = ' ' + stateLabel.name;
+                    stateInfoElm.appendChild(spinnerElm);
+                    stateInfoElm.appendChild(textElm);
+                } else {
+                    stateInfoElm.textContent = stateLabel.name;
+                }
+
+                if (stateLabel.error) {
+                    stateInfoElm.title = 'Connection error';
+                    stateInfoElm.dataset.content = stateLabel.error;
+                    $(stateInfoElm).popover('enable');
+                } else {
+                    stateInfoElm.title = '';
+                    stateInfoElm.dataset.content = '';
+                    $(stateInfoElm).popover('disable');
+                }
+            }
+        }
+    }
+
     const evtSource = new EventSource('/admin/changes');
     evtSource.onmessage = function (e) {
         let data;
@@ -258,6 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (data && data.type) {
             case 'state':
                 updateStateIndicators(data);
+                break;
+            case 'smtpServerState':
+                updateSmtpStateIndicators(data);
                 break;
         }
     };

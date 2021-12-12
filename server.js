@@ -30,7 +30,7 @@ const tokens = require('./lib/tokens');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, selectRendezvousNode, checkLicense } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
@@ -70,7 +70,8 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
 
-config.workers.imap = Number(process.env.EENGINE_WORKERS) || config.workers.imap || 4;
+config.workers.imap = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
+
 config.workers.webhooks = Number(process.env.EENGINE_WORKERS_WEBHOOKS) || config.workers.webhooks || 1;
 config.workers.submit = Number(process.env.EENGINE_WORKERS_SUBMIT) || config.workers.submit || 1;
 
@@ -271,17 +272,54 @@ let clearUnassignmentCounter = account => {
     unassignCounter.delete(account);
 };
 
-let spawnWorker = type => {
-    if (closing) {
-        return;
+let updateSmtpServerState = async (state, payload) => {
+    await redis.hset(`smtp`, 'state', state);
+    if (payload) {
+        await redis.hset(`smtp`, 'payload', JSON.stringify(payload));
     }
 
-    if (suspendedWorkerTypes.has(type)) {
+    if (workers.has('api')) {
+        for (let worker of workers.get('api')) {
+            let callPayload = {
+                cmd: 'change',
+                type: 'smtpServerState',
+                key: state,
+                payload: payload || null
+            };
+
+            try {
+                postMessage(worker, callPayload, true);
+            } catch (err) {
+                logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
+            }
+        }
+    }
+};
+
+let spawnWorker = async type => {
+    if (closing) {
         return;
     }
 
     if (!workers.has(type)) {
         workers.set(type, new Set());
+    }
+
+    if (suspendedWorkerTypes.has(type)) {
+        if (type === 'smtp') {
+            await updateSmtpServerState('suspended', {});
+        }
+        return;
+    }
+
+    if (type === 'smtp') {
+        let smtpEnabled = await settings.get('smtpServerEnabled');
+        if (!smtpEnabled) {
+            await updateSmtpServerState('disabled', {});
+            return;
+        }
+
+        await updateSmtpServerState('spawning');
     }
 
     let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), {
@@ -294,37 +332,47 @@ let spawnWorker = type => {
     workers.get(type).add(worker);
 
     worker.on('online', () => {
+        if (type === 'smtp') {
+            updateSmtpServerState('initializing').catch(err => logger.error({ msg: 'Failed to update smtp server state', err }));
+        }
         onlineWorkers.add(worker);
     });
 
-    worker.on('exit', exitCode => {
+    let exitHandler = async exitCode => {
         onlineWorkers.delete(worker);
         metrics.threadStops.inc();
 
         workers.get(type).delete(worker);
-        availableIMAPWorkers.delete(worker);
 
-        if (workerAssigned.has(worker)) {
-            let accountList = workerAssigned.get(worker);
-            workerAssigned.delete(worker);
-            accountList.forEach(account => {
-                assigned.delete(account);
-                let shouldReassign = false;
-                // graceful reconnect
-                countUnassignment(account)
-                    .then(sr => {
-                        shouldReassign = sr;
-                    })
-                    .catch(() => {
-                        shouldReassign = true;
-                    })
-                    .finally(() => {
-                        unassigned.add(account);
-                        if (shouldReassign) {
-                            assignAccounts().catch(err => logger.error(err));
-                        }
-                    });
-            });
+        if (type === 'smtp') {
+            updateSmtpServerState(suspendedWorkerTypes.has(type) ? 'suspended' : 'exited');
+        }
+
+        if (type === 'imap') {
+            availableIMAPWorkers.delete(worker);
+
+            if (workerAssigned.has(worker)) {
+                let accountList = workerAssigned.get(worker);
+                workerAssigned.delete(worker);
+                accountList.forEach(account => {
+                    assigned.delete(account);
+                    let shouldReassign = false;
+                    // graceful reconnect
+                    countUnassignment(account)
+                        .then(sr => {
+                            shouldReassign = sr;
+                        })
+                        .catch(() => {
+                            shouldReassign = true;
+                        })
+                        .finally(() => {
+                            unassigned.add(account);
+                            if (shouldReassign) {
+                                assignAccounts().catch(err => logger.error(err));
+                            }
+                        });
+                });
+            }
         }
 
         if (closing) {
@@ -338,7 +386,15 @@ let spawnWorker = type => {
             logger.error({ msg: 'Worker exited', exitCode, type });
         }
 
-        setTimeout(() => spawnWorker(type), 1000);
+        // trigger new spawn
+        await new Promise(r => setTimeout(r, 1000));
+        await spawnWorker(type);
+    };
+
+    worker.on('exit', exitCode => {
+        exitHandler(exitCode).catch(err => {
+            logger.error({ msg: 'Failed to handle worker exit', exitCode, worker: worker.threadId, err });
+        });
     });
 
     worker.on('message', message => {
@@ -480,13 +536,19 @@ let spawnWorker = type => {
                 return;
 
             case 'change':
-                // forward all state changes to the API worker
-                for (let worker of workers.get('api')) {
-                    try {
-                        postMessage(worker, message, true);
-                    } catch (err) {
-                        logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload: message, err });
-                    }
+                switch (message.type) {
+                    case 'smtpServerState':
+                        updateSmtpServerState(message.key, message.payload).catch(err => logger.error({ msg: 'Failed to update smtp server state', err }));
+                        break;
+                    default:
+                        // forward all state changes to the API worker
+                        for (let worker of workers.get('api')) {
+                            try {
+                                postMessage(worker, message, true);
+                            } catch (err) {
+                                logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload: message, err });
+                            }
+                        }
                 }
                 break;
         }
@@ -590,8 +652,7 @@ async function assignAccounts() {
 }
 
 let licenseCheckTimer = false;
-let checkActiveLicense = () => {
-    clearTimeout(licenseCheckTimer);
+let licenseCheckHandler = async () => {
     if (!licenseInfo.active && !suspendedWorkerTypes.size) {
         logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
 
@@ -612,13 +673,13 @@ let checkActiveLicense = () => {
                     case 'smtp':
                         if (SMTP_ENABLED) {
                             // single SMTP interface worker
-                            spawnWorker('smtp');
+                            await spawnWorker('smtp');
                         }
                         break;
                     default:
                         if (config.workers && config.workers[type]) {
                             for (let i = 0; i < config.workers[type]; i++) {
-                                spawnWorker(type);
+                                await spawnWorker(type);
                             }
                         }
                 }
@@ -629,6 +690,13 @@ let checkActiveLicense = () => {
         licenseCheckTimer.unref();
     }
 };
+
+function checkActiveLicense() {
+    clearTimeout(licenseCheckTimer);
+    licenseCheckHandler().catch(err => {
+        logger.error('Failed to process license checker', err);
+    });
+}
 
 async function updateQueueCounters() {
     for (let queue of ['notify', 'submit']) {
@@ -741,6 +809,25 @@ async function onCommand(worker, message) {
                     .catch(err => logger.error(err));
             }
             return;
+
+        case 'smtpReload':
+            {
+                let hasWorkers = workers.has('smtp') && workers.get('smtp').size;
+                // reload (or kill) SMTP submission worker
+                if (hasWorkers) {
+                    for (let worker of workers.get('smtp').values()) {
+                        worker.terminate();
+                    }
+                } else {
+                    let smtpEnabled = await settings.get('smtpServerEnabled');
+                    if (smtpEnabled) {
+                        // spawn a new worker
+                        await spawnWorker('smtp');
+                    }
+                }
+            }
+
+            break;
 
         case 'listMessages':
         case 'buildContacts':
@@ -940,24 +1027,24 @@ const startApplication = async () => {
 
     // multiple IMAP connection handlers
     for (let i = 0; i < config.workers.imap; i++) {
-        spawnWorker('imap');
+        await spawnWorker('imap');
     }
 
     for (let i = 0; i < config.workers.webhooks; i++) {
-        spawnWorker('webhooks');
+        await spawnWorker('webhooks');
     }
 
     for (let i = 0; i < config.workers.submit; i++) {
-        spawnWorker('submit');
+        await spawnWorker('submit');
     }
 
     if (await settings.get('smtpServerEnabled')) {
         // single SMTP interface worker
-        spawnWorker('smtp');
+        await spawnWorker('smtp');
     }
 
     // single worker for HTTP
-    spawnWorker('api');
+    await spawnWorker('api');
 };
 
 startApplication()

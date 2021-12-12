@@ -3,16 +3,12 @@
 
         <small><i class="fas fa-server fa-fw"></i></small>
         SMTP Server
+        <span class="badge badge-{{serverState.label.type}} state-info" data-type="smtp">
+            {{#if serverState.label.spinner}}
+            <i class="fas fa-spinner fa-spin fa-fw"></i>
+            {{/if}}
 
-        {{#if values.webhooksEnabled}}
-
-        <span class="badge badge-success">enabled</span>
-
-        {{else}}
-
-        <span class="badge badge-warning">disabled</span>
-
-        {{/if}}
+            {{serverState.label.name}}</span>
     </h1>
 </div>
 
@@ -21,8 +17,7 @@
         endpoint</a> or the
     built-in SMTP server. On this page, you can configure the settings of the SMTP server.</p>
 
-
-<form method="post" action="/admin/config/stmp">
+<form method="post" action="/admin/config/smtp">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mt-4">
@@ -31,46 +26,47 @@
         </div>
         <div class="card-body">
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
-                    name="enabled" {{#if values.enabled}}checked{{/if}} />
-                <label class="form-check-label" for="enabled">Enable SMTP Server</label>
-                {{#if errors.enabled}}
-                <span class="invalid-feedback">{{errors.enabled}}</span>
+                <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
+                    id="smtpServerEnabled" name="smtpServerEnabled" {{#if values.smtpServerEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Server</label>
+                {{#if errors.smtpServerEnabled}}
+                <span class="invalid-feedback">{{errors.smtpServerEnabled}}</span>
                 {{/if}}
             </div>
 
             <div class="form-group">
-                <label for="port">SMTP port</label>
+                <label for="smtpServerPort">SMTP port</label>
 
-                <input type="number" class="form-control or-else-all {{#if errors.port}}is-invalid{{/if}}" id="port"
-                    name="port" value="{{values.port}}" />
+                <input type="number" class="form-control {{#if errors.smtpServerPort}}is-invalid{{/if}}"
+                    id="smtpServerPort" name="smtpServerPort" value="{{values.smtpServerPort}}" />
 
-                {{#if errors.port}}
-                <span class="invalid-feedback">{{errors.port}}</span>
+                {{#if errors.smtpServerPort}}
+                <span class="invalid-feedback">{{errors.smtpServerPort}}</span>
                 {{/if}}
                 <small class="form-text text-muted">The port number to bound to. Port numbers lower than 1024 might not
                     be allowed.</small>
             </div>
 
             <div class="form-group">
-                <label for="host">SMTP host</label>
+                <label for="smtpServerHost">SMTP host</label>
 
-                <input type="text" class="form-control or-else-all {{#if errors.host}}is-invalid{{/if}}" id="host"
-                    name="host" value="{{values.host}}" />
+                <input type="text" class="form-control basicAutoComplete {{#if errors.smtpServerHost}}is-invalid{{/if}}"
+                    id="smtpServerHost" name="smtpServerHost" value="{{values.smtpServerHost}}" data-lpignore="true"
+                    autocomplete="off" />
 
-                {{#if errors.host}}
-                <span class="invalid-feedback">{{errors.host}}</span>
+                {{#if errors.smtpServerHost}}
+                <span class="invalid-feedback">{{errors.smtpServerHost}}</span>
                 {{/if}}
-                <small class="form-text text-muted">IP address to bind to. Use "0.0.0.0" to listen on all
-                    interfaces.</small>
+                <small class="form-text text-muted">IP address to bind to. Set to empty or use "0.0.0.0" to listen on
+                    all interfaces.</small>
             </div>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
-                    name="proxy" {{#if values.proxy}}checked{{/if}} />
-                <label class="form-check-label" for="proxy">Enable PROXY protocol</label>
-                {{#if errors.proxy}}
-                <span class="invalid-feedback">{{errors.proxy}}</span>
+                <input type="checkbox" class="form-check-input {{#if errors.smtpServerProxy}}is-invalid{{/if}}"
+                    id="smtpServerProxy" name="smtpServerProxy" {{#if values.smtpServerProxy}}checked{{/if}} />
+                <label class="form-check-label" for="smtpServerProxy">Enable PROXY protocol</label>
+                {{#if errors.smtpServerProxy}}
+                <span class="invalid-feedback">{{errors.smtpServerProxy}}</span>
                 {{/if}}
                 <small class="form-text text-muted">Use this if your SMTP server is proxied by HAProxy using the
                     <code>send-proxy</code> option.</small>
@@ -84,20 +80,22 @@
         </div>
         <div class="card-body">
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.authEnabled}}is-invalid{{/if}}"
-                    id="authEnabled" name="authEnabled" {{#if values.authEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="authEnabled">Enable authentication</label>
-                {{#if errors.authEnabled}}
-                <span class="invalid-feedback">{{errors.authEnabled}}</span>
+                <input type="checkbox" class="form-check-input {{#if errors.smtpServerAuthEnabled}}is-invalid{{/if}}"
+                    id="smtpServerAuthEnabled" name="smtpServerAuthEnabled" {{#if
+                    values.smtpServerAuthEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="smtpServerAuthEnabled">Enable authentication</label>
+                {{#if errors.smtpServerAuthEnabled}}
+                <span class="invalid-feedback">{{errors.smtpServerAuthEnabled}}</span>
                 {{/if}}
             </div>
 
             <div class="form-group">
-                <label for="password">SMTP password</label>
+                <label for="smtpServerPassword">SMTP password</label>
 
                 <div class="input-group">
-                    <input type="password" class="form-control {{#if errors.password}}is-invalid{{/if}}" id="password"
-                        name="password" value="{{values.password}}" data-lpignore="true" autocomplete="off" />
+                    <input type="password" class="form-control {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
+                        id="smtpServerPassword" name="smtpServerPassword" value="{{values.smtpServerPassword}}"
+                        data-lpignore="true" autocomplete="off" />
 
                     <div class="input-group-append">
                         <button class="btn btn-outline-primary" type="button" id="showPassword"><i
@@ -105,13 +103,14 @@
                     </div>
                 </div>
 
-                {{#if errors.password}}
-                <span class="invalid-feedback">{{errors.password}}</span>
+                {{#if errors.smtpServerPassword}}
+                <span class="invalid-feedback">{{errors.smtpServerPassword}}</span>
                 {{/if}}
                 <small class="form-text text-muted">All SMTP accounts share the same password. Username is the account
                     Id.</small>
             </div>
-
+        </div>
+        <div class="card-footer">
             <div class="mb-3">If authentication is disabled, then the all messages must include a special header
                 <code>X-EE-Account</code> that identifies the
                 account to be used for sending.
@@ -139,12 +138,13 @@ X-EE-Account: myaccount</small></pre>
 
 </form>
 
+<input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
         let showBt = document.getElementById('showPassword');
-        let serviceSecretElm = document.getElementById('password');
+        let serviceSecretElm = document.getElementById('smtpServerPassword');
 
         let showSecret = () => {
             let current = serviceSecretElm.getAttribute('type')
@@ -154,5 +154,16 @@ X-EE-Account: myaccount</small></pre>
 
         showBt.addEventListener('click', showSecret);
 
+        let availableAddresses = document.getElementById('availableAddresses').value.split(',').map(e => e.trim()).filter(e => e);
+        $('.basicAutoComplete').autoComplete({
+            resolver: 'custom',
+            events: {
+                search: function (query, callback) {
+                    callback(availableAddresses.filter(a => a.indexOf(query) >= 0))
+                }
+            },
+            preventEnter: true,
+            minLength: 1
+        });
     })
 </script>

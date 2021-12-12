@@ -7,7 +7,7 @@ const { SMTPServer } = require('smtp-server');
 const util = require('util');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
-const { getDuration, getBoolean } = require('../lib/tools');
+const { getDuration, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const packageData = require('../package.json');
 const { Splitter, Joiner } = require('mailsplit');
@@ -28,11 +28,6 @@ const MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
-
-const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || Number(config.smtp.port) || 2525;
-const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
-const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
-const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
 const ACCOUNT_CACHE = new WeakMap();
 
@@ -98,10 +93,6 @@ async function onAuth(auth, session) {
     }
 
     let smtpPassword = await settings.get('smtpServerPassword');
-    if (smtpPassword === null && SMTP_SECRET) {
-        smtpPassword = SMTP_SECRET;
-    }
-
     if (auth.password !== smtpPassword) {
         throw new Error('Failed to authenticate user');
     }
@@ -154,20 +145,26 @@ async function checkAccountData(session, messageMeta) {
 
     if (!session.eeAuthEnabled && messageMeta.requestedAccount) {
         // load account data
-        let accountObject = new Account({ account: messageMeta.requestedAccount, redis, call, secret: await getSecret() });
+        accountObject = new Account({ account: messageMeta.requestedAccount, redis, call, secret: await getSecret() });
         let accountData;
         try {
             // throws if unknown user
             accountData = await accountObject.loadAccountData();
             if (accountData) {
                 ACCOUNT_CACHE.set(session, accountObject);
-                logger.error({ msg: 'Resolving requested account', account: messageMeta.requestedAccount });
+                logger.info({ msg: 'Resolved requested account', account: messageMeta.requestedAccount });
             }
         } catch (err) {
             logger.error({ msg: 'Failed resolving requested account', account: messageMeta.requestedAccount, err });
         }
     } else {
         accountObject = ACCOUNT_CACHE.get(session);
+    }
+
+    if (!session.eeAuthEnabled && !messageMeta.requestedAccount && !accountObject) {
+        let err = new Error('Sender account ID not provided, can not send mail');
+        err.responseCode = 451;
+        throw err;
     }
 
     if (!accountObject) {
@@ -189,7 +186,7 @@ async function init() {
         disableReverseLookup: true,
         banner: 'EmailEngine MSA',
         size: MAX_SIZE,
-        useProxy: SMTP_PROXY
+        useProxy: await settings.get('smtpServerProxy')
     };
 
     // check and update authentication settings on connection
@@ -197,10 +194,6 @@ async function init() {
         settings
             .get('smtpServerAuthEnabled')
             .then(authEnabled => {
-                if (authEnabled === null && SMTP_SECRET) {
-                    authEnabled = true;
-                }
-
                 if (authEnabled && server.options.disabledCommands.includes('AUTH')) {
                     let disabledCommands = new Set(server.options.disabledCommands);
                     disabledCommands.delete('AUTH');
@@ -212,6 +205,13 @@ async function init() {
                 }
 
                 session.eeAuthEnabled = !!authEnabled;
+
+                return settings.get('smtpServerProxy');
+            })
+            .then(smtpServerProxy => {
+                server.options.useProxy = smtpServerProxy;
+            })
+            .then(() => {
                 callback();
             })
             .catch(err => {
@@ -294,18 +294,31 @@ async function init() {
 
     server = new SMTPServer(serverOptions);
 
-    return await new Promise((resolve, reject) => {
-        server.once('error', err => reject(err));
-        server.listen(SMTP_PORT, SMTP_HOST, () => {
-            server.on('error', err => {
-                logger.error({
-                    msg: 'SMTP Server Error',
-                    err
+    let port = await settings.get('smtpServerPort');
+    let host = await settings.get('smtpServerHost');
+
+    try {
+        await new Promise((resolve, reject) => {
+            server.once('error', err => reject(err));
+            server.listen(port, host, () => {
+                server.on('error', err => {
+                    logger.error({
+                        msg: 'SMTP Server Error',
+                        err
+                    });
                 });
+                resolve();
             });
-            resolve();
         });
-    });
+        await emitChangeEvent(logger, null, 'smtpServerState', 'listening');
+    } catch (err) {
+        await emitChangeEvent(logger, null, 'smtpServerState', 'failed', {
+            error: { message: err.message, code: err.code || null }
+        });
+        throw err;
+    }
+
+    return server;
 }
 
 async function onCommand(command) {
@@ -353,11 +366,11 @@ parentPort.on('message', message => {
 });
 
 init()
-    .then(() => {
+    .then(smtpServer => {
+        let address = smtpServer.server.address();
         logger.debug({
             msg: 'Started SMTP server thread',
-            port: SMTP_PORT,
-            host: SMTP_HOST,
+            address,
             version: packageData.version
         });
     })

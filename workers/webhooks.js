@@ -62,12 +62,6 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
     }
 
     logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
-    /*
-    if (!job.data.path && ![EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY].includes(job.data.event)) {
-        // ignore non-message related events
-        return;
-    }
-    */
 
     let headers = {
         'Content-Type': 'application/json',
@@ -114,6 +108,8 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
             throw err;
         }
 
+        logger.trace({ msg: 'Webhook posted', webhooks, event: job.name, status: res.status });
+
         metrics(logger, 'webhooks', 'inc', {
             event: job.name,
             status: 'success'
@@ -121,7 +117,7 @@ notifyQueue.process('*', NOTIFY_QC, async job => {
     } catch (err) {
         if (err.status === 410 || err.status === 404) {
             // disable webhook
-            logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, err });
+            logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, status: err.status, err });
             await settings.set('webhooksEnabled', false);
             return;
         }
