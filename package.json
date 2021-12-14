@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.4.2",
+    "version": "2.5.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -42,10 +42,10 @@
         "dotenv": "10.0.0",
         "exponential-backoff": "3.1.0",
         "express": "4.17.1",
-        "google-auth-library": "7.10.3",
+        "google-auth-library": "7.10.4",
         "handlebars": "4.7.7",
         "hapi-auth-bearer-token": "8.0.0",
-        "hapi-pino": "9.0.0",
+        "hapi-pino": "9.1.0",
         "hapi-swagger": "14.2.4",
         "he": "1.2.0",
         "html-to-text": "8.1.0",
@@ -83,7 +83,7 @@
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
         "license-checker": "25.0.1",
-        "pino-pretty": "7.2.0",
+        "pino-pretty": "7.3.0",
         "pkg": "5.5.1"
     },
     "pkg": {
