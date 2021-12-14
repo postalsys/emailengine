@@ -5,15 +5,13 @@
 const packageData = require('../package.json');
 const fs = require('fs');
 const pathlib = require('path');
+const settings = require('../lib/settings');
+const { checkLicense } = require('../lib/tools');
 const argv = require('minimist')(process.argv.slice(2));
 const msgpack = require('msgpack5')();
 
 let cmd = ((argv._ && argv._[0]) || '').toLowerCase();
 if (!cmd) {
-    if (argv.license || argv.l) {
-        cmd = 'license';
-    }
-
     if (argv.version || argv.v) {
         cmd = 'version';
     }
@@ -56,43 +54,78 @@ switch (cmd) {
         break;
 
     case 'license':
-        // Display license information
-        fs.readFile(pathlib.join(__dirname, '..', 'LICENSE.txt'), (err, license) => {
-            if (err) {
-                console.error('Failed to load license information');
-                console.error(err);
-                return process.exit(1);
+        {
+            let licenseCmd = ((argv._ && argv._[1]) || '').toLowerCase();
+            if (licenseCmd === 'export') {
+                return settings
+                    .exportLicense()
+                    .then(license => {
+                        console.log(license);
+                        return process.exit(0);
+                    })
+                    .catch(err => {
+                        console.error('Failed to load license information');
+                        console.error(err);
+                        return process.exit(1);
+                    });
             }
 
-            fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
+            if (licenseCmd === 'import') {
+                return settings
+                    .importLicense((argv.license || argv.l || '').toString(), checkLicense)
+                    .then(result => {
+                        if (!result) {
+                            console.error('License key was not imported');
+                        } else {
+                            console.error('License key was imported');
+                        }
+                        return process.exit(0);
+                    })
+                    .catch(err => {
+                        console.error('Failed to import license information');
+                        console.error(err);
+                        return process.exit(1);
+                    });
+            }
+
+            // Display license information
+            fs.readFile(pathlib.join(__dirname, '..', 'LICENSE.txt'), (err, license) => {
                 if (err) {
                     console.error('Failed to load license information');
                     console.error(err);
                     return process.exit(1);
                 }
 
-                console.error('EmailEngine License');
-                console.error('===================');
+                fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
+                    if (err) {
+                        console.error('Failed to load license information');
+                        console.error(err);
+                        return process.exit(1);
+                    }
 
-                console.log(`EmailEngine v${packageData.version}`);
-                console.error(`(c) 2020-2021 Postal Systems`);
-                console.error(`${packageData.license}, full text follows`);
-                console.error('');
+                    console.error('EmailEngine License');
+                    console.error('===================');
 
-                console.error('-'.repeat(78));
-                console.error(license.toString().trim());
+                    console.log(`EmailEngine v${packageData.version}`);
+                    console.error(`(c) 2020-2021 Postal Systems`);
+                    console.error(`${packageData.license}, full text follows`);
+                    console.error('');
 
-                console.error('');
-                console.error('-'.repeat(78));
-                console.error('');
+                    console.error('-'.repeat(78));
+                    console.error(license.toString().trim());
 
-                console.error(licenseComm.toString().trim());
-                console.error('-'.repeat(78));
-                console.error('');
+                    console.error('');
+                    console.error('-'.repeat(78));
+                    console.error('');
 
-                process.exit();
+                    console.error(licenseComm.toString().trim());
+                    console.error('-'.repeat(78));
+                    console.error('');
+
+                    process.exit();
+                });
             });
-        });
+        }
         break;
 
     case 'tokens':

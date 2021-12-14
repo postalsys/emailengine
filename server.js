@@ -744,7 +744,7 @@ async function onCommand(worker, message) {
                     throw new Error('Failed to verify provided license');
                 }
 
-                logger.info({ msg: 'Loaded license', license, source: config.licensePath });
+                logger.info({ msg: 'Loaded license', license, source: 'API' });
 
                 await redis.hset('settings', 'license', licenseFile);
 
@@ -757,7 +757,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'Failed to verify provided license', source: config.licensePath, err });
+                logger.fatal({ msg: 'Failed to verify provided license', source: 'API', err });
                 return false;
             }
         }
@@ -936,6 +936,19 @@ const startApplication = async () => {
             await redis.hset('settings', 'license', licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
+            return process.exit(13);
+        }
+    }
+
+    const preparedLicenseString = process.env.EENGINE_PREPARED_LICENSE || config.preparedLicense;
+    if (preparedLicenseString) {
+        try {
+            let imported = await settings.importLicense(preparedLicenseString, checkLicense);
+            if (imported) {
+                logger.info({ msg: 'Imported license key', source: 'import' });
+            }
+        } catch (err) {
+            logger.fatal({ msg: 'Failed to verify provided license key data', source: 'import', err });
             return process.exit(13);
         }
     }
