@@ -12,6 +12,9 @@
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
     <div class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+        </div>
         <div class="card-body">
 
             <div class="form-group">
@@ -63,6 +66,41 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Queue settings</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Queue actions:</div>
+                    <a class="dropdown-item" href="#" id="clean-queues-btn">
+                        <i class="fas fa-trash-alt fa-sm clean-icon"></i> <span>Clear completed queue entries</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="form-group">
+                <label for="settingsQueueKeep">How many completed/failed queue entries to keep in Bull</label>
+                <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
+                    id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
+                    autocomplete="off" />
+                {{#if errors.queueKeep}}
+                <span class="invalid-feedback">{{errors.queueKeep}}</span>
+                {{/if}}
+                <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
+                    "Failed" and "Completed" lists are empty in Bull UI. Set this value if you want to keep a fixed
+                    number of the latest entries in the list.</small>
+            </div>
+
+        </div>
+    </div>
+
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
@@ -88,5 +126,48 @@
 
         showBt.addEventListener('click', showSecret);
 
+        const sendCleanPayload = async () => {
+
+            const res = await fetch('/admin/config/service/clean', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        let sendingCleanRequest = false;
+        document.getElementById('clean-queues-btn').addEventListener('click', e => {
+            e.preventDefault();
+            if (sendingCleanRequest) {
+                e.stopPropagation();
+                return
+            }
+            sendingCleanRequest = true;
+            let cleanIconElm = document.querySelector('#clean-queues-btn .clean-icon');
+            cleanIconElm.classList.remove('fa-trash-alt');
+            cleanIconElm.classList.add('fa-spinner', 'fa-spin');
+
+            sendCleanPayload().then(data => {
+                sendingCleanRequest = false;
+                cleanIconElm.classList.add('fa-trash-alt');
+                cleanIconElm.classList.remove('fa-spinner', 'fa-spin');
+
+                showToast(data.error ? data.error : (data.success ? 'Cleanup request sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                sendingCleanRequest = false;
+                cleanIconElm.classList.add('fa-trash-alt');
+                cleanIconElm.classList.remove('fa-spinner', 'fa-spin');
+
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
     })
 </script>

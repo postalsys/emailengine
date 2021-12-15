@@ -1020,6 +1020,12 @@ const startApplication = async () => {
         await settings.set('serviceSecret', crypto.randomBytes(16).toString('hex'));
     }
 
+    let existingQueueKeep = await settings.get('queueKeep');
+    if (existingQueueKeep === null) {
+        let QUEUE_KEEP = Math.max((process.env.EENGINE_QUEUE_REMOVE_AFTER && Number(process.env.EENGINE_QUEUE_REMOVE_AFTER)) || 0, 0);
+        await settings.set('queueKeep', QUEUE_KEEP);
+    }
+
     if (preparedToken) {
         try {
             let imported = await tokens.setRawData(preparedToken);

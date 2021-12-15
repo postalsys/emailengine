@@ -8,10 +8,11 @@ const { redis, submitQueue, notifyQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
+const settings = require('../lib/settings');
 const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
 
-const { EMAIL_FAILED_NOTIFY, QUEUE_REMOVE_AFTER } = require('../lib/consts');
+const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -88,9 +89,10 @@ async function notify(account, event, data) {
         payload.data = data;
     }
 
+    let queueKeep = (await settings.get('queueKeep')) || true;
     await notifyQueue.add(event, payload, {
-        removeOnComplete: QUEUE_REMOVE_AFTER,
-        removeOnFail: QUEUE_REMOVE_AFTER,
+        removeOnComplete: queueKeep,
+        removeOnFail: queueKeep,
         attempts: 10,
         backoff: {
             type: 'exponential',
