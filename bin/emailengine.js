@@ -51,7 +51,7 @@ switch (cmd) {
     case 'version':
         // Show version
         console.log(`EmailEngine v${packageData.version} (${packageData.license})`);
-        break;
+        return process.exit();
 
     case 'license':
         {

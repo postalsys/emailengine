@@ -207,7 +207,7 @@ let availableIMAPWorkers = new Set();
 
 let suspendedWorkerTypes = new Set();
 
-const postMessage = (worker, payload, ignoreOffline) => {
+const postMessage = (worker, payload, ignoreOffline, transferList) => {
     if (!onlineWorkers.has(worker)) {
         if (ignoreOffline) {
             return false;
@@ -215,7 +215,7 @@ const postMessage = (worker, payload, ignoreOffline) => {
         throw new Error('Requested worker thread not available');
     }
 
-    return worker.postMessage(payload);
+    return worker.postMessage(payload, transferList);
 };
 
 const countUnassignment = async account => {
@@ -598,6 +598,7 @@ async function call(worker, message, transferList) {
                     mid,
                     message
                 },
+                false,
                 transferList
             );
         } catch (err) {

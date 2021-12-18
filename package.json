@@ -41,8 +41,8 @@
         "bull-arena": "3.29.3",
         "dotenv": "10.0.0",
         "exponential-backoff": "3.1.0",
-        "express": "4.17.1",
-        "google-auth-library": "7.10.4",
+        "express": "4.17.2",
+        "google-auth-library": "7.11.0",
         "handlebars": "4.7.7",
         "hapi-auth-bearer-token": "8.0.0",
         "hapi-pino": "9.1.0",
@@ -76,7 +76,7 @@
         "yargs": "17.3.0"
     },
     "devDependencies": {
-        "eslint": "8.4.1",
+        "eslint": "8.5.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",
