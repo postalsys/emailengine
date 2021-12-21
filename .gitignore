@@ -5,3 +5,4 @@ package-lock.json
 dist/
 yarn.lock
 swagger.json
+static/licenses.html
