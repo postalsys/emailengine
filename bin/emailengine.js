@@ -7,8 +7,12 @@ const fs = require('fs');
 const pathlib = require('path');
 const settings = require('../lib/settings');
 const { checkLicense } = require('../lib/tools');
+const pbkdf2 = require('@phc/pbkdf2');
+const { PDKDF2_ITERATIONS, PDKDF2_SALT_SIZE, PDKDF2_DIGEST } = require('../lib/consts');
+
 const argv = require('minimist')(process.argv.slice(2));
 const msgpack = require('msgpack5')();
+const crypto = require('crypto');
 
 let cmd = ((argv._ && argv._[0]) || '').toLowerCase();
 if (!cmd) {
@@ -32,6 +36,42 @@ switch (cmd) {
         process.title = 'emailengine-scan';
         // Scan Redis keys
         require('../scan');
+        break;
+
+    case 'password':
+        {
+            // Update admin password
+            let password = argv.password || argv.p || crypto.randomBytes(16).toString('hex');
+
+            let updatePassword = async () => {
+                let passwordHash = await pbkdf2.hash(password, {
+                    iterations: PDKDF2_ITERATIONS,
+                    saltSize: PDKDF2_SALT_SIZE,
+                    digest: PDKDF2_DIGEST
+                });
+
+                let authData = await settings.get('authData');
+
+                authData = authData || {};
+                authData.user = authData.user || 'admin';
+                authData.password = passwordHash;
+
+                await settings.set('authData', authData);
+
+                return password;
+            };
+
+            updatePassword()
+                .then(() => {
+                    console.log(password);
+                    return process.exit(0);
+                })
+                .catch(err => {
+                    console.error('Failed to process account password');
+                    console.error(err);
+                    return process.exit(1);
+                });
+        }
         break;
 
     case 'help':

@@ -14,7 +14,7 @@
                     <label for="imap_auth_user">Username</label>
                     <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
                         id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
-                        autocomplete="off" required />
+                        autocomplete="off" required tabindex="1" />
                     {{#if errors.imap_auth_user}}
                     <span class="invalid-feedback">{{errors.imap_auth_user}}</span>
                     {{/if}}
@@ -24,7 +24,7 @@
                     <label for="imap_auth_pass">Password</label>
                     <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
                         id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
-                        autocomplete="off" required />
+                        autocomplete="off" required tabindex="2" />
                     {{#if errors.imap_auth_pass}}
                     <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
                     {{/if}}
@@ -34,7 +34,7 @@
                     <label for="imap_host">Hostname</label>
                     <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="imap_host" name="imap_host"
-                        value="{{values.imap_host}}" required />
+                        value="{{values.imap_host}}" required tabindex="3" />
                     {{#if errors.imap_host}}
                     <span class="invalid-feedback">{{errors.imap_host}}</span>
                     {{/if}}
@@ -44,7 +44,7 @@
                     <label for="imap_port">Port</label>
                     <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="imap_port" name="imap_port"
-                        value="{{values.imap_port}}" required />
+                        value="{{values.imap_port}}" required tabindex="4" />
                     {{#if errors.imap_port}}
                     <span class="invalid-feedback">{{errors.imap_port}}</span>
                     {{/if}}
@@ -53,8 +53,8 @@
                 <div class="form-group form-check">
                     <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
                         data-target="header-list" id="imap_secure" name="imap_secure" {{#if
-                        values.imap_secure}}checked{{/if}} />
-                    <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover"
+                        values.imap_secure}}checked{{/if}} tabindex="5" />
+                    <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
                         data-trigger="hover" title="TLS for IMAP"
                         data-content="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
                             class="fas fa-question-circle"></i></a>
@@ -73,7 +73,7 @@
                     <label for="smtp_auth_user">Username</label>
                     <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
                         id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
-                        autocomplete="off" required />
+                        autocomplete="off" required tabindex="6" />
                     {{#if errors.smtp_auth_user}}
                     <span class="invalid-feedback">{{errors.smtp_auth_user}}</span>
                     {{/if}}
@@ -83,7 +83,7 @@
                     <label for="smtp_auth_pass">Password</label>
                     <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
                         id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
-                        autocomplete="off" required />
+                        autocomplete="off" required tabindex="7" />
                     {{#if errors.smtp_auth_pass}}
                     <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
                     {{/if}}
@@ -93,7 +93,7 @@
                     <label for="smtp_host">Hostname</label>
                     <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="smtp_host" name="smtp_host"
-                        value="{{values.smtp_host}}" required />
+                        value="{{values.smtp_host}}" required tabindex="8" />
                     {{#if errors.smtp_host}}
                     <span class="invalid-feedback">{{errors.smtp_host}}</span>
                     {{/if}}
@@ -103,7 +103,7 @@
                     <label for="smtp_port">Port</label>
                     <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="smtp_port" name="smtp_port"
-                        value="{{values.smtp_port}}" required />
+                        value="{{values.smtp_port}}" required tabindex="9" />
                     {{#if errors.smtp_port}}
                     <span class="invalid-feedback">{{errors.smtp_port}}</span>
                     {{/if}}
@@ -112,8 +112,8 @@
                 <div class="form-group form-check">
                     <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
                         data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
-                        values.smtp_secure}}checked{{/if}} />
-                    <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover"
+                        values.smtp_secure}}checked{{/if}} tabindex="10" />
+                    <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
                         data-trigger="hover" title="TLS for SMTP"
                         data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
                             class="fas fa-question-circle"></i></a>
@@ -129,14 +129,15 @@
         <div class="row mt-3">
             <div class="col-sm">
 
-                <button type="button" id="test-settings-btn" class="btn btn-primary btn-icon-split">
+                <button type="button" id="test-settings-btn" class="btn btn-primary btn-icon-split" tabindex="11">
                     <span class="icon text-white-50">
                         <i class="fas fa-question-circle"></i>
                     </span>
                     <span class="text">Test settings</span>
                 </button>
 
-                <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split" disabled>
+                <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split" disabled
+                    tabindex="11">
                     <span class="icon text-white-50">
                         <i class="fas fa-arrow-right"></i>
                     </span>
