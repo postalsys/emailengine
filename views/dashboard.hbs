@@ -118,6 +118,11 @@
             <li class="list-group-item">Node.js v{{stats.node}}</li>
             <li class="list-group-item">Redis v{{stats.redis}}</li>
             <li class="list-group-item">ImapFlow v{{stats.imapflow}}</li>
+            {{#if stats.build.commit}}
+            <li class="list-group-item">Code version: <a
+                    href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}">{{stats.build.commit}}</a>
+            </li>
+            {{/if}}
         </ul>
     </div>
 </div>

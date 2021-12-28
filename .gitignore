@@ -6,3 +6,4 @@ dist/
 yarn.lock
 swagger.json
 static/licenses.html
+version-info.json
