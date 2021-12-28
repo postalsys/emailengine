@@ -105,10 +105,6 @@ Read about logging options [here](https://emailengine.app/logging)
 
 [Read here](https://docs.emailengine.app/data-compliance/).
 
-## Changelog
-
-Changelog is available for Postal Systems subscribers [here](https://postalsys.com/changelog/package/emailengine-app).
-
 ## Licensing
 
 Dual licensed under [GNU Affero General Public License v3.0](./LICENSE.txt) or later and the [EmailEngine License](./LICENSE_EMAILENGINE.txt).
