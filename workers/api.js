@@ -1402,10 +1402,18 @@ const init = async () => {
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2']) {
+                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
+                }
+
+                if (accountData.sync) {
+                    result.syncTime = accountData.sync;
+                }
+
+                if (accountData.state) {
+                    result.lastError = accountData.state === 'connected' ? null : accountData.lastErrorState;
                 }
 
                 return result;
