@@ -10,12 +10,20 @@
     "addons": ["heroku-redis"],
 
     "env": {
+        "EENGINE_SECRET": {
+            "description": "Encryption secret. Setting this value encrypts account passwords and other secrets stored in Redis. Do not change once configured.",
+            "value": ""
+        },
+        "EENGINE_TIMEOUT": {
+            "description": "Time to wait until an IMAP command is aborted. IMAP is single threaded so new API requests must wait until previous ones have finished. Requests that wait too long are aborted.",
+            "value": "10s"
+        },
         "EENGINE_WORKERS": {
-            "description": "Worker count",
+            "description": "Worker count. Increasing this value requires upgraded plan as you would run out of allowed Redis connections if using the free add-on.",
             "value": "1"
         },
         "EENGINE_HOST": {
-            "description": "Host to bind to",
+            "description": "Host to bind to. Default is 127.0.0.1 and heroku can not access EmailEngine from that address, so set it to 0.0.0.0.",
             "value": "0.0.0.0"
         }
     }

@@ -87,6 +87,9 @@
         "pino-pretty": "7.3.0",
         "pkg": "5.5.1"
     },
+    "engines": {
+        "node": "16.x"
+    },
     "pkg": {
         "scripts": [
             "workers/**/*.js"
