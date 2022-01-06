@@ -32,6 +32,10 @@ Later, when you want to upgrade, just download the newer version and restart the
 
 > **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping EmailEngine output to it: `emailengine | pino-pretty`
 
+## Run on Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/postalsys/emailengine)
+
 ## Screenshots
 
 ![](https://cldup.com/dC_4_suWrh.png)
