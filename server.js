@@ -68,7 +68,7 @@ const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.servic
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-config.dbs.redis = process.env.EENGINE_REDIS || config.dbs.redis;
+config.dbs.redis = process.env.EENGINE_REDIS || process.env.REDIS_URL || config.dbs.redis;
 
 config.workers.imap = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
 

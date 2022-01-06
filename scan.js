@@ -12,7 +12,7 @@ config.dbs = config.dbs || {
     redis: 'redis://127.0.0.1:6379/8'
 };
 
-const redisConf = process.env.EENGINE_REDIS || config.dbs.redis;
+const redisConf = process.env.EENGINE_REDIS || process.env.REDIS_URL || config.dbs.redis;
 const REDIS_CONF = Object.assign(
     {
         // some defaults

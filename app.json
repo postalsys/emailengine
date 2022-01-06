@@ -7,12 +7,5 @@
     "image": "heroku/nodejs",
 
     "success_url": "/admin",
-    "addons": ["heroku-redis"],
-
-    "env": {
-        "EENGINE_REDIS": {
-            "description": "Redis connection URL",
-            "value": "redis://127.0.0.1:6379/8"
-        }
-    }
+    "addons": ["heroku-redis"]
 }
