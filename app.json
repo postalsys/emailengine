@@ -1,0 +1,18 @@
+{
+    "name": "EmailEngine on Heroku",
+    "description": "Headless email client",
+    "logo": "https://emailengine.app/lib_pTNsKLAHHUZrxQKE/6etgoat1wj19t5o5.png?w=160",
+    "repository": "https://github.com/postalsys/emailengine",
+    "keywords": ["smtp", "imap", "rest", "heroku"],
+    "image": "heroku/nodejs",
+
+    "success_url": "/admin",
+    "addons": ["heroku-redis"],
+
+    "env": {
+        "EENGINE_REDIS": {
+            "description": "Redis connection URL",
+            "value": "redis://127.0.0.1:6379/8"
+        }
+    }
+}
