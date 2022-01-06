@@ -75,7 +75,7 @@ config.workers.imap = getWorkerCount(process.env.EENGINE_WORKERS || config.worke
 config.workers.webhooks = Number(process.env.EENGINE_WORKERS_WEBHOOKS) || config.workers.webhooks || 1;
 config.workers.submit = Number(process.env.EENGINE_WORKERS_SUBMIT) || config.workers.submit || 1;
 
-config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
+config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 config.api.host = process.env.EENGINE_HOST || config.api.host;
 
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;

@@ -66,7 +66,7 @@ config.service = config.service || {};
 const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
-const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port;
+const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
 const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
@@ -231,8 +231,8 @@ parentPort.on('message', message => {
 
 const init = async () => {
     const server = Hapi.server({
-        port: (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || config.api.port,
-        host: process.env.EENGINE_HOST || config.api.host,
+        port: API_PORT,
+        host: API_HOST,
 
         router: {
             stripTrailingSlash: true
