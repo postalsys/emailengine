@@ -1,9 +1,10 @@
 {
-    "name": "EmailEngine on Heroku",
-    "description": "Headless email client",
+    "name": "EmailEngine",
+    "description": "Headless email client that allows access to any email account over a REST API.",
     "logo": "https://emailengine.app/lib_pTNsKLAHHUZrxQKE/6etgoat1wj19t5o5.png?w=160",
+    "website": "https://emailengine.app/",
     "repository": "https://github.com/postalsys/emailengine",
-    "keywords": ["smtp", "imap", "rest", "heroku"],
+    "keywords": ["SMTP", "IMAP", "REST", "Email API", "email"],
     "image": "heroku/nodejs",
 
     "success_url": "/admin",
@@ -12,19 +13,23 @@
     "env": {
         "EENGINE_SECRET": {
             "description": "Encryption secret. Setting this value encrypts account passwords and other secrets stored in Redis. Do not change once configured.",
-            "value": ""
+            "generator": "secret",
+            "required": false
         },
         "EENGINE_TIMEOUT": {
-            "description": "Time to wait until an IMAP command is aborted. IMAP is single threaded so new API requests must wait until previous ones have finished. Requests that wait too long are aborted.",
-            "value": "10s"
+            "description": "Time to wait until an IMAP command is aborted. IMAP is single-threaded, so new API requests must wait until previous ones have finished. Requests that wait too long are aborted.",
+            "value": "10s",
+            "required": false
         },
         "EENGINE_WORKERS": {
-            "description": "Worker count. Increasing this value requires upgraded plan as you would run out of allowed Redis connections if using the free add-on.",
-            "value": "1"
+            "description": "The number of IMAP workers to run. Increasing this value requires an upgraded plan as you would run out of allowed Redis connections when using the free Heroku Redis add-on.",
+            "value": "1",
+            "required": true
         },
         "EENGINE_HOST": {
-            "description": "Host to bind to. Default is 127.0.0.1 and heroku can not access EmailEngine from that address, so set it to 0.0.0.0.",
-            "value": "0.0.0.0"
+            "description": "IP address to bind to. Set it to \"0.0.0.0\", otherwise Heroku can not access the application.",
+            "value": "0.0.0.0",
+            "required": true
         }
     }
 }
