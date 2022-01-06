@@ -7,5 +7,12 @@
     "image": "heroku/nodejs",
 
     "success_url": "/admin",
-    "addons": ["heroku-redis"]
+    "addons": ["heroku-redis"],
+
+    "env": {
+        "EENGINE_WORKERS": {
+            "description": "Worker count",
+            "value": "1"
+        }
+    }
 }
