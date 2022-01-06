@@ -13,6 +13,10 @@
         "EENGINE_WORKERS": {
             "description": "Worker count",
             "value": "1"
+        },
+        "EENGINE_HOST": {
+            "description": "Host to bind to",
+            "value": "0.0.0.0"
         }
     }
 }

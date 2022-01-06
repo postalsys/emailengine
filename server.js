@@ -87,7 +87,7 @@ const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_S
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
 const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
-logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
+logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node, env: process.env });
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
