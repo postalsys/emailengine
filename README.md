@@ -76,6 +76,27 @@ By default EmailEngine allows connections only from localhost. To change this ei
 
 ## Deployment
 
+### Ubuntu or Debian
+
+You can use the included install script to set up
+
+-   EmailEngine as a SystemD service
+-   Nginx reverse proxy
+-   ACME.sh and Let's Encrypt HTTPS certoficate
+
+```
+$ wget https://raw.githubusercontent.com/postalsys/emailengine/master/install.sh
+$ chmod +x install.sh
+$ ./install.sh example.com info@example.com
+```
+
+Where
+
+-   **example.com** is the domain name for EmailEngine
+-   **info@example.com** is your email address to generate the HTTPS certificate
+
+> **NB!** Tested with Ubuntu 20.04 and Debian 11. Might not work with other OS versions.
+
 ### SystemD
 
 Read about running EmailEngine as a SystemD service [here](https://emailengine.app/system-d-service)
