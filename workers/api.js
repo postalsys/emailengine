@@ -46,12 +46,15 @@ const {
     messageListSchema,
     mailboxesSchema,
     shortMailboxesSchema,
-    licenseSchema
+    licenseSchema,
+    lastErrorSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
-const OUTLOOK_SCOPES = ['https://outlook.office.com/IMAP.AccessAsUser.All', 'https://outlook.office.com/SMTP.Send', 'offline_access', 'openid', 'profile'];
+
+const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
+const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -536,44 +539,43 @@ const init = async () => {
             switch (provider) {
                 case 'gmail': {
                     const r = await oAuth2Client.getToken(request.query.code);
-                    if (!r || !r.tokens) {
+                    if (!r || !r.access_token) {
                         let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
                         throw error;
                     }
 
-                    // retrieve account email address as this is the username for IMAP/SMTP
-                    oAuth2Client.setCredentials(r.tokens);
                     let profileRes;
                     try {
-                        profileRes = await oAuth2Client.request({ url: 'https://gmail.googleapis.com/gmail/v1/users/me/profile' });
+                        profileRes = await oAuth2Client.request(r.access_token, 'https://gmail.googleapis.com/gmail/v1/users/me/profile');
                     } catch (err) {
-                        if (err.response && err.response.data && err.response.data.error) {
-                            let error = Boom.boomify(new Error(err.response.data.error.message), { statusCode: err.response.data.error.code });
+                        let response = err.oauthRequest && err.oauthRequest.response;
+                        if (response && response.error) {
+                            let error = Boom.boomify(new Error(response.error.message), { statusCode: response.error.code });
                             throw error;
                         }
                         throw err;
                     }
 
-                    if (!profileRes || !profileRes.data || !profileRes.data.emailAddress) {
+                    if (!profileRes || !profileRes || !profileRes.emailAddress) {
                         let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
                         throw error;
                     }
 
-                    accountData.email = accountData.email || (isEmail(profileRes.data.emailAddress) ? profileRes.data.emailAddress : '');
+                    accountData.email = accountData.email || (isEmail(profileRes.emailAddress) ? profileRes.emailAddress : '');
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
                             provider,
-                            accessToken: r.tokens.access_token,
-                            refreshToken: r.tokens.refresh_token,
-                            expires: new Date(r.tokens.expiry_date),
-                            scope: r.tokens.scope,
-                            tokenType: r.tokens.token_type
+                            accessToken: r.access_token,
+                            refreshToken: r.refresh_token,
+                            expires: new Date(Date.now() + r.expires_in * 1000),
+                            scope: r.scope ? r.scope.split(/\s+/) : GMAIL_SCOPES,
+                            tokenType: r.token_type
                         },
                         {
                             auth: {
-                                user: profileRes.data.emailAddress
+                                user: profileRes.emailAddress
                             }
                         }
                     );
@@ -996,15 +998,19 @@ const init = async () => {
                     // Generate the url that will be used for the consent dialog.
                     let authorizeUrl;
                     switch (request.payload.oauth2.provider) {
-                        case 'gmail':
-                            authorizeUrl = oAuth2Client.generateAuthUrl({
-                                access_type: 'offline',
-                                scope: ['https://mail.google.com/'],
-                                state: `account:add:${nonce}`,
-                                prompt: 'consent'
-                            });
+                        case 'gmail': {
+                            let requestData = {
+                                state: `account:add:${nonce}`
+                            };
+
+                            if (request.payload.email) {
+                                requestData.email = request.payload.email;
+                            }
+
+                            authorizeUrl = oAuth2Client.generateAuthUrl(requestData);
 
                             break;
+                        }
                         case 'outlook':
                             authorizeUrl = oAuth2Client.generateAuthUrl({
                                 state: `account:add:${nonce}`
@@ -1357,12 +1363,7 @@ const init = async () => {
                                     .example('connected')
                                     .description('Account state'),
                                 syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
-                                lastError: Joi.object({
-                                    response: Joi.string().example('Request to authentication server failed'),
-                                    serverResponseCode: Joi.string().example('HTTPRequestError')
-                                })
-                                    .allow(null)
-                                    .label('AccountErrorEntry')
+                                lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
                         )
                         .label('AccountEntries')
@@ -1467,7 +1468,9 @@ const init = async () => {
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
 
-                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTP')
+                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTP'),
+
+                    lastError: lastErrorSchema.allow(null)
                 }).label('AccountResponse'),
                 failAction: 'log'
             }
