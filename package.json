@@ -78,7 +78,7 @@
         "xml2js": "0.4.23"
     },
     "devDependencies": {
-        "eslint": "8.5.0",
+        "eslint": "8.6.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",

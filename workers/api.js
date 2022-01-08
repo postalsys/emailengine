@@ -3187,7 +3187,6 @@ const init = async () => {
         }
 
         // Replace error with friendly HTML
-
         const error = response;
         const ctx = {
             message:
