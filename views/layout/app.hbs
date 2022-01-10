@@ -85,10 +85,45 @@
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
 
+                        {{#if systemAlerts}}
+
+                        <!-- Nav Item - Alerts -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter">{{systemAlerts.length}}</span>
+                            </a>
+                            <!-- Dropdown - Alerts -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="alertsDropdown">
+
+                                {{#each systemAlerts}}
+
+                                <a class="dropdown-item d-flex align-items-center" href="{{url}}">
+                                    <div class="mr-3">
+                                        <div class="icon-circle bg-{{level}}">
+                                            <i class="fas fa-{{icon}} text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {{message}}
+                                    </div>
+                                </a>
+
+                                {{/each}}
+
+                            </div>
+                        </li>
+
+                        {{/if}}
+
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
-
-
 
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -125,9 +160,8 @@
                     <div id="toastContainer"
                         style="position: fixed; top: 50px; right: 50px; min-width: 250px; z-index: 10000;"></div>
 
+
                     {{#unless licenseInfo.active}}
-
-
 
                     {{#unless hideLicenseWarning}}
                     <div class="card border-left-danger shadow mb-4">

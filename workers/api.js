@@ -619,7 +619,7 @@ const init = async () => {
                 }
 
                 default: {
-                    throw new Error('FUTURE FEATURE 2');
+                    throw new Error('Unknown OAuth2 provider');
                 }
             }
 
@@ -3171,6 +3171,18 @@ const init = async () => {
         async context(request) {
             const pendingMessages = await flash(redis, request);
             const authData = await settings.get('authData');
+
+            let systemAlerts = [];
+            let upgradeInfo = await settings.get('upgrade');
+            if (upgradeInfo && upgradeInfo.canUpgrade) {
+                systemAlerts.push({
+                    url: 'https://emailengine.app/#downloads',
+                    level: 'info',
+                    icon: 'exclamation-triangle',
+                    message: `An update is available: Emailengine v${upgradeInfo.available}`
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
@@ -3178,7 +3190,8 @@ const init = async () => {
                 licenseInfo: request.app.licenseInfo,
                 authEnabled: !!(authData && authData.password),
                 authData,
-                packageData
+                packageData,
+                systemAlerts
             };
         }
     });

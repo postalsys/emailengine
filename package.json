@@ -40,6 +40,7 @@
         "@phc/pbkdf2": "1.1.14",
         "bull": "3.29.3",
         "bull-arena": "3.29.3",
+        "compare-versions": "^4.1.2",
         "dotenv": "10.0.0",
         "exponential-backoff": "3.1.0",
         "express": "4.17.2",

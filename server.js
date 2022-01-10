@@ -30,7 +30,7 @@ const tokens = require('./lib/tokens');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense, checkForUpgrade } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
@@ -94,6 +94,8 @@ const NO_ACTIVE_HANDLER_RESP = {
     statusCode: 503
 };
 
+// check for upgrades once in 8 hours
+const CHECK_UPGRADE_TIMEOUT = 8 * 3600 * 1000;
 const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
 
 const licenseInfo = {
@@ -699,6 +701,41 @@ function checkActiveLicense() {
     });
 }
 
+let processCheckUpgrade = async () => {
+    try {
+        let updateInfo = await checkForUpgrade();
+        if (updateInfo.canUpgrade) {
+            logger.info({ msg: 'Found an upgrade for EmailEngine', updateInfo });
+
+            updateInfo.checked = Date.now();
+            await redis.hset('settings', 'upgrade', JSON.stringify(updateInfo));
+        } else {
+            await redis.hdel('settings', 'upgrade');
+        }
+    } catch (err) {
+        logger.error({ msg: 'Failed to check updates', err });
+    }
+};
+
+let upgradeCheckTimer = false;
+let upgradeCheckHandler = async () => {
+    let upgradeInfoExists = await redis.hexists('settings', 'upgrade');
+    if (!upgradeInfoExists) {
+        // nothing to do here
+        return;
+    }
+    await processCheckUpgrade();
+    upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
+    licenseCheckTimer.unref();
+};
+
+function checkUpgrade() {
+    clearTimeout(upgradeCheckTimer);
+    upgradeCheckHandler().catch(err => {
+        logger.error('Failed to process upgrade check', err);
+    });
+}
+
 async function updateQueueCounters() {
     for (let queue of ['notify', 'submit']) {
         const [resActive, resDelayed] = await redis.multi().llen(`bull:${queue}:active`).zcard(`bull:${queue}:delayed`).exec();
@@ -922,6 +959,7 @@ process.on('SIGINT', () => {
 // START APPLICATION
 
 const startApplication = async () => {
+    // process license
     if (config.licensePath) {
         try {
             let stat = await fs.stat(config.licensePath);
@@ -975,6 +1013,11 @@ const startApplication = async () => {
     if (!licenseInfo.active) {
         logger.fatal({ msg: 'No active license key provided. Running in limited mode.' });
     }
+
+    // check for updates, run as a promise to not block other activities
+    processCheckUpgrade().catch(err => {
+        logger.error({ msg: 'Failed to process upgrade check', err });
+    });
 
     if (preparedSettings) {
         // set up configuration
@@ -1080,6 +1123,9 @@ startApplication()
         }, 1000).unref();
 
         licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
+        licenseCheckTimer.unref();
+
+        upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
         licenseCheckTimer.unref();
     })
     .catch(err => {
