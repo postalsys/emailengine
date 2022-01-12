@@ -43,6 +43,11 @@ switch (cmd) {
             // Update admin password
             let password = argv.password || argv.p || crypto.randomBytes(16).toString('hex');
 
+            if (!password || typeof password !== 'string' || password.length < 8) {
+                console.error('Password must be at least 8 characters');
+                return process.exit(1);
+            }
+
             let updatePassword = async () => {
                 let passwordHash = await pbkdf2.hash(password, {
                     iterations: PDKDF2_ITERATIONS,
@@ -58,12 +63,13 @@ switch (cmd) {
 
                 await settings.set('authData', authData);
 
-                return password;
+                return { password, passwordHash };
             };
 
             updatePassword()
-                .then(() => {
-                    console.log(password);
+                .then(res => {
+                    let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
+                    console.log(returnValue);
                     return process.exit(0);
                 })
                 .catch(err => {

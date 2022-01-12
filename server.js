@@ -140,6 +140,20 @@ if (preparedTokenString) {
     }
 }
 
+let preparedPassword = false;
+const preparedPasswordString = process.env.EENGINE_PREPARED_PASSWORD || config.preparedPassword;
+if (preparedPasswordString) {
+    try {
+        preparedPassword = Buffer.from(preparedPasswordString, 'base64url').toString();
+        if (!preparedPassword || preparedPassword.indexOf('$pbkdf2') !== 0) {
+            throw new Error('Invalid password format');
+        }
+    } catch (err) {
+        logger.error({ msg: 'Received invalid password string', input: preparedPasswordString, err });
+        process.exit(1);
+    }
+}
+
 logger.debug({ msg: 'IMAP Worker Count', workersImap: config.workers.imap });
 logger.debug({ msg: 'Webhooks Worker Count', workersWebhooks: config.workers.webhooks });
 logger.debug({ msg: 'Submission Worker Count', workersWebhooks: config.workers.submit });
@@ -1080,6 +1094,21 @@ const startApplication = async () => {
             }
         } catch (err) {
             logger.error({ msg: 'Failed to import token', token: preparedToken.id });
+        }
+    }
+
+    if (preparedPassword) {
+        try {
+            let authData = await settings.get('authData');
+
+            authData = authData || {};
+            authData.user = authData.user || 'admin';
+            authData.password = preparedPassword;
+
+            await settings.set('authData', authData);
+            logger.debug({ msg: 'Imported hashed password', hash: preparedPassword });
+        } catch (err) {
+            logger.error({ msg: 'Failed to import password', hash: preparedPassword });
         }
     }
 
