@@ -1086,7 +1086,7 @@ const init = async () => {
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
 
-                    oauth2: oauth2Schema.allow(false).description('OAuth2 configuration').label('OAuth2')
+                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2')
                 }).label('CreateAccount')
             },
 
@@ -1157,11 +1157,9 @@ const init = async () => {
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
-
-                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
-
-                    oauth2: oauth2Schema.allow(false).description('OAuth2 configuration').label('OAuth2')
+                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
+                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
+                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
                 }).label('UpdateAccount')
             },
 

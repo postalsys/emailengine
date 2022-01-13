@@ -9,6 +9,10 @@ try {
 
 process.title = 'emailengine';
 
+const os = require('os');
+process.env.UV_THREADPOOL_SIZE =
+    process.env.UV_THREADPOOL_SIZE && !isNaN(process.env.UV_THREADPOOL_SIZE) ? Number(process.env.UV_THREADPOOL_SIZE) : Math.max(os.cpus().length, 4);
+
 // cache before wild-config
 const argv = process.argv.slice(2);
 
@@ -80,14 +84,22 @@ config.api.host = process.env.EENGINE_HOST || config.api.host;
 
 config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
 
-// legacy options, will be removed
+// legacy options, will be removed in the future
 const SMTP_ENABLED = 'EENGINE_SMTP_ENABLED' in process.env ? getBoolean(process.env.EENGINE_SMTP_ENABLED) : getBoolean(config.smtp.enabled);
 const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
 const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || Number(config.smtp.port) || 2525;
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
 const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
-logger.info({ msg: 'Starting EmailEngine', version: packageData.version, node: process.versions.node });
+logger.info({
+    msg: 'Starting EmailEngine',
+    version: packageData.version,
+    node: process.versions.node,
+    uvThreadpoolSize: Number(process.env.UV_THREADPOOL_SIZE),
+    workersImap: config.workers.imap,
+    workersWebhooks: config.workers.webhooks,
+    workersSubmission: config.workers.submit
+});
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
@@ -153,10 +165,6 @@ if (preparedPasswordString) {
         process.exit(1);
     }
 }
-
-logger.debug({ msg: 'IMAP Worker Count', workersImap: config.workers.imap });
-logger.debug({ msg: 'Webhooks Worker Count', workersWebhooks: config.workers.webhooks });
-logger.debug({ msg: 'Submission Worker Count', workersWebhooks: config.workers.submit });
 
 const metrics = {
     threadStarts: new promClient.Counter({
