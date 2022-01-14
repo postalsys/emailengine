@@ -654,7 +654,7 @@ const init = async () => {
 
             validate: {
                 options: {
-                    stripUnknown: false,
+                    stripUnknown: true,
                     abortEarly: false,
                     convert: true
                 },
