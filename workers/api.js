@@ -40,8 +40,11 @@ const {
     addressSchema,
     settingsQuerySchema,
     imapSchema,
+    imapUpdateSchema,
     smtpSchema,
+    smtpUpdateSchema,
     oauth2Schema,
+    oauth2UpdateSchema,
     messageDetailsSchema,
     messageListSchema,
     mailboxesSchema,
@@ -1177,9 +1180,9 @@ const init = async () => {
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
-                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
-                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
+                    imap: Joi.object(imapUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
+                    smtp: Joi.object(smtpUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
+                    oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
                 }).label('UpdateAccount')
             },
 
@@ -3201,6 +3204,35 @@ const init = async () => {
                 });
             }
 
+            let outlookAuthFlag = await settings.get('outlookAuthFlag');
+            if (outlookAuthFlag && outlookAuthFlag.message) {
+                systemAlerts.push({
+                    url: '/admin/config/oauth/outlook',
+                    level: 'danger',
+                    icon: 'unlock-alt',
+                    message: outlookAuthFlag.message
+                });
+            }
+
+            let gmailAuthFlag = await settings.get('gmailAuthFlag');
+            if (gmailAuthFlag && gmailAuthFlag.message) {
+                systemAlerts.push({
+                    url: '/admin/config/oauth/gmail',
+                    level: 'danger',
+                    icon: 'unlock-alt',
+                    message: gmailAuthFlag.message
+                });
+            }
+
+            if (!request.app.licenseInfo || !request.app.licenseInfo.active) {
+                systemAlerts.push({
+                    url: '/admin/config/license',
+                    level: 'warning',
+                    icon: 'key',
+                    message: 'License key is not registered'
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
@@ -3209,7 +3241,8 @@ const init = async () => {
                 authEnabled: !!(authData && authData.password),
                 authData,
                 packageData,
-                systemAlerts
+                systemAlerts,
+                embeddedTemplateHeader: await settings.get('templateHeader')
             };
         }
     });

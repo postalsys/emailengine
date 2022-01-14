@@ -49,6 +49,13 @@
 
                         <div class="p-5">
 
+                            {{#if embeddedTemplateHeader}}
+                            <div>
+                                {{{embeddedTemplateHeader}}}
+                            </div>
+                            {{/if}}
+
+
                             {{{content}}}
                         </div>
 
