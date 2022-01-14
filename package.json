@@ -85,7 +85,7 @@
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
         "pino-pretty": "7.3.0",
-        "pkg": "5.5.1"
+        "pkg": "5.5.2"
     },
     "engines": {
         "node": "16.x"

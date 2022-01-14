@@ -3181,6 +3181,35 @@ const init = async () => {
                 });
             }
 
+            let outlookAuthFlag = await settings.get('outlookAuthFlag');
+            if (outlookAuthFlag && outlookAuthFlag.message) {
+                systemAlerts.push({
+                    url: '/admin/config/oauth/outlook',
+                    level: 'danger',
+                    icon: 'unlock-alt',
+                    message: outlookAuthFlag.message
+                });
+            }
+
+            let gmailAuthFlag = await settings.get('gmailAuthFlag');
+            if (gmailAuthFlag && gmailAuthFlag.message) {
+                systemAlerts.push({
+                    url: '/admin/config/oauth/gmail',
+                    level: 'danger',
+                    icon: 'unlock-alt',
+                    message: gmailAuthFlag.message
+                });
+            }
+
+            if (!request.app.licenseInfo || !request.app.licenseInfo.active) {
+                systemAlerts.push({
+                    url: '/admin/config/license',
+                    level: 'warning',
+                    icon: 'key',
+                    message: 'License key is not registered'
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
