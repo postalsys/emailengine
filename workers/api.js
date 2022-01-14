@@ -40,8 +40,11 @@ const {
     addressSchema,
     settingsQuerySchema,
     imapSchema,
+    imapUpdateSchema,
     smtpSchema,
+    smtpUpdateSchema,
     oauth2Schema,
+    oauth2UpdateSchema,
     messageDetailsSchema,
     messageListSchema,
     mailboxesSchema,
@@ -1157,9 +1160,9 @@ const init = async () => {
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
-                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
-                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
+                    imap: Joi.object(imapUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
+                    smtp: Joi.object(smtpUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
+                    oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
                 }).label('UpdateAccount')
             },
 
