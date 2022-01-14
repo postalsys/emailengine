@@ -122,14 +122,14 @@
 
             <div class="form-group">
 
-                <label for="templateHeaderElement">Template header</label>
+                <label for="templateHeaderElement">Template header for public pages</label>
                 <textarea class="form-control droptxt {{#if errors.templateHeader}}is-invalid{{/if}}"
                     id="templateHeaderElement" name="templateHeader" rows="9"
                     spellcheck="false">{{values.templateHeader}}</textarea>
                 {{#if errors.templateHeader}}
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Insert here the HTML code you want to display on the top of public
+                <small class="form-text text-muted">Insert here the HTML code you want to display on top of public
                     pages like the hosted authentication form.</small>
             </div>
 
