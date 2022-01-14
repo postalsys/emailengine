@@ -139,7 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = e.dataTransfer.files[0];
             dropfile(elm, file);
         });
+    }
 
+    for (let elm of document.querySelectorAll('.autoselect')) {
         elm.addEventListener('click', () => {
             elm.focus();
             elm.select();

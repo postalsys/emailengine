@@ -101,6 +101,41 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Template</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Template actions:</div>
+                    <a class="dropdown-item" href="#" id="preview-header-btn">
+                        <i class="fas fa-eye fa-sm clean-icon"></i> <span>Preview</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group">
+
+                <label for="templateHeaderElement">Template header</label>
+                <textarea class="form-control droptxt {{#if errors.templateHeader}}is-invalid{{/if}}"
+                    id="templateHeaderElement" name="templateHeader" rows="9"
+                    spellcheck="false">{{values.templateHeader}}</textarea>
+                {{#if errors.templateHeader}}
+                <span class="invalid-feedback">{{errors.templateHeader}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Insert here the HTML code you want to display on the top of public
+                    pages like the hosted authentication form.</small>
+            </div>
+
+        </div>
+    </div>
+
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
@@ -110,6 +145,11 @@
         </button>
     </div>
 
+</form>
+
+<form id="preview-form" method="post" action="/admin/config/service/preview">
+    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="templateHeader" id="preview-header-elm">
 </form>
 
 <script>
@@ -168,6 +208,16 @@
 
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
+        });
+
+
+        document.getElementById('preview-header-btn').addEventListener('click', e => {
+            e.preventDefault();
+            let previewWindow = window.open('about:blank', 'preview-window', '');
+            let previewForm = document.getElementById('preview-form');
+            previewForm.target = 'preview-window';
+            document.getElementById('preview-header-elm').value = document.getElementById('templateHeaderElement').value;
+            previewForm.submit();
         });
     })
 </script>

@@ -55,6 +55,7 @@
         "ioredis": "4.28.3",
         "joi": "17.5.0",
         "jquery": "3.6.0",
+        "js-beautify": "^1.14.0",
         "libmime": "5.0.0",
         "license-checker": "25.0.1",
         "linkifyjs": "2.1.9",

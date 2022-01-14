@@ -3218,7 +3218,8 @@ const init = async () => {
                 authEnabled: !!(authData && authData.password),
                 authData,
                 packageData,
-                systemAlerts
+                systemAlerts,
+                embeddedTemplateHeader: await settings.get('templateHeader')
             };
         }
     });
