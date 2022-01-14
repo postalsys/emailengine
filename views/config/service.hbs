@@ -129,8 +129,12 @@
                 {{#if errors.templateHeader}}
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Insert here the HTML code you want to display on top of public
-                    pages like the hosted authentication form.</small>
+                <small class="form-text text-muted">Insert here the HTML code you want to display <u
+                        data-toggle="popover" data-trigger="hover" data-html="true"
+                        data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
+                        style="cursor: default;">on
+                        top of
+                        public</u> like the hosted authentication form.</small>
             </div>
 
         </div>
@@ -219,5 +223,5 @@
             document.getElementById('preview-header-elm').value = document.getElementById('templateHeaderElement').value;
             previewForm.submit();
         });
-    })
+    });
 </script>
