@@ -658,11 +658,31 @@ const init = async () => {
                 failAction,
 
                 query: Joi.object({
-                    state: Joi.string().max(1024).example('account:add:12345').description('OAuth2 state info'),
-                    code: Joi.string().max(1024).example('67890...').description('OAuth2 setup code'),
-                    scope: Joi.string().max(1024).example('https://mail.google.com/').description('OAuth2 scopes'),
-                    client_info: Joi.string().base64({ urlSafe: true, paddingRequired: false }).description('Outlook client info'),
-                    error: Joi.string().max(1024).example('access_denied').description('OAuth2 Error')
+                    state: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('account:add:12345')
+                        .description('OAuth2 state info'),
+                    code: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('67890...')
+                        .description('OAuth2 setup code'),
+                    scope: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('https://mail.google.com/')
+                        .description('OAuth2 scopes'),
+                    client_info: Joi.string()
+                        .empty('')
+                        .max(1024 * 1024)
+                        .base64({ urlSafe: true, paddingRequired: false })
+                        .description('Outlook client info'),
+                    error: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('access_denied')
+                        .description('OAuth2 Error')
                 }).label('CreateAccount')
             },
 
