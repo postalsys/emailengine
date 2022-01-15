@@ -1,0 +1,22 @@
+'use strict';
+
+const fetch = require('node-fetch');
+
+const AUTH =
+    'eyJ0eXAiOiJKV1QiLCJub25jZSI6ImdvZlZwT0o5TDlsclVNRXc4NFNtQlpKcHBwT29GOG01QVhVOHhrT203THMiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik1yNS1BVWliZkJpaTdOZDFqQmViYXhib1hXMCIsImtpZCI6Ik1yNS1BVWliZkJpaTdOZDFqQmViYXhib1hXMCJ9.eyJhdWQiOiJodHRwczovL291dGxvb2sub2ZmaWNlLmNvbSIsImlzcyI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0L2MyY2M1ZjljLWUzNDYtNDEyYi1iOWZjLTgxOWQxNDg2YThiNy8iLCJpYXQiOjE2NDIyNDkyNTIsIm5iZiI6MTY0MjI0OTI1MiwiZXhwIjoxNjQyMjU0MDcxLCJhY2N0IjowLCJhY3IiOiIxIiwiYWlvIjoiQVRRQXkvOFRBQUFBRUhYdlFmUk5WSVVtN2dvMkxhbE5tcnVremNmWHRmTkdvMFl6ZjBuRStYcjJRUEJqempPQnlIK1hrREMvcFY3aCIsImFtciI6WyJwd2QiXSwiYXBwX2Rpc3BsYXluYW1lIjoiRW1haWxFbmdpbmUgZm9yIFNSVi5ERVYiLCJhcHBpZCI6Ijc4MGNiZDc4LTEyM2ItNDMxOC1hMmU3LWQwZDVkMjZlMjg3NiIsImFwcGlkYWNyIjoiMSIsImVuZnBvbGlkcyI6W10sImZhbWlseV9uYW1lIjoiUmVpbm1hbiIsImdpdmVuX25hbWUiOiJBbmRyaXMiLCJpcGFkZHIiOiI5MC4xOTAuMTczLjkwIiwibmFtZSI6IkFuZHJpcyBSZWlubWFuIiwib2lkIjoiYWIwOTk2ZjAtNTM1MS00ZGZjLTgwZTctNjY4NzJmNzMyOTk2IiwicHVpZCI6IjEwMDMyMDAxQ0UzMkNBQTciLCJyaCI6IjAuQVU0QW5GX013a2JqSzBHNV9JR2RGSWFvdDNpOURIZzdFaGhEb3VmUTFkSnVLSFpPQUZrLiIsInNjcCI6IklNQVAuQWNjZXNzQXNVc2VyLkFsbCBTTVRQLlNlbmQgVXNlci5SZWFkIiwic2lkIjoiMDkyNGEyODMtMzMzNS00NDBhLWFiNDMtZGE2ZjAzMmM5ODljIiwic2lnbmluX3N0YXRlIjpbImttc2kiXSwic3ViIjoiUU1rd0JidWtiREFwQU1TcW82dm44YzNnQ2RqdWE2Tndkc05uczlxUnpvRSIsInRpZCI6ImMyY2M1ZjljLWUzNDYtNDEyYi1iOWZjLTgxOWQxNDg2YThiNyIsInVuaXF1ZV9uYW1lIjoiYW5kcmlzQHNydi5kZXYiLCJ1cG4iOiJhbmRyaXNAc3J2LmRldiIsInV0aSI6IjRPaDgyREdPV0V1SFUyd0RxY3JjQWciLCJ2ZXIiOiIxLjAiLCJ3aWRzIjpbIjYyZTkwMzk0LTY5ZjUtNDIzNy05MTkwLTAxMjE3NzE0NWUxMCIsImI3OWZiZjRkLTNlZjktNDY4OS04MTQzLTc2YjE5NGU4NTUwOSJdfQ.vUpo-oOZ6N-BYVBCbet75p_Y_GpnFc8TbHVqJAPUHpjvSS6gewl48xazDl_geNvcKmsoQoNPVb_2k6i8ZrL76Vh8Ja2LE6jgtIqHirVQh_Awj4XUhg_zSzDUMXPkNU8mjQJnJnKBu9ZxJd0TqQgcQ1dFUupVdkMt43uZcJYnENtNv_-lMA1ITsVyOcQA6VK47rk_5SNY-05N06It_FTaInhwfJVP0qvPe8gdIBSX_75YG4_rk5gLoiKuVFlkZ5FnXxOAJ5w-suUsunt9l-o05mV5XqNMoZOVNF37i_hdd_gnVFvCK-4EjvKMJvBaczE0dP_Bobw8VZU5gpqLXmfwsA';
+
+const uid = 'ab0996f0-5351-4dfc-80e7-66872f732996';
+
+const main = async () => {
+    let res = await fetch(`https://graph.microsoft.com/v1.0/users/${uid}`, {
+        method: 'get',
+        headers: {
+            Authorization: `Bearer ${AUTH}`
+        }
+    });
+
+    console.log('OK', res.ok);
+    console.log(JSON.stringify(await res.json()));
+};
+
+main().catch(err => console.error(err));

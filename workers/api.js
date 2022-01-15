@@ -58,6 +58,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
+const { encode } = require('punycode');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -586,21 +587,53 @@ const init = async () => {
                 }
 
                 case 'outlook': {
-                    const clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64').toString()) : false;
-
-                    if (!clientInfo || !clientInfo.preferred_username) {
-                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
-                        throw error;
-                    }
-
                     const r = await oAuth2Client.getToken(request.query.code);
                     if (!r || !r.access_token) {
                         let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
                         throw error;
                     }
 
-                    accountData.name = accountData.name || clientInfo.name || '';
-                    accountData.email = accountData.email || (isEmail(clientInfo.preferred_username) ? clientInfo.preferred_username : '');
+                    let userInfo = {};
+
+                    let clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString()) : false;
+
+                    if (clientInfo && typeof clientInfo.name === 'string') {
+                        userInfo.name = clientInfo.name;
+                    }
+
+                    if (clientInfo && clientInfo.preferred_username && isEmail(clientInfo.preferred_username)) {
+                        userInfo.email = clientInfo.preferred_username;
+                    }
+
+                    if (r.id_token && typeof r.id_token === 'string') {
+                        let [, encodedValue] = r.id_token.split('.');
+                        if (encodedValue) {
+                            try {
+                                let decodedValue = JSON.parse(Buffer.from(encodedValue, 'base64url').toString());
+                                if (decodedValue && typeof decodedValue.name === 'string') {
+                                    userInfo.name = decodedValue.name;
+                                }
+
+                                if (decodedValue && typeof decodedValue.email === 'string' && isEmail(decodedValue.email)) {
+                                    userInfo.email = decodedValue.email;
+                                }
+
+                                if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
+                                    userInfo.email = decodedValue.preferred_username;
+                                }
+                            } catch (err) {
+                                request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
+                            }
+                        }
+                    }
+
+                    if (!userInfo.email) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.name = accountData.name || userInfo.name || '';
+                    accountData.email = accountData.email || userInfo.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -614,7 +647,7 @@ const init = async () => {
                         },
                         {
                             auth: {
-                                user: clientInfo.preferred_username
+                                user: userInfo.email
                             }
                         }
                     );
