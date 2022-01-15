@@ -554,7 +554,15 @@ const init = async () => {
                     } catch (err) {
                         let response = err.oauthRequest && err.oauthRequest.response;
                         if (response && response.error) {
-                            let error = Boom.boomify(new Error(response.error.message), { statusCode: response.error.code });
+                            let message;
+                            if (/Gmail API has not been used in project/.test(response.error.message)) {
+                                message =
+                                    'Can not perform requests against Gmail API as the project has not been enabled. If you are the admin, check notifications on the dashboard.';
+                            } else {
+                                message = response.error.message;
+                            }
+
+                            let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
                             throw error;
                         }
                         throw err;
@@ -3240,7 +3248,7 @@ const init = async () => {
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
-                    url: '/admin/config/oauth/outlook',
+                    url: outlookAuthFlag.url || '/admin/config/oauth/outlook',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: outlookAuthFlag.message
@@ -3250,7 +3258,7 @@ const init = async () => {
             let gmailAuthFlag = await settings.get('gmailAuthFlag');
             if (gmailAuthFlag && gmailAuthFlag.message) {
                 systemAlerts.push({
-                    url: '/admin/config/oauth/gmail',
+                    url: gmailAuthFlag.url || '/admin/config/oauth/gmail',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailAuthFlag.message
