@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.9.2",
+    "version": "2.10.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -41,7 +41,7 @@
         "bull": "3.29.3",
         "bull-arena": "3.29.3",
         "compare-versions": "4.1.3",
-        "dotenv": "12.0.3",
+        "dotenv": "12.0.4",
         "exponential-backoff": "3.1.0",
         "express": "4.17.2",
         "handlebars": "4.7.7",
@@ -79,7 +79,7 @@
         "xml2js": "0.4.23"
     },
     "devDependencies": {
-        "eslint": "8.6.0",
+        "eslint": "8.7.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.3.0",
         "grunt": "1.4.1",
