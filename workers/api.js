@@ -3265,6 +3265,16 @@ const init = async () => {
                 });
             }
 
+            let gmailServiceAuthFlag = await settings.get('gmailServiceAuthFlag');
+            if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
+                systemAlerts.push({
+                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/gmailService',
+                    level: 'danger',
+                    icon: 'unlock-alt',
+                    message: gmailServiceAuthFlag.message
+                });
+            }
+
             if (!request.app.licenseInfo || !request.app.licenseInfo.active) {
                 systemAlerts.push({
                     url: '/admin/config/license',

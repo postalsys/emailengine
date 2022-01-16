@@ -15,6 +15,10 @@
     <li class="nav-item">
         <a class="nav-link {{#if activeOutlook}}active{{/if}}" href="/admin/config/oauth/outlook">Outlook</a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link {{#if activeGmailService}}active{{/if}}" href="/admin/config/oauth/gmailService">Gmail
+            Service Accounts</a>
+    </li>
 </ul>
 
 <div class="card border-left-info shadow mb-4">
@@ -30,6 +34,13 @@
                 <div>Read about setting up the OAuth2 project in Google Cloud from <a
                         href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
                 </div>
+                {{/if}}
+
+                {{#if activeGmailService}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"https://mail.google.com/"</code>
+                </ul>
                 {{/if}}
 
                 {{#if activeOutlook}}
@@ -59,6 +70,47 @@
 
             <p>Setting up OAuth2 credentials allows refreshing expired access tokens.</p>
 
+            {{#if activeGmailService}}
+
+            <div class="form-group">
+                <label for="serviceFile">
+                    Extract service values from a JSON formatted key file (optional)
+                </label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="serviceFile">
+                    <label class="custom-file-label" for="serviceFile">Choose service key file</label>
+                </div>
+                <small class="form-text text-muted">Choose the file you got when you created a new service key and
+                    selected JSON as the output format.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="serviceClient">
+                    Service client
+                </label>
+                <input type="text" class="form-control {{#if errors.serviceClient}}is-invalid{{/if}}" id="serviceClient"
+                    name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID…" />
+                {{#if errors.serviceClient}}
+                <span class="invalid-feedback">{{errors.serviceClient}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OAuth2 Service Client ID</small>
+            </div>
+
+            <div class="form-group">
+
+                <label for="serviceKey">Secret service key</label>
+
+                <textarea class="form-control droptxt autoselect {{#if errors.serviceKey}}is-invalid{{/if}}"
+                    id="serviceKey" name="serviceKey" rows="4" spellcheck="false" {{#if
+                    hasServiceKey}}placeholder="Service key is set but not shown…" {{else}}
+                    placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;…"
+                    {{/if}}>{{values.serviceKey}}</textarea>
+                {{#if errors.serviceKey}}
+                <span class="invalid-feedback">{{errors.serviceKey}}</span>
+                {{/if}}
+            </div>
+
+            {{else}}
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
                     id="oauth2Enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
@@ -68,8 +120,7 @@
                 <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
                 {{/if}}
                 <small class="form-text text-muted">If enabled, then <em>"{{providerName}}"</em> is shown as an account
-                    type option when adding an
-                    account.</small>
+                    type option when adding an account using the hosted authentication form.</small>
             </div>
 
             <div class="form-group">
@@ -129,6 +180,8 @@
                 <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow,
                     then set it to <code>{{defaultRedirectUrl}}</code></small>
             </div>
+            {{/if}}
+
         </div>
     </div>
 
@@ -141,3 +194,46 @@
         </button>
     </div>
 </form>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let serviceFileElm = document.getElementById('serviceFile');
+        if (serviceFileElm) {
+            serviceFileElm.addEventListener('change', e => {
+                e.preventDefault();
+
+                if (!serviceFileElm.files || !serviceFileElm.files.length) {
+                    return;
+                }
+
+                let fr = new FileReader();
+                fr.onload = (evt) => {
+                    let data;
+                    try {
+                        data = JSON.parse(evt.target.result);
+                    } catch (err) {
+                        return showToast('Selected file is not JSON formatted', 'alert-triangle');
+                    }
+
+                    if (data.type !== 'service_account') {
+                        return showToast('Selected file is not in a service key format', 'alert-triangle');
+                    }
+
+                    if (!data.client_id || !data.private_key) {
+                        return showToast('Selected file does not contain required values', 'alert-triangle');
+                    }
+
+                    document.getElementById('serviceClient').value = data.client_id;
+                    document.getElementById('serviceKey').value = data.private_key;
+
+                    return showToast('Loaded service values from file', 'check-circle');
+                };
+                fr.readAsText(serviceFileElm.files[0]);
+            });
+        }
+
+    });
+
+</script>
