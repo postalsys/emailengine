@@ -277,7 +277,10 @@ const init = async () => {
             contact: {
                 name: 'Postal Systems OÜ',
                 email: 'info@emailengine.app'
-            }
+            },
+            description: `You will need an Access Token to use this API (generate one <a href="/admin/tokens" target="_parent">here</a>).
+
+When making API calls remember that requests against the same account are queued and not executed in parallel. If a previous request takes too much time to finish, a queued request might time out before EmailEngine can run it.`
         },
 
         securityDefinitions: {
