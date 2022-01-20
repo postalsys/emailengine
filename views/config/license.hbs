@@ -5,14 +5,19 @@
 
         License key
 
+        {{#if licenseInfo.details.trial}}
+        <span class="badge badge-warning">in trial</span>
+        {{else}}
+
         {{#if licenseInfo.active}}
 
         <span class="badge badge-success">active</span>
 
         {{else}}
 
-        <span class="badge badge-warning">not provided</span>
+        <span class="badge badge-danger">not provided</span>
 
+        {{/if}}
         {{/if}}
     </h1>
 </div>
@@ -78,6 +83,13 @@
 
             <dt class="col-sm-3">Environment</dt>
             <dd class="col-sm-9">{{licenseInfo.details.hostname}}</dd>
+
+
+            {{#if licenseDetails.expires}}
+            <dt class="col-sm-3">License expires</dt>
+            <dd class="col-sm-9">in {{licenseDetails.expiresDays}} days</dd>
+            {{/if}}
+
         </dl>
 
 

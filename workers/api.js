@@ -3284,11 +3284,28 @@ const init = async () => {
                 });
             }
 
+            let licenseDetails = Object.assign({}, (request.app.licenseInfo && request.app.licenseInfo.details) || {});
+
+            if (licenseDetails.expires) {
+                let delayMs = new Date(licenseDetails.expires) - Date.now();
+                licenseDetails.expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
+            }
+
+            if (licenseDetails.expires && licenseDetails.expiresDays < 31) {
+                systemAlerts.push({
+                    url: '/admin/config/license',
+                    level: 'warning',
+                    icon: 'key',
+                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} days`
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
+                licenseDetails,
                 authEnabled: !!(authData && authData.password),
                 authData,
                 packageData,

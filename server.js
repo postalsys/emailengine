@@ -678,6 +678,15 @@ async function assignAccounts() {
 
 let licenseCheckTimer = false;
 let licenseCheckHandler = async () => {
+    if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
+        // clear expired license
+
+        logger.info({ msg: 'License expired', license: licenseInfo.details });
+
+        licenseInfo.active = false;
+        licenseInfo.details = false;
+    }
+
     if (!licenseInfo.active && !suspendedWorkerTypes.size) {
         logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
 
