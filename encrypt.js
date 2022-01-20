@@ -13,6 +13,8 @@ const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
 const getSecret = require('./lib/get-secret');
 
+const { REDIS_PREFIX } = require('./lib/consts');
+
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
 async function processSecret(value, encryptSecret) {
@@ -76,12 +78,12 @@ async function main() {
 
     // convert settings
     for (let key of encryptedKeys) {
-        let value = await redis.hget('settings', key);
+        let value = await redis.hget(`${REDIS_PREFIX}settings`, key);
         if (value && typeof value === 'string') {
             try {
                 let updated = await processSecret(value, encryptSecret);
                 if (updated !== value) {
-                    await redis.hset('settings', key, updated);
+                    await redis.hset(`${REDIS_PREFIX}settings`, key, updated);
                     console.log(`${key}: Updated setting value`);
                 }
             } catch (err) {
@@ -92,9 +94,9 @@ async function main() {
     }
 
     let updatedAccounts = 0;
-    let accounts = await redis.smembers('ia:accounts');
+    let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
     for (let account of accounts) {
-        let accountData = await redis.hgetall(`iad:${account}`);
+        let accountData = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
         if (!accountData) {
             continue;
         }
@@ -155,7 +157,7 @@ async function main() {
         }
 
         if (updated) {
-            let result = await redis.hmset(`iad:${account}`, updates);
+            let result = await redis.hmset(`${REDIS_PREFIX}iad:${account}`, updates);
             if (result === 'OK') {
                 console.log(`${account}: updated`);
             } else {

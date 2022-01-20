@@ -3,6 +3,7 @@ local listKey = KEYS[1];
 local filterState = ARGV[1];
 local skip = tonumber(ARGV[2]) or 0;
 local count = tonumber(ARGV[3]) or 0;
+local prefix = ARGV[4];
 
 local total = redis.call("SCARD", listKey);
 
@@ -21,7 +22,7 @@ for index, account in ipairs(list) do
     local state;
     if filterState ~= '*' then
         -- load only if we actually need to compare account state value
-        state = redis.call("HGET", "iad:" .. account, "state"); 
+        state = redis.call("HGET", prefix .. "iad:" .. account, "state"); 
     end
 
     if filterState == '*' or filterState == state then
@@ -31,7 +32,7 @@ for index, account in ipairs(list) do
             -- enough entries skipped, can use
             if #result < count then
                 -- now we can actually use this record
-                result[#result + 1] = redis.call("HGETALL", "iad:" .. account);
+                result[#result + 1] = redis.call("HGETALL", prefix .. "iad:" .. account);
             else
                 -- max number entries in result buffer
                 if filterState == '*' then

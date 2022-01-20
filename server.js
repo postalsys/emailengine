@@ -35,7 +35,7 @@ const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
 const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense, checkForUpgrade } = require('./lib/tools');
-const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY } = require('./lib/consts');
+const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY, REDIS_PREFIX } = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
@@ -267,7 +267,7 @@ const countUnassignment = async account => {
         }
     }
 
-    await redis.hset(`iad:${account}`, 'state', 'disconnected');
+    await redis.hset(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected');
     for (let worker of workers.get('api')) {
         let callPayload = {
             cmd: 'change',
@@ -297,9 +297,9 @@ let clearUnassignmentCounter = account => {
 };
 
 let updateSmtpServerState = async (state, payload) => {
-    await redis.hset(`smtp`, 'state', state);
+    await redis.hset(`${REDIS_PREFIX}smtp`, 'state', state);
     if (payload) {
-        await redis.hset(`smtp`, 'payload', JSON.stringify(payload));
+        await redis.hset(`${REDIS_PREFIX}smtp`, 'payload', JSON.stringify(payload));
     }
 
     if (workers.has('api')) {
@@ -530,12 +530,12 @@ let spawnWorker = async type => {
                         .substr(0, 16)
                         .replace(/[^0-9]+/g, '')}`;
 
-                    let hkey = `stats:${statUpdateKey}:${dateStr}`;
+                    let hkey = `${REDIS_PREFIX}stats:${statUpdateKey}:${dateStr}`;
 
                     redis
                         .multi()
                         .hincrby(hkey, timeStr, 1)
-                        .sadd('stats:keys', statUpdateKey)
+                        .sadd(`${REDIS_PREFIX}stats:keys`, statUpdateKey)
                         // keep alive at most 2 days
                         .expire(hkey, MAX_DAYS_STATS + 1 * 24 * 3600)
                         .exec()
@@ -641,7 +641,7 @@ async function assignAccounts() {
         if (!unassigned) {
             // first run
             // list all available accounts and assign to worker threads
-            let accounts = await redis.smembers('ia:accounts');
+            let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
             unassigned = new Set(accounts);
         }
 
@@ -678,6 +678,15 @@ async function assignAccounts() {
 
 let licenseCheckTimer = false;
 let licenseCheckHandler = async () => {
+    if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
+        // clear expired license
+
+        logger.info({ msg: 'License expired', license: licenseInfo.details });
+
+        licenseInfo.active = false;
+        licenseInfo.details = false;
+    }
+
     if (!licenseInfo.active && !suspendedWorkerTypes.size) {
         logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
 
@@ -730,9 +739,9 @@ let processCheckUpgrade = async () => {
             logger.info({ msg: 'Found an upgrade for EmailEngine', updateInfo });
 
             updateInfo.checked = Date.now();
-            await redis.hset('settings', 'upgrade', JSON.stringify(updateInfo));
+            await redis.hset(`${REDIS_PREFIX}settings`, 'upgrade', JSON.stringify(updateInfo));
         } else {
-            await redis.hdel('settings', 'upgrade');
+            await redis.hdel(`${REDIS_PREFIX}settings`, 'upgrade');
         }
     } catch (err) {
         logger.error({ msg: 'Failed to check updates', err });
@@ -741,7 +750,7 @@ let processCheckUpgrade = async () => {
 
 let upgradeCheckTimer = false;
 let upgradeCheckHandler = async () => {
-    let upgradeInfoExists = await redis.hexists('settings', 'upgrade');
+    let upgradeInfoExists = await redis.hexists(`${REDIS_PREFIX}settings`, 'upgrade');
     if (!upgradeInfoExists) {
         // nothing to do here
         return;
@@ -760,7 +769,7 @@ function checkUpgrade() {
 
 async function updateQueueCounters() {
     for (let queue of ['notify', 'submit']) {
-        const [resActive, resDelayed] = await redis.multi().llen(`bull:${queue}:active`).zcard(`bull:${queue}:delayed`).exec();
+        const [resActive, resDelayed] = await redis.multi().llen(`${REDIS_PREFIX}bull:${queue}:active`).zcard(`${REDIS_PREFIX}bull:${queue}:delayed`).exec();
         if (resActive[0] || resDelayed[0]) {
             // counting failed
             logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed });
@@ -806,7 +815,7 @@ async function onCommand(worker, message) {
 
                 logger.info({ msg: 'Loaded license', license, source: 'API' });
 
-                await redis.hset('settings', 'license', licenseFile);
+                await redis.hset(`${REDIS_PREFIX}settings`, 'license', licenseFile);
 
                 licenseInfo.active = true;
                 licenseInfo.details = license;
@@ -824,7 +833,7 @@ async function onCommand(worker, message) {
 
         case 'removeLicense': {
             try {
-                await redis.hdel('settings', 'license');
+                await redis.hdel(`${REDIS_PREFIX}settings`, 'license');
 
                 licenseInfo.active = false;
                 licenseInfo.details = false;
@@ -994,7 +1003,7 @@ const startApplication = async () => {
                 throw new Error('Failed to verify provided license key');
             }
             logger.info({ msg: 'Loaded license key', license, source: config.licensePath });
-            await redis.hset('settings', 'license', licenseFile);
+            await redis.hset(`${REDIS_PREFIX}settings`, 'license', licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
             return process.exit(13);
@@ -1014,7 +1023,7 @@ const startApplication = async () => {
         }
     }
 
-    let licenseFile = await redis.hget('settings', 'license');
+    let licenseFile = await redis.hget(`${REDIS_PREFIX}settings`, 'license');
     if (licenseFile) {
         try {
             let license = await checkLicense(licenseFile);

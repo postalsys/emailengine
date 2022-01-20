@@ -5,14 +5,19 @@
 
         License key
 
+        {{#if licenseInfo.details.trial}}
+        <span class="badge badge-warning">in trial</span>
+        {{else}}
+
         {{#if licenseInfo.active}}
 
         <span class="badge badge-success">active</span>
 
         {{else}}
 
-        <span class="badge badge-warning">not provided</span>
+        <span class="badge badge-danger">not provided</span>
 
+        {{/if}}
         {{/if}}
     </h1>
 </div>
@@ -78,6 +83,13 @@
 
             <dt class="col-sm-3">Environment</dt>
             <dd class="col-sm-9">{{licenseInfo.details.hostname}}</dd>
+
+
+            {{#if licenseDetails.expires}}
+            <dt class="col-sm-3">License expires</dt>
+            <dd class="col-sm-9">in {{licenseDetails.expiresDays}} days</dd>
+            {{/if}}
+
         </dl>
 
 
@@ -95,12 +107,10 @@
     </a>
     <div class="collapse {{#if showLicenseText}} show{{/if}}" id="setupKey">
         <div class="card-body">
-            {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new
-                license
+
+            {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new license
                 key from the Postal Systems' <a href="https://postalsys.com/licenses" target="_blank">license
-                    central</a> (requires
-                a
-                paid subscription).</p>{{/if}}
+                    central</a> (requires a paid subscription).</p>{{/if}}
 
             <form method="post" action="/admin/config/license">
                 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
