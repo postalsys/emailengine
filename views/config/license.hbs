@@ -95,12 +95,10 @@
     </a>
     <div class="collapse {{#if showLicenseText}} show{{/if}}" id="setupKey">
         <div class="card-body">
-            {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new
-                license
+
+            {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new license
                 key from the Postal Systems' <a href="https://postalsys.com/licenses" target="_blank">license
-                    central</a> (requires
-                a
-                paid subscription).</p>{{/if}}
+                    central</a> (requires a paid subscription).</p>{{/if}}
 
             <form method="post" action="/admin/config/license">
                 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />

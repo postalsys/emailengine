@@ -18,6 +18,7 @@ const crypto = require('crypto');
 const { Transform, finished } = require('stream');
 const { getOAuth2Client } = require('../lib/oauth');
 const consts = require('../lib/consts');
+const { REDIS_PREFIX } = consts;
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
@@ -58,7 +59,6 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
-const { encode } = require('punycode');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -518,7 +518,7 @@ const init = async () => {
                 throw error;
             }
 
-            let [[, accountData]] = await redis.multi().get(request.query.state).del(request.query.state).exec();
+            let [[, accountData]] = await redis.multi().get(`${REDIS_PREFIX}${request.query.state}`).del(`${REDIS_PREFIX}${request.query.state}`).exec();
             if (!accountData) {
                 let error = Boom.boomify(new Error(`Oauth failed: session expired`), { statusCode: 400 });
                 throw error;
@@ -1055,8 +1055,8 @@ const init = async () => {
                     // store account data
                     await redis
                         .multi()
-                        .set(`account:add:${nonce}`, JSON.stringify(request.payload))
-                        .expire(`account:add:${nonce}`, 1 * 24 * 3600)
+                        .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(request.payload))
+                        .expire(`${REDIS_PREFIX}account:add:${nonce}`, 1 * 24 * 3600)
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
