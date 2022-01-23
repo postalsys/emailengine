@@ -1,4 +1,4 @@
-name: Notify discord
+name: Notify discord of a new commit
 on:
     push:
         branches:

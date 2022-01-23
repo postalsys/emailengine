@@ -1,0 +1,17 @@
+name: Notify discord of a new release
+on:
+    release:
+        types:
+            - 'prereleased'
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@master
+            - name: send custom message with args
+              uses: appleboy/discord-action@master
+              with:
+                  webhook_id: ${{ secrets.WEBHOOK_ID }}
+                  webhook_token: ${{ secrets.WEBHOOK_TOKEN }}
+                  args: 'github=${{ toJSON(github) }} job=${{ toJSON(job) }}'
