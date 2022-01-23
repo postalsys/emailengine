@@ -1,8 +1,6 @@
 name: Notify discord of a new release
 
-on:
-    release:
-        types: [published]
+on: [release]
 
 jobs:
     build:
