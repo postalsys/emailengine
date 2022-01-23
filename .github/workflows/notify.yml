@@ -14,4 +14,4 @@ jobs:
               with:
                   webhook_id: ${{ secrets.WEBHOOK_ID }}
                   webhook_token: ${{ secrets.WEBHOOK_TOKEN }}
-                  args: '**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.github.ref_name }}**'
+                  args: '**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**'
