@@ -167,7 +167,7 @@
                     {{#unless licenseInfo.active}}
 
                     {{#unless hideLicenseWarning}}
-                    <div class="card border-left-danger shadow mb-4">
+                    <div id="license-warning" class="card border-left-danger shadow mb-4">
                         <div class="card-body">
 
                             {{#if licenseInfo.suspended}}
@@ -184,12 +184,26 @@
                                     <p>To use all the features of EmailEngine, you need to provide a valid license key.
                                     </p>
                                     <div>
+
+                                        {{#if trialPossible}}
+
+                                        <button type="button" id="start-trial-btn"
+                                            class="btn btn-success btn-icon-split">
+                                            <span class="icon text-white-50">
+                                                <i class="fas fa-gift"></i>
+                                            </span>
+                                            <span class="text">Start a 14-day trial</span>
+                                        </button>
+
+                                        {{/if}}
+
                                         <a href="/admin/config/license" class="btn btn-primary btn-icon-split">
                                             <span class="icon text-white-50">
                                                 <i class="fas fa-arrow-right"></i>
                                             </span>
                                             <span class="text">Register a license</span>
                                         </a>
+
                                     </div>
                                 </div>
                                 <div class="col-auto">
@@ -279,6 +293,94 @@
     <script src="/static/js/bootstrap-autocomplete.min.js"></script>
 
     <script src="/static/js/app.js"></script>
+
+
+    {{#if trialPossible}}
+    <div class="modal fade" id="activateTrial" tabindex="-1" aria-labelledby="activateTrialLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="activateTrialLabel">Start a 14-day trial</h5>
+                    <button type="button" class="close d-none" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Provisioning a trial license, please wait <i class="fas fa-spinner fa-spin fa-fw"></i>
+                </div>
+                <div class="modal-footer d-none">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">OK?</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let trialBtn = document.getElementById('start-trial-btn');
+
+            let handleActivation = async () => {
+
+                const res = await fetch('/admin/config/license/trial', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value
+                    })
+                });
+
+                if (!res.ok) {
+                    throw new Error('Request failed with status ' + res.status);
+                }
+
+                let data = await res.json();
+
+                if (!data || !data.success) {
+                    console.log(data)
+                    throw new Error(data.error || 'Request failed');
+                }
+
+                return 1
+            }
+
+            let lastError, lastSuccess;
+
+            $('#activateTrial').on('shown.bs.modal', function (event) {
+                // do something...
+                handleActivation().then(res => {
+                    lastError = false;
+                    lastSuccess = res;
+                    $('#activateTrial').modal('hide');
+                }).catch(err => {
+                    lastError = err;
+                    lastSuccess = false;
+                    $('#activateTrial').modal('hide');
+                })
+            })
+
+            $('#activateTrial').on('hidden.bs.modal', function (event) {
+                // do something...
+                if (lastError) {
+                    return showToast(lastError.message, 'alert-triangle');
+                }
+
+                if (lastSuccess) {
+                    console.log(lastSuccess);
+                    document.getElementById('license-warning').style.display = 'none';
+                    window.location.reload();
+                }
+            });
+
+            trialBtn.addEventListener('click', e => {
+                e.preventDefault();
+                $('#activateTrial').modal('show');
+            });
+        });
+    </script>
+
+    {{/if}}
 </body>
 
 </html>

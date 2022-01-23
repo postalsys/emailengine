@@ -34,7 +34,7 @@ const tokens = require('./lib/tokens');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense, checkForUpgrade } = require('./lib/tools');
+const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense, checkForUpgrade, setLicense } = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY, REDIS_PREFIX } = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
@@ -808,17 +808,18 @@ async function onCommand(worker, message) {
         case 'updateLicense': {
             try {
                 const licenseFile = message.license;
-                let license = await checkLicense(licenseFile);
-                if (!license) {
+                console.log(typeof message.license, message.license);
+                let licenseData = await checkLicense(licenseFile);
+                if (!licenseData) {
                     throw new Error('Failed to verify provided license');
                 }
 
-                logger.info({ msg: 'Loaded license', license, source: 'API' });
+                logger.info({ msg: 'Loaded license', license: licenseData, source: 'API' });
 
-                await redis.hset(`${REDIS_PREFIX}settings`, 'license', licenseFile);
+                await setLicense(licenseData, licenseFile);
 
                 licenseInfo.active = true;
-                licenseInfo.details = license;
+                licenseInfo.details = licenseData;
                 licenseInfo.type = 'EmailEngine License';
 
                 // re-enable workers
@@ -998,12 +999,13 @@ const startApplication = async () => {
                 throw new Error(`Provided license key is not a regular file`);
             }
             const licenseFile = await fs.readFile(config.licensePath, 'utf-8');
-            let license = await checkLicense(licenseFile);
-            if (!license) {
+            let licenseData = await checkLicense(licenseFile);
+            if (!licenseData) {
                 throw new Error('Failed to verify provided license key');
             }
-            logger.info({ msg: 'Loaded license key', license, source: config.licensePath });
-            await redis.hset(`${REDIS_PREFIX}settings`, 'license', licenseFile);
+            logger.info({ msg: 'Loaded license key', license: licenseData, source: config.licensePath });
+
+            await setLicense(licenseData, licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
             return process.exit(13);
@@ -1026,15 +1028,15 @@ const startApplication = async () => {
     let licenseFile = await redis.hget(`${REDIS_PREFIX}settings`, 'license');
     if (licenseFile) {
         try {
-            let license = await checkLicense(licenseFile);
-            if (!license) {
+            let licenseData = await checkLicense(licenseFile);
+            if (!licenseData) {
                 throw new Error('Failed to verify provided license key');
             }
             licenseInfo.active = true;
-            licenseInfo.details = license;
+            licenseInfo.details = licenseData;
             licenseInfo.type = 'EmailEngine License';
             if (!config.licensePath) {
-                logger.info({ msg: 'Loaded license', license, source: 'db' });
+                logger.info({ msg: 'Loaded license', license: licenseData, source: 'db' });
             }
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify stored license key', content: licenseFile, err });

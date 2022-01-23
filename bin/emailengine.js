@@ -128,7 +128,7 @@ switch (cmd) {
                         return process.exit(0);
                     })
                     .catch(err => {
-                        console.error('Failed to import license information');
+                        console.error(`Failed to import license information${err.code ? ` [${err.code}]` : ''}`);
                         console.error(err);
                         return process.exit(1);
                     });
