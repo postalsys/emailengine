@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.10.0",
+    "version": "2.11.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -9,7 +9,8 @@
         "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' | pino-pretty",
         "test": "grunt",
         "swagger": "./getswagger.sh",
-        "build-dist": "npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --production && ./update-info.sh && npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
+        "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --production && rm -rf package-lock.json && ./update-info.sh",
+        "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses"
     },
@@ -55,7 +56,7 @@
         "ioredis": "4.28.3",
         "joi": "17.5.0",
         "jquery": "3.6.0",
-        "js-beautify": "^1.14.0",
+        "js-beautify": "1.14.0",
         "libmime": "5.0.0",
         "license-checker": "25.0.1",
         "linkifyjs": "2.1.9",
@@ -111,6 +112,6 @@
             "node16-macos-x64",
             "node16-win-x64"
         ],
-        "outputPath": "dist"
+        "outputPath": "ee-dist"
     }
 }

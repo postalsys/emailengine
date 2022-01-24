@@ -7,3 +7,4 @@ yarn.lock
 swagger.json
 static/licenses.html
 version-info.json
+ee-dist/
