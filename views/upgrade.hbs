@@ -1,0 +1,32 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+        <small><i class="fas fa-cog fa-fw"></i></small>
+        Upgrade instructions
+    </h1>
+</div>
+
+<div class="card border-left-info shadow mt-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                {{#if isDO}}
+                <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your server and run the
+                    following command:<br />
+                    <kbd>sudo /opt/upgrade-emailengine.sh</kbd>
+                </p>
+                {{/if}}
+
+                {{#if isGeneral}}
+                <p class="mb-4">To upgrade EmailEngine to the latest version, download the latest version from the <a
+                        href="https://emailengine.app/#downloads">EmailEngine's homepage</a>, replace the binary and
+                    restart the application.</p>
+                {{/if}}
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>

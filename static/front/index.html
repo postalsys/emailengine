@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="EmailEngine" />
+        <title>EmailEngine</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
+            integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn"
+            crossorigin="anonymous"
+        />
+    </head>
+
+    <body class="d-flex flex-column h-100">
+        <main role="main" class="flex-shrink-0">
+            <div class="container mt-4">
+                <img src="/logo.png" style="display: block; float: left; margin: 10px 10px 0 0; max-width: 32px; max-height: 32px" />
+
+                <h1>EmailEngine</h1>
+
+                <div class="row mt-4">
+                    <div class="col-12 col-sm-12 col-md-12 col-lg-8">
+                        <p>
+                            EmailEngine is a self-hosted headless email client for accessing IMAP accounts over REST API. EmailEngine connects to the user's
+                            IMAP account, translates API requests to IMAP, and sends webhooks for changes like new or deleted emails.
+                        </p>
+
+                        <div class="mt-4 alert alert-info">
+                            To continue setting up your EmailEngine installation, log in to your server using SSH:<br />
+                            <kbd>ssh root@<span id="hostname">example.com</span></kbd>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer mt-auto py-3">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-8">
+                        <a href="https://emailengine.app" target="_blank">EmailEngine</a>
+                        <span class="text-muted">&copy; 2020-2021</span>
+                        <a class="text-muted" href="mailto:info@postalsys.com" target="_blank">Postal Systems OÜ</a>.
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            document.getElementById('hostname').textContent = window.location.hostname;
+        </script>
+    </body>
+</html>

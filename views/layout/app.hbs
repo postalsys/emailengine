@@ -163,6 +163,7 @@
                     <div id="toastContainer"
                         style="position: fixed; top: 50px; right: 50px; min-width: 250px; z-index: 10000;"></div>
 
+                    {{> alerts}}
 
                     {{#unless licenseInfo.active}}
 
@@ -241,8 +242,6 @@
                     </div>
                     {{/unless}}
                     {{/unless}}
-
-                    {{> alerts}}
 
                     {{{content}}}
 

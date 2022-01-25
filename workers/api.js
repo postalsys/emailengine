@@ -3243,7 +3243,7 @@ When making API calls remember that requests against the same account are queued
             let upgradeInfo = await settings.get('upgrade');
             if (upgradeInfo && upgradeInfo.canUpgrade) {
                 systemAlerts.push({
-                    url: 'https://emailengine.app/#downloads',
+                    url: '/admin/upgrade',
                     level: 'info',
                     icon: 'exclamation-triangle',
                     message: `An update is available: Emailengine v${upgradeInfo.available}`
