@@ -78,8 +78,6 @@ const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
 const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
 
-const ENABLE_TRIAL = 'EENGINE_ENABLE_TRIAL' in process.env ? getBoolean(process.env.EENGINE_ENABLE_TRIAL) : getBoolean(config.enableTrial);
-
 let registeredPublishers = new Set();
 
 class ResponseStream extends Transform {
@@ -3312,7 +3310,7 @@ When making API calls remember that requests against the same account are queued
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
                 authEnabled: !!(authData && authData.password),
-                trialPossible: ENABLE_TRIAL && !(await settings.get('tract')),
+                trialPossible: !(await settings.get('tract')),
                 authData,
                 packageData,
                 systemAlerts,
