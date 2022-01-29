@@ -6,7 +6,8 @@
 
 Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
-Documentation and details: [EmailEngine.app](https://emailengine.app/)
+-   Documentation and details: [EmailEngine.app](https://emailengine.app/)
+-   [Discord](https://emailengine.app/discord) chat room
 
 ## Use cases
 
