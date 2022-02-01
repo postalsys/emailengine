@@ -4,7 +4,8 @@ const { parentPort } = require('worker_threads');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 const util = require('util');
-const { redis, submitQueue, notifyQueue } = require('../lib/db');
+const { redis, notifyQueue, queueConf } = require('../lib/db');
+const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
@@ -117,44 +118,53 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
     };
 }
 
-submitQueue.process('*', SUBMIT_QC, async job => {
-    let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
-    if (!queueEntryBuf) {
-        // nothing to do here
-        try {
-            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
-        } catch (err) {
-            // ignore
+const submitWorker = new Worker(
+    'submit',
+    async job => {
+        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
+        if (!queueEntryBuf) {
+            // nothing to do here
+            try {
+                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            } catch (err) {
+                // ignore
+            }
+            return;
         }
-        return;
-    }
 
-    let queueEntry;
-    try {
-        queueEntry = msgpack.decode(queueEntryBuf);
-    } catch (err) {
-        logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
+        let queueEntry;
         try {
-            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            queueEntry = msgpack.decode(queueEntryBuf);
         } catch (err) {
-            // ignore
+            logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
+            try {
+                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            } catch (err) {
+                // ignore
+            }
+            return;
         }
-        return;
-    }
 
-    if (!queueEntry) {
-        //could be expired?
-        return false;
-    }
+        if (!queueEntry) {
+            //could be expired?
+            return false;
+        }
 
-    let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
+        let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
 
-    let res = await accountObject.submitMessage(queueEntry);
+        let res = await accountObject.submitMessage(queueEntry);
 
-    logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, messageId: job.data.messageId, res });
-});
+        logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, messageId: job.data.messageId, res });
+    },
+    Object.assign(
+        {
+            concurrency: SUBMIT_QC
+        },
+        queueConf
+    )
+);
 
-submitQueue.on('completed', async job => {
+submitWorker.on('completed', async job => {
     if (job.data && job.data.account && job.data.qId) {
         try {
             await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
@@ -164,7 +174,7 @@ submitQueue.on('completed', async job => {
     }
 });
 
-submitQueue.on('failed', async job => {
+submitWorker.on('failed', async job => {
     if (job.finishedOn) {
         // this was final attempt, remove it
         if (job.data && job.data.account && job.data.qId) {

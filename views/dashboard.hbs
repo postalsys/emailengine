@@ -71,7 +71,8 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Webhooks queue</div>
+                                Webhooks queue{{#if stats.queues.notify.isPaused}} <span
+                                    class="badge badge-warning">paused</span>{{/if}}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
                                     data-placement="top">{{stats.queues.notify.total}}</span> /
@@ -93,7 +94,8 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Submission queue</div>
+                                Submission queue{{#if stats.queues.submit.isPaused}} <span
+                                    class="badge badge-warning">paused</span>{{/if}}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
                                     data-placement="top">{{stats.queues.submit.total}}</span> /
