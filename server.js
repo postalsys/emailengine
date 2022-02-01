@@ -21,7 +21,7 @@ const packageData = require('./package.json');
 
 const pathlib = require('path');
 const { Worker, SHARE_ENV } = require('worker_threads');
-const { redis } = require('./lib/db');
+const { redis, queueConf } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -30,6 +30,8 @@ const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const tokens = require('./lib/tokens');
+
+const { QueueScheduler } = require('bullmq');
 
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
@@ -115,6 +117,9 @@ const licenseInfo = {
     details: false,
     type: packageData.license
 };
+
+let notifyScheduler;
+let submitScheduler;
 
 let preparedSettings = false;
 const preparedSettingsString = process.env.EENGINE_SETTINGS || config.settings;
@@ -968,12 +973,47 @@ async function collectMetrics() {
     });
 }
 
+const closeQueues = cb => {
+    let proms = [];
+    if (notifyScheduler) {
+        proms.push(notifyScheduler.close());
+    }
+
+    if (submitScheduler) {
+        proms.push(submitScheduler.close());
+    }
+
+    if (!proms.length) {
+        return setImmediate(() => cb());
+    }
+
+    let returned;
+
+    let closeTimeout = setTimeout(() => {
+        clearTimeout(closeTimeout);
+        if (returned) {
+            return;
+        }
+        returned = true;
+        cb();
+    }, 2500);
+
+    Promise.allSettled(proms).then(() => {
+        clearTimeout(closeTimeout);
+        if (returned) {
+            return;
+        }
+        returned = true;
+        cb();
+    });
+};
+
 process.on('SIGTERM', () => {
     if (closing) {
         return;
     }
     closing = true;
-    setImmediate(() => {
+    closeQueues(() => {
         process.exit();
     });
 });
@@ -983,7 +1023,7 @@ process.on('SIGINT', () => {
         return;
     }
     closing = true;
-    setImmediate(() => {
+    closeQueues(() => {
         process.exit();
     });
 });
@@ -1175,6 +1215,9 @@ startApplication()
 
         upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
         licenseCheckTimer.unref();
+
+        notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
+        submitScheduler = new QueueScheduler('submit', Object.assign({}, queueConf));
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });
