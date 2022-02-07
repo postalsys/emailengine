@@ -813,7 +813,7 @@ async function onCommand(worker, message) {
         case 'updateLicense': {
             try {
                 const licenseFile = message.license;
-                console.log(typeof message.license, message.license);
+
                 let licenseData = await checkLicense(licenseFile);
                 if (!licenseData) {
                     throw new Error('Failed to verify provided license');

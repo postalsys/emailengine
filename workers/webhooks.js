@@ -34,22 +34,9 @@ async function metrics(logger, key, method, ...args) {
     }
 }
 
-console.log(
-    'WORKER SETUP',
-    'notify',
-    Object.assign(
-        {
-            concurrency: NOTIFY_QC
-        },
-        queueConf
-    )
-);
-
 const notifyWorker = new Worker(
     'notify',
     async job => {
-        console.log('PROCESSING WEBHOOK', job);
-
         // do not process active jobs, use it for debugging only
         //return new Promise((resolve, reject) => {});
 
