@@ -3325,6 +3325,16 @@ When making API calls remember that requests against the same account are queued
                 });
             }
 
+            let disableTokens = await settings.get('disableTokens');
+            if (disableTokens) {
+                systemAlerts.push({
+                    url: '/admin/config/service',
+                    level: 'warning',
+                    icon: 'key',
+                    message: `Access tokens are disabled for API requests`
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},

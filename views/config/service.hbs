@@ -54,14 +54,14 @@
                 <label class="form-check-label" for="disableTokens">Disable Access Tokens
 
                     <span class="badge badge-{{#if values.disableTokens}}danger{{else}}success{{/if}}">{{#if
-                        values.disableTokens}}access tokens are disabled{{else}}access tokens are required{{/if}}</span>
+                        values.disableTokens}}disabled{{else}}required{{/if}}</span>
                 </label>
                 {{#if errors.disableTokens}}
                 <span class="invalid-feedback">{{errors.disableTokens}}</span>
                 {{/if}}
                 <small class="form-text text-muted">You can disable access tokens when in development. Not
-                    requiring access tokens to authorize API requests allows you to easily make API queries from the
-                    command line.</small>
+                    requiring access tokens to authorize API requests makes it easier to run API requests from the
+                    command line. Do not use this option in production.</small>
             </div>
 
             <div class="form-group form-check">
