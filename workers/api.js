@@ -296,10 +296,32 @@ When making API calls remember that requests against the same account are queued
 
     await server.register(AuthBearer);
 
+    server.ext('onRequest', async (request, h) => {
+        let disableTokens = await settings.get('disableTokens');
+        if (disableTokens && !request.url.searchParams.get('access_token')) {
+            // make sure that we have a access_token value set in query args
+            let url = new URL(request.url.href);
+            url.searchParams.set('access_token', 'preauth');
+            request.setUrl(`${url.pathname}${url.search}`);
+        }
+
+        return h.continue;
+    });
+
     // Authentication for API calls
     server.auth.strategy('api-token', 'bearer-access-token', {
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
+            let disableTokens = await settings.get('disableTokens');
+            if (disableTokens) {
+                // tokens check are disabled, allow all
+                return {
+                    isValid: true,
+                    credentials: {},
+                    artifacts: {}
+                };
+            }
+
             let scope = false;
             let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
             if (tags.includes('api')) {

@@ -49,6 +49,22 @@
             </div>
 
             <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.disableTokens}}is-invalid{{/if}}"
+                    id="disableTokens" name="disableTokens" {{#if values.disableTokens}}checked{{/if}} />
+                <label class="form-check-label" for="disableTokens">Disable Access Tokens
+
+                    <span class="badge badge-{{#if values.disableTokens}}danger{{else}}success{{/if}}">{{#if
+                        values.disableTokens}}access tokens are disabled{{else}}access tokens are required{{/if}}</span>
+                </label>
+                {{#if errors.disableTokens}}
+                <span class="invalid-feedback">{{errors.disableTokens}}</span>
+                {{/if}}
+                <small class="form-text text-muted">You can disable access tokens when in development. Not
+                    requiring access tokens to authorize API requests allows you to easily make API queries from the
+                    command line.</small>
+            </div>
+
+            <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
                 <label class="form-check-label" for="encryption">Field level encryption
