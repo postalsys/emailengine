@@ -30,7 +30,7 @@ const { arenaExpress } = require('../lib/arena-express');
 const { redis, REDIS_CONF } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getStats, getBoolean, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
+const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -75,8 +75,6 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
-
-const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
 
 let registeredPublishers = new Set();
 
@@ -247,8 +245,10 @@ const init = async () => {
     });
 
     server.ext('onRequest', async (request, h) => {
-        if (API_PROXY) {
-            // check for IP from the Forwarded-For header
+        // check if client IP is resolved from X-Forwarded-For or not
+        let enableApiProxy = (await settings.get('enableApiProxy')) || false;
+        if (enableApiProxy) {
+            // check for the IP address from the Forwarded-For header
             const xFF = request.headers['x-forwarded-for'];
             request.app.ip = xFF ? xFF.split(',')[0] : request.info.remoteAddress;
         } else {
@@ -256,7 +256,20 @@ const init = async () => {
             request.app.ip = request.info.remoteAddress;
         }
 
+        // check if access tokens for api requests are required
+        let disableTokens = await settings.get('disableTokens');
+        if (disableTokens && !request.url.searchParams.get('access_token')) {
+            // make sure that we have a access_token value set in query args
+            let url = new URL(request.url.href);
+            url.searchParams.set('access_token', 'preauth');
+            request.setUrl(`${url.pathname}${url.search}`);
+        }
+
+        // make license info available for the request
         request.app.licenseInfo = await call({ cmd: 'license' });
+
+        // flash notifications
+        request.flash = async message => await flash(redis, request, message);
 
         return h.continue;
     });
@@ -295,18 +308,6 @@ When making API calls remember that requests against the same account are queued
     };
 
     await server.register(AuthBearer);
-
-    server.ext('onRequest', async (request, h) => {
-        let disableTokens = await settings.get('disableTokens');
-        if (disableTokens && !request.url.searchParams.get('access_token')) {
-            // make sure that we have a access_token value set in query args
-            let url = new URL(request.url.href);
-            url.searchParams.set('access_token', 'preauth');
-            request.setUrl(`${url.pathname}${url.search}`);
-        }
-
-        return h.continue;
-    });
 
     // Authentication for API calls
     server.auth.strategy('api-token', 'bearer-access-token', {
@@ -3237,11 +3238,6 @@ When making API calls remember that requests against the same account are queued
         }
     });
 
-    server.ext('onRequest', async (request, h) => {
-        request.flash = async message => await flash(redis, request, message);
-        return h.continue;
-    });
-
     server.views({
         engines: {
             hbs: handlebars
@@ -3328,7 +3324,7 @@ When making API calls remember that requests against the same account are queued
             let disableTokens = await settings.get('disableTokens');
             if (disableTokens) {
                 systemAlerts.push({
-                    url: '/admin/config/service',
+                    url: '/admin/config/service#security',
                     level: 'warning',
                     icon: 'key',
                     message: `Access tokens are disabled for API requests`

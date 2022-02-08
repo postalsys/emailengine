@@ -49,19 +49,39 @@
             </div>
 
             <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.disableTokens}}is-invalid{{/if}}"
-                    id="disableTokens" name="disableTokens" {{#if values.disableTokens}}checked{{/if}} />
-                <label class="form-check-label" for="disableTokens">Disable Access Tokens
+                <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
+                    id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
+                <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
+                {{#if errors.enableApiProxy}}
+                <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine looks for the client
+                    IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
+                    web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
+            </div>
+        </div>
+    </div>
 
-                    <span class="badge badge-{{#if values.disableTokens}}danger{{else}}success{{/if}}">{{#if
-                        values.disableTokens}}disabled{{else}}required{{/if}}</span>
+    <div class="card mb-4" id="security">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Security settings</h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.enableTokens}}is-invalid{{/if}}"
+                    id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
+                <label class="form-check-label" for="enableTokens">Require Access Tokens
+
+                    <span class="badge badge-{{#if values.enableTokens}}success{{else}}danger{{/if}}">{{#if
+                        values.enableTokens}}enabled{{else}}disabled{{/if}}</span>
                 </label>
-                {{#if errors.disableTokens}}
-                <span class="invalid-feedback">{{errors.disableTokens}}</span>
+                {{#if errors.enableTokens}}
+                <span class="invalid-feedback">{{errors.enableTokens}}</span>
                 {{/if}}
                 <small class="form-text text-muted">You can disable access tokens when in development. Not
-                    requiring access tokens to authorize API requests makes it easier to run API requests from the
-                    command line. Do not use this option in production.</small>
+                    requiring access tokens to authorize API requests makes running API requests from the
+                    command line easier. Always enable access tokens in production.</small>
             </div>
 
             <div class="form-group form-check">
@@ -69,7 +89,7 @@
                     disabled />
                 <label class="form-check-label" for="encryption">Field level encryption
 
-                    <span class="badge badge-{{#if encryption}}success{{else}}warning{{/if}}">{{#if
+                    <span class="badge badge-{{#if encryption}}success{{else}}danger{{/if}}">{{#if
                         encryption}}enabled{{else}}disabled{{/if}}</span>
 
                 </label>
@@ -102,7 +122,7 @@
 
         <div class="card-body">
             <div class="form-group">
-                <label for="settingsQueueKeep">How many completed/failed queue entries to keep in Bull</label>
+                <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
                 <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
                     id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
                     autocomplete="off" />
@@ -110,8 +130,8 @@
                 <span class="invalid-feedback">{{errors.queueKeep}}</span>
                 {{/if}}
                 <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
-                    "Failed" and "Completed" lists are empty in Bull UI. Set this value if you want to keep a fixed
-                    number of the latest entries in the list.</small>
+                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank">Bull Arena</a>.
+                    Set this value if you want to keep a fixed number of the latest entries in the list.</small>
             </div>
 
         </div>

@@ -93,6 +93,8 @@ const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_S
 const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
 const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
 
+const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
+
 logger.info({
     msg: 'Starting EmailEngine',
     version: packageData.version,
@@ -1130,6 +1132,11 @@ const startApplication = async () => {
     let existingSmtpProxy = await settings.get('smtpServerProxy');
     if (existingSmtpProxy === null) {
         await settings.set('smtpServerProxy', SMTP_PROXY);
+    }
+
+    let existingEnableApiProxy = await settings.get('enableApiProxy');
+    if (existingEnableApiProxy === null) {
+        await settings.set('enableApiProxy', API_PROXY);
     }
 
     let existinServiceSecret = await settings.get('serviceSecret');
