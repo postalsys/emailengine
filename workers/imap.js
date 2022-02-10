@@ -76,6 +76,11 @@ class ConnectionHandler {
                     .ltrim(logKey, -this.maxLogLines, -1)
                     .exec()
                     .catch(err => this.logger.error(err));
+            },
+            async reload() {
+                logging = await settings.getLoggingInfo(account);
+                this.enabled = logging.enabled;
+                this.maxLogLines = logging.maxLogLines;
             }
         };
     }
