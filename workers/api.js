@@ -842,7 +842,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     token: Joi.string().length(64).hex().required().example('123456').description('Access token')
-                }).label('CreateTokenReponse'),
+                }).label('CreateTokenResponse'),
                 failAction: 'log'
             }
         }
@@ -894,7 +894,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
-                }).label('DeleteTokenRequestReponse'),
+                }).label('DeleteTokenRequestResponse'),
                 failAction: 'log'
             }
         }
@@ -974,7 +974,7 @@ When making API calls remember that requests against the same account are queued
                             }).label('AccountResponseItem')
                         )
                         .label('AccountEntries')
-                }).label('AccountsFilterReponse'),
+                }).label('AccountsFilterResponse'),
                 failAction: 'log'
             }
         }
@@ -1057,7 +1057,7 @@ When making API calls remember that requests against the same account are queued
                             }).label('AccountResponseItem')
                         )
                         .label('AccountEntries')
-                }).label('AccountsFilterReponse'),
+                }).label('AccountsFilterResponse'),
                 failAction: 'log'
             }
         }
@@ -1184,7 +1184,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     state: Joi.string().required().valid('existing', 'new').example('new').description('Is the account new or updated existing')
-                }).label('CreateAccountReponse'),
+                }).label('CreateAccountResponse'),
                 failAction: 'log'
             }
         }
@@ -1256,7 +1256,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                }).label('UpdateAccountReponse'),
+                }).label('UpdateAccountResponse'),
                 failAction: 'log'
             }
         }
@@ -1314,7 +1314,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     reconnect: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only reconnect if true')
-                }).label('RequestReconnectReponse'),
+                }).label('RequestReconnectResponse'),
                 failAction: 'log'
             }
         }
@@ -1369,7 +1369,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
-                }).label('DeleteRequestReponse'),
+                }).label('DeleteRequestResponse'),
                 failAction: 'log'
             }
         }
@@ -1455,7 +1455,7 @@ When making API calls remember that requests against the same account are queued
                             }).label('AccountResponseItem')
                         )
                         .label('AccountEntries')
-                }).label('AccountsFilterReponse'),
+                }).label('AccountsFilterResponse'),
                 failAction: 'log'
             }
         }
@@ -1612,7 +1612,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     mailboxes: mailboxesSchema
-                }).label('MailboxesFilterReponse'),
+                }).label('MailboxesFilterResponse'),
                 failAction: 'log'
             }
         }
@@ -1677,7 +1677,7 @@ When making API calls remember that requests against the same account are queued
                     path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
                     mailboxId: Joi.string().example('1439876283476').description('Mailbox ID (if server has support)').label('MailboxId'),
                     created: Joi.boolean().example(true).description('Was the mailbox created')
-                }).label('CreateMailboxReponse'),
+                }).label('CreateMailboxResponse'),
                 failAction: 'log'
             }
         }
@@ -1737,7 +1737,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     path: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('MailboxPath'),
                     deleted: Joi.boolean().example(true).description('Was the mailbox deleted')
-                }).label('DeleteMailboxReponse'),
+                }).label('DeleteMailboxResponse'),
                 failAction: 'log'
             }
         }
@@ -2113,7 +2113,7 @@ When making API calls remember that requests against the same account are queued
                         delete: Joi.boolean().example(false),
                         set: Joi.boolean().example(false)
                     }).label('FlagResponse')
-                }).label('MessageUpdateReponse'),
+                }).label('MessageUpdateResponse'),
                 failAction: 'log'
             }
         }
@@ -2242,12 +2242,12 @@ When making API calls remember that requests against the same account are queued
             },
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().example(true).description('Present if message was actualy deleted'),
+                    deleted: Joi.boolean().example(true).description('Present if message was actually deleted'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
                         message: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
                     }).description('Present if message was moved to Trash')
-                }).label('MessageDeleteReponse'),
+                }).label('MessageDeleteResponse'),
                 failAction: 'log'
             }
         }
@@ -2409,7 +2409,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Search for messages',
-            notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific foldera and not for the entire account.',
+            notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific folder and not for the entire account.',
             tags: ['api', 'message'],
 
             plugins: {},
@@ -2979,7 +2979,7 @@ When making API calls remember that requests against the same account are queued
                             .label('VerifySmtpCode')
                     }),
                     mailboxes: shortMailboxesSchema
-                }).label('VerifyAccountReponse'),
+                }).label('VerifyAccountResponse'),
                 failAction: 'log'
             }
         }
@@ -3020,7 +3020,7 @@ When making API calls remember that requests against the same account are queued
             },
 
             response: {
-                schema: licenseSchema.label('LicenseReponse'),
+                schema: licenseSchema.label('LicenseResponse'),
                 failAction: 'log'
             }
         }
@@ -3067,7 +3067,7 @@ When making API calls remember that requests against the same account are queued
                     active: Joi.boolean().example(false),
                     details: Joi.boolean().example(false),
                     type: Joi.string().example('AGPL-3.0-or-later')
-                }).label('EmtpyLicenseReponse'),
+                }).label('EmptyLicenseResponse'),
                 failAction: 'log'
             }
         }
@@ -3127,7 +3127,7 @@ When making API calls remember that requests against the same account are queued
             },
 
             response: {
-                schema: licenseSchema.label('LicenseReponse'),
+                schema: licenseSchema.label('LicenseResponse'),
                 failAction: 'log'
             }
         }
