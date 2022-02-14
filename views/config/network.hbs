@@ -20,6 +20,10 @@
                 CONNECT and SOCKS (both 4 and 5) proxies.</p>
 
             <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">proxyEnabled</a>]</div>
+
                 <input type="checkbox"
                     class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
                     id="proxy_enabled" name="proxyEnabled" {{#if values.proxyEnabled}}checked{{/if}} />
@@ -32,6 +36,10 @@
             </div>
 
             <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">proxyUrl</a>]</div>
+
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
                     id="proxyUrl" placeholder="Connection URL like &quot;socks://localhost:1080&quot;…"
@@ -67,8 +75,13 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>IMAP</td>
                     <td>
+                        <span>IMAP</span>
+                    </td>
+                    <td>
+                        <div class="text-muted float-right code-link">[<a
+                                href="/admin/iframe/docs#/settings/postV1Settings" target="_blank">imapStrategy</a>]
+                        </div>
                         <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
                             errors.imapStrategy}}is-invalid{{/if}}>
                             {{#each imapStrategies}}
@@ -82,8 +95,13 @@
                 </tr>
 
                 <tr>
-                    <td>SMTP</td>
                     <td>
+                        <span>SMTP</span>
+                    </td>
+                    <td>
+                        <div class="text-muted float-right code-link">[<a
+                                href="/admin/iframe/docs#/settings/postV1Settings" target="_blank">smtpStrategy</a>]
+                        </div>
                         <select class="custom-select custom-select-sm" name="smtpStrategy" {{#if
                             errors.smtpStrategy}}is-invalid{{/if}}>
 
@@ -109,7 +127,10 @@
                     <i class="fa fa-sync-alt fa-fw"></i>
                     Scan addresses</button></div>
         </div>
+
         <div class="card-body">
+            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                    target="_blank">localAddresses</a>]</div>
             Mark all addresses that EmailEngine can use with <em>Dedicated</em> and <em>Random</em> strategies.
         </div>
         <table class="table table-hover">

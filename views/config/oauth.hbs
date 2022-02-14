@@ -85,6 +85,10 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">serviceClient</a>]
+                </div>
+
                 <label for="serviceClient">
                     Service client
                 </label>
@@ -97,6 +101,9 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">serviceKey</a>]
+                </div>
 
                 <label for="serviceKey">Secret service key</label>
 
@@ -112,6 +119,11 @@
 
             {{else}}
             <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">{{values.provider}}Enabled</a>]
+                </div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
                     id="oauth2Enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
                 <label class="form-check-label" for="oauth2Enabled">Enable OAuth2 support for
@@ -124,6 +136,11 @@
             </div>
 
             <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">{{values.provider}}ClientId</a>]
+                </div>
+
                 <label for="clientId">
                     {{#if activeGmail}}
                     Client Id
@@ -142,6 +159,11 @@
             </div>
 
             <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">{{values.provider}}ClientSecret</a>]
+                </div>
+
                 <label for="clientSecret">Client Secret</label>
 
                 <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
@@ -156,6 +178,10 @@
 
             {{#if activeOutlook}}
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">{{values.provider}}Authority</a>]
+                </div>
+
                 <label for="authority">Supported account types</label>
 
                 <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="clientSecret"
@@ -171,6 +197,10 @@
             {{/if}}
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">{{values.provider}}RedirectUrl</a>]
+                </div>
+
                 <label for="redirectUrl">Redirect URL</label>
                 <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
                     name="redirectUrl" value="{{values.redirectUrl}}" />

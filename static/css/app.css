@@ -12,3 +12,8 @@
     background-position: center;
     background-size: cover;
 }
+
+.code-link {
+    font-family: monospace;
+    font-size: 0.8em;
+}

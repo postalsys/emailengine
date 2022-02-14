@@ -26,6 +26,10 @@
         </div>
         <div class="card-body">
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerEnabled</a>]
+                </div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
                     id="smtpServerEnabled" name="smtpServerEnabled" {{#if values.smtpServerEnabled}}checked{{/if}} />
                 <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Server</label>
@@ -35,6 +39,10 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerPort</a>]
+                </div>
+
                 <label for="smtpServerPort">SMTP port</label>
 
                 <input type="number" class="form-control {{#if errors.smtpServerPort}}is-invalid{{/if}}"
@@ -48,6 +56,10 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerHost</a>]
+                </div>
+
                 <label for="smtpServerHost">SMTP host</label>
 
                 <input type="text" class="form-control basicAutoComplete {{#if errors.smtpServerHost}}is-invalid{{/if}}"
@@ -62,6 +74,10 @@
             </div>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerProxy</a>]
+                </div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerProxy}}is-invalid{{/if}}"
                     id="smtpServerProxy" name="smtpServerProxy" {{#if values.smtpServerProxy}}checked{{/if}} />
                 <label class="form-check-label" for="smtpServerProxy">Enable PROXY protocol</label>
@@ -80,6 +96,10 @@
         </div>
         <div class="card-body">
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerAuthEnabled</a>]
+                </div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerAuthEnabled}}is-invalid{{/if}}"
                     id="smtpServerAuthEnabled" name="smtpServerAuthEnabled" {{#if
                     values.smtpServerAuthEnabled}}checked{{/if}} />
@@ -90,6 +110,10 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerPassword</a>]
+                </div>
+
                 <label for="smtpServerPassword">SMTP password</label>
                 <div class="input-group">
                     <input type="password" class="form-control {{#if errors.smtpServerPassword}}is-invalid{{/if}}"

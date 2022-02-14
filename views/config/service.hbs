@@ -18,6 +18,9 @@
         <div class="card-body">
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">serviceUrl</a>]</div>
+
                 <label for="settingsServiceUrl">Service URL</label>
                 <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
                     id="settingsServiceUrl" name="serviceUrl" value="{{values.serviceUrl}}" data-lpignore="true"
@@ -29,6 +32,9 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">serviceSecret</a>]</div>
+
                 <label for="settingsServiceSecret">Service secret</label>
 
                 <div class="input-group">
@@ -49,6 +55,9 @@
             </div>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">enableApiProxy</a>]</div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
                     id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
                 <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
@@ -69,6 +78,9 @@
         <div class="card-body">
 
             <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.enableTokens}}is-invalid{{/if}}"
                     id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
                 <label class="form-check-label" for="enableTokens">Require Access Tokens
@@ -85,6 +97,11 @@
             </div>
 
             <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a
+                        href="https://docs.emailengine.app/enabling-secret-encryption/"
+                        target="_blank">EENGINE_SECRET</a>]</div>
+
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
                 <label class="form-check-label" for="encryption">Field level encryption
@@ -122,6 +139,10 @@
 
         <div class="card-body">
             <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">queueKeep</a>]</div>
+
                 <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
                 <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
                     id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
@@ -157,6 +178,9 @@
         <div class="card-body">
 
             <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">templateHeader</a>]</div>
 
                 <label for="templateHeaderElement">Template header for public pages</label>
                 <textarea class="form-control droptxt {{#if errors.templateHeader}}is-invalid{{/if}}"

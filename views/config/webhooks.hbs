@@ -45,6 +45,10 @@
         <div class="card-body">
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">webhooksEnabled</a>]
+                </div>
+
                 <input type="checkbox"
                     class="form-check-input webhooks-status {{#if errors.webhooksEnabled}}is-invalid{{/if}}"
                     id="webhooks_enabled" name="webhooksEnabled" {{#if values.webhooksEnabled}}checked{{/if}} />
@@ -57,6 +61,10 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">webhooks</a>]
+                </div>
+
                 <label for="settingsWebhooks">Webhook URL</label>
 
                 <input type="url" class="form-control or-else-all {{#if errors.webhooks}}is-invalid{{/if}}"
@@ -81,6 +89,10 @@
                 events if you have a lot of accounts registered, or you might fill the event queue in memory.</p>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">webhookEvents</a>="*"]
+                </div>
+
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyAll}}is-invalid{{/if}}"
                     data-target="event-type" id="notifyAll" name="notifyAll" {{#if values.notifyAll}}checked{{/if}} />
                 <label class="form-check-label" for="notifyAll">All
@@ -93,6 +105,9 @@
             <div class="form-group form-check">
                 {{#each notificationTypes}}
                 <div>
+                    <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">webhookEvents</a>="{{name}}"]
+                    </div>
                     <input type="checkbox" class="form-check-input event-type {{#if error}}is-invalid{{/if}}"
                         id="notify_{{name}}" name="notify_{{name}}" {{#if checked}}checked{{/if}}>
                     <label class="form-check-label" for="notify_{{name}}"
@@ -115,6 +130,9 @@
                 header keys as well.</p>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">notifyHeaders</a>="*"]
+                </div>
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.headersAll}}is-invalid{{/if}}"
                     data-target="header-list" id="headers_all" name="headersAll" {{#if
                     values.headersAll}}checked{{/if}} />
@@ -125,6 +143,9 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">notifyHeaders</a>]
+                </div>
                 <label for="settingsNotifyHeaders">Selected headers</label>
                 <textarea class="form-control header-list {{#if errors.notifyHeaders}}is-invalid{{/if}}"
                     id="settingsNotifyHeaders" name="notifyHeaders" rows="3"
@@ -149,6 +170,9 @@
                 well.</p>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">notifyText</a>]
+                </div>
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyText}}is-invalid{{/if}}"
                     data-target="text-list" data-reverse="true" id="settingsNotifyText" name="notifyText" {{#if
                     values.notifyText}}checked{{/if}} />
@@ -160,6 +184,9 @@
             </div>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">notifyTextSize</a>]
+                </div>
                 <label for="settingsNotifyTextSize">Maximum text size</label>
                 <input type="number" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
                     id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}" />
