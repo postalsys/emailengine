@@ -2231,13 +2231,7 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
-                    message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
-                    force: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('Delete message even if not in Trash')
-                        .label('ForceDelete')
+                    message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }).label('MessageDelete')
             },
             response: {
