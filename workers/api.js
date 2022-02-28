@@ -2562,7 +2562,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return await accountObject.queueMessage(request.payload);
+                return await accountObject.queueMessage(request.payload, { source: 'api' });
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2673,7 +2673,11 @@ When making API calls remember that requests against the same account are queued
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers'),
 
-                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso()
+                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso(),
+                    deliveryAttempts: Joi.number()
+                        .example(10)
+                        .description('How many delivery attempts to make until message is considered as failed')
+                        .default(10)
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')

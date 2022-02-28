@@ -263,7 +263,7 @@ async function init() {
                     };
 
                     accountObject
-                        .queueMessage(payload)
+                        .queueMessage(payload, { source: 'smtp' })
                         .then(res => {
                             // queued for later
                             metrics(logger, 'events', 'inc', {
