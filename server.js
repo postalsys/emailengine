@@ -1139,8 +1139,8 @@ const startApplication = async () => {
         await settings.set('enableApiProxy', API_PROXY);
     }
 
-    let existinServiceSecret = await settings.get('serviceSecret');
-    if (existinServiceSecret === null) {
+    let existingServiceSecret = await settings.get('serviceSecret');
+    if (existingServiceSecret === null) {
         await settings.set('serviceSecret', crypto.randomBytes(16).toString('hex'));
     }
 
