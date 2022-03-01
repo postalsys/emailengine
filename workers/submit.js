@@ -151,10 +151,60 @@ const submitWorker = new Worker(
         }
 
         let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
+        try {
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'processing'
+                });
+            } catch (err) {
+                // ignore
+            }
 
-        let res = await accountObject.submitMessage(queueEntry);
+            let res = await accountObject.submitMessage(queueEntry);
 
-        logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, messageId: job.data.messageId, res });
+            logger.info({
+                msg: 'Submitted queued message for delivery',
+                account: queueEntry.account,
+                queueId: job.data.qId,
+                messageId: job.data.messageId,
+                res
+            });
+
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'submitted',
+                    response: res.response
+                });
+            } catch (err) {
+                // ignore
+            }
+        } catch (err) {
+            logger.error({
+                msg: 'Message submission failed',
+                account: queueEntry.account,
+                queueId: job.data.qId,
+                messageId: job.data.messageId,
+                err
+            });
+
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'error',
+                    error: {
+                        message: err.message,
+                        code: err.code,
+                        statusCode: err.statusCode
+                    }
+                });
+            } catch (err) {
+                // ignore
+            }
+
+            throw err;
+        }
     },
     Object.assign(
         {
