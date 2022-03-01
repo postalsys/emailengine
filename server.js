@@ -764,7 +764,7 @@ let upgradeCheckHandler = async () => {
     }
     await processCheckUpgrade();
     upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
-    licenseCheckTimer.unref();
+    upgradeCheckTimer.unref();
 };
 
 function checkUpgrade() {
@@ -1221,7 +1221,7 @@ startApplication()
         licenseCheckTimer.unref();
 
         upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
-        licenseCheckTimer.unref();
+        upgradeCheckTimer.unref();
 
         notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
         submitScheduler = new QueueScheduler('submit', Object.assign({}, queueConf));
