@@ -213,6 +213,21 @@ const submitWorker = new Worker(
                 // ignore
             }
 
+            if (err.statusCode >= 500 && job.attemptsMade < job.opts.attempts) {
+                try {
+                    // do not retry after 5xx error
+                    await job.discard();
+                    logger.info({
+                        msg: 'Job discarded',
+                        account: queueEntry.account,
+                        queueId: job.data.qId
+                    });
+                } catch (E) {
+                    // ignore
+                    logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.qId, err: E });
+                }
+            }
+
             throw err;
         }
     },
@@ -235,7 +250,7 @@ submitWorker.on('completed', async job => {
 });
 
 submitWorker.on('failed', async job => {
-    if (job.finishedOn) {
+    if (job.finishedOn || job.discarded) {
         // this was final attempt, remove it
         if (job.data && job.data.account && job.data.qId) {
             try {

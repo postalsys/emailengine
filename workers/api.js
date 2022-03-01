@@ -26,6 +26,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
+const outbox = require('../lib/outbox');
 
 const { redis, REDIS_CONF } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -3220,9 +3221,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
-                return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
+                return await outbox.list(request.query);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -3289,7 +3288,27 @@ When making API calls remember that requests against the same account are queued
 
                                 created: Joi.date().example('2021-02-17T13:43:18.860Z').description('The time this message was queued').iso(),
                                 scheduled: Joi.date().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered').iso(),
-                                nextAttempt: Joi.date().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt').iso()
+                                nextAttempt: Joi.date().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt').iso(),
+
+                                attemptsMade: Joi.number().example(3).description('How many times EmailEngine has tried to deliver this email'),
+                                attempts: Joi.number().example(3).description('How many delivery attempts to make until message is considered as failed'),
+
+                                progress: Joi.object({
+                                    status: Joi.string()
+                                        .valid('queued', 'processing', 'submitted', 'error')
+                                        .example('queued')
+                                        .description('Current state of the sending'),
+                                    response: Joi.string()
+                                        .example('250 Message Accepted')
+                                        .description('Response from the SMTP server. Only if state=processing'),
+                                    error: Joi.object({
+                                        message: Joi.string().example('Authentication failed').description('Error message'),
+                                        code: Joi.string().example('EAUTH').description('Error code'),
+                                        statusCode: Joi.string().example(502).description('SMTP response code')
+                                    })
+                                        .label('OutboxListProgressError')
+                                        .description('Error information if state=error')
+                                }).label('OutboxListProgress')
                             }).label('OutboxListItem')
                         )
                         .label('OutboxListEntries')
