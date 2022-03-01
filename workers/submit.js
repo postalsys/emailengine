@@ -14,6 +14,7 @@ const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
+const { now } = require('jquery');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -160,6 +161,15 @@ const submitWorker = new Worker(
             } catch (err) {
                 // ignore
             }
+
+            let backoffDelay = Number(job.opts.backoff && job.opts.backoff.delay) || 0;
+            let nextAttempt = job.attemptsMade < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
+
+            queueEntry.job = {
+                attemptsMade: job.attemptsMade,
+                attempts: job.opts.attempts,
+                nextAttempt: new Date(nextAttempt).toISOString()
+            };
 
             let res = await accountObject.submitMessage(queueEntry);
 

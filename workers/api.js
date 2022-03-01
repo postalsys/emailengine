@@ -3214,6 +3214,91 @@ When making API calls remember that requests against the same account are queued
         }
     });
 
+    server.route({
+        method: 'GET',
+        path: '/v1/outbox',
+
+        async handler(request) {
+            try {
+                let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+                return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List queued messages',
+            notes: 'Lists messages in the Outbox',
+            tags: ['api', 'outbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('OutbixListFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    messages: Joi.array()
+                        .items(
+                            Joi.object({
+                                qId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
+
+                                messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                                envelope: Joi.object({
+                                    from: Joi.string().email().allow('').example('sender@example.com'),
+                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
+                                }).description('SMTP envelope'),
+                                subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+
+                                created: Joi.date().example('2021-02-17T13:43:18.860Z').description('The time this message was queued').iso(),
+                                scheduled: Joi.date().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered').iso(),
+                                nextAttempt: Joi.date().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt').iso()
+                            }).label('OutboxListItem')
+                        )
+                        .label('OutboxListEntries')
+                }).label('OutboxListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
     // Web UI routes
 
     await server.register({
