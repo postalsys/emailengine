@@ -111,7 +111,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 };
 
 // check for upgrades once in 8 hours
-const CHECK_UPGRADE_TIMEOUT = 8 * 3600 * 1000;
+const UPGRADE_CHECK_TIMEOUT = 8 * 3600 * 1000;
 const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
 
 const licenseInfo = {
@@ -763,7 +763,7 @@ let upgradeCheckHandler = async () => {
         return;
     }
     await processCheckUpgrade();
-    upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
+    upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
     upgradeCheckTimer.unref();
 };
 
@@ -1220,7 +1220,7 @@ startApplication()
         licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
         licenseCheckTimer.unref();
 
-        upgradeCheckTimer = setTimeout(checkUpgrade, CHECK_UPGRADE_TIMEOUT);
+        upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
         upgradeCheckTimer.unref();
 
         notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
