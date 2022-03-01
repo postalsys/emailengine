@@ -26,6 +26,7 @@ const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
+const outbox = require('../lib/outbox');
 
 const { redis, REDIS_CONF } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -2562,7 +2563,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return await accountObject.queueMessage(request.payload);
+                return await accountObject.queueMessage(request.payload, { source: 'api' });
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2673,7 +2674,11 @@ When making API calls remember that requests against the same account are queued
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers'),
 
-                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso()
+                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso(),
+                    deliveryAttempts: Joi.number()
+                        .example(10)
+                        .description('How many delivery attempts to make until message is considered as failed')
+                        .default(10)
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -3205,6 +3210,163 @@ When making API calls remember that requests against the same account are queued
                     }).label('DiscoveredServerSettings'),
                     _source: Joi.string().example('srv').description('Source for the detected info')
                 }).label('DiscoveredEmailSettings'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/outbox',
+
+        async handler(request) {
+            try {
+                return await outbox.list(Object.assign({ logger }, request.query));
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List queued messages',
+            notes: 'Lists messages in the Outbox',
+            tags: ['api', 'outbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('OutbixListFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    messages: Joi.array()
+                        .items(
+                            Joi.object({
+                                queueId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
+
+                                messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                                envelope: Joi.object({
+                                    from: Joi.string().email().allow('').example('sender@example.com'),
+                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
+                                }).description('SMTP envelope'),
+                                subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+
+                                created: Joi.date().example('2021-02-17T13:43:18.860Z').description('The time this message was queued').iso(),
+                                scheduled: Joi.date().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered').iso(),
+                                nextAttempt: Joi.date().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt').iso(),
+
+                                attemptsMade: Joi.number().example(3).description('How many times EmailEngine has tried to deliver this email'),
+                                attempts: Joi.number().example(3).description('How many delivery attempts to make until message is considered as failed'),
+
+                                progress: Joi.object({
+                                    status: Joi.string()
+                                        .valid('queued', 'processing', 'submitted', 'error')
+                                        .example('queued')
+                                        .description('Current state of the sending'),
+                                    response: Joi.string()
+                                        .example('250 Message Accepted')
+                                        .description('Response from the SMTP server. Only if state=processing'),
+                                    error: Joi.object({
+                                        message: Joi.string().example('Authentication failed').description('Error message'),
+                                        code: Joi.string().example('EAUTH').description('Error code'),
+                                        statusCode: Joi.string().example(502).description('SMTP response code')
+                                    })
+                                        .label('OutboxListProgressError')
+                                        .description('Error information if state=error')
+                                }).label('OutboxListProgress')
+                            }).label('OutboxListItem')
+                        )
+                        .label('OutboxListEntries')
+                }).label('OutboxListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/outbox/{queueId}',
+
+        async handler(request) {
+            try {
+                return {
+                    deleted: await outbox.del({ queueId: request.params.queueId, logger })
+                };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove a message',
+            notes: 'Remove a message from the outbox',
+            tags: ['api', 'outbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queueId: Joi.string().max(100).example('d41f0423195f271f').description('Queue identifier for scheduled email').required()
+                }).label('DeleteOutboxEntry')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the message deleted')
+                }).label('DeleteOutboxEntryResponse'),
                 failAction: 'log'
             }
         }

@@ -255,12 +255,12 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        let accountData = this.accounts.get(message.account);
+        const accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.queueMessage(message.data);
+        return await accountData.connection.queueMessage(message.data, message.meta);
     }
 
     async uploadMessage(message) {

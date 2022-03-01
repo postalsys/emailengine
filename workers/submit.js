@@ -121,11 +121,16 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 const submitWorker = new Worker(
     'submit',
     async job => {
-        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
+        if (!job.data.queueId && job.data.qId) {
+            // this value was used to be called qId
+            job.data.queueId = job.data.qId;
+        }
+
+        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.queueId);
         if (!queueEntryBuf) {
             // nothing to do here
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -138,7 +143,7 @@ const submitWorker = new Worker(
         } catch (err) {
             logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -151,10 +156,84 @@ const submitWorker = new Worker(
         }
 
         let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
+        try {
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'processing'
+                });
+            } catch (err) {
+                // ignore
+            }
 
-        let res = await accountObject.submitMessage(queueEntry);
+            let backoffDelay = Number(job.opts.backoff && job.opts.backoff.delay) || 0;
+            let nextAttempt = job.attemptsMade < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
 
-        logger.info({ msg: 'Submitted queued message for delivery', account: queueEntry.account, queueId: job.data.qId, messageId: job.data.messageId, res });
+            queueEntry.job = {
+                attemptsMade: job.attemptsMade,
+                attempts: job.opts.attempts,
+                nextAttempt: new Date(nextAttempt).toISOString()
+            };
+
+            let res = await accountObject.submitMessage(queueEntry);
+
+            logger.info({
+                msg: 'Submitted queued message for delivery',
+                account: queueEntry.account,
+                queueId: job.data.queueId,
+                messageId: job.data.messageId,
+                res
+            });
+
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'submitted',
+                    response: res.response
+                });
+            } catch (err) {
+                // ignore
+            }
+        } catch (err) {
+            logger.error({
+                msg: 'Message submission failed',
+                account: queueEntry.account,
+                queueId: job.data.queueId,
+                messageId: job.data.messageId,
+                err
+            });
+
+            try {
+                // try to update
+                await job.updateProgress({
+                    status: 'error',
+                    error: {
+                        message: err.message,
+                        code: err.code,
+                        statusCode: err.statusCode
+                    }
+                });
+            } catch (err) {
+                // ignore
+            }
+
+            if (err.statusCode >= 500 && job.attemptsMade < job.opts.attempts) {
+                try {
+                    // do not retry after 5xx error
+                    await job.discard();
+                    logger.info({
+                        msg: 'Job discarded',
+                        account: queueEntry.account,
+                        queueId: job.data.queueId
+                    });
+                } catch (E) {
+                    // ignore
+                    logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.queueId, err: E });
+                }
+            }
+
+            throw err;
+        }
     },
     Object.assign(
         {
@@ -165,28 +244,37 @@ const submitWorker = new Worker(
 );
 
 submitWorker.on('completed', async job => {
-    if (job.data && job.data.account && job.data.qId) {
+    if (!job.data.queueId && job.data.qId) {
+        // this value was used to be called qId
+        job.data.queueId = job.data.qId;
+    }
+
+    if (job.data && job.data.account && job.data.queueId) {
         try {
-            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
         } catch (err) {
-            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
         }
     }
 });
 
 submitWorker.on('failed', async job => {
-    if (job.finishedOn) {
+    if (job.finishedOn || job.discarded) {
         // this was final attempt, remove it
-        if (job.data && job.data.account && job.data.qId) {
+        if (!job.data.queueId && job.data.qId) {
+            // this value was used to be called qId
+            job.data.queueId = job.data.qId;
+        }
+        if (job.data && job.data.account && job.data.queueId) {
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
-                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
             }
             // report as failed
             await notify(job.data.account, EMAIL_FAILED_NOTIFY, {
                 messageId: job.data.messageId,
-                queueId: job.data.qId,
+                queueId: job.data.queueId,
                 error: job.stacktrace && job.stacktrace[0] && job.stacktrace[0].split('\n').shift()
             });
         }
