@@ -3221,7 +3221,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await outbox.list(request.query);
+                return await outbox.list(Object.assign({ logger }, request.query));
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -3275,7 +3275,7 @@ When making API calls remember that requests against the same account are queued
                     messages: Joi.array()
                         .items(
                             Joi.object({
-                                qId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
+                                queueId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
                                 account: Joi.string().max(256).required().example('example').description('Account ID'),
                                 source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
 
@@ -3313,6 +3313,60 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('OutboxListEntries')
                 }).label('OutboxListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/outbox/{queueId}',
+
+        async handler(request) {
+            try {
+                return {
+                    deleted: await outbox.del({ queueId: request.params.queueId, logger })
+                };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove a message',
+            notes: 'Remove a message from the outbox',
+            tags: ['api', 'outbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queueId: Joi.string().max(100).example('d41f0423195f271f').description('Queue identifier for scheduled email').required()
+                }).label('DeleteOutboxEntry')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the message deleted')
+                }).label('DeleteOutboxEntryResponse'),
                 failAction: 'log'
             }
         }

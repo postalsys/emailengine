@@ -14,7 +14,6 @@ const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
-const { now } = require('jquery');
 
 config.smtp = config.smtp || {
     port: 2525,
@@ -122,11 +121,16 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 const submitWorker = new Worker(
     'submit',
     async job => {
-        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.qId);
+        if (!job.data.queueId && job.data.qId) {
+            // this value was used to be called qId
+            job.data.queueId = job.data.qId;
+        }
+
+        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.queueId);
         if (!queueEntryBuf) {
             // nothing to do here
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -139,7 +143,7 @@ const submitWorker = new Worker(
         } catch (err) {
             logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -176,7 +180,7 @@ const submitWorker = new Worker(
             logger.info({
                 msg: 'Submitted queued message for delivery',
                 account: queueEntry.account,
-                queueId: job.data.qId,
+                queueId: job.data.queueId,
                 messageId: job.data.messageId,
                 res
             });
@@ -194,7 +198,7 @@ const submitWorker = new Worker(
             logger.error({
                 msg: 'Message submission failed',
                 account: queueEntry.account,
-                queueId: job.data.qId,
+                queueId: job.data.queueId,
                 messageId: job.data.messageId,
                 err
             });
@@ -220,11 +224,11 @@ const submitWorker = new Worker(
                     logger.info({
                         msg: 'Job discarded',
                         account: queueEntry.account,
-                        queueId: job.data.qId
+                        queueId: job.data.queueId
                     });
                 } catch (E) {
                     // ignore
-                    logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.qId, err: E });
+                    logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.queueId, err: E });
                 }
             }
 
@@ -240,11 +244,16 @@ const submitWorker = new Worker(
 );
 
 submitWorker.on('completed', async job => {
-    if (job.data && job.data.account && job.data.qId) {
+    if (!job.data.queueId && job.data.qId) {
+        // this value was used to be called qId
+        job.data.queueId = job.data.qId;
+    }
+
+    if (job.data && job.data.account && job.data.queueId) {
         try {
-            await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+            await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
         } catch (err) {
-            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+            logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
         }
     }
 });
@@ -252,16 +261,20 @@ submitWorker.on('completed', async job => {
 submitWorker.on('failed', async job => {
     if (job.finishedOn || job.discarded) {
         // this was final attempt, remove it
-        if (job.data && job.data.account && job.data.qId) {
+        if (!job.data.queueId && job.data.qId) {
+            // this value was used to be called qId
+            job.data.queueId = job.data.qId;
+        }
+        if (job.data && job.data.account && job.data.queueId) {
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.qId);
+                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
-                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.qId, messageId: job.data.messageId, err });
+                logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
             }
             // report as failed
             await notify(job.data.account, EMAIL_FAILED_NOTIFY, {
                 messageId: job.data.messageId,
-                queueId: job.data.qId,
+                queueId: job.data.queueId,
                 error: job.stacktrace && job.stacktrace[0] && job.stacktrace[0].split('\n').shift()
             });
         }
