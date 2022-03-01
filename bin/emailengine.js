@@ -84,7 +84,7 @@ switch (cmd) {
         // Show version
         fs.readFile(pathlib.join(__dirname, '..', 'help.txt'), (err, helpText) => {
             if (err) {
-                console.error('Failed to load license information');
+                console.error('Failed to load help information');
                 console.error(err);
                 return process.exit(1);
             }
