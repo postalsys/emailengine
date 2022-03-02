@@ -153,7 +153,7 @@ switch (cmd) {
                     console.error('===================');
 
                     console.log(`EmailEngine v${packageData.version}`);
-                    console.error(`(c) 2020-2021 Postal Systems`);
+                    console.error(`(c) 2020-${new Date().getFullYear()} Postal Systems`);
                     console.error(`${packageData.license}, full text follows`);
                     console.error('');
 

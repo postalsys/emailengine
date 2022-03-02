@@ -3498,7 +3498,8 @@ When making API calls remember that requests against the same account are queued
                 authData,
                 packageData,
                 systemAlerts,
-                embeddedTemplateHeader: await settings.get('templateHeader')
+                embeddedTemplateHeader: await settings.get('templateHeader'),
+                currentYear: new Date().getFullYear()
             };
         }
     });
