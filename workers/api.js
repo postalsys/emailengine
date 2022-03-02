@@ -1492,7 +1492,7 @@ When making API calls remember that requests against the same account are queued
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state']) {
+                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state', 'smtpStatus']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }

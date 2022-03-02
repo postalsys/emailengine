@@ -126,53 +126,8 @@
 </div>
 
 
-{{#if account.oauth2}}
-
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Oauth2</h6>
-    </div>
-    <div class="card-body">
-
-        <dl class="row">
-
-            {{#if account.oauth2.provider}}
-            <dt class="col-sm-3">Provider</dt>
-            <dd class="col-sm-9">{{account.type.comment}}</dd>
-            {{/if}}
-
-            {{#if account.oauth2.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
-            {{/if}}
-
-            {{#if account.oauth2.scopes}}
-            <dt class="col-sm-3">Scopes</dt>
-            <dd class="col-sm-9">
-                <div>
-                    {{#each account.oauth2.scopes}}
-                    <div><code>{{this}}</code></div>
-                    {{/each}}
-                </div>
-            </dd>
-            {{/if}}
-
-        </dl>
-
-
-
-    </div>
-</div>
-
-
-
-{{/if}}
-
-
 
 {{#if account.imap}}
-
-
 <div class="card mb-4">
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
@@ -217,9 +172,25 @@
 {{#if account.smtp}}
 <div class="card mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
+        <h6 class="m-0 font-weight-bold text-primary">SMTP {{#if smtpError}}<span
+                class="badge badge-danger">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
+
+        {{#if smtpError}}
+        <dl class="row">
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{account.smtpStatus.description}}</dd>
+
+            {{#if account.smtpStatus.response}}
+            <dt class="col-sm-3">SMTP response</dt>
+            <dd class="col-sm-9"><code>{{account.smtpStatus.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+        <hr>
+        {{/if}}
+
 
         <dl class="row">
 
@@ -251,6 +222,68 @@
     </div>
 </div>
 
+{{else}}
+
+{{#if smtpError}}
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">SMTP <span class="badge badge-danger">errored</span></h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{account.smtpStatus.description}}</dd>
+
+            {{#if account.smtpStatus.response}}
+            <dt class="col-sm-3">SMTP response</dt>
+            <dd class="col-sm-9"><code>{{account.smtpStatus.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+    </div>
+</div>
+{{/if}}
+
+{{/if}}
+
+{{#if account.oauth2}}
+
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Oauth2</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+
+            {{#if account.oauth2.provider}}
+            <dt class="col-sm-3">Provider</dt>
+            <dd class="col-sm-9">{{account.type.comment}}</dd>
+            {{/if}}
+
+            {{#if account.oauth2.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            {{/if}}
+
+            {{#if account.oauth2.scopes}}
+            <dt class="col-sm-3">Scopes</dt>
+            <dd class="col-sm-9">
+                <div>
+                    {{#each account.oauth2.scopes}}
+                    <div><code>{{this}}</code></div>
+                    {{/each}}
+                </div>
+            </dd>
+            {{/if}}
+
+        </dl>
+
+
+
+    </div>
+</div>
 
 {{/if}}
 
