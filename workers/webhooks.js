@@ -125,7 +125,7 @@ const notifyWorker = new Worker(
                 status: 'success'
             });
         } catch (err) {
-            if (err.status === 410 || err.status === 404) {
+            if (err.status === 410) {
                 // disable webhook
                 logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, status: err.status, err });
                 await settings.set('webhooksEnabled', false);
