@@ -1,6 +1,10 @@
 'use strict';
 
-require('dotenv').config();
+if (!process.env.EE_ENV_LOADED) {
+    require('dotenv').config(); // eslint-disable-line global-require
+    process.env.EE_ENV_LOADED = 'true';
+}
+
 try {
     process.chdir(__dirname);
 } catch (err) {
