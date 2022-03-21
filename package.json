@@ -11,6 +11,7 @@
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --production && rm -rf package-lock.json && ./update-info.sh",
         "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
+        "build-dist-fast": "npx pkg package.json && rm -rf package-lock.json && npm install",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses"
     },
