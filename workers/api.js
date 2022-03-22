@@ -77,6 +77,8 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
+const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
 let registeredPublishers = new Set();
 
 class ResponseStream extends Transform {
@@ -514,6 +516,17 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/robots.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'static', 'robots.txt'), confine: false }
+        },
+        options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/static/{file*}',
         handler: {
             directory: {
@@ -521,6 +534,81 @@ When making API calls remember that requests against the same account are queued
             }
         },
         options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/redirect',
+        async handler(request, h) {
+            // TODO: track a click
+
+            return h.redirect(request.query.url);
+        },
+        options: {
+            description: 'Click tracking redirect',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    msg: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .required(),
+                    url: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .required()
+                })
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/open.gif',
+        async handler(request, h) {
+            // TODO: track an open
+
+            // respond with a static image file
+            return h
+                .response(TRACKER_IMAGE)
+                .header('Content-Type', 'image/gif')
+                .header('Content-Disposition', 'inline; filename="open.gif"')
+                .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+                .header('Pragma', 'no-cache')
+                .code(200);
+        },
+        options: {
+            description: 'Open tracking image',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    msg: Joi.string()
+                        .empty('')
+                        .max(100 * 1024)
+                        .required()
+                })
+            },
+
             auth: false
         }
     });
