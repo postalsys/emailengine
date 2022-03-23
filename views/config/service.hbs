@@ -71,6 +71,32 @@
         </div>
     </div>
 
+
+    <div class="card mb-4" id="sending">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">trackSentMessages</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
+                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
+                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
+                        class="badge badge-dark">experimental</span></label>
+                {{#if errors.trackSentMessages}}
+                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
+                    through EmailEngine to track opens and clicks. <strong>NB!</strong> <a href="{{values.serviceUrl}}"
+                        target="_blank">{{values.serviceUrl}}</a> must be
+                    publicly accessible for tracking to work.</small>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-4" id="security">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Security settings</h6>

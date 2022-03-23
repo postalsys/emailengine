@@ -28,7 +28,7 @@ const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 
-const { redis, REDIS_CONF } = require('../lib/db');
+const { redis, REDIS_CONF, notifyQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
@@ -36,6 +36,8 @@ const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo
 const getSecret = require('../lib/get-secret');
 
 const routesUi = require('../lib/routes-ui');
+
+const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY } = require('../lib/consts');
 
 const {
     settingsSchema,
@@ -60,6 +62,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
+const { url } = require('inspector');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -76,6 +79,8 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
+
+const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
 let registeredPublishers = new Set();
 
@@ -172,6 +177,36 @@ async function notify(cmd, data) {
     parentPort.postMessage({
         cmd,
         data
+    });
+}
+
+async function sendWebhook(account, event, data) {
+    metrics(logger, 'events', 'inc', {
+        event
+    });
+
+    let payload = {
+        account,
+        date: new Date().toISOString()
+    };
+
+    if (event) {
+        payload.event = event;
+    }
+
+    if (data) {
+        payload.data = data;
+    }
+
+    let queueKeep = (await settings.get('queueKeep')) || true;
+    await notifyQueue.add(event, payload, {
+        removeOnComplete: queueKeep,
+        removeOnFail: queueKeep,
+        attempts: 10,
+        backoff: {
+            type: 'exponential',
+            delay: 5000
+        }
     });
 }
 
@@ -514,6 +549,17 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/robots.txt',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'static', 'robots.txt'), confine: false }
+        },
+        options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/static/{file*}',
         handler: {
             directory: {
@@ -521,6 +567,125 @@ When making API calls remember that requests against the same account are queued
             }
         },
         options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/redirect',
+        async handler(request, h) {
+            // TODO: track a click
+
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                    throw error;
+                }
+            }
+
+            data = JSON.parse(data);
+            if (!data || !data.url || data.act !== 'click') {
+                let error = Boom.boomify(new Error('Invalid query'), { statusCode: 403 });
+                throw error;
+            }
+
+            if (!data.url) {
+                let error = Boom.boomify(new Error('Missing URL'), { statusCode: 403 });
+                throw error;
+            }
+
+            await sendWebhook(data.acc, TRACK_CLICK_NOTIFY, {
+                messageId: data.msg,
+                url: data.url,
+                remoteAddress: request.info.remoteAddress,
+                userAgent: request.headers['user-agent']
+            });
+
+            return h.redirect(data.url);
+        },
+        options: {
+            description: 'Click tracking redirect',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
+                })
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/open.gif',
+        async handler(request, h) {
+            // TODO: track an open
+
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                    throw error;
+                }
+            }
+
+            data = JSON.parse(data);
+            if (!data || data.act !== 'open') {
+                let error = Boom.boomify(new Error('Invalid query'), { statusCode: 403 });
+                throw error;
+            }
+
+            await sendWebhook(data.acc, TRACK_OPEN_NOTIFY, {
+                messageId: data.msg,
+                remoteAddress: request.info.remoteAddress,
+                userAgent: request.headers['user-agent']
+            });
+
+            // respond with a static image file
+            return h
+                .response(TRACKER_IMAGE)
+                .header('Content-Type', 'image/gif')
+                .header('Content-Disposition', 'inline; filename="open.gif"')
+                .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+                .header('Pragma', 'no-cache')
+                .code(200);
+        },
+        options: {
+            description: 'Open tracking image',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
+                })
+            },
+
             auth: false
         }
     });
