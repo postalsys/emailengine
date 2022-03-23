@@ -28,7 +28,7 @@ const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 
-const { redis, REDIS_CONF } = require('../lib/db');
+const { redis, REDIS_CONF, notifyQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
@@ -36,6 +36,8 @@ const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo
 const getSecret = require('../lib/get-secret');
 
 const routesUi = require('../lib/routes-ui');
+
+const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY } = require('../lib/consts');
 
 const {
     settingsSchema,
@@ -60,6 +62,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
+const { url } = require('inspector');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -174,6 +177,36 @@ async function notify(cmd, data) {
     parentPort.postMessage({
         cmd,
         data
+    });
+}
+
+async function sendWebhook(account, event, data) {
+    metrics(logger, 'events', 'inc', {
+        event
+    });
+
+    let payload = {
+        account,
+        date: new Date().toISOString()
+    };
+
+    if (event) {
+        payload.event = event;
+    }
+
+    if (data) {
+        payload.data = data;
+    }
+
+    let queueKeep = (await settings.get('queueKeep')) || true;
+    await notifyQueue.add(event, payload, {
+        removeOnComplete: queueKeep,
+        removeOnFail: queueKeep,
+        attempts: 10,
+        backoff: {
+            type: 'exponential',
+            delay: 5000
+        }
     });
 }
 
@@ -544,7 +577,36 @@ When making API calls remember that requests against the same account are queued
         async handler(request, h) {
             // TODO: track a click
 
-            return h.redirect(request.query.url);
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                    throw error;
+                }
+            }
+
+            data = JSON.parse(data);
+            if (!data || !data.url || data.act !== 'click') {
+                let error = Boom.boomify(new Error('Invalid query'), { statusCode: 403 });
+                throw error;
+            }
+
+            if (!data.url) {
+                let error = Boom.boomify(new Error('Missing URL'), { statusCode: 403 });
+                throw error;
+            }
+
+            await sendWebhook(data.acc, TRACK_CLICK_NOTIFY, {
+                messageId: data.msg,
+                url: data.url,
+                remoteAddress: request.info.remoteAddress,
+                userAgent: request.headers['user-agent']
+            });
+
+            return h.redirect(data.url);
         },
         options: {
             description: 'Click tracking redirect',
@@ -559,14 +621,8 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 query: Joi.object({
-                    msg: Joi.string()
-                        .empty('')
-                        .max(100 * 1024)
-                        .required(),
-                    url: Joi.string()
-                        .empty('')
-                        .max(100 * 1024)
-                        .required()
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
             },
 
@@ -579,6 +635,29 @@ When making API calls remember that requests against the same account are queued
         path: '/open.gif',
         async handler(request, h) {
             // TODO: track an open
+
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                    throw error;
+                }
+            }
+
+            data = JSON.parse(data);
+            if (!data || data.act !== 'open') {
+                let error = Boom.boomify(new Error('Invalid query'), { statusCode: 403 });
+                throw error;
+            }
+
+            await sendWebhook(data.acc, TRACK_OPEN_NOTIFY, {
+                messageId: data.msg,
+                remoteAddress: request.info.remoteAddress,
+                userAgent: request.headers['user-agent']
+            });
 
             // respond with a static image file
             return h
@@ -602,10 +681,8 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 query: Joi.object({
-                    msg: Joi.string()
-                        .empty('')
-                        .max(100 * 1024)
-                        .required()
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
             },
 
