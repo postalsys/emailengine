@@ -31,6 +31,29 @@
                 <small class="form-text text-muted">Base URL for EmailEngine without the path part.</small>
             </div>
 
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">enableApiProxy</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
+                    id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
+                <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
+                {{#if errors.enableApiProxy}}
+                <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine looks for the client
+                    IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
+                    web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4" id="security">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Security settings</h6>
+        </div>
+        <div class="card-body">
+
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">serviceSecret</a>]</div>
@@ -51,57 +74,9 @@
                 {{#if errors.serviceSecret}}
                 <span class="invalid-feedback">{{errors.serviceSecret}}</span>
                 {{/if}}
-                <small class="form-text text-muted">HMAC secret for signing public requests</small>
+                <small class="form-text text-muted">HMAC secret for signing public requests. Changing this value
+                    invalidates all tracking links in emails that were sent with the tracking option enabled.</small>
             </div>
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">enableApiProxy</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
-                    id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
-                <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
-                {{#if errors.enableApiProxy}}
-                <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
-                {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine looks for the client
-                    IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
-                    web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="card mb-4" id="sending">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
-        </div>
-        <div class="card-body">
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">trackSentMessages</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
-                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
-                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
-                        class="badge badge-dark">experimental</span></label>
-                {{#if errors.trackSentMessages}}
-                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
-                {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
-                    through EmailEngine to track opens and clicks. <strong>NB!</strong> <a href="{{values.serviceUrl}}"
-                        target="_blank">{{values.serviceUrl}}</a> must be
-                    publicly accessible for tracking to work.</small>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4" id="security">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Security settings</h6>
-        </div>
-        <div class="card-body">
 
             <div class="form-group form-check">
 
@@ -225,6 +200,34 @@
 
         </div>
     </div>
+
+    <div class="card mb-4" id="sending">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">trackSentMessages</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
+                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
+                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
+                        class="badge badge-dark">experimental</span></label>
+                {{#if errors.trackSentMessages}}
+                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
+                    through EmailEngine to track opens and clicks by default. You can still set this in the message
+                    level by using <code>trackingEnabled</code> option or <code>X-EE-Tracking-Enabled</code>
+                    header.<br />
+                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
+                    be publicly accessible for tracking to work.</small>
+            </div>
+        </div>
+    </div>
+
 
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">

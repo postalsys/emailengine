@@ -62,7 +62,6 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
-const { url } = require('inspector');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -2838,6 +2837,8 @@ When making API calls remember that requests against the same account are queued
 
                     messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers'),
+
+                    trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
 
                     sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso(),
                     deliveryAttempts: Joi.number()
