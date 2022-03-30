@@ -8,7 +8,7 @@ const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 const logger = require('../lib/logger');
 const packageData = require('../package.json');
-//const { EMAIL_SENT_NOTIFY, EMAIL_FAILED_NOTIFY, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
+// const { REDIS_PREFIX } = require('../lib/consts');
 const he = require('he');
 
 config.queues = config.queues || {
@@ -71,7 +71,29 @@ const notifyWorker = new Worker(
             return;
         }
 
-        logger.trace({ msg: 'Received new notification', webhooks, event: job.name, data: job.data });
+        switch (job.data.event) {
+            case 'messageNew': {
+                // check if we need to send this event or not
+                let isInbox = false;
+                if (
+                    (job.data.account && job.data.path === 'INBOX') ||
+                    job.data.specialUse === '\\Inbox' ||
+                    (job.data.data && job.data.data.labels && job.data.data.labels.includes('\\Inbox'))
+                ) {
+                    isInbox = true;
+                }
+
+                const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
+                if (inboxNewOnly && !isInbox) {
+                    // ignore this message
+                    return;
+                }
+
+                break;
+            }
+        }
+
+        logger.trace({ msg: 'Processing webhook', webhooks, event: job.name, data: job.data });
 
         let headers = {
             'Content-Type': 'application/json',
