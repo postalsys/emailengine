@@ -114,6 +114,24 @@
                         title="&quot;{{name}}&quot;">{{description}}</label>
                     {{#if error}}<span class="invalid-feedback">{{error}}</span>{{/if}}
                 </div>
+
+                {{#if isMessageNew}}
+
+                <div style="padding-left: 20px;">
+                    <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">inboxNewOnly</a>]
+                    </div>
+                    <input type="checkbox" class="form-check-input {{#if error}}is-invalid{{/if}}" id="inboxNewOnly"
+                        name="inboxNewOnly" {{#if ../values.inboxNewOnly}}checked{{/if}}>
+                    <label class="form-check-label" for="inboxNewOnly">Send "New Email" notifications about incoming
+                        emails
+                        only</label>
+                    {{#if ../errors.inboxNewOnly}}
+                    <span class="invalid-feedback">{{../errors.inboxNewOnly}}</span>
+                    {{/if}}
+                </div>
+
+                {{/if}}
                 {{/each}}
             </div>
         </div>
