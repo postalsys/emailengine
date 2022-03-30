@@ -20,6 +20,20 @@
 
 <p class="mb-4">Webhooks allow EmailEngine to notify you about changes on registered email accounts.</p>
 
+{{#if values.webhooksEnabled}}
+{{#if webhookErrorFlag}}
+<div class="mt-3 mb-3 alert alert-danger">
+    <p><strong>NB!</strong> The last attempted webhook failed with the response below.</p>
+    <hr>
+    <p class="mb-0">
+        <code>
+            {{webhookErrorFlag.message}}
+        </code>
+    </p>
+</div>
+{{/if}}
+{{/if}}
+
 <form method="post" action="/admin/config/webhooks">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 

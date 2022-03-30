@@ -3618,6 +3618,17 @@ When making API calls remember that requests against the same account are queued
                 });
             }
 
+            let webhookErrorFlag = await settings.get('webhookErrorFlag');
+            let webhooksEnabled = await settings.get('webhooksEnabled');
+            if (webhooksEnabled && webhookErrorFlag && webhookErrorFlag.message) {
+                systemAlerts.push({
+                    url: '/admin/config/webhooks',
+                    level: 'danger',
+                    icon: 'link',
+                    message: 'Webhooks are failing, please review'
+                });
+            }
+
             if (!request.app.licenseInfo || !request.app.licenseInfo.active) {
                 systemAlerts.push({
                     url: '/admin/config/license',

@@ -142,6 +142,12 @@ const notifyWorker = new Worker(
 
             logger.trace({ msg: 'Webhook posted', webhooks, event: job.name, status: res.status });
 
+            try {
+                await settings.clear('webhookErrorFlag', {});
+            } catch (err) {
+                // ignore
+            }
+
             metrics(logger, 'webhooks', 'inc', {
                 event: job.name,
                 status: 'success'
@@ -155,6 +161,16 @@ const notifyWorker = new Worker(
             }
 
             logger.error({ msg: 'Failed posting webhook', webhooks, event: job.name, err });
+
+            try {
+                await settings.set('webhookErrorFlag', {
+                    event: job.name,
+                    message: err.message,
+                    time: Date.now()
+                });
+            } catch (err) {
+                // ignore
+            }
 
             metrics(logger, 'webhooks', 'inc', {
                 event: job.name,
