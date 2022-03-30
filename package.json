@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.15.1",
+    "version": "2.16.0",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -54,10 +54,10 @@
         "html-to-text": "8.1.0",
         "humanize": "0.0.9",
         "imapflow": "1.0.88",
-        "ioredis": "4.28.5",
+        "ioredis": "5.0.2",
         "joi": "17.6.0",
         "jquery": "3.6.0",
-        "js-beautify": "1.14.0",
+        "js-beautify": "1.14.2",
         "libmime": "5.0.0",
         "license-checker": "25.0.1",
         "linkifyjs": "2.1.9",
@@ -65,7 +65,7 @@
         "mailsplit": "5.3.1",
         "minimist": "1.2.6",
         "msgpack5": "5.3.2",
-        "nanoid": "3.3.1",
+        "nanoid": "3.3.2",
         "node-fetch": "2.6.7",
         "node-vault": "0.9.22",
         "nodemailer": "6.7.3",
@@ -81,13 +81,13 @@
         "xml2js": "0.4.23"
     },
     "devDependencies": {
-        "eslint": "8.11.0",
+        "eslint": "8.12.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.5.0",
         "grunt": "1.4.1",
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
-        "pino-pretty": "7.5.4",
+        "pino-pretty": "7.6.0",
         "pkg": "5.5.2"
     },
     "engines": {
