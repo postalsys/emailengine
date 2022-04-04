@@ -237,7 +237,7 @@ const metrics = {
     queues: new promClient.Gauge({
         name: 'queue_size',
         help: 'Queue size',
-        labelNames: ['queue']
+        labelNames: ['queue', 'state']
     }),
 
     queuesProcessed: new promClient.Counter({
@@ -895,9 +895,9 @@ async function updateQueueCounters() {
             return false;
         }
 
-        metrics.queues.set({ queue: `${queue}_active` }, Number(resActive[1]) || 0);
-        metrics.queues.set({ queue: `${queue}_delayed` }, Number(resDelayed[1]) || 0);
-        metrics.queues.set({ queue: `${queue}_paused` }, Number(resPaused[1]) || 0);
+        metrics.queues.set({ queue: `${queue}`, state: `active` }, Number(resActive[1]) || 0);
+        metrics.queues.set({ queue: `${queue}`, state: `delayed` }, Number(resDelayed[1]) || 0);
+        metrics.queues.set({ queue: `${queue}`, state: `paused` }, Number(resPaused[1]) || 0);
     }
 
     try {
