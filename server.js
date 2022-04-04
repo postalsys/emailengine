@@ -40,7 +40,17 @@ const { QueueScheduler } = require('bullmq');
 const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
-const { getDuration, getByteSize, getBoolean, getWorkerCount, selectRendezvousNode, checkLicense, checkForUpgrade, setLicense } = require('./lib/tools');
+const {
+    getDuration,
+    getByteSize,
+    getBoolean,
+    getWorkerCount,
+    selectRendezvousNode,
+    checkLicense,
+    checkForUpgrade,
+    setLicense,
+    getRedisStats
+} = require('./lib/tools');
 const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY, REDIS_PREFIX } = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
@@ -200,6 +210,12 @@ const metrics = {
         labelNames: ['status']
     }),
 
+    imapResponses: new promClient.Counter({
+        name: 'imap_responses',
+        help: 'IMAP responses',
+        labelNames: ['response', 'code']
+    }),
+
     webhooks: new promClient.Counter({
         name: 'webhooks',
         help: 'Webhooks sent',
@@ -212,7 +228,7 @@ const metrics = {
         labelNames: ['event']
     }),
 
-    webhook_req: new promClient.Histogram({
+    webhookReq: new promClient.Histogram({
         name: 'webhook_req',
         help: 'Duration of webhook requests',
         buckets: [100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000, 60 * 1000]
@@ -222,6 +238,88 @@ const metrics = {
         name: 'queue_size',
         help: 'Queue size',
         labelNames: ['queue']
+    }),
+
+    queuesProcessed: new promClient.Counter({
+        name: 'queues_processed',
+        help: 'Processed job count',
+        labelNames: ['queue', 'status']
+    }),
+
+    redisUptimeInSeconds: new promClient.Gauge({
+        name: 'redis_uptime_in_seconds',
+        help: 'Redis uptime in seconds'
+    }),
+
+    redisRejectedConnectionsTotal: new promClient.Gauge({
+        name: 'redis_rejected_connections_total',
+        help: 'Number of connections rejected by Redis'
+    }),
+
+    redisConfigMaxclients: new promClient.Gauge({
+        name: 'redis_config_maxclients',
+        help: 'Maximum client number for Redis'
+    }),
+
+    redisConnectedClients: new promClient.Gauge({
+        name: 'redis_connected_clients',
+        help: 'Number of client connections for Redis'
+    }),
+
+    redisSlowlogLength: new promClient.Gauge({
+        name: 'redis_slowlog_length',
+        help: 'Number of of entries in the Redis slow log'
+    }),
+
+    redisCommandsDurationSecondsTotal: new promClient.Gauge({
+        name: 'redis_commands_duration_seconds_total',
+        help: 'How many seconds spend on processing Redis commands'
+    }),
+
+    redisCommandsProcessedTotal: new promClient.Gauge({
+        name: 'redis_commands_processed_total',
+        help: 'How many commands processed by Redis'
+    }),
+
+    redisKeyspaceHitsTotal: new promClient.Gauge({
+        name: 'redis_keyspace_hits_total',
+        help: 'Number of successful lookup of keys in Redis'
+    }),
+
+    redisKeyspaceMissesTotal: new promClient.Gauge({
+        name: 'redis_keyspace_misses_total',
+        help: 'Number of failed lookup of keys in Redis'
+    }),
+
+    redisEvictedKeysTotal: new promClient.Gauge({
+        name: 'redis_evicted_keys_total',
+        help: 'Number of evicted keys due to maxmemory limit in Redis'
+    }),
+
+    redisMemoryUsedBytes: new promClient.Gauge({
+        name: 'redis_memory_used_bytes',
+        help: 'Total number of bytes allocated by Redis using its allocator'
+    }),
+
+    redisMemoryMaxBytes: new promClient.Gauge({
+        name: 'redis_memory_max_bytes',
+        help: 'The value of the Redis maxmemory configuration directive'
+    }),
+
+    redisMemFragmentationRatio: new promClient.Gauge({
+        name: 'redis_mem_fragmentation_ratio',
+        help: 'Ratio between used_memory_rss and used_memory in Redis'
+    }),
+
+    redisKeyCount: new promClient.Gauge({
+        name: 'redis_key_count',
+        help: 'Redis key counts',
+        labelNames: ['db']
+    }),
+
+    redisLastSaveTime: new promClient.Gauge({
+        name: 'redis_last_save_time',
+        help: 'Unix timestamp of the last RDB save time'
     })
 };
 
@@ -499,7 +597,7 @@ let spawnWorker = async type => {
                         break;
                     }
 
-                    case 'webhook_req': {
+                    case 'webhookReq': {
                         break;
                     }
 
@@ -780,15 +878,55 @@ function checkUpgrade() {
 
 async function updateQueueCounters() {
     for (let queue of ['notify', 'submit']) {
-        const [resActive, resDelayed] = await redis.multi().llen(`${REDIS_PREFIX}bull:${queue}:active`).zcard(`${REDIS_PREFIX}bull:${queue}:delayed`).exec();
-        if (resActive[0] || resDelayed[0]) {
+        const [resActive, resDelayed, resPaused] = await redis
+            .multi()
+            .llen(`${REDIS_PREFIX}bull:${queue}:active`)
+            .zcard(`${REDIS_PREFIX}bull:${queue}:delayed`)
+            .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
+            .exec();
+        if (resActive[0] || resDelayed[0] || resPaused[0]) {
             // counting failed
-            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed });
+            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed, paused: resPaused });
             return false;
         }
 
         metrics.queues.set({ queue: `${queue}_active` }, Number(resActive[1]) || 0);
         metrics.queues.set({ queue: `${queue}_delayed` }, Number(resDelayed[1]) || 0);
+        metrics.queues.set({ queue: `${queue}_paused` }, Number(resPaused[1]) || 0);
+    }
+
+    try {
+        let redisInfo = await getRedisStats(redis);
+
+        metrics.redisUptimeInSeconds.set(Number(redisInfo.uptime_in_seconds) || 0);
+        metrics.redisRejectedConnectionsTotal.set(Number(redisInfo.rejected_connections) || 0);
+        metrics.redisConfigMaxclients.set(Number(redisInfo.maxclients) || 0);
+        metrics.redisConnectedClients.set(Number(redisInfo.connected_clients) || 0);
+        metrics.redisSlowlogLength.set(Number(redisInfo.slowlog_length) || 0);
+
+        metrics.redisCommandsDurationSecondsTotal.set(Math.ceil((Number(redisInfo.cmdstat_total && redisInfo.cmdstat_total.usec) || 0) / 1000000));
+        metrics.redisCommandsProcessedTotal.set(Number(redisInfo.cmdstat_total && redisInfo.cmdstat_total.calls) || 0);
+
+        metrics.redisKeyspaceHitsTotal.set(Number(redisInfo.keyspace_hits) || 0);
+        metrics.redisKeyspaceMissesTotal.set(Number(redisInfo.keyspace_misses) || 0);
+
+        metrics.redisEvictedKeysTotal.set(Number(redisInfo.evicted_keys) || 0);
+
+        metrics.redisMemoryUsedBytes.set(Number(redisInfo.used_memory) || 0);
+        metrics.redisMemoryMaxBytes.set(Number(redisInfo.maxmemory) || Number(redisInfo.total_system_memory) || 0);
+
+        metrics.redisMemFragmentationRatio.set(Number(redisInfo.mem_fragmentation_ratio) || 0);
+
+        Object.keys(redisInfo).forEach(key => {
+            if (/^db\d+$/.test(key)) {
+                //redisKeyCount
+                metrics.redisKeyCount.set({ db: key }, Number(redisInfo[key].keys) || 0);
+            }
+        });
+
+        metrics.redisLastSaveTime.set(Number(redisInfo.rdb_last_save_time) || 0);
+    } catch (err) {
+        logger.error(err);
     }
 }
 

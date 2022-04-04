@@ -180,7 +180,7 @@ const notifyWorker = new Worker(
             throw err;
         } finally {
             if (duration) {
-                metrics(logger, 'webhook_req', 'observe', duration);
+                metrics(logger, 'webhookReq', 'observe', duration);
             }
         }
     },
@@ -198,10 +198,20 @@ const notifyWorker = new Worker(
 );
 
 notifyWorker.on('completed', async job => {
+    metrics(logger, 'queuesProcessed', 'inc', {
+        queue: 'notify',
+        status: 'completed'
+    });
+
     logger.info({ msg: 'Notification queue entry completed', result: 'completed', job: job.id });
 });
 
 notifyWorker.on('failed', async job => {
+    metrics(logger, 'queuesProcessed', 'inc', {
+        queue: 'notify',
+        status: 'failed'
+    });
+
     logger.info({ msg: 'Notification queue entry failed', result: 'failed', job: job.id });
 });
 

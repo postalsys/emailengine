@@ -244,6 +244,11 @@ const submitWorker = new Worker(
 );
 
 submitWorker.on('completed', async job => {
+    metrics(logger, 'queuesProcessed', 'inc', {
+        queue: 'submit',
+        status: 'completed'
+    });
+
     if (!job.data.queueId && job.data.qId) {
         // this value was used to be called qId
         job.data.queueId = job.data.qId;
@@ -259,6 +264,11 @@ submitWorker.on('completed', async job => {
 });
 
 submitWorker.on('failed', async job => {
+    metrics(logger, 'queuesProcessed', 'inc', {
+        queue: 'submit',
+        status: 'failed'
+    });
+
     if (job.finishedOn || job.discarded) {
         // this was final attempt, remove it
         if (!job.data.queueId && job.data.qId) {
