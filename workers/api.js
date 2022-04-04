@@ -1328,7 +1328,12 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
-                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+                    path: Joi.array()
+                        .items(Joi.string().empty('').max(1024).example('INBOX'))
+                        .single()
+                        .allow(false)
+                        .default(false)
+                        .description('Check changes only on selected paths'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
@@ -1403,7 +1408,11 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
-                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+                    path: Joi.array()
+                        .items(Joi.string().empty('').max(1024).example('INBOX'))
+                        .single()
+                        .allow(false)
+                        .description('Check changes only on selected paths'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
