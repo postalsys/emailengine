@@ -320,6 +320,11 @@ const metrics = {
     redisLastSaveTime: new promClient.Gauge({
         name: 'redis_last_save_time',
         help: 'Unix timestamp of the last RDB save time'
+    }),
+
+    redisOpsPerSec: new promClient.Gauge({
+        name: 'redis_instantaneous_ops_per_sec',
+        help: 'Unix timestamp of the last RDB save time'
     })
 };
 
@@ -925,6 +930,7 @@ async function updateQueueCounters() {
         });
 
         metrics.redisLastSaveTime.set(Number(redisInfo.rdb_last_save_time) || 0);
+        metrics.redisOpsPerSec.set(Number(redisInfo.instantaneous_ops_per_sec) || 0);
     } catch (err) {
         logger.error(err);
     }
