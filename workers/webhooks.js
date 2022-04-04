@@ -180,7 +180,7 @@ const notifyWorker = new Worker(
             throw err;
         } finally {
             if (duration) {
-                metrics(logger, 'webhook_req', 'observe', duration);
+                metrics(logger, 'webhookReq', 'observe', duration);
             }
         }
     },
@@ -198,7 +198,7 @@ const notifyWorker = new Worker(
 );
 
 notifyWorker.on('completed', async job => {
-    metrics(logger, 'queues_processed', 'inc', {
+    metrics(logger, 'queuesProcessed', 'inc', {
         queue: 'notify',
         status: 'completed'
     });
@@ -207,7 +207,7 @@ notifyWorker.on('completed', async job => {
 });
 
 notifyWorker.on('failed', async job => {
-    metrics(logger, 'queues_processed', 'inc', {
+    metrics(logger, 'queuesProcessed', 'inc', {
         queue: 'notify',
         status: 'failed'
     });

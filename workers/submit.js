@@ -244,7 +244,7 @@ const submitWorker = new Worker(
 );
 
 submitWorker.on('completed', async job => {
-    metrics(logger, 'queues_processed', 'inc', {
+    metrics(logger, 'queuesProcessed', 'inc', {
         queue: 'submit',
         status: 'completed'
     });
@@ -264,7 +264,7 @@ submitWorker.on('completed', async job => {
 });
 
 submitWorker.on('failed', async job => {
-    metrics(logger, 'queues_processed', 'inc', {
+    metrics(logger, 'queuesProcessed', 'inc', {
         queue: 'submit',
         status: 'failed'
     });
