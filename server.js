@@ -324,7 +324,19 @@ const metrics = {
 
     redisOpsPerSec: new promClient.Gauge({
         name: 'redis_instantaneous_ops_per_sec',
-        help: 'Unix timestamp of the last RDB save time'
+        help: 'Throughput operations per second'
+    }),
+
+    redisCommandRuns: new promClient.Gauge({
+        name: 'redis_command_runs',
+        help: 'Redis command counts',
+        labelNames: ['command']
+    }),
+
+    redisCommandRunsFailed: new promClient.Gauge({
+        name: 'redis_command_runs_fail',
+        help: 'Redis command counts',
+        labelNames: ['command', 'status']
     })
 };
 
@@ -926,6 +938,19 @@ async function updateQueueCounters() {
             if (/^db\d+$/.test(key)) {
                 //redisKeyCount
                 metrics.redisKeyCount.set({ db: key }, Number(redisInfo[key].keys) || 0);
+            }
+
+            if (key.indexOf('cmdstat_') === 0) {
+                let cmd = key.substr('cmdstat_'.length);
+                metrics.redisCommandRuns.set({ command: cmd }, Number(redisInfo[key].calls) || 0);
+
+                if (redisInfo[key].failed_calls) {
+                    metrics.redisCommandRunsFailed.set({ command: cmd, status: 'failed' }, Number(redisInfo[key].failed_calls) || 0);
+                }
+
+                if (redisInfo[key].rejected_calls) {
+                    metrics.redisCommandRunsFailed.set({ command: cmd, status: 'rejected' }, Number(redisInfo[key].rejected_calls) || 0);
+                }
             }
         });
 
