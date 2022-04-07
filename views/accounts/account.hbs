@@ -49,9 +49,7 @@
             {{/if}}
         </div>
 
-
         <dl class="row">
-
             {{#if account.account}}
             <dt class="col-sm-3">ID</dt>
             <dd class="col-sm-9">
@@ -280,11 +278,50 @@
 
         </dl>
 
-
-
     </div>
 </div>
 
+{{/if}}
+
+
+{{#if showAdvanced}}
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Advanced</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+
+            {{#if account.path}}
+            <dt class="col-sm-3">Path to sync</dt>
+            <dd class="col-sm-9"><code style="color: #858796;">{{account.path}}</code></dd>
+            {{/if}}
+
+            {{#if account.proxy}}
+            <dt class="col-sm-3">Proxy</dt>
+            <dd class="col-sm-9"><code style="color: #858796;">{{account.proxy}}</code></dd>
+            {{/if}}
+
+            {{#if account.webhooks}}
+            <dt class="col-sm-3">Webhook URL</dt>
+            <dd class="col-sm-9"><code style="color: #858796;">{{account.webhooks}}</code></dd>
+            {{/if}}
+
+        </dl>
+
+        {{#if account.webhooks}}
+        {{#if account.webhookErrorFlag.message}}
+        <hr />
+
+        <div><small><strong>NB!</strong> The last attempted webhook failed with the following response.</small></div>
+        <div><code>{{account.webhookErrorFlag.message}}</code></div>
+
+        {{/if}}
+        {{/if}}
+
+    </div>
+</div>
 {{/if}}
 
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">

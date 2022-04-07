@@ -340,6 +340,18 @@ const metrics = {
     })
 };
 
+/*
+Object.keys(metrics).forEach(key => {
+    if (metrics[key] && metrics[key].name) {
+        console.log(
+            `  * **${metrics[key].name}** (*${metrics[key].constructor.name}*) – ${metrics[key].help} ${
+                metrics[key].labelNames && metrics[key].labelNames.length ? ` [labels: *"${metrics[key].labelNames.join('"*, *"')}"*]` : ''
+            }`
+        );
+    }
+});
+*/
+
 let callQueue = new Map();
 let mids = 0;
 

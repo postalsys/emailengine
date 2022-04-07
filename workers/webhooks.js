@@ -40,8 +40,10 @@ const notifyWorker = new Worker(
         // do not process active jobs, use it for debugging only
         //return new Promise((resolve, reject) => {});
 
+        let accountKey = getAccountKey(job.data.account);
+
         // validate if we should even process this webhook
-        let accountExists = await redis.exists(getAccountKey(job.data.account));
+        let accountExists = await redis.exists(accountKey);
         if (!accountExists) {
             logger.debug({ msg: 'Account is not enabled', action: 'webhook', event: job.name, account: job.data.account });
             return;
@@ -52,7 +54,9 @@ const notifyWorker = new Worker(
             return;
         }
 
-        let webhooks = await settings.get('webhooks');
+        let accountWebhooks = await redis.hget(accountKey, 'webhooks');
+
+        let webhooks = accountWebhooks || (await settings.get('webhooks'));
         if (!webhooks) {
             // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
             return;
@@ -93,7 +97,13 @@ const notifyWorker = new Worker(
             }
         }
 
-        logger.trace({ msg: 'Processing webhook', webhooks, event: job.name, data: job.data });
+        logger.trace({
+            msg: 'Processing webhook',
+            webhooks,
+            accountWebhooks: !!accountWebhooks,
+            event: job.name,
+            data: job.data
+        });
 
         let headers = {
             'Content-Type': 'application/json',
@@ -140,10 +150,20 @@ const notifyWorker = new Worker(
                 throw err;
             }
 
-            logger.trace({ msg: 'Webhook posted', webhooks, event: job.name, status: res.status });
+            logger.trace({
+                msg: 'Webhook posted',
+                webhooks,
+                accountWebhooks: !!accountWebhooks,
+                event: job.name,
+                status: res.status
+            });
 
             try {
-                await settings.clear('webhookErrorFlag', {});
+                if (accountWebhooks) {
+                    await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));
+                } else {
+                    await settings.clear('webhookErrorFlag', {});
+                }
             } catch (err) {
                 // ignore
             }
@@ -155,19 +175,46 @@ const notifyWorker = new Worker(
         } catch (err) {
             if (err.status === 410) {
                 // disable webhook
-                logger.error({ msg: 'Webhooks were disabled by server', webhooks, event: job.name, status: err.status, err });
+                logger.error({
+                    msg: 'Webhooks were disabled by server',
+                    webhooks,
+                    accountWebhooks: !!accountWebhooks,
+                    event: job.name,
+                    status: err.status,
+                    err
+                });
                 await settings.set('webhooksEnabled', false);
                 return;
             }
 
-            logger.error({ msg: 'Failed posting webhook', webhooks, event: job.name, err });
+            logger.error({
+                msg: 'Failed posting webhook',
+                webhooks,
+                accountWebhooks: !!accountWebhooks,
+                event: job.name,
+                err
+            });
 
             try {
-                await settings.set('webhookErrorFlag', {
-                    event: job.name,
-                    message: err.message,
-                    time: Date.now()
-                });
+                if (accountWebhooks) {
+                    await redis.hset(
+                        accountKey,
+                        'webhookErrorFlag',
+                        JSON.stringify({
+                            event: job.name,
+                            message: err.message,
+                            time: Date.now(),
+                            url: webhooks
+                        })
+                    );
+                } else {
+                    await settings.set('webhookErrorFlag', {
+                        event: job.name,
+                        message: err.message,
+                        time: Date.now(),
+                        url: webhooks
+                    });
+                }
             } catch (err) {
                 // ignore
             }

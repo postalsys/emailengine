@@ -82,7 +82,9 @@
                 <label for="settingsWebhooks">Webhook URL</label>
 
                 <input type="url" class="form-control or-else-all {{#if errors.webhooks}}is-invalid{{/if}}"
-                    data-target="webhooks-status" id="settingsWebhooks" name="webhooks" value="{{values.webhooks}}" />
+                    data-target="webhooks-status" id="settingsWebhooks" name="webhooks"
+                    placeholder="URL like &quot;https://myservice.com/imap/webhooks&quot;"
+                    value="{{values.webhooks}}" />
 
                 {{#if errors.webhooks}}
                 <span class="invalid-feedback">{{errors.webhooks}}</span>

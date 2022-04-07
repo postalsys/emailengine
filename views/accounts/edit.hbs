@@ -39,19 +39,6 @@
                 <small class="form-text text-muted">Email address of the user</small>
             </div>
 
-            <div class="form-group">
-                <label for="proxy">Proxy URL</label>
-                <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
-                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;…" value="{{values.proxy}}"
-                    name="proxy" data-target="proxy-status">
-                {{#if errors.proxy}}
-                <span class="invalid-feedback">{{errors.proxy}}</span>
-                {{/if}}
-                <small id="passwordHelpBlock" class="form-text text-muted">Fill this if you want to use a custom proxy
-                    for this account. Proxy URL must start with http://, https://,
-                    socks://, socks4:// or socks5://</small>
-            </div>
-
         </div>
     </div>
 
@@ -206,6 +193,53 @@
     </div>
     {{/if}}
 
+    <div class="card mb-4">
+
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Advanced settings</h6>
+        </div>
+
+        <div class="card-body">
+            <div class="form-group">
+                <label for="proxy">Proxy URL</label>
+                <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
+                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;…" value="{{values.proxy}}"
+                    name="proxy" data-target="proxy-status">
+                {{#if errors.proxy}}
+                <span class="invalid-feedback">{{errors.proxy}}</span>
+                {{/if}}
+                <small id="proxyHelpBlock" class="form-text text-muted">Fill this if you want to use a custom proxy
+                    for this account. Proxy URL must start with http://, https://,
+                    socks://, socks4:// or socks5://</small>
+            </div>
+
+            <div class="form-group">
+                <label for="webhooks">Webhook URL</label>
+                <input type="text" class="form-control {{#if errors.webhooks}}is-invalid{{/if}}" id="webhooks"
+                    value="{{values.webhooks}}" placeholder="URL like &quot;https://myservice.com/imap/webhooks&quot;"
+                    name="webhooks">
+                {{#if errors.webhooks}}
+                <span class="invalid-feedback">{{errors.webhooks}}</span>
+                {{/if}}
+                <small id="webhooksHelpBlock" class="form-text text-muted">Account-specific webhook URL. If it is set
+                    and <a href="/admin/config/webhooks">webhooks</a> are enabled, EmailEngine makes webhook
+                    requests for events related to this account against this URL instead of the default webhook URL.
+                    Leave empty to clear it.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="path">Path to sync</label>
+                <input type="text" class="form-control basicAutoComplete {{#if errors.path}}is-invalid{{/if}}" id="path"
+                    value="{{values.path}}" placeholder="Folder path like &quot;INBOX&quot;" name="path"
+                    data-lpignore="true" autocomplete="off">
+                {{#if errors.path}}
+                <span class="invalid-feedback">{{errors.path}}</span>
+                {{/if}}
+                <small id="pathHelpBlock" class="form-text text-muted">Set a specific folder path to sync. By
+                    default all folders are synced. Leave it empty to keep the default.</small>
+            </div>
+        </div>
+    </div>
 
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
@@ -216,3 +250,22 @@
         </button>
     </div>
 </form>
+
+
+<input type="hidden" id="availablePaths" value="{{availablePaths}}">
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let availablePaths = JSON.parse(document.getElementById('availablePaths').value);
+        $('.basicAutoComplete').autoComplete({
+            resolver: 'custom',
+            events: {
+                search: function (query, callback) {
+                    callback(availablePaths.filter(a => a.indexOf(query) >= 0))
+                }
+            },
+            preventEnter: true,
+            minLength: 1
+        });
+    })
+</script>
