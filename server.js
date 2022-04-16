@@ -187,6 +187,9 @@ if (preparedPasswordString) {
     }
 }
 
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+collectDefaultMetrics({});
+
 const metrics = {
     threadStarts: new promClient.Counter({
         name: 'thread_starts',
