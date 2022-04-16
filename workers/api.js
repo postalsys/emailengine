@@ -2197,7 +2197,7 @@ When making API calls remember that requests against the same account are queued
                         .description('List of attachments')
                         .label('AttachmentList'),
 
-                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers')
                 }).label('MessageUpload')
             },
@@ -2853,7 +2853,7 @@ When making API calls remember that requests against the same account are queued
                         .description('List of attachments')
                         .label('AttachmentList'),
 
-                    messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().description('Custom Headers'),
 
                     trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
@@ -3463,7 +3463,7 @@ When making API calls remember that requests against the same account are queued
                                 account: Joi.string().max(256).required().example('example').description('Account ID'),
                                 source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
 
-                                messageId: Joi.string().max(74).example('<test123@example.com>').description('Message ID'),
+                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
                                 envelope: Joi.object({
                                     from: Joi.string().email().allow('').example('sender@example.com'),
                                     to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
