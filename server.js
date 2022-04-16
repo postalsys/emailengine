@@ -249,6 +249,18 @@ const metrics = {
         labelNames: ['queue', 'status']
     }),
 
+    emailengineConfig: new promClient.Gauge({
+        name: 'emailengine_config',
+        help: 'Configuration values',
+        labelNames: ['version', 'config']
+    }),
+
+    redisVersion: new promClient.Gauge({
+        name: 'redis_version',
+        help: 'Redis version',
+        labelNames: ['version']
+    }),
+
     redisUptimeInSeconds: new promClient.Gauge({
         name: 'redis_uptime_in_seconds',
         help: 'Redis uptime in seconds'
@@ -909,6 +921,11 @@ function checkUpgrade() {
 }
 
 async function updateQueueCounters() {
+    metrics.emailengineConfig.set({ version: 'v' + packageData.version }, 1);
+    metrics.emailengineConfig.set({ config: 'uvThreadpoolSize' }, Number(process.env.UV_THREADPOOL_SIZE));
+    metrics.emailengineConfig.set({ config: 'workersWebhooks' }, config.workers.webhooks);
+    metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
+
     for (let queue of ['notify', 'submit']) {
         const [resActive, resDelayed, resPaused] = await redis
             .multi()
@@ -929,6 +946,8 @@ async function updateQueueCounters() {
 
     try {
         let redisInfo = await getRedisStats(redis);
+
+        metrics.redisVersion.set({ version: 'v' + redisInfo.redis_version }, 1);
 
         metrics.redisUptimeInSeconds.set(Number(redisInfo.uptime_in_seconds) || 0);
         metrics.redisRejectedConnectionsTotal.set(Number(redisInfo.rejected_connections) || 0);
