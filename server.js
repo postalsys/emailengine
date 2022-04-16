@@ -923,6 +923,7 @@ function checkUpgrade() {
 async function updateQueueCounters() {
     metrics.emailengineConfig.set({ version: 'v' + packageData.version }, 1);
     metrics.emailengineConfig.set({ config: 'uvThreadpoolSize' }, Number(process.env.UV_THREADPOOL_SIZE));
+    metrics.emailengineConfig.set({ config: 'workersImap' }, config.workers.imap);
     metrics.emailengineConfig.set({ config: 'workersWebhooks' }, config.workers.webhooks);
     metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
 
