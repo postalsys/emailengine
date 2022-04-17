@@ -136,13 +136,22 @@
                     <span class="text">Test settings</span>
                 </button>
 
-                <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split" disabled
-                    tabindex="11">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-arrow-right"></i>
-                    </span>
-                    <span class="text">Continue</span>
-                </button>
+                <div class="btn-group">
+                    <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split"
+                        data-disabled="1">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </span>
+                        <span class="text">Continue</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
+                        data-toggle="dropdown" aria-expanded="false">
+                        <span class="sr-only">Toggle Dropdown</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="#" id="submit-wo-testing">Continue without testing</a>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -182,18 +191,43 @@
         let submitElm = document.getElementById('submit-settings-btn')
         let errorsListElm = document.getElementById('test-errors-list')
 
-        let addErrorRow = (type, text) => {
-            let keyElm = document.createElement('dt')
-            let valueElm = document.createElement('dd')
+        let urlify = (text) => {
+            return text.replace(/(https?:\/\/[^\s]+)/g, function (url) {
+                return '<a href="' + url + '" target="_blank">' + url + '</a>';
+            })
+        }
+
+        let addErrorRow = (type, text, extraLabel, extraText) => {
+            let keyElm = document.createElement('dt');
+            let valueContainerElm = document.createElement('dd');
+            let valueElm = document.createElement('div');
+
 
             keyElm.classList.add('col-sm-2');
-            valueElm.classList.add('col-sm-10', 'text-danger');
+            valueContainerElm.classList.add('col-sm-10');
+            valueElm.classList.add('text-danger')
 
             keyElm.textContent = type;
             valueElm.textContent = text;
 
+            valueContainerElm.append(valueElm);
+
             errorsListElm.appendChild(keyElm);
-            errorsListElm.appendChild(valueElm);
+            errorsListElm.appendChild(valueContainerElm);
+
+            if (extraLabel && extraText) {
+
+                extraLabelElm = document.createElement('div');
+                extraLabelElm.textContent = extraLabel;
+
+                extraTextElm = document.createElement('small');
+                extraTextElm.textContent = extraText;
+
+                extraTextElm.innerHTML = urlify(extraTextElm.innerHTML);
+
+                valueContainerElm.appendChild(extraLabelElm);
+                valueContainerElm.appendChild(extraTextElm);
+            }
         }
 
         let showErrorPopup = (data) => {
@@ -206,12 +240,20 @@
             } else {
                 if (!data.imap || !data.imap.success) {
                     let error = data.imap && data.imap.error || 'Failed to validate IMAP server settings'
-                    addErrorRow('IMAP', error);
+                    if (data.imap && data.imap.responseText) {
+                        addErrorRow('IMAP', error, 'IMAP Server responded with the following message:', data.imap.responseText);
+                    } else {
+                        addErrorRow('IMAP', error);
+                    }
                 }
 
                 if (!data.smtp || !data.smtp.success) {
                     let error = data.smtp && data.smtp.error || 'Failed to validate SMTP server settings'
-                    addErrorRow('SMTP', error);
+                    if (data.smtp && data.smtp.responseText) {
+                        addErrorRow('SMTP', error, 'SMTP Server responded with the following message:', data.smtp.responseText);
+                    } else {
+                        addErrorRow('SMTP', error);
+                    }
                 }
             }
 
@@ -224,8 +266,9 @@
                 iconElm.classList.remove('fa-spinner', 'fa-spin', 'fa-question-circle', 'fa-check-circle', 'fa-times-circle');
                 iconElm.classList.add(success ? 'fa-check-circle' : 'fa-times-circle');
                 btnElm.disabled = false;
-                submitElm.disabled = !success;
-                if (submitElm.disabled) {
+
+                submitElm.dataset.disabled = !success ? "1" : "0";
+                if (submitElm.dataset.disabled === "1") {
                     submitElm.classList.replace('btn-primary', 'btn-secondary');
                 } else {
                     submitElm.classList.replace('btn-secondary', 'btn-primary');
@@ -234,7 +277,8 @@
                 iconElm.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-question-circle');
                 iconElm.classList.add('fa-spinner', 'fa-spin');
                 btnElm.disabled = true;
-                submitElm.disabled = true;
+
+                submitElm.dataset.disabled = "1";
                 submitElm.classList.replace('btn-primary', 'btn-secondary');
             }
         }
@@ -287,11 +331,18 @@
             });
         }
 
+        document.getElementById('submit-wo-testing').addEventListener('click', e => {
+            e.preventDefault();
+            formTested = true;
+            myForm.submit();
+        });
+
         btnElm.addEventListener('click', () => {
             runTest();
         });
 
         myForm.addEventListener('submit', e => {
+            submitElm.blur();
             if (formTested) {
                 return;
             }
