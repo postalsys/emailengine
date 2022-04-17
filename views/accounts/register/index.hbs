@@ -43,3 +43,17 @@
     </form>
 </div>
 {{/if}}
+
+{{#if mailRuEnabled}}
+<div class="mb-3">
+    <form method="post" action="/accounts/new">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" name="type" value="mailRu">
+        <input type="hidden" name="data" value="{{values.data}}">
+        <input type="hidden" name="sig" value="{{values.sig}}">
+        <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa fa-envelope fa-fw"></i> Mail.ru
+        </button>
+    </form>
+</div>
+{{/if}}

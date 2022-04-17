@@ -62,6 +62,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
+const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -853,6 +854,53 @@ When making API calls remember that requests against the same account are queued
                     break;
                 }
 
+                case 'mailRu': {
+                    const r = await oAuth2Client.getToken(request.query.code);
+                    if (!r || !r.access_token) {
+                        let error = Boom.boomify(new Error(`Oauth failed: did not get token`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    let profileRes;
+                    try {
+                        profileRes = await oAuth2Client.request(r.access_token, 'https://oauth.mail.ru/userinfo');
+                    } catch (err) {
+                        let response = err.oauthRequest && err.oauthRequest.response;
+                        if (response && response.error) {
+                            let message = response.error.message;
+                            let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
+                            throw error;
+                        }
+                        throw err;
+                    }
+
+                    if (!profileRes || !profileRes || !profileRes.email) {
+                        let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
+                        throw error;
+                    }
+
+                    accountData.name = accountData.name || profileRes.name || '';
+                    accountData.email = accountData.email || (isEmail(profileRes.email) ? profileRes.email : '');
+
+                    accountData.oauth2 = Object.assign(
+                        accountData.oauth2 || {},
+                        {
+                            provider,
+                            accessToken: r.access_token,
+                            refreshToken: r.refresh_token,
+                            expires: new Date(Date.now() + r.expires_in * 1000),
+                            scope: r.scope ? r.scope.split(/\s+/) : MAIL_RU_SCOPES,
+                            tokenType: r.token_type
+                        },
+                        {
+                            auth: {
+                                user: profileRes.email
+                            }
+                        }
+                    );
+                    break;
+                }
+
                 default: {
                     throw new Error('Unknown OAuth2 provider');
                 }
@@ -1266,11 +1314,14 @@ When making API calls remember that requests against the same account are queued
 
                             break;
                         }
+
                         case 'outlook':
+                        case 'mailRu':
                             authorizeUrl = oAuth2Client.generateAuthUrl({
                                 state: `account:add:${nonce}`
                             });
                             break;
+
                         default: {
                             let error = Boom.boomify(new Error('Unknown OAuth provider'), { statusCode: 400 });
                             throw error;

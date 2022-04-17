@@ -19,6 +19,14 @@
         <a class="nav-link {{#if activeGmailService}}active{{/if}}" href="/admin/config/oauth/gmailService">Gmail
             Service Accounts</a>
     </li>
+
+    <!-- Future feature -->
+    <!--
+    <li class="nav-item">
+        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth/mailRu">Mail.ru</a>
+    </li>
+    -->
+
 </ul>
 
 <div class="card border-left-info shadow mb-4">
@@ -49,6 +57,14 @@
                     <li><code>"IMAP.AccessAsUser.All"</code>
                     <li><code>"SMTP.Send"</code>
                     <li><code>"offline_access"</code>
+                </ul>
+                {{/if}}
+
+                {{#if activeMailRu}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"userinfo"</code>
+                    <li><code>"mail.imap"</code>
                 </ul>
                 {{/if}}
 
@@ -143,6 +159,10 @@
 
                 <label for="clientId">
                     {{#if activeGmail}}
+                    Client Id
+                    {{/if}}
+
+                    {{#if activeMailRu}}
                     Client Id
                     {{/if}}
 
