@@ -144,8 +144,9 @@
                         </span>
                         <span class="text">Continue</span>
                     </button>
-                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                        data-toggle="dropdown" aria-expanded="false">
+                    <button type="button" id="submit-settings-btn-down"
+                        class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"
+                        aria-expanded="false">
                         <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     <div class="dropdown-menu">
@@ -189,6 +190,7 @@
         let btnElm = document.getElementById('test-settings-btn');
         let iconElm = document.querySelector('#test-settings-btn i');
         let submitElm = document.getElementById('submit-settings-btn')
+        let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
 
         let urlify = (text) => {
@@ -270,8 +272,10 @@
                 submitElm.dataset.disabled = !success ? "1" : "0";
                 if (submitElm.dataset.disabled === "1") {
                     submitElm.classList.replace('btn-primary', 'btn-secondary');
+                    submitDownElm.classList.replace('btn-primary', 'btn-secondary');
                 } else {
                     submitElm.classList.replace('btn-secondary', 'btn-primary');
+                    submitDownElm.classList.replace('btn-secondary', 'btn-primary');
                 }
             } else {
                 iconElm.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-question-circle');
@@ -280,6 +284,7 @@
 
                 submitElm.dataset.disabled = "1";
                 submitElm.classList.replace('btn-primary', 'btn-secondary');
+                submitDownElm.classList.replace('btn-primary', 'btn-secondary');
             }
         }
 
