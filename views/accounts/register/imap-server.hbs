@@ -309,7 +309,7 @@
             return data;
         }
 
-        let runTest = () => {
+        let runTest = (continueIfSuccessful) => {
             if (formTesting) {
                 return;
             }
@@ -323,6 +323,12 @@
                     toggleSpinner(true, true);
                     // everything checks out!
                     formTested = true;
+
+                    if (continueIfSuccessful) {
+                        // resubmit after paint
+                        setTimeout(() => myForm.submit(), 10);
+                    }
+
                 } else {
                     toggleSpinner(true, false);
                     formTested = false;
@@ -352,7 +358,7 @@
                 return;
             }
             e.preventDefault();
-            runTest();
+            runTest(true);
         });
 
         const checkPort = (proto) => {
