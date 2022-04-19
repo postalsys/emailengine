@@ -2,7 +2,7 @@
     <h1 class="h3 mb-0 text-gray-800">
 
         <small><i class="fas fa-server fa-fw"></i></small>
-        SMTP Server
+        SMTP Interface
         <span class="badge badge-{{serverState.label.type}} state-info" data-type="smtp">
             {{#if serverState.label.spinner}}
             <i class="fas fa-spinner fa-spin fa-fw"></i>
@@ -12,17 +12,18 @@
     </h1>
 </div>
 
-<p class="mb-4">EmailEngine allows submitting email messages for delivery using the <a
-        href="https://api.emailengine.app/#tag/submit" target="_blank">submission API
-        endpoint</a> or the
-    built-in SMTP server. On this page, you can configure the settings of the SMTP server.</p>
+<p>To queue an email for delivery with EmailEngine, you can use the Simple Mail Transfer Protocol (SMTP)
+    interface or the <a href="https://api.emailengine.app/#tag/submit" target="_blank">message submission API</a>. The
+    preferred way to send emails would be the message submission API. EmailEngine provides the SMTP interface for legacy
+    applications that can only send emails using the SMTP protocol.</p>
+<p class="mb-4">On this page, you can configure the settings for the SMTP interface.</p>
 
 <form method="post" action="/admin/config/smtp">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Server settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -32,7 +33,7 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
                     id="smtpServerEnabled" name="smtpServerEnabled" {{#if values.smtpServerEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Server</label>
+                <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Interface</label>
                 {{#if errors.smtpServerEnabled}}
                 <span class="invalid-feedback">{{errors.smtpServerEnabled}}</span>
                 {{/if}}
@@ -45,7 +46,8 @@
 
                 <label for="smtpServerPort">SMTP port</label>
 
-                <input type="number" class="form-control {{#if errors.smtpServerPort}}is-invalid{{/if}}"
+                <input type="number"
+                    class="form-control trigger-example-render {{#if errors.smtpServerPort}}is-invalid{{/if}}"
                     id="smtpServerPort" name="smtpServerPort" value="{{values.smtpServerPort}}" />
 
                 {{#if errors.smtpServerPort}}
@@ -62,7 +64,8 @@
 
                 <label for="smtpServerHost">SMTP host</label>
 
-                <input type="text" class="form-control basicAutoComplete {{#if errors.smtpServerHost}}is-invalid{{/if}}"
+                <input type="text"
+                    class="form-control basicAutoComplete trigger-example-render {{#if errors.smtpServerHost}}is-invalid{{/if}}"
                     id="smtpServerHost" name="smtpServerHost" value="{{values.smtpServerHost}}" data-lpignore="true"
                     autocomplete="off" />
 
@@ -84,7 +87,7 @@
                 {{#if errors.smtpServerProxy}}
                 <span class="invalid-feedback">{{errors.smtpServerProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Use this if your SMTP server is proxied by HAProxy using the
+                <small class="form-text text-muted">Use this if the SMTP interface is proxied by HAProxy using the
                     <code>send-proxy</code> option.</small>
             </div>
         </div>
@@ -100,7 +103,8 @@
                         target="_blank">smtpServerAuthEnabled</a>]
                 </div>
 
-                <input type="checkbox" class="form-check-input {{#if errors.smtpServerAuthEnabled}}is-invalid{{/if}}"
+                <input type="checkbox"
+                    class="form-check-input trigger-example-render {{#if errors.smtpServerAuthEnabled}}is-invalid{{/if}}"
                     id="smtpServerAuthEnabled" name="smtpServerAuthEnabled" {{#if
                     values.smtpServerAuthEnabled}}checked{{/if}} />
                 <label class="form-check-label" for="smtpServerAuthEnabled">Enable authentication</label>
@@ -116,7 +120,8 @@
 
                 <label for="smtpServerPassword">SMTP password</label>
                 <div class="input-group">
-                    <input type="password" class="form-control {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
+                    <input type="password"
+                        class="form-control trigger-example-render {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
                         id="smtpServerPassword" name="smtpServerPassword" value="{{values.smtpServerPassword}}"
                         data-lpignore="true" autocomplete="off" />
 
@@ -149,6 +154,46 @@
                 <p>If authentication is <strong>disabled</strong>, then the all messages must include a special header
                     <code>X-EE-Account</code> that identifies the account to be used for sending.
                 </p>
+
+                <ul class="nav nav-tabs mb-3" id="code-examples" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="example-nodemailer-tab" data-toggle="tab"
+                            href="#example-nodemailer" role="tab" aria-controls="example-nodemailer"
+                            aria-selected="true">Nodemailer</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="example-phpmailer-tab" data-toggle="tab" href="#example-phpmailer"
+                            role="tab" aria-controls="example-phpmailer" aria-selected="false">PHPMailer</a>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div class="tab-pane active" id="example-nodemailer" role="tabpanel"
+                        aria-labelledby="example-nodemailer-tab">
+
+                        <pre><code id="example-nodemailer-code"></code></pre>
+
+                    </div>
+
+                    <div class="tab-pane" id="example-phpmailer" role="tabpanel"
+                        aria-labelledby="example-phpmailer-tab">
+
+                        <pre><code id="example-phpmailer-code"></code></pre>
+
+                    </div>
+                </div>
+
+
+
+                <div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input trigger-example-render"
+                            id="exampleShowPassword" />
+                        <label class="form-check-label" for="exampleShowPassword">Show password</label>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -191,5 +236,81 @@
             preventEnter: true,
             minLength: 1
         });
-    })
+
+
+        let codeTemplates = {
+            nodemailer: {
+                lang: 'javascript',
+                codeAuth: `const transporter = nodemailer.createTransport({
+    host: 'HOST',
+    port: PORT,
+    auth: {
+        user: 'USERNAME',
+        pass: 'PASSWORD'
+    }
+}});`,
+                codeNoAuth: `const transporter = nodemailer.createTransport({
+    host: 'HOST',
+    port: PORT,
+    auth: false
+}}, {
+    // default message fields
+    headers: {
+        // provide sending account id via this header
+        'X-EE-Account': 'USERNAME'
+    }
+});`},
+
+            phpmailer: {
+                lang: 'php',
+                codeAuth: `$mail = new PHPMailer(true);
+$mail->isSMTP();
+$mail->Host = 'HOST';
+$mail->SMTPAuth = true;
+$mail->Username = 'USERNAME';
+$mail->Password = 'PASSWORD';
+$mail->SMTPSecure = '';
+$mail->Port = PORT;`,
+                codeNoAuth: `$mail = new PHPMailer(true);
+$mail->isSMTP();
+$mail->Host = 'HOST';
+$mail->SMTPAuth = false;
+$mail->SMTPSecure = '';
+$mail->Port = PORT;
+
+// provide sending account id via this header
+$mail->addCustomHeader('X-EE-Account', 'USERNAME');
+`}
+        };
+
+        let renderTemplate = (templateKey) => {
+            let template = codeTemplates[templateKey][document.getElementById('smtpServerAuthEnabled').checked ? 'codeAuth' : 'codeNoAuth'];
+
+            template = `// Replace "USERNAME" with the account id of a registered user you want to send mail as
+// Replace "HOST" with the hostname or IP address of the SMTP interface
+// NB! Make sure that firewall settings allow accessing the SMTP interface
+
+` + template;
+
+            let code = template.
+                replace(/HOST/g, window.location.hostname).
+                replace(/PORT/g, Number(document.getElementById('smtpServerPort').value) || 0).
+                replace(/USERNAME/g, 'account_id').
+                replace(/PASSWORD/g, document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******');
+            return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
+        }
+
+        let renderExamples = () => {
+            document.getElementById('example-nodemailer-code').innerHTML = renderTemplate('nodemailer');
+            document.getElementById('example-phpmailer-code').innerHTML = renderTemplate('phpmailer');
+
+            document.getElementById('exampleShowPassword').disabled = !document.getElementById('smtpServerAuthEnabled').checked;
+        }
+
+        for (let elm of document.querySelectorAll('.trigger-example-render')) {
+            elm.addEventListener('change', renderExamples);
+        }
+
+        renderExamples();
+    });
 </script>
