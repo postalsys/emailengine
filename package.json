@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.19.0",
+    "version": "2.19.1",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
@@ -35,7 +35,7 @@
         "@hapi/boom": "9.1.4",
         "@hapi/cookie": "11.0.2",
         "@hapi/crumb": "8.0.1",
-        "@hapi/hapi": "20.2.1",
+        "@hapi/hapi": "20.2.2",
         "@hapi/inert": "6.0.5",
         "@hapi/vision": "6.1.0",
         "@hapipal/hecks": "3.0.0",
