@@ -370,7 +370,7 @@ Object.keys(metrics).forEach(key => {
 let callQueue = new Map();
 let mids = 0;
 
-let closing = false;
+let isClosing = false;
 let assigning = false;
 
 let unassigned = false;
@@ -474,7 +474,7 @@ let updateSmtpServerState = async (state, payload) => {
 };
 
 let spawnWorker = async type => {
-    if (closing) {
+    if (isClosing) {
         return;
     }
 
@@ -552,7 +552,7 @@ let spawnWorker = async type => {
             }
         }
 
-        if (closing) {
+        if (isClosing) {
             return;
         }
 
@@ -1219,20 +1219,20 @@ const closeQueues = cb => {
 };
 
 process.on('SIGTERM', () => {
-    if (closing) {
+    if (isClosing) {
         return;
     }
-    closing = true;
+    isClosing = true;
     closeQueues(() => {
         process.exit();
     });
 });
 
 process.on('SIGINT', () => {
-    if (closing) {
+    if (isClosing) {
         return;
     }
-    closing = true;
+    isClosing = true;
     closeQueues(() => {
         process.exit();
     });
