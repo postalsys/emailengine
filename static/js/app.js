@@ -190,13 +190,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 break;
             case 'authenticationError':
-            case 'connectError':
+            case 'connectError': {
+                let errorMessage = error ? error.response : false;
+                if (error) {
+                    switch (error.serverResponseCode) {
+                        case 'ETIMEDOUT':
+                            errorMessage = 'Connection timed out. This usually happens when you are firewalled, for example are connecting to a wrong port.';
+                            break;
+                        case 'ClosedAfterConnectTLS':
+                            errorMessage = 'Server unexpectedly closed the connection.';
+                            break;
+                        case 'ClosedAfterConnectText':
+                            errorMessage =
+                                'The server unexpectedly closed the connection. This usually happens when you try to connect to a TLS port without having TLS enabled.';
+                            break;
+                    }
+                }
+
                 stateLabel = {
                     type: 'danger',
                     name: 'Failed',
-                    error: error ? error.response : false
+                    error: errorMessage
                 };
                 break;
+            }
             case 'unset':
             case 'disconnected':
                 stateLabel = {
@@ -236,11 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (stateLabel.error) {
-                    stateInfoElm.title = 'Connection error';
+                    stateInfoElm.dataset.title = 'Connection error';
                     stateInfoElm.dataset.content = stateLabel.error;
                     $(stateInfoElm).popover('enable');
                 } else {
-                    stateInfoElm.title = '';
+                    stateInfoElm.dataset.title = '';
                     stateInfoElm.dataset.content = '';
                     $(stateInfoElm).popover('disable');
                 }
@@ -316,11 +333,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (stateLabel.error) {
-                    stateInfoElm.title = 'Connection error';
+                    stateInfoElm.dataset.title = 'Connection error';
                     stateInfoElm.dataset.content = stateLabel.error;
                     $(stateInfoElm).popover('enable');
                 } else {
-                    stateInfoElm.title = '';
+                    stateInfoElm.dataset.title = '';
                     stateInfoElm.dataset.content = '';
                     $(stateInfoElm).popover('disable');
                 }

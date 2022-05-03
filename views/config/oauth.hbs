@@ -20,12 +20,12 @@
             Service Accounts</a>
     </li>
 
-    <!-- Future feature -->
-    <!--
+    <!-- Do not expose Mail.RU by default (untested) -->
+    {{#if mailRuEnabled}}
     <li class="nav-item">
         <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth/mailRu">Mail.ru</a>
     </li>
-    -->
+    {{/if}}
 
 </ul>
 

@@ -76,7 +76,7 @@
 
                                 <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
                                     data-account="{{account}}" style="cursor:default;" data-toggle="popover"
-                                    data-trigger="hover" {{#if stateLabel.error}}title="Connection error"
+                                    data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
                                     data-content="{{stateLabel.error}}" {{/if}}>
 
                                     {{#if stateLabel.spinner}}
