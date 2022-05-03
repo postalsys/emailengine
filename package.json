@@ -55,7 +55,7 @@
         "html-to-text": "8.2.0",
         "humanize": "0.0.9",
         "iconv-lite": "0.6.3",
-        "imapflow": "1.0.92",
+        "imapflow": "1.0.93",
         "ioredis": "5.0.4",
         "joi": "17.6.0",
         "jquery": "3.6.0",
