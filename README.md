@@ -127,6 +127,12 @@ There is a Prometheus output available at `/metrics` URL path of the app.
 
 Read about logging options [here](https://emailengine.app/logging)
 
+To start EmailEngine to trail the IMAP traffic of a specific account
+
+```
+$ npm run raw -- --filter.account=account1
+```
+
 ## Security and Data compliance
 
 [Read here](https://docs.emailengine.app/data-compliance/).
