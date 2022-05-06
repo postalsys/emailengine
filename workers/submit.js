@@ -156,6 +156,18 @@ const submitWorker = new Worker(
         }
 
         let accountObject = new Account({ account: job.data.account, redis, call, secret: await getSecret() });
+
+        logger.trace({
+            msg: 'Processing message',
+            action: 'submit',
+            queue: job.queue.name,
+            code: 'processing',
+            job: job.id,
+            event: job.name,
+            data: job.data,
+            account: job.data.account
+        });
+
         try {
             try {
                 // try to update
@@ -177,12 +189,15 @@ const submitWorker = new Worker(
 
             let res = await accountObject.submitMessage(queueEntry);
 
-            logger.info({
+            logger.trace({
                 msg: 'Submitted queued message for delivery',
-                account: queueEntry.account,
-                queueId: job.data.queueId,
-                messageId: job.data.messageId,
-                res
+                action: 'submit',
+                queue: job.queue.name,
+                code: 'result_success',
+                job: job.id,
+                event: job.name,
+                data: job.data,
+                account: job.data.account
             });
 
             try {
@@ -197,9 +212,13 @@ const submitWorker = new Worker(
         } catch (err) {
             logger.error({
                 msg: 'Message submission failed',
-                account: queueEntry.account,
-                queueId: job.data.queueId,
-                messageId: job.data.messageId,
+                action: 'submit',
+                queue: job.queue.name,
+                code: 'result_fail',
+                job: job.id,
+                event: job.name,
+                data: job.data,
+                account: job.data.account,
                 err
             });
 
@@ -229,6 +248,18 @@ const submitWorker = new Worker(
                 } catch (E) {
                     // ignore
                     logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.queueId, err: E });
+
+                    logger.error({
+                        msg: 'Failed to discard job',
+                        action: 'submit',
+                        queue: job.queue.name,
+                        code: 'discard_fail',
+                        job: job.id,
+                        event: job.name,
+                        data: job.data,
+                        account: job.data.account,
+                        err: E
+                    });
                 }
             }
 
@@ -261,6 +292,15 @@ submitWorker.on('completed', async job => {
             logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
         }
     }
+
+    logger.info({
+        msg: 'Submission queue entry completed',
+        action: 'submit',
+        queue: job.queue.name,
+        code: 'completed',
+        job: job.id,
+        account: job.data.account
+    });
 });
 
 submitWorker.on('failed', async job => {
@@ -289,6 +329,15 @@ submitWorker.on('failed', async job => {
             });
         }
     }
+
+    logger.info({
+        msg: 'Submission queue entry failed',
+        action: 'submit',
+        queue: job.queue.name,
+        code: 'failed',
+        job: job.id,
+        account: job.data.account
+    });
 });
 
 async function onCommand(command) {

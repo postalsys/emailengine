@@ -2,7 +2,6 @@
 
 const { parentPort } = require('worker_threads');
 const config = require('wild-config');
-const fetch = require('node-fetch');
 const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
@@ -10,6 +9,9 @@ const logger = require('../lib/logger');
 const packageData = require('../package.json');
 // const { REDIS_PREFIX } = require('../lib/consts');
 const he = require('he');
+
+const nodeFetch = require('node-fetch');
+const fetchCmd = global.fetch || nodeFetch;
 
 config.queues = config.queues || {
     notify: 1
@@ -39,13 +41,20 @@ const notifyWorker = new Worker(
     async job => {
         // do not process active jobs, use it for debugging only
         //return new Promise((resolve, reject) => {});
-
         let accountKey = getAccountKey(job.data.account);
 
         // validate if we should even process this webhook
         let accountExists = await redis.exists(accountKey);
         if (!accountExists) {
-            logger.debug({ msg: 'Account is not enabled', action: 'webhook', event: job.name, account: job.data.account });
+            logger.debug({
+                msg: 'Account is not enabled',
+                action: 'webhook',
+                queue: job.queue.name,
+                code: 'account_not_found',
+                job: job.id,
+                event: job.name,
+                account: job.data.account
+            });
             return;
         }
 
@@ -67,6 +76,9 @@ const notifyWorker = new Worker(
             logger.trace({
                 msg: 'Webhook event not in whitelist',
                 action: 'webhook',
+                queue: job.queue.name,
+                code: 'event_not_whitelisted',
+                job: job.id,
                 event: job.name,
                 account: job.data.account,
                 webhookEvents,
@@ -99,10 +111,15 @@ const notifyWorker = new Worker(
 
         logger.trace({
             msg: 'Processing webhook',
+            action: 'webhook',
+            queue: job.queue.name,
+            code: 'processing',
+            job: job.id,
             webhooks,
             accountWebhooks: !!accountWebhooks,
             event: job.name,
-            data: job.data
+            data: job.data,
+            account: job.data.account
         });
 
         let headers = {
@@ -133,7 +150,7 @@ const notifyWorker = new Worker(
             let res;
 
             try {
-                res = await fetch(parsed.toString(), {
+                res = await fetchCmd(parsed.toString(), {
                     method: 'post',
                     body: JSON.stringify(job.data),
                     headers
@@ -152,10 +169,15 @@ const notifyWorker = new Worker(
 
             logger.trace({
                 msg: 'Webhook posted',
+                action: 'webhook',
+                queue: job.queue.name,
+                code: 'result_success',
+                job: job.id,
                 webhooks,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
-                status: res.status
+                status: res.status,
+                account: job.data.account
             });
 
             try {
@@ -177,10 +199,15 @@ const notifyWorker = new Worker(
                 // disable webhook
                 logger.error({
                     msg: 'Webhooks were disabled by server',
+                    action: 'webhook',
+                    queue: job.queue.name,
+                    code: 'disabled_by_server',
+                    job: job.id,
                     webhooks,
                     accountWebhooks: !!accountWebhooks,
                     event: job.name,
                     status: err.status,
+                    account: job.data.account,
                     err
                 });
                 await settings.set('webhooksEnabled', false);
@@ -189,9 +216,14 @@ const notifyWorker = new Worker(
 
             logger.error({
                 msg: 'Failed posting webhook',
+                action: 'webhook',
+                queue: job.queue.name,
+                code: 'result_fail',
+                job: job.id,
                 webhooks,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
+                account: job.data.account,
                 err
             });
 
@@ -250,7 +282,14 @@ notifyWorker.on('completed', async job => {
         status: 'completed'
     });
 
-    logger.info({ msg: 'Notification queue entry completed', result: 'completed', job: job.id });
+    logger.info({
+        msg: 'Notification queue entry completed',
+        action: 'webhook',
+        queue: job.queue.name,
+        code: 'completed',
+        job: job.id,
+        account: job.data.account
+    });
 });
 
 notifyWorker.on('failed', async job => {
@@ -259,7 +298,14 @@ notifyWorker.on('failed', async job => {
         status: 'failed'
     });
 
-    logger.info({ msg: 'Notification queue entry failed', result: 'failed', job: job.id });
+    logger.info({
+        msg: 'Notification queue entry failed',
+        action: 'webhook',
+        queue: job.queue.name,
+        code: 'failed',
+        job: job.id,
+        account: job.data.account
+    });
 });
 
 logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });
