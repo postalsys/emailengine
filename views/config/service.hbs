@@ -159,9 +159,36 @@
         </div>
     </div>
 
+    <div class="card mb-4" id="sending">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">trackSentMessages</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
+                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
+                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
+                        class="badge badge-dark">experimental</span></label>
+                {{#if errors.trackSentMessages}}
+                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
+                    through EmailEngine to track opens and clicks. You can also set this in the message level to
+                    override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
+                        target="_blank">documentation</a> for details.<br />
+                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
+                    be publicly accessible for tracking to work.</small>
+            </div>
+        </div>
+    </div>
+
     <div class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Template</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Templates</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -183,7 +210,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">templateHeader</a>]</div>
 
-                <label for="templateHeaderElement">Template header for public pages</label>
+                <label for="templateHeaderElement">Template header for public pages (HTML code)</label>
                 <textarea class="form-control droptxt {{#if errors.templateHeader}}is-invalid{{/if}}"
                     id="templateHeaderElement" name="templateHeader" rows="9"
                     spellcheck="false">{{values.templateHeader}}</textarea>
@@ -195,39 +222,11 @@
                 <small class="form-text text-muted">Insert here the HTML code you want to display <u
                         data-toggle="popover" data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
-                        style="cursor: default;">on top of public</u> like the hosted authentication form.</small>
+                        style="cursor: default;">on top of public pages</u> like the hosted authentication form.</small>
             </div>
 
         </div>
     </div>
-
-    <div class="card mb-4" id="sending">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
-        </div>
-        <div class="card-body">
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">trackSentMessages</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
-                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
-                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
-                        class="badge badge-dark">experimental</span></label>
-                {{#if errors.trackSentMessages}}
-                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
-                {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
-                    through EmailEngine to track opens and clicks by default. You can still set this in the message
-                    level by using <code>trackingEnabled</code> option or <code>X-EE-Tracking-Enabled</code>
-                    header.<br />
-                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
-                    be publicly accessible for tracking to work.</small>
-            </div>
-        </div>
-    </div>
-
 
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
