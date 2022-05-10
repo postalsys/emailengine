@@ -5,6 +5,7 @@
     </h1>
 </div>
 
+{{#unless isRender}}
 <div class="card border-left-info shadow mt-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
@@ -17,6 +18,7 @@
                 </p>
                 {{/if}}
 
+
                 {{#if isGeneral}}
                 <p class="mb-4">To upgrade EmailEngine to the latest version, download the latest version from the <a
                         href="https://emailengine.app/#downloads">EmailEngine's homepage</a>, replace the binary and
@@ -28,5 +30,19 @@
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>
             </div>
         </div>
+    </div>
+</div>
+{{/unless}}
+
+<div class="card mt-4 mb-4">
+    <div class="card-body">
+
+        {{#if isRender}}
+        <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your Render <a
+                href="https://dashboard.render.com/">Dashboard</a>, select EmailEngine and run a manual deploy as shown
+            on the screenshot below.
+        </p>
+        <p><img src="/static/preview/render.png" class="img-fluid img-thumbnail"></p>
+        {{/if}}
     </div>
 </div>
