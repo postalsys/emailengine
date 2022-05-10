@@ -1011,7 +1011,12 @@ async function onCommand(worker, message) {
                     connections[metric.labels.status] = metric.value;
                 }
             }
+
             return { connections };
+        }
+
+        case 'imapWorkerCount': {
+            return { workers: availableIMAPWorkers.size };
         }
 
         case 'license':

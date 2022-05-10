@@ -31,7 +31,7 @@ const outbox = require('../lib/outbox');
 const { redis, REDIS_CONF, notifyQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs } = require('../lib/tools');
+const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs, getWorkerCount } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -79,6 +79,8 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
+
+const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
@@ -573,10 +575,33 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/health',
+        async handler() {
+            const imapWorkerCount = await call({ cmd: 'imapWorkerCount' });
+            if (imapWorkerCount < IMAP_WORKER_COUNT) {
+                let error = Boom.boomify(new Error('Not all IMAP workers available'), { statusCode: 500 });
+                throw error;
+            }
+
+            let checkKey = `test:${Date.now()}`;
+            let expected = crypto.randomBytes(8).toString('hex');
+            let res = await redis.multi().set(checkKey, expected).get(checkKey).del(checkKey).exec();
+            if (res[1] && res[1][1] === expected && res[2] && res[2][1] === 1) {
+                return { success: true };
+            }
+            let error = Boom.boomify(new Error('Database check failed'), { statusCode: 500 });
+            throw error;
+        },
+        options: {
+            description: 'Health check',
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/redirect',
         async handler(request, h) {
-            // TODO: track a click
-
             let data = Buffer.from(request.query.data, 'base64url').toString();
             let serviceSecret = await settings.get('serviceSecret');
             if (serviceSecret) {
@@ -3782,7 +3807,7 @@ When making API calls remember that requests against the same account are queued
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }
 
-        if (/^\/v1\//.test(request.path)) {
+        if (/^\/v1\//.test(request.path) || /^\/health$/.test(request.path)) {
             // API path
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }
