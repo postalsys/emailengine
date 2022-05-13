@@ -1415,10 +1415,10 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/imap/webhooks')
                         .description('Account-specific webhook URL'),
 
-                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
+                    copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
 
-                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now'),
 
                     proxy: settingsSchema.proxyUrl,
 
@@ -1499,10 +1499,10 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/imap/webhooks')
                         .description('Account-specific webhook URL'),
 
-                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+                    copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
+                    logs: Joi.boolean().example(true).description('Store recent logs'),
 
-                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
 
                     proxy: settingsSchema.proxyUrl,
 
@@ -1709,7 +1709,7 @@ When making API calls remember that requests against the same account are queued
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                                     .example('connected')
                                     .description('Account state'),
-                                syncTime: Joi.date().example('2021-02-17T13:43:18.860Z').description('Last sync time').iso(),
+                                syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
                         )
@@ -1806,10 +1806,10 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
-                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder').default(true),
-                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+                    copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder'),
+                    logs: Joi.boolean().example(true).description('Store recent logs'),
 
-                    notifyFrom: Joi.date().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now').iso(),
+                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
 
                     proxy: settingsSchema.proxyUrl,
 
@@ -2934,7 +2934,13 @@ When making API calls remember that requests against the same account are queued
 
                     trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
 
-                    sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Send message at specified time').iso(),
+                    copy: Joi.boolean()
+                        .example(true)
+                        .description(
+                            "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting."
+                        ),
+
+                    sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
                     deliveryAttempts: Joi.number()
                         .example(10)
                         .description('How many delivery attempts to make until message is considered as failed')
@@ -3546,9 +3552,9 @@ When making API calls remember that requests against the same account are queued
                                 }).description('SMTP envelope'),
                                 subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
 
-                                created: Joi.date().example('2021-02-17T13:43:18.860Z').description('The time this message was queued').iso(),
-                                scheduled: Joi.date().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered').iso(),
-                                nextAttempt: Joi.date().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt').iso(),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this message was queued'),
+                                scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
+                                nextAttempt: Joi.date().iso().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt'),
 
                                 attemptsMade: Joi.number().example(3).description('How many times EmailEngine has tried to deliver this email'),
                                 attempts: Joi.number().example(3).description('How many delivery attempts to make until message is considered as failed'),
