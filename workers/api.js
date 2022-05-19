@@ -2878,22 +2878,24 @@ When making API calls remember that requests against the same account are queued
 
                     envelope: Joi.object({
                         from: Joi.string().email().allow('').example('sender@example.com'),
-                        to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
+                        to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
                     })
                         .description('Optional SMTP envelope. If not set then derived from message headers.')
                         .label('SMTPEnvelope'),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }),
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
+                    replyTo: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The Reply-To address').label('ReplyTo'),
 
                     to: Joi.array()
-                        .items(addressSchema)
-                        .description('List of addresses')
+                        .items(addressSchema.label('ToAddress'))
+                        .single()
+                        .description('List of recipient addresses')
                         .example([{ address: 'recipient@example.com' }])
                         .label('ToAddressList'),
 
-                    cc: Joi.array().items(addressSchema).description('List of addresses').label('CcAddressList'),
+                    cc: Joi.array().items(addressSchema.label('CcAddress')).single().description('List of CC addresses').label('CcAddressList'),
 
-                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('BccAddressList'),
+                    bcc: Joi.array().items(addressSchema.label('BccAddress')).single().description('List of BCC addresses').label('BccAddressList'),
 
                     raw: Joi.string()
                         .base64()
