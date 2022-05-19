@@ -22,6 +22,7 @@ const { REDIS_PREFIX } = consts;
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
+const importer = require('../lib/importer');
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const Hecks = require('@hapipal/hecks');
@@ -83,6 +84,8 @@ const API_HOST = process.env.EENGINE_HOST || config.api.host;
 const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+
+let isMatch;
 
 let registeredPublishers = new Set();
 
@@ -414,6 +417,42 @@ When making API calls remember that requests against the same account are queued
                         isValid: false,
                         credentials: { token },
                         artifacts: { err: 'Unauthorized account' }
+                    };
+                }
+            }
+
+            if (tokenData.restrictions) {
+                if (tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(request.app.ip)) {
+                    logger.error({
+                        msg: 'Trying to use invalid account for a token',
+                        tokenAccount: tokenData.account,
+                        tokenId: tokenData.id,
+                        account: (request.params && request.params.account) || null,
+                        remoteAddress: request.app.ip,
+                        addressAllowlist: tokenData.restrictions.addresses
+                    });
+
+                    return {
+                        isValid: false,
+                        credentials: { token },
+                        artifacts: { err: 'Unauthorized address' }
+                    };
+                }
+
+                if (tokenData.restrictions.referrers && !isMatch(request.headers.referer, tokenData.restrictions.referrers)) {
+                    logger.error({
+                        msg: 'Trying to use invalid referer for a token',
+                        tokenAccount: tokenData.account,
+                        tokenId: tokenData.id,
+                        account: (request.params && request.params.account) || null,
+                        referer: request.headers.referer,
+                        referrerAllowlist: tokenData.restrictions.referrers
+                    });
+
+                    return {
+                        isValid: false,
+                        credentials: { token },
+                        artifacts: { err: 'Unauthorized referrer' }
                     };
                 }
             }
@@ -1065,6 +1104,35 @@ When making API calls remember that requests against the same account are queued
                         .description('Related metadata in JSON format')
                         .label('JsonMetaData'),
 
+                    restrictions: Joi.object()
+                        .keys({
+                            referrers: Joi.array()
+                                .items(Joi.string())
+                                .empty('')
+                                .allow(false)
+                                .default(false)
+                                .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
+                                .label('ReferrerAllowlist')
+                                .description('HTTP referrer allowlist'),
+                            addresses: Joi.array()
+                                .items(
+                                    Joi.string().ip({
+                                        version: ['ipv4', 'ipv6'],
+                                        cidr: 'forbidden'
+                                    })
+                                )
+                                .empty('')
+                                .allow(false)
+                                .default(false)
+                                .example(['1.2.3.4', '5.6.7.8'])
+                                .label('AddressAllowlist')
+                                .description('IP address allowlist')
+                        })
+                        .empty('')
+                        .allow(false)
+                        .label('TokenRestrictions')
+                        .description('Access restrictions'),
+
                     ip: Joi.string()
                         .empty('')
                         .trim()
@@ -1283,6 +1351,36 @@ When making API calls remember that requests against the same account are queued
                                     .example('{"example": "value"}')
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
+
+                                restrictions: Joi.object()
+                                    .keys({
+                                        referrers: Joi.array()
+                                            .items(Joi.string())
+                                            .empty('')
+                                            .allow(false)
+                                            .default(false)
+                                            .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
+                                            .label('ReferrerAllowlist')
+                                            .description('HTTP referrer allowlist'),
+                                        addresses: Joi.array()
+                                            .items(
+                                                Joi.string().ip({
+                                                    version: ['ipv4', 'ipv6'],
+                                                    cidr: 'forbidden'
+                                                })
+                                            )
+                                            .empty('')
+                                            .allow(false)
+                                            .default(false)
+                                            .example(['1.2.3.4', '5.6.7.8'])
+                                            .label('AddressAllowlist')
+                                            .description('IP address allowlist')
+                                    })
+                                    .empty('')
+                                    .allow(false)
+                                    .label('TokenRestrictions')
+                                    .description('Access restrictions'),
+
                                 ip: Joi.string()
                                     .empty('')
                                     .trim()
@@ -3904,7 +4002,12 @@ When making API calls remember that requests against the same account are queued
     await server.start();
 };
 
-init()
+// dynamic imports first, use a wrapper function or eslint parser will crash
+importer('matcher')
+    .then(matcher => {
+        isMatch = matcher.isMatch;
+    })
+    .then(init)
     .then(() => {
         logger.debug({
             msg: 'Started API server thread',
