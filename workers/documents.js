@@ -74,8 +74,19 @@ const documentsWorker = new Worker(
                     let messageId = messageData.id;
 
                     delete messageData.id;
-                    messageData.account = job.data.account;
-                    messageData.created = job.data.date;
+
+                    let baseObject = {
+                        account: job.data.account,
+                        created: job.data.date,
+                        internalId: messageId,
+                        path: job.data.path
+                    };
+
+                    if (job.data.specialUse) {
+                        baseObject.specialUse = job.data.specialUse;
+                    }
+
+                    messageData = Object.assign(baseObject, messageData);
 
                     const { index, client } = await getClient();
                     if (!client) {
@@ -192,7 +203,13 @@ const documentsWorker = new Worker(
                     let updates = {};
                     if (messageData.changes && messageData.changes.flags && messageData.changes.flags.value) {
                         updates.flags = messageData.changes.flags.value;
+
+                        updates.unseen = updates.flags && !updates.flags.includes('\\Seen') ? true : false;
+                        updates.flagged = updates.flags && updates.flags.includes('\\Flagged') ? true : false;
+                        updates.answered = updates.flags && updates.flags.includes('\\Answered') ? true : false;
+                        updates.draft = updates.flags && updates.flags.includes('\\Draft') ? true : false;
                     }
+
                     if (messageData.changes && messageData.changes.labels && messageData.changes.labels.value) {
                         updates.labels = messageData.changes.labels.value;
                     }
