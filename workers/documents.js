@@ -8,7 +8,7 @@ const settings = require('../lib/settings');
 const packageData = require('../package.json');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 
-const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY } = require('../lib/consts');
+const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED } = require('../lib/consts');
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -68,6 +68,58 @@ const documentsWorker = new Worker(
     'documents',
     async job => {
         switch (job.data.event) {
+            case ACCOUNT_DELETED:
+                {
+                    const { index, client } = await getClient();
+                    if (!client) {
+                        return;
+                    }
+
+                    let deleteResult;
+                    try {
+                        deleteResult = await client.deleteByQuery({
+                            index,
+                            query: {
+                                match: {
+                                    account: job.data.account
+                                }
+                            }
+                        });
+                    } catch (err) {
+                        logger.error({
+                            msg: 'Failed to delete account data',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_delete_account_error',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account,
+                            request: {
+                                index,
+                                query: {
+                                    match: {
+                                        account: job.data.account
+                                    }
+                                }
+                            },
+                            err
+                        });
+                        throw err;
+                    }
+
+                    logger.trace({
+                        msg: 'Deleted account data',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_delete_account',
+                        job: job.id,
+                        event: job.name,
+                        account: job.data.account,
+                        deleteResult
+                    });
+                }
+                break;
+
             case MESSAGE_NEW_NOTIFY:
                 {
                     let messageData = job.data.data;

@@ -29,7 +29,7 @@ const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 
-const { redis, REDIS_CONF, notifyQueue } = require('../lib/db');
+const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs, getWorkerCount } = require('../lib/tools');
@@ -1682,7 +1682,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                documentsQeueue,
+                call,
+                secret: await getSecret()
+            });
 
             try {
                 return await accountObject.delete();
