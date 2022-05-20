@@ -159,33 +159,6 @@
         </div>
     </div>
 
-    <div class="card mb-4" id="sending">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Sending settings</h6>
-        </div>
-        <div class="card-body">
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">trackSentMessages</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
-                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
-                <label class="form-check-label" for="trackSentMessages">Track opens and clicks <span
-                        class="badge badge-dark">experimental</span></label>
-                {{#if errors.trackSentMessages}}
-                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
-                {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
-                    through EmailEngine to track opens and clicks. You can also set this in the message level to
-                    override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
-                        target="_blank">documentation</a> for details.<br />
-                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
-                    be publicly accessible for tracking to work.</small>
-            </div>
-        </div>
-    </div>
-
     <div class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Templates</h6>
@@ -225,6 +198,46 @@
                         style="cursor: default;">on top of public pages</u> like the hosted authentication form.</small>
             </div>
 
+        </div>
+    </div>
+
+    <div class="card mb-4" id="labs">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Labs <span class="badge badge-dark">beta</span></h6>
+        </div>
+        <div class="card-body">
+
+            <p>The following options are not well tested and might change in the futurue. Use these with care.</p>
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">trackSentMessages</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
+                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
+                <label class="form-check-label" for="trackSentMessages">Track opens and clicks</label>
+                {{#if errors.trackSentMessages}}
+                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
+                    through EmailEngine to track opens and clicks. You can also set this in the message level to
+                    override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
+                        target="_blank">documentation</a> for details.<br />
+                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
+                    be publicly accessible for tracking to work.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.labsDocumentStore}}is-invalid{{/if}}"
+                    id="labsDocumentStore" name="labsDocumentStore" {{#if values.labsDocumentStore}}checked{{/if}} />
+                <label class="form-check-label" for="labsDocumentStore">Allow to use Document Store</label>
+                {{#if errors.labsDocumentStore}}
+                <span class="invalid-feedback">{{errors.labsDocumentStore}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Document Store allows to sync messages to external storage
+                    (ElasticSearch). Enabling this option will add a new configuration menu option you can
+                    use to set up document store syncing.</small>
+            </div>
         </div>
     </div>
 

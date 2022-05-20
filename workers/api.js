@@ -3876,7 +3876,8 @@ When making API calls remember that requests against the same account are queued
                 packageData,
                 systemAlerts,
                 embeddedTemplateHeader: await settings.get('templateHeader'),
-                currentYear: new Date().getFullYear()
+                currentYear: new Date().getFullYear(),
+                showDocumentStore: (await settings.get('labsDocumentStore')) || (await settings.get('documentStoreEnabled'))
             };
         }
     });

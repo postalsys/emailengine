@@ -1414,6 +1414,9 @@ const startApplication = async () => {
         await spawnWorker('submit');
     }
 
+    // single worker to process events in order
+    await spawnWorker('documents');
+
     if (await settings.get('smtpServerEnabled')) {
         // single SMTP interface worker
         await spawnWorker('smtp');

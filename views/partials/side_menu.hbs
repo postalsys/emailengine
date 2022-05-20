@@ -74,6 +74,12 @@
                     {{/unless}}
                 </div>
             </a>
+
+            {{#if showDocumentStore}}
+            <a class="collapse-item {{#if menuConfigDocumentStore}}active{{/if}}"
+                href="/admin/config/document-store">Document Store <span
+                    class="badge badge-dark">beta</span></label></a>
+            {{/if}}
         </div>
     </div>
 </li>

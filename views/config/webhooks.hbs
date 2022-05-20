@@ -153,6 +153,13 @@
         </div>
     </div>
 
+    {{#if documentStoreEnabled}}
+    <div class="mt-3 mb-3 alert alert-warning">
+        While <a href="/admin/config/document-store">Document Store</a> is enabled, EmailEngine
+        always fetches full headers and text for new messages, so the following settings are ignored.
+    </div>
+    {{/if}}
+
     <div class="card mt-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Headers to include</h6>
@@ -200,7 +207,8 @@
         <div class="card-body">
 
             <p>By default, only message metadata without any text content is included in the webhook payload for new
-                emails. If needed, you can configure EmailEngine to include plaintext and HTML content in the payload as
+                emails. If needed, you can configure EmailEngine to include plaintext and HTML content in the
+                payload as
                 well.</p>
 
             <div class="form-group form-check">
@@ -227,8 +235,10 @@
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">To keep webhook size with text values in check, you can define the
-                    maximum text size limit. Longer texts are cropped to fit that size. This limit is applied per text
+                <small class="form-text text-muted">To keep webhook size with text values in check, you can define
+                    the
+                    maximum text size limit. Longer texts are cropped to fit that size. This limit is applied per
+                    text
                     type, so if the limit is 1000 bytes and email has both plaintext and HTML content, you get 1000
                     bytes of plaintext and 1000 bytes of HTML.</small>
             </div>

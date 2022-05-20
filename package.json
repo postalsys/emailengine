@@ -33,6 +33,7 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
+        "@elastic/elasticsearch": "^8.2.0-patch.1",
         "@hapi/boom": "10.0.0",
         "@hapi/cookie": "11.0.2",
         "@hapi/crumb": "8.0.1",
