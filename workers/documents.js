@@ -7,6 +7,7 @@ const logger = require('../lib/logger');
 const settings = require('../lib/settings');
 const packageData = require('../package.json');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
+const { ensureIndex } = require('../lib/es');
 
 const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED } = require('../lib/consts');
 
@@ -60,6 +61,12 @@ const getClient = async () => {
 
     clientCache.version = documentStoreVersion;
     clientCache.client = new ElasticSearch(clientCache.config);
+
+    // ensure proper index settings
+    let indexResult = await ensureIndex(clientCache.client, clientCache.index);
+    if (!indexResult || indexResult.exists) {
+        logger.info({ msg: 'Updated document index', index: clientCache.index, result: indexResult });
+    }
 
     return clientCache;
 };
@@ -125,12 +132,9 @@ const documentsWorker = new Worker(
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
-                    delete messageData.id;
-
                     let baseObject = {
                         account: job.data.account,
                         created: job.data.date,
-                        internalId: messageId,
                         path: job.data.path
                     };
 
@@ -139,6 +143,17 @@ const documentsWorker = new Worker(
                     }
 
                     messageData = Object.assign(baseObject, messageData);
+                    if (messageData.headers) {
+                        messageData.headers = Object.keys(messageData.headers).map(key => ({ key, value: [].concat(messageData.headers[key] || []) }));
+                    }
+
+                    let textContent = {};
+                    for (let subType of ['plain', 'html']) {
+                        if (messageData.text && messageData.text[subType]) {
+                            textContent[subType] = messageData.text[subType];
+                        }
+                    }
+                    messageData.text = textContent;
 
                     const { index, client } = await getClient();
                     if (!client) {
@@ -185,7 +200,6 @@ const documentsWorker = new Worker(
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
-                    delete messageData.id;
                     messageData.account = job.data.account;
                     messageData.created = job.data.date;
 
