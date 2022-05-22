@@ -155,6 +155,15 @@ const documentsWorker = new Worker(
                     }
                     messageData.text = textContent;
 
+                    if (messageData.attachments) {
+                        for (let attachment of messageData.attachments) {
+                            if ('filename' in attachment && !attachment.filename) {
+                                // remove falys filenames, otherwise these will be casted into strings
+                                delete attachment.filename;
+                            }
+                        }
+                    }
+
                     const { index, client } = await getClient();
                     if (!client) {
                         return;
