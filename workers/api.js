@@ -24,6 +24,7 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const importer = require('../lib/importer');
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
+const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 
 const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
@@ -137,6 +138,47 @@ class ResponseStream extends Transform {
         done();
     }
 }
+
+const esClientCache = { version: -1, config: false, client: false, index: false };
+
+const getESClient = async () => {
+    const documentStoreVersion = (await settings.get('documentStoreVersion')) || 0;
+    if (esClientCache.version === documentStoreVersion) {
+        return esClientCache;
+    }
+
+    let documentStoreEnabled = await settings.get('documentStoreEnabled');
+    let documentStoreUrl = await settings.get('documentStoreUrl');
+
+    if (!documentStoreEnabled || !documentStoreUrl) {
+        esClientCache.version = documentStoreVersion;
+        esClientCache.client = false;
+        esClientCache.index = false;
+        return esClientCache;
+    }
+
+    esClientCache.index = (await settings.get('documentStoreIndex')) || 'emailengine';
+
+    let documentStoreAuthEnabled = await settings.get('documentStoreAuthEnabled');
+    let documentStoreUsername = await settings.get('documentStoreUsername');
+    let documentStorePassword = await settings.get('documentStorePassword');
+
+    esClientCache.config = {
+        node: { url: new URL(documentStoreUrl), tls: { rejectUnauthorized: false } },
+        auth:
+            documentStoreAuthEnabled && documentStoreUsername
+                ? {
+                      username: documentStoreUsername,
+                      password: documentStorePassword
+                  }
+                : false
+    };
+
+    esClientCache.version = documentStoreVersion;
+    esClientCache.client = new ElasticSearch(esClientCache.config);
+
+    return esClientCache;
+};
 
 let callQueue = new Map();
 let mids = 0;
@@ -2217,7 +2259,66 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return await accountObject.getMessage(request.params.message, request.query);
+                if (request.query.documentStore) {
+                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
+                    if (!documentStoreEnabled) {
+                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
+                        error.output.payload.code = 'DisabledDocumentStore';
+                        throw error;
+                    }
+
+                    const { index, client } = await getESClient();
+                    let getResult = await client.get({
+                        index,
+                        id: `${request.params.account}:${request.params.message}`
+                    });
+
+                    if (!getResult || !getResult._source) {
+                        let message = 'Requested message was not found';
+                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                        throw error;
+                    }
+
+                    let messageData = getResult._source;
+
+                    // restore headers and text object as per the API response
+                    let headersObj = {};
+                    for (let { key, value } of messageData.headers) {
+                        headersObj[key] = value;
+                    }
+                    messageData.headers = headersObj;
+
+                    if (messageData.text) {
+                        messageData.text = Object.assign(
+                            {
+                                id: null,
+                                encodedSize: {
+                                    plain: (messageData.text.plain || '').length,
+                                    html: (messageData.text.html || '').length
+                                }
+                            },
+                            messageData.text
+                        );
+                        messageData.text.hasMore = false;
+                    }
+
+                    for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
+                        if (messageData[key] === false) {
+                            messageData[key] = undefined;
+                        }
+                    }
+
+                    for (let key of ['account', 'created', 'specialUse']) {
+                        if (messageData[key]) {
+                            messageData[key] = undefined;
+                        }
+                    }
+
+                    return messageData;
+                } else {
+                    // regular IMAP request
+                    return await accountObject.getMessage(request.params.message, request.query);
+                }
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2248,16 +2349,24 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 query: Joi.object({
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
+                        .label('UseDocumentStore'),
                     maxBytes: Joi.number()
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(5 * 1025 * 1024)
-                        .description('Max length of text content'),
+                        .description('Max length of text content. This setting is ignored if `documentStore` is `true`.'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
                         .example('*')
-                        .description('Which text content to return, use * for all. By default text content is not returned.')
+                        .description(
+                            'Which text content to return, use * for all. By default text content is not returned. This setting is ignored if `documentStore` is `true`.'
+                        )
                 }),
 
                 params: Joi.object({
