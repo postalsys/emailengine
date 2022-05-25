@@ -20,7 +20,7 @@
         "IMAP"
     ],
     "author": "Postal Systems OU",
-    "license": "AGPL-3.0-or-later OR LICENSE_EMAILENGINE",
+    "license": "SSPL-1.0-or-later OR LICENSE_EMAILENGINE",
     "bin": {
         "emailengine": "bin/emailengine.js"
     },
