@@ -2730,7 +2730,42 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return await accountObject.getText(request.params.text, request.query);
+                if (request.query.documentStore) {
+                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
+                    if (!documentStoreEnabled) {
+                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
+                        error.output.payload.code = 'DisabledDocumentStore';
+                        throw error;
+                    }
+
+                    let buf = Buffer.from(request.params.text, 'base64url');
+                    let message = buf.slice(0, 8).toString('base64url');
+
+                    const { index, client } = await getESClient();
+                    let getResult = await client.get({
+                        index,
+                        id: `${request.params.account}:${message}`
+                    });
+
+                    if (!getResult || !getResult._source) {
+                        let message = 'Requested message was not found';
+                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                        throw error;
+                    }
+
+                    let messageData = getResult._source;
+                    let response = {};
+                    for (let textType of Object.keys(messageData.text || {})) {
+                        if (['plain', 'html'].includes(textType) && (request.query.textType === '*' || request.query.textType === textType)) {
+                            response[textType] = messageData.text[textType];
+                        }
+                    }
+                    response.hasMore = false;
+
+                    return response;
+                } else {
+                    return await accountObject.getText(request.params.text, request.query);
+                }
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2765,13 +2800,19 @@ When making API calls remember that requests against the same account are queued
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(MAX_ATTACHMENT_SIZE)
-                        .description('Max length of text content'),
+                        .description('Max length of text content. This setting is ignored if `documentStore` is `true`.'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
                         .default('*')
                         .example('*')
-                        .description('Which text content to return, use * for all. By default all contents are returned.')
+                        .description('Which text content to return, use * for all. By default all contents are returned.'),
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
+                        .label('UseDocumentStore')
                 }),
 
                 params: Joi.object({
