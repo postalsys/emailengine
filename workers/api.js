@@ -34,7 +34,19 @@ const outbox = require('../lib/outbox');
 const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs, getWorkerCount, normalizePath } = require('../lib/tools');
+const {
+    getByteSize,
+    getDuration,
+    getStats,
+    flash,
+    failAction,
+    verifyAccountInfo,
+    isEmail,
+    getLogs,
+    getWorkerCount,
+    normalizePath,
+    unpackUIDRangeForSearch
+} = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -2815,20 +2827,16 @@ When making API calls remember that requests against the same account are queued
                         bool: {
                             must: [
                                 {
-                                    constant_score: {
-                                        filter: {
-                                            term: {
-                                                account: request.params.account
-                                            }
+                                    filter: {
+                                        term: {
+                                            account: request.params.account
                                         }
                                     }
                                 },
                                 {
-                                    constant_score: {
-                                        filter: {
-                                            term: {
-                                                path
-                                            }
+                                    filter: {
+                                        term: {
+                                            path
                                         }
                                     }
                                 }
@@ -2941,7 +2949,244 @@ When making API calls remember that requests against the same account are queued
         async handler(request) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
             try {
-                return await accountObject.listMessages(Object.assign(request.query, request.payload));
+                if (request.query.documentStore) {
+                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
+                    if (!documentStoreEnabled) {
+                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
+                        error.output.payload.code = 'DisabledDocumentStore';
+                        throw error;
+                    }
+
+                    let inboxData = await redis.hget(accountObject.getMailboxListKey(), 'INBOX');
+                    let delimiter;
+                    if (inboxData) {
+                        try {
+                            delimiter = msgpack.decode(inboxData).delimiter;
+                        } catch (err) {
+                            delimiter = '/'; // hope for the best
+                        }
+                    }
+
+                    let query = {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        account: request.params.account
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    if (request.query.path) {
+                        let path = normalizePath(request.query.path, delimiter);
+                        query.bool.must.push({
+                            term: {
+                                path
+                            }
+                        });
+                    }
+
+                    for (let key of ['answered', 'deleted', 'draft', 'unseen', 'flagged']) {
+                        if (typeof request.payload.search[key] === 'boolean') {
+                            query.bool.must.push({
+                                term: {
+                                    [key]: request.payload.search[key]
+                                }
+                            });
+                        }
+                    }
+
+                    if (typeof request.payload.search.seen === 'boolean') {
+                        query.bool.must.push({
+                            term: {
+                                unseen: !request.payload.search.seen
+                            }
+                        });
+                    }
+
+                    for (let key of ['from', 'to', 'cc', 'bcc']) {
+                        if (request.payload.search[key]) {
+                            query.bool.must.push({
+                                bool: {
+                                    should: [
+                                        {
+                                            match: {
+                                                [`${key}.name`]: {
+                                                    query: request.payload.search[key]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            term: {
+                                                [`${key}.address`]: request.payload.search[key]
+                                            }
+                                        }
+                                    ],
+                                    minimum_should_match: 1
+                                }
+                            });
+                        }
+                    }
+
+                    if (request.payload.search.uid) {
+                        let uidEntries = unpackUIDRangeForSearch(request.payload.search.uid);
+                        if (uidEntries && uidEntries.length) {
+                            console.log(uidEntries);
+                            let mustList = [];
+                            for (let entry of uidEntries) {
+                                if (typeof entry === 'number') {
+                                    mustList.push({
+                                        match: {
+                                            uid: {
+                                                query: entry
+                                            }
+                                        }
+                                    });
+                                } else if (typeof entry === 'object') {
+                                    mustList.push({
+                                        range: {
+                                            uid: entry
+                                        }
+                                    });
+                                }
+                            }
+
+                            if (mustList.length) {
+                                query.bool.must.push({
+                                    bool: {
+                                        should: mustList,
+                                        minimum_should_match: 1
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    for (let key of ['emailId', 'threadId']) {
+                        if (request.payload.search[key]) {
+                            query.bool.must.push({
+                                term: {
+                                    key: request.payload.search[key]
+                                }
+                            });
+                        }
+                    }
+
+                    if (request.payload.search.subject) {
+                        query.bool.must.push({
+                            match: {
+                                subject: {
+                                    query: request.payload.search.subject
+                                }
+                            }
+                        });
+                    }
+
+                    if (request.payload.search.body) {
+                        query.bool.must.push({
+                            bool: {
+                                should: [
+                                    {
+                                        match: {
+                                            'text.plain': {
+                                                query: request.payload.search.body
+                                            }
+                                        }
+                                    },
+                                    {
+                                        match: {
+                                            'text.html': {
+                                                query: request.payload.search.body
+                                            }
+                                        }
+                                    }
+                                ],
+                                minimum_should_match: 1
+                            }
+                        });
+                    }
+
+                    let dateMatch = {};
+
+                    for (let key of ['before', 'sentBefore']) {
+                        if (request.payload.search[key]) {
+                            dateMatch.lte = request.payload.search[key];
+                        }
+                    }
+
+                    for (let key of ['since', 'sentSince']) {
+                        if (request.payload.search[key]) {
+                            dateMatch.gte = request.payload.search[key];
+                        }
+                    }
+
+                    if (Object.keys(dateMatch).length) {
+                        query.bool.must.push({
+                            range: { date: dateMatch }
+                        });
+                    }
+
+                    let sizeMatch = {};
+
+                    if (request.payload.search.larger) {
+                        dateMatch.gte = request.payload.search.larger;
+                    }
+
+                    if (request.payload.search.smaller) {
+                        dateMatch.lte = request.payload.search.smaller;
+                    }
+
+                    if (Object.keys(sizeMatch).length) {
+                        query.bool.must.push({
+                            range: { size: sizeMatch }
+                        });
+                    }
+
+                    console.log(require('util').inspect(query, false, 22));
+
+                    const { index, client } = await getESClient();
+                    let searchResult = await client.search({
+                        index,
+                        size: request.query.pageSize,
+                        from: request.query.pageSize * request.query.page,
+                        query,
+                        sort: { uid: 'desc' },
+                        _source_excludes: 'headers,text.plain,text.html'
+                    });
+
+                    console.log(require('util').inspect(searchResult, false, 22));
+
+                    let response = {
+                        total: searchResult.hits.total.value,
+                        page: request.query.page,
+                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1),
+                        messages: searchResult.hits.hits.map(entry => {
+                            let messageData = entry._source;
+
+                            // normalize as per the API response
+
+                            for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
+                                if (messageData[key] === false) {
+                                    messageData[key] = undefined;
+                                }
+                            }
+
+                            for (let key of ['account', 'created', 'specialUse']) {
+                                if (messageData[key]) {
+                                    messageData[key] = undefined;
+                                }
+                            }
+
+                            return messageData;
+                        })
+                    };
+
+                    return response;
+                } else {
+                    return await accountObject.listMessages(Object.assign(request.query, request.payload));
+                }
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2978,19 +3223,34 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string().required().example('INBOX').description('Mailbox folder path'),
+                    path: Joi.string()
+                        .when('documentStore', {
+                            is: true,
+                            then: Joi.optional(),
+                            otherwise: Joi.required()
+                        })
+                        .example('INBOX')
+                        .description('Mailbox folder path. Not required if `documentStore` is `true`'),
                     page: Joi.number()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page')
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
+                        .label('UseDocumentStore')
                 }),
 
                 payload: Joi.object({
                     search: Joi.object({
-                        seq: Joi.string().max(256).description('Sequence number range'),
+                        seq: Joi.string()
+                            .max(256)
+                            .description('Sequence number range. Ignored when `documentStore` is `true` as Document Store does not assign sequence numbers.'),
 
                         answered: Joi.boolean()
                             .truthy('Y', 'true', '1')
@@ -3041,7 +3301,10 @@ When making API calls remember that requests against the same account are queued
 
                         uid: Joi.string().max(256).description('UID range').label('UIDRange'),
 
-                        modseq: Joi.number().min(0).description('Matches messages with modseq higher than value').label('ModseqLarger'),
+                        modseq: Joi.number()
+                            .min(0)
+                            .description('Matches messages with modseq higher than value. Ignored when `documentStore` is `true`.')
+                            .label('ModseqLarger'),
 
                         before: Joi.date().description('Matches messages received before date').label('EnvelopeBefore'),
                         since: Joi.date().description('Matches messages received after date').label('EnvelopeSince'),

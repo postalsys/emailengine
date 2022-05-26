@@ -147,6 +147,11 @@ const documentsWorker = new Worker(
                         messageData.headers = Object.keys(messageData.headers).map(key => ({ key, value: [].concat(messageData.headers[key] || []) }));
                     }
 
+                    messageData.unseen = messageData.flags && !messageData.flags.includes('\\Seen') ? true : false;
+                    messageData.flagged = messageData.flags && messageData.flags.includes('\\Flagged') ? true : false;
+                    messageData.answered = messageData.flags && messageData.flags.includes('\\Answered') ? true : false;
+                    messageData.draft = messageData.flags && messageData.flags.includes('\\Draft') ? true : false;
+
                     let textContent = {};
                     for (let subType of ['id', 'plain', 'html', 'encodedSize']) {
                         if (messageData.text && messageData.text[subType]) {
