@@ -3033,7 +3033,6 @@ When making API calls remember that requests against the same account are queued
                     if (request.payload.search.uid) {
                         let uidEntries = unpackUIDRangeForSearch(request.payload.search.uid);
                         if (uidEntries && uidEntries.length) {
-                            console.log(uidEntries);
                             let mustList = [];
                             for (let entry of uidEntries) {
                                 if (typeof entry === 'number') {
@@ -3144,7 +3143,32 @@ When making API calls remember that requests against the same account are queued
                         });
                     }
 
-                    console.log(require('util').inspect(query, false, 22));
+                    // headers, nested query
+                    if (Object.keys(request.payload.search.header || {}).length) {
+                        Object.keys(request.payload.search.header).forEach(header => {
+                            query.bool.must.push({
+                                nested: {
+                                    path: 'headers',
+                                    query: {
+                                        bool: {
+                                            must: [
+                                                {
+                                                    term: {
+                                                        'headers.key': header.toLowerCase()
+                                                    }
+                                                },
+                                                {
+                                                    match: {
+                                                        'headers.value': { query: (request.payload.search.header[header] || '').toString() }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    }
 
                     const { index, client } = await getESClient();
                     let searchResult = await client.search({
@@ -3155,8 +3179,6 @@ When making API calls remember that requests against the same account are queued
                         sort: { uid: 'desc' },
                         _source_excludes: 'headers,text.plain,text.html'
                     });
-
-                    console.log(require('util').inspect(searchResult, false, 22));
 
                     let response = {
                         total: searchResult.hits.total.value,
