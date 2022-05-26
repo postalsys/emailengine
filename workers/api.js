@@ -2323,6 +2323,7 @@ When making API calls remember that requests against the same account are queued
                     return await accountObject.getMessage(request.params.message, request.query);
                 }
             } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2767,6 +2768,7 @@ When making API calls remember that requests against the same account are queued
                     return await accountObject.getText(request.params.text, request.query);
                 }
             } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2852,38 +2854,67 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
-                    let inboxData = await redis.hget(accountObject.getMailboxListKey(), 'INBOX');
+                    let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
                     let delimiter;
                     if (inboxData) {
                         try {
-                            delimiter = msgpack.decode(inboxData).delimiter;
+                            inboxData = msgpack.decode(inboxData);
+                            delimiter = inboxData.delimiter;
                         } catch (err) {
                             delimiter = '/'; // hope for the best
+                            inboxData = false;
                         }
                     }
 
+                    inboxData = inboxData || {
+                        path: 'INBOX',
+                        delimiter
+                    };
+
+                    inboxData.specialUse = inboxData.specialUse || '\\Inbox';
+
                     let path = normalizePath(request.query.path, delimiter);
+                    let mailboxData = path === 'INBOX' ? inboxData : false;
+                    if (!mailboxData) {
+                        mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
+                        if (mailboxData) {
+                            try {
+                                mailboxData = msgpack.decode(mailboxData);
+                            } catch (err) {
+                                mailboxData = false;
+                            }
+                        }
+                    }
 
                     let query = {
                         bool: {
                             must: [
                                 {
-                                    filter: {
-                                        term: {
-                                            account: request.params.account
-                                        }
-                                    }
-                                },
-                                {
-                                    filter: {
-                                        term: {
-                                            path
-                                        }
+                                    term: {
+                                        account: request.params.account
                                     }
                                 }
                             ]
                         }
                     };
+
+                    query.bool.must.push({
+                        bool: {
+                            should: [
+                                {
+                                    term: {
+                                        path
+                                    }
+                                },
+                                {
+                                    term: {
+                                        labels: mailboxData.specialUse || path
+                                    }
+                                }
+                            ],
+                            minimum_should_match: 1
+                        }
+                    });
 
                     const { index, client } = await getESClient();
                     let searchResult = await client.search({
@@ -2925,6 +2956,7 @@ When making API calls remember that requests against the same account are queued
                     return await accountObject.listMessages(request.query);
                 }
             } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2998,16 +3030,6 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
-                    let inboxData = await redis.hget(accountObject.getMailboxListKey(), 'INBOX');
-                    let delimiter;
-                    if (inboxData) {
-                        try {
-                            delimiter = msgpack.decode(inboxData).delimiter;
-                        } catch (err) {
-                            delimiter = '/'; // hope for the best
-                        }
-                    }
-
                     let query = {
                         bool: {
                             must: [
@@ -3021,10 +3043,54 @@ When making API calls remember that requests against the same account are queued
                     };
 
                     if (request.query.path) {
+                        let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
+                        let delimiter;
+
+                        if (inboxData) {
+                            try {
+                                inboxData = msgpack.decode(inboxData);
+                                delimiter = inboxData.delimiter;
+                            } catch (err) {
+                                delimiter = '/'; // hope for the best
+                                inboxData = false;
+                            }
+                        }
+
+                        inboxData = inboxData || {
+                            path: 'INBOX',
+                            delimiter
+                        };
+
+                        inboxData.specialUse = inboxData.specialUse || '\\Inbox';
+
                         let path = normalizePath(request.query.path, delimiter);
+                        let mailboxData = path === 'INBOX' ? inboxData : false;
+                        if (!mailboxData) {
+                            mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
+                            if (mailboxData) {
+                                try {
+                                    mailboxData = msgpack.decode(mailboxData);
+                                } catch (err) {
+                                    mailboxData = false;
+                                }
+                            }
+                        }
+
                         query.bool.must.push({
-                            term: {
-                                path
+                            bool: {
+                                should: [
+                                    {
+                                        term: {
+                                            path
+                                        }
+                                    },
+                                    {
+                                        term: {
+                                            labels: mailboxData.specialUse || path
+                                        }
+                                    }
+                                ],
+                                minimum_should_match: 1
                             }
                         });
                     }
@@ -3251,6 +3317,7 @@ When making API calls remember that requests against the same account are queued
                     return await accountObject.listMessages(Object.assign(request.query, request.payload));
                 }
             } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
