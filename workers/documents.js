@@ -148,7 +148,7 @@ const documentsWorker = new Worker(
                     }
 
                     let textContent = {};
-                    for (let subType of ['plain', 'html']) {
+                    for (let subType of ['id', 'plain', 'html', 'encodedSize']) {
                         if (messageData.text && messageData.text[subType]) {
                             textContent[subType] = messageData.text[subType];
                         }

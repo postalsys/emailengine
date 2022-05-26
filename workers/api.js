@@ -23,6 +23,7 @@ const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const importer = require('../lib/importer');
+const msgpack = require('msgpack5')();
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 
@@ -33,7 +34,7 @@ const outbox = require('../lib/outbox');
 const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs, getWorkerCount } = require('../lib/tools');
+const { getByteSize, getDuration, getStats, flash, failAction, verifyAccountInfo, isEmail, getLogs, getWorkerCount, normalizePath } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 
@@ -82,7 +83,7 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
-const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
+const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || (config.workers && config.workers.imap)) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
@@ -2289,16 +2290,6 @@ When making API calls remember that requests against the same account are queued
                     messageData.headers = headersObj;
 
                     if (messageData.text) {
-                        messageData.text = Object.assign(
-                            {
-                                id: null,
-                                encodedSize: {
-                                    plain: (messageData.text.plain || '').length,
-                                    html: (messageData.text.html || '').length
-                                }
-                            },
-                            messageData.text
-                        );
                         messageData.text.hasMore = false;
                     }
 
@@ -2349,12 +2340,6 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 query: Joi.object({
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore'),
                     maxBytes: Joi.number()
                         .min(0)
                         .max(1024 * 1024 * 1024)
@@ -2366,7 +2351,13 @@ When making API calls remember that requests against the same account are queued
                         .example('*')
                         .description(
                             'Which text content to return, use * for all. By default text content is not returned. This setting is ignored if `documentStore` is `true`.'
-                        )
+                        ),
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
+                        .label('UseDocumentStore')
                 }),
 
                 params: Joi.object({
@@ -2800,7 +2791,90 @@ When making API calls remember that requests against the same account are queued
         async handler(request) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
             try {
-                return await accountObject.listMessages(request.query);
+                if (request.query.documentStore) {
+                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
+                    if (!documentStoreEnabled) {
+                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
+                        error.output.payload.code = 'DisabledDocumentStore';
+                        throw error;
+                    }
+
+                    let inboxData = await redis.hget(accountObject.getMailboxListKey(), 'INBOX');
+                    let delimiter;
+                    if (inboxData) {
+                        try {
+                            delimiter = msgpack.decode(inboxData).delimiter;
+                        } catch (err) {
+                            delimiter = '/'; // hope for the best
+                        }
+                    }
+
+                    let path = normalizePath(request.query.path, delimiter);
+
+                    let query = {
+                        bool: {
+                            must: [
+                                {
+                                    constant_score: {
+                                        filter: {
+                                            term: {
+                                                account: request.params.account
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    constant_score: {
+                                        filter: {
+                                            term: {
+                                                path
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    const { index, client } = await getESClient();
+                    let searchResult = await client.search({
+                        index,
+                        size: request.query.pageSize,
+                        from: request.query.pageSize * request.query.page,
+                        query,
+                        sort: { uid: 'desc' },
+                        _source_excludes: 'headers,text.plain,text.html'
+                    });
+
+                    let response = {
+                        total: searchResult.hits.total.value,
+                        page: request.query.page,
+                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1),
+                        messages: searchResult.hits.hits.map(entry => {
+                            let messageData = entry._source;
+
+                            // normalize as per the API response
+
+                            for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
+                                if (messageData[key] === false) {
+                                    messageData[key] = undefined;
+                                }
+                            }
+
+                            for (let key of ['account', 'created', 'specialUse']) {
+                                if (messageData[key]) {
+                                    messageData[key] = undefined;
+                                }
+                            }
+
+                            return messageData;
+                        })
+                    };
+
+                    return response;
+                } else {
+                    return await accountObject.listMessages(request.query);
+                }
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2843,7 +2917,13 @@ When making API calls remember that requests against the same account are queued
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
+                        .label('UseDocumentStore')
                 }).label('MessageQuery')
             },
 
