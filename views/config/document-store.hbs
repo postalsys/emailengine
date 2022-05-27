@@ -9,6 +9,30 @@
     EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch is supported.
 </p>
 
+<div class="card border-left-warning shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <h5>Things to consider</h5>
+                <ul>
+                    <li>Document Store is in beta, which means the application might change in the future without a
+                        possible
+                        migration path.</li>
+                    <li>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
+                        some
+                        data.</li>
+                    <li>Enable Document Store before adding any accounts. Otherwise, emails that have been already
+                        processed will not be indexed.</li>
+                </ul>
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <form method="post" action="/admin/config/document-store">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
@@ -46,11 +70,6 @@
                 {{/if}}
             </div>
 
-            <div class="alert alert-primary mt-3 mb-3">
-                <strong>NB!</strong> Enable Document Store before adding any accounts. Otherwise, emails that have been
-                already processed will not be indexed.
-            </div>
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">documentStoreUrl</a>]
@@ -82,7 +101,8 @@
                 {{#if errors.documentStoreIndex}}
                 <span class="invalid-feedback">{{errors.documentStoreIndex}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Index to use for data.</small>
+                <small class="form-text text-muted">Index to use for data. EmailEngine will create a separate index with
+                    the same prefix for threading.</small>
             </div>
 
             <div class="form-group form-check">

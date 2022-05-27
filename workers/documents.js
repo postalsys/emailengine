@@ -8,6 +8,7 @@ const settings = require('../lib/settings');
 const packageData = require('../package.json');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 const { ensureIndex } = require('../lib/es');
+const { getThread } = require('../lib/threads');
 
 const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED } = require('../lib/consts');
 
@@ -82,36 +83,39 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult;
-                    try {
-                        deleteResult = await client.deleteByQuery({
-                            index,
-                            query: {
-                                match: {
-                                    account: job.data.account
-                                }
-                            }
-                        });
-                    } catch (err) {
-                        logger.error({
-                            msg: 'Failed to delete account data',
-                            action: 'document',
-                            queue: job.queue.name,
-                            code: 'document_delete_account_error',
-                            job: job.id,
-                            event: job.name,
-                            account: job.data.account,
-                            request: {
-                                index,
+                    let deleteResult = {};
+
+                    for (let indexName of [index]) {
+                        try {
+                            deleteResult[indexName] = await client.deleteByQuery({
+                                index: indexName,
                                 query: {
                                     match: {
                                         account: job.data.account
                                     }
                                 }
-                            },
-                            err
-                        });
-                        throw err;
+                            });
+                        } catch (err) {
+                            logger.error({
+                                msg: 'Failed to delete account data',
+                                action: 'document',
+                                queue: job.queue.name,
+                                code: 'document_delete_account_error',
+                                job: job.id,
+                                event: job.name,
+                                account: job.data.account,
+                                request: {
+                                    index: indexName,
+                                    query: {
+                                        match: {
+                                            account: job.data.account
+                                        }
+                                    }
+                                },
+                                err
+                            });
+                            throw err;
+                        }
                     }
 
                     logger.trace({
@@ -129,6 +133,11 @@ const documentsWorker = new Worker(
 
             case MESSAGE_NEW_NOTIFY:
                 {
+                    const { index, client } = await getClient();
+                    if (!client) {
+                        return;
+                    }
+
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
@@ -137,6 +146,16 @@ const documentsWorker = new Worker(
                         created: job.data.date,
                         path: job.data.path
                     };
+
+                    // set thread id
+                    try {
+                        let thread = await getThread(client, index, job.data.account, messageData, logger);
+                        if (thread) {
+                            messageData.threadId = thread;
+                        }
+                    } catch (err) {
+                        logger.error({ msg: 'Failed to resolve thread', err });
+                    }
 
                     if (job.data.specialUse) {
                         baseObject.specialUse = job.data.specialUse;
@@ -167,11 +186,6 @@ const documentsWorker = new Worker(
                                 delete attachment.filename;
                             }
                         }
-                    }
-
-                    const { index, client } = await getClient();
-                    if (!client) {
-                        return;
                     }
 
                     let indexResult;
