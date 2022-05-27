@@ -155,6 +155,7 @@ const notifyWorker = new Worker(
                     for (let textType of ['html', 'plain']) {
                         if (job.data.data.text && typeof job.data.data.text[textType] === 'string' && job.data.data.text[textType].length > notifyTextSize) {
                             job.data.data.text[textType] = job.data.data.text[textType].substr(0, notifyTextSize);
+                            job.data.data.text.hasMore = true;
                         }
                     }
                 }

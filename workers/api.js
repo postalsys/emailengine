@@ -2281,10 +2281,26 @@ When making API calls remember that requests against the same account are queued
                     }
 
                     const { index, client } = await getESClient();
-                    let getResult = await client.get({
+
+                    const reqOpts = {
                         index,
                         id: `${request.params.account}:${request.params.message}`
-                    });
+                    };
+
+                    switch (request.query.textType) {
+                        case '*':
+                            break;
+                        case 'html':
+                            reqOpts._source_excludes = 'text.plain';
+                            break;
+                        case 'plain':
+                            reqOpts._source_excludes = 'text.html';
+                            break;
+                        default:
+                            reqOpts._source_excludes = 'text.plain,text.html';
+                    }
+
+                    let getResult = await client.get(reqOpts);
 
                     if (!getResult || !getResult._source) {
                         let message = 'Requested message was not found';
@@ -2301,7 +2317,7 @@ When making API calls remember that requests against the same account are queued
                     }
                     messageData.headers = headersObj;
 
-                    if (messageData.text) {
+                    if (messageData.text && (messageData.text.html || messageData.text.plain)) {
                         messageData.text.hasMore = false;
                     }
 
@@ -2362,9 +2378,7 @@ When making API calls remember that requests against the same account are queued
                         .lowercase()
                         .valid('html', 'plain', '*')
                         .example('*')
-                        .description(
-                            'Which text content to return, use * for all. By default text content is not returned. This setting is ignored if `documentStore` is `true`.'
-                        ),
+                        .description('Which text content to return, use * for all. By default text content is not returned.'),
                     documentStore: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
