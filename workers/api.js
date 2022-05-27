@@ -22,7 +22,6 @@ const { REDIS_PREFIX } = consts;
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
-const importer = require('../lib/importer');
 const msgpack = require('msgpack5')();
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
@@ -45,7 +44,8 @@ const {
     getLogs,
     getWorkerCount,
     normalizePath,
-    unpackUIDRangeForSearch
+    unpackUIDRangeForSearch,
+    matcher
 } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
@@ -98,8 +98,6 @@ const API_HOST = process.env.EENGINE_HOST || config.api.host;
 const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || (config.workers && config.workers.imap)) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-
-let isMatch;
 
 let registeredPublishers = new Set();
 
@@ -494,7 +492,11 @@ When making API calls remember that requests against the same account are queued
                     };
                 }
 
-                if (tokenData.restrictions.referrers && !isMatch(request.headers.referer, tokenData.restrictions.referrers)) {
+                if (
+                    tokenData.restrictions.referrers &&
+                    tokenData.restrictions.referrers.length &&
+                    !matcher(tokenData.restrictions.referrers, request.headers.referer)
+                ) {
                     logger.error({
                         msg: 'Trying to use invalid referer for a token',
                         tokenAccount: tokenData.account,
@@ -4606,11 +4608,7 @@ When making API calls remember that requests against the same account are queued
 };
 
 // dynamic imports first, use a wrapper function or eslint parser will crash
-importer('matcher')
-    .then(matcher => {
-        isMatch = matcher.isMatch;
-    })
-    .then(init)
+init()
     .then(() => {
         logger.debug({
             msg: 'Started API server thread',
