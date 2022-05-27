@@ -81,7 +81,7 @@ const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.a
 const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
 const API_HOST = process.env.EENGINE_HOST || config.api.host;
 
-const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
+const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || (config.workers && config.workers.imap)) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
