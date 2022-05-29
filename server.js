@@ -1092,6 +1092,7 @@ async function onCommand(worker, message) {
             return;
 
         case 'update':
+        case 'sync':
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)

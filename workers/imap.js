@@ -147,6 +147,25 @@ class ConnectionHandler {
         }
     }
 
+    async syncConnection(account) {
+        logger.info({ msg: 'Account sync requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account sync requested'
+                });
+
+                await accountObject.connection.syncMailboxes();
+
+                return true;
+            }
+        }
+    }
+
     async listMessages(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -418,6 +437,9 @@ class ConnectionHandler {
 
             case 'update':
                 return await this.updateConnection(message.account);
+
+            case 'sync':
+                return await this.syncConnection(message.account);
 
             case 'listMessages':
                 return await this.listMessages(message);

@@ -1729,8 +1729,66 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    reconnect: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only reconnect if true')
+                    reconnect: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Reconnection status')
                 }).label('RequestReconnectResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/sync',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return { sync: await accountObject.requestSync(request.payload) };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Request syncing',
+            notes: 'Requests account syncing to be run immediatelly',
+            tags: ['api', 'account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    sync: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only sync if true')
+                }).label('RequestSync')
+            },
+
+            response: {
+                schema: Joi.object({
+                    sync: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Sync status')
+                }).label('RequestSyncResponse'),
                 failAction: 'log'
             }
         }
