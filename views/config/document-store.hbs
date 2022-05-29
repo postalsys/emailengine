@@ -51,7 +51,6 @@
                     <a class="dropdown-item test-connection" href="#" id="test-payload-btn">
                         <i class="fas fa-link fa-sm"></i> <span>Test connection</span>
                     </a>
-
                 </div>
             </div>
         </div>
@@ -199,7 +198,7 @@
         document.getElementById('test-payload-btn').addEventListener('click', e => {
             e.preventDefault()
             sendTestPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
+                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })

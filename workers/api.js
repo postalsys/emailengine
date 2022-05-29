@@ -338,6 +338,8 @@ const init = async () => {
         }
     });
 
+    server.decorate('toolkit', 'getESClient', async () => await getESClient());
+
     server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not
         let enableApiProxy = (await settings.get('enableApiProxy')) || false;
