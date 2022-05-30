@@ -70,9 +70,12 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Webhooks queue{{#if stats.queues.notify.isPaused}} <span
-                                    class="badge badge-warning">paused</span>{{/if}}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="This queue processes webhook notifications" data-toggle="tooltip"
+                                data-placement="top" style="cursor: default;">
+                                <a href="/admin/arena/queue/notify">Webhooks queue</a>{{#if
+                                stats.queues.notify.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                            </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
                                     data-placement="top">{{stats.queues.notify.total}}</span> /
@@ -93,14 +96,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Submission queue{{#if stats.queues.submit.isPaused}} <span
-                                    class="badge badge-warning">paused</span>{{/if}}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="This queue processes emails to be sent to SMTP" data-toggle="tooltip"
+                                data-placement="top" style="cursor: default;">
+                                <a href="/admin/arena/queue/submit">Submission queue</a>{{#if
+                                stats.queues.submit.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                            </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
                                     data-placement="top">{{stats.queues.submit.total}}</span> /
-                                <span title="Delayed queue entries" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.submit.delayed}}</span>
+                                <span
+                                    title="Delayed queue entries. This includes emails that are scheduled to be sent in the future."
+                                    data-toggle="tooltip" data-placement="top">{{stats.queues.submit.delayed}}</span>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -116,12 +123,18 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Documents queue{{#if stats.queues.documents.isPaused}} <span
-                                    class="badge badge-warning">paused</span>{{/if}}</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="This queue indexes mailbox changes to ElasticSearch" data-toggle="tooltip"
+                                data-placement="top" style="cursor: default;">
+                                <a href="/admin/arena/queue/documents">Documents queue</a>{{#if
+                                stats.queues.documents.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                            </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
-                                <span title="Queue entries total" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.documents.total}}</span> /
+                                <span title="Queue entries total" data-toggle="tooltip" data-placement="top"></span>
+
+                                {{stats.queues.documents.total}}
+
+                                </span> /
                                 <span title="Delayed queue entries" data-toggle="tooltip"
                                     data-placement="top">{{stats.queues.documents.delayed}}</span>
                             </div>
