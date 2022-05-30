@@ -136,6 +136,7 @@ const licenseInfo = {
 
 let notifyScheduler;
 let submitScheduler;
+let documentsScheduler;
 
 let preparedSettings = false;
 const preparedSettingsString = process.env.EENGINE_SETTINGS || config.settings;
@@ -1199,6 +1200,10 @@ const closeQueues = cb => {
         proms.push(submitScheduler.close());
     }
 
+    if (documentsScheduler) {
+        proms.push(documentsScheduler.close());
+    }
+
     if (!proms.length) {
         return setImmediate(() => cb());
     }
@@ -1442,6 +1447,7 @@ startApplication()
 
         notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
         submitScheduler = new QueueScheduler('submit', Object.assign({}, queueConf));
+        documentsScheduler = new QueueScheduler('documents', Object.assign({}, queueConf));
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });
