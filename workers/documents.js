@@ -406,7 +406,11 @@ documentsWorker.on('failed', async job => {
         queue: job.queue.name,
         code: 'failed',
         job: job.id,
-        account: job.data.account
+        account: job.data.account,
+
+        failedReason: job.failedReason,
+        stacktrace: job.stacktrace,
+        attemptsMade: job.attemptsMade
     });
 });
 
