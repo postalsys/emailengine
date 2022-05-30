@@ -13,20 +13,29 @@
         <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2" role="group" aria-label="First group">
 
-
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit">
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit"
+                    title="Edit account configuration" data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-user-edit fa-fw"></i> Edit
                 </a>
 
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal">
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this account and all associated data" id="delete-btn" data-placement="top">
                     <i class="fas fa-trash-alt fa-fw"></i> Delete
                 </button>
 
-                <button type="button" class="btn btn-light" id="request-reconnect">
+                <button type="button" class="btn btn-light" id="request-reconnect"
+                    title="Close and re-open IMAP connection" data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-sync-alt fa-fw" id="reconnect-icon"></i> Reconnect
                 </button>
 
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt" download>
+                <button type="button" class="btn btn-light" id="request-sync" title="Run periodic folder syncing now"
+                    data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-redo fa-fw" id="sync-icon"></i> Run sync
+                </button>
+
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
+                    title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
+                    data-placement="top" download>
                     <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
                 </a>
 
@@ -361,7 +370,8 @@
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
+                    crumb: document.getElementById('crumb').value,
+                    reconnect: true
                 })
             })
             if (!res.ok) {
@@ -393,6 +403,50 @@
             }).catch(err => {
                 document.getElementById('reconnect-icon').classList.remove('fa-spin');
                 reconnecting = false;
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+
+        const syncAccount = async () => {
+            const account = document.getElementById('account-id').value.trim();
+
+            const res = await fetch(`/admin/accounts/${account}/sync`, {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    sync: true
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        let syncing = false;
+        const requestSyncElm = document.getElementById('request-sync');
+        requestSyncElm.addEventListener('click', e => {
+            e.preventDefault();
+            if (requestSyncElm.classList.contains('disabled')) {
+                return;
+            }
+
+            if (syncing) {
+                return
+            }
+
+            syncing = true;
+            document.getElementById('sync-icon').classList.add('fa-spin');
+            syncAccount().then(data => {
+                document.getElementById('sync-icon').classList.remove('fa-spin');
+                syncing = false;
+                showToast(data.error ? data.error : (data.success ? 'Account sync requested' : 'Failed to request syncing'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                document.getElementById('sync-icon').classList.remove('fa-spin');
+                syncing = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
         });
@@ -478,7 +532,9 @@
                 togglinflushingLogsgLogs = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
-        })
+        });
 
-    })
+        // not set up by default as this element has a different data-toggle
+        $('#delete-btn').tooltip();
+    });
 </script>

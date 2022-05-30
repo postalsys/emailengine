@@ -3,7 +3,7 @@ const { parentPort } = require('worker_threads');
 const { Connection } = require('../lib/connection');
 const { Account } = require('../lib/account');
 const logger = require('../lib/logger');
-const { redis, notifyQueue, submitQueue } = require('../lib/db');
+const { redis, notifyQueue, submitQueue, documentsQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
@@ -97,6 +97,7 @@ class ConnectionHandler {
             redis,
             notifyQueue,
             submitQueue,
+            documentsQueue,
             accountLogger: await this.getAccountLogger(account),
             logRaw: EENGINE_LOG_RAW
         });
@@ -142,6 +143,25 @@ class ConnectionHandler {
                 await redis.hset(accountObject.connection.getAccountKey(), 'state', state);
                 await emitChangeEvent(this.logger, account, 'state', state);
                 await accountObject.connection.reconnect(true);
+            }
+        }
+    }
+
+    async syncConnection(account) {
+        logger.info({ msg: 'Account sync requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account sync requested'
+                });
+
+                await accountObject.connection.syncMailboxes();
+
+                return true;
             }
         }
     }
@@ -417,6 +437,9 @@ class ConnectionHandler {
 
             case 'update':
                 return await this.updateConnection(message.account);
+
+            case 'sync':
+                return await this.syncConnection(message.account);
 
             case 'listMessages':
                 return await this.listMessages(message);

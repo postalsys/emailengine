@@ -3,15 +3,13 @@
 set -e
 
 DOMAIN_NAME=$1
-EMAIL_ADDRESS=$2
 
 APP_URL="https://github.com/postalsys/emailengine/releases/latest/download/emailengine.tar.gz"
 
 show_info () {
-    echo "Usage: $0 <domain-name> <email-address>"
+    echo "Usage: $0 <domain-name>"
     echo "Where"
     echo " <domain-name> is the domain name for EmailEngine, eg. \"example.com\""
-    echo " <email-address> is your email address, needed to generate HTTPS certs. Must be valid."
 }
 
 if [[ $EUID -ne 0 ]]; then
@@ -21,13 +19,16 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 if [[ -z $DOMAIN_NAME ]]; then
-    show_info
-    exit
-fi
 
-if [[ -z $EMAIL_ADDRESS ]]; then
-    show_info
-    exit
+    echo "Enter the domain name for your new EmailEngine installation."
+    echo "(ex. example.com or test.example.com)"
+
+    while [ -z "$DOMAIN_NAME" ]
+    do
+        #echo -en "\n"
+        read -p "Domain/Subdomain name: " DOMAIN_NAME
+    done
+
 fi
 
 if [ $DOMAIN_NAME = "help" ]; then
@@ -35,15 +36,22 @@ if [ $DOMAIN_NAME = "help" ]; then
     exit
 fi
 
-# Install Redis and Nginx
+# Prepare Caddy
+apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+
+# Install Redis and Caddy
 apt-get update
-apt-get install redis-server nginx wget -q -y
+apt-get install redis-server caddy wget -q -y
 
+# Just in case the installation does not start Caddy already
+systemctl enable caddy
+systemctl start caddy
+
+# Download and extract EmailEngine executable
 TMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'ee')
-
 cd $TMPDIR
-
-# Download EmailEngine executable
 if ! [ -x `command -v wget` ]; then
     if ! [ -x `command -v wget` ]; then
         echo "Can not download application"
@@ -61,16 +69,9 @@ rm -rf emailengine.tar.gz
 mv emailengine /opt
 chmod +x /opt/emailengine
 
-# Setup certs for Nginx
-
-openssl req -subj "/CN=${DOMAIN_NAME}/O=EmailEngine./C=US" -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout privkey.pem -out fullchain.pem
-chmod 0600 privkey.pem
-mv privkey.pem /etc/ssl/private/emailengine-privkey.pem 
-mv fullchain.pem /etc/ssl/certs/emailengine-fullchain.pem
-
 rm -rf $TMPDIR
 
-# Create unit file
+# Create unit file for EmailEngine
 echo "[Unit]
 Description=EmailEngine
 After=redis-server
@@ -102,50 +103,26 @@ systemctl daemon-reload
 systemctl enable emailengine
 systemctl restart emailengine
 
-echo "server {
-    listen 80;
-    listen 443 ssl http2;
+# Create Caddyfile
+echo "
+:80 {
+  redir https://${DOMAIN_NAME}{uri}
+}
 
-    server_name ${DOMAIN_NAME};
+${DOMAIN_NAME} {
+  reverse_proxy localhost:3000
+}" > /etc/caddy/Caddyfile
 
-    ssl_certificate_key /etc/ssl/private/emailengine-privkey.pem;
-    ssl_certificate /etc/ssl/certs/emailengine-fullchain.pem;
+systemctl reload caddy
 
-    location / {
-        client_max_body_size 50M;
-        proxy_http_version 1.1;
-        proxy_redirect off;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Scheme \$scheme;
-        proxy_set_header Host \$http_host;
-        proxy_set_header X-NginX-Proxy true;
-        proxy_pass http://127.0.0.1:3000; # <- use EmailEngine's HTTP port
-    }
+printf "Waiting for the web server to start up.."
+until $(curl --output /dev/null --silent --fail https://${DOMAIN_NAME}/); do
+    printf '.'
+    sleep 2
+done
+echo "."
 
-    # Enforce HTTPS
-    if (\$scheme != \"https\") {
-        return 301 https://\$host\$request_uri;
-    }
-}" > /etc/nginx/sites-available/emailengine.conf
-
-if [ ! -f "/etc/nginx/sites-enabled/emailengine.conf" ]
-then
-    ln -s /etc/nginx/sites-available/emailengine.conf /etc/nginx/sites-enabled/emailengine.conf
-fi
-
-# check config
-nginx -t
-
-cd
-curl https://get.acme.sh | sh -s email="${EMAIL_ADDRESS}"
-
-/root/.acme.sh/acme.sh --issue --nginx --server letsencrypt \
-    -d "${DOMAIN_NAME}" \
-    --key-file       /etc/ssl/private/emailengine-privkey.pem  \
-    --ca-file        /etc/ssl/certs/emailengine-chain.pem \
-    --fullchain-file /etc/ssl/certs/emailengine-fullchain.pem \
-    --reloadcmd     "/bin/systemctl reload nginx"
-
-echo "EmailEngine was set up"
+echo ""
+echo "Installation complete."
+echo "Access your new EmailEngine installation in a browser at https://${dom}/"
+echo ""

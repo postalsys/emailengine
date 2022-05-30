@@ -144,6 +144,39 @@ const notifyWorker = new Worker(
             headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
         }
 
+        if (job.data && job.data.data && job.data.data.text) {
+            // normalize text content
+            let notifyText = await settings.get('notifyText');
+            if (!notifyText) {
+                delete job.data.data.text;
+            } else {
+                let notifyTextSize = await settings.get('notifyTextSize');
+                if (notifyTextSize) {
+                    for (let textType of ['html', 'plain']) {
+                        if (job.data.data.text && typeof job.data.data.text[textType] === 'string' && job.data.data.text[textType].length > notifyTextSize) {
+                            job.data.data.text[textType] = job.data.data.text[textType].substr(0, notifyTextSize);
+                            job.data.data.text.hasMore = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (job.data && job.data.data && job.data.data.headers) {
+            // normalize headers
+            let notifyHeaders = await settings.get('notifyHeaders');
+            if (!notifyHeaders) {
+                delete job.data.data.headers;
+            } else if (!notifyHeaders.includes('*')) {
+                // filter unneeded headers
+                for (let header of Object.keys(job.data.data.headers || {})) {
+                    if (!notifyHeaders.includes(header.toLowerCase())) {
+                        delete job.data.data.headers[header];
+                    }
+                }
+            }
+        }
+
         let start = Date.now();
         let duration;
         try {
@@ -304,7 +337,11 @@ notifyWorker.on('failed', async job => {
         queue: job.queue.name,
         code: 'failed',
         job: job.id,
-        account: job.data.account
+        account: job.data.account,
+
+        failedReason: job.failedReason,
+        stacktrace: job.stacktrace,
+        attemptsMade: job.attemptsMade
     });
 });
 

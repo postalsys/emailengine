@@ -927,7 +927,7 @@ async function updateQueueCounters() {
     metrics.emailengineConfig.set({ config: 'workersWebhooks' }, config.workers.webhooks);
     metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
 
-    for (let queue of ['notify', 'submit']) {
+    for (let queue of ['notify', 'submit', 'documents']) {
         const [resActive, resDelayed, resPaused] = await redis
             .multi()
             .llen(`${REDIS_PREFIX}bull:${queue}:active`)
@@ -1092,6 +1092,7 @@ async function onCommand(worker, message) {
             return;
 
         case 'update':
+        case 'sync':
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
@@ -1413,6 +1414,9 @@ const startApplication = async () => {
     for (let i = 0; i < config.workers.submit; i++) {
         await spawnWorker('submit');
     }
+
+    // single worker to process events in order
+    await spawnWorker('documents');
 
     if (await settings.get('smtpServerEnabled')) {
         // single SMTP interface worker
