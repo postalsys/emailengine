@@ -3683,19 +3683,18 @@ When making API calls remember that requests against the same account are queued
                         .description(
                             'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
                         )
-                        .label('RFC822Raw'),
+                        .label('RFC822Raw')
+                        .when('bulk', {
+                            is: Joi.exist(),
+                            then: Joi.forbidden('y')
+                        }),
 
                     subject: Joi.alternatives()
                         .try(
                             Joi.string().max(1024).example('What a wonderful message'),
                             Joi.object()
                                 .keys({
-                                    format: Joi.string()
-                                        .empty('')
-                                        .valid('text', 'markdown')
-                                        .default('text')
-                                        .description('Template format')
-                                        .label('TextTemplateFormat'),
+                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
                                     template: Joi.string().max(1024).example('What a wonderful message').required()
                                 })
                                 .label('TemplateSuject')
@@ -3707,12 +3706,7 @@ When making API calls remember that requests against the same account are queued
                             Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!'),
                             Joi.object()
                                 .keys({
-                                    format: Joi.string()
-                                        .empty('')
-                                        .valid('text', 'markdown')
-                                        .default('text')
-                                        .description('Template format')
-                                        .label('TextTemplateFormat'),
+                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
                                     template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').required()
                                 })
                                 .label('TemplateText')
