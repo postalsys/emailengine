@@ -3643,9 +3643,15 @@ When making API calls remember that requests against the same account are queued
                         to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
                     })
                         .description('Optional SMTP envelope. If not set then derived from message headers.')
-                        .label('SMTPEnvelope'),
+                        .label('SMTPEnvelope')
+                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
+                    from: addressSchema
+                        .example({ name: 'From Me', address: 'sender@example.com' })
+                        .description('The From address')
+                        .label('From')
+                        .when('bulk', { is: Joi.exist(), then: Joi.required() }),
+
                     replyTo: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The Reply-To address').label('ReplyTo'),
 
                     to: Joi.array()
@@ -3653,11 +3659,22 @@ When making API calls remember that requests against the same account are queued
                         .single()
                         .description('List of recipient addresses')
                         .example([{ address: 'recipient@example.com' }])
-                        .label('ToAddressList'),
+                        .label('ToAddressList')
+                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
-                    cc: Joi.array().items(addressSchema.label('CcAddress')).single().description('List of CC addresses').label('CcAddressList'),
+                    cc: Joi.array()
+                        .items(addressSchema.label('CcAddress'))
+                        .single()
+                        .description('List of CC addresses')
+                        .label('CcAddressList')
+                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
-                    bcc: Joi.array().items(addressSchema.label('BccAddress')).single().description('List of BCC addresses').label('BccAddressList'),
+                    bcc: Joi.array()
+                        .items(addressSchema.label('BccAddress'))
+                        .single()
+                        .description('List of BCC addresses')
+                        .label('BccAddressList')
+                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
                     raw: Joi.string()
                         .base64()
@@ -3666,13 +3683,82 @@ When making API calls remember that requests against the same account are queued
                         .description(
                             'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
                         )
-                        .label('RFC822Raw'),
+                        .label('RFC822Raw')
+                        .when('bulk', {
+                            is: Joi.exist(),
+                            then: Joi.forbidden('y')
+                        }),
 
-                    subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+                    subject: Joi.alternatives()
+                        .try(
+                            Joi.string().max(1024).example('What a wonderful message'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
+                                    template: Joi.string().max(1024).example('What a wonderful message').required()
+                                })
+                                .label('TemplateSuject')
+                        )
+                        .description('Message subject'),
 
-                    text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
+                    text: Joi.alternatives()
+                        .try(
+                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
+                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').required()
+                                })
+                                .label('TemplateText')
+                        )
+                        .description('Message Text'),
 
-                    html: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').description('Message HTML'),
+                    html: Joi.alternatives()
+                        .try(
+                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string()
+                                        .empty('')
+                                        .valid('html', 'markdown', 'mjml')
+                                        .default('html')
+                                        .description('Template format')
+                                        .label('HtmlTemplateFormat'),
+                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').required()
+                                })
+                                .label('TemplateHtml')
+                        )
+                        .description('Message HTML'),
+
+                    render: Joi.object()
+                        .keys({
+                            values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                        })
+                        .description('Template rendering options')
+                        .when('bulk', {
+                            is: Joi.exist(),
+                            then: Joi.forbidden('y')
+                        }),
+
+                    bulk: Joi.array()
+                        .items(
+                            Joi.object()
+                                .keys({
+                                    to: addressSchema.label('ToAddress').required(),
+                                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
+                                    render: Joi.object()
+                                        .keys({
+                                            values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                                        })
+                                        .description('Template rendering options')
+                                })
+                                .label('BulkListEntry')
+                        )
+                        .min(1)
+                        .description(
+                            'Bulk mail recipients with message specific options. A separate email is generated for each recipient. Using this disables `messageId`, `envelope`, `to`, `cc`, `bcc`, `render` keys for the message root.'
+                        )
+                        .label('BulkList'),
 
                     attachments: Joi.array()
                         .items(
@@ -3720,9 +3806,27 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     response: Joi.string().example('Queued for delivery'),
-                    messageId: Joi.string().example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>').description('Message-ID header value'),
+                    messageId: Joi.string()
+                        .example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>')
+                        .description('Message-ID header value. Not present for bulk messages.'),
+                    queueId: Joi.string().example('d41f0423195f271f').description('Queue identifier for scheduled email. Not present for bulk messages.'),
                     sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Scheduled send time'),
-                    queueId: Joi.string().example('d41f0423195f271f').description('Queue identifier for scheduled email')
+                    bulk: Joi.array()
+                        .items(
+                            Joi.object()
+                                .label('BulkResponseEntry')
+                                .example({
+                                    success: true,
+                                    to: {
+                                        name: 'Andris 2',
+                                        address: 'andris@ethereal.email'
+                                    },
+                                    messageId: '<19b9c433-d428-f6d8-1d00-d666ebcadfc4@ekiri.ee>',
+                                    queueId: '1812477338914c8372a'
+                                })
+                        )
+                        .label('BulkResponseList')
+                        .description('Bulk message responses')
                 }).label('SubmitMessageResponse'),
                 failAction: 'log'
             }
