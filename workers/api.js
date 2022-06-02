@@ -3668,11 +3668,62 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('RFC822Raw'),
 
-                    subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+                    subject: Joi.alternatives()
+                        .try(
+                            Joi.string().max(1024).example('What a wonderful message'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string()
+                                        .empty('')
+                                        .valid('text', 'markdown')
+                                        .default('text')
+                                        .description('Template format')
+                                        .label('TextTemplateFormat'),
+                                    template: Joi.string().max(1024).example('What a wonderful message').required()
+                                })
+                                .label('TemplateSuject')
+                        )
+                        .description('Message subject'),
 
-                    text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
+                    text: Joi.alternatives()
+                        .try(
+                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string()
+                                        .empty('')
+                                        .valid('text', 'markdown')
+                                        .default('text')
+                                        .description('Template format')
+                                        .label('TextTemplateFormat'),
+                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').required()
+                                })
+                                .label('TemplateText')
+                        )
+                        .description('Message Text'),
 
-                    html: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').description('Message HTML'),
+                    html: Joi.alternatives()
+                        .try(
+                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>'),
+                            Joi.object()
+                                .keys({
+                                    format: Joi.string()
+                                        .empty('')
+                                        .valid('html', 'markdown', 'mjml')
+                                        .default('html')
+                                        .description('Template format')
+                                        .label('HtmlTemplateFormat'),
+                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').required()
+                                })
+                                .label('TemplateHtml')
+                        )
+                        .description('Message HTML'),
+
+                    render: Joi.object()
+                        .keys({
+                            values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                        })
+                        .description('Template rendering options'),
 
                     attachments: Joi.array()
                         .items(
