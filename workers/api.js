@@ -29,6 +29,7 @@ const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
+const { templates } = require('../lib/templates');
 
 const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -69,7 +70,8 @@ const {
     mailboxesSchema,
     shortMailboxesSchema,
     licenseSchema,
-    lastErrorSchema
+    lastErrorSchema,
+    templateSchemas
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -3689,46 +3691,9 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.forbidden('y')
                         }),
 
-                    subject: Joi.alternatives()
-                        .try(
-                            Joi.string().max(1024).example('What a wonderful message'),
-                            Joi.object()
-                                .keys({
-                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
-                                    template: Joi.string().max(1024).example('What a wonderful message').required()
-                                })
-                                .label('TemplateSuject')
-                        )
-                        .description('Message subject'),
-
-                    text: Joi.alternatives()
-                        .try(
-                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!'),
-                            Joi.object()
-                                .keys({
-                                    format: Joi.string().empty('').valid('text').default('text').description('Template format').label('TextTemplateFormat'),
-                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').required()
-                                })
-                                .label('TemplateText')
-                        )
-                        .description('Message Text'),
-
-                    html: Joi.alternatives()
-                        .try(
-                            Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>'),
-                            Joi.object()
-                                .keys({
-                                    format: Joi.string()
-                                        .empty('')
-                                        .valid('html', 'markdown', 'mjml')
-                                        .default('html')
-                                        .description('Template format')
-                                        .label('HtmlTemplateFormat'),
-                                    template: Joi.string().max(MAX_ATTACHMENT_SIZE).example('<p>Hello from myself!</p>').required()
-                                })
-                                .label('TemplateHtml')
-                        )
-                        .description('Message HTML'),
+                    subject: templateSchemas.subject,
+                    text: templateSchemas.text,
+                    html: templateSchemas.html,
 
                     render: Joi.object()
                         .keys({
@@ -4501,6 +4466,399 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the message deleted')
                 }).label('DeleteOutboxEntryResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/account/{account}/template',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                return await templates.create(
+                    request.params.account,
+                    {
+                        name: request.payload.name,
+                        description: request.payload.description
+                    },
+                    request.payload.content
+                );
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Create template',
+            notes: 'Create a new stored template. Templates can be used when sending emails as the content of the message.',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
+                    description: Joi.string()
+                        .allow('')
+                        .max(1024)
+                        .example('Something about the template')
+                        .description('Optional description of the template')
+                        .label('TemplateDescription'),
+                    content: Joi.object()
+                        .keys({
+                            subject: templateSchemas.subject,
+                            text: templateSchemas.text,
+                            html: templateSchemas.html
+                        })
+                        .required()
+                        .label('CreateTemplateContent')
+                }).label('CreateTemplate')
+            },
+
+            response: {
+                schema: Joi.object({
+                    created: Joi.boolean().description('Was the template created or not'),
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    id: Joi.string().max(256).required().example('example').description('Template ID')
+                }).label('CreateTemplateResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/template/{template}',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                let meta = {};
+                for (let key of ['name', 'description']) {
+                    if (typeof request.payload[key] !== 'undefined') {
+                        meta[key] = request.payload[key];
+                    }
+                }
+
+                return await templates.update(request.params.account, request.params.template, meta, request.payload.content);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Update a template',
+            notes: 'Update a stored template.',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    template: Joi.string().max(256).required().example('example').description('Template ID')
+                }).label('GetTemplateRequest'),
+
+                payload: Joi.object({
+                    name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
+                    description: Joi.string()
+                        .allow('')
+                        .max(1024)
+                        .example('Something about the template')
+                        .description('Optional description of the template')
+                        .label('TemplateDescription'),
+                    content: Joi.object()
+                        .keys({
+                            subject: templateSchemas.subject,
+                            text: templateSchemas.text,
+                            html: templateSchemas.html
+                        })
+                        .label('UpdateTemplateContent')
+                }).label('UpdateTemplate')
+            },
+
+            response: {
+                schema: Joi.object({
+                    updated: Joi.boolean().description('Was the template updated or not'),
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    id: Joi.string().max(256).required().example('example').description('Template ID')
+                }).label('UpdateTemplateResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/templates',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                return await templates.list(request.params.account, request.query.page, request.query.pageSize);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List account templates',
+            notes: 'Lists stored templates for the account',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('AccountTemplatesRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    templates: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID'),
+                                name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
+                                description: Joi.string()
+                                    .allow('')
+                                    .max(1024)
+                                    .example('Something about the template')
+                                    .description('Optional description of the template')
+                                    .label('TemplateDescription'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was created'),
+                                updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was last updated')
+                            }).label('AccountTemplate')
+                        )
+                        .label('AccountTemplatesList')
+                }).label('AccountTemplatesResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/template/{template}',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                return await templates.get(request.params.account, request.params.template);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Get template information',
+            notes: 'Retrieve template content and information',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    template: Joi.string().max(256).required().example('example').description('Template ID')
+                }).label('GetTemplateRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID'),
+                    name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
+                    description: Joi.string()
+                        .allow('')
+                        .max(1024)
+                        .example('Something about the template')
+                        .description('Optional description of the template')
+                        .label('TemplateDescription'),
+                    created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was created'),
+                    updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was last updated'),
+                    content: Joi.object()
+                        .keys({
+                            subject: templateSchemas.subject,
+                            text: templateSchemas.text,
+                            html: templateSchemas.html
+                        })
+                        .label('RequestTemplateContent')
+                }).label('AccountTemplateResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/account/{account}/template/{template}',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                return await templates.del(request.params.account, request.params.template);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove a template',
+            notes: 'Delete a stored template',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    template: Joi.string().max(256).required().example('example').description('Template ID')
+                }).label('GetTemplateRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted'),
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID')
+                }).label('DeleteTemplateRequestResponse'),
                 failAction: 'log'
             }
         }
