@@ -80,6 +80,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
+const { allow } = require('joi');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -3646,13 +3647,13 @@ When making API calls remember that requests against the same account are queued
                     })
                         .description('Optional SMTP envelope. If not set then derived from message headers.')
                         .label('SMTPEnvelope')
-                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
                     from: addressSchema
                         .example({ name: 'From Me', address: 'sender@example.com' })
                         .description('The From address')
                         .label('From')
-                        .when('bulk', { is: Joi.exist(), then: Joi.required() }),
+                        .when('mailMerge', { is: Joi.exist(), then: Joi.required() }),
 
                     replyTo: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The Reply-To address').label('ReplyTo'),
 
@@ -3662,21 +3663,21 @@ When making API calls remember that requests against the same account are queued
                         .description('List of recipient addresses')
                         .example([{ address: 'recipient@example.com' }])
                         .label('ToAddressList')
-                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
                     cc: Joi.array()
                         .items(addressSchema.label('CcAddress'))
                         .single()
                         .description('List of CC addresses')
                         .label('CcAddressList')
-                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
                     bcc: Joi.array()
                         .items(addressSchema.label('BccAddress'))
                         .single()
                         .description('List of BCC addresses')
                         .label('BccAddressList')
-                        .when('bulk', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
                     raw: Joi.string()
                         .base64()
@@ -3686,7 +3687,7 @@ When making API calls remember that requests against the same account are queued
                             'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
                         )
                         .label('RFC822Raw')
-                        .when('bulk', {
+                        .when('mailMerge', {
                             is: Joi.exist(),
                             then: Joi.forbidden('y')
                         }),
@@ -3695,37 +3696,38 @@ When making API calls remember that requests against the same account are queued
                     text: templateSchemas.text,
                     html: templateSchemas.html,
 
-                    template: Joi.string().max(256).required().example('example').description('Stored template ID to load the email content from.'),
+                    template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from.'),
 
                     render: Joi.object()
                         .keys({
-                            values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                            format: Joi.string()
+                                .valid('html', 'mjml', 'markdown')
+                                .default('html')
+                                .description('Markup language for HTML ("html", "markdown" or "mjml")'),
+                            params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
                         })
+                        .allow(false)
                         .description('Template rendering options')
-                        .when('bulk', {
+                        .when('mailMerge', {
                             is: Joi.exist(),
                             then: Joi.forbidden('y')
                         }),
 
-                    bulk: Joi.array()
+                    mailMerge: Joi.array()
                         .items(
                             Joi.object()
                                 .keys({
                                     to: addressSchema.label('ToAddress').required(),
                                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                                    render: Joi.object()
-                                        .keys({
-                                            values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
-                                        })
-                                        .description('Template rendering options')
+                                    params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
                                 })
-                                .label('BulkListEntry')
+                                .label('MailMergeListEntry')
                         )
                         .min(1)
                         .description(
-                            'Bulk mail recipients with message specific options. A separate email is generated for each recipient. Using this disables `messageId`, `envelope`, `to`, `cc`, `bcc`, `render` keys for the message root.'
+                            'Mail merge options. A separate email is generated for each recipient. Using mail merge disables `messageId`, `envelope`, `to`, `cc`, `bcc`, `render` keys for the message root.'
                         )
-                        .label('BulkList'),
+                        .label('MailMergeList'),
 
                     attachments: Joi.array()
                         .items(
@@ -4488,7 +4490,8 @@ When making API calls remember that requests against the same account are queued
                     request.params.account,
                     {
                         name: request.payload.name,
-                        description: request.payload.description
+                        description: request.payload.description,
+                        format: request.payload.format
                     },
                     request.payload.content
                 );
@@ -4536,11 +4539,15 @@ When making API calls remember that requests against the same account are queued
                         .example('Something about the template')
                         .description('Optional description of the template')
                         .label('TemplateDescription'),
+                    format: Joi.string()
+                        .valid('html', 'mjml', 'markdown')
+                        .default('html')
+                        .description('Markup language for HTML ("html", "markdown" or "mjml")'),
                     content: Joi.object()
                         .keys({
-                            subject: templateSchemas.subjectTemplate,
-                            text: templateSchemas.textTemplate,
-                            html: templateSchemas.htmlTemplate
+                            subject: templateSchemas.subject,
+                            text: templateSchemas.text,
+                            html: templateSchemas.html
                         })
                         .required()
                         .label('CreateTemplateContent')
@@ -4570,7 +4577,7 @@ When making API calls remember that requests against the same account are queued
                 await accountObject.loadAccountData();
 
                 let meta = {};
-                for (let key of ['name', 'description']) {
+                for (let key of ['name', 'description', 'format']) {
                     if (typeof request.payload[key] !== 'undefined') {
                         meta[key] = request.payload[key];
                     }
@@ -4622,11 +4629,15 @@ When making API calls remember that requests against the same account are queued
                         .example('Something about the template')
                         .description('Optional description of the template')
                         .label('TemplateDescription'),
+                    format: Joi.string()
+                        .valid('html', 'mjml', 'markdown')
+                        .default('html')
+                        .description('Markup language for HTML ("html", "markdown" or "mjml")'),
                     content: Joi.object()
                         .keys({
-                            subject: templateSchemas.subjectTemplate,
-                            text: templateSchemas.textTemplate,
-                            html: templateSchemas.htmlTemplate
+                            subject: templateSchemas.subject,
+                            text: templateSchemas.text,
+                            html: templateSchemas.html
                         })
                         .label('UpdateTemplateContent')
                 }).label('UpdateTemplate')
@@ -4720,6 +4731,10 @@ When making API calls remember that requests against the same account are queued
                                     .example('Something about the template')
                                     .description('Optional description of the template')
                                     .label('TemplateDescription'),
+                                format: Joi.string()
+                                    .valid('html', 'mjml', 'markdown')
+                                    .default('html')
+                                    .description('Markup language for HTML ("html", "markdown" or "mjml")'),
                                 created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was created'),
                                 updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was last updated')
                             }).label('AccountTemplate')
@@ -4791,13 +4806,21 @@ When making API calls remember that requests against the same account are queued
                         .example('Something about the template')
                         .description('Optional description of the template')
                         .label('TemplateDescription'),
+                    format: Joi.string()
+                        .valid('html', 'mjml', 'markdown')
+                        .default('html')
+                        .description('Markup language for HTML ("html", "markdown" or "mjml")'),
                     created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was created'),
                     updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was last updated'),
                     content: Joi.object()
                         .keys({
                             subject: templateSchemas.subject,
                             text: templateSchemas.text,
-                            html: templateSchemas.html
+                            html: templateSchemas.html,
+                            format: Joi.string()
+                                .valid('html', 'mjml', 'markdown')
+                                .default('html')
+                                .description('Markup language for HTML ("html", "markdown" or "mjml")')
                         })
                         .label('RequestTemplateContent')
                 }).label('AccountTemplateResponse'),
@@ -4857,9 +4880,77 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted'),
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the template deleted'),
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID')
+                }).label('DeleteTemplateRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/account/{account}/templates',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                return await templates.flush(request.params.account);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Flush templates',
+            notes: 'Delete all stored templates for an user',
+            tags: ['api', 'templates'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }).label('GetTemplateRequest'),
+
+                query: Joi.object({
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .valid(true)
+                        .description('Must be true in order to flush templates')
+                        .label('ForceFlush')
+                }).label('FlushTemplateQuerye')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account flushed'),
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
                 }).label('DeleteTemplateRequestResponse'),
                 failAction: 'log'
             }
