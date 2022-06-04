@@ -3695,6 +3695,8 @@ When making API calls remember that requests against the same account are queued
                     text: templateSchemas.text,
                     html: templateSchemas.html,
 
+                    template: Joi.string().max(256).required().example('example').description('Stored template ID to load the email content from.'),
+
                     render: Joi.object()
                         .keys({
                             values: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
@@ -4536,9 +4538,9 @@ When making API calls remember that requests against the same account are queued
                         .label('TemplateDescription'),
                     content: Joi.object()
                         .keys({
-                            subject: templateSchemas.subject,
-                            text: templateSchemas.text,
-                            html: templateSchemas.html
+                            subject: templateSchemas.subjectTemplate,
+                            text: templateSchemas.textTemplate,
+                            html: templateSchemas.htmlTemplate
                         })
                         .required()
                         .label('CreateTemplateContent')
@@ -4622,9 +4624,9 @@ When making API calls remember that requests against the same account are queued
                         .label('TemplateDescription'),
                     content: Joi.object()
                         .keys({
-                            subject: templateSchemas.subject,
-                            text: templateSchemas.text,
-                            html: templateSchemas.html
+                            subject: templateSchemas.subjectTemplate,
+                            text: templateSchemas.textTemplate,
+                            html: templateSchemas.htmlTemplate
                         })
                         .label('UpdateTemplateContent')
                 }).label('UpdateTemplate')
