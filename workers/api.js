@@ -4477,17 +4477,18 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'POST',
-        path: '/v1/account/{account}/template',
+        path: '/v1/templates/template',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
             try {
-                // throws if account does not exist
-                await accountObject.loadAccountData();
+                if (request.payload.account) {
+                    // throws if account does not exist
+                    let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+                    await accountObject.loadAccountData();
+                }
 
                 return await templates.create(
-                    request.params.account,
+                    request.payload.account,
                     {
                         name: request.payload.name,
                         description: request.payload.description,
@@ -4527,11 +4528,9 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
 
-                params: Joi.object({
-                    account: Joi.string().max(256).example('example').required().description('Account ID')
-                }),
-
                 payload: Joi.object({
+                    account: Joi.string().allow(null).max(256).example('example').required().description('Account ID. Use `null` for public templates.'),
+
                     name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
                     description: Joi.string()
                         .allow('')
@@ -4567,15 +4566,10 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'PUT',
-        path: '/v1/account/{account}/template/{template}',
+        path: '/v1/templates/template/{template}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
             try {
-                // throws if account does not exist
-                await accountObject.loadAccountData();
-
                 let meta = {};
                 for (let key of ['name', 'description', 'format']) {
                     if (typeof request.payload[key] !== 'undefined') {
@@ -4583,7 +4577,7 @@ When making API calls remember that requests against the same account are queued
                     }
                 }
 
-                return await templates.update(request.params.account, request.params.template, meta, request.payload.content);
+                return await templates.update(request.params.template, meta, request.payload.content);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -4617,12 +4611,11 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
                     template: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('GetTemplateRequest'),
 
                 payload: Joi.object({
-                    name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
+                    name: Joi.string().empty('').max(256).example('Transaction receipt').description('Name of the template').label('TemplateName'),
                     description: Joi.string()
                         .allow('')
                         .max(1024)
@@ -4630,6 +4623,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Optional description of the template')
                         .label('TemplateDescription'),
                     format: Joi.string()
+                        .empty('')
                         .valid('html', 'mjml', 'markdown')
                         .default('html')
                         .description('Markup language for HTML ("html", "markdown" or "mjml")'),
@@ -4656,16 +4650,17 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
-        path: '/v1/account/{account}/templates',
+        path: '/v1/templates',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
             try {
-                // throws if account does not exist
-                await accountObject.loadAccountData();
+                if (request.query.account) {
+                    // throws if account does not exist
+                    let accountObject = new Account({ redis, account: request.query.account, call, secret: await getSecret() });
+                    await accountObject.loadAccountData();
+                }
 
-                return await templates.list(request.params.account, request.query.page, request.query.pageSize);
+                return await templates.list(request.query.account, request.query.page, request.query.pageSize);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -4697,11 +4692,10 @@ When making API calls remember that requests against the same account are queued
                     convert: true
                 },
                 failAction,
-                params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
-                }),
 
                 query: Joi.object({
+                    account: Joi.string().empty('').max(256).example('example').description('Account ID to list the templates for'),
+
                     page: Joi.number()
                         .min(0)
                         .max(1024 * 1024)
@@ -4748,16 +4742,11 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
-        path: '/v1/account/{account}/template/{template}',
+        path: '/v1/templates/template/{template}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
             try {
-                // throws if account does not exist
-                await accountObject.loadAccountData();
-
-                return await templates.get(request.params.account, request.params.template);
+                return await templates.get(request.params.template);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -4790,7 +4779,6 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
                     template: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('GetTemplateRequest')
             },
@@ -4831,16 +4819,11 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'DELETE',
-        path: '/v1/account/{account}/template/{template}',
+        path: '/v1/templates/template/{template}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-
             try {
-                // throws if account does not exist
-                await accountObject.loadAccountData();
-
-                return await templates.del(request.params.account, request.params.template);
+                return await templates.del(request.params.template);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -4873,7 +4856,6 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
                     template: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('GetTemplateRequest')
             },
@@ -4891,7 +4873,7 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'DELETE',
-        path: '/v1/account/{account}/templates',
+        path: '/v1/templates/account/{account}',
 
         async handler(request) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
@@ -4914,7 +4896,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Flush templates',
-            notes: 'Delete all stored templates for an user',
+            notes: 'Delete all stored templates for an account',
             tags: ['api', 'templates'],
 
             plugins: {},
