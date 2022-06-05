@@ -179,19 +179,6 @@ class ConnectionHandler {
         return await accountData.connection.listMessages(message);
     }
 
-    async buildContacts(message) {
-        if (!this.accounts.has(message.account)) {
-            return NO_ACTIVE_HANDLER_RESP;
-        }
-
-        let accountData = this.accounts.get(message.account);
-        if (!accountData.connection) {
-            return NO_ACTIVE_HANDLER_RESP;
-        }
-
-        return await accountData.connection.buildContacts(message);
-    }
-
     async getText(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -229,6 +216,19 @@ class ConnectionHandler {
         }
 
         return await accountData.connection.updateMessage(message.message, message.updates);
+    }
+
+    async listMailboxes(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.listMailboxes();
     }
 
     async moveMessage(message) {
@@ -444,9 +444,6 @@ class ConnectionHandler {
             case 'listMessages':
                 return await this.listMessages(message);
 
-            case 'buildContacts':
-                return await this.buildContacts(message);
-
             case 'getText':
                 return await this.getText(message);
 
@@ -455,6 +452,9 @@ class ConnectionHandler {
 
             case 'updateMessage':
                 return await this.updateMessage(message);
+
+            case 'listMailboxes':
+                return await this.listMailboxes(message);
 
             case 'moveMessage':
                 return await this.moveMessage(message);

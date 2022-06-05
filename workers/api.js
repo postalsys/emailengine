@@ -3540,45 +3540,6 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
-        method: 'GET',
-        path: '/v1/account/{account}/contacts',
-
-        async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-            try {
-                return await accountObject.buildContacts();
-            } catch (err) {
-                if (Boom.isBoom(err)) {
-                    throw err;
-                }
-                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
-                if (err.code) {
-                    error.output.payload.code = err.code;
-                }
-                throw error;
-            }
-        },
-        options: {
-            description: 'Builds a contact listing',
-            notes: 'Builds a contact listings from email addresses. For larger mailboxes this could take a lot of time.',
-            tags: [/*'api', */ 'experimental'],
-
-            validate: {
-                options: {
-                    stripUnknown: false,
-                    abortEarly: false,
-                    convert: true
-                },
-                failAction,
-
-                params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
-                })
-            }
-        }
-    });
-
-    server.route({
         method: 'POST',
         path: '/v1/account/{account}/submit',
 

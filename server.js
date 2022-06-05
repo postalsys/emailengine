@@ -1122,11 +1122,11 @@ async function onCommand(worker, message) {
             break;
 
         case 'listMessages':
-        case 'buildContacts':
         case 'getRawMessage':
         case 'getText':
         case 'getMessage':
         case 'updateMessage':
+        case 'listMailboxes':
         case 'moveMessage':
         case 'deleteMessage':
         case 'createMailbox':
