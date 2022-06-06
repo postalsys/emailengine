@@ -20,11 +20,34 @@ process.env.UV_THREADPOOL_SIZE =
 // cache before wild-config
 const argv = process.argv.slice(2);
 
-const logger = require('./lib/logger');
+const { Worker, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
+const config = require('wild-config');
+const logger = require('./lib/logger');
+
+const Bugsnag = require('@bugsnag/js');
+if (process.env.BUGSNAG_API_KEY) {
+    Bugsnag.start({
+        apiKey: process.env.BUGSNAG_API_KEY,
+        appVersion: packageData.version,
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
+    });
+}
 
 const pathlib = require('path');
-const { Worker, SHARE_ENV } = require('worker_threads');
 const { redis, queueConf } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
@@ -37,7 +60,6 @@ const tokens = require('./lib/tokens');
 
 const { QueueScheduler } = require('bullmq');
 
-const config = require('wild-config');
 const getSecret = require('./lib/get-secret');
 
 const {

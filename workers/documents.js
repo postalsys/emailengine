@@ -1,11 +1,35 @@
 'use strict';
 
 const { parentPort } = require('worker_threads');
+
+const packageData = require('../package.json');
+const logger = require('../lib/logger');
+
+const Bugsnag = require('@bugsnag/js');
+if (process.env.BUGSNAG_API_KEY) {
+    Bugsnag.start({
+        apiKey: process.env.BUGSNAG_API_KEY,
+        appVersion: packageData.version,
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
+    });
+}
+
 const { queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
-const logger = require('../lib/logger');
 const settings = require('../lib/settings');
-const packageData = require('../package.json');
 const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 const { ensureIndex } = require('../lib/es');
 const { getThread } = require('../lib/threads');

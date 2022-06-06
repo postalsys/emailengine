@@ -1,15 +1,39 @@
 'use strict';
 
 const { parentPort } = require('worker_threads');
+
+const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
+
+const Bugsnag = require('@bugsnag/js');
+if (process.env.BUGSNAG_API_KEY) {
+    Bugsnag.start({
+        apiKey: process.env.BUGSNAG_API_KEY,
+        appVersion: packageData.version,
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
+    });
+}
+
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { getDuration, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
-const packageData = require('../package.json');
 const { Splitter, Joiner } = require('mailsplit');
 const { HeadersRewriter } = require('../lib/headers-rewriter');
 const settings = require('../lib/settings');

@@ -1,8 +1,33 @@
 'use strict';
 
 const { parentPort } = require('worker_threads');
+
+const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
+
+const Bugsnag = require('@bugsnag/js');
+if (process.env.BUGSNAG_API_KEY) {
+    Bugsnag.start({
+        apiKey: process.env.BUGSNAG_API_KEY,
+        appVersion: packageData.version,
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
+    });
+}
+
 const util = require('util');
 const { redis, notifyQueue, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
@@ -10,7 +35,6 @@ const { Account } = require('../lib/account');
 const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const settings = require('../lib/settings');
-const packageData = require('../package.json');
 const msgpack = require('msgpack5')();
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');

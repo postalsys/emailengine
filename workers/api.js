@@ -1,19 +1,45 @@
 'use strict';
 
 const { parentPort } = require('worker_threads');
+
+const packageData = require('../package.json');
+const config = require('wild-config');
+const logger = require('../lib/logger');
+
+const Bugsnag = require('@bugsnag/js');
+if (process.env.BUGSNAG_API_KEY) {
+    Bugsnag.start({
+        apiKey: process.env.BUGSNAG_API_KEY,
+        appVersion: packageData.version,
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
+    });
+}
+
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');
 const Cookie = require('@hapi/cookie');
 const Crumb = require('@hapi/crumb');
 const Joi = require('joi');
-const logger = require('../lib/logger');
 const hapiPino = require('hapi-pino');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const HapiSwagger = require('hapi-swagger');
-const packageData = require('../package.json');
+
 const pathlib = require('path');
-const config = require('wild-config');
+
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
 const { getOAuth2Client } = require('../lib/oauth');
@@ -80,7 +106,6 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
-const { allow } = require('joi');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
