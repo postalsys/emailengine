@@ -9,8 +9,18 @@
 
 {{> templates_header}}
 
+{{#if account}}
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{account.name}}</li>
+    </ol>
+</nav>
+{{/if}}
+
+
 <p>
-    Here you can manage email temlates for sending.
+    Here you can manage email templates for sending.
 </p>
 
 
@@ -19,8 +29,8 @@
     {{#if account}}
     <div class="card-body">
         <div class="alert alert-info">
-            Currently showing templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
-                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
+            Currently showing templates for <strong><a
+                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>.
         </div>
     </div>
     {{/if}}
