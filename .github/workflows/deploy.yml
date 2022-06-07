@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-document-store
+            - feature-templates-ui
 
 name: Deploy test instance
 
