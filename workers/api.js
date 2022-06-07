@@ -4957,6 +4957,7 @@ When making API calls remember that requests against the same account are queued
         layout: 'app',
         layoutPath: './views/layout',
         partialsPath: './views/partials',
+        helpersPath: 'views/helpers',
 
         isCached: false,
 

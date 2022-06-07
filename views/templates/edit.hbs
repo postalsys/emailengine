@@ -1,0 +1,119 @@
+{{> templates_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
+        {{#if account}}
+        <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
+        {{/if}}
+
+        <li class="breadcrumb-item"><a href="/admin/templates/template/{{template.id}}">{{template.name}}</a></li>
+
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+
+    </ol>
+</nav>
+
+
+<form method="post" action="/admin/templates/edit" id="edit-form">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" name="template" value="{{template.id}}">
+
+    <input type="hidden" id="html-content-element" name="contentHtml" value="{{template.content.html}}">
+    <input type="hidden" id="text-content-element" name="contentText" value="{{template.content.text}}">
+
+    <div class="card mb-4">
+        <div class="card-body">
+
+            <div class="form-group">
+                <label for="inputName">Name</label>
+                <input type="text" class="form-control" name="name" id="inputName" aria-describedby="inputNameHelp"
+                    value="{{template.name}}">
+                <small id="inputNameHelp" class="form-text text-muted">Name for this template.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputDescription">Description</label>
+                <input type="text" class="form-control" name="description" id="inputDescription"
+                    aria-describedby="inputDescriptionHelp" value="{{template.description}}">
+                <small id="inputDescriptionHelp" class="form-text text-muted">Description for this template.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputSubject">Subject</label>
+                <input type="text" class="form-control" name="subject" id="inputSubject"
+                    aria-describedby="inputSubjectHelp" value="{{template.content.subject}}">
+                <small id="inputSubjectHelp" class="form-text text-muted">Subject line for the sent email. Handlebars
+                    syntax is allowed.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputFormat">HTML preprocessor format</label>
+                <select class="form-control" id="inputFormat" name="format">
+                    <option>HTML</option>
+                    <option>MJML</option>
+                    <option>Markdown</option>
+                </select>
+                <small id="inputSubjectHelp" class="form-text text-muted">EmailEngine will generate final HTML using the
+                    selected formatter.</small>
+            </div>
+
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="html-tab" data-toggle="tab" href="#html" role="tab"
+                        aria-controls="html" aria-selected="true">HTML</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
+                        aria-selected="false">Plain text</a>
+                </li>
+            </ul>
+            <div class="tab-content mt-3" id="myTabContent">
+                <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
+
+                    <div id="editor-html" class="code-editor"></div>
+
+                </div>
+                <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
+
+                    <div id="editor-text" class="code-editor"></div>
+
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-file-signature"></i>
+            </span>
+            <span class="text">Update template</span>
+        </button>
+    </div>
+</form>
+
+<script src="/static/js/ace/ace.js"></script>
+
+<script>
+
+    const editorHtml = ace.edit("editor-html");
+    editorHtml.setTheme("ace/theme/xcode");
+    editorHtml.session.setMode("ace/mode/handlebars");
+    editorHtml.session.setValue(document.getElementById('html-content-element').value);
+
+    const editorText = ace.edit("editor-text");
+    editorText.setTheme("ace/theme/xcode");
+    editorText.session.setMode("ace/mode/handlebars");
+    editorText.session.setValue(document.getElementById('text-content-element').value);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('edit-form').addEventListener('submit', () => {
+            document.getElementById('html-content-element').value = editorHtml.getValue();
+            document.getElementById('text-content-element').value = editorText.getValue();
+        });
+    });
+
+</script>
