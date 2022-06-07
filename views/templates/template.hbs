@@ -9,3 +9,96 @@
         <li class="breadcrumb-item active" aria-current="page">{{template.name}}</li>
     </ol>
 </nav>
+
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/templates/template/{{template.id}}/edit"
+                    title="Edit account configuration" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-user-edit fa-fw"></i> Edit
+                </a>
+
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this template" id="delete-btn" data-placement="top">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        <dl class="row">
+
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">
+                <div class="input-group">
+                    <input type="text" id="templateIdValue" class="form-control bg-light border-0 small" aria-label="ID"
+                        aria-describedby="basic-addon2" value="{{template.id}}" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
+                            data-clipboard-target="#templateIdValue" title="Copy to clipboard" data-toggle="tooltip"
+                            data-placement="top">
+                            <i class="fas fa-copy fa-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </dd>
+
+            {{#if account}}
+
+            <dt class="col-sm-3">Account</dt>
+            <dd class="col-sm-9"><a href="/admin/accounts/{{account.account}}">{{account.name}}</a></dd>
+
+            {{/if}}
+
+            {{#if template.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{template.name}}</dd>
+            {{/if}}
+
+            {{#if template.description}}
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">{{template.description}}</dd>
+            {{/if}}
+
+            {{#if template.content.subject}}
+            <dt class="col-sm-3">Subject</dt>
+            <dd class="col-sm-9"><strong>{{template.content.subject}}</strong></dd>
+            {{/if}}
+
+            {{#if template.format}}
+            <dt class="col-sm-3">HTML source format</dt>
+            <dd class="col-sm-9"><span class="text-monospace">{{template.format}}</span></dd>
+            {{/if}}
+
+        </dl>
+
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="html-tab" data-toggle="tab" href="#html" role="tab" aria-controls="html"
+                    aria-selected="true">HTML</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
+                    aria-selected="false">Plain text</a>
+            </li>
+        </ul>
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
+
+                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.html}}</textarea>
+
+            </div>
+            <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
+
+                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.text}}</textarea>
+
+            </div>
+        </div>
+    </div>
+</div>

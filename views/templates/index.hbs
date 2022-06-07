@@ -28,7 +28,7 @@
 <div class="card mt-4 mb-4">
     {{#if account}}
     <div class="card-body">
-        <div class="alert alert-info">
+        <div>
             Currently showing templates for <strong><a
                     href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>.
         </div>
@@ -110,10 +110,11 @@
 <div class="list-group mt-4 mb-4">
     <div class="list-group-item">
         {{#if account}}
-        <div class="alert alert-info">
+        <div>
             Currently showing templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
                     account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
         </div>
+        <hr>
         {{/if}}
 
         <p>
