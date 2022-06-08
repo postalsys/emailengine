@@ -19,9 +19,35 @@
 {{/if}}
 
 
-<p>
-    Here you can manage templates that you can use as prepared content when sending out emails.
-</p>
+<div class="card border-left-info shadow mt-4 mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+
+                <p>Email templating allows you to prepare and re-use email content.</p>
+
+                <p>When sending emails using the EmailEngine's <a
+                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit"
+                        target="_blank">submission API
+                        endpoint</a>, you would not have to provide the full
+                    subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
+                    EmailEngine
+                    would use the contents of that template to compile the final email.</p>
+                <p>For extra customization, you can use Handlebars syntax in the template and provide variables that
+                    would be
+                    used to fill up the blanks.</p>
+
+                <div>
+                    <a href="https://emailengine.app/email-templates" class="btn btn-info btn-sm" target="_blank">
+                        <i class="fa fa-arrow-circle-right fa-fw"></i>
+                        Documentation</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
 
 
 {{#if templates}}
@@ -29,8 +55,9 @@
     {{#if account}}
     <div class="card-body">
         <div>
-            Currently showing templates for <strong><a
-                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>.
+            Currently showing email templates for <strong><a
+                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>. These templates can not be
+            used by other accounts.
         </div>
     </div>
     {{/if}}
@@ -111,8 +138,9 @@
     <div class="list-group-item">
         {{#if account}}
         <div>
-            Currently showing templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
-                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
+            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
+                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These templates can not
+            be used by other accounts.
         </div>
         <hr>
         {{/if}}
@@ -127,3 +155,53 @@
     </div>
 </div>
 {{/if}}
+
+<div class="card mt-4 mb-4">
+    <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+        aria-expanded="true" aria-controls="showHelp">
+        <h6 class="m-0 font-weight-bold text-primary">Usage example</h6>
+    </a>
+    <div class="collapse" id="showHelp">
+        <div class="card-body">
+            <p>When sending emails using the submission API endpoint, do not set <code>"subject"</code>,
+                <code>"html"</code> and <code>"text"</code> properties. Instead, set the <code>"template"</code>
+                property
+                with the template ID value and, optionally, <code>"render"</code> definition if you are using MJML or
+                Markdown format as the HTML source or you want to use the Handlebars variables.
+            </p>
+
+            <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/account/example/submit" \ 
+  -H "Authorization: Bearer <token>" \ 
+  -H "Content-type: application/json" \ 
+  -d '{
+    &quot;from&quot;: {
+      &quot;name&quot;: &quot;sender name&quot;,
+      &quot;address&quot;: &quot;sender@example.com&quot;
+    },
+    &quot;to&quot;: [
+      {
+        &quot;name&quot;: &quot;recipient name&quot;,
+        &quot;address&quot;: &quot;recipient@example.com&quot;
+      }
+    ],
+    &quot;template&quot;: &quot;AAABgUIbuG0AAAAE&quot;,
+    &quot;render&quot;: {
+      &quot;params&quot;: {
+        &quot;key&quot;: &quot;value&quot;
+      }
+    }
+  }'</pre>
+
+
+
+            <hr>
+            <div class="text-muted">
+                <p>This example assumes that you use <code>\{{params.key}}</code> in the subject, html or plain-text
+                    content
+                    of the template.</pre>
+            </div>
+
+
+        </div>
+    </div>
+</div>
