@@ -3,30 +3,29 @@
 <nav aria-label="breadcrumb" class="mt-4 mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
+
         {{#if account}}
         <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
         {{/if}}
 
-        <li class="breadcrumb-item"><a href="/admin/templates/template/{{template.id}}">{{template.name}}</a></li>
-
-        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        <li class="breadcrumb-item active" aria-current="page">New</li>
 
     </ol>
 </nav>
 
 
-<form method="post" action="/admin/templates/edit" id="edit-form">
+<form method="post" action="/admin/templates/new" id="edit-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
-    <input type="hidden" name="template" value="{{values.template}}">
+    <input type="hidden" name="account" value="{{values.account}}">
 
     {{>template_form}}
 
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
-                <i class="fas fa-file-signature"></i>
+                <i class="fas fa-plus"></i>
             </span>
-            <span class="text">Update template</span>
+            <span class="text">Create template</span>
         </button>
     </div>
 </form>

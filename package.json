@@ -44,6 +44,7 @@
         "@hapipal/hecks": "3.0.0",
         "@phc/pbkdf2": "1.1.14",
         "@postalsys/templates": "1.0.0",
+        "ace-builds": "^1.5.3",
         "bull-arena": "3.29.3",
         "bullmq": "1.85.3",
         "compare-versions": "4.1.3",
