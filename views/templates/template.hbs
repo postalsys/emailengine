@@ -1,0 +1,389 @@
+{{> templates_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
+        {{#if account}}
+        <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
+        {{/if}}
+        <li class="breadcrumb-item active" aria-current="page">{{template.name}}</li>
+    </ol>
+</nav>
+
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/templates/template/{{template.id}}/edit"
+                    title="Edit template contents" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-file-signature fa-fw"></i> Edit
+                </a>
+
+                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this template" id="delete-btn" data-placement="top">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
+
+            </div>
+
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
+                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-backdrop="static"
+                    data-target="#sendTestModal" title="Send test email using this template" id="test-btn"
+                    data-placement="top">
+                    <i class="fas fa-mail-bulk fa-fw"></i> Send test email
+                </button>
+            </div>
+
+        </div>
+
+        <dl class="row">
+
+            <dt class="col-sm-3">Template ID</dt>
+            <dd class="col-sm-9">
+                <div class="input-group">
+                    <input type="text" id="templateIdValue" class="form-control bg-light border-0 small" aria-label="ID"
+                        aria-describedby="basic-addon2" value="{{template.id}}" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
+                            data-clipboard-target="#templateIdValue" title="Copy to clipboard" data-toggle="tooltip"
+                            data-placement="top">
+                            <i class="fas fa-copy fa-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <small id="inputDescriptionHelp" class="form-text text-muted">Use this ID value as the <span
+                        class="text-monospace">"template"</span> property when sending email.</small>
+            </dd>
+
+            {{#if account}}
+
+            <dt class="col-sm-3">Account</dt>
+            <dd class="col-sm-9"><a href="/admin/accounts/{{account.account}}">{{account.name}}</a></dd>
+
+            {{/if}}
+
+            {{#if template.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{template.name}}</dd>
+            {{/if}}
+
+            {{#if template.description}}
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">{{template.description}}</dd>
+            {{/if}}
+
+            {{#if template.content.subject}}
+            <dt class="col-sm-3">Subject</dt>
+            <dd class="col-sm-9"><strong>{{template.content.subject}}</strong></dd>
+            {{/if}}
+
+            {{#if template.format}}
+            <dt class="col-sm-3">HTML source format</dt>
+            <dd class="col-sm-9"><span class="text-monospace">{{format.name}}</span></dd>
+            {{/if}}
+
+        </dl>
+
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="html-tab" data-toggle="tab" href="#html" role="tab" aria-controls="html"
+                    aria-selected="true">HTML</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
+                    aria-selected="false">Plain text</a>
+            </li>
+        </ul>
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
+
+                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.html}}</textarea>
+
+            </div>
+            <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
+
+                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.text}}</textarea>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete template</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{account.name}}</strong>? This action is not
+                    recoverable.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/templates/delete">
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <input type="hidden" name="template" value="{{template.id}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="crumb" value="{{crumb}}" />
+<input type="hidden" id="template" value="{{template.id}}" />
+
+<div class="modal fade" id="sendTestModal" tabindex="-1" aria-labelledby="sendTestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendTestModalLabel">Send test email</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                {{#unless account}}
+                <div class="form-group">
+                    <label for="inputAccount">Account ID</label>
+                    <input type="text" class="form-control" name="account" id="inputAccount"
+                        aria-describedby="inputAccountHelp" value="" required>
+                    <small id="inputNameHelp" class="form-text text-muted">The account ID to send email as.</small>
+                </div>
+                {{/unless}}
+
+                <div class="form-group">
+                    <label for="inputTo">Recipient's email address</label>
+                    <input type="email" class="form-control" name="account" id="inputTo" aria-describedby="inputToHelp"
+                        value="" required>
+                    <small id="inputToHelp" class="form-text text-muted">Where to send the test email to.</small>
+                </div>
+
+                <div class="card mb-4">
+                    <a href="#jsonStructure" id="jsonHeader" class="d-block card-header py-3 collapsed"
+                        data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupKey">
+                        <h6 class="m-0 font-weight-bold text-primary">Handlebars payload</h6>
+                    </a>
+                    <div class="collapse" id="jsonStructure">
+                        <div class="card-body">
+                            <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
+                            <small id="inputToHelp" class="form-text text-muted">Enter the JSON strcture for the
+                                "render.params" API parameter.<br /><code>"keyName"</code> property in this JSON
+                                structure
+                                becomes
+                                <code>\{{params.keyName}}</code> in the template.</small>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" id="send-test-btn" class="btn btn-primary btn-icon-split">
+
+                    <span class="icon text-white-50">
+                        <i class="fas fa-mail-bulk"></i>
+                    </span>
+                    <span class="text">Send email</span>
+
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertModalLabel"></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="alertModalContent"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/ace/ace.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        $('.has-tooltip').tooltip();
+
+
+        function showAlert(title, content, backdrop) {
+            document.getElementById('alertModalLabel').textContent = title;
+            document.getElementById('alertModalContent').textContent = content;
+
+            $('#alertModal').modal({ show: true, backdrop: !!backdrop })
+        }
+
+        const editorJson = ace.edit("editor-json");
+        editorJson.setTheme("ace/theme/xcode");
+        editorJson.session.setMode("ace/mode/json");
+        editorJson.session.setValue('{\n    "keyName": "key value"\n}');
+
+        let inputAccount = document.getElementById('inputAccount')
+        let inputTo = document.getElementById('inputTo')
+
+        let sendTestBtn = document.getElementById("send-test-btn");
+
+        $('#sendTestModal').on('show.bs.modal', function (event) {
+
+            editorJson.session.setValue('{\n    "keyName": "value"\n}');
+
+            if (inputAccount) {
+                inputAccount.value = '';
+            }
+            inputTo.value = '';
+
+            document.getElementById('jsonStructure').classList.remove('show');
+            document.getElementById('jsonHeader').classList.add('collapsed');
+        });
+
+        let hasValidJson = true;
+
+        function setStateUpdate() {
+            let accountValue = true;
+            if (inputAccount) {
+                accountValue = inputAccount.value.trim();
+            }
+
+            let toValue = inputTo.value.trim();
+            if (!accountValue || !toValue || !hasValidJson) {
+                sendTestBtn.disabled = true;
+            } else {
+                sendTestBtn.disabled = false;
+            }
+        }
+
+        editorJson.session.on('change', function (delta) {
+            // delta.start, delta.end, delta.lines, delta.action
+            let curval = editorJson.getValue().trim();
+            try {
+                if (curval) {
+                    let parsed = JSON.parse(curval);
+                    if (parsed && typeof parsed !== 'object') {
+                        throw new Error('Not an object')
+                    }
+                }
+                hasValidJson = true;
+            } catch (err) {
+                hasValidJson = false;
+            }
+            setStateUpdate();
+        });
+
+        if (inputAccount) {
+            inputAccount.addEventListener('input', setStateUpdate);
+            inputAccount.addEventListener('change', setStateUpdate);
+            inputAccount.addEventListener('keyup', setStateUpdate);
+        }
+
+        inputTo.addEventListener('input', setStateUpdate);
+        inputTo.addEventListener('change', setStateUpdate);
+        inputTo.addEventListener('keyup', setStateUpdate);
+
+        setStateUpdate();
+
+
+        const sendTestPayload = async () => {
+
+            const payload = {
+                crumb: document.getElementById('crumb').value,
+                template: document.getElementById('template').value
+            }
+
+            if (inputAccount) {
+                payload.account = inputAccount.value.trim()
+            }
+
+            payload.to = inputTo.value.trim()
+
+            let templateVars = editorJson.getValue().trim();
+            if (templateVars) {
+                templateVars = JSON.parse(templateVars);
+            }
+
+            if (templateVars && typeof templateVars === 'object') {
+                payload.params = templateVars
+            }
+
+            const res = await fetch('/admin/templates/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            return data;
+        }
+
+        let iconElm = document.querySelector('#send-test-btn i');
+        let toggleSpinner = (enabled) => {
+
+            if (enabled) {
+                iconElm.classList.remove('fa-spinner', 'fa-spin');
+                iconElm.classList.add('fa-mail-bulk');
+                sendTestBtn.disabled = false;
+
+                //sendTestBtn.classList.replace('btn-secondary', 'btn-primary');
+
+            } else {
+                iconElm.classList.remove('fa-mail-bulk');
+                iconElm.classList.add('fa-spinner', 'fa-spin');
+                sendTestBtn.disabled = true;
+
+                //sendTestBtn.classList.replace('btn-primary', 'btn-secondary');
+            }
+        }
+
+        let sending = false;
+        function sendTestEmail() {
+            if (sending) {
+                return;
+            }
+            sending = true;
+            toggleSpinner(false);
+            sendTestPayload().then(info => {
+                toggleSpinner(true);
+                sending = false;
+
+                $('#sendTestModal').modal('hide');
+
+                showAlert('Message sent', `${info.response} as ${info.queueId}`, true)
+            }).catch(err => {
+                toggleSpinner(true);
+                sending = false;
+                showAlert('Error', err.message);
+            })
+        }
+
+        sendTestBtn.addEventListener('click', sendTestEmail);
+    });
+</script>

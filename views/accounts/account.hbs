@@ -10,8 +10,8 @@
 <div class="card mb-4">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2" role="group" aria-label="First group">
+        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit"
                     title="Edit account configuration" data-toggle="tooltip" data-placement="top">
@@ -41,8 +41,16 @@
 
             </div>
 
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="Third group">
+                <a type="button" class="btn btn-light" href="/admin/templates/?account={{account.account}}"
+                    title="Email templates for &quot;{{account.account}}&quot;" data-toggle="tooltip"
+                    data-placement="top">
+                    <i class="fas fa-file-code fa-fw"></i> Email templates
+                </a>
+            </div>
+
             {{#if oauth2ProviderEnabled}}
-            <div class="btn-group mr-2" role="group" aria-label="Second group">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
                 <form method="post" action="/accounts/new">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" name="type" value="{{account.oauth2.provider}}">
@@ -131,8 +139,6 @@
 
     </div>
 </div>
-
-
 
 {{#if account.imap}}
 <div class="card mb-4">

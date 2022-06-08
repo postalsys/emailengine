@@ -1,0 +1,77 @@
+<input type="hidden" id="html-content-element" name="contentHtml" value="{{values.contentHtml}}">
+<input type="hidden" id="text-content-element" name="contentText" value="{{values.contentText}}">
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="form-group">
+            <label for="inputName">Name</label>
+            <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" name="name" id="inputName"
+                aria-describedby="inputNameHelp" value="{{values.name}}" required>
+            {{#if errors.name}}
+            <span class="invalid-feedback">{{errors.name}}</span>
+            {{/if}}
+            <small id="inputNameHelp" class="form-text text-muted">Name for this template.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="inputDescription">Description</label>
+            <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" name="description"
+                id="inputDescription" aria-describedby="inputDescriptionHelp" value="{{values.description}}">
+            {{#if errors.description}}
+            <span class="invalid-feedback">{{errors.description}}</span>
+            {{/if}}
+            <small id="inputDescriptionHelp" class="form-text text-muted">Description for this template.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="inputSubject">Subject</label>
+            <input type="text" class="form-control {{#if errors.subject}}is-invalid{{/if}}" name="subject"
+                id="inputSubject" aria-describedby="inputSubjectHelp" value="{{values.subject}}">
+            {{#if errors.subject}}
+            <span class="invalid-feedback">{{errors.subject}}</span>
+            {{/if}}
+            <small id="inputSubjectHelp" class="form-text text-muted">Subject line for the sent email. Handlebars
+                syntax is allowed.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="inputFormat">HTML source format</label>
+            <select class="form-control {{#if errors.format}}is-invalid{{/if}}" id="inputFormat" name="format">
+                {{#each formats}}
+                <option value="{{format}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                {{/each}}
+            </select>
+            {{#if errors.format}}
+            <span class="invalid-feedback">{{errors.format}}</span>
+            {{/if}}
+            <small id="inputSubjectHelp" class="form-text text-muted">EmailEngine will generate final HTML using the
+                selected code formatter.</small>
+        </div>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="html-tab" data-toggle="tab" href="#html" role="tab" aria-controls="html"
+                    aria-selected="true">HTML</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
+                    aria-selected="false">Plain text</a>
+            </li>
+        </ul>
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
+
+                <div id="editor-html" class="code-editor"></div>
+
+            </div>
+            <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
+
+                <div id="editor-text" class="code-editor"></div>
+
+            </div>
+        </div>
+
+
+    </div>
+</div>
