@@ -1,59 +1,61 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">Select account type</h1>
+    <h1 class="h4 text-gray-900 mb-4">Choose Your email account provider</h1>
 </div>
 
-<div class="mb-3">
-    <form method="post" action="/accounts/new">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="type" value="imap">
-        <input type="hidden" name="data" value="{{values.data}}">
-        <input type="hidden" name="sig" value="{{values.sig}}">
+<div style="width: 250px; margin: 0 auto;">
 
-        <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa fa-envelope-square fa-fw"></i> IMAP
-        </button>
-    </form>
+    <div class="mb-3">
+        <form method="post" action="/accounts/new">
+            <input type="hidden" name="crumb" value="{{crumb}}">
+            <input type="hidden" name="type" value="imap">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
+
+            <button type="submit" class="btn btn-primary btn-block" style="line-height: 2.5rem; font-size: 1.2rem;">
+                <i class="fa fa-envelope-square fa-fw"></i> Standard IMAP
+            </button>
+        </form>
+    </div>
+
+    {{#if gmailEnabled}}
+    <div class="mb-3">
+        <form method="post" action="/accounts/new">
+            <input type="hidden" name="crumb" value="{{crumb}}">
+            <input type="hidden" name="type" value="gmail">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
+
+            <input type="image" src="/static/providers/google_dark_edited.png" style="width: 100%; display: block;" />
+        </form>
+    </div>
+    {{/if}}
+
+
+    {{#if outlookEnabled}}
+    <div class="mb-3">
+        <form method="post" action="/accounts/new">
+            <input type="hidden" name="crumb" value="{{crumb}}">
+            <input type="hidden" name="type" value="outlook">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
+            <input type="image" src="/static/providers/ms_light.svg" style="width: 100%; display: block;" />
+        </form>
+    </div>
+    {{/if}}
+
+
+    {{#if mailRuEnableds}}
+    <div class="mb-3">
+        <form method="post" action="/accounts/new">
+            <input type="hidden" name="crumb" value="{{crumb}}">
+            <input type="hidden" name="type" value="mailRu">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
+            <button type="submit" class="btn btn-primary btn-block" style="font-size: 1.5rem;">
+                <i class="fa fa-envelope fa-fw"></i> Mail.ru
+            </button>
+        </form>
+    </div>
+    {{/if}}
+
 </div>
-
-{{#if gmailEnabled}}
-<div class="mb-3">
-    <form method="post" action="/accounts/new">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="type" value="gmail">
-        <input type="hidden" name="data" value="{{values.data}}">
-        <input type="hidden" name="sig" value="{{values.sig}}">
-
-        <button type="submit" class="btn btn-primary btn-block">
-            <i class="fab fa-google fa-fw"></i> Gmail
-        </button>
-    </form>
-</div>
-{{/if}}
-
-{{#if outlookEnabled}}
-<div class="mb-3">
-    <form method="post" action="/accounts/new">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="type" value="outlook">
-        <input type="hidden" name="data" value="{{values.data}}">
-        <input type="hidden" name="sig" value="{{values.sig}}">
-        <button type="submit" class="btn btn-primary btn-block">
-            <i class="fab fa-microsoft fa-fw"></i> Outlook
-        </button>
-    </form>
-</div>
-{{/if}}
-
-{{#if mailRuEnabled}}
-<div class="mb-3">
-    <form method="post" action="/accounts/new">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="type" value="mailRu">
-        <input type="hidden" name="data" value="{{values.data}}">
-        <input type="hidden" name="sig" value="{{values.sig}}">
-        <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa fa-envelope fa-fw"></i> Mail.ru
-        </button>
-    </form>
-</div>
-{{/if}}
