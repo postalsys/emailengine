@@ -238,6 +238,19 @@
                     (ElasticSearch). Enabling this option will add a new configuration menu option you can
                     use to set up document store syncing.</small>
             </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.labsMailRu}}is-invalid{{/if}}"
+                    id="labsMailRu" name="labsMailRu" {{#if values.labsMailRu}}checked{{/if}} />
+                <label class="form-check-label" for="labsMailRu">Allow to use OAuth2 with Mail.ru</label>
+                {{#if errors.labsMailRu}}
+                <span class="invalid-feedback">{{errors.labsMailRu}}</span>
+                {{/if}}
+                <small class="form-text text-muted"><a href="https://oauth.mail.ru/docs" target="_blank">OAuth2 for
+                        Mail.ru</a> is disabled by default due to insufficient
+                    testing. It might or might not work as intended. Make sure that your OAuth2 app has the required
+                    email scopes.</small>
+            </div>
         </div>
     </div>
 

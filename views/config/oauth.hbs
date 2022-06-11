@@ -21,9 +21,10 @@
     </li>
 
     <!-- Do not expose Mail.RU by default (untested) -->
-    {{#if mailRuEnabled}}
+    {{#if showMailRu}}
     <li class="nav-item">
-        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth/mailRu">Mail.ru</a>
+        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth/mailRu">Mail.ru <span
+                class="badge badge-dark">beta</span></a>
     </li>
     {{/if}}
 
@@ -66,6 +67,10 @@
                     <li><code>"userinfo"</code>
                     <li><code>"mail.imap"</code>
                 </ul>
+
+                <div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
+                    for your <a href="https://oauth.mail.ru/app/" target="_blank">OAuth2 apps</a>
+                    by default.</div>
                 {{/if}}
 
             </div>
