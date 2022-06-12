@@ -50,7 +50,6 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const msgpack = require('msgpack5')();
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
-const { Client: ElasticSearch } = require('@elastic/elasticsearch');
 
 const Hecks = require('@hapipal/hecks');
 const { arenaExpress } = require('../lib/arena-express');
@@ -76,6 +75,7 @@ const {
 } = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
+const { getESClient } = require('../lib/document-store');
 
 const routesUi = require('../lib/routes-ui');
 
@@ -177,47 +177,6 @@ class ResponseStream extends Transform {
         done();
     }
 }
-
-const esClientCache = { version: -1, config: false, client: false, index: false };
-
-const getESClient = async () => {
-    const documentStoreVersion = (await settings.get('documentStoreVersion')) || 0;
-    if (esClientCache.version === documentStoreVersion) {
-        return esClientCache;
-    }
-
-    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-    let documentStoreUrl = await settings.get('documentStoreUrl');
-
-    if (!documentStoreEnabled || !documentStoreUrl) {
-        esClientCache.version = documentStoreVersion;
-        esClientCache.client = false;
-        esClientCache.index = false;
-        return esClientCache;
-    }
-
-    esClientCache.index = (await settings.get('documentStoreIndex')) || 'emailengine';
-
-    let documentStoreAuthEnabled = await settings.get('documentStoreAuthEnabled');
-    let documentStoreUsername = await settings.get('documentStoreUsername');
-    let documentStorePassword = await settings.get('documentStorePassword');
-
-    esClientCache.config = {
-        node: { url: new URL(documentStoreUrl), tls: { rejectUnauthorized: false } },
-        auth:
-            documentStoreAuthEnabled && documentStoreUsername
-                ? {
-                      username: documentStoreUsername,
-                      password: documentStorePassword
-                  }
-                : false
-    };
-
-    esClientCache.version = documentStoreVersion;
-    esClientCache.client = new ElasticSearch(esClientCache.config);
-
-    return esClientCache;
-};
 
 let callQueue = new Map();
 let mids = 0;
@@ -366,7 +325,7 @@ const init = async () => {
         }
     });
 
-    server.decorate('toolkit', 'getESClient', async () => await getESClient());
+    server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
 
     server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not
@@ -2358,7 +2317,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/account/{account}/message/{message}',
 
-        async handler(request) {
+        async handler(request, h) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
@@ -2370,7 +2329,7 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
-                    const { index, client } = await getESClient();
+                    const { index, client } = await h.getESClient(request.logger);
 
                     const reqOpts = {
                         index,
@@ -2831,7 +2790,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/account/{account}/text/{text}',
 
-        async handler(request) {
+        async handler(request, h) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
@@ -2846,7 +2805,7 @@ When making API calls remember that requests against the same account are queued
                     let buf = Buffer.from(request.params.text, 'base64url');
                     let message = buf.slice(0, 8).toString('base64url');
 
-                    const { index, client } = await getESClient();
+                    const { index, client } = await h.getESClient(request.logger);
                     let getResult = await client.get({
                         index,
                         id: `${request.params.account}:${message}`
@@ -2947,7 +2906,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/account/{account}/messages',
 
-        async handler(request) {
+        async handler(request, h) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
             try {
                 if (request.query.documentStore) {
@@ -3020,7 +2979,7 @@ When making API calls remember that requests against the same account are queued
                         }
                     });
 
-                    const { index, client } = await getESClient();
+                    const { index, client } = await h.getESClient(request.logger);
                     let searchResult = await client.search({
                         index,
                         size: request.query.pageSize,
@@ -3123,7 +3082,7 @@ When making API calls remember that requests against the same account are queued
         method: 'POST',
         path: '/v1/account/{account}/search',
 
-        async handler(request) {
+        async handler(request, h) {
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
             try {
                 if (request.query.documentStore) {
@@ -3381,7 +3340,7 @@ When making API calls remember that requests against the same account are queued
                         });
                     }
 
-                    const { index, client } = await getESClient();
+                    const { index, client } = await h.getESClient(request.logger);
                     let searchResult = await client.search({
                         index,
                         size: request.query.pageSize,

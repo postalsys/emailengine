@@ -29,12 +29,10 @@ if (process.env.BUGSNAG_API_KEY) {
 
 const { queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
-const settings = require('../lib/settings');
-const { Client: ElasticSearch } = require('@elastic/elasticsearch');
-const { ensureIndex } = require('../lib/es');
+const { getESClient } = require('../lib/document-store');
 const { getThread } = require('../lib/threads');
 
-const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED } = require('../lib/consts');
+const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -49,60 +47,13 @@ async function metrics(logger, key, method, ...args) {
     }
 }
 
-const clientCache = { version: -1, config: false, client: false, index: false };
-
-const getClient = async () => {
-    const documentStoreVersion = (await settings.get('documentStoreVersion')) || 0;
-    if (clientCache.version === documentStoreVersion) {
-        return clientCache;
-    }
-
-    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-    let documentStoreUrl = await settings.get('documentStoreUrl');
-
-    if (!documentStoreEnabled || !documentStoreUrl) {
-        clientCache.version = documentStoreVersion;
-        clientCache.client = false;
-        clientCache.index = false;
-        return clientCache;
-    }
-
-    clientCache.index = (await settings.get('documentStoreIndex')) || 'emailengine';
-
-    let documentStoreAuthEnabled = await settings.get('documentStoreAuthEnabled');
-    let documentStoreUsername = await settings.get('documentStoreUsername');
-    let documentStorePassword = await settings.get('documentStorePassword');
-
-    clientCache.config = {
-        node: { url: new URL(documentStoreUrl), tls: { rejectUnauthorized: false } },
-        auth:
-            documentStoreAuthEnabled && documentStoreUsername
-                ? {
-                      username: documentStoreUsername,
-                      password: documentStorePassword
-                  }
-                : false
-    };
-
-    clientCache.version = documentStoreVersion;
-    clientCache.client = new ElasticSearch(clientCache.config);
-
-    // ensure proper index settings
-    let indexResult = await ensureIndex(clientCache.client, clientCache.index);
-    if (!indexResult || indexResult.exists) {
-        logger.info({ msg: 'Updated document index', index: clientCache.index, result: indexResult });
-    }
-
-    return clientCache;
-};
-
 const documentsWorker = new Worker(
     'documents',
     async job => {
         switch (job.data.event) {
             case ACCOUNT_DELETED:
                 {
-                    const { index, client } = await getClient();
+                    const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
@@ -157,7 +108,7 @@ const documentsWorker = new Worker(
 
             case MESSAGE_NEW_NOTIFY:
                 {
-                    const { index, client } = await getClient();
+                    const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
@@ -255,7 +206,7 @@ const documentsWorker = new Worker(
                     messageData.account = job.data.account;
                     messageData.created = job.data.date;
 
-                    const { index, client } = await getClient();
+                    const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
@@ -313,7 +264,7 @@ const documentsWorker = new Worker(
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
-                    const { index, client } = await getClient();
+                    const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
@@ -374,7 +325,7 @@ const documentsWorker = new Worker(
                         msg: 'Updated email',
                         action: 'document',
                         queue: job.queue.name,
-                        code: 'document_delete',
+                        code: 'document_updated',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
@@ -382,6 +333,98 @@ const documentsWorker = new Worker(
                             index,
                             id: `${job.data.account}:${messageId}`,
                             doc: updates
+                        },
+                        updateResult
+                    });
+                }
+                break;
+
+            case EMAIL_BOUNCE_NOTIFY:
+                {
+                    let bounceData = job.data.data;
+                    let messageId = bounceData.id;
+                    if (!messageId) {
+                        // nothing to do here, the bounce was not matched to a message
+                        return;
+                    }
+
+                    const { index, client } = await getESClient(logger);
+                    if (!client) {
+                        return;
+                    }
+
+                    let bounceInfo = {
+                        message: bounceData.bounceMessage,
+                        date: job.data.date
+                    };
+
+                    for (let key of ['recipient', 'action', 'response', 'mta', 'queueId']) {
+                        if (bounceData[key]) {
+                            bounceInfo[key] = bounceData[key];
+                        }
+                    }
+
+                    let script = {
+                        lang: 'painless',
+                        source: `
+if( ctx._source.bounces != null) {
+    ctx._source.bounces.add(params.bounceInfo)
+} else {
+    ctx._source.bounces = [params.bounceInfo]
+}
+`,
+                        params: {
+                            bounceInfo
+                        }
+                    };
+
+                    let updateResult;
+
+                    try {
+                        updateResult = await client.update({
+                            index: `${index}`,
+                            id: `${job.data.account}:${messageId}`,
+                            refresh: true,
+                            script
+                        });
+                    } catch (err) {
+                        switch (err.meta && err.meta.body && err.meta.body.error && err.meta.body.error.type) {
+                            case 'document_missing_exception':
+                                // ignore error
+                                updateResult = Object.assign({ failed: true }, err.meta.body);
+                                break;
+                            default:
+                                logger.error({
+                                    msg: 'Failed to update email',
+                                    action: 'document',
+                                    queue: job.queue.name,
+                                    code: 'document_update_error',
+                                    job: job.id,
+                                    event: job.name,
+                                    account: job.data.account,
+                                    request: {
+                                        index,
+                                        id: `${job.data.account}:${messageId}`,
+                                        bounceData
+                                    },
+                                    err
+                                });
+                                throw err;
+                        }
+                    }
+
+                    logger.trace({
+                        msg: 'Updated email',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_updated',
+                        job: job.id,
+                        event: job.name,
+                        account: job.data.account,
+                        request: {
+                            index,
+                            id: `${job.data.account}:${messageId}`,
+                            bounceData
                         },
                         updateResult
                     });
