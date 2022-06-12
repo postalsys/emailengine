@@ -33,11 +33,7 @@
                     <i class="fas fa-redo fa-fw" id="sync-icon"></i> Run sync
                 </button>
 
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
-                    title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
-                    data-placement="top" download>
-                    <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
-                </a>
+
 
             </div>
 
@@ -46,6 +42,11 @@
                     title="Email templates for &quot;{{account.account}}&quot;" data-toggle="tooltip"
                     data-placement="top">
                     <i class="fas fa-file-code fa-fw"></i> Email templates
+                </a>
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
+                    title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
+                    data-placement="top" download>
+                    <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
                 </a>
             </div>
 
