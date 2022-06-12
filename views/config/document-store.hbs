@@ -9,24 +9,20 @@
     EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch is supported.
 </p>
 
-<div class="card border-left-warning shadow mb-4">
+<div class="card border-left-info shadow mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
-                <h5>Things to consider</h5>
-                <ul>
-                    <li>Document Store is in beta, which means the application might change in the future without a
-                        possible
-                        migration path.</li>
-                    <li>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
-                        some
-                        data.</li>
-                    <li>Enable Document Store before adding any accounts. Otherwise, emails that have been already
-                        processed will not be indexed.</li>
-                    <li>Email attachments are not stored in the Document Store.</li>
-                </ul>
+                <p>Document Store is in beta, which means the application might change in the future without a
+                    possible migration path.</p>
+                <p>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
+                    some data. Email attachments are not stored in the Document Store.</p>
+                <p>Enable Document Store before adding any accounts. Otherwise, emails that have been already
+                    processed will not be indexed.</p>
+
             </div>
+
             <div class="col-auto">
                 <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
             </div>

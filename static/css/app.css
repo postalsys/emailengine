@@ -25,3 +25,22 @@
     border: 1px solid #f8f8f8;
     border-radius: 3px;
 }
+
+
+input.form-control::placeholder, textarea.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #AAA;
+    font-style: oblique;
+    opacity: 0.8; /* Firefox */
+}
+
+input.form-control:-ms-input-placeholder, textarea.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: #AAA;
+    font-style: oblique;
+    opacity: 0.8; /* Firefox */
+}
+
+input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-placeholder { /* Microsoft Edge */
+    color: #AAA;
+    font-style: oblique;
+    opacity: 0.8; /* Firefox */
+}
