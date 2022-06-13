@@ -18,12 +18,12 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-if [ $DOMAIN_NAME = "help" ]; then
+if [ "$DOMAIN_NAME" = "help" ]; then
 	show_info
     exit
 fi
 
-if [ $DOMAIN_NAME = "-h" ]; then
+if [ "$DOMAIN_NAME" = "-h" ]; then
 	show_info
     exit
 fi
