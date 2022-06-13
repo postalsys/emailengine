@@ -129,7 +129,7 @@ class ConnectionHandler {
         let accountData = await accountObject.loadAccountData();
 
         if (accountData.state) {
-            await redis.hset(accountObject.connection.getAccountKey(), 'state', accountData.state);
+            await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', accountData.state);
             await emitChangeEvent(this.logger, account, 'state', accountData.state);
         }
 
@@ -163,7 +163,7 @@ class ConnectionHandler {
                 });
 
                 let state = 'connecting';
-                await redis.hset(accountObject.connection.getAccountKey(), 'state', state);
+                await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', state);
                 await emitChangeEvent(this.logger, account, 'state', state);
                 await accountObject.connection.reconnect(true);
             }

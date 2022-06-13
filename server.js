@@ -443,7 +443,8 @@ const countUnassignment = async account => {
         }
     }
 
-    await redis.hset(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected');
+    await redis.hSetExists(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected');
+
     for (let worker of workers.get('api')) {
         let callPayload = {
             cmd: 'change',

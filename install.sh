@@ -18,6 +18,16 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+if [ $DOMAIN_NAME = "help" ]; then
+	show_info
+    exit
+fi
+
+if [ $DOMAIN_NAME = "-h" ]; then
+	show_info
+    exit
+fi
+
 if [[ -z $DOMAIN_NAME ]]; then
 
     echo "Enter the domain name for your new EmailEngine installation."
@@ -31,9 +41,9 @@ if [[ -z $DOMAIN_NAME ]]; then
 
 fi
 
-if [ $DOMAIN_NAME = "help" ]; then
-	show_info
-    exit
+if ! [ -x `command -v curl` ]; then
+    apt-get update
+    apt-get install curl -q -y
 fi
 
 # Prepare Caddy
@@ -53,7 +63,7 @@ systemctl start caddy
 TMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'ee')
 cd $TMPDIR
 if ! [ -x `command -v wget` ]; then
-    if ! [ -x `command -v wget` ]; then
+    if ! [ -x `command -v curl` ]; then
         echo "Can not download application"
         exit 1
     else
@@ -80,6 +90,7 @@ After=redis-server
 # Configure environment variables
 Environment=\"EENGINE_REDIS=redis://127.0.0.1:6379/8\"
 Environment=\"EENGINE_PORT=3000\"
+Environment=\"EENGINE_API_PROXY=true\"
 
 # Folder where EmailEngine executable is located
 WorkingDirectory=/opt
@@ -113,6 +124,45 @@ ${DOMAIN_NAME} {
   reverse_proxy localhost:3000
 }" > /etc/caddy/Caddyfile
 
+# Create upgrade script
+cat > '/opt/upgrade-emailengine.sh' <<'EOL'
+#!/bin/bash
+
+set -e
+
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+OLD_VERSION=`/opt/emailengine -v`
+
+TMPDIR=$(mktemp -d -t ci-XXXXXXXXXX)
+
+cd "$TMPDIR"
+wget https://github.com/postalsys/emailengine/releases/latest/download/emailengine.tar.gz
+tar xzf emailengine.tar.gz
+rm -rf emailengine.tar.gz
+
+NEW_VERSION=`./emailengine -v`
+
+if [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
+    rm -rf "$TMPDIR"
+    echo "Nothing to upgrade, already running $NEW_VERSION"
+else
+    mv emailengine /opt
+    rm -rf "$TMPDIR"
+    chmod +x /opt/emailengine
+    systemctl restart emailengine
+
+    echo "Upgraded EmailEngine"
+    echo "  - was: $OLD_VERSION"
+    echo "  - now: $NEW_VERSION"
+fi
+EOL
+chmod +x /opt/upgrade-emailengine.sh
+
+
 systemctl reload caddy
 
 printf "Waiting for the web server to start up.."
@@ -124,5 +174,8 @@ echo "."
 
 echo ""
 echo "Installation complete."
-echo "Access your new EmailEngine installation in a browser at https://${dom}/"
+echo "Access your new EmailEngine installation in a browser at https://${DOMAIN_NAME}/"
+echo ""
+echo "To upgrade EmailEngine in the future, run the following command:"
+echo "  /opt/upgrade-emailengine.sh"
 echo ""
