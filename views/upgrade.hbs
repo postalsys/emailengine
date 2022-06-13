@@ -14,10 +14,16 @@
                 {{#if isDO}}
                 <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your server and run the
                     following command:<br />
-                    <kbd>sudo /opt/upgrade-emailengine.sh</kbd>
+                    <kbd>$ sudo /opt/upgrade-emailengine.sh</kbd>
                 </p>
                 {{/if}}
 
+                {{#if isScriptInstalled}}
+                <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your server and run the
+                    following command:<br />
+                    <kbd>$ sudo /opt/upgrade-emailengine.sh</kbd>
+                </p>
+                {{/if}}
 
                 {{#if isGeneral}}
                 <p class="mb-4">To upgrade EmailEngine to the latest version, download the latest version from the <a
@@ -34,15 +40,14 @@
 </div>
 {{/unless}}
 
+{{#if isRender}}
 <div class="card mt-4 mb-4">
     <div class="card-body">
-
-        {{#if isRender}}
         <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your Render <a
                 href="https://dashboard.render.com/">Dashboard</a>, select EmailEngine and run a manual deploy as shown
             on the screenshot below.
         </p>
         <p><img src="/static/preview/render.png" class="img-fluid img-thumbnail"></p>
-        {{/if}}
     </div>
 </div>
+{{/if}}

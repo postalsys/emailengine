@@ -91,6 +91,8 @@ After=redis-server
 Environment=\"EENGINE_REDIS=redis://127.0.0.1:6379/8\"
 Environment=\"EENGINE_PORT=3000\"
 Environment=\"EENGINE_API_PROXY=true\"
+# Triggers install script specific upgrade instructions
+Environment=\"EENGINE_INSTALL_SCRIPT=true\"
 
 # Folder where EmailEngine executable is located
 WorkingDirectory=/opt
