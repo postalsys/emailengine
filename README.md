@@ -139,4 +139,4 @@ $ npm run raw -- --filter.account=account1
 
 ## Licensing
 
-Dual licensed under [GNU Affero General Public License v3.0](./LICENSE.txt) or later and the [EmailEngine License](./LICENSE_EMAILENGINE.txt).
+Dual licensed under [Server Side Public License v1](./LICENSE.txt) or later and the [EmailEngine License](./LICENSE_EMAILENGINE.txt).

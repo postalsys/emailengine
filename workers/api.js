@@ -4113,7 +4113,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     active: Joi.boolean().example(false),
                     details: Joi.boolean().example(false),
-                    type: Joi.string().example('AGPL-3.0-or-later')
+                    type: Joi.string().example('SSPL-1.0-or-later')
                 }).label('EmptyLicenseResponse'),
                 failAction: 'log'
             }
