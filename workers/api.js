@@ -3184,7 +3184,8 @@ When making API calls remember that requests against the same account are queued
                                         {
                                             match: {
                                                 [`${key}.name`]: {
-                                                    query: request.payload.search[key]
+                                                    query: request.payload.search[key],
+                                                    operator: 'and'
                                                 }
                                             }
                                         },
@@ -3209,7 +3210,8 @@ When making API calls remember that requests against the same account are queued
                                     mustList.push({
                                         match: {
                                             uid: {
-                                                query: entry
+                                                query: entry,
+                                                operator: 'and'
                                             }
                                         }
                                     });
@@ -3247,7 +3249,8 @@ When making API calls remember that requests against the same account are queued
                         query.bool.must.push({
                             match: {
                                 subject: {
-                                    query: request.payload.search.subject
+                                    query: request.payload.search.subject,
+                                    operator: 'and'
                                 }
                             }
                         });
@@ -3260,14 +3263,16 @@ When making API calls remember that requests against the same account are queued
                                     {
                                         match: {
                                             'text.plain': {
-                                                query: request.payload.search.body
+                                                query: request.payload.search.body,
+                                                operator: 'and'
                                             }
                                         }
                                     },
                                     {
                                         match: {
                                             'text.html': {
-                                                query: request.payload.search.body
+                                                query: request.payload.search.body,
+                                                operator: 'and'
                                             }
                                         }
                                     }
@@ -3329,7 +3334,10 @@ When making API calls remember that requests against the same account are queued
                                                 },
                                                 {
                                                     match: {
-                                                        'headers.value': { query: (request.payload.search.header[header] || '').toString() }
+                                                        'headers.value': {
+                                                            query: (request.payload.search.header[header] || '').toString(),
+                                                            operator: 'and'
+                                                        }
                                                     }
                                                 }
                                             ]
@@ -3353,27 +3361,32 @@ When making API calls remember that requests against the same account are queued
                     let response = {
                         total: searchResult.hits.total.value,
                         page: request.query.page,
-                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1),
-                        messages: searchResult.hits.hits.map(entry => {
-                            let messageData = entry._source;
-
-                            // normalize as per the API response
-
-                            for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                                if (messageData[key] === false) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            for (let key of ['account', 'created', 'specialUse']) {
-                                if (messageData[key]) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            return messageData;
-                        })
+                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1)
                     };
+
+                    if (request.query.exposeQuery) {
+                        response.documentStoreQuery = query;
+                    }
+
+                    response.messages = searchResult.hits.hits.map(entry => {
+                        let messageData = entry._source;
+
+                        // normalize as per the API response
+
+                        for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
+                            if (messageData[key] === false) {
+                                messageData[key] = undefined;
+                            }
+                        }
+
+                        for (let key of ['account', 'created', 'specialUse']) {
+                            if (messageData[key]) {
+                                messageData[key] = undefined;
+                            }
+                        }
+
+                        return messageData;
+                    });
 
                     return response;
                 } else {
@@ -3436,7 +3449,18 @@ When making API calls remember that requests against the same account are queued
                         .falsy('N', 'false', 0)
                         .default(false)
                         .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                        .label('UseDocumentStore'),
+                    exposeQuery: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
+                        .label('exposeQuery')
+                        .when('documentStore', {
+                            is: true,
+                            then: Joi.optional(),
+                            otherwise: Joi.forbidden()
+                        })
                 }),
 
                 payload: Joi.object({
