@@ -1,7 +1,7 @@
 <div class="float-right">
     <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal" data-target="#addAccount">
         <span class="icon text-white-50">
-            <i class="fas fa-plus"></i>
+            <i class="fas fa-user-plus"></i>
         </span>
         <span class="text">Add an account</span>
     </button>
@@ -133,56 +133,4 @@
 </div>
 {{/if}}
 
-
-<div class="modal fade" id="addAccount" tabindex="-1" aria-labelledby="addAccountLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addAccountLabel">Add an account</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form method="post" action="/admin/accounts/new">
-                <input type="hidden" name="crumb" value="{{crumb}}">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="account-name" class="col-form-label">Full name:</label>
-                        <input type="text" class="form-control" id="account-name" name="name" placeholder="">
-                    </div>
-                    <div class="form-group">
-                        <label for="account-id" class="col-form-label">Account ID:</label>
-                        <input type="text" class="form-control" id="account-id" name="account" placeholder="">
-                        <small class="form-text text-muted">Keep empty to autogenerate. If an account with the same ID
-                            already exists, EmailEngine will update its settings.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-
-                    <button type="submit" class="btn btn-primary btn-icon-split">
-                        <span class="icon text-white-50">
-                            <i class="fas fa-arrow-right"></i>
-                        </span>
-                        <span class="text">Continue</span>
-                    </button>
-
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        $('#addAccount').on('shown.bs.modal', function (event) {
-            document.getElementById('account-name').focus();
-            document.getElementById('account-name').select();
-        });
-
-        $('#addAccount').on('hidden.bs.modal', function (event) {
-            document.getElementById('account-name').value = '';
-            document.getElementById('account-id').value = '';
-        })
-    });
-</script>
+{{>add_account_modal}}

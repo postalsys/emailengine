@@ -180,6 +180,8 @@
     </div>
 </div>
 
+<input type="hidden" id="autoTest" value="{{#if autoTest}}true{{/if}}">
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
@@ -396,6 +398,10 @@
         smtpPortElm.addEventListener('change', () => checkPort('smtp'));
         smtpPortElm.addEventListener('click', () => checkPort('smtp'));
         smtpPortElm.addEventListener('keyup', () => checkPort('smtp'));
+
+        if (document.getElementById('autoTest').value.trim() === 'true') {
+            runTest();
+        }
 
     })
 </script>

@@ -4,6 +4,37 @@
 
     <h1>EmailEngine</h1>
 
+    {{#unless stats.accounts}}
+
+    <div class="card border-left-success mt-4">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Welcome to EmailEngine!
+                    </div>
+                    <p>To start using EmailEngine, add an email account. Once added, you can access this account to send
+                        and receive emails using the <a href="/admin/swagger">EmailEngine's API</a>.
+                    </p>
+                    <div>
+                        <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal"
+                            data-target="#addAccount">
+                            <span class="icon text-white-50">
+                                <i class="fas fa-user-plus"></i>
+                            </span>
+                            <span class="text">Add an account</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{/unless}}
+
+
     <div class="row mt-4">
 
         <div class="col-xl-3 col-md-6 mb-4">
@@ -201,3 +232,5 @@
         sendBrowserInfo().catch(err => console.error(err))
     });
 </script>
+
+{{>add_account_modal}}
