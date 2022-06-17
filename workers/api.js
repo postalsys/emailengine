@@ -6,10 +6,26 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const {
+    getByteSize,
+    getDuration,
+    getStats,
+    flash,
+    failAction,
+    verifyAccountInfo,
+    isEmail,
+    getLogs,
+    getWorkerCount,
+    normalizePath,
+    unpackUIDRangeForSearch,
+    matcher,
+    readEnvValue
+} = require('../lib/tools');
+
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
@@ -59,20 +75,6 @@ const { templates } = require('../lib/templates');
 const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
-const {
-    getByteSize,
-    getDuration,
-    getStats,
-    flash,
-    failAction,
-    verifyAccountInfo,
-    isEmail,
-    getLogs,
-    getWorkerCount,
-    normalizePath,
-    unpackUIDRangeForSearch,
-    matcher
-} = require('../lib/tools');
 
 const getSecret = require('../lib/get-secret');
 const { getESClient } = require('../lib/document-store');
@@ -117,13 +119,14 @@ config.api = config.api || {
 
 config.service = config.service || {};
 
-const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
-const MAX_ATTACHMENT_SIZE = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
-const API_PORT = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
-const API_HOST = process.env.EENGINE_HOST || config.api.host;
+const API_PORT =
+    (readEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (readEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
+const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
 
-const IMAP_WORKER_COUNT = getWorkerCount(process.env.EENGINE_WORKERS || (config.workers && config.workers.imap)) || 4;
+const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 

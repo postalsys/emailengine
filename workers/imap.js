@@ -5,10 +5,12 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue } = require('../lib/tools');
+
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
@@ -34,7 +36,6 @@ const { MessagePortWritable } = require('../lib/message-port-stream');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
-const { getDuration, getBoolean, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 
 config.service = config.service || {};
@@ -43,9 +44,9 @@ config.log = config.log || {
     raw: false
 };
 
-const EENGINE_LOG_RAW = 'EENGINE_LOG_RAW' in process.env ? getBoolean(process.env.EENGINE_LOG_RAW) : getBoolean(config.log.raw);
+const EENGINE_LOG_RAW = hasEnvValue('EENGINE_LOG_RAW') ? getBoolean(readEnvValue('EENGINE_LOG_RAW')) : getBoolean(config.log.raw);
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
-const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
 const DEFAULT_STATES = {
     init: 0,

@@ -6,10 +6,12 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const { getDuration, emitChangeEvent, readEnvValue } = require('../lib/tools');
+
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
@@ -32,7 +34,6 @@ const { SMTPServer } = require('smtp-server');
 const util = require('util');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
-const { getDuration, emitChangeEvent } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const { Splitter, Joiner } = require('mailsplit');
 const { HeadersRewriter } = require('../lib/headers-rewriter');
@@ -51,7 +52,7 @@ config.service = config.service || {};
 const MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
-const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
 const ACCOUNT_CACHE = new WeakMap();
 

@@ -6,10 +6,12 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const { getDuration, readEnvValue } = require('../lib/tools');
+
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
@@ -32,7 +34,6 @@ const util = require('util');
 const { redis, notifyQueue, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
-const { getDuration } = require('../lib/tools');
 const getSecret = require('../lib/get-secret');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
@@ -52,9 +53,9 @@ config.service = config.service || {};
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
-const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
-const SUBMIT_QC = (process.env.EENGINE_SUBMIT_QC && Number(process.env.EENGINE_SUBMIT_QC)) || config.queues.submit || 1;
+const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EENGINE_SUBMIT_QC'))) || config.queues.submit || 1;
 
 let callQueue = new Map();
 let mids = 0;

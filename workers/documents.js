@@ -5,10 +5,12 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
 
+const { readEnvValue } = require('../lib/tools');
+
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
