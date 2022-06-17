@@ -2506,6 +2506,7 @@ When making API calls remember that requests against the same account are queued
                     path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
 
                     flags: Joi.array().items(Joi.string().max(128)).example(['\\Seen', '\\Draft']).default([]).description('Message flags').label('Flags'),
+                    internalDate: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Sets the internal date for this message'),
 
                     reference: Joi.object({
                         message: Joi.string()
