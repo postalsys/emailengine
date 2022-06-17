@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.22.3",
+    "version": "2.22.4",
     "private": true,
     "description": "Email Sync Engine",
     "main": "server.js",
