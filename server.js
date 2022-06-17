@@ -24,11 +24,12 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
+const { readEnvValue, hasEnvValue } = require('./lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
-if (process.env.BUGSNAG_API_KEY) {
+if (readEnvValue('BUGSNAG_API_KEY')) {
     Bugsnag.start({
-        apiKey: process.env.BUGSNAG_API_KEY,
+        apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
         logger: {
             debug(...args) {
@@ -106,30 +107,31 @@ config.smtp = config.smtp || {
 };
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
-const EENGINE_TIMEOUT = getDuration(process.env.EENGINE_TIMEOUT || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 
-config.api.maxSize = getByteSize(process.env.EENGINE_MAX_SIZE || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
-config.dbs.redis = process.env.EENGINE_REDIS || process.env.REDIS_URL || config.dbs.redis;
+config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
+config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
 
-config.workers.imap = getWorkerCount(process.env.EENGINE_WORKERS || config.workers.imap) || 4;
+config.workers.imap = getWorkerCount(readEnvValue('EENGINE_WORKERS') || config.workers.imap) || 4;
 
-config.workers.webhooks = Number(process.env.EENGINE_WORKERS_WEBHOOKS) || config.workers.webhooks || 1;
-config.workers.submit = Number(process.env.EENGINE_WORKERS_SUBMIT) || config.workers.submit || 1;
+config.workers.webhooks = Number(readEnvValue('EENGINE_WORKERS_WEBHOOKS')) || config.workers.webhooks || 1;
+config.workers.submit = Number(readEnvValue('EENGINE_WORKERS_SUBMIT')) || config.workers.submit || 1;
 
-config.api.port = (process.env.EENGINE_PORT && Number(process.env.EENGINE_PORT)) || (process.env.PORT && Number(process.env.PORT)) || config.api.port;
-config.api.host = process.env.EENGINE_HOST || config.api.host;
+config.api.port =
+    (readEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (readEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
+config.api.host = readEnvValue('EENGINE_HOST') || config.api.host;
 
-config.log.level = process.env.EENGINE_LOG_LEVEL || config.log.level;
+config.log.level = readEnvValue('EENGINE_LOG_LEVEL') || config.log.level;
 
 // legacy options, will be removed in the future
-const SMTP_ENABLED = 'EENGINE_SMTP_ENABLED' in process.env ? getBoolean(process.env.EENGINE_SMTP_ENABLED) : getBoolean(config.smtp.enabled);
-const SMTP_SECRET = process.env.EENGINE_SMTP_SECRET || config.smtp.secret;
-const SMTP_PORT = (process.env.EENGINE_SMTP_PORT && Number(process.env.EENGINE_SMTP_PORT)) || Number(config.smtp.port) || 2525;
-const SMTP_HOST = process.env.EENGINE_SMTP_HOST || config.smtp.host || '127.0.0.1';
-const SMTP_PROXY = 'EENGINE_SMTP_PROXY' in process.env ? getBoolean(process.env.EENGINE_SMTP_PROXY) : getBoolean(config.smtp.proxy);
+const SMTP_ENABLED = hasEnvValue('EENGINE_SMTP_ENABLED') ? getBoolean(readEnvValue('EENGINE_SMTP_ENABLED')) : getBoolean(config.smtp.enabled);
+const SMTP_SECRET = readEnvValue('EENGINE_SMTP_SECRET') || config.smtp.secret;
+const SMTP_PORT = (readEnvValue('EENGINE_SMTP_PORT') && Number(readEnvValue('EENGINE_SMTP_PORT'))) || Number(config.smtp.port) || 2525;
+const SMTP_HOST = readEnvValue('EENGINE_SMTP_HOST') || config.smtp.host || '127.0.0.1';
+const SMTP_PROXY = hasEnvValue('EENGINE_SMTP_PROXY') ? getBoolean(readEnvValue('EENGINE_SMTP_PROXY')) : getBoolean(config.smtp.proxy);
 
-const API_PROXY = 'EENGINE_API_PROXY' in process.env ? getBoolean(process.env.EENGINE_API_PROXY) : getBoolean(config.api.proxy);
+const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
 logger.info({
     msg: 'Starting EmailEngine',
@@ -161,7 +163,7 @@ let submitScheduler;
 let documentsScheduler;
 
 let preparedSettings = false;
-const preparedSettingsString = process.env.EENGINE_SETTINGS || config.settings;
+const preparedSettingsString = readEnvValue('EENGINE_SETTINGS') || config.settings;
 if (preparedSettingsString) {
     // received a configuration block
     try {
@@ -183,7 +185,7 @@ if (preparedSettingsString) {
 }
 
 let preparedToken = false;
-const preparedTokenString = process.env.EENGINE_PREPARED_TOKEN || config.preparedToken;
+const preparedTokenString = readEnvValue('EENGINE_PREPARED_TOKEN') || config.preparedToken;
 if (preparedTokenString) {
     try {
         preparedToken = msgpack.decode(Buffer.from(preparedTokenString, 'base64url'));
@@ -197,7 +199,7 @@ if (preparedTokenString) {
 }
 
 let preparedPassword = false;
-const preparedPasswordString = process.env.EENGINE_PREPARED_PASSWORD || config.preparedPassword;
+const preparedPasswordString = readEnvValue('EENGINE_PREPARED_PASSWORD') || config.preparedPassword;
 if (preparedPasswordString) {
     try {
         preparedPassword = Buffer.from(preparedPasswordString, 'base64url').toString();
@@ -1296,7 +1298,7 @@ const startApplication = async () => {
         }
     }
 
-    const preparedLicenseString = process.env.EENGINE_PREPARED_LICENSE || config.preparedLicense;
+    const preparedLicenseString = readEnvValue('EENGINE_PREPARED_LICENSE') || config.preparedLicense;
     if (preparedLicenseString) {
         try {
             let imported = await settings.importLicense(preparedLicenseString, checkLicense);
@@ -1388,7 +1390,7 @@ const startApplication = async () => {
 
     let existingQueueKeep = await settings.get('queueKeep');
     if (existingQueueKeep === null) {
-        let QUEUE_KEEP = Math.max((process.env.EENGINE_QUEUE_REMOVE_AFTER && Number(process.env.EENGINE_QUEUE_REMOVE_AFTER)) || 0, 0);
+        let QUEUE_KEEP = Math.max((readEnvValue('EENGINE_QUEUE_REMOVE_AFTER') && Number(readEnvValue('EENGINE_QUEUE_REMOVE_AFTER'))) || 0, 0);
         await settings.set('queueKeep', QUEUE_KEEP);
     }
 

@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-templates-ui
+            - feature-env-file
 
 name: Deploy test instance
 

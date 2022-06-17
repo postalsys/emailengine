@@ -7,12 +7,13 @@ const Redis = require('ioredis');
 const redisUrl = require('./lib/redis-url');
 const packageData = require('./package.json');
 const { threadId } = require('worker_threads');
+const { readEnvValue } = require('./lib/tools');
 
 config.dbs = config.dbs || {
     redis: 'redis://127.0.0.1:6379/8'
 };
 
-const redisConf = process.env.EENGINE_REDIS || process.env.REDIS_URL || config.dbs.redis;
+const redisConf = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
 const REDIS_CONF = Object.assign(
     {
         // some defaults
