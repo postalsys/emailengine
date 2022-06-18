@@ -82,7 +82,7 @@
         "smtp-server": "3.11.0",
         "socks": "2.6.2",
         "uuid": "8.3.2",
-        "wild-config": "1.6.0",
+        "wild-config": "1.6.1",
         "xml2js": "0.4.23"
     },
     "devDependencies": {
