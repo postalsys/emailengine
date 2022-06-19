@@ -3628,13 +3628,18 @@ When making API calls remember that requests against the same account are queued
                         .label('From')
                         .when('mailMerge', { is: Joi.exist(), then: Joi.required() }),
 
-                    replyTo: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The Reply-To address').label('ReplyTo'),
+                    replyTo: Joi.array()
+                        .items(addressSchema.label('ReplyToAddress'))
+                        .single()
+                        .example([{ name: 'From Me', address: 'sender@example.com' }])
+                        .description('List of Reply-To addresses')
+                        .label('ReplyTo'),
 
                     to: Joi.array()
                         .items(addressSchema.label('ToAddress'))
                         .single()
-                        .description('List of recipient addresses')
                         .example([{ address: 'recipient@example.com' }])
+                        .description('List of recipient addresses')
                         .label('ToAddressList')
                         .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
