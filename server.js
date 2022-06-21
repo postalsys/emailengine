@@ -954,21 +954,23 @@ async function updateQueueCounters() {
     metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
 
     for (let queue of ['notify', 'submit', 'documents']) {
-        const [resActive, resDelayed, resPaused] = await redis
+        const [resActive, resDelayed, resPaused, resWaiting] = await redis
             .multi()
             .llen(`${REDIS_PREFIX}bull:${queue}:active`)
             .zcard(`${REDIS_PREFIX}bull:${queue}:delayed`)
             .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
+            .llen(`${REDIS_PREFIX}bull:${queue}:wait`)
             .exec();
-        if (resActive[0] || resDelayed[0] || resPaused[0]) {
+        if (resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0]) {
             // counting failed
-            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed, paused: resPaused });
+            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed, paused: resPaused, waiting: resWaiting });
             return false;
         }
 
         metrics.queues.set({ queue: `${queue}`, state: `active` }, Number(resActive[1]) || 0);
         metrics.queues.set({ queue: `${queue}`, state: `delayed` }, Number(resDelayed[1]) || 0);
         metrics.queues.set({ queue: `${queue}`, state: `paused` }, Number(resPaused[1]) || 0);
+        metrics.queues.set({ queue: `${queue}`, state: `waiting` }, Number(resWaiting[1]) || 0);
     }
 
     try {
