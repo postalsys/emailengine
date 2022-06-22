@@ -113,6 +113,11 @@
                 {{/if}}
             </div>
 
+            <div class="alert alert-secondary mb-3">
+                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password below
+                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
+            </div>
+
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">smtpServerPassword</a>]
@@ -123,6 +128,7 @@
                     <input type="password"
                         class="form-control trigger-example-render {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
                         id="smtpServerPassword" name="smtpServerPassword" value="{{values.smtpServerPassword}}"
+                        {{#unless values.smtpServerPassword}}placeholder="Shared SMTP password is not set" {{/unless}}
                         data-lpignore="true" autocomplete="off" />
 
                     <div class="input-group-append">
@@ -134,8 +140,8 @@
                 {{#if errors.smtpServerPassword}}
                 <span class="invalid-feedback">{{errors.smtpServerPassword}}</span>
                 {{/if}}
-                <small class="form-text text-muted">All SMTP accounts share the same password. Username is the account
-                    Id.</small>
+                <small class="form-text text-muted">Shared password for all accounts. Leave this value empty to disable
+                    global shared password.</small>
             </div>
         </div>
 
