@@ -469,7 +469,7 @@ When making API calls remember that requests against the same account are queued
             if (tokenData.restrictions) {
                 if (tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(request.app.ip)) {
                     logger.error({
-                        msg: 'Trying to use invalid account for a token',
+                        msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
                         account: (request.params && request.params.account) || null,
@@ -1137,6 +1137,8 @@ When making API calls remember that requests against the same account are queued
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
+                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp')).default(['api']).required().label('Scopes'),
+
                     metadata: Joi.string()
                         .empty('')
                         .max(1024 * 1024)
@@ -1162,7 +1164,7 @@ When making API calls remember that requests against the same account are queued
                                 .default(false)
                                 .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
                                 .label('ReferrerAllowlist')
-                                .description('HTTP referrer allowlist'),
+                                .description('HTTP referrer allowlist for API requests'),
                             addresses: Joi.array()
                                 .items(
                                     Joi.string().ip({

@@ -1357,7 +1357,7 @@ const startApplication = async () => {
 
     let existingSecret = await settings.get('smtpServerPassword');
     if (existingSecret === null) {
-        await settings.set('smtpServerPassword', SMTP_SECRET || crypto.randomBytes(16).toString('hex'));
+        await settings.set('smtpServerPassword', SMTP_SECRET || null);
     }
 
     let existingSmtpAuthEnabled = await settings.get('smtpServerAuthEnabled');

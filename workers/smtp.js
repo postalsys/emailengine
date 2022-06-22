@@ -38,6 +38,7 @@ const getSecret = require('../lib/get-secret');
 const { Splitter, Joiner } = require('mailsplit');
 const { HeadersRewriter } = require('../lib/headers-rewriter');
 const settings = require('../lib/settings');
+const tokens = require('../lib/tokens');
 
 config.smtp = config.smtp || {
     enabled: false,
@@ -117,12 +118,62 @@ async function onAuth(auth, session) {
         throw new Error('Authentication not enabled');
     }
 
+    let account = auth.username;
+
     let smtpPassword = await settings.get('smtpServerPassword');
-    if (auth.password !== smtpPassword) {
-        throw new Error('Failed to authenticate user');
+    let authPass = false;
+
+    if (!smtpPassword || auth.password !== smtpPassword) {
+        if (/^[0-9a-f]{64}$/i.test(auth.password)) {
+            // fallback to tokens
+            let tokenData;
+            try {
+                tokenData = await tokens.get(auth.password, false, { log: true, remoteAddress: session.remoteAddress });
+            } catch (err) {
+                // ignore?
+            }
+
+            if (tokenData) {
+                if (tokenData.account && tokenData.account !== auth.username) {
+                    throw new Error('Access denied, invalid username');
+                }
+
+                if (tokenData.scopes && !tokenData.scopes.includes('smtp') && !tokenData.scopes.includes('*')) {
+                    logger.error({
+                        msg: 'Trying to use invalid scope for a token',
+                        tokenAccount: tokenData.account,
+                        tokenId: tokenData.id,
+                        account,
+                        requestedScope: 'smtp',
+                        scopes: tokenData.scopes
+                    });
+
+                    throw new Error('Access denied, invalid scope');
+                }
+
+                if (tokenData.restrictions && tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(session.remoteAddress)) {
+                    logger.error({
+                        msg: 'Trying to use invalid IP for a token',
+                        tokenAccount: tokenData.account,
+                        tokenId: tokenData.id,
+                        account,
+                        remoteAddress: session.remoteAddress,
+                        addressAllowlist: tokenData.restrictions.addresses
+                    });
+
+                    throw new Error('Access denied, traffic not accepted from this IP');
+                }
+
+                authPass = true;
+            }
+        }
+
+        if (!authPass) {
+            throw new Error('Failed to authenticate user');
+        }
     }
 
-    let accountObject = new Account({ account: auth.username, redis, call, secret: await getSecret() });
+    let accountObject = new Account({ account, redis, call, secret: await getSecret() });
     let accountData;
     try {
         accountData = await accountObject.loadAccountData();
