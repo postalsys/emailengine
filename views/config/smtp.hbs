@@ -147,6 +147,31 @@
 
     </div>
 
+    <div class="card mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">TLS settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerTLSEnabled</a>]
+                </div>
+
+                <input type="checkbox"
+                    class="form-check-input trigger-example-render {{#if errors.smtpServerTLSEnabled}}is-invalid{{/if}}"
+                    id="smtpServerTLSEnabled" name="smtpServerTLSEnabled" {{#if
+                    values.smtpServerTLSEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="smtpServerTLSEnabled">Enable TLS</label>
+                {{#if errors.smtpServerTLSEnabled}}
+                <span class="invalid-feedback">{{errors.smtpServerTLSEnabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted" id="smtpServerTLSInfo"></small>
+            </div>
+
+        </div>
+
+    </div>
+
     <div class="card mt-4 mb-4">
         <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
             aria-expanded="true" aria-controls="showHelp">
@@ -189,8 +214,6 @@
 
                     </div>
                 </div>
-
-
 
                 <div>
                     <div class="form-group form-check">
@@ -250,6 +273,7 @@
                 codeAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
+    secure: NODEMAILER_TLS,
     auth: {
         user: 'USERNAME',
         pass: 'PASSWORD'
@@ -258,6 +282,7 @@
                 codeNoAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
+    secure: NODEMAILER_TLS,
     auth: false
 }}, {
     // default message fields
@@ -275,13 +300,13 @@ $mail->Host = 'HOST';
 $mail->SMTPAuth = true;
 $mail->Username = 'USERNAME';
 $mail->Password = 'PASSWORD';
-$mail->SMTPSecure = '';
+$mail->SMTPSecure = 'PHPMAILER_TLS';
 $mail->Port = PORT;`,
                 codeNoAuth: `$mail = new PHPMailer(true);
 $mail->isSMTP();
 $mail->Host = 'HOST';
 $mail->SMTPAuth = false;
-$mail->SMTPSecure = '';
+$mail->SMTPSecure = 'PHPMAILER_TLS';
 $mail->Port = PORT;
 
 // provide sending account id via this header
@@ -301,6 +326,8 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
             let code = template.
                 replace(/HOST/g, window.location.hostname).
                 replace(/PORT/g, Number(document.getElementById('smtpServerPort').value) || 0).
+                replace(/NODEMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'true' : 'false').
+                replace(/PHPMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'tls' : '').
                 replace(/USERNAME/g, 'account_id').
                 replace(/PASSWORD/g, document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******');
             return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
@@ -318,5 +345,45 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
         }
 
         renderExamples();
+
+        let loadingCertData = false;
+        let loadedCertData = false;
+
+        function loadCertData() {
+            loadingCertData = true;
+            document.getElementById('smtpServerTLSInfo').textContent = 'Fetching certificate data…';
+
+            fetch('/admin/config/smtp/certificate', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value
+                })
+            }).then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json()
+            }).then(data => {
+                loadingCertData = false;
+                loadedCertData = true;
+
+                document.getElementById('smtpServerTLSInfo').textContent = JSON.stringify(data);
+            }).catch(err => {
+                loadingCertData = false;
+                document.getElementById('smtpServerTLSInfo').textContent = err.message;
+            });
+        }
+
+        function checkLoadCerts() {
+            if (document.getElementById('smtpServerTLSEnabled').checked && !loadingCertData && !loadedCertData) {
+                loadCertData();
+            }
+        }
+
+        document.getElementById('smtpServerTLSEnabled').addEventListener('click', checkLoadCerts);
+        document.getElementById('smtpServerTLSEnabled').addEventListener('change', checkLoadCerts);
+
+        checkLoadCerts();
     });
 </script>

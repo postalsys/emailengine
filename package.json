@@ -6,7 +6,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' | pino-pretty",
+        "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 | pino-pretty",
         "raw": "EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt",
         "swagger": "./getswagger.sh",
@@ -43,6 +43,7 @@
         "@hapi/vision": "6.1.0",
         "@hapipal/hecks": "3.0.0",
         "@phc/pbkdf2": "1.1.14",
+        "@postalsys/certs": "^1.0.0",
         "@postalsys/templates": "1.0.0",
         "ace-builds": "1.6.1",
         "bull-arena": "3.29.3",
