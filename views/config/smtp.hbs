@@ -113,11 +113,6 @@
                 {{/if}}
             </div>
 
-            <div class="alert alert-secondary mb-3">
-                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password below
-                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
-            </div>
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">smtpServerPassword</a>]
@@ -145,6 +140,15 @@
             </div>
         </div>
 
+        <div class="card-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle text-gray-300"></i>
+
+                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password above
+                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
+            </small>
+        </div>
+
     </div>
 
     <div class="card mt-4">
@@ -159,16 +163,33 @@
 
                 <input type="checkbox"
                     class="form-check-input trigger-example-render {{#if errors.smtpServerTLSEnabled}}is-invalid{{/if}}"
-                    id="smtpServerTLSEnabled" name="smtpServerTLSEnabled" {{#if
-                    values.smtpServerTLSEnabled}}checked{{/if}} />
+                    id="smtpServerTLSEnabled" {{#if certificateData}}data-certificate="{{certificateData.fingerprint}}"
+                    {{/if}} name="smtpServerTLSEnabled" {{#if values.smtpServerTLSEnabled}}checked{{/if}} {{#unless
+                    serviceDomain}}disabled{{/unless}} />
                 <label class="form-check-label" for="smtpServerTLSEnabled">Enable TLS</label>
                 {{#if errors.smtpServerTLSEnabled}}
                 <span class="invalid-feedback">{{errors.smtpServerTLSEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted" id="smtpServerTLSInfo"></small>
             </div>
 
+            {{#unless serviceDomain}}
+            <div class="alert alert-warning">TLS can only be used if EmailEngine is accessible from a publicly available
+                domain name.</div>
+            {{/unless}}
+
         </div>
+
+        {{#if serviceDomain}}
+        <div class="card-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle text-gray-300"></i>
+
+                Enabling TLS requires that EmailEngine can be publicly accessed using the <em><a href="{{serviceUrl}}"
+                        target="_blank">{{serviceDomain}}</a></em>
+                domain name. Otherwise, a valid certificate can not be provisioned.
+            </small>
+        </div>
+        {{/if}}
 
     </div>
 
@@ -237,6 +258,35 @@
     </div>
 
 </form>
+
+<div class="modal fade" id="tlsModal" tabindex="-1" aria-labelledby="tlsModalLabel" aria-hidden="true">
+    <div class="modal-dialog  modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+
+                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
+                        class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
+                <h5 class="modal-title modal-show-error">Certifciate reqest failed</h5>
+
+                <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body modal-show-default">
+                Please wait, provisioning a TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>.
+            </div>
+            <div class="modal-body modal-show-error d-none">
+                <p>The server responded with the following error message:</p>
+
+                <div class="text-monospace error-content alert alert-danger"></div>
+            </div>
+
+            <div class="modal-footer modal-show-error d-none">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
@@ -330,6 +380,7 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
                 replace(/PHPMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'tls' : '').
                 replace(/USERNAME/g, 'account_id').
                 replace(/PASSWORD/g, document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******');
+
             return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
         }
 
@@ -351,8 +402,16 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
 
         function loadCertData() {
             loadingCertData = true;
-            document.getElementById('smtpServerTLSInfo').textContent = 'Fetching certificate data…';
 
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                elm.classList.add('d-none')
+            }
+
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                elm.classList.remove('d-none')
+            }
+
+            $('#tlsModal').modal('show');
             fetch('/admin/config/smtp/certificate', {
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
@@ -365,18 +424,35 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
                 }
                 return res.json()
             }).then(data => {
+                if (!data || !data.success) {
+                    throw new Error(data && data.error || 'Request failed')
+                }
+                console.log(data)
+                $('#tlsModal').modal('hide');
                 loadingCertData = false;
                 loadedCertData = true;
-
-                document.getElementById('smtpServerTLSInfo').textContent = JSON.stringify(data);
+                document.getElementById('smtpServerTLSEnabled').dataset.certificate = data.fingerprint
             }).catch(err => {
+                console.error(err)
                 loadingCertData = false;
-                document.getElementById('smtpServerTLSInfo').textContent = err.message;
+
+                document.getElementById('smtpServerTLSEnabled').checked = false;
+                renderExamples();
+
+                for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                    elm.classList.remove('d-none')
+                }
+
+                for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                    elm.classList.add('d-none')
+                }
+
+                document.querySelector('#tlsModal .error-content').textContent = err.message;
             });
         }
 
         function checkLoadCerts() {
-            if (document.getElementById('smtpServerTLSEnabled').checked && !loadingCertData && !loadedCertData) {
+            if (document.getElementById('smtpServerTLSEnabled').checked && !loadingCertData && !loadedCertData && !document.getElementById('smtpServerTLSEnabled').dataset.certificate) {
                 loadCertData();
             }
         }

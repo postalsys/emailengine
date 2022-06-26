@@ -81,6 +81,10 @@ const { getESClient } = require('../lib/document-store');
 
 const routesUi = require('../lib/routes-ui');
 
+const { encrypt, decrypt } = require('../lib/encrypt');
+const { Certs } = require('@postalsys/certs');
+const net = require('net');
+
 const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY } = require('../lib/consts');
 
 const {
@@ -329,6 +333,40 @@ const init = async () => {
     });
 
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
+
+    server.decorate('toolkit', 'serviceDomain', async () => {
+        let serviceUrl = await settings.get('serviceUrl');
+        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
+        if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
+            return false;
+        }
+        return hostname;
+    });
+
+    server.decorate(
+        'toolkit',
+        'certs',
+        new Certs({
+            redis,
+            namespace: `${REDIS_PREFIX}`,
+
+            environment: 'ee',
+            directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
+            //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+
+            logger: logger.child({ sub: 'acme' }),
+
+            encryptFn: async value => {
+                const encryptSecret = await getSecret();
+                return encrypt(value, encryptSecret);
+            },
+
+            decryptFn: async value => {
+                const encryptSecret = await getSecret();
+                return decrypt(value, encryptSecret);
+            }
+        })
+    );
 
     server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not

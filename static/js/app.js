@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
             duration /= division.amount;
         }
     }
+    window.formatTimeAgo = formatTimeAgo;
 
     let updateRelativeTimes = () => {
         document.querySelectorAll('.relative-time').forEach(entry => {

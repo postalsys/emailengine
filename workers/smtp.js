@@ -40,6 +40,9 @@ const { HeadersRewriter } = require('../lib/headers-rewriter');
 const settings = require('../lib/settings');
 const tokens = require('../lib/tokens');
 
+const { encrypt, decrypt } = require('../lib/encrypt');
+const { Certs } = require('@postalsys/certs');
+
 config.smtp = config.smtp || {
     enabled: false,
     port: 2525,
@@ -54,6 +57,8 @@ const MAX_SIZE = 20 * 1024 * 1024;
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
+const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT_CACHE = new WeakMap();
 
@@ -265,6 +270,25 @@ async function init() {
         useProxy: await settings.get('smtpServerProxy')
     };
 
+    let certs = new Certs({
+        redis,
+        namespace: `${REDIS_PREFIX}`,
+
+        environment: 'ee',
+
+        logger: logger.child({ sub: 'acme' }),
+
+        encryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return encrypt(value, encryptSecret);
+        },
+
+        decryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return decrypt(value, encryptSecret);
+        }
+    });
+
     // check and update authentication settings on connection
     serverOptions.onConnect = (session, callback) => {
         settings
@@ -367,6 +391,25 @@ async function init() {
                 .catch(err => callback(err));
         });
     };
+
+    let tls = await settings.get('smtpServerTLSEnabled');
+
+    if (tls) {
+        serverOptions.secure = true;
+        serverOptions.allowInsecureAuth = false;
+
+        // load certificates
+        let serviceUrl = await settings.get('serviceUrl');
+        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
+        if (hostname) {
+            let certificateData = await certs.getCertificate(hostname, true);
+            if (certificateData && certificateData.status === 'valid') {
+                serverOptions.ca = certificateData.ca;
+                serverOptions.cert = certificateData.cert;
+                serverOptions.key = certificateData.privateKey;
+            }
+        }
+    }
 
     server = new SMTPServer(serverOptions);
 
