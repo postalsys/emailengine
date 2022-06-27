@@ -334,39 +334,88 @@ const init = async () => {
 
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
 
-    server.decorate('toolkit', 'serviceDomain', async () => {
+    let getServiceDomain = async () => {
         let serviceUrl = await settings.get('serviceUrl');
         let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
         if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
             return false;
         }
         return hostname;
+    };
+
+    let certHandler = new Certs({
+        redis,
+        namespace: `${REDIS_PREFIX}`,
+
+        environment: 'ee',
+        directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
+        //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+
+        logger: logger.child({ sub: 'acme' }),
+
+        encryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return encrypt(value, encryptSecret);
+        },
+
+        decryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return decrypt(value, encryptSecret);
+        }
     });
 
-    server.decorate(
-        'toolkit',
-        'certs',
-        new Certs({
-            redis,
-            namespace: `${REDIS_PREFIX}`,
+    server.decorate('toolkit', 'serviceDomain', getServiceDomain);
+    server.decorate('toolkit', 'certs', certHandler);
 
-            environment: 'ee',
-            directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
-            //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+    server.decorate('toolkit', 'getCertificate', async provision => {
+        let hostname = await getServiceDomain();
+        let certificateData;
 
-            logger: logger.child({ sub: 'acme' }),
+        if (hostname) {
+            certificateData = await certHandler.getCertificate(hostname, !provision);
+        }
 
-            encryptFn: async value => {
-                const encryptSecret = await getSecret();
-                return encrypt(value, encryptSecret);
-            },
-
-            decryptFn: async value => {
-                const encryptSecret = await getSecret();
-                return decrypt(value, encryptSecret);
+        if (!certificateData) {
+            certificateData = {
+                domain: hostname,
+                status: 'self_signed',
+                label: { type: 'warning', text: 'Self-signed', title: 'Using a self-signed certificate' }
+            };
+        } else if (certificateData.status !== 'valid') {
+            switch (certificateData.status) {
+                case 'pending':
+                    certificateData.label = { type: 'info', text: 'Provisioning…', title: 'Currently provisioning a certificate' };
+                    break;
+                case 'failed':
+                    certificateData.label = {
+                        type: 'danger',
+                        text: 'Failed',
+                        title: (certificateData.lastError && certificateData.lastError.err) || 'Failed to generate a certificate'
+                    };
+                    break;
             }
-        })
-    );
+        } else if (certificateData.validFrom > new Date()) {
+            certificateData.label = {
+                type: 'warning',
+                text: 'Future certificate',
+                title: 'Certificate is not yet valid'
+            };
+        } else if (certificateData.validTo < new Date()) {
+            certificateData.label = {
+                type: 'warning',
+                text: 'Expired certificate',
+                title: (certificateData.lastError && certificateData.lastError.err) || 'Certificate has been expired'
+            };
+        } else {
+            certificateData.label = {
+                type: 'success',
+                text: 'Valid certificate',
+                title: certificateData.fingerprint
+            };
+        }
+
+        return certificateData;
+    });
 
     server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not
