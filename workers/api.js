@@ -347,9 +347,11 @@ const init = async () => {
         redis,
         namespace: `${REDIS_PREFIX}`,
 
-        environment: 'ee',
-        directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory',
-        //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+        acme: {
+            environment: 'emailengine',
+            directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory'
+            //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+        },
 
         logger: logger.child({ sub: 'acme' }),
 
