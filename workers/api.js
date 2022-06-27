@@ -59,8 +59,7 @@ const pathlib = require('path');
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
 const { getOAuth2Client } = require('../lib/oauth');
-const consts = require('../lib/consts');
-const { REDIS_PREFIX } = consts;
+
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
@@ -85,7 +84,8 @@ const { encrypt, decrypt } = require('../lib/encrypt');
 const { Certs } = require('@postalsys/certs');
 const net = require('net');
 
-const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY } = require('../lib/consts');
+const consts = require('../lib/consts');
+const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY, REDIS_PREFIX, MAX_DAYS_STATS, RENEW_TLS_AFTER, BLOCK_TLS_RENEW, TLS_RENEW_CHECK_INTERVAL } = consts;
 
 const {
     settingsSchema,
@@ -4045,7 +4045,7 @@ When making API calls remember that requests against the same account are queued
                     seconds: Joi.number()
                         .empty('')
                         .min(0)
-                        .max(consts.MAX_DAYS_STATS * 24 * 3600)
+                        .max(MAX_DAYS_STATS * 24 * 3600)
                         .default(3600)
                         .example(3600)
                         .description('Duration for counters')
@@ -5270,6 +5270,34 @@ When making API calls remember that requests against the same account are queued
     });
 
     await server.start();
+
+    // renew TLS certificates if needed
+    setInterval(() => {
+        async function handler() {
+            let serviceDomain = await getServiceDomain();
+            let currentCert = await certHandler.getCertificate(serviceDomain, true);
+            if (
+                currentCert &&
+                currentCert.validTo < new Date(Date.now() - RENEW_TLS_AFTER) &&
+                (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW))
+            ) {
+                try {
+                    await certHandler.acquireCert(serviceDomain);
+                    await call({ cmd: 'smtpReload' });
+                } catch (err) {
+                    logger.error({ err });
+                } finally {
+                    try {
+                        await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
+                    } catch (err) {
+                        logger.error(err);
+                    }
+                }
+            }
+        }
+
+        handler().catch(err => logger.error(err));
+    }, TLS_RENEW_CHECK_INTERVAL).unref();
 };
 
 // dynamic imports first, use a wrapper function or eslint parser will crash
