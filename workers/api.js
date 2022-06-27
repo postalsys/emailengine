@@ -59,8 +59,7 @@ const pathlib = require('path');
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
 const { getOAuth2Client } = require('../lib/oauth');
-const consts = require('../lib/consts');
-const { REDIS_PREFIX } = consts;
+
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
@@ -81,7 +80,12 @@ const { getESClient } = require('../lib/document-store');
 
 const routesUi = require('../lib/routes-ui');
 
-const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY } = require('../lib/consts');
+const { encrypt, decrypt } = require('../lib/encrypt');
+const { Certs } = require('@postalsys/certs');
+const net = require('net');
+
+const consts = require('../lib/consts');
+const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY, REDIS_PREFIX, MAX_DAYS_STATS, RENEW_TLS_AFTER, BLOCK_TLS_RENEW, TLS_RENEW_CHECK_INTERVAL } = consts;
 
 const {
     settingsSchema,
@@ -329,6 +333,91 @@ const init = async () => {
     });
 
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
+
+    let getServiceDomain = async () => {
+        let serviceUrl = await settings.get('serviceUrl');
+        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
+        if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
+            return false;
+        }
+        return hostname;
+    };
+
+    let certHandler = new Certs({
+        redis,
+        namespace: `${REDIS_PREFIX}`,
+
+        acme: {
+            environment: 'emailengine',
+            directoryUrl: 'https://acme-v02.api.letsencrypt.org/directory'
+            //directoryUrl: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+        },
+
+        logger: logger.child({ sub: 'acme' }),
+
+        encryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return encrypt(value, encryptSecret);
+        },
+
+        decryptFn: async value => {
+            const encryptSecret = await getSecret();
+            return decrypt(value, encryptSecret);
+        }
+    });
+
+    server.decorate('toolkit', 'serviceDomain', getServiceDomain);
+    server.decorate('toolkit', 'certs', certHandler);
+
+    server.decorate('toolkit', 'getCertificate', async provision => {
+        let hostname = await getServiceDomain();
+        let certificateData;
+
+        if (hostname) {
+            certificateData = await certHandler.getCertificate(hostname, !provision);
+        }
+
+        if (!certificateData) {
+            certificateData = {
+                domain: hostname,
+                status: 'self_signed',
+                label: { type: 'warning', text: 'Self-signed', title: 'Using a self-signed certificate' }
+            };
+        } else if (certificateData.status !== 'valid') {
+            switch (certificateData.status) {
+                case 'pending':
+                    certificateData.label = { type: 'info', text: 'Provisioning…', title: 'Currently provisioning a certificate' };
+                    break;
+                case 'failed':
+                    certificateData.label = {
+                        type: 'danger',
+                        text: 'Failed',
+                        title: (certificateData.lastError && certificateData.lastError.err) || 'Failed to generate a certificate'
+                    };
+                    break;
+            }
+        } else if (certificateData.validFrom > new Date()) {
+            certificateData.label = {
+                type: 'warning',
+                text: 'Future certificate',
+                title: 'Certificate is not yet valid'
+            };
+        } else if (certificateData.validTo < new Date()) {
+            certificateData.label = {
+                type: 'warning',
+                text: 'Expired certificate',
+                title: (certificateData.lastError && certificateData.lastError.err) || 'Certificate has been expired'
+            };
+        } else {
+            certificateData.label = {
+                type: 'success',
+                text: 'Valid certificate',
+                title: certificateData.fingerprint
+            };
+        }
+
+        return certificateData;
+    });
 
     server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not
@@ -3958,7 +4047,7 @@ When making API calls remember that requests against the same account are queued
                     seconds: Joi.number()
                         .empty('')
                         .min(0)
-                        .max(consts.MAX_DAYS_STATS * 24 * 3600)
+                        .max(MAX_DAYS_STATS * 24 * 3600)
                         .default(3600)
                         .example(3600)
                         .description('Duration for counters')
@@ -5183,6 +5272,34 @@ When making API calls remember that requests against the same account are queued
     });
 
     await server.start();
+
+    // renew TLS certificates if needed
+    setInterval(() => {
+        async function handler() {
+            let serviceDomain = await getServiceDomain();
+            let currentCert = await certHandler.getCertificate(serviceDomain, true);
+            if (
+                currentCert &&
+                currentCert.validTo < new Date(Date.now() - RENEW_TLS_AFTER) &&
+                (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW))
+            ) {
+                try {
+                    await certHandler.acquireCert(serviceDomain);
+                    await call({ cmd: 'smtpReload' });
+                } catch (err) {
+                    logger.error({ err });
+                } finally {
+                    try {
+                        await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
+                    } catch (err) {
+                        logger.error(err);
+                    }
+                }
+            }
+        }
+
+        handler().catch(err => logger.error(err));
+    }, TLS_RENEW_CHECK_INTERVAL).unref();
 };
 
 // dynamic imports first, use a wrapper function or eslint parser will crash

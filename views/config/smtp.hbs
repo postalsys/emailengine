@@ -113,11 +113,6 @@
                 {{/if}}
             </div>
 
-            <div class="alert alert-secondary mb-3">
-                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password below
-                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
-            </div>
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">smtpServerPassword</a>]
@@ -144,6 +139,79 @@
                     global shared password.</small>
             </div>
         </div>
+
+        <div class="card-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle text-gray-300"></i>
+
+                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password above
+                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
+            </small>
+        </div>
+
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">TLS settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpServerTLSEnabled</a>]
+                </div>
+
+                <input type="checkbox"
+                    class="form-check-input trigger-example-render {{#if errors.smtpServerTLSEnabled}}is-invalid{{/if}}"
+                    id="smtpServerTLSEnabled" {{#if certificateData}}data-certificate="{{certificateData.fingerprint}}"
+                    {{/if}} data-domain="{{serviceDomain}}" name="smtpServerTLSEnabled" {{#if
+                    values.smtpServerTLSEnabled}}checked{{/if}} />
+
+                <label class="form-check-label" for="smtpServerTLSEnabled">Enable TLS
+
+                    {{#if certificateData.label}}
+                    <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
+                        data-labeltype="{{certificateData.label.type}}" style="cursor: default;" data-toggle="tooltip"
+                        data-placement="top"
+                        title="{{certificateData.label.title}}">{{certificateData.label.text}}</span>
+                    {{/if}}
+
+                </label>
+
+                {{#if errors.smtpServerTLSEnabled}}
+                <span class="invalid-feedback">{{errors.smtpServerTLSEnabled}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">
+                    {{#if serviceDomain}}
+
+                    TLS certificates are provisioned for <em>{{serviceDomain}}</em>. You can change this by setting
+                    another domain name for the <a href="/admin/config/service#settingsServiceUrl">service
+                        URL</a> configuration option.
+
+                    {{else}}
+
+                    You need to set a valid domain name for the <a
+                        href="/admin/config/service#settingsServiceUrl">service
+                        URL</a> in order to provision TLS sertificates.
+
+                    {{/if}}
+
+                </small>
+            </div>
+
+        </div>
+
+        {{#if serviceDomain}}
+        <div class="card-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle text-gray-300"></i>
+                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}"
+                        target="_blank">{{serviceUrl}}</a></em> to provision a valid TLS certificate. Otherwise,
+                EmailEngine will use a self-signed certificate.
+            </small>
+        </div>
+        {{/if}}
 
     </div>
 
@@ -190,8 +258,6 @@
                     </div>
                 </div>
 
-
-
                 <div>
                     <div class="form-group form-check">
                         <input type="checkbox" class="form-check-input trigger-example-render"
@@ -214,6 +280,35 @@
     </div>
 
 </form>
+
+<div class="modal fade" id="tlsModal" tabindex="-1" aria-labelledby="tlsModalLabel" aria-hidden="true">
+    <div class="modal-dialog  modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+
+                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
+                        class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
+                <h5 class="modal-title modal-show-error">Certifciate reqest failed</h5>
+
+                <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body modal-show-default">
+                Please wait, provisioning a TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>.
+            </div>
+            <div class="modal-body modal-show-error d-none">
+                <p>The server responded with the following error message:</p>
+
+                <div class="text-monospace error-content alert alert-danger"></div>
+            </div>
+
+            <div class="modal-footer modal-show-error d-none">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
@@ -250,6 +345,7 @@
                 codeAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
+    secure: NODEMAILER_TLS,
     auth: {
         user: 'USERNAME',
         pass: 'PASSWORD'
@@ -258,6 +354,7 @@
                 codeNoAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
+    secure: NODEMAILER_TLS,
     auth: false
 }}, {
     // default message fields
@@ -275,13 +372,13 @@ $mail->Host = 'HOST';
 $mail->SMTPAuth = true;
 $mail->Username = 'USERNAME';
 $mail->Password = 'PASSWORD';
-$mail->SMTPSecure = '';
+$mail->SMTPSecure = 'PHPMAILER_TLS';
 $mail->Port = PORT;`,
                 codeNoAuth: `$mail = new PHPMailer(true);
 $mail->isSMTP();
 $mail->Host = 'HOST';
 $mail->SMTPAuth = false;
-$mail->SMTPSecure = '';
+$mail->SMTPSecure = 'PHPMAILER_TLS';
 $mail->Port = PORT;
 
 // provide sending account id via this header
@@ -298,11 +395,16 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
 
 ` + template;
 
+            let password = !document.getElementById('smtpServerPassword').value ? '<smtp-access-token>' : (document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******')
+
             let code = template.
                 replace(/HOST/g, window.location.hostname).
                 replace(/PORT/g, Number(document.getElementById('smtpServerPort').value) || 0).
+                replace(/NODEMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'true' : 'false').
+                replace(/PHPMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'tls' : '').
                 replace(/USERNAME/g, 'account_id').
-                replace(/PASSWORD/g, document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******');
+                replace(/PASSWORD/g, password);
+
             return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
         }
 
@@ -310,7 +412,7 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
             document.getElementById('example-nodemailer-code').innerHTML = renderTemplate('nodemailer');
             document.getElementById('example-phpmailer-code').innerHTML = renderTemplate('phpmailer');
 
-            document.getElementById('exampleShowPassword').disabled = !document.getElementById('smtpServerAuthEnabled').checked;
+            document.getElementById('exampleShowPassword').disabled = !document.getElementById('smtpServerAuthEnabled').checked || !document.getElementById('smtpServerPassword').value;
         }
 
         for (let elm of document.querySelectorAll('.trigger-example-render')) {
@@ -318,5 +420,95 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
         }
 
         renderExamples();
+
+        function paintCertData(certData) {
+            let tlsLabelElm = document.getElementById('tls-label');
+
+            if (!certData || !certData.label || !tlsLabelElm) {
+                return
+            }
+
+            tlsLabelElm.classList.remove(`badge-${tlsLabelElm.dataset.labeltype}`);
+            tlsLabelElm.classList.add(`badge-${certData.label.type}`);
+            tlsLabelElm.dataset.labeltype = certData.label.type
+
+            tlsLabelElm.title = certData.label.title;
+            tlsLabelElm.textContent = certData.label.text;
+
+            $(tlsLabelElm).tooltip('dispose');
+            $(tlsLabelElm).tooltip('enable');
+        }
+
+        let loadingCertData = false;
+        let loadedCertData = false;
+
+        function loadCertData() {
+            loadingCertData = true;
+
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                elm.classList.add('d-none')
+            }
+
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                elm.classList.remove('d-none')
+            }
+
+            $('#tlsModal').modal('show');
+
+            $('#tlsModal').on('shown.bs.modal', function () {
+                fetch('/admin/config/smtp/certificate', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value
+                    })
+                }).then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    return res.json()
+                }).then(data => {
+                    if (!data || !data.success) {
+                        throw new Error(data && data.error || 'Request failed')
+                    }
+                    console.log(data)
+                    $('#tlsModal').modal('hide');
+                    loadingCertData = false;
+                    loadedCertData = true;
+                    document.getElementById('smtpServerTLSEnabled').dataset.certificate = data.fingerprint
+
+                    paintCertData(data);
+                }).catch(err => {
+                    console.error(err)
+                    loadingCertData = false;
+
+                    document.getElementById('smtpServerTLSEnabled').checked = false;
+                    renderExamples();
+
+                    for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                        elm.classList.remove('d-none')
+                    }
+
+                    for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                        elm.classList.add('d-none')
+                    }
+
+                    document.querySelector('#tlsModal .error-content').textContent = err.message;
+                });
+            });
+        }
+
+        function checkLoadCerts() {
+            if (document.getElementById('smtpServerTLSEnabled').checked &&
+                !loadingCertData && !loadedCertData &&
+                !document.getElementById('smtpServerTLSEnabled').dataset.certificate &&
+                document.getElementById('smtpServerTLSEnabled').dataset.domain) {
+
+                loadCertData();
+            }
+        }
+
+        document.getElementById('smtpServerTLSEnabled').addEventListener('click', checkLoadCerts);
+        document.getElementById('smtpServerTLSEnabled').addEventListener('change', checkLoadCerts);
     });
 </script>

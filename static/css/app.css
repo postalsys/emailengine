@@ -44,3 +44,7 @@ input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-plac
     font-style: oblique;
     opacity: 0.8; /* Firefox */
 }
+
+.certinfo dt, .certinfo dd {
+    font-size: 0.8rem;
+}

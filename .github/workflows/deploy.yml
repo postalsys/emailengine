@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-chunk-size
+            - feature-acme-tls
 
 name: Deploy test instance
 
