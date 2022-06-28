@@ -1,0 +1,27 @@
+<div class="float-right">
+    <a href="/admin/gateways/new" class="btn btn-primary btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Create new</span>
+    </a>
+</div>
+
+{{> gateways_header}}
+
+<p>
+    You can use a SMTP gateway as the SMTP server for an email account when sending out emails.
+</p>
+
+{{#if gateways}}
+{{else}}
+<div class="list-group mt-4 mb-4">
+    <div class="list-group-item">
+        {{#if firstPage}}
+        No gateways have been registered yet. Add one <a href="/admin/gateways/new">here</a>.
+        {{else}}
+        Nothing to show here.
+        {{/if}}
+    </div>
+</div>
+{{/if}}
