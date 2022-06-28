@@ -216,6 +216,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
             case 'unset':
+                account.stateLabel = {
+                    type: 'light',
+                    name: 'Not syncing'
+                };
+                break;
             case 'disconnected':
                 stateLabel = {
                     type: 'warning',
