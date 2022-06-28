@@ -165,6 +165,7 @@ class ConnectionHandler {
 
                 let state = 'connecting';
                 await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', state);
+                accountObject.connection.state = state;
                 await emitChangeEvent(this.logger, account, 'state', state);
                 await accountObject.connection.reconnect(true);
             }

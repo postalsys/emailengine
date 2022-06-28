@@ -148,12 +148,15 @@
         <dl class="row">
 
             <dt class="col-sm-3">Enabled</dt>
+
             {{#if account.imap.disabled}}
             <dd class="col-sm-9">No</dd>
             {{else}}
             <dd class="col-sm-9">Yes</dd>
             {{/if}}
 
+
+            {{#unless account.imap.disabled}}
             {{#unless account.oauth2}}
 
             {{#if account.imap.auth.user}}
@@ -191,6 +194,8 @@
             <dt class="col-sm-3">Sent Mail folder</dt>
             <dd class="col-sm-9">{{account.imap.sentMailPath}}</dd>
             {{/if}}
+
+            {{/unless}}
 
         </dl>
 

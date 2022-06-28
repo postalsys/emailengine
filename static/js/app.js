@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
             case 'unset':
-                account.stateLabel = {
+                stateLabel = {
                     type: 'light',
                     name: 'Not syncing'
                 };

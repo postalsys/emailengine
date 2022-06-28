@@ -53,12 +53,10 @@
 
         <div class="card-body">
 
+            {{#unless values.imap_disabled}}
             {{#unless values.oauth2}}
 
             <div class="form-group">
-
-
-
                 <label for="imap_auth_user">Username</label>
                 <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
                     id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
@@ -114,6 +112,7 @@
 
             {{/unless}}
 
+
             <div class="form-group">
                 <label for="imap_sentMailPath">Sent Mail folder</label>
                 <input type="text"
@@ -139,6 +138,8 @@
                 {{/if}}
                 <small class="form-text text-muted">Keep empty for default</small>
             </div>
+
+            {{/unless}}
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input {{#if errors.imap_disabled}}is-invalid{{/if}}"
