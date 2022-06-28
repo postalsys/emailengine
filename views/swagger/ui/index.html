@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>{{ hapiSwagger.info.title }}</title>
+        <link rel="stylesheet" type="text/css" href="{{ hapiSwagger.swaggerUIPath }}swagger-ui.css" />
+        <link rel="icon" type="image/png" href="{{ hapiSwagger.swaggerUIPath }}favicon-32x32.png" sizes="32x32" />
+        <link rel="icon" type="image/png" href="{{ hapiSwagger.swaggerUIPath }}favicon-16x16.png" sizes="16x16" />
+        <style>
+            html {
+                box-sizing: border-box;
+                overflow: -moz-scrollbars-vertical;
+                overflow-y: scroll;
+            }
+
+            *,
+            *:before,
+            *:after {
+                box-sizing: inherit;
+            }
+
+            body {
+                margin: 0;
+                background: #fafafa;
+            }
+            .topbar {
+                background-color: #4e73df !important;
+            }
+
+            .download-url-wrapper {
+                display: none !important;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="{{ hapiSwagger.swaggerUIPath }}swagger-ui-bundle.js"></script>
+        <script src="{{ hapiSwagger.swaggerUIPath }}swagger-ui-standalone-preset.js"></script>
+        <script src="{{ hapiSwagger.swaggerUIPath }}extend.js" type="text/javascript"></script>
+        <script>
+            function getUrlVars() {
+                const vars = [];
+                let hash;
+                const hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+                for (let i = 0; i < hashes.length; i++) {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+                }
+                return vars;
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+
+                let url = window.location.search.match(/url=([^&]+)/);
+                if (url && url.length > 1) {
+                    url = decodeURIComponent(url[1]);
+                } else {
+                    url = "{{{hapiSwagger.jsonPath}}}";
+                }
+
+                // pull validatorUrl string or null form server
+                let validatorUrl = null;
+                {{#if hapiSwagger.validatorUrl}}
+                validatorUrl: '{{hapiSwagger.validatorUrl}}';
+                {{/if}}
+
+                const ACCESS_TOKEN_QUERY_PARAM_NAME = 'access_token';
+                const accessToken = getUrlVars()[ACCESS_TOKEN_QUERY_PARAM_NAME];
+
+                fetch(url + (accessToken ? (url.indexOf('?') < 0 ? '?' : '&') + ACCESS_TOKEN_QUERY_PARAM_NAME + '=' + accessToken : ''))
+                    .then(function(response) {
+                        return response.json()
+                    })
+                    .then(function(json) {
+                        json.schemes[0] = window.location.protocol.slice(0, -1)
+                        json.host = window.location.host
+
+                        const swaggerOptions = {
+                            // url: url + (accessToken ? (url.indexOf('?') < 0 ? '?' : '&') + ACCESS_TOKEN_QUERY_PARAM_NAME + '=' + accessToken : ''),
+                            spec: json,
+                            validatorUrl: validatorUrl,
+                            dom_id: '#swagger-ui',
+                            deepLinking: true,
+                            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+                            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+                            layout: 'StandaloneLayout',
+                            docExpansion: "{{hapiSwagger.expanded}}",
+                            tagsSorter: apisSorter.{{hapiSwagger.sortTags}},
+                            operationsSorter: operationsSorter.{{hapiSwagger.sortEndpoints}},
+
+                            // patch: uiCompleteScript -- Rendering
+                            onComplete: function() {
+                            {{{ hapiSwagger.uiCompleteScript }}}
+                            },
+                            tryItOutEnabled: {{hapiSwagger.tryItOutEnabled}},
+                        }
+
+                        const ui = SwaggerUIBundle(swaggerOptions);
+
+                        window.ui = ui;
+                    });
+            });
+        </script>
+    </body>
+</html>

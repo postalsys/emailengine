@@ -5,6 +5,7 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
+const Path = require('path');
 
 const {
     getByteSize,
@@ -454,6 +455,12 @@ const init = async () => {
         swaggerUIPath: '/admin/iframe/swagger/',
         documentationPage: true,
         documentationPath: '/admin/iframe/docs',
+
+        expanded: 'list',
+        sortEndpoints: 'method',
+        tryItOutEnabled: true,
+
+        templates: Path.join(__dirname, '..', 'views', 'swagger', 'ui'),
 
         grouping: 'tags',
 
@@ -1204,7 +1211,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Provision an access token',
             notes: 'Provisions a new access token for an account',
-            tags: ['api', 'token'],
+            tags: ['api', 'Access Tokens'],
 
             plugins: {},
 
@@ -1244,30 +1251,29 @@ When making API calls remember that requests against the same account are queued
                         .description('Related metadata in JSON format')
                         .label('JsonMetaData'),
 
-                    restrictions: Joi.object()
-                        .keys({
-                            referrers: Joi.array()
-                                .items(Joi.string())
-                                .empty('')
-                                .allow(false)
-                                .default(false)
-                                .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                                .label('ReferrerAllowlist')
-                                .description('HTTP referrer allowlist for API requests'),
-                            addresses: Joi.array()
-                                .items(
-                                    Joi.string().ip({
-                                        version: ['ipv4', 'ipv6'],
-                                        cidr: 'forbidden'
-                                    })
-                                )
-                                .empty('')
-                                .allow(false)
-                                .default(false)
-                                .example(['1.2.3.4', '5.6.7.8'])
-                                .label('AddressAllowlist')
-                                .description('IP address allowlist')
-                        })
+                    restrictions: Joi.object({
+                        referrers: Joi.array()
+                            .items(Joi.string())
+                            .empty('')
+                            .allow(false)
+                            .default(false)
+                            .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
+                            .label('ReferrerAllowlist')
+                            .description('HTTP referrer allowlist for API requests'),
+                        addresses: Joi.array()
+                            .items(
+                                Joi.string().ip({
+                                    version: ['ipv4', 'ipv6'],
+                                    cidr: 'forbidden'
+                                })
+                            )
+                            .empty('')
+                            .allow(false)
+                            .default(false)
+                            .example(['1.2.3.4', '5.6.7.8'])
+                            .label('AddressAllowlist')
+                            .description('IP address allowlist')
+                    })
                         .empty('')
                         .allow(false)
                         .label('TokenRestrictions')
@@ -1315,7 +1321,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Remove a token',
             notes: 'Delete an access token',
-            tags: ['api', 'token'],
+            tags: ['api', 'Access Tokens'],
 
             plugins: {},
 
@@ -1368,7 +1374,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List root tokens',
             notes: 'Lists access tokens registered for root access',
-            tags: ['api', 'token'],
+            tags: ['api', 'Access Tokens'],
 
             plugins: {},
 
@@ -1448,7 +1454,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List account tokens',
             notes: 'Lists access tokens registered for an account',
-            tags: ['api', 'token'],
+            tags: ['api', 'Access Tokens'],
 
             plugins: {},
 
@@ -1492,30 +1498,29 @@ When making API calls remember that requests against the same account are queued
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
 
-                                restrictions: Joi.object()
-                                    .keys({
-                                        referrers: Joi.array()
-                                            .items(Joi.string())
-                                            .empty('')
-                                            .allow(false)
-                                            .default(false)
-                                            .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                                            .label('ReferrerAllowlist')
-                                            .description('HTTP referrer allowlist'),
-                                        addresses: Joi.array()
-                                            .items(
-                                                Joi.string().ip({
-                                                    version: ['ipv4', 'ipv6'],
-                                                    cidr: 'forbidden'
-                                                })
-                                            )
-                                            .empty('')
-                                            .allow(false)
-                                            .default(false)
-                                            .example(['1.2.3.4', '5.6.7.8'])
-                                            .label('AddressAllowlist')
-                                            .description('IP address allowlist')
-                                    })
+                                restrictions: Joi.object({
+                                    referrers: Joi.array()
+                                        .items(Joi.string())
+                                        .empty('')
+                                        .allow(false)
+                                        .default(false)
+                                        .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
+                                        .label('ReferrerAllowlist')
+                                        .description('HTTP referrer allowlist'),
+                                    addresses: Joi.array()
+                                        .items(
+                                            Joi.string().ip({
+                                                version: ['ipv4', 'ipv6'],
+                                                cidr: 'forbidden'
+                                            })
+                                        )
+                                        .empty('')
+                                        .allow(false)
+                                        .default(false)
+                                        .example(['1.2.3.4', '5.6.7.8'])
+                                        .label('AddressAllowlist')
+                                        .description('IP address allowlist')
+                                })
                                     .empty('')
                                     .allow(false)
                                     .label('TokenRestrictions')
@@ -1613,7 +1618,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Register new account',
             notes: 'Registers new IMAP account to be synced',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -1701,7 +1706,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Update account info',
             notes: 'Updates account information',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -1782,7 +1787,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Request reconnect',
             notes: 'Requests connection to be reconnected',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -1840,7 +1845,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Request syncing',
             notes: 'Requests account syncing to be run immediatelly',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -1904,7 +1909,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Remove synced account',
             notes: 'Stop syncing IMAP account and delete cached values',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -1960,7 +1965,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List accounts',
             notes: 'Lists registered accounts',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -2081,7 +2086,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Get account info',
             notes: 'Returns stored information about the account. Passwords are not included.',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             auth: {
                 strategy: 'api-token',
@@ -2150,7 +2155,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List mailboxes',
             notes: 'Lists all available mailboxes',
-            tags: ['api', 'mailbox'],
+            tags: ['api', 'Mailbox'],
 
             auth: {
                 strategy: 'api-token',
@@ -2203,7 +2208,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Create mailbox',
             notes: 'Create new mailbox folder',
-            tags: ['api', 'mailbox'],
+            tags: ['api', 'Mailbox'],
 
             plugins: {},
 
@@ -2268,7 +2273,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Delete mailbox',
             notes: 'Delete existing mailbox folder',
-            tags: ['api', 'mailbox'],
+            tags: ['api', 'Mailbox'],
 
             plugins: {},
 
@@ -2327,7 +2332,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Download raw message',
             notes: 'Fetches raw message as a stream',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             auth: {
                 strategy: 'api-token',
@@ -2379,7 +2384,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Download attachment',
             notes: 'Fetches attachment file as a binary stream',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             auth: {
                 strategy: 'api-token',
@@ -2496,7 +2501,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Get message information',
             notes: 'Returns details of a specific message. By default text content is not included, use textType value to force retrieving text',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             auth: {
                 strategy: 'api-token',
@@ -2572,7 +2577,7 @@ When making API calls remember that requests against the same account are queued
 
             description: 'Upload message',
             notes: 'Upload a message structure, compile it into an EML file and store it into selected mailbox.',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
@@ -2643,13 +2648,13 @@ When making API calls remember that requests against the same account are queued
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
                                 encoding: Joi.string().valid('base64').default('base64')
-                            }).label('Attachment')
+                            }).label('UploadAttachment')
                         )
                         .description('List of attachments')
-                        .label('AttachmentList'),
+                        .label('UploadAttachmentList'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().description('Custom Headers')
+                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown()
                 }).label('MessageUpload')
             },
 
@@ -2691,7 +2696,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Update message',
             notes: 'Update message information. Mainly this means changing message flag values',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
@@ -2776,7 +2781,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Move message',
             notes: 'Move message to another folder',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
@@ -2837,7 +2842,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Delete message',
             notes: 'Move message to Trash or delete it if already in Trash',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
@@ -2940,7 +2945,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Retrieve message text',
             notes: 'Retrieves message text',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             auth: {
                 strategy: 'api-token',
@@ -3128,7 +3133,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List messages in a folder',
             notes: 'Lists messages in a mailbox folder',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             auth: {
                 strategy: 'api-token',
@@ -3502,7 +3507,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Search for messages',
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific folder and not for the entire account.',
-            tags: ['api', 'message'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
@@ -3627,7 +3632,7 @@ When making API calls remember that requests against the same account are queued
                         emailId: Joi.string().max(256).description('Match specific Gmail unique email UD'),
                         threadId: Joi.string().max(256).description('Match specific Gmail unique thread UD'),
 
-                        header: Joi.object().unknown(true).description('Headers to match against').label('Headers')
+                        header: Joi.object().description('Headers to match against').label('Headers').unknown()
                     })
                         .required()
                         .description('Search query to filter messages')
@@ -3671,7 +3676,7 @@ When making API calls remember that requests against the same account are queued
 
             description: 'Submit message for delivery',
             notes: 'Submit message for delivery. If reference message ID is provided then EmailEngine adds all headers and flags required for a reply/forward automatically.',
-            tags: ['api', 'submit'],
+            tags: ['api', 'Submit'],
 
             plugins: {},
 
@@ -3767,14 +3772,13 @@ When making API calls remember that requests against the same account are queued
 
                     template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from.'),
 
-                    render: Joi.object()
-                        .keys({
-                            format: Joi.string()
-                                .valid('html', 'mjml', 'markdown')
-                                .default('html')
-                                .description('Markup language for HTML ("html", "markdown" or "mjml")'),
-                            params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
-                        })
+                    render: Joi.object({
+                        format: Joi.string()
+                            .valid('html', 'mjml', 'markdown')
+                            .default('html')
+                            .description('Markup language for HTML ("html", "markdown" or "mjml")'),
+                        params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                    })
                         .allow(false)
                         .description('Template rendering options')
                         .when('mailMerge', {
@@ -3784,13 +3788,11 @@ When making API calls remember that requests against the same account are queued
 
                     mailMerge: Joi.array()
                         .items(
-                            Joi.object()
-                                .keys({
-                                    to: addressSchema.label('ToAddress').required(),
-                                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                                    params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
-                                })
-                                .label('MailMergeListEntry')
+                            Joi.object({
+                                to: addressSchema.label('ToAddress').required(),
+                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
+                                params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                            }).label('MailMergeListEntry')
                         )
                         .min(1)
                         .description(
@@ -3812,13 +3814,13 @@ When making API calls remember that requests against the same account are queued
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
                                 encoding: Joi.string().valid('base64').default('base64')
-                            }).label('Attachment')
+                            }).label('UploadAttachment')
                         )
                         .description('List of attachments')
-                        .label('AttachmentList'),
+                        .label('UploadAttachmentList'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().description('Custom Headers'),
+                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
 
                     trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
 
@@ -3862,6 +3864,7 @@ When making API calls remember that requests against the same account are queued
                                     messageId: '<19b9c433-d428-f6d8-1d00-d666ebcadfc4@ekiri.ee>',
                                     queueId: '1812477338914c8372a'
                                 })
+                                .unknown()
                         )
                         .label('BulkResponseList')
                         .description('Bulk message responses')
@@ -3907,7 +3910,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List specific settings',
             notes: 'List setting values for specific keys',
-            tags: ['api', 'settings'],
+            tags: ['api', 'Settings'],
 
             auth: {
                 strategy: 'api-token',
@@ -3957,7 +3960,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Set setting values',
             notes: 'Set setting values for specific keys',
-            tags: ['api', 'settings'],
+            tags: ['api', 'Settings'],
 
             plugins: {},
 
@@ -3996,7 +3999,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Return IMAP logs for an account',
             notes: 'Output is a downloadable text file',
-            tags: ['api', 'logs'],
+            tags: ['api', 'Logs'],
 
             auth: {
                 strategy: 'api-token',
@@ -4028,7 +4031,7 @@ When making API calls remember that requests against the same account are queued
 
         options: {
             description: 'Return server stats',
-            tags: ['api', 'stats'],
+            tags: ['api', 'Stats'],
 
             auth: {
                 strategy: 'api-token',
@@ -4073,7 +4076,7 @@ When making API calls remember that requests against the same account are queued
                     })
                         .description('Counts of accounts in different connection states')
                         .label('ConnectionsStats'),
-                    counters: Joi.object().label('CounterStats')
+                    counters: Joi.object().label('CounterStats').unknown()
                 }).label('SettingsResponse'),
                 failAction: 'log'
             }
@@ -4101,7 +4104,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Verify IMAP and SMTP settings',
             notes: 'Checks if can connect and authenticate using provided account info',
-            tags: ['api', 'account'],
+            tags: ['api', 'Account'],
 
             plugins: {},
 
@@ -4183,7 +4186,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Request license info',
             notes: 'Get active license information',
-            tags: ['api', 'license'],
+            tags: ['api', 'License'],
 
             auth: {
                 strategy: 'api-token',
@@ -4224,7 +4227,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Remove license',
             notes: 'Remove registered active license',
-            tags: ['api', 'license'],
+            tags: ['api', 'License'],
 
             plugins: {},
 
@@ -4271,7 +4274,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Register a license',
             notes: 'Set up a license for EmailEngine to unlock all features',
-            tags: ['api', 'license'],
+            tags: ['api', 'License'],
 
             plugins: {},
 
@@ -4323,7 +4326,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Discover Email settings',
             notes: 'Try to discover IMAP and SMTP settings for an email account',
-            tags: ['api', 'settings'],
+            tags: ['api', 'Settings'],
 
             plugins: {},
 
@@ -4409,7 +4412,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List queued messages',
             notes: 'Lists messages in the Outbox',
-            tags: ['api', 'outbox'],
+            tags: ['api', 'Outbox'],
 
             plugins: {},
 
@@ -4513,7 +4516,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Remove a message',
             notes: 'Remove a message from the outbox',
-            tags: ['api', 'outbox'],
+            tags: ['api', 'Outbox'],
 
             plugins: {},
 
@@ -4580,7 +4583,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Create template',
             notes: 'Create a new stored template. Templates can be used when sending emails as the content of the message.',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
@@ -4611,12 +4614,11 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'mjml', 'markdown')
                         .default('html')
                         .description('Markup language for HTML ("html", "markdown" or "mjml")'),
-                    content: Joi.object()
-                        .keys({
-                            subject: templateSchemas.subject,
-                            text: templateSchemas.text,
-                            html: templateSchemas.html
-                        })
+                    content: Joi.object({
+                        subject: templateSchemas.subject,
+                        text: templateSchemas.text,
+                        html: templateSchemas.html
+                    })
                         .required()
                         .label('CreateTemplateContent')
                 }).label('CreateTemplate')
@@ -4662,7 +4664,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Update a template',
             notes: 'Update a stored template.',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
@@ -4696,13 +4698,11 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'mjml', 'markdown')
                         .default('html')
                         .description('Markup language for HTML ("html", "markdown" or "mjml")'),
-                    content: Joi.object()
-                        .keys({
-                            subject: templateSchemas.subject,
-                            text: templateSchemas.text,
-                            html: templateSchemas.html
-                        })
-                        .label('UpdateTemplateContent')
+                    content: Joi.object({
+                        subject: templateSchemas.subject,
+                        text: templateSchemas.text,
+                        html: templateSchemas.html
+                    }).label('UpdateTemplateContent')
                 }).label('UpdateTemplate')
             },
 
@@ -4745,7 +4745,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'List account templates',
             notes: 'Lists stored templates for the account',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
@@ -4831,7 +4831,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Get template information',
             notes: 'Retrieve template content and information',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
@@ -4869,17 +4869,15 @@ When making API calls remember that requests against the same account are queued
                         .description('Markup language for HTML ("html", "markdown" or "mjml")'),
                     created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was created'),
                     updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this template was last updated'),
-                    content: Joi.object()
-                        .keys({
-                            subject: templateSchemas.subject,
-                            text: templateSchemas.text,
-                            html: templateSchemas.html,
-                            format: Joi.string()
-                                .valid('html', 'mjml', 'markdown')
-                                .default('html')
-                                .description('Markup language for HTML ("html", "markdown" or "mjml")')
-                        })
-                        .label('RequestTemplateContent')
+                    content: Joi.object({
+                        subject: templateSchemas.subject,
+                        text: templateSchemas.text,
+                        html: templateSchemas.html,
+                        format: Joi.string()
+                            .valid('html', 'mjml', 'markdown')
+                            .default('html')
+                            .description('Markup language for HTML ("html", "markdown" or "mjml")')
+                    }).label('RequestTemplateContent')
                 }).label('AccountTemplateResponse'),
                 failAction: 'log'
             }
@@ -4907,7 +4905,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Remove a template',
             notes: 'Delete a stored template',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
@@ -4966,7 +4964,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Flush templates',
             notes: 'Delete all stored templates for an account',
-            tags: ['api', 'templates'],
+            tags: ['api', 'Templates'],
 
             plugins: {},
 
