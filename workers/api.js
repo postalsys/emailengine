@@ -1659,6 +1659,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Account-specific webhook URL'),
 
                     copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
+
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
 
                     notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now'),
@@ -3830,7 +3831,7 @@ When making API calls remember that requests against the same account are queued
                             "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting."
                         ),
 
-                    destination: Joi.string()
+                    sentMailPath: Joi.string()
                         .empty('')
                         .max(1024)
                         .example('Sent Mail')

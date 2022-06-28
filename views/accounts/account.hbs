@@ -138,7 +138,7 @@
     </div>
 </div>
 
-{{#if account.imap}}
+
 <div class="card mb-4">
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
@@ -146,6 +146,15 @@
     <div class="card-body">
 
         <dl class="row">
+
+            <dt class="col-sm-3">Enabled</dt>
+            {{#if account.imap.disabled}}
+            <dd class="col-sm-9">No</dd>
+            {{else}}
+            <dd class="col-sm-9">Yes</dd>
+            {{/if}}
+
+            {{#unless account.oauth2}}
 
             {{#if account.imap.auth.user}}
             <dt class="col-sm-3">Username</dt>
@@ -167,18 +176,26 @@
             <dd class="col-sm-9">{{account.imap.port}}</dd>
             {{/if}}
 
-
             <dt class="col-sm-3">TLS</dt>
             <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
             </dd>
+
+            {{/unless}}
+
+            {{#if account.imap.resyncDelay}}
+            <dt class="col-sm-3">Resync delay</dt>
+            <dd class="col-sm-9">{{account.imap.resyncDelay}}</dd>
+            {{/if}}
+
+            {{#if account.imap.sentMailPath}}
+            <dt class="col-sm-3">Sent Mail folder</dt>
+            <dd class="col-sm-9">{{account.imap.sentMailPath}}</dd>
+            {{/if}}
 
         </dl>
 
     </div>
 </div>
-
-{{/if}}
-
 
 {{#if account.smtp}}
 <div class="card mb-4">
