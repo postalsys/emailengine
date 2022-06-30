@@ -1,0 +1,89 @@
+<input type="hidden" id="wellKnownServices" value="{{wellKnownServices}}">
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let wellKnownServices = JSON.parse(document.getElementById('wellKnownServices').value);
+
+        for (let key of Object.keys(wellKnownServices)) {
+            if (wellKnownServices[key].aliases) {
+                for (let alias of wellKnownServices[key].aliases) {
+                    wellKnownServices.push(Object.assign({}, wellKnownServices[key], { key: alias }))
+                }
+            }
+        }
+
+        $('.basicAutoComplete').autoComplete({
+            resolver: 'custom',
+            events: {
+                search: function (query, callback) {
+                    let matches = wellKnownServices.filter(a => a.key.toLowerCase().indexOf(query.toLowerCase().trim()) >= 0);
+                    callback(matches.map(entry => entry.key))
+                },
+                typed: function (newValue, origJQElement) {
+                    return newValue
+                }
+            },
+            preventEnter: true,
+            minLength: 1
+        }).on('change', function (a) {
+        }).on('autocomplete.select', function (e) {
+            if (e && e.type === 'autocomplete') {
+                let selectedValue = e.currentTarget && e.currentTarget.value || '';
+                if (selectedValue) {
+                    let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue.toLowerCase().trim())
+                    if (entry) {
+                        for (let key of Object.keys(entry)) {
+                            switch (key) {
+                                case 'host':
+                                    document.getElementById('host').value = entry[key];
+                                    break;
+                                case 'port':
+                                    document.getElementById('port').value = entry[key];
+                                    break;
+                                case 'secure':
+                                    document.getElementById('secure').checked = entry[key];
+                                    break;
+                            }
+
+                        }
+                    }
+                }
+
+            }
+        });
+
+        const sendTestPayload = async () => {
+
+            const payload = {
+                crumb: document.getElementById('crumb').value,
+                host: document.getElementById('host').value,
+                port: Number(document.getElementById('port').value) || 0,
+                user: document.getElementById('user').value || '',
+                pass: document.getElementById('pass').value || '',
+                secure: document.getElementById('secure').checked
+            }
+
+            const res = await fetch('/admin/gateways/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            console.log(data)
+
+            return data;
+        }
+
+        document.getElementById('test-verify-btn').addEventListener('click', e => {
+            e.preventDefault()
+            sendTestPayload().then(data => {
+                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+    })
+</script>

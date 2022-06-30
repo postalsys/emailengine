@@ -33,6 +33,9 @@
                     <th class="p-0">
                         <div class="p-2">Last used</div>
                     </th>
+                    <th class="p-0">
+                        <div class="p-2">&nbsp;</div>
+                    </th>
                 </tr>
             </thead>
 
@@ -68,6 +71,16 @@
                         </div>
                     </td>
 
+                    <td class="p-0">
+                        <div class="position-relative p-2 text-right">
+                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
+
+                            <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
+                                style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
+                                label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
+                                {{label.name}}</span>
+                        </div>
+                    </td>
 
                 </tr>
                 {{/each}}

@@ -13,7 +13,7 @@
         <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
-                <a type="button" class="btn btn-light" href="/admin/gateways/{{gateway.gateway}}/edit"
+                <a type="button" class="btn btn-light" href="/admin/gateways/edit/{{gateway.gateway}}"
                     title="Edit gateway configuration" data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-user-edit fa-fw"></i> Edit
                 </a>
@@ -27,11 +27,30 @@
 
         </div>
 
+        {{#if gateway.lastError}}
+        <dl class="row">
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{gateway.lastError.description}}</dd>
+
+            {{#if gateway.lastError.response}}
+            <dt class="col-sm-3">SMTP response</dt>
+            <dd class="col-sm-9"><code>{{gateway.lastError.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+        <hr>
+        {{/if}}
+
         <dl class="row">
             {{#if gateway.gateway}}
             <dt class="col-sm-3">ID</dt>
             <dd class="col-sm-9">
                 <strong>{{gateway.gateway}}</strong>
+
+                <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
+                    style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
+                    label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
+                    {{label.name}}</span>
             </dd>
             {{/if}}
 
@@ -44,24 +63,6 @@
             <dt class="col-sm-3">Deliveries</dt>
             <dd class="col-sm-9">{{gateway.deliveries}}</dd>
             {{/if}}
-        </dl>
-
-        {{#if smtpError}}
-        <dl class="row">
-            <dt class="col-sm-3">Error</dt>
-            <dd class="col-sm-9">{{gateway.smtpStatus.description}}</dd>
-
-            {{#if gateway.smtpStatus.response}}
-            <dt class="col-sm-3">SMTP response</dt>
-            <dd class="col-sm-9"><code>{{gateway.smtpStatus.response}}</code></dd>
-            {{/if}}
-        </dl>
-
-        <hr>
-        {{/if}}
-
-
-        <dl class="row">
 
             {{#if gateway.user}}
             <dt class="col-sm-3">Username</dt>
