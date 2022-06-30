@@ -172,6 +172,32 @@ async function main() {
     }
 
     console.log(`Updated ${updatedAccounts}/${accounts.length} accounts`);
+
+    let updatedGateways = 0;
+    let gateways = await redis.smembers(`${REDIS_PREFIX}ia:gateways`);
+    for (let gateway of gateways) {
+        let pass = await redis.hget(`${REDIS_PREFIX}gateway:${gateway}`, 'pass');
+        if (!pass) {
+            continue;
+        }
+
+        try {
+            let value = await processSecret(pass, encryptSecret);
+            if (value !== pass) {
+                let result = await redis.hset(`${REDIS_PREFIX}gateway:${gateway}`, 'pass', value);
+                if (result === 'OK') {
+                    console.log(`${gateway}: updated`);
+                } else {
+                    console.log(`${gateway}: Unexpected response from DB: ${result}`);
+                }
+                updatedGateways++;
+            }
+        } catch (err) {
+            console.error(`Could not process "pass" for ${gateway}. Check decryption secrets.`);
+        }
+    }
+
+    console.log(`Updated ${updatedGateways}/${gateways.length} SMTP gateways`);
 }
 
 main()
