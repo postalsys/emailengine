@@ -27,7 +27,8 @@
     {{#if errors.pass}}
     <span class="invalid-feedback">{{errors.pass}}</span>
     {{/if}}
-    <small class="form-text text-muted">Authentication password for this gateway</small>
+    <small class="form-text text-muted">Authentication password for this gateway.{{#if gatewayData}} Only set if you
+        want to change current IMAP password.{{/if}}</small>
 </div>
 
 <div class="form-group">
