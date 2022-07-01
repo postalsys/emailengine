@@ -25,7 +25,9 @@
                         href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit">Submit API call</a>,
                     provide the <code>gateway</code> property
                     so that EmailEngine would know to route that email not through the user's SMTP server but the
-                    specified gateway.</p>
+                    specified gateway. For messages sent through the SMTP interface, use the
+                    <code>X-EE-Gateway: gateway</code> header.
+                </p>
             </div>
 
             <div class="col-auto">
@@ -56,7 +58,7 @@
                         <div class="p-2">Last used</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">&nbsp;</div>
+                        <div class="p-2">Status</div>
                     </th>
                 </tr>
             </thead>
@@ -93,8 +95,8 @@
                         </div>
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2 text-right">
+                    <td style="width: 120px;" class="p-0">
+                        <div class="position-relative  p-2">
                             <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
 
                             <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
