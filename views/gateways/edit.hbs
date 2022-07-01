@@ -3,14 +3,15 @@
 <nav aria-label="breadcrumb" class="mt-4 mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/admin/gateways">SMTP Gateways</a></li>
-        <li class="breadcrumb-item"><a href="/admin/gateways/gateway/{{values.gateway}}">{{values.gateway}}</a></li>
+        <li class="breadcrumb-item"><a
+                href="/admin/gateways/gateway/{{gatewayData.gateway}}">{{gatewayData.gateway}}</a></li>
         <li class="breadcrumb-item active" aria-current="page">Edit</li>
     </ol>
 </nav>
 
 <form method="post" action="/admin/gateways/edit">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}">
-    <input type="hidden" name="gateway" id="gateway" value="{{values.gateway}}">
+    <input type="hidden" name="gateway" id="gateway" value="{{gatewayData.gateway}}">
 
     <div class="card mb-4">
 
