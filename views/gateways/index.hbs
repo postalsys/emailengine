@@ -1,15 +1,44 @@
 <div class="float-right">
-    <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal" data-target="#addAccount">
+    <a href="/admin/gateways/new" class="btn btn-primary btn-icon-split">
         <span class="icon text-white-50">
-            <i class="fas fa-user-plus"></i>
+            <i class="fas fa-plus"></i>
         </span>
-        <span class="text">Add an account</span>
-    </button>
+        <span class="text">Create new</span>
+    </a>
 </div>
 
-{{> accounts_header}}
+{{> gateways_header}}
 
-{{#if accounts}}
+<p>
+    You can use an SMTP gateway as the SMTP server for any email account when sending out emails.
+</p>
+
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <p>SMTP Gateways are SMTP smarthosts that are not bound to a specific email account. You can use an SMTP
+                    server hosted on your local infrastructure or some paid service like Amazon SES, SendGrid, Mailgun,
+                    or others.</p>
+                <p>When sending an email with the <a
+                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit">Submit API call</a>,
+                    provide the <code>gateway</code> property
+                    so that EmailEngine would know to route that email not through the user's SMTP server but the
+                    specified gateway. For messages sent through the SMTP interface, use the
+                    <code>X-EE-Gateway: gateway</code> header.
+                </p>
+            </div>
+
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{#if gateways}}
+
 <div class="card mb-4 mt-4">
 
     <div class="table-responsive">
@@ -23,10 +52,10 @@
                         <div class="p-2">Name</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Email</div>
+                        <div class="p-2">Deliveries</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Type</div>
+                        <div class="p-2">Last used</div>
                     </th>
                     <th class="p-0">
                         <div class="p-2">Status</div>
@@ -35,58 +64,48 @@
             </thead>
 
             <tbody>
-                {{#each accounts}}
+                {{#each gateways}}
                 <tr>
                     <td class="p-0">
                         <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
-                            {{account}}
+                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
+                            {{gateway}}
                         </div>
                     </td>
                     <td class="p-0">
                         <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a><strong>{{name}}</strong>
+                            <a href="/admin/gateways/gateway/{{gateway}}"
+                                class="stretched-link"></a><strong>{{name}}</strong>
                         </div>
                     </td>
                     <td class="p-0">
                         <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>{{email}}
+                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>{{deliveries}}
                         </div>
                     </td>
 
                     <td class="p-0">
                         <div class="position-relative p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link"></a>
-                            {{#if type.icon}}
-                            <i class="{{type.icon}} fa-fw"
-                                title="{{type.name}}{{#if type.comment}} ({{type.comment}}){{/if}}"
-                                data-toggle="tooltip" data-placement="top"></i>
+                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
+                            {{#if timeStr}}
+                            <span class="relative-time" data-time="{{timeStr}}"></span>
                             {{else}}
-                            {{type.name}}
-                            {{#if type.comment}}
-                            <span class="text-muted">({{type.comment}})</span>
-                            {{/if}}
+                            <small><em>Never</em></small>
                             {{/if}}
                         </div>
                     </td>
 
                     <td style="width: 120px;" class="p-0">
                         <div class="position-relative  p-2">
-                            <a href="/admin/accounts/{{account}}" class="stretched-link">
+                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
 
-                                <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
-                                    data-account="{{account}}" style="cursor:default;" data-toggle="popover"
-                                    data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
-                                    data-content="{{stateLabel.error}}" {{/if}}>
-
-                                    {{#if stateLabel.spinner}}
-                                    <i class="fas fa-spinner fa-spin fa-fw"></i>
-                                    {{/if}}
-
-                                    {{stateLabel.name}}</span>
-                            </a>
+                            <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
+                                style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
+                                label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
+                                {{label.name}}</span>
                         </div>
                     </td>
+
                 </tr>
                 {{/each}}
             </tbody>
@@ -121,16 +140,15 @@
     </div>
     {{/if}}
 </div>
+
 {{else}}
 <div class="list-group mt-4 mb-4">
     <div class="list-group-item">
         {{#if firstPage}}
-        No accounts have been registered yet.
+        No gateways have been registered yet. Add one <a href="/admin/gateways/new">here</a>.
         {{else}}
         Nothing to show here.
         {{/if}}
     </div>
 </div>
 {{/if}}
-
-{{>add_account_modal}}

@@ -1,0 +1,124 @@
+{{> gateways_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/gateways">Gateways</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{gateway.gateway}}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/gateways/edit/{{gateway.gateway}}"
+                    title="Edit gateway configuration" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-user-edit fa-fw"></i> Edit
+                </a>
+
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this gateway" id="delete-btn" data-placement="top">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        {{#if gateway.lastError}}
+        <dl class="row">
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{gateway.lastError.description}}</dd>
+
+            {{#if gateway.lastError.response}}
+            <dt class="col-sm-3">SMTP response</dt>
+            <dd class="col-sm-9"><code>{{gateway.lastError.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+        <hr>
+        {{/if}}
+
+        <dl class="row">
+            {{#if gateway.gateway}}
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9">
+                <strong>{{gateway.gateway}}</strong>
+
+                <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
+                    style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
+                    label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
+                    {{label.name}}</span>
+            </dd>
+            {{/if}}
+
+            {{#if gateway.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{gateway.name}}</dd>
+            {{/if}}
+
+            {{#if gateway.deliveries}}
+            <dt class="col-sm-3">Deliveries</dt>
+            <dd class="col-sm-9">{{gateway.deliveries}}</dd>
+            {{/if}}
+
+            {{#if gateway.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{gateway.user}}</dd>
+            {{/if}}
+
+            {{#if gateway.pass}}
+            <dt class="col-sm-3">Password</dt>
+            <dd class="col-sm-9">*******</dd>
+            {{/if}}
+
+            {{#if gateway.host}}
+            <dt class="col-sm-3">Hostname</dt>
+            <dd class="col-sm-9">{{gateway.host}}</dd>
+            {{/if}}
+
+            {{#if gateway.port}}
+            <dt class="col-sm-3">Port</dt>
+            <dd class="col-sm-9">{{gateway.port}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">TLS</dt>
+            <dd class="col-sm-9">{{#if gateway.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            </dd>
+        </dl>
+
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete gateway</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the gateway "{{gateway.name}}"? This action is not
+                    recoverable.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/gateways/delete/{{gateway.gateway}}">
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // not set up by default as this element has a different data-toggle
+        $('#delete-btn').tooltip();
+    });
+</script>

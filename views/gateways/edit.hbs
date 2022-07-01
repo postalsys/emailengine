@@ -1,0 +1,51 @@
+{{> gateways_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/gateways">SMTP Gateways</a></li>
+        <li class="breadcrumb-item"><a href="/admin/gateways/gateway/{{values.gateway}}">{{values.gateway}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+
+<form method="post" action="/admin/gateways/edit">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}">
+    <input type="hidden" name="gateway" id="gateway" value="{{values.gateway}}">
+
+    <div class="card mb-4">
+
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">SMTP Gateway</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Gateway actions:</div>
+                    <a class="dropdown-item test-connection" href="#" id="test-verify-btn">
+                        <i class="fas fa-paper-plane fa-sm"></i> <span>Test settings</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            {{>gateway_form}}
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-paper-plane"></i>
+            </span>
+            <span class="text">Update Gateway</span>
+        </button>
+    </div>
+</form>
+
+{{>gateway_js}}

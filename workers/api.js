@@ -74,6 +74,7 @@ const { templates } = require('../lib/templates');
 
 const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
+const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
 
 const getSecret = require('../lib/get-secret');
@@ -1659,6 +1660,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Account-specific webhook URL'),
 
                     copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
+
                     logs: Joi.boolean().example(true).description('Store recent logs').default(false),
 
                     notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now'),
@@ -3830,11 +3832,19 @@ When making API calls remember that requests against the same account are queued
                             "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting."
                         ),
 
+                    sentMailPath: Joi.string()
+                        .empty('')
+                        .max(1024)
+                        .example('Sent Mail')
+                        .description("Upload sent message to this folder. By default the account's Sent Mail folder is used."),
+
                     sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
                     deliveryAttempts: Joi.number()
                         .example(10)
                         .description('How many delivery attempts to make until message is considered as failed')
-                        .default(10)
+                        .default(10),
+
+                    gateway: Joi.string().max(256).required().example('example').description('Optional SMTP gateway ID for message routing')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -5001,6 +5011,384 @@ When making API calls remember that requests against the same account are queued
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account flushed'),
                     account: Joi.string().max(256).required().example('example').description('Account ID')
                 }).label('DeleteTemplateRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/gateways',
+
+        async handler(request) {
+            try {
+                let gatewayObject = new Gateway({ redis, gateway: request.params.gateway, call, secret: await getSecret() });
+
+                return await gatewayObject.listGateways(request.query.page, request.query.pageSize);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List gateways',
+            notes: 'Lists registered gateways',
+            tags: ['api', 'SMTP Gateway'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('GatewaysFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    gateways: Joi.array()
+                        .items(
+                            Joi.object({
+                                gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
+                                name: Joi.string().max(256).example('My Email Gateway').description('Display name for the gateway'),
+                                deliveries: Joi.number().empty('').example(100).description('Count of email deliveries using this gateway'),
+                                lastUse: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last delivery time'),
+                                lastError: lastErrorSchema.allow(null)
+                            }).label('GatewayResponseItem')
+                        )
+                        .label('GatewayEntries')
+                }).label('GatewaysFilterResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/gateway/{gateway}',
+
+        async handler(request) {
+            let gatewayObject = new Gateway({ redis, gateway: request.params.gateway, call, secret: await getSecret() });
+            try {
+                let gatewayData = await gatewayObject.loadGatewayData();
+
+                // remove secrets
+                if (gatewayData.pass) {
+                    gatewayData.pass = '******';
+                }
+
+                let result = {};
+
+                for (let key of ['gateway', 'name', 'host', 'port', 'user', 'pass', 'secure', 'deliveries', 'lastUse', 'lastError']) {
+                    if (key in gatewayData) {
+                        result[key] = gatewayData[key];
+                    }
+                }
+
+                return result;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Get gateway info',
+            notes: 'Returns stored information about the gateway. Passwords are not included.',
+            tags: ['api', 'SMTP Gateway'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
+
+                    name: Joi.string().max(256).required().example('My Email Gateway').description('Display name for the gateway'),
+                    deliveries: Joi.number().empty('').example(100).description('Count of email deliveries using this gateway'),
+                    lastUse: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last delivery time'),
+
+                    user: Joi.string().empty('').trim().max(1024).label('UserName'),
+                    pass: Joi.string().empty('').max(1024).label('Password'),
+                    host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
+                    port: Joi.number()
+                        .min(1)
+                        .max(64 * 1024)
+                        .example(465)
+                        .description('Service port number')
+                        .label('Port'),
+                    secure: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .default(false)
+                        .example(true)
+                        .description('Should connection use TLS. Usually true for port 465')
+                        .label('TLS'),
+
+                    lastError: lastErrorSchema.allow(null)
+                }).label('GatewayResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/gateway',
+
+        async handler(request) {
+            let gatewayObject = new Gateway({ redis, call, secret: await getSecret() });
+
+            try {
+                let result = await gatewayObject.create(request.payload);
+                return result;
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Register new gateway',
+            notes: 'Registers a new SMP gateway',
+            tags: ['api', 'SMTP Gateway'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object({
+                    gateway: Joi.string().empty('').trim().max(256).default(null).example('sendgun').description('Gateway ID').label('Gateway ID').required(),
+
+                    name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name').required(),
+
+                    user: Joi.string().empty('').trim().default(null).max(1024).label('UserName'),
+                    pass: Joi.string().empty('').max(1024).default(null).label('Password'),
+
+                    host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname').required(),
+                    port: Joi.number()
+                        .min(1)
+                        .max(64 * 1024)
+                        .example(465)
+                        .description('Service port number')
+                        .label('Port')
+                        .required(),
+                    secure: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .default(false)
+                        .example(true)
+                        .description('Should connection use TLS. Usually true for port 465')
+                        .label('TLS')
+                }).label('CreateGateway')
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
+                    state: Joi.string().required().valid('existing', 'new').example('new').description('Is the gateway new or updated existing')
+                }).label('CreateGatewayResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/gateway/edit/{gateway}',
+
+        async handler(request) {
+            let gatewayObject = new Gateway({ redis, gateway: request.params.gateway, call, secret: await getSecret() });
+
+            try {
+                return await gatewayObject.update(request.payload);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Update gateway info',
+            notes: 'Updates gateway information',
+            tags: ['api', 'SMTP Gateway'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                }),
+
+                payload: Joi.object({
+                    name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name'),
+
+                    user: Joi.string().empty('').trim().max(1024).allow(null).label('UserName'),
+                    pass: Joi.string().empty('').max(1024).allow(null).label('Password'),
+
+                    host: Joi.string().hostname().empty('').example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
+                    port: Joi.number()
+                        .min(1)
+                        .empty('')
+                        .max(64 * 1024)
+                        .example(465)
+                        .description('Service port number')
+                        .label('Port'),
+                    secure: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .example(true)
+                        .description('Should connection use TLS. Usually true for port 465')
+                        .label('TLS')
+                }).label('UpdateGateway')
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                }).label('UpdateGatewayResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/gateway/{gateway}',
+
+        async handler(request) {
+            let gatewayObject = new Gateway({
+                redis,
+                gateway: request.params.gateway,
+                secret: await getSecret()
+            });
+
+            try {
+                return await gatewayObject.delete();
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove SMTP gateway',
+            notes: 'Delete SMTP gateway data',
+            tags: ['api', 'SMTP Gateway'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                }).label('DeleteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the gateway deleted')
+                }).label('DeleteRequestResponse'),
                 failAction: 'log'
             }
         }

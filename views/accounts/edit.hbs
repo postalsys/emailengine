@@ -53,6 +53,9 @@
 
         <div class="card-body">
 
+            {{#unless values.imap_disabled}}
+            {{#unless values.oauth2}}
+
             <div class="form-group">
                 <label for="imap_auth_user">Username</label>
                 <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
@@ -107,6 +110,24 @@
                 {{/if}}
             </div>
 
+            {{/unless}}
+
+
+            <div class="form-group">
+                <label for="imap_sentMailPath">Sent Mail folder</label>
+                <input type="text"
+                    class="form-control basicAutoComplete {{#if errors.imap_sentMailPath}}is-invalid{{/if}}"
+                    data-lpignore="true" autocomplete="off" id="imap_sentMailPath" name="imap_sentMailPath"
+                    value="{{values.imap_sentMailPath}}" placeholder="Folder path like &quot;Sent Mail&quot;"
+                    data-lpignore="true" autocomplete="off" />
+                {{#if errors.imap_sentMailPath}}
+                <span class="invalid-feedback">{{errors.imap_sentMailPath}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Copies of sent emails will be uploaded to this folder. Leave empty
+                    to use the default "Sent Mail" folder on the
+                    account.</small>
+            </div>
+
             <div class="form-group">
                 <label for="imap_resyncDelay">Resync delay</label>
                 <input type="number" class="form-control {{#if errors.imap_resyncDelay}}is-invalid{{/if}}"
@@ -116,6 +137,23 @@
                 <span class="invalid-feedback">{{errors.imap_resyncDelay}}</span>
                 {{/if}}
                 <small class="form-text text-muted">Keep empty for default</small>
+            </div>
+
+            {{/unless}}
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.imap_disabled}}is-invalid{{/if}}"
+                    data-target="header-list" id="imap_disabled" name="imap_disabled" {{#if
+                    values.imap_disabled}}checked{{/if}} />
+                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
+                    data-title="Disable IMAP"
+                    data-content="Disable IMAP if you are using this email account to only send emails."><i
+                        class="fas fa-question-circle"></i></a>
+                <label class="form-check-label" for="imap_disabled">Disable IMAP
+                </label>
+                {{#if errors.imap_disabled}}
+                <span class="invalid-feedback">{{errors.imap_disabled}}</span>
+                {{/if}}
             </div>
 
         </div>
