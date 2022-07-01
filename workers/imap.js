@@ -112,13 +112,15 @@ class ConnectionHandler {
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
 
-        let accountObject = new Account({ redis, account, secret: await getSecret() });
+        let secret = await getSecret();
+        let accountObject = new Account({ redis, account, secret });
 
         this.accounts.set(account, accountObject);
         accountObject.connection = new Connection({
             account,
             accountObject,
             redis,
+            secret,
             notifyQueue,
             submitQueue,
             documentsQueue,

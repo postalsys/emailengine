@@ -13,6 +13,28 @@
     You can use an SMTP gateway as the SMTP server for any email account when sending out emails.
 </p>
 
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <p>SMTP Gateways are SMTP smarthosts that are not bound to a specific email account. You can use an SMTP
+                    server hosted on your local infrastructure or some paid service like Amazon SES, SendGrid, Mailgun,
+                    or others.</p>
+                <p>When sending an email with the <a
+                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit">Submit API call</a>,
+                    provide the <code>gateway</code> property
+                    so that EmailEngine would know to route that email not through the user's SMTP server but the
+                    specified gateway.</p>
+            </div>
+
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{#if gateways}}
 
 <div class="card mb-4 mt-4">

@@ -3842,7 +3842,9 @@ When making API calls remember that requests against the same account are queued
                     deliveryAttempts: Joi.number()
                         .example(10)
                         .description('How many delivery attempts to make until message is considered as failed')
-                        .default(10)
+                        .default(10),
+
+                    gateway: Joi.string().max(256).required().example('example').description('Optional SMTP gateway ID for message routing')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -5224,17 +5226,19 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     gateway: Joi.string().empty('').trim().max(256).default(null).example('sendgun').description('Gateway ID').label('Gateway ID').required(),
 
-                    name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name'),
+                    name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name').required(),
 
-                    user: Joi.string().empty('').trim().max(1024).label('UserName'),
-                    pass: Joi.string().empty('').max(1024).label('Password'),
-                    host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
+                    user: Joi.string().empty('').trim().default(null).max(1024).label('UserName'),
+                    pass: Joi.string().empty('').max(1024).default(null).label('Password'),
+
+                    host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname').required(),
                     port: Joi.number()
                         .min(1)
                         .max(64 * 1024)
                         .example(465)
                         .description('Service port number')
-                        .label('Port'),
+                        .label('Port')
+                        .required(),
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5302,11 +5306,13 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name'),
 
-                    user: Joi.string().empty('').trim().max(1024).label('UserName'),
-                    pass: Joi.string().empty('').max(1024).label('Password'),
-                    host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
+                    user: Joi.string().empty('').trim().max(1024).allow(null).label('UserName'),
+                    pass: Joi.string().empty('').max(1024).allow(null).label('Password'),
+
+                    host: Joi.string().hostname().empty('').example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
                         .min(1)
+                        .empty('')
                         .max(64 * 1024)
                         .example(465)
                         .description('Service port number')
@@ -5314,7 +5320,6 @@ When making API calls remember that requests against the same account are queued
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
-                        .default(false)
                         .example(true)
                         .description('Should connection use TLS. Usually true for port 465')
                         .label('TLS')
