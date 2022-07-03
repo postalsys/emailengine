@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-smtp-gateways
+            - fix-submit-schema
 
 name: Deploy test instance
 
