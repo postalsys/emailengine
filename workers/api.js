@@ -1667,7 +1667,7 @@ When making API calls remember that requests against the same account are queued
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth').description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth', 'disabled').description('IMAP configuration').label('IMAP'),
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
 
@@ -1751,7 +1751,11 @@ When making API calls remember that requests against the same account are queued
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('IMAP configuration').label('IMAPUpdate'),
+                    imap: Joi.object(imapUpdateSchema)
+                        .allow(false)
+                        .oxor('useAuthServer', 'auth', 'disabled')
+                        .description('IMAP configuration')
+                        .label('IMAPUpdate'),
                     smtp: Joi.object(smtpUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
                     oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
                 }).label('UpdateAccount')
@@ -3844,7 +3848,7 @@ When making API calls remember that requests against the same account are queued
                         .description('How many delivery attempts to make until message is considered as failed')
                         .default(10),
 
-                    gateway: Joi.string().max(256).required().example('example').description('Optional SMTP gateway ID for message routing')
+                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
