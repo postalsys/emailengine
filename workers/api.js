@@ -3724,11 +3724,7 @@ When making API calls remember that requests against the same account are queued
                         .label('SMTPEnvelope')
                         .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
 
-                    from: addressSchema
-                        .example({ name: 'From Me', address: 'sender@example.com' })
-                        .description('The From address')
-                        .label('From')
-                        .when('mailMerge', { is: Joi.exist(), then: Joi.required() }),
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
 
                     replyTo: Joi.array()
                         .items(addressSchema.label('ReplyToAddress'))
