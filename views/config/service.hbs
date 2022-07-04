@@ -8,7 +8,7 @@
 
 <p class="mb-4">General settings for EmailEngine.</p>
 
-<form method="post" action="/admin/config/service">
+<form method="post" id="settings-form" action="/admin/config/service">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
     <div class="card mb-4">
@@ -184,9 +184,9 @@
                         target="_blank">templateHeader</a>]</div>
 
                 <label for="templateHeaderElement">Template header for public pages (HTML code)</label>
-                <textarea class="form-control droptxt {{#if errors.templateHeader}}is-invalid{{/if}}"
-                    id="templateHeaderElement" name="templateHeader" rows="9"
-                    spellcheck="false">{{values.templateHeader}}</textarea>
+
+                <input type="hidden" id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
+                <div id="editor-html" class="code-editor" style="height: 10rem;"></div>
 
                 {{#if errors.templateHeader}}
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
@@ -268,9 +268,12 @@
 </form>
 
 <form id="preview-form" method="post" action="/admin/config/service/preview">
-    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="templateHeader" id="preview-header-elm">
 </form>
+
+
+<script src="/static/js/ace/ace.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -336,8 +339,19 @@
             let previewWindow = window.open('about:blank', 'preview-window', '');
             let previewForm = document.getElementById('preview-form');
             previewForm.target = 'preview-window';
-            document.getElementById('preview-header-elm').value = document.getElementById('templateHeaderElement').value;
+            document.getElementById('preview-header-elm').value = editorHtml.getValue();
             previewForm.submit();
         });
     });
+
+    const editorHtml = ace.edit("editor-html");
+    editorHtml.setTheme("ace/theme/xcode");
+    editorHtml.session.setMode("ace/mode/handlebars");
+    editorHtml.session.setValue(document.getElementById('templateHeaderElement').value);
+
+    document.getElementById('settings-form').addEventListener('submit', () => {
+        document.getElementById('templateHeaderElement').value = editorHtml.getValue();
+    });
+
+
 </script>
