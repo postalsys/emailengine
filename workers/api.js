@@ -2617,7 +2617,13 @@ When making API calls remember that requests against the same account are queued
                             .required()
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
+                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
+                        inline: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then blockquotes the email that is being replied to')
+                            .label('InlineReply')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3711,7 +3717,13 @@ When making API calls remember that requests against the same account are queued
                             .required()
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply')
+                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
+                        inline: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then blockquotes the email that is being replied to')
+                            .label('InlineReply')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),

@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - fix-submit-schema
+            - feature-inline-reply
 
 name: Deploy test instance
 
