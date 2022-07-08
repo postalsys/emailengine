@@ -5456,7 +5456,7 @@ When making API calls remember that requests against the same account are queued
                 if (!accountData.oauth2.accessToken || !accountData.oauth2.expires || accountData.oauth2.expires < new Date(now - 30 * 1000)) {
                     // renew access token
                     try {
-                        accountData = await this.accountObject.renewAccessToken();
+                        accountData = await accountObject.renewAccessToken();
                         accessToken = accountData.oauth2.accessToken;
                     } catch (err) {
                         let error = Boom.boomify(err, { statusCode: 403 });
