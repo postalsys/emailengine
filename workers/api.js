@@ -5475,7 +5475,7 @@ When making API calls remember that requests against the same account are queued
                     user: accountData.oauth2.auth.user,
                     accessToken,
                     provider: accountData.oauth2.auth.provider,
-                    registeredScopes: accountData.oauth2.scopes
+                    registeredScopes: accountData.oauth2.scope
                 };
             } catch (err) {
                 if (Boom.isBoom(err)) {
