@@ -5452,6 +5452,7 @@ When making API calls remember that requests against the same account are queued
 
                 let now = Date.now();
                 let accessToken;
+                let cached = false;
                 if (!accountData.oauth2.accessToken || !accountData.oauth2.expires || accountData.oauth2.expires < new Date(now - 30 * 1000)) {
                     // renew access token
                     try {
@@ -5468,6 +5469,7 @@ When making API calls remember that requests against the same account are queued
                     }
                 } else {
                     accessToken = accountData.oauth2.accessToken;
+                    cached = true;
                 }
 
                 return {
@@ -5475,7 +5477,9 @@ When making API calls remember that requests against the same account are queued
                     user: accountData.oauth2.auth.user,
                     accessToken,
                     provider: accountData.oauth2.auth.provider,
-                    registeredScopes: accountData.oauth2.scope
+                    registeredScopes: accountData.oauth2.scope,
+                    expires: accountData.oauth2.expires && accountData.oauth2.expires.toISOString(),
+                    cached
                 };
             } catch (err) {
                 if (Boom.isBoom(err)) {
