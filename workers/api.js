@@ -5478,7 +5478,10 @@ When making API calls remember that requests against the same account are queued
                     accessToken,
                     provider: accountData.oauth2.auth.provider,
                     registeredScopes: accountData.oauth2.scope,
-                    expires: accountData.oauth2.expires && accountData.oauth2.expires.toISOString(),
+                    expires:
+                        accountData.oauth2.expires && typeof accountData.oauth2.expires.toISOString === 'function'
+                            ? accountData.oauth2.expires.toISOString()
+                            : accountData.oauth2.expires,
                     cached
                 };
             } catch (err) {
