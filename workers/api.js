@@ -5439,6 +5439,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/oauth-token',
 
         async handler(request) {
+            let enableOAuthTokensApi = await settings.get('enableOAuthTokensApi');
+            if (!enableOAuthTokensApi) {
+                let error = Boom.boomify(new Error('Disabled API endpoint'), { statusCode: 403 });
+                error.output.payload.code = 'ApiEndpointDisabled';
+                throw error;
+            }
+
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
@@ -5498,7 +5505,7 @@ When making API calls remember that requests against the same account are queued
 
         options: {
             description: 'Get OAuth2 access token',
-            notes: 'Get active OAuth2 access token for an account',
+            notes: 'Get the active OAuth2 access token for an account. NB! This endpoint is disabled by default and needs activation on the Service configuration page.',
             tags: ['api', 'Account'],
 
             plugins: {},
