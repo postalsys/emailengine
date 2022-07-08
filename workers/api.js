@@ -5439,16 +5439,12 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/oauth-token',
 
         async handler(request) {
-            console.log('33333', request.payload);
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-            console.log('33334');
 
             try {
                 // throws if account does not exist
                 let accountData = await accountObject.loadAccountData();
-                console.log(accountData);
-                if (!accountData.oauth2 || !accountData.oauth2.user || !accountData.oauth2.provider) {
-                    console.log('Result 1');
+                if (!accountData.oauth2 || !accountData.oauth2.auth || !accountData.oauth2.auth.user || !accountData.oauth2.provider) {
                     let error = Boom.boomify(new Error('Not an OAuth2 account'), { statusCode: 403 });
                     error.output.payload.code = 'AccountNotOAuth2';
                     throw error;
@@ -5461,9 +5457,7 @@ When making API calls remember that requests against the same account are queued
                     try {
                         accountData = await this.accountObject.renewAccessToken();
                         accessToken = accountData.oauth2.accessToken;
-                        console.log('Result 2');
                     } catch (err) {
-                        console.log('Result 3', err);
                         let error = Boom.boomify(err, { statusCode: 403 });
                         error.output.payload.code = 'OauthRenewError';
                         error.output.payload.authenticationFailed = true;
@@ -5473,7 +5467,6 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
                 } else {
-                    console.log('Result 4');
                     accessToken = accountData.oauth2.accessToken;
                 }
 
@@ -5481,7 +5474,8 @@ When making API calls remember that requests against the same account are queued
                     account: accountData.account,
                     user: accountData.oauth2.auth.user,
                     accessToken,
-                    provider: accountData.oauth2.auth.provider
+                    provider: accountData.oauth2.auth.provider,
+                    registeredScopes: accountData.oauth2.scopes
                 };
             } catch (err) {
                 if (Boom.isBoom(err)) {
