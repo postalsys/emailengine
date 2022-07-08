@@ -5434,6 +5434,111 @@ When making API calls remember that requests against the same account are queued
         }
     });
 
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/oauth-token',
+
+        async handler(request) {
+            let enableOAuthTokensApi = await settings.get('enableOAuthTokensApi');
+            if (!enableOAuthTokensApi) {
+                let error = Boom.boomify(new Error('Disabled API endpoint'), { statusCode: 403 });
+                error.output.payload.code = 'ApiEndpointDisabled';
+                throw error;
+            }
+
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                let accountData = await accountObject.loadAccountData();
+                if (!accountData.oauth2 || !accountData.oauth2.auth || !accountData.oauth2.auth.user || !accountData.oauth2.provider) {
+                    let error = Boom.boomify(new Error('Not an OAuth2 account'), { statusCode: 403 });
+                    error.output.payload.code = 'AccountNotOAuth2';
+                    throw error;
+                }
+
+                let now = Date.now();
+                let accessToken;
+                let cached = false;
+                if (!accountData.oauth2.accessToken || !accountData.oauth2.expires || accountData.oauth2.expires < new Date(now - 30 * 1000)) {
+                    // renew access token
+                    try {
+                        accountData = await accountObject.renewAccessToken();
+                        accessToken = accountData.oauth2.accessToken;
+                    } catch (err) {
+                        let error = Boom.boomify(err, { statusCode: 403 });
+                        error.output.payload.code = 'OauthRenewError';
+                        error.output.payload.authenticationFailed = true;
+                        if (err.tokenRequest) {
+                            error.output.payload.tokenRequest = err.tokenRequest;
+                        }
+                        throw error;
+                    }
+                } else {
+                    accessToken = accountData.oauth2.accessToken;
+                    cached = true;
+                }
+
+                return {
+                    account: accountData.account,
+                    user: accountData.oauth2.auth.user,
+                    accessToken,
+                    provider: accountData.oauth2.auth.provider,
+                    registeredScopes: accountData.oauth2.scope,
+                    expires:
+                        accountData.oauth2.expires && typeof accountData.oauth2.expires.toISOString === 'function'
+                            ? accountData.oauth2.expires.toISOString()
+                            : accountData.oauth2.expires,
+                    cached
+                };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Get OAuth2 access token',
+            notes: 'Get the active OAuth2 access token for an account. NB! This endpoint is disabled by default and needs activation on the Service configuration page.',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    user: Joi.string().max(256).required().example('user@example.com').description('Username'),
+                    accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
+                    provider: Joi.string().max(256).required().example('google').description('OAuth2 provider')
+                }).label('AccountTokenResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
     // Web UI routes
 
     await server.register({

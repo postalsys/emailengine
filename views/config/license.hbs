@@ -124,7 +124,7 @@
                     <label for="licenseTextElement">License key</label>
 
                     <textarea class="form-control droptxt autoselect {{#if errors.license}}is-invalid{{/if}}"
-                        id="licenseTextElement" name="license" rows="9" spellcheck="false"
+                        id="licenseTextElement" name="license" rows="9" data-enable-grammarly="false" spellcheck="false"
                         placeholder="Starts with &quot;-----BEGIN LICENSE-----&quot;…"
                         required>{{values.license}}</textarea>
                     {{#if errors.license}}
