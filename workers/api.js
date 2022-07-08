@@ -5434,6 +5434,103 @@ When making API calls remember that requests against the same account are queued
         }
     });
 
+    server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/oauth-token',
+
+        async handler(request) {
+            console.log('33333', request.payload);
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            console.log('33334');
+
+            try {
+                // throws if account does not exist
+                let accountData = await accountObject.loadAccountData();
+                console.log(accountData);
+                if (!accountData.oauth2 || !accountData.oauth2.user || !accountData.oauth2.provider) {
+                    console.log('Result 1');
+                    let error = Boom.boomify(new Error('Not an OAuth2 account'), { statusCode: 403 });
+                    error.output.payload.code = 'AccountNotOAuth2';
+                    throw error;
+                }
+
+                let now = Date.now();
+                let accessToken;
+                if (!accountData.oauth2.accessToken || !accountData.oauth2.expires || accountData.oauth2.expires < new Date(now - 30 * 1000)) {
+                    // renew access token
+                    try {
+                        accountData = await this.accountObject.renewAccessToken();
+                        accessToken = accountData.oauth2.accessToken;
+                        console.log('Result 2');
+                    } catch (err) {
+                        console.log('Result 3', err);
+                        let error = Boom.boomify(err, { statusCode: 403 });
+                        error.output.payload.code = 'OauthRenewError';
+                        error.output.payload.authenticationFailed = true;
+                        if (err.tokenRequest) {
+                            error.output.payload.tokenRequest = err.tokenRequest;
+                        }
+                        throw error;
+                    }
+                } else {
+                    console.log('Result 4');
+                    accessToken = accountData.oauth2.accessToken;
+                }
+
+                return {
+                    account: accountData.account,
+                    user: accountData.oauth2.auth.user,
+                    accessToken,
+                    provider: accountData.oauth2.auth.provider
+                };
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Get OAuth2 access token',
+            notes: 'Get active OAuth2 access token for an account',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    user: Joi.string().max(256).required().example('user@example.com').description('Username'),
+                    accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
+                    provider: Joi.string().max(256).required().example('google').description('OAuth2 provider')
+                }).label('AccountTokenResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
     // Web UI routes
 
     await server.register({
