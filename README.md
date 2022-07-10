@@ -2,9 +2,7 @@
 
 # EmailEngine Email API
 
-> **NB** This is the version 2 of EmailEngine. If you are looking for the previous version, you can find it [here](https://github.com/postalsys/emailengine/tree/v1).
-
-Headless email client that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
+Headless email client application that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
 
 -   Documentation and details: [EmailEngine.app](https://emailengine.app/)
 -   [Discord](https://emailengine.app/discord) chat room
@@ -18,24 +16,7 @@ Headless email client that makes IMAP and SMTP resources available over REST. In
 
 ## Quickstart
 
-> This example assumes that [Redis](https://redis.io/) is installed locally and does not require any authentication. See [docs](https://emailengine.app/configuration#redis) for other options.
-
-1. Download EmailEngine for your OS:
-
-    - [MacOS](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.pkg)
-    - [Linux](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.tar.gz)
-    - [Window](https://github.com/postalsys/emailengine/releases/latest/download/emailengine.exe)
-    - Docker: `docker pull andris9/emailengine:v2`
-
-2. Open http://127.0.0.1:3000 in your browser
-
-Later, when you want to upgrade, just download the newer version and restart the _emailengine_ service.
-
-> **Tip** For human readable logs you can use _pino-pretty_ (`npm install -g pino-pretty`) by piping EmailEngine output to it: `emailengine | pino-pretty`
-
-## Run on Heroku
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/postalsys/emailengine)
+* [Set-up instructions](https://emailengine.app/set-up)
 
 ## Screenshots
 
@@ -82,19 +63,17 @@ By default EmailEngine allows connections only from localhost. To change this ei
 You can use the included install script to set up
 
 -   EmailEngine as a SystemD service
--   Nginx reverse proxy
--   ACME.sh and Let's Encrypt HTTPS certoficate
+-   Caddy as a reverse proxy and HTTPS certificate handler
 
 ```
 $ wget https://raw.githubusercontent.com/postalsys/emailengine/master/install.sh
 $ chmod +x install.sh
-$ ./install.sh example.com info@example.com
+$ ./install.sh example.com
 ```
 
 Where
 
 -   **example.com** is the domain name for EmailEngine
--   **info@example.com** is your email address to generate the HTTPS certificate
 
 > **NB!** Tested with Ubuntu 20.04 and Debian 11. Might not work with other OS versions.
 
