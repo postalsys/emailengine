@@ -5,6 +5,8 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const { REDIS_PREFIX } = require('../lib/consts');
+
 const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -78,7 +80,7 @@ class ConnectionHandler {
 
     getLogKey(account) {
         // this format ensures that the key is deleted when user is removed
-        return `iam:${account}:g`;
+        return `${REDIS_PREFIX}iam:${account}:g`;
     }
 
     async getAccountLogger(account) {

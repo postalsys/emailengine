@@ -34,7 +34,7 @@ const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-// const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX } = require('../lib/consts');
 const he = require('he');
 
 const nodeFetch = require('node-fetch');
@@ -47,7 +47,7 @@ config.queues = config.queues || {
 const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EENGINE_NOTIFY_QC'))) || config.queues.notify || 1;
 
 function getAccountKey(account) {
-    return `iad:${account}`;
+    return `${REDIS_PREFIX}iad:${account}`;
 }
 
 async function metrics(logger, key, method, ...args) {

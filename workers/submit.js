@@ -6,6 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
+const { REDIS_PREFIX } = require('../lib/consts');
 const { getDuration, readEnvValue } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -151,11 +152,11 @@ const submitWorker = new Worker(
             job.data.queueId = job.data.qId;
         }
 
-        let queueEntryBuf = await redis.hgetBuffer(`iaq:${job.data.account}`, job.data.queueId);
+        let queueEntryBuf = await redis.hgetBuffer(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
         if (!queueEntryBuf) {
             // nothing to do here
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
+                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -168,7 +169,7 @@ const submitWorker = new Worker(
         } catch (err) {
             logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
+                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 // ignore
             }
@@ -312,7 +313,7 @@ submitWorker.on('completed', async job => {
 
     if (job.data && job.data.account && job.data.queueId) {
         try {
-            await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
+            await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
         } catch (err) {
             logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
         }
@@ -342,7 +343,7 @@ submitWorker.on('failed', async job => {
         }
         if (job.data && job.data.account && job.data.queueId) {
             try {
-                await redis.hdel(`iaq:${job.data.account}`, job.data.queueId);
+                await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
                 logger.error({ msg: 'Failed to remove queue entry', account: job.data.account, queueId: job.data.queueId, messageId: job.data.messageId, err });
             }

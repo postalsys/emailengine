@@ -768,7 +768,7 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            let checkKey = `test:${Date.now()}`;
+            let checkKey = `${REDIS_PREFIX}test:${Date.now()}`;
             let expected = crypto.randomBytes(8).toString('hex');
             let res = await redis.multi().set(checkKey, expected).get(checkKey).del(checkKey).exec();
             if (res[1] && res[1][1] === expected && res[2] && res[2][1] === 1) {
