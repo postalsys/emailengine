@@ -18,6 +18,7 @@ const {
     getLogs,
     getWorkerCount,
     normalizePath,
+    assertPreconditions,
     unpackUIDRangeForSearch,
     matcher,
     readEnvValue
@@ -334,6 +335,7 @@ const init = async () => {
         }
     });
 
+    let assertPreconditionResult;
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
 
     let getServiceDomain = async () => {
@@ -5685,7 +5687,12 @@ When making API calls remember that requests against the same account are queued
     });
 
     const preResponse = async (request, h) => {
-        const response = request.response;
+        let response = request.response;
+
+        if (assertPreconditionResult && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
+            response = assertPreconditionResult;
+        }
+
         if (!response.isBoom) {
             return h.continue;
         }
@@ -5809,6 +5816,14 @@ When making API calls remember that requests against the same account are queued
         async function handler() {
             let serviceDomain = await getServiceDomain();
             let currentCert = await certHandler.getCertificate(serviceDomain, true);
+
+            try {
+                await assertPreconditions(redis);
+                assertPreconditionResult = false;
+            } catch (err) {
+                assertPreconditionResult = Boom.boomify(err);
+            }
+
             if (
                 currentCert &&
                 currentCert.validTo < new Date(Date.now() - RENEW_TLS_AFTER) &&
