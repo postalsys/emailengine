@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-oauth2-server
+            - feature-hint-authform-type
 
 name: Deploy test instance
 
