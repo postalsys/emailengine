@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-hint-authform-type
+            - gettext
 
 name: Deploy test instance
 
