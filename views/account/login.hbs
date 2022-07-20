@@ -7,7 +7,7 @@
 
     <div class="form-group">
         <input type="text" class="form-control form-control-user {{#if errors.username}}is-invalid{{/if}}"
-            id="exampleInputEmail" name="username" aria-describedby="emailHelp" placeholder="Username…"
+            id="exampleInputEmail" name="username" aria-describedby="emailHelp" placeholder="Username&mldr;"
             value="{{values.username}}">
         {{#if errors.username}}
         <span class="invalid-feedback">{{errors.username}}</span>
@@ -15,7 +15,7 @@
     </div>
     <div class="form-group">
         <input type="password" class="form-control form-control-user {{#if errors.password}}is-invalid{{/if}}"
-            id="exampleInputPassword" name="password" placeholder="Password…">
+            id="exampleInputPassword" name="password" placeholder="Password&mldr;">
         {{#if errors.password}}
         <span class="invalid-feedback">{{errors.password}}</span>
         {{/if}}

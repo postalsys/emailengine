@@ -15,7 +15,8 @@
         "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
         "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
-        "postinstall": "npm run licenses"
+        "postinstall": "npm run licenses",
+        "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -o translations/messages.pot -j"
     },
     "keywords": [
         "IMAP"
@@ -55,6 +56,7 @@
         "encoding-japanese": "2.0.0",
         "exponential-backoff": "3.1.0",
         "express": "4.18.1",
+        "gettext-parser": "^5.1.2",
         "handlebars": "4.7.7",
         "hapi-auth-bearer-token": "8.0.0",
         "hapi-pino": "10.1.0",
@@ -78,6 +80,7 @@
         "murmurhash": "2.0.1",
         "nanoid": "3.3.4",
         "node-fetch": "2.6.7",
+        "node-gettext": "^3.0.0",
         "node-html-parser": "5.3.3",
         "node-vault": "0.9.22",
         "nodemailer": "6.7.7",
@@ -101,8 +104,11 @@
         "grunt": "1.5.3",
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
+        "jsxgettext": "^0.11.0",
         "pino-pretty": "8.1.0",
-        "pkg": "5.8.0"
+        "pkg": "5.8.0",
+        "xgettext-js": "^3.0.0",
+        "xgettext-template": "^4.1.1"
     },
     "engines": {
         "node": ">=16.x"

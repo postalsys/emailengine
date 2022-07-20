@@ -1,0 +1,10 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=ascii\n"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""

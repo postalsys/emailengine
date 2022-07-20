@@ -6,6 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
+const { loadTranslations, gt } = require('../lib/translations');
 
 const {
     getByteSize,
@@ -326,6 +327,13 @@ parentPort.on('message', message => {
 });
 
 const init = async () => {
+    await loadTranslations();
+
+    gt.setLocale((await settings.get('locale')) || 'en');
+
+    handlebars.registerHelper('_', msgid => gt.gettext(msgid));
+    handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
+
     const server = Hapi.server({
         port: API_PORT,
         host: API_HOST,
@@ -390,7 +398,7 @@ const init = async () => {
         } else if (certificateData.status !== 'valid') {
             switch (certificateData.status) {
                 case 'pending':
-                    certificateData.label = { type: 'info', text: 'Provisioning…', title: 'Currently provisioning a certificate' };
+                    certificateData.label = { type: 'info', text: 'Provisioning...', title: 'Currently provisioning a certificate' };
                     break;
                 case 'failed':
                     certificateData.label = {
@@ -424,6 +432,11 @@ const init = async () => {
     });
 
     server.ext('onRequest', async (request, h) => {
+        let defaultLocale = (await settings.get('locale')) || 'en';
+        if (defaultLocale && gt.locale !== defaultLocale) {
+            gt.setLocale(defaultLocale);
+        }
+
         // check if client IP is resolved from X-Forwarded-For or not
         let enableApiProxy = (await settings.get('enableApiProxy')) || false;
         if (enableApiProxy) {

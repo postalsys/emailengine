@@ -1,0 +1,170 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2022-07-20 21:25+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: et\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.1.1\n"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Valige oma e-posti konto pakkuja"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standardne IMAP"
+
+#: views/accounts/register/imap-server.hbs:11
+msgid "IMAP"
+msgstr "IMAP"
+
+#: views/accounts/register/imap-server.hbs:14
+#: views/accounts/register/imap-server.hbs:73
+msgid "Username"
+msgstr "Kasutajanimi"
+
+#: views/accounts/register/imap-server.hbs:24
+#: views/accounts/register/imap-server.hbs:83
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
+msgstr "Parool"
+
+#: views/accounts/register/imap-server.hbs:34
+#: views/accounts/register/imap-server.hbs:93
+msgid "Hostname"
+msgstr "Serveri nimi"
+
+#: views/accounts/register/imap-server.hbs:44
+#: views/accounts/register/imap-server.hbs:103
+msgid "Port"
+msgstr "Port"
+
+#: views/accounts/register/imap-server.hbs:58
+msgid "TLS for IMAP"
+msgstr "TLS IMAP serveris"
+
+#: views/accounts/register/imap-server.hbs:59
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (tuntud ka kui SSL) on tavaliselt vajalik ainult siis, kui kasutatakse "
+"porti 993. Teiste portide puhul kasutab EmailEngine STARTTLS-põhist "
+"krüpteerimist."
+
+#: views/accounts/register/imap-server.hbs:61
+#: views/accounts/register/imap-server.hbs:120
+msgid "Use TLS"
+msgstr "Kasuta TLS krüpteerimist"
+
+#: views/accounts/register/imap-server.hbs:70
+msgid "SMTP"
+msgstr "SMTP"
+
+#: views/accounts/register/imap-server.hbs:117
+msgid "TLS for SMTP"
+msgstr "TLS SMTP serveris"
+
+#: views/accounts/register/imap-server.hbs:118
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (tuntud ka kui SSL) on tavaliselt vajalik ainult siis, kui kasutatakse "
+"porti 465. Teiste portide puhul kasutab EmailEngine STARTTLS-põhist "
+"krüpteerimist."
+
+#: views/accounts/register/imap-server.hbs:136
+msgid "Test settings"
+msgstr "Kontrolli seadeid"
+
+#: views/accounts/register/imap-server.hbs:145
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr "Jätka"
+
+#: views/accounts/register/imap-server.hbs:153
+msgid "Continue without testing"
+msgstr "Jätka ilma seadistusi kontrollimata"
+
+#: views/accounts/register/imap-server.hbs:167
+msgid "Test failed"
+msgstr "Test ebaõnnestus"
+
+#: views/accounts/register/imap-server.hbs:173
+msgid "Failed to validate provided email server settings."
+msgstr "Esitatud e-posti serveri seadete valideerimine ebaõnnestus."
+
+#: views/accounts/register/imap-server.hbs:177
+msgid "Close"
+msgstr "Sulge"
+
+#: views/accounts/register/imap-server.hbs:246
+msgid "Failed to validate IMAP server settings"
+msgstr "IMAP serveri seadete valideerimine ebaõnnestus"
+
+#: views/accounts/register/imap-server.hbs:248
+msgid "IMAP Server responded with the following message:"
+msgstr "IMAP server vastas järgmise teatega:"
+
+#: views/accounts/register/imap-server.hbs:255
+msgid "Failed to validate SMTP server settings"
+msgstr "SMTP serveri seadete valideerimine ebaõnnestus"
+
+#: views/accounts/register/imap-server.hbs:257
+msgid "SMTP Server responded with the following message:"
+msgstr "SMTP server vastas järgmise teatega:"
+
+#: views/accounts/register/imap-server.hbs:306
+msgid "HTTP error!"
+msgstr "HTTP viga!"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "Sinu nimi"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "Sisestage oma täisnimi"
+
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr "E-posti aadress"
+
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr "Sisestage oma e-posti aadress"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "Sisestage oma konto parool"
+
+#: lib/routes-ui.js:2764 lib/routes-ui.js:4007 lib/routes-ui.js:4018
+msgid "Server hostname was not found"
+msgstr "Serverit ei leitud"
+
+#: lib/routes-ui.js:2767 lib/routes-ui.js:4010 lib/routes-ui.js:4021
+msgid "Invalid username or password"
+msgstr "Vigane kasutajanimi või parool"
+
+#: lib/routes-ui.js:2771 lib/routes-ui.js:4025
+msgid "TLS protocol error"
+msgstr "TLS protokolli viga"
+
+#: lib/routes-ui.js:3737
+msgid "Unknown OAuth provider"
+msgstr "Tundmatu OAuth teenus"
+
+#: lib/routes-ui.js:3777 lib/routes-ui.js:3886 lib/routes-ui.js:4110
+msgid "Signature validation failed"
+msgstr "Päringu allkirja kontroll ebaõnnestus"
+
+#: lib/routes-ui.js:3826 lib/routes-ui.js:3859
+msgid "Failed to validate request arguments"
+msgstr "Päringu argumentide kontroll ebaõnnestus"

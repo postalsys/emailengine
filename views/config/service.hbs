@@ -45,6 +45,23 @@
                     IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
                     web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
             </div>
+
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">locale</a>]</div>
+
+                <label for="settingsServiceLocale">Default language</label>
+                <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
+                    errors.locale}}is-invalid{{/if}}>
+                    {{#each locales}}
+                    <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.locale}}
+                <span class="invalid-feedback">{{errors.locale}}</span>
+                {{/if}}
+            </div>
         </div>
     </div>
 

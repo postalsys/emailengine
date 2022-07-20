@@ -42,7 +42,7 @@
 
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
-                    id="proxyUrl" placeholder="Connection URL like &quot;socks://localhost:1080&quot;…"
+                    id="proxyUrl" placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;"
                     value="{{values.proxyUrl}}" name="proxyUrl" data-target="proxy-status">
                 {{#if errors.proxyUrl}}
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
@@ -84,6 +84,7 @@
                         </div>
                         <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
                             errors.imapStrategy}}is-invalid{{/if}}>
+
                             {{#each imapStrategies}}
                             <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
                             {{/each}}
