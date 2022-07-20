@@ -4,7 +4,7 @@
 
     <h1>EmailEngine</h1>
 
-    {{#unless stats.accounts}}
+    {{#unless hasAccounts}}
 
     <div class="card border-left-success mt-4">
         <div class="card-body">
@@ -12,8 +12,13 @@
                 <div class="col mr-2">
                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Welcome to EmailEngine!
                     </div>
-                    <p>To start using EmailEngine, add an email account. Once added, you can access this account to send
+                    <p>To start using EmailEngine, add an email account to the <a href="/admin/accounts">account
+                            registry</a>. Once registered, you can access this account to send
                         and receive emails using the <a href="/admin/swagger">EmailEngine's API</a>.
+                    </p>
+                    <p>You can add email accounts by using the API endpoint for <a
+                            href="https://api.emailengine.app/#operation/postV1Account" target="_blank">registering
+                            accounts</a> or the hosted authentication form.
                     </p>
                     <div>
                         <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal"
