@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
-const { loadTranslations, gt } = require('../lib/translations');
+const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 
 const {
     getByteSize,
@@ -340,6 +340,9 @@ const init = async () => {
 
         router: {
             stripTrailingSlash: true
+        },
+        routes: {
+            validate: { options: { messages: joiLocales } }
         }
     });
 
@@ -431,12 +434,22 @@ const init = async () => {
         return certificateData;
     });
 
-    server.ext('onRequest', async (request, h) => {
+    server.ext('onPostAuth', async (request, h) => {
         let defaultLocale = (await settings.get('locale')) || 'en';
         if (defaultLocale && gt.locale !== defaultLocale) {
             gt.setLocale(defaultLocale);
         }
 
+        if (joiLocales[defaultLocale] && request.route.settings.validate.options) {
+            if (!request.route.settings.validate.options.errors) {
+                request.route.settings.validate.options.errors = {};
+            }
+            request.route.settings.validate.options.errors.language = defaultLocale;
+        }
+        return h.continue;
+    });
+
+    server.ext('onRequest', async (request, h) => {
         // check if client IP is resolved from X-Forwarded-For or not
         let enableApiProxy = (await settings.get('enableApiProxy')) || false;
         if (enableApiProxy) {

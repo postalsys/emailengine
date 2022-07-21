@@ -1,7 +1,38 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-07-20 21:25+0000\n"
+"POT-Creation-Date: 2022-07-21 08:46+0000\n"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:24
+#: views/accounts/register/imap-server.hbs:83
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:145
+msgid "Continue"
+msgstr ""
 
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
@@ -18,12 +49,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:14
 #: views/accounts/register/imap-server.hbs:73
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:24
-#: views/accounts/register/imap-server.hbs:83
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:34
@@ -69,11 +94,6 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:145
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:153
 msgid "Continue without testing"
 msgstr ""
@@ -110,26 +130,6 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
 #: lib/routes-ui.js:2764
 #: lib/routes-ui.js:4007
 #: lib/routes-ui.js:4018
@@ -160,4 +160,9 @@ msgstr ""
 #: lib/routes-ui.js:3826
 #: lib/routes-ui.js:3859
 msgid "Failed to validate request arguments"
+msgstr ""
+
+#: lib/routes-ui.js:3949
+#: lib/routes-ui.js:4188
+msgid "Failed to process account"
 msgstr ""

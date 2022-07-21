@@ -16,7 +16,7 @@
         "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses",
-        "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -o translations/messages.pot -j"
+        "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -j -o translations/messages.pot"
     },
     "keywords": [
         "IMAP"
@@ -67,6 +67,7 @@
         "imapflow": "1.0.100",
         "ioredis": "5.2.1",
         "joi": "17.6.0",
+        "joi18n": "^2.0.3",
         "jquery": "3.6.0",
         "js-beautify": "1.14.4",
         "libmime": "5.1.0",
