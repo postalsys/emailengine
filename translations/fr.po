@@ -1,0 +1,171 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2022-07-20 21:25+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.1.1\n"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Choisissez votre fournisseur de compte de messagerie"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "IMAP Standard"
+
+#: views/accounts/register/imap-server.hbs:11
+msgid "IMAP"
+msgstr "IMAP"
+
+#: views/accounts/register/imap-server.hbs:14
+#: views/accounts/register/imap-server.hbs:73
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: views/accounts/register/imap-server.hbs:24
+#: views/accounts/register/imap-server.hbs:83
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
+msgstr "Mot de passe"
+
+#: views/accounts/register/imap-server.hbs:34
+#: views/accounts/register/imap-server.hbs:93
+msgid "Hostname"
+msgstr "Nom d'hôte"
+
+#: views/accounts/register/imap-server.hbs:44
+#: views/accounts/register/imap-server.hbs:103
+msgid "Port"
+msgstr "Port"
+
+#: views/accounts/register/imap-server.hbs:58
+msgid "TLS for IMAP"
+msgstr "TSL pour IMAP"
+
+#: views/accounts/register/imap-server.hbs:59
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (également connu sous le nom de SSL) n'est généralement nécessaire "
+"que lors de l'utilisation du port 993. Pour les autres ports, "
+"EmailEngine revient à l'utilisation du cryptage basé sur STARTTLS."
+
+#: views/accounts/register/imap-server.hbs:61
+#: views/accounts/register/imap-server.hbs:120
+msgid "Use TLS"
+msgstr "Utiliser TLS"
+
+#: views/accounts/register/imap-server.hbs:70
+msgid "SMTP"
+msgstr "SMTP"
+
+#: views/accounts/register/imap-server.hbs:117
+msgid "TLS for SMTP"
+msgstr "TLS pour SMTP"
+
+#: views/accounts/register/imap-server.hbs:118
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (également connu sous le nom de SSL) n'est généralement nécessaire "
+"que lors de l'utilisation du port 465. Pour les autres ports, "
+"EmailEngine revient à l'utilisation du cryptage basé sur STARTTLS."
+
+#: views/accounts/register/imap-server.hbs:136
+msgid "Test settings"
+msgstr "Tester"
+
+#: views/accounts/register/imap-server.hbs:145
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr "Continuer"
+
+#: views/accounts/register/imap-server.hbs:153
+msgid "Continue without testing"
+msgstr "Continuer sans tester"
+
+#: views/accounts/register/imap-server.hbs:167
+msgid "Test failed"
+msgstr "Test échoué"
+
+#: views/accounts/register/imap-server.hbs:173
+msgid "Failed to validate provided email server settings."
+msgstr ""
+"Échec de la validation des paramètres de serveur de messagerie fournis."
+
+#: views/accounts/register/imap-server.hbs:177
+msgid "Close"
+msgstr "Fermer"
+
+#: views/accounts/register/imap-server.hbs:246
+msgid "Failed to validate IMAP server settings"
+msgstr "Impossible de valider les paramètres du serveur IMAP"
+
+#: views/accounts/register/imap-server.hbs:248
+msgid "IMAP Server responded with the following message:"
+msgstr "Le serveur IMAP a répondu avec le message suivant :"
+
+#: views/accounts/register/imap-server.hbs:255
+msgid "Failed to validate SMTP server settings"
+msgstr "Impossible de valider les paramètres du serveur SMTP"
+
+#: views/accounts/register/imap-server.hbs:257
+msgid "SMTP Server responded with the following message:"
+msgstr "Le serveur SMTP a répondu avec le message suivant :"
+
+#: views/accounts/register/imap-server.hbs:306
+msgid "HTTP error!"
+msgstr "Erreur HTTP!"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "Votre nom"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "Entrer votre nom et prénom"
+
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr "Adresse e-mail"
+
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr "Entrez votre adresse email"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "Saisissez le mot de passe de votre compte"
+
+#: lib/routes-ui.js:2764 lib/routes-ui.js:4007 lib/routes-ui.js:4018
+msgid "Server hostname was not found"
+msgstr "Le nom d'hôte du serveur est introuvable"
+
+#: lib/routes-ui.js:2767 lib/routes-ui.js:4010 lib/routes-ui.js:4021
+msgid "Invalid username or password"
+msgstr "Nom d'utilisateur ou mot de passe invalide"
+
+#: lib/routes-ui.js:2771 lib/routes-ui.js:4025
+msgid "TLS protocol error"
+msgstr "Erreur de protocole TLS"
+
+#: lib/routes-ui.js:3737
+msgid "Unknown OAuth provider"
+msgstr "Fournisseur OAuth inconnu"
+
+#: lib/routes-ui.js:3777 lib/routes-ui.js:3886 lib/routes-ui.js:4110
+msgid "Signature validation failed"
+msgstr "La validation de la signature a échoué"
+
+#: lib/routes-ui.js:3826 lib/routes-ui.js:3859
+msgid "Failed to validate request arguments"
+msgstr "Impossible de valider les arguments de la demande"
