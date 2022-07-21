@@ -7,6 +7,7 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
+const util = require('util');
 
 const {
     getByteSize,
@@ -331,7 +332,16 @@ const init = async () => {
 
     gt.setLocale((await settings.get('locale')) || 'en');
 
-    handlebars.registerHelper('_', msgid => gt.gettext(msgid));
+    handlebars.registerHelper('_', (...args) => {
+        let params = args.slice(1, args.length - 1);
+        let translated = gt.gettext(args[0]);
+        if (params.length) {
+            translated = util.format(translated, ...params);
+        }
+
+        return new handlebars.SafeString(translated);
+    });
+
     handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
 
     const server = Hapi.server({

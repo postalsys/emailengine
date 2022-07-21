@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2022-07-21 08:46+0000\n"
+"POT-Creation-Date: 2022-07-21 11:11+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -11,6 +11,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.1.1\n"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -145,15 +149,15 @@ msgstr "SMTP server vastas järgmise teatega:"
 msgid "HTTP error!"
 msgstr "HTTP viga!"
 
-#: lib/routes-ui.js:2764 lib/routes-ui.js:4007 lib/routes-ui.js:4018
+#: lib/routes-ui.js:2764 lib/routes-ui.js:4009 lib/routes-ui.js:4020
 msgid "Server hostname was not found"
 msgstr "Serverit ei leitud"
 
-#: lib/routes-ui.js:2767 lib/routes-ui.js:4010 lib/routes-ui.js:4021
+#: lib/routes-ui.js:2767 lib/routes-ui.js:4012 lib/routes-ui.js:4023
 msgid "Invalid username or password"
 msgstr "Vigane kasutajanimi või parool"
 
-#: lib/routes-ui.js:2771 lib/routes-ui.js:4025
+#: lib/routes-ui.js:2771 lib/routes-ui.js:4027
 msgid "TLS protocol error"
 msgstr "TLS protokolli viga"
 
@@ -161,14 +165,14 @@ msgstr "TLS protokolli viga"
 msgid "Unknown OAuth provider"
 msgstr "Tundmatu OAuth teenus"
 
-#: lib/routes-ui.js:3777 lib/routes-ui.js:3886 lib/routes-ui.js:4110
+#: lib/routes-ui.js:3778 lib/routes-ui.js:3887 lib/routes-ui.js:4112
 msgid "Signature validation failed"
 msgstr "Päringu allkirja kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:3826 lib/routes-ui.js:3859
+#: lib/routes-ui.js:3827 lib/routes-ui.js:3860
 msgid "Failed to validate request arguments"
 msgstr "Päringu argumentide kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:3949 lib/routes-ui.js:4188
+#: lib/routes-ui.js:3950 lib/routes-ui.js:4190
 msgid "Failed to process account"
 msgstr "Konto töötlemine ebaõnnestus"
