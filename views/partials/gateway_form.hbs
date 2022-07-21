@@ -23,7 +23,7 @@
     <label for="pass">Password</label>
     <input type="password" class="form-control {{#if errors.pass}}is-invalid{{/if}}" id="pass" name="pass"
         value="{{values.pass}}" data-lpignore="true" autocomplete="off" {{#if hasSMTPPass}}
-        placeholder="Password is set but not shown…" {{/if}} />
+        placeholder="Password is set but not shown&mldr;" {{/if}} />
     {{#if errors.pass}}
     <span class="invalid-feedback">{{errors.pass}}</span>
     {{/if}}

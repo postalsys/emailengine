@@ -8,10 +8,10 @@
     <div class="container">
         <div class="row">
             <div class="col-sm">
-                <h6>IMAP</h6>
+                <h6>{{_ "IMAP" }}</h6>
 
                 <div class="form-group">
-                    <label for="imap_auth_user">Username</label>
+                    <label for="imap_auth_user">{{_ "Username" }}</label>
                     <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
                         id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
                         autocomplete="off" required tabindex="1" />
@@ -21,7 +21,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="imap_auth_pass">Password</label>
+                    <label for="imap_auth_pass">{{_ "Password" }}</label>
                     <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
                         id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
                         autocomplete="off" required tabindex="2" />
@@ -31,7 +31,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="imap_host">Hostname</label>
+                    <label for="imap_host">{{_ "Hostname" }}</label>
                     <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="imap_host" name="imap_host"
                         value="{{values.imap_host}}" required tabindex="3" />
@@ -41,7 +41,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="imap_port">Port</label>
+                    <label for="imap_port">{{_ "Port" }}</label>
                     <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="imap_port" name="imap_port"
                         value="{{values.imap_port}}" required tabindex="4" />
@@ -55,10 +55,10 @@
                         data-target="header-list" id="imap_secure" name="imap_secure" {{#if
                         values.imap_secure}}checked{{/if}} tabindex="5" />
                     <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
-                        data-trigger="hover" data-title="TLS for IMAP"
-                        data-content="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                        data-trigger="hover" data-title="{{_ 'TLS for IMAP' }}"
+                        data-content="{{_ 'TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption.' }}"><i
                             class="fas fa-question-circle"></i></a>
-                    <label class="form-check-label" for="imap_secure">Use TLS
+                    <label class="form-check-label" for="imap_secure">{{_ "Use TLS" }}
                     </label>
                     {{#if errors.imap_secure}}
                     <span class="invalid-feedback">{{errors.imap_secure}}</span>
@@ -67,10 +67,10 @@
 
             </div>
             <div class="col-sm">
-                <h6>SMTP</h6>
+                <h6>{{_ "SMTP" }}</h6>
 
                 <div class="form-group">
-                    <label for="smtp_auth_user">Username</label>
+                    <label for="smtp_auth_user">{{_ "Username" }}</label>
                     <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
                         id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
                         autocomplete="off" required tabindex="6" />
@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="smtp_auth_pass">Password</label>
+                    <label for="smtp_auth_pass">{{_ "Password" }}</label>
                     <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
                         id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
                         autocomplete="off" required tabindex="7" />
@@ -90,7 +90,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="smtp_host">Hostname</label>
+                    <label for="smtp_host">{{_ "Hostname" }}</label>
                     <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="smtp_host" name="smtp_host"
                         value="{{values.smtp_host}}" required tabindex="8" />
@@ -100,7 +100,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="smtp_port">Port</label>
+                    <label for="smtp_port">{{_ "Port" }}</label>
                     <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}"
                         data-lpignore="true" autocomplete="off" id="smtp_port" name="smtp_port"
                         value="{{values.smtp_port}}" required tabindex="9" />
@@ -114,10 +114,10 @@
                         data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
                         values.smtp_secure}}checked{{/if}} tabindex="10" />
                     <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
-                        data-trigger="hover" data-title="TLS for SMTP"
-                        data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+                        data-trigger="hover" data-title="{{_ 'TLS for SMTP' }}"
+                        data-content="{{_ 'TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption.' }}"><i
                             class="fas fa-question-circle"></i></a>
-                    <label class="form-check-label" for="smtp_secure">Use TLS
+                    <label class="form-check-label" for="smtp_secure">{{_ "Use TLS" }}
                     </label>
                     {{#if errors.smtp_secure}}
                     <span class="invalid-feedback">{{errors.smtp_secure}}</span>
@@ -133,7 +133,7 @@
                     <span class="icon text-white-50">
                         <i class="fas fa-question-circle"></i>
                     </span>
-                    <span class="text">Test settings</span>
+                    <span class="text">{{_ "Test settings" }}</span>
                 </button>
 
                 <div class="btn-group">
@@ -142,7 +142,7 @@
                         <span class="icon text-white-50">
                             <i class="fas fa-arrow-right"></i>
                         </span>
-                        <span class="text">Continue</span>
+                        <span class="text">{{_ "Continue" }}</span>
                     </button>
                     <button type="button" id="submit-settings-btn-down"
                         class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"
@@ -150,7 +150,7 @@
                         <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="#" id="submit-wo-testing">Continue without testing</a>
+                        <a class="dropdown-item" href="#" id="submit-wo-testing">{{_ "Continue without testing" }}</a>
                     </div>
                 </div>
 
@@ -164,17 +164,17 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="testResponseModalLabel">Test failed</h5>
+                <h5 class="modal-title" id="testResponseModalLabel">{{_ "Test failed" }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>Failed to validate provided email server settings.</p>
+                <p>{{_ "Failed to validate provided email server settings."}}</p>
                 <dl class="row" id="test-errors-list"></dl>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{_ "Close" }}</button>
             </div>
         </div>
     </div>
@@ -243,18 +243,18 @@
                 addErrorRow('General error', data.error.message || data.error)
             } else {
                 if (!data.imap || !data.imap.success) {
-                    let error = data.imap && data.imap.error || 'Failed to validate IMAP server settings'
+                    let error = data.imap && data.imap.error || '{{_ "Failed to validate IMAP server settings" }}'
                     if (data.imap && data.imap.responseText) {
-                        addErrorRow('IMAP', error, 'IMAP Server responded with the following message:', data.imap.responseText);
+                        addErrorRow('IMAP', error, '{{_ "IMAP Server responded with the following message:" }}', data.imap.responseText);
                     } else {
                         addErrorRow('IMAP', error);
                     }
                 }
 
                 if (!data.smtp || !data.smtp.success) {
-                    let error = data.smtp && data.smtp.error || 'Failed to validate SMTP server settings'
+                    let error = data.smtp && data.smtp.error || '{{_ "Failed to validate SMTP server settings" }}'
                     if (data.smtp && data.smtp.responseText) {
-                        addErrorRow('SMTP', error, 'SMTP Server responded with the following message:', data.smtp.responseText);
+                        addErrorRow('SMTP', error, '{{_ "SMTP Server responded with the following message:" }}', data.smtp.responseText);
                     } else {
                         addErrorRow('SMTP', error);
                     }
@@ -303,7 +303,7 @@
                 body: JSON.stringify(body)
             })
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`{{_ "HTTP error!"}} status: ${res.status}`);
             }
 
             const data = await res.json();

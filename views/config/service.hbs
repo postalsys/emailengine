@@ -45,6 +45,31 @@
                     IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
                     web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
             </div>
+
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">locale</a>]</div>
+
+                <label for="settingsServiceLocale">Default language</label>
+                <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
+                    errors.locale}}is-invalid{{/if}}>
+                    {{#each locales}}
+                    <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.locale}}
+                <span class="invalid-feedback">{{errors.locale}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Language for <u data-toggle="popover" data-trigger="hover"
+                        data-html="true"
+                        data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
+                        style="cursor: default;">public pages</u>, e.g., for the <a
+                        href="https://emailengine.app/hosted-authentication" target="_blank">hosted authentication</a>
+                    form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md">See
+                        here</a>
+                    if you would like to add an additional translation.</small>
+            </div>
         </div>
     </div>
 

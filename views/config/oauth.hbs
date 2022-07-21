@@ -122,7 +122,7 @@
                     Service client
                 </label>
                 <input type="text" class="form-control {{#if errors.serviceClient}}is-invalid{{/if}}" id="serviceClient"
-                    name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID…" />
+                    name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;" />
                 {{#if errors.serviceClient}}
                 <span class="invalid-feedback">{{errors.serviceClient}}</span>
                 {{/if}}
@@ -138,8 +138,8 @@
 
                 <textarea class="form-control droptxt autoselect {{#if errors.serviceKey}}is-invalid{{/if}}"
                     id="serviceKey" name="serviceKey" rows="4" data-enable-grammarly="false" spellcheck="false" {{#if
-                    hasServiceKey}}placeholder="Service key is set but not shown…" {{else}}
-                    placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;…"
+                    hasServiceKey}}placeholder="Service key is set but not shown&mldr;" {{else}}
+                    placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;&mldr;"
                     {{/if}}>{{values.serviceKey}}</textarea>
                 {{#if errors.serviceKey}}
                 <span class="invalid-feedback">{{errors.serviceKey}}</span>
@@ -184,7 +184,7 @@
                     {{/if}}
                 </label>
                 <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
-                    name="clientId" value="{{values.clientId}}" placeholder="Enter client ID…" />
+                    name="clientId" value="{{values.clientId}}" placeholder="Enter client ID&mldr;" />
                 {{#if errors.clientId}}
                 <span class="invalid-feedback">{{errors.clientId}}</span>
                 {{/if}}
@@ -201,8 +201,8 @@
 
                 <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
                     name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
-                    placeholder="Client secret is set but not shown…" {{else}} placeholder="Enter client secret…"
-                    {{/if}} />
+                    placeholder="Client secret is set but not shown&mldr;" {{else}}
+                    placeholder="Enter client secret&mldr;" {{/if}} />
                 {{#if errors.clientSecret}}
                 <span class="invalid-feedback">{{errors.clientSecret}}</span>
                 {{/if}}
@@ -285,7 +285,7 @@
 
                     <textarea class="form-control {{#if errors.extraScopes}}is-invalid{{/if}}" id="extraScopes"
                         name="extraScopes" rows="5" spellcheck="false" data-enable-grammarly="false"
-                        placeholder="Scope identifiers like &quot;https://mail.google.com/&quot;…">{{values.extraScopes}}</textarea>
+                        placeholder="Scope identifiers like &quot;https://mail.google.com/&quot;&mldr;">{{values.extraScopes}}</textarea>
                     {{#if errors.extraScopes}}
                     <span class="invalid-feedback">{{errors.extraScopes}}</span>
                     {{/if}}

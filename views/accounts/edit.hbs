@@ -70,7 +70,7 @@
                 <label for="imap_auth_pass">Password</label>
                 <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
                     id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasIMAPPass}} placeholder="Password is set but not shown…" {{/if}} />
+                    autocomplete="off" {{#if hasIMAPPass}} placeholder="Password is set but not shown&mldr;" {{/if}} />
                 {{#if errors.imap_auth_pass}}
                 <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
                 {{/if}}
@@ -187,7 +187,7 @@
                 <label for="smtp_auth_pass">Password</label>
                 <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
                     id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasSMTPPass}} placeholder="Password is set but not shown…" {{/if}} />
+                    autocomplete="off" {{#if hasSMTPPass}} placeholder="Password is set but not shown&mldr;" {{/if}} />
                 {{#if errors.smtp_auth_pass}}
                 <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
                 {{/if}}
@@ -241,7 +241,7 @@
             <div class="form-group">
                 <label for="proxy">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
-                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;…" value="{{values.proxy}}"
+                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;" value="{{values.proxy}}"
                     name="proxy" data-target="proxy-status">
                 {{#if errors.proxy}}
                 <span class="invalid-feedback">{{errors.proxy}}</span>

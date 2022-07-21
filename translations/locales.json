@@ -1,0 +1,19 @@
+[
+    {
+        "name": "English",
+        "locale": "en",
+        "file": "en.mo"
+    },
+
+    {
+        "name": "Estonian",
+        "locale": "et",
+        "file": "et.mo"
+    },
+
+    {
+        "name": "French",
+        "locale": "fr",
+        "file": "fr.mo"
+    }
+]
