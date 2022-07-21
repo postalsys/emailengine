@@ -1,0 +1,118 @@
+
+{
+  "root": "value",
+  "key": "\"{{!key}}\" ",
+  "messages": {
+    "wrapArrays": true
+  },
+  "any": {
+    "unknown": "n'est pas autorisé",
+    "invalid": "contient une valeur invalide",
+    "empty": "n'est pas autorisé à être vide",
+    "required": "est requis",
+    "allowOnly": "doit être l'un de {{valids}}",
+    "default": "génère une erreur quand on lance la valeur par défaut"
+  },
+  "alternatives": {
+    "base": "ne correspondant à aucune des alternatives autorisées"
+  },
+  "array": {
+    "base": "doit être un tableau",
+    "includes": "à la position {{pos}} ne correspond à aucun des types autorisés",
+    "includesSingle": "l'un des valeurs de \"{{!key}}\" ne correspond à aucun des types autorisés",
+    "includesOne": "à la position {{pos}} échoue parce que {{reason}}",
+    "includesOneSingle": "l'un des valeurs de \"{{!key}}\" échoue parce que {{reason}}",
+    "includesRequiredUnknowns": "ne contient pas {{unknownMisses}} valeur(s) requise(s)",
+    "includesRequiredKnowns": "ne contient pas {{knownMisses}}",
+    "includesRequiredBoth": "ne contient pas {{knownMisses}} et {{unknownMisses}} autre(s) valeur(s) requise(s)",
+    "excludes": "à la position {{pos}} contient une valeur exclue",
+    "excludesSingle": "l'un de la valeurs de \"{{!key}}\" contient une valeur exclue",
+    "min": "doit contenir au moins {{limit}} articles",
+    "max": "doit contenir moins que ou égal à {{limit}} articles",
+    "length": "doit contenir {{limit}} articles",
+    "ordered": "à la position {{pos}} échoue parce que {{reason}}",
+    "orderedLength": "à la position {{pos}} échoue parce que le tableau doit contenir au maximum {{limit}} articles",
+    "sparse": "ne doit pas être un tableau épars",
+    "unique": "la position {{pos}} contient une valeur en double"
+  },
+  "boolean": {
+    "base": "doit être booléen"
+  },
+  "binary": {
+    "base": "doit être un tampon ou une chaîne de caractères",
+    "min": "doit contenir au moins {{limit}} octets",
+    "max": "doit contenir au maximum {{limit}} octets",
+    "length": "doit contenir {{limit}} octets"
+  },
+  "date": {
+    "base": "doit être un nombre de millisecondes ou une date valide",
+    "min": "doit être égale à au moins \"{{limit}}\"",
+    "max": "doit être égale au maximum à \"{{limit}}\"",
+    "isoDate": "doit être une date ISO 8601 valide",
+    "ref": "références \"{{ref}}\" qui n'est pas une date"
+  },
+  "function": {
+    "base": "doit être une fonction"
+  },
+  "object": {
+    "base": "doit être un objet",
+    "child": "le sous-objet \"{{!key}}\" échoue parce que {{reason}}",
+    "min": "doit contenir au moins {{limit}} sous-objets",
+    "max": "doit contenir au maximum {{limit}} sous-objets",
+    "length": "doit contenir {{limit}} sous-objets",
+    "allowUnknown": "n'est pas autorisé",
+    "with": "le paire \"{{peer}}\" manquant est requise",
+    "without": "conflit avec un pair interdit \"{{peer}}\"",
+    "missing": "doit contenir au moins un des éléments suivants {{peers}}",
+    "xor": "contient un conflit entre les pairs exclusifs {{peers}}",
+    "or": "doit contenir au moins un des éléments suivants {{peers}}",
+    "and": "contient {{present}} sans ses pairs obligatoires {{missing}}",
+    "nand": "!!\"{{main}}\" ne doit pas exister simultanément avec {{peers}}",
+    "assert": "la validation de !!\"{{ref}}\" a échoué parce que  \"{{ref}}\" échoue de {{message}}",
+    "rename": {
+      "multiple": "ne peut pas renommer le sous-objet \"{{from}}\" parce que plusieurs renoms sont désactivés et qu'une autre clé a déjà été renommée en \"{{to}}\"",
+      "override": "ne peut pas renommer le sous-objet \"{{from}}\" parce que le contournement est désactivé et la cible \"{{to}}\" est désactivée"
+    },
+    "type": "doit être une instance de \"{{type}}\""
+  },
+  "number": {
+    "base": "doit être un nombre",
+    "min": "doit être au moins égale à {{limit}}",
+    "max": "doit être au maximum égale à {{limit}}",
+    "less": "doit être inférieur à {{limit}}",
+    "greater": "doit être supérieur à {{limit}}",
+    "float": "doit être un nombre en virgule flottante",
+    "integer": "doit être un entier",
+    "negative": "doit être un nombre négatif",
+    "positive": "doit être un nombre positif",
+    "precision": "ne doit pas avoir plus de {{limit}} précision décimale",
+    "ref": "référence \"{{ref}}\" qui n'est pas un nombre",
+    "multiple": "doit être un multiple de {{multiple}}"
+  },
+  "string": {
+    "base": "doit être une chaîne de caractères",
+    "min": "la longeur doit être au moins égale à {{limit}}",
+    "max": "la longeur doit être au maximum égale à {{limit}}",
+    "length": "la longeur doit être égale à {{limit}}",
+    "alphanum": "ne doit contenir que des caractères alphanumériques",
+    "token": "ne doit contenir que des caractères alphanumériques et soulignés",
+    "regex": {
+      "base": "avec la valeur \"{{!value}}\" ne correspond pas au modèle suivant demandé: {{pattern}}",
+      "name": "avec la valeur \"{{!value}}\" ne correspond pas à la valeur du modèle {{name}}"
+    },
+    "email": "doit être un courriel valide",
+    "uri": "doit être un URI valide",
+    "uriCustomScheme": "doit être un uri valide avec un schéma correspondant au modèle {{scheme}}",
+    "isoDate": "doit être une date ISO 8601 valide",
+    "guid": "doit être un GUID valide",
+    "hex": "ne doit contenir que des caractères hexadécimaux",
+    "hostname": "doit être un nom de domaine valide",
+    "lowercase": "doivent contenir uniquement des caractères minuscules",
+    "uppercase": "ne doivent contenir que des caractères majuscules",
+    "trim": "ne doit pas avoir d'espaces au début ou à la fin",
+    "creditCard": "doit être une carte de crédit",
+    "ref": "référence \"{{ref}}\" qui n'est pas un numéro",
+    "ip": "doit être une adresse IP valide avec un CIDR {{cidr}}",
+    "ipVersion": "doit être une adresse IP valide d'une des versions suivantes {{version}} avec un CIDR {{cidr}}"
+  }
+}

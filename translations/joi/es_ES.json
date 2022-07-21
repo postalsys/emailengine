@@ -1,0 +1,117 @@
+{
+  "root": "value",
+  "key": "\"{{!key}}\" ",
+  "messages": {
+    "wrapArrays": true
+  },
+  "any": {
+    "unknown": "no está permitido",
+    "invalid": "contiene un valor erroneo",
+    "empty": "no puede estar vacío",
+    "required": "es requerido",
+    "allowOnly": "ha de ser uno de {{valids}}",
+    "default": "lanzó un error al ejecutar el método predeterminado"
+  },
+  "alternatives": {
+    "base": "no coincide con ninguna de las alternativas permitidas"
+  },
+  "array": {
+    "base": "ha de ser un array",
+    "includes": "en la posición {{pos}} no coincide con ninguno de los tipos permitidos",
+    "includesSingle": "el valor único de \"{{!key}}\" no coincide con ninguno de los tipos permitidos",
+    "includesOne": "en la posición {{pos}} falla porque {{reason}}",
+    "includesOneSingle": "el valor único de \"{{!key}}\" falla porque {{reason}}",
+    "includesRequiredUnknowns": "no contiene {{unknownMisses}} los valores requeridos",
+    "includesRequiredKnowns": "no contiene {{knownMisses}}",
+    "includesRequiredBoth": "no contiene {{knownMisses}} y {{unknownMisses}} otros valores requeridos",
+    "excludes": "en la posición {{pos}} contiene un valor excluido",
+    "excludesSingle": "el valor único de \"{{!key}}\" contiene un valor excluido",
+    "min": "debe contener al menos {{limit}} elementos",
+    "max": "debe contener menos o igual que {{limit}} elementos",
+    "length": "debe contener {{limit}} elementos",
+    "ordered": "en la posición {{pos}} falla porque {{reason}}",
+    "orderedLength": "en la posición {{pos}} falla porque el array debe contener como máximo {{limit}} elementos",
+    "sparse": "no ha de ser un array dispersa",
+    "unique": "la posición {{pos}} contiene un valor duplicado"
+  },
+  "boolean": {
+    "base": "ha de ser un booleano"
+  },
+  "binary": {
+    "base": "ha de ser un buffer o una string",
+    "min": "debe tener al menos {{limit}} bytes",
+    "max": "debe ser menor o igual que {{limit}} bytes",
+    "length": "debe tener {{limit}} bytes"
+  },
+  "date": {
+    "base": "debe ser un número de milisegundos o una fecha válida de tipo string",
+    "min": "debe ser mayor o igual que \"{{limit}}\"",
+    "max": "debe ser menor o igual que \"{{limit}}\"",
+    "isoDate": "debe ser una fecha ISO 8601 válida",
+    "ref": "hace referencia a \"{{ref}}\" que no es una fecha"
+  },
+  "function": {
+    "base": "ha de ser una función"
+  },
+  "object": {
+    "base": "ha de ser un objeto",
+    "child": "la propiedad \"{{!key}}\" falla porque {{reason}}",
+    "min": "debe tener al menos {{limit}} propiedades",
+    "max": "debe tener menos o igual que {{limit}} propiedades",
+    "length": "ha de tener {{limit}} propiedades",
+    "allowUnknown": "no está permitido",
+    "with": "falta el par requerido \"{{peer}}\"",
+    "without": "conflicto con pares prohibidos \"{{peer}}\"",
+    "missing": "debe contener al menos uno de {{peers}}",
+    "xor": "contiene un conflicto entre pares exclusivos {{peers}}",
+    "or": "debe contener al menos uno de {{peers}}",
+    "and": "contiene {{present}} sin sus pares requeridos {{missing}}",
+    "nand": "!!\"{{main}}\" no debe existir simultáneamente con {{peers}}",
+    "assert": "!!\"{{ref}}\" a validación falló porque \"{{ref}}\" no pudo {{message}}",
+    "rename": {
+      "multiple": "no se puede cambiar el nombre de la propiedad \"{{from}}\" porque varios cambios de nombre están deshabilitados y otra propiedad ya se cambió a \"{{to}}\"",
+      "override": "no se puede cambiar el nombre de la propiedad \"{{from}}\" porque la escritura esta deshabilitada y el destino \"{{to}}\" ya existe"
+    },
+    "type": "ha de ser una instancia de \"{{type}}\""
+  },
+  "number": {
+    "base": "ha de ser un número",
+    "min": "ha de ser mayor o igual que {{limit}}",
+    "max": "ha de ser menor o igual que {{limit}}",
+    "less": "ha de ser menor que {{limit}}",
+    "greater": "ah de ser mayor que {{limit}}",
+    "float": "ha de ser un float o un double",
+    "integer": "debe ser un entero",
+    "negative": "ha de ser un número negativo",
+    "positive": "ha de ser un número positivo",
+    "precision": "no debe tener más de {{limit}} decimales",
+    "ref": "hace referencia a \"{{ref}}\" que no es un número",
+    "multiple": "debe ser un múltiple de {{multiple}}"
+  },
+  "string": {
+    "base": "ha de ser una string",
+    "min": "la longitud debe tener al menos {{limit}} carácteres de longitud",
+    "max": "la longitud debe ser menor o igual a {{limit}} carácteres de longitud",
+    "length": "la longitud debe ser de {{limit}} carácteres de longitud",
+    "alphanum": "solo debe contener caracteres alfanuméricos",
+    "token": "solo debe contener caracteres alfanuméricos y guines bajos",
+    "regex": {
+      "base": "con el valor \"{{!value}}\" no coincide con el patrón requerido: {{pattern}}",
+      "name": "con el valor \"{{!value}}\" no coincide con el patrón {{name}}"
+    },
+    "email": "ha de ser un correo electrónico válido",
+    "uri": "ha de ser un uri válido",
+    "uriCustomScheme": "ha de ser un uri válido con un esquema que coincida con el patrón {{scheme}}",
+    "isoDate": "debe ser una fecha ISO 8601 válida",
+    "guid": "debe ser un GUID válido",
+    "hex": "solo debe contener caracteres hexadecimales",
+    "hostname": "debe ser un nombre de host válido",
+    "lowercase": "solo debe contener caracteres en minúscula",
+    "uppercase": "solo debe contener caracteres en mayúscula",
+    "trim": "no debe tener espacios iniciales o finales en blanco",
+    "creditCard": "debe ser una tarjeta de crédito",
+    "ref": "hace referencia a \"{{ref}}\" que no es un número",
+    "ip": "debe ser una dirección IP válida con un CIDR {{cidr}}",
+    "ipVersion": "debe ser una dirección IP válida de una de las siguientes versiones {{version}} con un CIDR {{cidr}}"
+  }
+}

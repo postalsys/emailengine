@@ -1,10 +1,18 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-07-21 11:11+0000\n"
+"POT-Creation-Date: 2022-07-21 13:39+0000\n"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -36,14 +44,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:145
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:11
@@ -135,19 +135,19 @@ msgid "HTTP error!"
 msgstr ""
 
 #: lib/routes-ui.js:2764
-#: lib/routes-ui.js:4009
-#: lib/routes-ui.js:4020
+#: lib/routes-ui.js:4007
+#: lib/routes-ui.js:4018
 msgid "Server hostname was not found"
 msgstr ""
 
 #: lib/routes-ui.js:2767
-#: lib/routes-ui.js:4012
-#: lib/routes-ui.js:4023
+#: lib/routes-ui.js:4010
+#: lib/routes-ui.js:4021
 msgid "Invalid username or password"
 msgstr ""
 
 #: lib/routes-ui.js:2771
-#: lib/routes-ui.js:4027
+#: lib/routes-ui.js:4025
 msgid "TLS protocol error"
 msgstr ""
 
@@ -155,18 +155,18 @@ msgstr ""
 msgid "Unknown OAuth provider"
 msgstr ""
 
-#: lib/routes-ui.js:3778
-#: lib/routes-ui.js:3887
-#: lib/routes-ui.js:4112
+#: lib/routes-ui.js:3777
+#: lib/routes-ui.js:3886
+#: lib/routes-ui.js:4110
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:3827
-#: lib/routes-ui.js:3860
+#: lib/routes-ui.js:3826
+#: lib/routes-ui.js:3859
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:3950
-#: lib/routes-ui.js:4190
+#: lib/routes-ui.js:3949
+#: lib/routes-ui.js:4188
 msgid "Failed to process account"
 msgstr ""
