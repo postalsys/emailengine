@@ -47,7 +47,7 @@ msgstr "Port"
 
 #: views/accounts/register/imap-server.hbs:58
 msgid "TLS for IMAP"
-msgstr "TSL pour IMAP"
+msgstr "TLS pour IMAP"
 
 #: views/accounts/register/imap-server.hbs:59
 msgid ""
