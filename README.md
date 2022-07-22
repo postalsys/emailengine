@@ -1,5 +1,7 @@
 ![twitter_header_photo_2](https://user-images.githubusercontent.com/132242/127487204-e27c980b-04b5-448c-b92f-e692fbefc1c5.png)
 
+> This is just a FOSS edition of the existing [EmailEngine.app](https://emailengine.app/). All rights and code belong to them. I just made a few changes to make it work without license and am using of personal usa-case. For commercial/production use, please buy official license from [official Site](https://postalsys.com/plans).
+
 # EmailEngine Email API
 
 Headless email client application that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!

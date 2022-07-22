@@ -1067,7 +1067,7 @@ async function onCommand(worker, message) {
                 await setLicense(licenseData, licenseFile);
 
                 licenseInfo.active = true;
-                licenseInfo.details = licenseData;
+                licenseInfo.details = ' ';
                 licenseInfo.type = 'EmailEngine License';
 
                 // re-enable workers
@@ -1332,7 +1332,17 @@ const startApplication = async () => {
     }
 
     if (!licenseInfo.active) {
-        logger.fatal({ msg: 'No active license key provided. Running in limited mode.' });
+        logger.fatal({ msg: "Running FOSS Edition. Don't run in production mode"});
+        licenseInfo.active = true;
+        licenseInfo.type = 'FOSS License';
+        licenseInfo.details = {
+            expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10),
+            application: 'FOSS',
+            licensedTo: 'FOSS',
+            hostname: 'FOSS Server',
+            created: new Date().toISOString(),
+            trial: false
+        };
     }
 
     // check for updates, run as a promise to not block other activities
