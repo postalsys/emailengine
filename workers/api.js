@@ -2060,6 +2060,14 @@ When making API calls remember that requests against the same account are queued
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                                     .example('connected')
                                     .description('Account state'),
+                                webhooks: Joi.string()
+                                    .uri({
+                                        scheme: ['http', 'https'],
+                                        allowRelative: false
+                                    })
+                                    .example('https://myservice.com/imap/webhooks')
+                                    .description('Account-specific webhook URL'),
+                                proxy: settingsSchema.proxyUrl,
                                 syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
@@ -2101,7 +2109,7 @@ When making API calls remember that requests against the same account are queued
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state', 'smtpStatus']) {
+                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state', 'smtpStatus', 'webhooks', 'proxy']) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
@@ -2162,6 +2170,13 @@ When making API calls remember that requests against the same account are queued
 
                     notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
 
+                    webhooks: Joi.string()
+                        .uri({
+                            scheme: ['http', 'https'],
+                            allowRelative: false
+                        })
+                        .example('https://myservice.com/imap/webhooks')
+                        .description('Account-specific webhook URL'),
                     proxy: settingsSchema.proxyUrl,
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
