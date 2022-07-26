@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - gettext
+            - feature-gmail-categories
 
 name: Deploy test instance
 
