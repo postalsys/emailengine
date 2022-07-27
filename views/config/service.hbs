@@ -271,6 +271,23 @@
             </div>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">resolveGmailCategories</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
+                    id="resolveGmailCategories" name="resolveGmailCategories" {{#if
+                    values.resolveGmailCategories}}checked{{/if}} />
+                <label class="form-check-label" for="resolveGmailCategories">Resolve Gmail categories</label>
+                {{#if errors.resolveGmailCategories}}
+                <span class="invalid-feedback">{{errors.resolveGmailCategories}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, EmailEngine resolves the inbox category (also known as
+                    the Gmail tab) for incoming emails. Possible category values are the following: <em>social</em>,
+                    <em>promotions</em>, <em>updates</em>, <em>forums</em>, and <em>primary</em>. You can find the value
+                    in the <em>category</em> property of the <em>messageNew</em> webhook payload.</small>
+            </div>
+
+            <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.labsDocumentStore}}is-invalid{{/if}}"
                     id="labsDocumentStore" name="labsDocumentStore" {{#if values.labsDocumentStore}}checked{{/if}} />
