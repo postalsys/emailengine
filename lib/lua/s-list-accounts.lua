@@ -18,6 +18,9 @@ local shouldSkip = skip;
 local matching = 0;
 local result = {}
 
+-- sort list by account IDs
+table.sort(list);
+
 for index, account in ipairs(list) do
 
     local state;
