@@ -9,6 +9,15 @@
 
 {{> accounts_header}}
 
+{{#if query}}
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Results for "{{query}}"</li>
+    </ol>
+</nav>
+{{/if}}
+
 {{#if accounts}}
 <div class="card mb-4 mt-4">
 

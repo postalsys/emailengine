@@ -1993,7 +1993,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
-                return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
+                return await accountObject.listAccounts(request.query.state, request.query.query, request.query.page, request.query.pageSize);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2039,7 +2039,8 @@ When making API calls remember that requests against the same account are queued
                         .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
                         .description('Filter accounts by state')
-                        .label('AccountState')
+                        .label('AccountState'),
+                    query: Joi.string().example('user@example').description('Filter accounts by string match').label('AccountQuery')
                 }).label('AccountsFilter')
             },
 
