@@ -34,7 +34,7 @@ const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-const { REDIS_PREFIX } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 const nodeFetch = require('node-fetch');
@@ -72,7 +72,7 @@ const notifyWorker = new Worker(
 
         // validate if we should even process this webhook
         let accountExists = await redis.exists(accountKey);
-        if (!accountExists) {
+        if (!accountExists && job.name !== ACCOUNT_DELETED_NOTIFY) {
             logger.debug({
                 msg: 'Account is not enabled',
                 action: 'webhook',

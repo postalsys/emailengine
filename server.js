@@ -49,7 +49,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const pathlib = require('path');
-const { redis, queueConf } = require('./lib/db');
+const { redis, queueConf, notifyQueue } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -74,7 +74,15 @@ const {
     setLicense,
     getRedisStats
 } = require('./lib/tools');
-const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY, REDIS_PREFIX } = require('./lib/consts');
+const {
+    MAX_DAYS_STATS,
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    CONNECT_ERROR_NOTIFY,
+    REDIS_PREFIX,
+    ACCOUNT_ADDED_NOTIFY,
+    ACCOUNT_DELETED_NOTIFY
+} = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
@@ -498,6 +506,32 @@ let updateSmtpServerState = async (state, payload) => {
         }
     }
 };
+
+async function sendWebhook(account, event, data) {
+    let payload = {
+        account,
+        date: new Date().toISOString()
+    };
+
+    if (event) {
+        payload.event = event;
+    }
+
+    if (data) {
+        payload.data = data;
+    }
+
+    let queueKeep = (await settings.get('queueKeep')) || true;
+    await notifyQueue.add(event, payload, {
+        removeOnComplete: queueKeep,
+        removeOnFail: queueKeep,
+        attempts: 10,
+        backoff: {
+            type: 'exponential',
+            delay: 5000
+        }
+    });
+}
 
 let spawnWorker = async type => {
     if (isClosing) {
@@ -1097,7 +1131,9 @@ async function onCommand(worker, message) {
 
         case 'new':
             unassigned.add(message.account);
-            assignAccounts().catch(err => logger.error(err));
+            assignAccounts()
+                .then(sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
+                .catch(err => logger.error(err));
             return;
 
         case 'delete':
@@ -1117,6 +1153,7 @@ async function onCommand(worker, message) {
                     .then(() => logger.debug('worker processed'))
                     .catch(err => logger.error(err));
             }
+            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err => logger.error(err));
             return;
 
         case 'update':
