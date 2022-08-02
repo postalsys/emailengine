@@ -40,6 +40,30 @@
                     data-placement="top">
                     <i class="fas fa-file-code fa-fw"></i> Email templates
                 </a>
+
+                {{#if canSend}}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown"
+                        aria-expanded="false" title="Test SMTP delivery settings for this account" id="test-smtp-btn">
+                        <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
+                    </button>
+                    <div class="dropdown-menu">
+                        {{#if canUseSmtp}}
+                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal" data-keyboard="false"
+                            data-backdrop="static" data-account="{{account.account}}" href="#">Account's
+                            SMTP server</a>
+                        {{#if gateways}}
+                        <div class="dropdown-divider"></div>
+                        {{/if}}
+                        {{/if}}
+                        {{#each gateways}}
+                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal"
+                            data-account="{{../account.account}}" data-gateway="{{gateway}}" href="#">{{name}}</a>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/if}}
+
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
                     title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
                     data-placement="top" download>
@@ -383,6 +407,41 @@
     </div>
 </div>
 
+<div class="modal fade" id="testSendModal" tabindex="-1" aria-labelledby="testSendModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testSendModalLabel">Email delivery test</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p><small class="text-muted">EmailEngine sends a test email from the selected account to EmailEngine's
+                        remote testing server. Once the test email has been processed, EmailEngine displays the
+                        authorization validation results below.</small>
+                </p>
+                <div id="test-send-pending-message">
+                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Testing email delivery settings, please wait…<br />
+                        <small><strong>NB!</strong> this process might take several
+                            minutes depending on the SMTP server.</small>
+                    </p>
+                </div>
+                <div id="test-send-error">
+                    <p>Message submission failed with the following result:</p>
+                    <div>
+                        <small class="alert alert-danger text-monospace error-message" style="display: block;"></small>
+                    </div>
+                </div>
+                <div id="test-send-results"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <input type="hidden" id="account-id" value="{{account.account}}">
 <input type="hidden" id="crumb" value="{{crumb}}">
 
@@ -562,5 +621,138 @@
 
         // not set up by default as this element has a different data-toggle
         $('#delete-btn').tooltip();
+        $('#delete-btn').click(() => $('#delete-btn').tooltip('hide'));
+        $('#test-smtp-btn').tooltip();
+        $('#test-smtp-btn').click(() => $('#test-smtp-btn').tooltip('hide'));
     });
+</script>
+
+<script id="test-send-template" type="text/x-handlebars-template">{{{testSendTemplate}}}</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        Handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
+            if (baseVal == compareVal) {
+                return options.fn(this);
+            }
+            return options.inverse(this);
+        });
+
+        Handlebars.registerHelper('inc', function (nr, inc, options) {
+            return Number(nr) + Number(inc);
+        });
+
+        const testSendTemplate = Handlebars.compile(document.getElementById('test-send-template').innerHTML);
+
+        let aborted = false;
+
+        const createSmtpTestAccount = async (account, gateway) => {
+            aborted = false;
+            const res = await fetch(`/admin/smtp/create-test`, {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    account,
+                    gateway
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+
+        const checkSmtpTestAccount = async user => {
+            if (aborted) {
+                return false
+            }
+
+            const res = await fetch(`/admin/smtp/check-test`, {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    user
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            return data;
+        }
+
+        const waitForTestResults = async user => {
+            let results;
+
+            while (!results) {
+                if (aborted) {
+                    return false
+                }
+
+                let data = await checkSmtpTestAccount(user);
+                switch (data.status) {
+                    case 'error':
+                        throw new Error(data.error)
+                    case 'success':
+                        results = data;
+                        break;
+                    case 'no data':
+                    default:
+                        await new Promise(r => setTimeout(r, 1000))
+                }
+
+            }
+
+            return results;
+        }
+
+        $('#testSendModal').on('show.bs.modal', function (event) {
+            document.getElementById('test-send-pending-message').classList.remove('d-none');
+            document.getElementById('test-send-results').classList.add('d-none');
+            document.getElementById('test-send-error').classList.add('d-none');
+            document.getElementById('test-send-results').innerHTML = ''
+        })
+
+        $('#testSendModal').on('shown.bs.modal', function (event) {
+
+            let testData = {
+                account: event.relatedTarget.dataset.account || '',
+                gateway: event.relatedTarget.dataset.gateway || '',
+            }
+
+            createSmtpTestAccount(testData.account, testData.gateway).then((result) => {
+                return waitForTestResults(result.user);
+            }).then(results => {
+                document.getElementById('test-send-pending-message').classList.add('d-none');
+                document.getElementById('test-send-error').classList.add('d-none');
+                if (aborted) {
+                    return false
+                }
+                document.getElementById('test-send-results').classList.remove('d-none');
+                console.log('TEST RESULTS', results);
+                document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
+
+                // activate tabs
+                //$('#testResultTabs li button').tab();
+                //$('.collapse').collapse();
+            }).catch(err => {
+                document.getElementById('test-send-pending-message').classList.add('d-none');
+                document.getElementById('test-send-results').classList.add('d-none');
+                document.getElementById('test-send-error').classList.remove('d-none');
+                document.querySelector('#test-send-error .error-message').textContent = err.message;
+            });
+        });
+
+        $('#testSendModal').on('hide.bs.modal', function (event) {
+            aborted = true;
+        });
+    })
 </script>
