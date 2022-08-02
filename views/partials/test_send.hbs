@@ -21,8 +21,10 @@
             <dt>IP address</dt>
             <dd class="text-monospace">{{spf.[client-ip]}}</dd>
 
+            {{#if spf.rr}}
             <dt>DNS record</dt>
             <dd class="text-monospace">{{spf.rr}}</dd>
+            {{/if}}
 
             <dt>Result</dt>
             <dd>
@@ -115,5 +117,46 @@
         {{/each}}
 
     </div>
-    <div class="tab-pane" id="result-tabs-dmarc" role="tabpanel" aria-labelledby="result-tabs-ontact-tab">DMARC</div>
+    <div class="tab-pane" id="result-tabs-dmarc" role="tabpanel" aria-labelledby="result-tabs-ontact-tab">
+        <dl>
+            <dt>Domain</dt>
+            <dd>{{dmarc.domain}}</dd>
+
+            {{#if dmarc.rr}}
+            <dt>DNS record</dt>
+            <dd class="text-monospace">{{dmarc.rr}}</dd>
+            {{/if}}
+
+            <dt>Result</dt>
+            <dd>
+                {{#equals dmarc.status.result "pass"}}
+                <span class="badge badge-success">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "info"}}
+                <span class="badge badge-warning">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "fail"}}
+                <span class="badge badge-danger">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "neutral"}}
+                <span class="badge badge-light">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "none"}}
+                <span class="badge badge-light">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "permerror"}}
+                <span class="badge badge-secondary">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+
+                {{#equals dmarc.status.result "temperror"}}
+                <span class="badge badge-secondary">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{/equals}}
+            </dd>
+        </dl>
+    </div>
 </div>
