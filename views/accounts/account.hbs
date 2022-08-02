@@ -49,8 +49,8 @@
                     </button>
                     <div class="dropdown-menu">
                         {{#if canUseSmtp}}
-                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal"
-                            data-account="{{account.account}}" href="#">Account's
+                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal" data-keyboard="false"
+                            data-backdrop="static" data-account="{{account.account}}" href="#">Account's
                             SMTP server</a>
                         {{#if gateways}}
                         <div class="dropdown-divider"></div>
