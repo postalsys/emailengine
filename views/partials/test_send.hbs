@@ -1,162 +1,230 @@
-<ul class="nav nav-tabs" id="testResultTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-        <a class="nav-link active" id="result-tabs-spf-tab" data-toggle="tab" data-target="#result-tabs-spf" href="#"
-            role="tab" aria-controls="result-tabs-spf" aria-selected="true">SPF</a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a class="nav-link" id="result-tabs-dkim-tab" data-toggle="tab" data-target="#result-tabs-dkim" href="#"
-            role="tab" aria-controls="result-tabs-dkim" aria-selected="false">DKIM</a>
-    </li>
-    <li class="nav-item" role="presentation">
-        <a class="nav-link" id="result-tabs-dmarc-tab" data-toggle="tab" data-target="#result-tabs-dmarc" href="#"
-            role="tab" aria-controls="result-tabs-dmarc" aria-selected="false">DMARC</a>
-    </li>
-</ul>
-<div class="tab-content mt-3" id="testResultContent">
-    <div class="tab-pane show active" id="result-tabs-spf" role="tabpanel" aria-labelledby="result-tabs-spf-tab">
-        <dl>
-            <dt>Envelope address</dt>
-            <dd>{{spf.[envelope-from]}}</dd>
+<div class="accordion">
+    <div class="card">
+        <a href="#showSpf" class="d-block card-header py-3 collapsed" data-toggle="collapse" data-target="#showSpf"
+            role="button" aria-expanded="true" aria-controls="showSpf">
+            <h6 class="m-0 font-weight-bold text-primary">
 
-            <dt>IP address</dt>
-            <dd class="text-monospace">{{spf.[client-ip]}}</dd>
-
-            {{#if spf.rr}}
-            <dt>DNS record</dt>
-            <dd class="text-monospace">{{spf.rr}}</dd>
-            {{/if}}
-
-            <dt>Result</dt>
-            <dd>
                 {{#equals spf.status.result "pass"}}
-                <span class="badge badge-success">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i></span></span>
                 {{/equals}}
 
-                {{#equals spf.status.result "info"}}
-                <span class="badge badge-warning">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{#equals spf.status.result "softfail"}}
+                <span class="badge badge-warning"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals spf.status.result "fail"}}
-                <span class="badge badge-danger">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-danger"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals spf.status.result "neutral"}}
-                <span class="badge badge-light">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
                 {{/equals}}
 
                 {{#equals spf.status.result "none"}}
-                <span class="badge badge-light">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
                 {{/equals}}
 
                 {{#equals spf.status.result "permerror"}}
-                <span class="badge badge-secondary">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals spf.status.result "temperror"}}
-                <span class="badge badge-secondary">{{spf.status.result}}</span> {{spf.status.comment}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
-            </dd>
-        </dl>
+
+
+                SPF
+            </h6>
+        </a>
+        <div class="collapse" id="showSpf">
+            <div class="card-body">
+                <dl>
+                    <dt>Envelope address</dt>
+                    <dd>{{spf.[envelope-from]}}</dd>
+
+                    <dt>IP address</dt>
+                    <dd class="text-monospace">{{spf.[client-ip]}}</dd>
+
+                    {{#if spf.rr}}
+                    <dt>DNS record</dt>
+                    <dd class="text-monospace">{{spf.rr}}</dd>
+                    {{/if}}
+
+                    <dt>Result</dt>
+                    <dd>
+                        {{spf.status.result}}
+                        {{#if spf.status.comment}} –
+                        {{spf.status.comment}}
+                        {{/if}}
+                    </dd>
+
+                </dl>
+            </div>
+        </div>
     </div>
-    <div class="tab-pane" id="result-tabs-dkim" role="tabpanel" aria-labelledby="result-tabs-dkim-tab">
 
-        {{#each dkim.results}}
+    <div class="card">
+        <a href="#showDkim" class="d-block card-header py-3 collapsed" data-toggle="collapse" data-target="#showDkim"
+            role="button" aria-expanded="true" aria-controls="showDkim">
+            <h6 class="m-0 font-weight-bold text-primary">
 
-        <p>Signature {{inc @index 1}}</p>
+                {{#equals mainSig.status.result "pass"}}
 
-        <dl>
+                {{#if mainSig.status.aligned}}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i></span></span>
+                {{else}}
+                <span class="badge badge-secondary">{{mainSig.status.result}} <i
+                        class="fas fa-exclamation-triangle"></i></span>
+                {{/if}}
 
-            {{#if signingDomain}}
-            <dt>Signed by</dt>
-            <dd class="text-monospace">{{signingDomain}}</dd>
-            {{/if}}
+                {{/equals}}
 
-            {{#if selector}}
-            <dt>with selector</dt>
-            <dd class="text-monospace">{{selector}}</dd>
-            {{/if}}
+                {{#equals mainSig.status.result "softfail"}}
+                <span class="badge badge-warning"><i class="fas fa-exclamation-triangle"></i></span>
+                {{/equals}}
 
-            {{#equals status.result "pass"}}
+                {{#equals mainSig.status.result "fail"}}
+                <span class="badge badge-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                {{/equals}}
 
-            {{#if status.aligned}}
-            <span class="badge badge-success">{{status.result}}</span>
-            {{else}}
-            <span class="badge badge-light">{{status.result}}</span> signature is valid but signing domain does not
-            match
-            sender address
-            {{/if}}
+                {{#equals mainSig.status.result "neutral"}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
+                {{/equals}}
 
-            {{/equals}}
+                {{#equals mainSig.status.result "none"}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
+                {{/equals}}
 
-            {{#equals status.result "info"}}
-            <span class="badge badge-warning">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                {{#equals mainSig.status.result "permerror"}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
+                {{/equals}}
 
-            {{#equals status.result "fail"}}
-            <span class="badge badge-danger">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                {{#equals mainSig.status.result "temperror"}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
+                {{/equals}}
 
-            {{#equals status.result "neutral"}}
-            <span class="badge badge-light">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                DKIM
+            </h6>
+        </a>
+        <div class="collapse" id="showDkim">
+            <div class="card-body">
+                {{#each dkim.results}}
 
-            {{#equals status.result "none"}}
-            <span class="badge badge-light">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                <p>Signature {{inc @index 1}}</p>
 
-            {{#equals status.result "permerror"}}
-            <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                <dl>
 
-            {{#equals status.result "temperror"}}
-            <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
-            {{/equals}}
+                    {{#if signingDomain}}
+                    <dt>Signed by</dt>
+                    <dd class="text-monospace">{{signingDomain}}</dd>
+                    {{/if}}
 
-        </dl>
+                    {{#if selector}}
+                    <dt>with selector</dt>
+                    <dd class="text-monospace">{{selector}}</dd>
+                    {{/if}}
 
-        {{/each}}
+                    {{#equals status.result "pass"}}
 
+                    {{#if status.aligned}}
+                    <span class="badge badge-success">{{status.result}}</span></span>
+                    {{else}}
+                    <span class="badge badge-secondary">{{status.result}}</span> signature is valid but signing domain
+                    does not match sender address
+                    {{/if}}
+
+                    {{/equals}}
+
+                    {{#equals status.result "softfail"}}
+                    <span class="badge badge-warning">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                    {{#equals status.result "fail"}}
+                    <span class="badge badge-danger">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                    {{#equals status.result "neutral"}}
+                    <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                    {{#equals status.result "none"}}
+                    <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                    {{#equals status.result "permerror"}}
+                    <span class="badge badge-info">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                    {{#equals status.result "temperror"}}
+                    <span class="badge badge-info">{{status.result}}</span> {{status.comment}}
+                    {{/equals}}
+
+                </dl>
+
+                {{/each}}
+            </div>
+        </div>
     </div>
-    <div class="tab-pane" id="result-tabs-dmarc" role="tabpanel" aria-labelledby="result-tabs-ontact-tab">
-        <dl>
-            <dt>Domain</dt>
-            <dd>{{dmarc.domain}}</dd>
 
-            {{#if dmarc.rr}}
-            <dt>DNS record</dt>
-            <dd class="text-monospace">{{dmarc.rr}}</dd>
-            {{/if}}
+    <div class="card">
+        <a href="#showDmarc" class="d-block card-header py-3 collapsed" data-toggle="collapse" data-target="#showDmarc"
+            role="button" aria-expanded="true" aria-controls="showDmarc">
+            <h6 class="m-0 font-weight-bold text-primary">
 
-            <dt>Result</dt>
-            <dd>
                 {{#equals dmarc.status.result "pass"}}
-                <span class="badge badge-success">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-success"><i class="fas fa-check-circle"></i></span></span>
                 {{/equals}}
 
-                {{#equals dmarc.status.result "info"}}
-                <span class="badge badge-warning">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                {{#equals dmarc.status.result "softfail"}}
+                <span class="badge badge-warning"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals dmarc.status.result "fail"}}
-                <span class="badge badge-danger">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-danger"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals dmarc.status.result "neutral"}}
-                <span class="badge badge-light">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
                 {{/equals}}
 
                 {{#equals dmarc.status.result "none"}}
-                <span class="badge badge-light">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-secondary"><i class="fas fa-stop-circle"></i></span>
                 {{/equals}}
 
                 {{#equals dmarc.status.result "permerror"}}
-                <span class="badge badge-secondary">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
 
                 {{#equals dmarc.status.result "temperror"}}
-                <span class="badge badge-secondary">{{dmarc.status.result}}</span> {{dmarc.status.comment}}
+                <span class="badge badge-info"><i class="fas fa-exclamation-triangle"></i></span>
                 {{/equals}}
-            </dd>
-        </dl>
+
+                DMARC
+            </h6>
+        </a>
+        <div class="collapse" id="showDmarc">
+            <div class="card-body">
+
+                <dl>
+                    <dt>Domain</dt>
+                    <dd>{{dmarc.domain}}</dd>
+
+                    {{#if dmarc.rr}}
+                    <dt>DNS record</dt>
+                    <dd class="text-monospace">{{dmarc.rr}}</dd>
+                    {{/if}}
+
+                    <dt>Result</dt>
+                    <dd>
+                        {{dmarc.status.result}}
+                        {{#if dmarc.status.comment}} –
+                        {{dmarc.status.comment}}
+                        {{/if}}
+                    </dd>
+
+                </dl>
+
+            </div>
+        </div>
     </div>
 </div>
