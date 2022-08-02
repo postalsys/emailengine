@@ -124,40 +124,47 @@
                     <dd class="text-monospace">{{selector}}</dd>
                     {{/if}}
 
-                    {{#equals status.result "pass"}}
+                    <dt>Result</dt>
+                    <dd>
 
-                    {{#if status.aligned}}
-                    <span class="badge badge-success">{{status.result}}</span></span>
-                    {{else}}
-                    <span class="badge badge-secondary">{{status.result}}</span> signature is valid but signing domain
-                    does not match sender address
-                    {{/if}}
+                        {{#equals status.result "pass"}}
 
-                    {{/equals}}
+                        {{#if status.aligned}}
+                        <span class="badge badge-success">{{status.result}}</span></span>
+                        {{else}}
+                        <span class="badge badge-secondary">{{status.result}}</span> – signature is valid but signing
+                        domain does not match sender address
+                        {{/if}}
 
-                    {{#equals status.result "softfail"}}
-                    <span class="badge badge-warning">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{/equals}}
 
-                    {{#equals status.result "fail"}}
-                    <span class="badge badge-danger">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{#equals status.result "softfail"}}
+                        <span class="badge badge-warning">{{status.result}}</span>
+                        {{/equals}}
 
-                    {{#equals status.result "neutral"}}
-                    <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{#equals status.result "fail"}}
+                        <span class="badge badge-danger">{{status.result}}</span>
+                        {{/equals}}
 
-                    {{#equals status.result "none"}}
-                    <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{#equals status.result "neutral"}}
+                        <span class="badge badge-secondary">{{status.result}}</span>
+                        {{/equals}}
 
-                    {{#equals status.result "permerror"}}
-                    <span class="badge badge-info">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{#equals status.result "none"}}
+                        <span class="badge badge-secondary">{{status.result}}</span>
+                        {{/equals}}
 
-                    {{#equals status.result "temperror"}}
-                    <span class="badge badge-info">{{status.result}}</span> {{status.comment}}
-                    {{/equals}}
+                        {{#equals status.result "permerror"}}
+                        <span class="badge badge-info">{{status.result}}</span>
+                        {{/equals}}
+
+                        {{#equals status.result "temperror"}}
+                        <span class="badge badge-info">{{status.result}}</span>
+                        {{/equals}}
+
+                        {{#if status.comment}}
+                        – {{status.comment}}
+                        {{/if}}
 
                 </dl>
 
