@@ -344,12 +344,14 @@ const init = async () => {
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
 
-    handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
+    handlebars.registerHelper('equals', (compareVal, baseVal, options) => {
         if (baseVal === compareVal) {
             return options.fn(this); // eslint-disable-line no-invalid-this
         }
         return options.inverse(this); // eslint-disable-line no-invalid-this
     });
+
+    handlebars.registerHelper('inc', (nr, inc) => Number(nr) + Number(inc));
 
     const server = Hapi.server({
         port: API_PORT,

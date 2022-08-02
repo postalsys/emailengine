@@ -631,6 +631,11 @@
                 }
                 return options.inverse(this);
             });
+
+            Handlebars.registerHelper('inc', function (nr, inc, options) {
+                return Number(nr) + Number(inc);
+            });
+
             const testSendTemplate = Handlebars.compile(document.getElementById('test-send-template').innerHTML);
 
             let aborted = false;

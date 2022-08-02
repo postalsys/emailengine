@@ -27,11 +27,93 @@
             <dt>Result</dt>
             <dd>
                 {{#equals spf.status.result "pass"}}
-                <span class="badge badge-success">{{spf.status.result}}</span>
+                <span class="badge badge-success">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "info"}}
+                <span class="badge badge-warning">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "fail"}}
+                <span class="badge badge-danger">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "neutral"}}
+                <span class="badge badge-light">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "none"}}
+                <span class="badge badge-light">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "permerror"}}
+                <span class="badge badge-secondary">{{spf.status.result}}</span> {{spf.status.comment}}
+                {{/equals}}
+
+                {{#equals spf.status.result "temperror"}}
+                <span class="badge badge-secondary">{{spf.status.result}}</span> {{spf.status.comment}}
                 {{/equals}}
             </dd>
         </dl>
     </div>
-    <div class="tab-pane" id="result-tabs-dkim" role="tabpanel" aria-labelledby="result-tabs-dkim-tab">DKIM</div>
+    <div class="tab-pane" id="result-tabs-dkim" role="tabpanel" aria-labelledby="result-tabs-dkim-tab">
+
+        {{#each dkim.results}}
+
+        <p>Signature {{inc @index 1}}</p>
+
+        <dl>
+
+            {{#if signingDomain}}
+            <dt>Signed by</dt>
+            <dd class="text-monospace">{{signingDomain}}</dd>
+            {{/if}}
+
+            {{#if selector}}
+            <dt>with selector</dt>
+            <dd class="text-monospace">{{selector}}</dd>
+            {{/if}}
+
+            {{#equals status.result "pass"}}
+
+            {{#if status.aligned}}
+            <span class="badge badge-success">{{status.result}}</span>
+            {{else}}
+            <span class="badge badge-light">{{status.result}}</span> signature is valid but signing domain does not
+            match
+            sender address
+            {{/if}}
+
+            {{/equals}}
+
+            {{#equals status.result "info"}}
+            <span class="badge badge-warning">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+            {{#equals status.result "fail"}}
+            <span class="badge badge-danger">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+            {{#equals status.result "neutral"}}
+            <span class="badge badge-light">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+            {{#equals status.result "none"}}
+            <span class="badge badge-light">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+            {{#equals status.result "permerror"}}
+            <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+            {{#equals status.result "temperror"}}
+            <span class="badge badge-secondary">{{status.result}}</span> {{status.comment}}
+            {{/equals}}
+
+        </dl>
+
+        {{/each}}
+
+    </div>
     <div class="tab-pane" id="result-tabs-dmarc" role="tabpanel" aria-labelledby="result-tabs-ontact-tab">DMARC</div>
 </div>
