@@ -344,6 +344,13 @@ const init = async () => {
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
 
+    handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
+        if (baseVal === compareVal) {
+            return options.fn(this); // eslint-disable-line no-invalid-this
+        }
+        return options.inverse(this); // eslint-disable-line no-invalid-this
+    });
+
     const server = Hapi.server({
         port: API_PORT,
         host: API_HOST,

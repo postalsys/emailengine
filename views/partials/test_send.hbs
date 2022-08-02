@@ -1,0 +1,37 @@
+<ul class="nav nav-tabs" id="testResultTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="result-tabs-spf-tab" data-toggle="tab" data-target="#result-tabs-spf" href="#"
+            role="tab" aria-controls="result-tabs-spf" aria-selected="true">SPF</a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="result-tabs-dkim-tab" data-toggle="tab" data-target="#result-tabs-dkim" href="#"
+            role="tab" aria-controls="result-tabs-dkim" aria-selected="false">DKIM</a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link" id="result-tabs-dmarc-tab" data-toggle="tab" data-target="#result-tabs-dmarc" href="#"
+            role="tab" aria-controls="result-tabs-dmarc" aria-selected="false">DMARC</a>
+    </li>
+</ul>
+<div class="tab-content mt-3" id="testResultContent">
+    <div class="tab-pane show active" id="result-tabs-spf" role="tabpanel" aria-labelledby="result-tabs-spf-tab">
+        <dl>
+            <dt>Envelope address</dt>
+            <dd>{{spf.[envelope-from]}}</dd>
+
+            <dt>IP address</dt>
+            <dd class="text-monospace">{{spf.[client-ip]}}</dd>
+
+            <dt>DNS record</dt>
+            <dd class="text-monospace">{{spf.rr}}</dd>
+
+            <dt>Result</dt>
+            <dd>
+                {{#equals spf.status.result "pass"}}
+                <span class="badge badge-success">{{spf.status.result}}</span>
+                {{/equals}}
+            </dd>
+        </dl>
+    </div>
+    <div class="tab-pane" id="result-tabs-dkim" role="tabpanel" aria-labelledby="result-tabs-dkim-tab">DKIM</div>
+    <div class="tab-pane" id="result-tabs-dmarc" role="tabpanel" aria-labelledby="result-tabs-ontact-tab">DMARC</div>
+</div>

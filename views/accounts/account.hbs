@@ -40,6 +40,37 @@
                     data-placement="top">
                     <i class="fas fa-file-code fa-fw"></i> Email templates
                 </a>
+
+                {{#if canSend}}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown"
+                        aria-expanded="false" title="Test SMTP settings" id="test-smtp-btn">
+                        <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> SMTP test
+                    </button>
+                    <div class="dropdown-menu">
+                        {{#if canUseSmtp}}
+                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal"
+                            data-account="{{account.account}}" href="#">Account's
+                            SMTP server</a>
+                        {{#if gateways}}
+                        <div class="dropdown-divider"></div>
+                        {{/if}}
+                        {{/if}}
+                        {{#each gateways}}
+                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal"
+                            data-account="{{../account.account}}" data-gateway="{{gateway}}" href="#">{{name}}</a>
+                        {{/each}}
+                    </div>
+                </div>
+                <!--
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
+                    title="Test SMTP settings" id="test-smtp-btn" data-placement="top"
+                    data-account="{{account.account}}">
+                    <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> SMTP test
+                </button>
+-->
+                {{/if}}
+
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
                     title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
                     data-placement="top" download>
@@ -383,184 +414,330 @@
     </div>
 </div>
 
-<input type="hidden" id="account-id" value="{{account.account}}">
-<input type="hidden" id="crumb" value="{{crumb}}">
+<div class="modal fade" id="testSendModal" tabindex="-1" aria-labelledby="testSendModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testSendModalLabel">SMTP test</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="test-send-pending-message">
+                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Testing SMTP settings, please wait…</p>
+                </div>
+                <div id="test-send-results"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
+    <input type="hidden" id="account-id" value="{{account.account}}">
+    <input type="hidden" id="crumb" value="{{crumb}}">
 
-        const reconnectAccount = async () => {
-            const account = document.getElementById('account-id').value.trim();
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
 
-            const res = await fetch(`/admin/accounts/${account}/reconnect`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    reconnect: true
+            const reconnectAccount = async () => {
+                const account = document.getElementById('account-id').value.trim();
+
+                const res = await fetch(`/admin/accounts/${account}/reconnect`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        reconnect: true
+                    })
                 })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
 
-            return data;
-        }
-
-        let reconnecting = false;
-        const requestReconnectElm = document.getElementById('request-reconnect');
-        requestReconnectElm.addEventListener('click', e => {
-            e.preventDefault();
-            if (requestReconnectElm.classList.contains('disabled')) {
-                return;
+                return data;
             }
 
-            if (reconnecting) {
-                return
-            }
+            let reconnecting = false;
+            const requestReconnectElm = document.getElementById('request-reconnect');
+            requestReconnectElm.addEventListener('click', e => {
+                e.preventDefault();
+                if (requestReconnectElm.classList.contains('disabled')) {
+                    return;
+                }
 
-            reconnecting = true;
-            document.getElementById('reconnect-icon').classList.add('fa-spin');
-            reconnectAccount().then(data => {
-                document.getElementById('reconnect-icon').classList.remove('fa-spin');
-                reconnecting = false;
-                showToast(data.error ? data.error : (data.success ? 'Account reconnection requested' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                document.getElementById('reconnect-icon').classList.remove('fa-spin');
-                reconnecting = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
-        });
+                if (reconnecting) {
+                    return
+                }
 
-        const syncAccount = async () => {
-            const account = document.getElementById('account-id').value.trim();
-
-            const res = await fetch(`/admin/accounts/${account}/sync`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    sync: true
+                reconnecting = true;
+                document.getElementById('reconnect-icon').classList.add('fa-spin');
+                reconnectAccount().then(data => {
+                    document.getElementById('reconnect-icon').classList.remove('fa-spin');
+                    reconnecting = false;
+                    showToast(data.error ? data.error : (data.success ? 'Account reconnection requested' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
+                }).catch(err => {
+                    document.getElementById('reconnect-icon').classList.remove('fa-spin');
+                    reconnecting = false;
+                    showToast('Request failed\n' + err.message, 'alert-triangle');
                 })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            });
 
-            return data;
-        }
+            const syncAccount = async () => {
+                const account = document.getElementById('account-id').value.trim();
 
-        let syncing = false;
-        const requestSyncElm = document.getElementById('request-sync');
-        requestSyncElm.addEventListener('click', e => {
-            e.preventDefault();
-            if (requestSyncElm.classList.contains('disabled')) {
-                return;
-            }
-
-            if (syncing) {
-                return
-            }
-
-            syncing = true;
-            document.getElementById('sync-icon').classList.add('fa-spin');
-            syncAccount().then(data => {
-                document.getElementById('sync-icon').classList.remove('fa-spin');
-                syncing = false;
-                showToast(data.error ? data.error : (data.success ? 'Account sync requested' : 'Failed to request syncing'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                document.getElementById('sync-icon').classList.remove('fa-spin');
-                syncing = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
-        });
-
-        const toggleLogs = async () => {
-            const account = document.getElementById('account-id').value.trim();
-
-            let current = document.getElementById('logs-info').dataset.logs;
-            let toggled = current === 'enabled' ? false : true;
-
-            const res = await fetch(`/admin/accounts/${account}/logs`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    enabled: toggled
+                const res = await fetch(`/admin/accounts/${account}/sync`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        sync: true
+                    })
                 })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+
+                return data;
             }
-            const data = await res.json();
-            if (data.enabled) {
-                // mark as enabled
-                document.getElementById('logs-info-label').textContent = 'Enabled';
-                document.getElementById('logs-info').dataset.logs = 'enabled'
-                document.getElementById('toggle-logs').textContent = 'Disable';
-            } else {
-                // mark as disabled
-                document.getElementById('logs-info-label').textContent = 'Disabled';
-                document.getElementById('logs-info').dataset.logs = 'disabled'
-                document.getElementById('toggle-logs').textContent = 'Enable';
-            }
-            return data;
-        }
 
-        let togglingLogs = false;
-        document.getElementById('toggle-logs').addEventListener('click', e => {
-            e.preventDefault();
-            if (togglingLogs) {
-                return
-            }
-            togglingLogs = true;
+            let syncing = false;
+            const requestSyncElm = document.getElementById('request-sync');
+            requestSyncElm.addEventListener('click', e => {
+                e.preventDefault();
+                if (requestSyncElm.classList.contains('disabled')) {
+                    return;
+                }
 
-            toggleLogs().then(data => {
-                togglingLogs = false;
-                showToast(data.error ? data.error : (data.success ? 'Logging settings updated' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                togglingLogs = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
-        });
+                if (syncing) {
+                    return
+                }
 
-        const flushLogs = async () => {
-            const account = document.getElementById('account-id').value.trim();
-
-            const res = await fetch(`/admin/accounts/${account}/logs-flush`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
+                syncing = true;
+                document.getElementById('sync-icon').classList.add('fa-spin');
+                syncAccount().then(data => {
+                    document.getElementById('sync-icon').classList.remove('fa-spin');
+                    syncing = false;
+                    showToast(data.error ? data.error : (data.success ? 'Account sync requested' : 'Failed to request syncing'), data.success ? 'check-circle' : 'alert-triangle');
+                }).catch(err => {
+                    document.getElementById('sync-icon').classList.remove('fa-spin');
+                    syncing = false;
+                    showToast('Request failed\n' + err.message, 'alert-triangle');
                 })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-            return data;
-        }
+            });
 
-        let flushingLogs = false;
-        document.getElementById('flush-logs').addEventListener('click', e => {
-            e.preventDefault();
-            if (flushingLogs) {
-                return
-            }
-            flushingLogs = true;
+            const toggleLogs = async () => {
+                const account = document.getElementById('account-id').value.trim();
 
-            flushLogs().then(data => {
-                flushingLogs = false;
-                showToast(data.error ? data.error : (data.success ? 'Stored logs were flushed' : 'Failed to flush logs'), data.success ? 'check-circle' : 'alert-triangle');
-            }).catch(err => {
-                togglinflushingLogsgLogs = false;
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+                let current = document.getElementById('logs-info').dataset.logs;
+                let toggled = current === 'enabled' ? false : true;
+
+                const res = await fetch(`/admin/accounts/${account}/logs`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        enabled: toggled
+                    })
+                })
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                if (data.enabled) {
+                    // mark as enabled
+                    document.getElementById('logs-info-label').textContent = 'Enabled';
+                    document.getElementById('logs-info').dataset.logs = 'enabled'
+                    document.getElementById('toggle-logs').textContent = 'Disable';
+                } else {
+                    // mark as disabled
+                    document.getElementById('logs-info-label').textContent = 'Disabled';
+                    document.getElementById('logs-info').dataset.logs = 'disabled'
+                    document.getElementById('toggle-logs').textContent = 'Enable';
+                }
+                return data;
+            }
+
+            let togglingLogs = false;
+            document.getElementById('toggle-logs').addEventListener('click', e => {
+                e.preventDefault();
+                if (togglingLogs) {
+                    return
+                }
+                togglingLogs = true;
+
+                toggleLogs().then(data => {
+                    togglingLogs = false;
+                    showToast(data.error ? data.error : (data.success ? 'Logging settings updated' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
+                }).catch(err => {
+                    togglingLogs = false;
+                    showToast('Request failed\n' + err.message, 'alert-triangle');
+                })
+            });
+
+            const flushLogs = async () => {
+                const account = document.getElementById('account-id').value.trim();
+
+                const res = await fetch(`/admin/accounts/${account}/logs-flush`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value
+                    })
+                })
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                return data;
+            }
+
+            let flushingLogs = false;
+            document.getElementById('flush-logs').addEventListener('click', e => {
+                e.preventDefault();
+                if (flushingLogs) {
+                    return
+                }
+                flushingLogs = true;
+
+                flushLogs().then(data => {
+                    flushingLogs = false;
+                    showToast(data.error ? data.error : (data.success ? 'Stored logs were flushed' : 'Failed to flush logs'), data.success ? 'check-circle' : 'alert-triangle');
+                }).catch(err => {
+                    togglinflushingLogsgLogs = false;
+                    showToast('Request failed\n' + err.message, 'alert-triangle');
+                })
+            });
+
+            // not set up by default as this element has a different data-toggle
+            $('#delete-btn').tooltip();
+            $('#delete-btn').click(() => $('#delete-btn').tooltip('hide'));
+            $('#test-smtp-btn').tooltip();
+            $('#test-smtp-btn').click(() => $('#test-smtp-btn').tooltip('hide'));
+
         });
+    </script>
 
-        // not set up by default as this element has a different data-toggle
-        $('#delete-btn').tooltip();
-    });
-</script>
+    <script id="test-send-template" type="text/x-handlebars-template">{{{testSendTemplate}}}</script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            Handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
+                if (baseVal == compareVal) {
+                    return options.fn(this);
+                }
+                return options.inverse(this);
+            });
+            const testSendTemplate = Handlebars.compile(document.getElementById('test-send-template').innerHTML);
+
+            let aborted = false;
+
+            const createSmtpTestAccount = async (account, gateway) => {
+                aborted = false;
+                const res = await fetch(`/admin/smtp/create-test`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        account,
+                        gateway
+                    })
+                })
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+
+                return data;
+            }
+
+
+            const checkSmtpTestAccount = async user => {
+                if (aborted) {
+                    return false
+                }
+
+                const res = await fetch(`/admin/smtp/check-test`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        user
+                    })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+
+                const data = await res.json();
+
+                return data;
+            }
+
+            const waitForTestResults = async user => {
+                let results;
+
+                while (!results) {
+                    if (aborted) {
+                        return false
+                    }
+
+                    let data = await checkSmtpTestAccount(user);
+                    switch (data.status) {
+                        case 'error':
+                            throw new Error(data.error)
+                        case 'success':
+                            results = data;
+                            break;
+                        case 'no data':
+                        default:
+                            await new Promise(r => setTimeout(r, 1000))
+                    }
+
+                }
+
+                return results;
+            }
+
+            $('#testSendModal').on('show.bs.modal', function (event) {
+                document.getElementById('test-send-pending-message').classList.remove('d-none');
+                document.getElementById('test-send-results').classList.add('d-none');
+                document.getElementById('test-send-results').innerHTML = ''
+            })
+
+            $('#testSendModal').on('shown.bs.modal', function (event) {
+
+                let testData = {
+                    account: event.relatedTarget.dataset.account || '',
+                    gateway: event.relatedTarget.dataset.gateway || '',
+                }
+
+                createSmtpTestAccount(testData.account, testData.gateway).then((result) => {
+                    return waitForTestResults(result.user);
+                }).then(results => {
+                    document.getElementById('test-send-pending-message').classList.add('d-none');
+                    if (aborted) {
+                        return false
+                    }
+                    document.getElementById('test-send-results').classList.remove('d-none');
+                    console.log('TEST RESULTS', results);
+                    document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
+
+                    // activate tabs
+                    $('#testResultTabs li button').tab();
+                }).catch(err => {
+                    document.getElementById('test-send-pending-message').classList.add('d-none');
+                    showToast(err.message, 'alert-triangle');
+                    $('#testSendModal').modal('hide');
+                });
+            });
+
+            $('#testSendModal').on('hide.bs.modal', function (event) {
+                aborted = true;
+            });
+        })
+    </script>
