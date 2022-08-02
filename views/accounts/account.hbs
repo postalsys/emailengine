@@ -44,8 +44,8 @@
                 {{#if canSend}}
                 <div class="btn-group">
                     <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown"
-                        aria-expanded="false" title="Test SMTP settings" id="test-smtp-btn">
-                        <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> SMTP test
+                        aria-expanded="false" title="Test SMTP delivery settings for this account" id="test-smtp-btn">
+                        <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
                     </button>
                     <div class="dropdown-menu">
                         {{#if canUseSmtp}}
@@ -62,13 +62,6 @@
                         {{/each}}
                     </div>
                 </div>
-                <!--
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
-                    title="Test SMTP settings" id="test-smtp-btn" data-placement="top"
-                    data-account="{{account.account}}">
-                    <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> SMTP test
-                </button>
--->
                 {{/if}}
 
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
@@ -415,17 +408,27 @@
 </div>
 
 <div class="modal fade" id="testSendModal" tabindex="-1" aria-labelledby="testSendModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="testSendModalLabel">SMTP test</h5>
+                <h5 class="modal-title" id="testSendModalLabel">Email delivery test</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
+                <p><small class="text-muted">EmailEngine sends a test email from the selected account to EmailEngine's
+                        remote testing server. Once the test email has been processed, EmailEngine displays the
+                        authorization validation results below.</small>
+                </p>
                 <div id="test-send-pending-message">
-                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Testing SMTP settings, please wait…</p>
+                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Testing email delivery settings, please wait…</p>
+                </div>
+                <div id="test-send-error">
+                    <p>Message submission failed with the following result:</p>
+                    <div>
+                        <small class="alert alert-danger text-monospace error-message" style="display: block;"></small>
+                    </div>
                 </div>
                 <div id="test-send-results"></div>
                 <div class="modal-footer">
@@ -711,6 +714,7 @@
         $('#testSendModal').on('show.bs.modal', function (event) {
             document.getElementById('test-send-pending-message').classList.remove('d-none');
             document.getElementById('test-send-results').classList.add('d-none');
+            document.getElementById('test-send-error').classList.add('d-none');
             document.getElementById('test-send-results').innerHTML = ''
         })
 
@@ -725,6 +729,7 @@
                 return waitForTestResults(result.user);
             }).then(results => {
                 document.getElementById('test-send-pending-message').classList.add('d-none');
+                document.getElementById('test-send-error').classList.add('d-none');
                 if (aborted) {
                     return false
                 }
@@ -737,8 +742,9 @@
                 //$('.collapse').collapse();
             }).catch(err => {
                 document.getElementById('test-send-pending-message').classList.add('d-none');
-                showToast(err.message, 'alert-triangle');
-                $('#testSendModal').modal('hide');
+                document.getElementById('test-send-results').classList.add('d-none');
+                document.getElementById('test-send-error').classList.remove('d-none');
+                document.querySelector('#test-send-error .error-message').textContent = err.message;
             });
         });
 
