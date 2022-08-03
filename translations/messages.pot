@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-07-27 20:38+0000\n"
+"POT-Creation-Date: 2022-08-03 15:07+0000\n"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -134,39 +134,39 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: lib/routes-ui.js:2767
-#: lib/routes-ui.js:4010
-#: lib/routes-ui.js:4021
+#: lib/routes-ui.js:2769
+#: lib/routes-ui.js:4020
+#: lib/routes-ui.js:4031
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:2770
-#: lib/routes-ui.js:4013
-#: lib/routes-ui.js:4024
+#: lib/routes-ui.js:2772
+#: lib/routes-ui.js:4023
+#: lib/routes-ui.js:4034
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:2774
-#: lib/routes-ui.js:4028
+#: lib/routes-ui.js:2776
+#: lib/routes-ui.js:4038
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:3740
+#: lib/routes-ui.js:3750
 msgid "Unknown OAuth provider"
 msgstr ""
 
-#: lib/routes-ui.js:3780
-#: lib/routes-ui.js:3889
-#: lib/routes-ui.js:4113
+#: lib/routes-ui.js:3790
+#: lib/routes-ui.js:3899
+#: lib/routes-ui.js:4123
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:3829
-#: lib/routes-ui.js:3862
+#: lib/routes-ui.js:3839
+#: lib/routes-ui.js:3872
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:3952
-#: lib/routes-ui.js:4191
+#: lib/routes-ui.js:3962
+#: lib/routes-ui.js:4201
 msgid "Failed to process account"
 msgstr ""
