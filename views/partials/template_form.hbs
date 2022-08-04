@@ -36,6 +36,17 @@
         </div>
 
         <div class="form-group">
+            <label for="inputPreviewText">Preview text</label>
+            <input type="text" class="form-control {{#if errors.previewText}}is-invalid{{/if}}" name="previewText"
+                id="inputPreviewText" aria-describedby="inputPreviewText" value="{{values.previewText}}">
+            {{#if errors.previewText}}
+            <span class="invalid-feedback">{{errors.previewText}}</span>
+            {{/if}}
+            <small id="inputPreviewText" class="form-text text-muted">Preview text appears in the inbox after the
+                subject line. Handlebars syntax is allowed.</small>
+        </div>
+
+        <div class="form-group">
             <label for="inputFormat">HTML source format</label>
             <select class="form-control {{#if errors.format}}is-invalid{{/if}}" id="inputFormat" name="format">
                 {{#each formats}}

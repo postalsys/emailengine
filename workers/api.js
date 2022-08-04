@@ -3871,8 +3871,9 @@ When making API calls remember that requests against the same account are queued
                     subject: templateSchemas.subject,
                     text: templateSchemas.text,
                     html: templateSchemas.html,
+                    previewText: templateSchemas.previewText,
 
-                    template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from.'),
+                    template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from'),
 
                     render: Joi.object({
                         format: Joi.string()
@@ -4730,7 +4731,8 @@ When making API calls remember that requests against the same account are queued
                     content: Joi.object({
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
-                        html: templateSchemas.html
+                        html: templateSchemas.html,
+                        previewText: templateSchemas.previewText
                     })
                         .required()
                         .label('CreateTemplateContent')
@@ -4814,7 +4816,8 @@ When making API calls remember that requests against the same account are queued
                     content: Joi.object({
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
-                        html: templateSchemas.html
+                        html: templateSchemas.html,
+                        previewText: templateSchemas.previewText
                     }).label('UpdateTemplateContent')
                 }).label('UpdateTemplate')
             },
@@ -4986,6 +4989,7 @@ When making API calls remember that requests against the same account are queued
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
                         html: templateSchemas.html,
+                        previewText: templateSchemas.previewText,
                         format: Joi.string()
                             .valid('html', 'mjml', 'markdown')
                             .default('html')
