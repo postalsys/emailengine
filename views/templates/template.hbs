@@ -80,6 +80,17 @@
             <dd class="col-sm-9"><strong>{{template.content.subject}}</strong></dd>
             {{/if}}
 
+            {{#if template.content.previewText}}
+            <dt class="col-sm-3">Preview text
+
+                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                    data-title="Preview text"
+                    data-content="Preview text appears in the inbox after the subject line."><i
+                        class="fas fa-question-circle"></i></a>
+            </dt>
+            <dd class="col-sm-9">{{template.content.previewText}}</dd>
+            {{/if}}
+
             {{#if template.format}}
             <dt class="col-sm-3">HTML source format</dt>
             <dd class="col-sm-9"><span class="text-monospace">{{format.name}}</span></dd>
