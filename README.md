@@ -118,4 +118,4 @@ $ npm run raw -- --filter.account=account1
 
 ## Licensing
 
-Licensed the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).
+Licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).
