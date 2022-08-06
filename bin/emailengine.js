@@ -135,42 +135,29 @@ function run() {
                         });
                 }
 
-                // Display license information
-                fs.readFile(pathlib.join(__dirname, '..', 'LICENSE.txt'), (err, license) => {
+                fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
                     if (err) {
                         console.error('Failed to load license information');
                         console.error(err);
                         return process.exit(1);
                     }
 
-                    fs.readFile(pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), (err, licenseComm) => {
-                        if (err) {
-                            console.error('Failed to load license information');
-                            console.error(err);
-                            return process.exit(1);
-                        }
+                    console.error('EmailEngine License');
+                    console.error('===================');
 
-                        console.error('EmailEngine License');
-                        console.error('===================');
+                    console.log(`EmailEngine v${packageData.version}`);
+                    console.error(`(c) 2020-${new Date().getFullYear()} Postal Systems`);
+                    console.error(`${packageData.license}, full text follows`);
+                    console.error('');
 
-                        console.log(`EmailEngine v${packageData.version}`);
-                        console.error(`(c) 2020-${new Date().getFullYear()} Postal Systems`);
-                        console.error(`${packageData.license}, full text follows`);
-                        console.error('');
+                    console.error('-'.repeat(78));
+                    console.error('');
 
-                        console.error('-'.repeat(78));
-                        console.error(license.toString().trim());
+                    console.error(licenseComm.toString().trim());
+                    console.error('-'.repeat(78));
+                    console.error('');
 
-                        console.error('');
-                        console.error('-'.repeat(78));
-                        console.error('');
-
-                        console.error(licenseComm.toString().trim());
-                        console.error('-'.repeat(78));
-                        console.error('');
-
-                        process.exit();
-                    });
+                    process.exit();
                 });
             }
             break;

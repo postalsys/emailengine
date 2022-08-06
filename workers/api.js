@@ -763,7 +763,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/LICENSE.txt',
         handler: {
-            file: { path: pathlib.join(__dirname, '..', 'LICENSE.txt'), confine: false }
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
         },
         options: {
             auth: false
