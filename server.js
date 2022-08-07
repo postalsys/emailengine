@@ -25,6 +25,8 @@ const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
 const { readEnvValue, hasEnvValue } = require('./lib/tools');
+const nodeFetch = require('node-fetch');
+const fetchCmd = global.fetch || nodeFetch;
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -117,6 +119,8 @@ config.smtp = config.smtp || {
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const SUBSCRIPTION_CHECK_TIMEOUT = 18 * 60 * 60 * 1000;
+const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -158,7 +162,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 
 // check for upgrades once in 8 hours
 const UPGRADE_CHECK_TIMEOUT = 8 * 3600 * 1000;
-const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
+const LICENSE_CHECK_TIMEOUT = 20 * 1000;
 
 const licenseInfo = {
     active: false,
@@ -891,6 +895,47 @@ async function assignAccounts() {
 
 let licenseCheckTimer = false;
 let licenseCheckHandler = async () => {
+    let now = Date.now();
+    if (
+        licenseInfo.active &&
+        !(licenseInfo.details && licenseInfo.details.expires) &&
+        (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - SUBSCRIPTION_CHECK_TIMEOUT, now))
+    ) {
+        // validate license
+        try {
+            let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
+                method: 'post',
+                headers: {
+                    'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    key: licenseInfo.details.key
+                })
+            });
+
+            let data = await res.json();
+
+            if (!res.ok) {
+                if (data.invalidate) {
+                    let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
+                    if (res === 2) {
+                        // grace period over
+                        logger.info({ msg: 'License not valid', license: licenseInfo.details, data });
+                        await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
+                        licenseInfo.active = false;
+                        licenseInfo.details = false;
+                        licenseInfo.type = packageData.license;
+                    }
+                }
+            } else {
+                await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+            }
+        } catch (err) {
+            logger.error({ msg: 'Failed to validate license', err });
+        }
+    }
+
     if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
         // clear expired license
 
@@ -1116,7 +1161,7 @@ async function onCommand(worker, message) {
 
         case 'removeLicense': {
             try {
-                await redis.hdel(`${REDIS_PREFIX}settings`, 'license');
+                await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
 
                 licenseInfo.active = false;
                 licenseInfo.details = false;

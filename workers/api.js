@@ -5656,6 +5656,19 @@ When making API calls remember that requests against the same account are queued
                 });
             }
 
+            let subexp = await settings.get('subexp');
+            if (subexp) {
+                let delayMs = new Date(subexp) - Date.now();
+                let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
+
+                systemAlerts.push({
+                    url: 'https://postalsys.com/plans',
+                    level: 'danger',
+                    icon: 'key',
+                    message: `You have ${expiresDays} day${expiresDays !== 1 ? 's' : ''} to renew your subscription`
+                });
+            }
+
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
@@ -5718,7 +5731,9 @@ When making API calls remember that requests against the same account are queued
                     url: '/admin/config/license',
                     level: 'warning',
                     icon: 'key',
-                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} days`
+                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} day${
+                        licenseDetails.expiresDays !== 1 ? 's' : ''
+                    }`
                 });
             }
 
