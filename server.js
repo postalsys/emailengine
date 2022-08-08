@@ -119,7 +119,7 @@ config.smtp = config.smtp || {
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
-const SUBSCRIPTION_CHECK_TIMEOUT = 18 * 60 * 60 * 1000;
+const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -162,7 +162,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 
 // check for upgrades once in 8 hours
 const UPGRADE_CHECK_TIMEOUT = 8 * 3600 * 1000;
-const LICENSE_CHECK_TIMEOUT = 20 * 1000;
+const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000;
 
 const licenseInfo = {
     active: false,
@@ -910,7 +910,9 @@ let licenseCheckHandler = async () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    key: licenseInfo.details.key
+                    key: licenseInfo.details.key,
+                    version: packageData.version,
+                    app: '@postalsys/emailengine-app'
                 })
             });
 
