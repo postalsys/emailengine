@@ -894,72 +894,82 @@ async function assignAccounts() {
 }
 
 let licenseCheckTimer = false;
-let licenseCheckHandler = async () => {
-    let now = Date.now();
-    if (
-        licenseInfo.active &&
-        !(licenseInfo.details && licenseInfo.details.expires) &&
-        (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - SUBSCRIPTION_CHECK_TIMEOUT, now))
-    ) {
-        // validate license
-        try {
-            let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
-                method: 'post',
-                headers: {
-                    'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    key: licenseInfo.details.key,
-                    version: packageData.version,
-                    app: '@postalsys/emailengine-app'
-                })
-            });
+let checkingLicense = false;
+let licenseCheckHandler = async opts => {
+    if (checkingLicense) {
+        return;
+    }
+    checkingLicense = true;
+    clearTimeout(licenseCheckTimer);
 
-            let data = await res.json();
+    try {
+        opts = opts || {};
+        let { subscriptionCheckTimeout } = opts;
+        let now = Date.now();
+        subscriptionCheckTimeout = subscriptionCheckTimeout || SUBSCRIPTION_CHECK_TIMEOUT;
+        if (
+            licenseInfo.active &&
+            !(licenseInfo.details && licenseInfo.details.expires) &&
+            (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
+        ) {
+            // validate license
+            try {
+                let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
+                    method: 'post',
+                    headers: {
+                        'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        key: licenseInfo.details.key,
+                        version: packageData.version,
+                        app: '@postalsys/emailengine-app'
+                    })
+                });
 
-            if (!res.ok) {
-                if (data.invalidate) {
-                    let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
-                    if (res === 2) {
-                        // grace period over
-                        logger.info({ msg: 'License not valid', license: licenseInfo.details, data });
-                        await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
-                        licenseInfo.active = false;
-                        licenseInfo.details = false;
-                        licenseInfo.type = packageData.license;
+                let data = await res.json();
+
+                if (!res.ok) {
+                    if (data.invalidate) {
+                        let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
+                        if (res === 2) {
+                            // grace period over
+                            logger.info({ msg: 'License not valid', license: licenseInfo.details, data });
+                            await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
+                            licenseInfo.active = false;
+                            licenseInfo.details = false;
+                            licenseInfo.type = packageData.license;
+                        }
+                    }
+                } else {
+                    await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+                }
+            } catch (err) {
+                logger.error({ msg: 'Failed to validate license', err });
+            }
+        }
+
+        if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
+            // clear expired license
+
+            logger.info({ msg: 'License expired', license: licenseInfo.details });
+
+            licenseInfo.active = false;
+            licenseInfo.details = false;
+        }
+
+        if (!licenseInfo.active && !suspendedWorkerTypes.size) {
+            logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+
+            for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
+                suspendedWorkerTypes.add(type);
+                if (workers.has(type)) {
+                    for (let worker of workers.get(type).values()) {
+                        worker.terminate();
                     }
                 }
-            } else {
-                await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
             }
-        } catch (err) {
-            logger.error({ msg: 'Failed to validate license', err });
-        }
-    }
-
-    if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
-        // clear expired license
-
-        logger.info({ msg: 'License expired', license: licenseInfo.details });
-
-        licenseInfo.active = false;
-        licenseInfo.details = false;
-    }
-
-    if (!licenseInfo.active && !suspendedWorkerTypes.size) {
-        logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
-
-        for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
-            suspendedWorkerTypes.add(type);
-            if (workers.has(type)) {
-                for (let worker of workers.get(type).values()) {
-                    worker.terminate();
-                }
-            }
-        }
-    } else {
-        if (licenseInfo.active && suspendedWorkerTypes.size) {
+        } else if (licenseInfo.active && suspendedWorkerTypes.size) {
             // re-enable missing workers
             for (let type of suspendedWorkerTypes) {
                 suspendedWorkerTypes.delete(type);
@@ -979,7 +989,8 @@ let licenseCheckHandler = async () => {
                 }
             }
         }
-
+    } finally {
+        checkingLicense = false;
         licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
         licenseCheckTimer.unref();
     }
@@ -1127,6 +1138,16 @@ async function onCommand(worker, message) {
         case 'imapWorkerCount': {
             return { workers: availableIMAPWorkers.size };
         }
+
+        case 'checkLicense':
+            try {
+                await licenseCheckHandler({
+                    subscriptionCheckTimeout: 60 * 1000
+                });
+            } catch (err) {
+                // ignore
+            }
+            return licenseInfo;
 
         case 'license':
             if (!licenseInfo.active && suspendedWorkerTypes.size) {

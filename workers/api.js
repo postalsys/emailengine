@@ -342,7 +342,7 @@ const init = async () => {
         return new handlebars.SafeString(translated);
     });
 
-    handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
+    handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
 
     handlebars.registerHelper('equals', (compareVal, baseVal, options) => {
         if (baseVal === compareVal) {
@@ -5662,10 +5662,10 @@ When making API calls remember that requests against the same account are queued
                 let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
 
                 systemAlerts.push({
-                    url: 'https://postalsys.com/plans',
+                    url: '/admin/config/license',
                     level: 'danger',
-                    icon: 'key',
-                    message: `You have ${expiresDays} day${expiresDays !== 1 ? 's' : ''} to renew your subscription`
+                    icon: 'exclamation-triangle',
+                    message: `You have ${expiresDays} day${expiresDays !== 1 ? 's' : ''} to update license key`
                 });
             }
 
