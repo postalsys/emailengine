@@ -5729,7 +5729,7 @@ When making API calls remember that requests against the same account are queued
                     url: '/admin/config/license',
                     level: 'danger',
                     icon: 'exclamation-triangle',
-                    message: `You have ${expiresDays} day${expiresDays !== 1 ? 's' : ''} to update the license key`
+                    message: `The license key needs to be renewed or replaced in ${expiresDays} day${expiresDays !== 1 ? 's' : ''}`
                 });
             }
 
