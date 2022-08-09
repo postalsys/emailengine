@@ -46,7 +46,6 @@
                     web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
             </div>
 
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">locale</a>]</div>
@@ -69,6 +68,22 @@
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md">See
                         here</a>
                     if you would like to add an additional translation.</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">timezone</a>]</div>
+
+                <label for="settingsServiceTimezone">Default timezone</label>
+                <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
+                    errors.timezone}}is-invalid{{/if}}>
+                    {{#each timezones}}
+                    <option value="{{timezone}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.timezone}}
+                <span class="invalid-feedback">{{errors.timezone}}</span>
+                {{/if}}
             </div>
         </div>
     </div>
