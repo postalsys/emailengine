@@ -2697,7 +2697,13 @@ When making API calls remember that requests against the same account are queued
                                 then: Joi.optional(),
                                 otherwise: Joi.forbidden()
                             })
-                            .label('ForwardAttachments')
+                            .label('ForwardAttachments'),
+                        ignoreMissing: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .label('IgnoreMissing')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -2755,7 +2761,20 @@ When making API calls remember that requests against the same account are queued
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().example(12345).description('UID of uploaded message'),
-                    seq: Joi.number().example(12345).description('Sequence number of uploaded message')
+                    seq: Joi.number().example(12345).description('Sequence number of uploaded message'),
+
+                    reference: Joi.object({
+                        message: Joi.string()
+                            .base64({ paddingRequired: false, urlSafe: true })
+                            .max(256)
+                            .required()
+                            .example('AAAAAQAACnA')
+                            .description('Referenced message ID'),
+                        success: Joi.boolean().example(true).description('Was the referenced message processed').label('ResponseReferenceSuccess'),
+                        error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
+                    })
+                        .description('Reference info if referencing was requested')
+                        .label('ResponseReference')
                 }).label('MessageUploadResponse'),
                 failAction: 'log'
             }
@@ -3811,7 +3830,13 @@ When making API calls remember that requests against the same account are queued
                                 then: Joi.optional(),
                                 otherwise: Joi.forbidden()
                             })
-                            .label('ForwardAttachments')
+                            .label('ForwardAttachments'),
+                        ignoreMissing: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .label('IgnoreMissing')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3965,6 +3990,20 @@ When making API calls remember that requests against the same account are queued
                         .description('Message-ID header value. Not present for bulk messages.'),
                     queueId: Joi.string().example('d41f0423195f271f').description('Queue identifier for scheduled email. Not present for bulk messages.'),
                     sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Scheduled send time'),
+
+                    reference: Joi.object({
+                        message: Joi.string()
+                            .base64({ paddingRequired: false, urlSafe: true })
+                            .max(256)
+                            .required()
+                            .example('AAAAAQAACnA')
+                            .description('Referenced message ID'),
+                        success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
+                        error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
+                    })
+                        .description('Reference info if referencing was requested')
+                        .label('ResponseReference'),
+
                     bulk: Joi.array()
                         .items(
                             Joi.object()
@@ -3976,7 +4015,11 @@ When making API calls remember that requests against the same account are queued
                                         address: 'andris@ethereal.email'
                                     },
                                     messageId: '<19b9c433-d428-f6d8-1d00-d666ebcadfc4@ekiri.ee>',
-                                    queueId: '1812477338914c8372a'
+                                    queueId: '1812477338914c8372a',
+                                    reference: {
+                                        message: 'AAAAAQAACnA',
+                                        success: true
+                                    }
                                 })
                                 .unknown()
                         )
