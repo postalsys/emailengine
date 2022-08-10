@@ -55,7 +55,7 @@ const { redis, queueConf, notifyQueue } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-
+const { compare: cv } = require('compare-versions');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
@@ -161,7 +161,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 };
 
 // check for upgrades once in 8 hours
-const UPGRADE_CHECK_TIMEOUT = 8 * 3600 * 1000;
+const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000;
 const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000;
 
 const licenseInfo = {
@@ -907,7 +907,15 @@ let licenseCheckHandler = async opts => {
         let { subscriptionCheckTimeout } = opts;
         let now = Date.now();
         subscriptionCheckTimeout = subscriptionCheckTimeout || SUBSCRIPTION_CHECK_TIMEOUT;
+
+        let kv = await redis.hget(`${REDIS_PREFIX}settings`, 'kv');
+        let checkKv = true;
+        if (kv && typeof kv === 'string' && cv(packageData.version, Buffer.from(kv, 'hex').toString(), '<=')) {
+            checkKv = false;
+        }
+
         if (
+            checkKv &&
             licenseInfo.active &&
             !(licenseInfo.details && licenseInfo.details.expires) &&
             (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
@@ -943,6 +951,7 @@ let licenseCheckHandler = async opts => {
                     }
                 } else {
                     await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+                    await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
                 }
             } catch (err) {
                 logger.error({ msg: 'Failed to validate license', err });
