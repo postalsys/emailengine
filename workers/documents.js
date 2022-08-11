@@ -166,7 +166,7 @@ const documentsWorker = new Worker(
                         }
                     }
 
-                    messageData.preview = generateTextPreview(textContent, 255);
+                    messageData.preview = generateTextPreview(textContent, 220);
 
                     let indexResult;
                     try {

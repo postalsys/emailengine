@@ -2522,7 +2522,8 @@ When making API calls remember that requests against the same account are queued
 
                     const reqOpts = {
                         index,
-                        id: `${request.params.account}:${request.params.message}`
+                        id: `${request.params.account}:${request.params.message}`,
+                        _source_excludes: 'preview,seemsLikeNew'
                     };
 
                     switch (request.query.textType) {
@@ -3215,7 +3216,7 @@ When making API calls remember that requests against the same account are queued
                         from: request.query.pageSize * request.query.page,
                         query,
                         sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html'
+                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
                     });
 
                     let response = {
@@ -3584,7 +3585,7 @@ When making API calls remember that requests against the same account are queued
                         from: request.query.pageSize * request.query.page,
                         query,
                         sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html'
+                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
                     });
 
                     let response = {
