@@ -33,6 +33,7 @@ const { queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { getESClient } = require('../lib/document-store');
 const { getThread } = require('../lib/threads');
+const { generateTextPreview } = require('../lib/generate-text-preview');
 
 const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
 
@@ -164,6 +165,8 @@ const documentsWorker = new Worker(
                             }
                         }
                     }
+
+                    messageData.preview = generateTextPreview(textContent, 255);
 
                     let indexResult;
                     try {
