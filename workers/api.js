@@ -342,7 +342,16 @@ const init = async () => {
         return new handlebars.SafeString(translated);
     });
 
-    handlebars.registerHelper('ngettext', (msgid, plural, count) => gt.ngettext(msgid, plural, count));
+    handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
+
+    handlebars.registerHelper('equals', (compareVal, baseVal, options) => {
+        if (baseVal === compareVal) {
+            return options.fn(this); // eslint-disable-line no-invalid-this
+        }
+        return options.inverse(this); // eslint-disable-line no-invalid-this
+    });
+
+    handlebars.registerHelper('inc', (nr, inc) => Number(nr) + Number(inc));
 
     const server = Hapi.server({
         port: API_PORT,
@@ -754,7 +763,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/LICENSE.txt',
         handler: {
-            file: { path: pathlib.join(__dirname, '..', 'LICENSE.txt'), confine: false }
+            file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
         },
         options: {
             auth: false
@@ -1709,7 +1718,10 @@ When making API calls remember that requests against the same account are queued
 
                     smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
 
-                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2')
+                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2'),
+
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
                 }).label('CreateAccount')
             },
 
@@ -1795,7 +1807,10 @@ When making API calls remember that requests against the same account are queued
                         .description('IMAP configuration')
                         .label('IMAPUpdate'),
                     smtp: Joi.object(smtpUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
-                    oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update')
+                    oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update'),
+
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
                 }).label('UpdateAccount')
             },
 
@@ -1993,7 +2008,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
-                return await accountObject.listAccounts(request.query.state, request.query.page, request.query.pageSize);
+                return await accountObject.listAccounts(request.query.state, request.query.query, request.query.page, request.query.pageSize);
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2039,7 +2054,8 @@ When making API calls remember that requests against the same account are queued
                         .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
                         .description('Filter accounts by state')
-                        .label('AccountState')
+                        .label('AccountState'),
+                    query: Joi.string().example('user@example').description('Filter accounts by string match').label('AccountQuery')
                 }).label('AccountsFilter')
             },
 
@@ -2060,6 +2076,14 @@ When making API calls remember that requests against the same account are queued
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                                     .example('connected')
                                     .description('Account state'),
+                                webhooks: Joi.string()
+                                    .uri({
+                                        scheme: ['http', 'https'],
+                                        allowRelative: false
+                                    })
+                                    .example('https://myservice.com/imap/webhooks')
+                                    .description('Account-specific webhook URL'),
+                                proxy: settingsSchema.proxyUrl,
                                 syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
@@ -2101,7 +2125,22 @@ When making API calls remember that requests against the same account are queued
 
                 let result = {};
 
-                for (let key of ['account', 'name', 'email', 'copy', 'notifyFrom', 'imap', 'smtp', 'oauth2', 'state', 'smtpStatus']) {
+                for (let key of [
+                    'account',
+                    'name',
+                    'email',
+                    'copy',
+                    'notifyFrom',
+                    'imap',
+                    'smtp',
+                    'oauth2',
+                    'state',
+                    'smtpStatus',
+                    'webhooks',
+                    'proxy',
+                    'locale',
+                    'tz'
+                ]) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
@@ -2162,6 +2201,13 @@ When making API calls remember that requests against the same account are queued
 
                     notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
 
+                    webhooks: Joi.string()
+                        .uri({
+                            scheme: ['http', 'https'],
+                            allowRelative: false
+                        })
+                        .example('https://myservice.com/imap/webhooks')
+                        .description('Account-specific webhook URL'),
                     proxy: settingsSchema.proxyUrl,
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
@@ -2476,7 +2522,8 @@ When making API calls remember that requests against the same account are queued
 
                     const reqOpts = {
                         index,
-                        id: `${request.params.account}:${request.params.message}`
+                        id: `${request.params.account}:${request.params.message}`,
+                        _source_excludes: 'preview,seemsLikeNew'
                     };
 
                     switch (request.query.textType) {
@@ -2672,7 +2719,13 @@ When making API calls remember that requests against the same account are queued
                                 then: Joi.optional(),
                                 otherwise: Joi.forbidden()
                             })
-                            .label('ForwardAttachments')
+                            .label('ForwardAttachments'),
+                        ignoreMissing: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .label('IgnoreMissing')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -2717,8 +2770,8 @@ When making API calls remember that requests against the same account are queued
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
 
-                    locale: Joi.string().max(100).example('fr').description('Optional locale for autogenerated date strings'),
-                    tz: Joi.string().max(100).example('Europe/Tallinn').description('Optional timezone for autogenerated date strings')
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
                 }).label('MessageUpload')
             },
 
@@ -2730,7 +2783,20 @@ When making API calls remember that requests against the same account are queued
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().example(12345).description('UID of uploaded message'),
-                    seq: Joi.number().example(12345).description('Sequence number of uploaded message')
+                    seq: Joi.number().example(12345).description('Sequence number of uploaded message'),
+
+                    reference: Joi.object({
+                        message: Joi.string()
+                            .base64({ paddingRequired: false, urlSafe: true })
+                            .max(256)
+                            .required()
+                            .example('AAAAAQAACnA')
+                            .description('Referenced message ID'),
+                        success: Joi.boolean().example(true).description('Was the referenced message processed').label('ResponseReferenceSuccess'),
+                        error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
+                    })
+                        .description('Reference info if referencing was requested')
+                        .label('ResponseReference')
                 }).label('MessageUploadResponse'),
                 failAction: 'log'
             }
@@ -3150,7 +3216,7 @@ When making API calls remember that requests against the same account are queued
                         from: request.query.pageSize * request.query.page,
                         query,
                         sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html'
+                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
                     });
 
                     let response = {
@@ -3519,7 +3585,7 @@ When making API calls remember that requests against the same account are queued
                         from: request.query.pageSize * request.query.page,
                         query,
                         sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html'
+                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
                     });
 
                     let response = {
@@ -3786,7 +3852,13 @@ When making API calls remember that requests against the same account are queued
                                 then: Joi.optional(),
                                 otherwise: Joi.forbidden()
                             })
-                            .label('ForwardAttachments')
+                            .label('ForwardAttachments'),
+                        ignoreMissing: Joi.boolean()
+                            .truthy('Y', 'true', '1')
+                            .falsy('N', 'false', 0)
+                            .default(false)
+                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .label('IgnoreMissing')
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3846,8 +3918,9 @@ When making API calls remember that requests against the same account are queued
                     subject: templateSchemas.subject,
                     text: templateSchemas.text,
                     html: templateSchemas.html,
+                    previewText: templateSchemas.previewText,
 
-                    template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from.'),
+                    template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from'),
 
                     render: Joi.object({
                         format: Joi.string()
@@ -3913,8 +3986,8 @@ When making API calls remember that requests against the same account are queued
                         .example('Sent Mail')
                         .description("Upload sent message to this folder. By default the account's Sent Mail folder is used."),
 
-                    locale: Joi.string().max(100).example('fr').description('Optional locale for autogenerated date strings'),
-                    tz: Joi.string().max(100).example('Europe/Tallinn').description('Optional timezone for autogenerated date strings'),
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
                     deliveryAttempts: Joi.number()
@@ -3939,6 +4012,20 @@ When making API calls remember that requests against the same account are queued
                         .description('Message-ID header value. Not present for bulk messages.'),
                     queueId: Joi.string().example('d41f0423195f271f').description('Queue identifier for scheduled email. Not present for bulk messages.'),
                     sendAt: Joi.date().example('2021-07-08T07:06:34.336Z').description('Scheduled send time'),
+
+                    reference: Joi.object({
+                        message: Joi.string()
+                            .base64({ paddingRequired: false, urlSafe: true })
+                            .max(256)
+                            .required()
+                            .example('AAAAAQAACnA')
+                            .description('Referenced message ID'),
+                        success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
+                        error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
+                    })
+                        .description('Reference info if referencing was requested')
+                        .label('ResponseReference'),
+
                     bulk: Joi.array()
                         .items(
                             Joi.object()
@@ -3950,7 +4037,11 @@ When making API calls remember that requests against the same account are queued
                                         address: 'andris@ethereal.email'
                                     },
                                     messageId: '<19b9c433-d428-f6d8-1d00-d666ebcadfc4@ekiri.ee>',
-                                    queueId: '1812477338914c8372a'
+                                    queueId: '1812477338914c8372a',
+                                    reference: {
+                                        message: 'AAAAAQAACnA',
+                                        success: true
+                                    }
                                 })
                                 .unknown()
                         )
@@ -4705,7 +4796,8 @@ When making API calls remember that requests against the same account are queued
                     content: Joi.object({
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
-                        html: templateSchemas.html
+                        html: templateSchemas.html,
+                        previewText: templateSchemas.previewText
                     })
                         .required()
                         .label('CreateTemplateContent')
@@ -4789,7 +4881,8 @@ When making API calls remember that requests against the same account are queued
                     content: Joi.object({
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
-                        html: templateSchemas.html
+                        html: templateSchemas.html,
+                        previewText: templateSchemas.previewText
                     }).label('UpdateTemplateContent')
                 }).label('UpdateTemplate')
             },
@@ -4961,6 +5054,7 @@ When making API calls remember that requests against the same account are queued
                         subject: templateSchemas.subject,
                         text: templateSchemas.text,
                         html: templateSchemas.html,
+                        previewText: templateSchemas.previewText,
                         format: Joi.string()
                             .valid('html', 'mjml', 'markdown')
                             .default('html')
@@ -5627,6 +5721,19 @@ When making API calls remember that requests against the same account are queued
                 });
             }
 
+            let subexp = await settings.get('subexp');
+            if (subexp) {
+                let delayMs = new Date(subexp) - Date.now();
+                let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
+
+                systemAlerts.push({
+                    url: '/admin/config/license',
+                    level: 'danger',
+                    icon: 'exclamation-triangle',
+                    message: `The license key needs to be renewed or replaced in ${expiresDays} day${expiresDays !== 1 ? 's' : ''}`
+                });
+            }
+
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
@@ -5689,7 +5796,9 @@ When making API calls remember that requests against the same account are queued
                     url: '/admin/config/license',
                     level: 'warning',
                     icon: 'key',
-                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} days`
+                    message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} day${
+                        licenseDetails.expiresDays !== 1 ? 's' : ''
+                    }`
                 });
             }
 

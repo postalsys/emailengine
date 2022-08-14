@@ -4,6 +4,7 @@ local filterState = ARGV[1];
 local skip = tonumber(ARGV[2]) or 0;
 local count = tonumber(ARGV[3]) or 0;
 local prefix = ARGV[4];
+local strsearch = ARGV[5];
 
 local total = redis.call("SCARD", listKey);
 
@@ -17,6 +18,9 @@ local shouldSkip = skip;
 local matching = 0;
 local result = {}
 
+-- sort list by account IDs
+table.sort(list);
+
 for index, account in ipairs(list) do
 
     local state;
@@ -25,7 +29,21 @@ for index, account in ipairs(list) do
         state = redis.call("HGET", prefix .. "iad:" .. account, "state"); 
     end
 
-    if filterState == '*' or filterState == state then
+    -- string search match defaults to true
+    local strmatch = true
+    if strsearch and strsearch  ~= '' then
+        local account = redis.call("HGET", prefix .. "iad:" .. account, "account") or ""; 
+        local name = redis.call("HGET", prefix .. "iad:" .. account, "name") or ""; 
+        local email = redis.call("HGET", prefix .. "iad:" .. account, "email") or "";
+
+        if string.find(string.lower(account), strsearch, 0, true) or string.find(string.lower(name), strsearch, 0, true) or string.find(string.lower(email), strsearch, 0, true) then
+            strmatch = true
+        else
+            strmatch = false
+        end
+    end
+
+    if (filterState == '*' or filterState == state) and strmatch then
         -- state matches, can use this entry for listing        
 
         if shouldSkip == 0 then

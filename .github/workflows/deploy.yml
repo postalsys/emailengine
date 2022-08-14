@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - gettext
+            - feature-smtp-test
 
 name: Deploy test instance
 

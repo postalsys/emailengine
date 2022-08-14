@@ -23,10 +23,49 @@
 </div>
 
 <p class="mb-4">
-    EmailEngine is dual-licensed under <a href="/LICENSE.txt" target="_blank">Server Side Public License v1</a> and the
+    EmailEngine is licensed under the commercial
     <a href="/LICENSE_EMAILENGINE.txt" target="_blank">EmailEngine License</a>. Using the EmailEngine license and
     unlocking commercial features requires a valid license key.
 </p>
+
+{{#if subexp}}
+<div class="card border-left-danger shadow mt-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                    Invalid license key</div>
+
+                <p>
+                    Your EmailEngine instance has a registered license key, but the account that
+                    generated the key seems to be missing an active subscription from Postal Systems, or the key has
+                    been invalidated.
+                </p>
+
+                <p>
+                    EmailEngine will use the current license key for the next
+                    <strong>{{ngettext '%d day' '%d days' expiresDays}}</strong>.
+                    If you haven't renewed your subscription by that time, you would need to provide a new license key.
+                </p>
+
+                <div>
+                    <a href="https://postalsys.com/plans" class="btn btn-primary btn-icon-split" target="_blank">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-right"></i>
+                        </span>
+                        <span class="text">Subscribe here</span>
+                    </a>
+                </div>
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
 
 {{#unless licenseInfo.active}}
 

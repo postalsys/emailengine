@@ -4,6 +4,7 @@
     <input type="hidden" name="sig" value="{{values.sig}}">
     <input type="hidden" name="email" value="{{values.email}}">
     <input type="hidden" name="name" value="{{values.name}}">
+    <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
 
     <div class="container">
         <div class="row">
@@ -391,6 +392,17 @@
 
         let imapPortElm = document.getElementById('imap_port');
         let smtpPortElm = document.getElementById('smtp_port');
+
+        try {
+            if (typeof Intl !== 'undefined' && Intl && typeof Intl.DateTimeFormat === 'function') {
+                tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (tz) {
+                    document.getElementById('tz').value = tz;
+                }
+            }
+        } catch (err) {
+            // Intl probably not supported
+        }
 
         imapPortElm.addEventListener('change', () => checkPort('imap'));
         imapPortElm.addEventListener('click', () => checkPort('imap'));

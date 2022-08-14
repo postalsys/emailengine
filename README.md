@@ -18,7 +18,7 @@ Headless email client application that makes IMAP and SMTP resources available o
 
 ## Quickstart
 
-* [Set-up instructions](https://emailengine.app/set-up)
+-   [Set-up instructions](https://emailengine.app/set-up)
 
 ## Screenshots
 
@@ -120,4 +120,4 @@ $ npm run raw -- --filter.account=account1
 
 ## Licensing
 
-Dual licensed under [Server Side Public License v1](./LICENSE.txt) or later and the [EmailEngine License](./LICENSE_EMAILENGINE.txt).
+Licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).

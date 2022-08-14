@@ -25,6 +25,8 @@ const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
 const { readEnvValue, hasEnvValue } = require('./lib/tools');
+const nodeFetch = require('node-fetch');
+const fetchCmd = global.fetch || nodeFetch;
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -49,11 +51,11 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const pathlib = require('path');
-const { redis, queueConf } = require('./lib/db');
+const { redis, queueConf, notifyQueue } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
-
+const { compare: cv } = require('compare-versions');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
@@ -74,7 +76,15 @@ const {
     setLicense,
     getRedisStats
 } = require('./lib/tools');
-const { MAX_DAYS_STATS, MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, CONNECT_ERROR_NOTIFY, REDIS_PREFIX } = require('./lib/consts');
+const {
+    MAX_DAYS_STATS,
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    CONNECT_ERROR_NOTIFY,
+    REDIS_PREFIX,
+    ACCOUNT_ADDED_NOTIFY,
+    ACCOUNT_DELETED_NOTIFY
+} = require('./lib/consts');
 const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
@@ -109,6 +119,8 @@ config.smtp = config.smtp || {
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
+const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -149,8 +161,8 @@ const NO_ACTIVE_HANDLER_RESP = {
 };
 
 // check for upgrades once in 8 hours
-const UPGRADE_CHECK_TIMEOUT = 8 * 3600 * 1000;
-const LICENSE_CHECK_TIMEOUT = 15 * 60 * 1000;
+const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000;
+const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000;
 
 const licenseInfo = {
     active: false,
@@ -498,6 +510,32 @@ let updateSmtpServerState = async (state, payload) => {
         }
     }
 };
+
+async function sendWebhook(account, event, data) {
+    let payload = {
+        account,
+        date: new Date().toISOString()
+    };
+
+    if (event) {
+        payload.event = event;
+    }
+
+    if (data) {
+        payload.data = data;
+    }
+
+    let queueKeep = (await settings.get('queueKeep')) || true;
+    await notifyQueue.add(event, payload, {
+        removeOnComplete: queueKeep,
+        removeOnFail: queueKeep,
+        attempts: 10,
+        backoff: {
+            type: 'exponential',
+            delay: 5000
+        }
+    });
+}
 
 let spawnWorker = async type => {
     if (isClosing) {
@@ -856,29 +894,91 @@ async function assignAccounts() {
 }
 
 let licenseCheckTimer = false;
-let licenseCheckHandler = async () => {
-    if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
-        // clear expired license
-
-        logger.info({ msg: 'License expired', license: licenseInfo.details });
-
-        licenseInfo.active = false;
-        licenseInfo.details = false;
+let checkingLicense = false;
+let licenseCheckHandler = async opts => {
+    if (checkingLicense) {
+        return;
     }
+    checkingLicense = true;
+    clearTimeout(licenseCheckTimer);
 
-    if (!licenseInfo.active && !suspendedWorkerTypes.size) {
-        logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+    try {
+        opts = opts || {};
+        let { subscriptionCheckTimeout } = opts;
+        let now = Date.now();
+        subscriptionCheckTimeout = subscriptionCheckTimeout || SUBSCRIPTION_CHECK_TIMEOUT;
 
-        for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
-            suspendedWorkerTypes.add(type);
-            if (workers.has(type)) {
-                for (let worker of workers.get(type).values()) {
-                    worker.terminate();
+        let kv = await redis.hget(`${REDIS_PREFIX}settings`, 'kv');
+        let checkKv = true;
+        if (kv && typeof kv === 'string' && cv(packageData.version, Buffer.from(kv, 'hex').toString(), '<=')) {
+            checkKv = false;
+        }
+
+        if (
+            checkKv &&
+            licenseInfo.active &&
+            !(licenseInfo.details && licenseInfo.details.expires) &&
+            (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
+        ) {
+            // validate license
+            try {
+                let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
+                    method: 'post',
+                    headers: {
+                        'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        key: licenseInfo.details.key,
+                        version: packageData.version,
+                        app: '@postalsys/emailengine-app'
+                    })
+                });
+
+                let data = await res.json();
+
+                if (!res.ok) {
+                    if (data.invalidate) {
+                        let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
+                        if (res === 2) {
+                            // grace period over
+                            logger.info({ msg: 'License not valid', license: licenseInfo.details, data });
+                            await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
+                            licenseInfo.active = false;
+                            licenseInfo.details = false;
+                            licenseInfo.type = packageData.license;
+                        }
+                    }
+                } else {
+                    await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+                    await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
                 }
+            } catch (err) {
+                logger.error({ msg: 'Failed to validate license', err });
             }
         }
-    } else {
-        if (licenseInfo.active && suspendedWorkerTypes.size) {
+
+        if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
+            // clear expired license
+
+            logger.info({ msg: 'License expired', license: licenseInfo.details });
+
+            licenseInfo.active = false;
+            licenseInfo.details = false;
+        }
+
+        if (!licenseInfo.active && !suspendedWorkerTypes.size) {
+            logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+
+            for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
+                suspendedWorkerTypes.add(type);
+                if (workers.has(type)) {
+                    for (let worker of workers.get(type).values()) {
+                        worker.terminate();
+                    }
+                }
+            }
+        } else if (licenseInfo.active && suspendedWorkerTypes.size) {
             // re-enable missing workers
             for (let type of suspendedWorkerTypes) {
                 suspendedWorkerTypes.delete(type);
@@ -898,7 +998,8 @@ let licenseCheckHandler = async () => {
                 }
             }
         }
-
+    } finally {
+        checkingLicense = false;
         licenseCheckTimer = setTimeout(checkActiveLicense, LICENSE_CHECK_TIMEOUT);
         licenseCheckTimer.unref();
     }
@@ -1047,6 +1148,16 @@ async function onCommand(worker, message) {
             return { workers: availableIMAPWorkers.size };
         }
 
+        case 'checkLicense':
+            try {
+                await licenseCheckHandler({
+                    subscriptionCheckTimeout: 60 * 1000
+                });
+            } catch (err) {
+                // ignore
+            }
+            return licenseInfo;
+
         case 'license':
             if (!licenseInfo.active && suspendedWorkerTypes.size) {
                 return Object.assign({}, licenseInfo, { suspended: true });
@@ -1082,7 +1193,7 @@ async function onCommand(worker, message) {
 
         case 'removeLicense': {
             try {
-                await redis.hdel(`${REDIS_PREFIX}settings`, 'license');
+                await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
 
                 licenseInfo.active = false;
                 licenseInfo.details = false;
@@ -1097,7 +1208,9 @@ async function onCommand(worker, message) {
 
         case 'new':
             unassigned.add(message.account);
-            assignAccounts().catch(err => logger.error(err));
+            assignAccounts()
+                .then(sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
+                .catch(err => logger.error(err));
             return;
 
         case 'delete':
@@ -1117,6 +1230,7 @@ async function onCommand(worker, message) {
                     .then(() => logger.debug('worker processed'))
                     .catch(err => logger.error(err));
             }
+            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err => logger.error(err));
             return;
 
         case 'update':

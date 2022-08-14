@@ -46,7 +46,6 @@
                     web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
             </div>
 
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">locale</a>]</div>
@@ -69,6 +68,22 @@
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md">See
                         here</a>
                     if you would like to add an additional translation.</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">timezone</a>]</div>
+
+                <label for="settingsServiceTimezone">Default timezone</label>
+                <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
+                    errors.timezone}}is-invalid{{/if}}>
+                    {{#each timezones}}
+                    <option value="{{timezone}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.timezone}}
+                <span class="invalid-feedback">{{errors.timezone}}</span>
+                {{/if}}
             </div>
         </div>
     </div>
@@ -271,6 +286,23 @@
             </div>
 
             <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">resolveGmailCategories</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
+                    id="resolveGmailCategories" name="resolveGmailCategories" {{#if
+                    values.resolveGmailCategories}}checked{{/if}} />
+                <label class="form-check-label" for="resolveGmailCategories">Resolve Gmail categories</label>
+                {{#if errors.resolveGmailCategories}}
+                <span class="invalid-feedback">{{errors.resolveGmailCategories}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, EmailEngine resolves the inbox category (also known as
+                    the Gmail tab) for incoming emails. Possible category values are the following: <em>social</em>,
+                    <em>promotions</em>, <em>updates</em>, <em>forums</em>, and <em>primary</em>. You can find the value
+                    in the <em>category</em> property of the <em>messageNew</em> webhook payload.</small>
+            </div>
+
+            <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.labsDocumentStore}}is-invalid{{/if}}"
                     id="labsDocumentStore" name="labsDocumentStore" {{#if values.labsDocumentStore}}checked{{/if}} />
@@ -358,6 +390,7 @@
                 return
             }
             sendingCleanRequest = true;
+
             let cleanIconElm = document.querySelector('#clean-queues-btn .clean-icon');
             cleanIconElm.classList.remove('fa-trash-alt');
             cleanIconElm.classList.add('fa-spinner', 'fa-spin');
