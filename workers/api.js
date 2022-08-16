@@ -3115,19 +3115,26 @@ When making API calls remember that requests against the same account are queued
                 esClient: await h.getESClient(request.logger)
             });
 
+            let extraValidationErrors = [];
+
             if (request.query.documentStore) {
-                let extraValidationErrors = [];
                 for (let key of ['seq', 'modseq']) {
                     if (request.payload.search && key in request.payload.search) {
                         extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
                     }
                 }
-
-                if (extraValidationErrors.length) {
-                    let error = new Error('Input validation failed');
-                    error.details = extraValidationErrors;
-                    return failAction(request, h, error);
+            } else {
+                for (let key of ['documentQuery']) {
+                    if (key in request.payload) {
+                        extraValidationErrors.push({ message: 'Not allowed without documentStore', context: { key } });
+                    }
                 }
+            }
+
+            if (extraValidationErrors.length) {
+                let error = new Error('Input validation failed');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
             }
 
             try {
@@ -3269,7 +3276,9 @@ When making API calls remember that requests against the same account are queued
                     })
                         .required()
                         .description('Search query to filter messages')
-                        .label('SearchQuery')
+                        .label('SearchQuery'),
+
+                    documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
                 }).label('SearchQuery')
             },
 
@@ -3501,7 +3510,7 @@ When making API calls remember that requests against the same account are queued
 
                     gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
 
-                    preview: Joi.boolean()
+                    dryRun: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
