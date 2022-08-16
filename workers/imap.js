@@ -35,6 +35,7 @@ const { Connection } = require('../lib/connection');
 const { Account } = require('../lib/account');
 const { redis, notifyQueue, submitQueue, documentsQueue } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
+const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
@@ -114,8 +115,14 @@ class ConnectionHandler {
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
 
+        let accountLogger = await this.getAccountLogger(account);
         let secret = await getSecret();
-        let accountObject = new Account({ redis, account, secret });
+        let accountObject = new Account({
+            redis,
+            account,
+            secret,
+            esClient: await getESClient(accountLogger)
+        });
 
         this.accounts.set(account, accountObject);
         accountObject.connection = new Connection({
@@ -126,7 +133,7 @@ class ConnectionHandler {
             notifyQueue,
             submitQueue,
             documentsQueue,
-            accountLogger: await this.getAccountLogger(account),
+            accountLogger,
             logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;

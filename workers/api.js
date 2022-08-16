@@ -19,9 +19,7 @@ const {
     isEmail,
     getLogs,
     getWorkerCount,
-    normalizePath,
     assertPreconditions,
-    unpackUIDRangeForSearch,
     matcher,
     readEnvValue
 } = require('../lib/tools');
@@ -67,7 +65,6 @@ const { getOAuth2Client } = require('../lib/oauth');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
-const msgpack = require('msgpack5')();
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
 const Hecks = require('@hapipal/hecks');
@@ -108,7 +105,8 @@ const {
     shortMailboxesSchema,
     licenseSchema,
     lastErrorSchema,
-    templateSchemas
+    templateSchemas,
+    documentStoreSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -2507,76 +2505,16 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
 
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    const { index, client } = await h.getESClient(request.logger);
-
-                    const reqOpts = {
-                        index,
-                        id: `${request.params.account}:${request.params.message}`,
-                        _source_excludes: 'preview,seemsLikeNew'
-                    };
-
-                    switch (request.query.textType) {
-                        case '*':
-                            break;
-                        case 'html':
-                            reqOpts._source_excludes = 'text.plain';
-                            break;
-                        case 'plain':
-                            reqOpts._source_excludes = 'text.html';
-                            break;
-                        default:
-                            reqOpts._source_excludes = 'text.plain,text.html';
-                    }
-
-                    let getResult = await client.get(reqOpts);
-
-                    if (!getResult || !getResult._source) {
-                        let message = 'Requested message was not found';
-                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
-                        throw error;
-                    }
-
-                    let messageData = getResult._source;
-
-                    // restore headers and text object as per the API response
-                    let headersObj = {};
-                    for (let { key, value } of messageData.headers) {
-                        headersObj[key] = value;
-                    }
-                    messageData.headers = headersObj;
-
-                    if (messageData.text && (messageData.text.html || messageData.text.plain)) {
-                        messageData.text.hasMore = false;
-                    }
-
-                    for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                        if (messageData[key] === false) {
-                            messageData[key] = undefined;
-                        }
-                    }
-
-                    for (let key of ['account', 'created', 'specialUse']) {
-                        if (messageData[key]) {
-                            messageData[key] = undefined;
-                        }
-                    }
-
-                    return messageData;
-                } else {
-                    // regular IMAP request
-                    return await accountObject.getMessage(request.params.message, request.query);
-                }
+                return await accountObject.getMessage(request.params.message, request.query);
             } catch (err) {
                 request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
@@ -2618,12 +2556,7 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -2725,7 +2658,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3021,45 +2955,16 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/text/{text}',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
 
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    let buf = Buffer.from(request.params.text, 'base64url');
-                    let message = buf.slice(0, 8).toString('base64url');
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let getResult = await client.get({
-                        index,
-                        id: `${request.params.account}:${message}`
-                    });
-
-                    if (!getResult || !getResult._source) {
-                        let message = 'Requested message was not found';
-                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
-                        throw error;
-                    }
-
-                    let messageData = getResult._source;
-                    let response = {};
-                    for (let textType of Object.keys(messageData.text || {})) {
-                        if (['plain', 'html'].includes(textType) && (request.query.textType === '*' || request.query.textType === textType)) {
-                            response[textType] = messageData.text[textType];
-                        }
-                    }
-                    response.hasMore = false;
-
-                    return response;
-                } else {
-                    return await accountObject.getText(request.params.text, request.query);
-                }
+                return await accountObject.getText(request.params.text, request.query);
             } catch (err) {
                 request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
@@ -3102,12 +3007,7 @@ When making API calls remember that requests against the same account are queued
                         .default('*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default all contents are returned.'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -3137,117 +3037,16 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/messages',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
-                    let delimiter;
-                    if (inboxData) {
-                        try {
-                            inboxData = msgpack.decode(inboxData);
-                            delimiter = inboxData.delimiter;
-                        } catch (err) {
-                            delimiter = '/'; // hope for the best
-                            inboxData = false;
-                        }
-                    }
-
-                    inboxData = inboxData || {
-                        path: 'INBOX',
-                        delimiter
-                    };
-
-                    inboxData.specialUse = inboxData.specialUse || '\\Inbox';
-
-                    let path = normalizePath(request.query.path, delimiter);
-                    let mailboxData = path === 'INBOX' ? inboxData : false;
-                    if (!mailboxData) {
-                        mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
-                        if (mailboxData) {
-                            try {
-                                mailboxData = msgpack.decode(mailboxData);
-                            } catch (err) {
-                                mailboxData = false;
-                            }
-                        }
-                    }
-
-                    let query = {
-                        bool: {
-                            must: [
-                                {
-                                    term: {
-                                        account: request.params.account
-                                    }
-                                }
-                            ]
-                        }
-                    };
-
-                    query.bool.must.push({
-                        bool: {
-                            should: [
-                                {
-                                    term: {
-                                        path
-                                    }
-                                },
-                                {
-                                    term: {
-                                        labels: mailboxData.specialUse || path
-                                    }
-                                }
-                            ],
-                            minimum_should_match: 1
-                        }
-                    });
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let searchResult = await client.search({
-                        index,
-                        size: request.query.pageSize,
-                        from: request.query.pageSize * request.query.page,
-                        query,
-                        sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
-                    });
-
-                    let response = {
-                        total: searchResult.hits.total.value,
-                        page: request.query.page,
-                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1),
-                        messages: searchResult.hits.hits.map(entry => {
-                            let messageData = entry._source;
-
-                            // normalize as per the API response
-
-                            for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                                if (messageData[key] === false) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            for (let key of ['account', 'created', 'specialUse']) {
-                                if (messageData[key]) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            return messageData;
-                        })
-                    };
-
-                    return response;
-                } else {
-                    return await accountObject.listMessages(request.query);
-                }
+                return await accountObject.listMessages(request.query);
             } catch (err) {
                 request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
@@ -3292,12 +3091,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }).label('MessageQuery')
             },
 
@@ -3313,315 +3107,38 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/search',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-            try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            let extraValidationErrors = [];
+
+            if (request.query.documentStore) {
+                for (let key of ['seq', 'modseq']) {
+                    if (request.payload.search && key in request.payload.search) {
+                        extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
                     }
-
-                    let query = {
-                        bool: {
-                            must: [
-                                {
-                                    term: {
-                                        account: request.params.account
-                                    }
-                                }
-                            ]
-                        }
-                    };
-
-                    if (request.query.path) {
-                        let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
-                        let delimiter;
-
-                        if (inboxData) {
-                            try {
-                                inboxData = msgpack.decode(inboxData);
-                                delimiter = inboxData.delimiter;
-                            } catch (err) {
-                                delimiter = '/'; // hope for the best
-                                inboxData = false;
-                            }
-                        }
-
-                        inboxData = inboxData || {
-                            path: 'INBOX',
-                            delimiter
-                        };
-
-                        inboxData.specialUse = inboxData.specialUse || '\\Inbox';
-
-                        let path = normalizePath(request.query.path, delimiter);
-                        let mailboxData = path === 'INBOX' ? inboxData : false;
-                        if (!mailboxData) {
-                            mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
-                            if (mailboxData) {
-                                try {
-                                    mailboxData = msgpack.decode(mailboxData);
-                                } catch (err) {
-                                    mailboxData = false;
-                                }
-                            }
-                        }
-
-                        query.bool.must.push({
-                            bool: {
-                                should: [
-                                    {
-                                        term: {
-                                            path
-                                        }
-                                    },
-                                    {
-                                        term: {
-                                            labels: mailboxData.specialUse || path
-                                        }
-                                    }
-                                ],
-                                minimum_should_match: 1
-                            }
-                        });
-                    }
-
-                    for (let key of ['answered', 'deleted', 'draft', 'unseen', 'flagged']) {
-                        if (typeof request.payload.search[key] === 'boolean') {
-                            query.bool.must.push({
-                                term: {
-                                    [key]: request.payload.search[key]
-                                }
-                            });
-                        }
-                    }
-
-                    if (typeof request.payload.search.seen === 'boolean') {
-                        query.bool.must.push({
-                            term: {
-                                unseen: !request.payload.search.seen
-                            }
-                        });
-                    }
-
-                    for (let key of ['from', 'to', 'cc', 'bcc']) {
-                        if (request.payload.search[key]) {
-                            query.bool.must.push({
-                                bool: {
-                                    should: [
-                                        {
-                                            match: {
-                                                [`${key}.name`]: {
-                                                    query: request.payload.search[key],
-                                                    operator: 'and'
-                                                }
-                                            }
-                                        },
-                                        {
-                                            term: {
-                                                [`${key}.address`]: request.payload.search[key]
-                                            }
-                                        }
-                                    ],
-                                    minimum_should_match: 1
-                                }
-                            });
-                        }
-                    }
-
-                    if (request.payload.search.uid) {
-                        let uidEntries = unpackUIDRangeForSearch(request.payload.search.uid);
-                        if (uidEntries && uidEntries.length) {
-                            let mustList = [];
-                            for (let entry of uidEntries) {
-                                if (typeof entry === 'number') {
-                                    mustList.push({
-                                        match: {
-                                            uid: {
-                                                query: entry,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    });
-                                } else if (typeof entry === 'object') {
-                                    mustList.push({
-                                        range: {
-                                            uid: entry
-                                        }
-                                    });
-                                }
-                            }
-
-                            if (mustList.length) {
-                                query.bool.must.push({
-                                    bool: {
-                                        should: mustList,
-                                        minimum_should_match: 1
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    for (let key of ['emailId', 'threadId']) {
-                        if (request.payload.search[key]) {
-                            query.bool.must.push({
-                                term: {
-                                    key: request.payload.search[key]
-                                }
-                            });
-                        }
-                    }
-
-                    if (request.payload.search.subject) {
-                        query.bool.must.push({
-                            match: {
-                                subject: {
-                                    query: request.payload.search.subject,
-                                    operator: 'and'
-                                }
-                            }
-                        });
-                    }
-
-                    if (request.payload.search.body) {
-                        query.bool.must.push({
-                            bool: {
-                                should: [
-                                    {
-                                        match: {
-                                            'text.plain': {
-                                                query: request.payload.search.body,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    },
-                                    {
-                                        match: {
-                                            'text.html': {
-                                                query: request.payload.search.body,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    }
-                                ],
-                                minimum_should_match: 1
-                            }
-                        });
-                    }
-
-                    let dateMatch = {};
-
-                    for (let key of ['before', 'sentBefore']) {
-                        if (request.payload.search[key]) {
-                            dateMatch.lte = request.payload.search[key];
-                        }
-                    }
-
-                    for (let key of ['since', 'sentSince']) {
-                        if (request.payload.search[key]) {
-                            dateMatch.gte = request.payload.search[key];
-                        }
-                    }
-
-                    if (Object.keys(dateMatch).length) {
-                        query.bool.must.push({
-                            range: { date: dateMatch }
-                        });
-                    }
-
-                    let sizeMatch = {};
-
-                    if (request.payload.search.larger) {
-                        dateMatch.gte = request.payload.search.larger;
-                    }
-
-                    if (request.payload.search.smaller) {
-                        dateMatch.lte = request.payload.search.smaller;
-                    }
-
-                    if (Object.keys(sizeMatch).length) {
-                        query.bool.must.push({
-                            range: { size: sizeMatch }
-                        });
-                    }
-
-                    // headers, nested query
-                    if (Object.keys(request.payload.search.header || {}).length) {
-                        Object.keys(request.payload.search.header).forEach(header => {
-                            query.bool.must.push({
-                                nested: {
-                                    path: 'headers',
-                                    query: {
-                                        bool: {
-                                            must: [
-                                                {
-                                                    term: {
-                                                        'headers.key': header.toLowerCase()
-                                                    }
-                                                },
-                                                {
-                                                    match: {
-                                                        'headers.value': {
-                                                            query: (request.payload.search.header[header] || '').toString(),
-                                                            operator: 'and'
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            });
-                        });
-                    }
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let searchResult = await client.search({
-                        index,
-                        size: request.query.pageSize,
-                        from: request.query.pageSize * request.query.page,
-                        query,
-                        sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
-                    });
-
-                    let response = {
-                        total: searchResult.hits.total.value,
-                        page: request.query.page,
-                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1)
-                    };
-
-                    if (request.query.exposeQuery) {
-                        response.documentStoreQuery = query;
-                    }
-
-                    response.messages = searchResult.hits.hits.map(entry => {
-                        let messageData = entry._source;
-
-                        // normalize as per the API response
-
-                        for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                            if (messageData[key] === false) {
-                                messageData[key] = undefined;
-                            }
-                        }
-
-                        for (let key of ['account', 'created', 'specialUse']) {
-                            if (messageData[key]) {
-                                messageData[key] = undefined;
-                            }
-                        }
-
-                        return messageData;
-                    });
-
-                    return response;
-                } else {
-                    return await accountObject.listMessages(Object.assign(request.query, request.payload));
                 }
+            } else {
+                for (let key of ['documentQuery']) {
+                    if (key in request.payload) {
+                        extraValidationErrors.push({ message: 'Not allowed without documentStore', context: { key } });
+                    }
+                }
+            }
+
+            if (extraValidationErrors.length) {
+                let error = new Error('Input validation failed');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            try {
+                return await accountObject.searchMessages(Object.assign(request.query, request.payload));
             } catch (err) {
                 request.logger.error({ msg: 'Request processing failed', err });
                 if (Boom.isBoom(err)) {
@@ -3674,12 +3191,7 @@ When making API calls remember that requests against the same account are queued
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore'),
+                    documentStore: documentStoreSchema.default(false),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -3695,9 +3207,7 @@ When making API calls remember that requests against the same account are queued
 
                 payload: Joi.object({
                     search: Joi.object({
-                        seq: Joi.string()
-                            .max(256)
-                            .description('Sequence number range. Ignored when `documentStore` is `true` as Document Store does not assign sequence numbers.'),
+                        seq: Joi.string().max(256).description('Sequence number range. Not allowed with `documentStore`.'),
 
                         answered: Joi.boolean()
                             .truthy('Y', 'true', '1')
@@ -3750,7 +3260,7 @@ When making API calls remember that requests against the same account are queued
 
                         modseq: Joi.number()
                             .min(0)
-                            .description('Matches messages with modseq higher than value. Ignored when `documentStore` is `true`.')
+                            .description('Matches messages with modseq higher than value. Not allowed with `documentStore`.')
                             .label('ModseqLarger'),
 
                         before: Joi.date().description('Matches messages received before date').label('EnvelopeBefore'),
@@ -3766,7 +3276,9 @@ When making API calls remember that requests against the same account are queued
                     })
                         .required()
                         .description('Search query to filter messages')
-                        .label('SearchQuery')
+                        .label('SearchQuery'),
+
+                    documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
                 }).label('SearchQuery')
             },
 
@@ -3858,7 +3370,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3995,7 +3508,16 @@ When making API calls remember that requests against the same account are queued
                         .description('How many delivery attempts to make until message is considered as failed')
                         .default(10),
 
-                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing')
+                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
+
+                    dryRun: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'If true, then EmailEngine does not send the email and returns an RFC822 formatted email file. Tracking information is not added to the email.'
+                        )
+                        .label('Preview')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -4020,11 +3542,21 @@ When making API calls remember that requests against the same account are queued
                             .required()
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
+                        documentStore: Joi.boolean()
+                            .example(true)
+                            .description('Was the message dat aloaded from the document store')
+                            .label('ResponseDocumentStore'),
                         success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
                         .description('Reference info if referencing was requested')
                         .label('ResponseReference'),
+
+                    preview: Joi.string()
+                        .base64()
+                        .example('Q29udGVudC1UeXBlOiBtdWx0aX...')
+                        .description('Base64 encoded RFC822 email if a preview was requested')
+                        .label('ResponsePreview'),
 
                     bulk: Joi.array()
                         .items(

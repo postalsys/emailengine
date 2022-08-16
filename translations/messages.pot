@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-08-11 19:55+0000\n"
+"POT-Creation-Date: 2022-08-16 15:06+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -42,6 +42,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:146
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:12
@@ -130,14 +138,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:307
 msgid "HTTP error!"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: lib/routes-ui.js:2798
