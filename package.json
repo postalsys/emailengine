@@ -7,7 +7,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 | pino-pretty",
+        "dev": "node server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=3000 --api.host=0.0.0.0 | pino-pretty",
         "raw": "EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt",
         "swagger": "./getswagger.sh",
