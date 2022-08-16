@@ -105,7 +105,8 @@ const {
     shortMailboxesSchema,
     licenseSchema,
     lastErrorSchema,
-    templateSchemas
+    templateSchemas,
+    documentStoreSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -2555,12 +2556,7 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -2662,7 +2658,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3010,12 +3007,7 @@ When making API calls remember that requests against the same account are queued
                         .default('*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default all contents are returned.'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -3099,12 +3091,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }).label('MessageQuery')
             },
 
@@ -3197,12 +3184,7 @@ When making API calls remember that requests against the same account are queued
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore'),
+                    documentStore: documentStoreSchema.default(false),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -3379,7 +3361,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3516,7 +3499,16 @@ When making API calls remember that requests against the same account are queued
                         .description('How many delivery attempts to make until message is considered as failed')
                         .default(10),
 
-                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing')
+                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
+
+                    preview: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'If true, then EmailEngine does not send the email and returns an RFC822 formatted email file. Tracking information is not added to the email.'
+                        )
+                        .label('Preview')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -3541,11 +3533,21 @@ When making API calls remember that requests against the same account are queued
                             .required()
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
+                        documentStore: Joi.boolean()
+                            .example(true)
+                            .description('Was the message dat aloaded from the document store')
+                            .label('ResponseDocumentStore'),
                         success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
                         .description('Reference info if referencing was requested')
                         .label('ResponseReference'),
+
+                    preview: Joi.string()
+                        .base64()
+                        .example('Q29udGVudC1UeXBlOiBtdWx0aX...')
+                        .description('Base64 encoded RFC822 email if a preview was requested')
+                        .label('ResponsePreview'),
 
                     bulk: Joi.array()
                         .items(
