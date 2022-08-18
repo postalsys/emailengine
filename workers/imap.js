@@ -264,7 +264,7 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.listMailboxes();
+        return await accountData.connection.listMailboxes(message.options);
     }
 
     async moveMessage(message) {

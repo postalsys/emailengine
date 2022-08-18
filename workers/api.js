@@ -2227,7 +2227,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return { mailboxes: await accountObject.getMailboxListing() };
+                return { mailboxes: await accountObject.getMailboxListing(request.query) };
             } catch (err) {
                 if (Boom.isBoom(err)) {
                     throw err;
@@ -2260,7 +2260,16 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                })
+                }),
+
+                query: Joi.object({
+                    counters: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then includes message counters in the response')
+                        .label('MailboxCounters')
+                }).label('MailboxListQuery')
             },
 
             response: {
