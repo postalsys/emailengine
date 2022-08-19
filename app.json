@@ -8,7 +8,7 @@
     "image": "heroku/nodejs",
 
     "success_url": "/admin",
-    "addons": ["heroku-redis"],
+    "addons": ["heroku-redis:premium-0"],
 
     "env": {
         "EENGINE_SECRET": {
