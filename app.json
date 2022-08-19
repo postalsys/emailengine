@@ -30,6 +30,11 @@
             "description": "IP address to bind to. Set it to \"0.0.0.0\", otherwise Heroku can not access the application.",
             "value": "0.0.0.0",
             "required": true
+        },
+        "NODE_TLS_REJECT_UNAUTHORIZED": {
+            "description": "Disable TLS certificate validation. Sorry for this, but otherwise EmailEngine is not able to connect to the Heroku Redis addon.",
+            "value": "0",
+            "required": true
         }
     }
 }

@@ -2,7 +2,7 @@ name: Notify discord of a new commit
 on:
     push:
         branches:
-            - 'zmaster'
+            - 'master'
 jobs:
     build:
         name: Build.
