@@ -58,6 +58,15 @@
 
                 <li class="list-group-item">
                     <div class="form-check">
+                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesImapProxy"
+                            name="scopesImapProxy" data-scope="imap-proxy" {{#if
+                            values.scopesImapProxy}}checked{{/if}} />
+                        <label class="form-check-label" for="scopesImapProxy">IMAP Proxy</label>
+                    </div>
+                </li>
+
+                <li class="list-group-item">
+                    <div class="form-check">
                         <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesMetrics"
                             name="scopesMetrics" data-scope="metrics" {{#if values.scopesMetrics}}checked{{/if}} />
                         <label class="form-check-label" for="scopesMetrics">Metrics</label>

@@ -404,8 +404,13 @@ async function init() {
         if (hostname) {
             let certificateData = await certs.getCertificate(hostname, true);
             if (certificateData && certificateData.status === 'valid') {
-                serverOptions.ca = certificateData.ca;
-                serverOptions.cert = certificateData.cert;
+                serverOptions.cert =
+                    certificateData.cert +
+                    '\n' +
+                    []
+                        .concat(certificateData.ca || [])
+                        .flatMap(entry => entry)
+                        .join('\n');
                 serverOptions.key = certificateData.privateKey;
             }
         }
