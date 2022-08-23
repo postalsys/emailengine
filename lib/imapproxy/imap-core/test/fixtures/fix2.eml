@@ -1,0 +1,599 @@
+Subject: Ryan Finnie's MIME Torture Test v1.0
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-qYxqvD9rbH0PNeExagh1"
+Message-Id: <1066976914.4721.5.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 23:28:34 -0700
+
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+Welcome to Ryan Finnie's MIME torture test.  This message was designed
+to introduce a couple of the newer features of MIME-aware MUAs, features
+that have come around since the days of the original MIME torture test.
+
+Just to be clear, this message SUPPLEMENTS the original torture test,
+not replaces it.  The original test is still very much valid these days,
+and new MUAs should strive to first pass the original test, then this
+one.
+
+By the way, the message/rfc822 parts have Content-Descriptions
+containing Futurama quotes.  Bonus points if the MUA display these
+somewhere.
+
+Have fun!
+
+Ryan Finnie
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: I'll be whatever I wanna do. --Fry
+Content-Type: message/rfc822
+
+Subject: plain jane message
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Message-Id: <1066973156.4264.42.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:25:56 -0700
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+Subject: plain jane message
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: text/plain
+Message-Id: <1066973156.4264.42.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:25:56 -0700
+Content-Transfer-Encoding: 7bit
+
+This is a plain text/plain message.  Nothing fancy here...
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Would you kindly shut your noise-hole? --Bender
+Content-Type: message/rfc822
+
+Subject: messages inside messages inside...
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-9Brg7LoMERBrIDtMRose"
+Message-Id: <1066976111.4263.74.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 23:15:11 -0700
+
+
+--=-9Brg7LoMERBrIDtMRose
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+While a message/rfc822 part inside another message/rfc822 part in a
+message isn't too strange, 200 iterations of that would be.  The MUA
+should have some sense when to stop looping through.
+
+--=-9Brg7LoMERBrIDtMRose
+Content-Disposition: inline
+Content-Description: At the risk of sounding negative, no. --Leela
+Content-Type: message/rfc822
+
+Subject: the original message
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-XFYecI7w+0shpolXq8bb"
+Message-Id: <1066975745.4263.70.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 23:09:05 -0700
+
+
+--=-XFYecI7w+0shpolXq8bb
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+by this point, I should be the 3rd layer deep!
+
+I also have an attachment.
+
+--=-XFYecI7w+0shpolXq8bb
+Content-Disposition: attachment; filename=foo.gz
+Content-Transfer-Encoding: base64
+Content-Type: application/x-gzip; NAME=foo.gz
+
+H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA
+
+--=-XFYecI7w+0shpolXq8bb--
+
+--=-9Brg7LoMERBrIDtMRose--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Dirt doesn't need luck! --Professor
+Content-Type: message/rfc822
+
+Subject: this message JUST contains an attachment
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Disposition: attachment; filename=blah.gz
+Content-Transfer-Encoding: base64
+Content-Description: Attachment has identical content to above foo.gz
+Message-Id: <1066974048.4264.62.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:40:49 -0700
+Content-Type: application/x-gzip; NAME=blah.gz
+
+SubjectthismessageJUSTcontainsanattachmentFromRyanFinnierfinniedomaindomTobo
+bdomaindomContentDispositionattachmentfilenameAblahgzContentTypeapplication/
+xgzipnameAblahgzContentTransferEncodingbase64ContentDescriptionAttachmenthas
+identicalcontenttoabovefoogzMessageId1066974048426462camellocalhostMimeVersi
+on10Date23Oct20032240490700H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe7
+64WA
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Hold still, I don't have good depth perception! --Leela
+Content-Type: message/rfc822
+
+Subject: Attachment filename vs. name
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-1066975756jd02"
+Message-Id: <1066975756.4263.70.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 23:09:16 -0700
+
+
+--=-1066975756jd02
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+In this message's attachment, the Content-Disposition has a
+filename of blah1.gz, while the Content-Type has a name of
+blah2.gz.  What should be done?  Well, since this is an attachment
+(as indicated in the Content-Disposition), the MUA should
+suggest a filename of blah1.gz.  The MUA *COULD* find a way to
+represent the name of blah2.gz somewhere else, it's not needed.
+
+--=-1066975756jd02
+Content-Disposition: attachment; filename=blah1.gz
+Content-Transfer-Encoding: base64
+Content-Description: filename is blah1.gz, name is blah2.gz
+Content-Type: application/x-gzip; NAME=blah2.gz
+
+H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA
+
+--=-1066975756jd02--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Hello little man.  I WILL DESTROY YOU! --Moro
+Content-Type: message/rfc822
+
+Subject: No filename?  No problem!
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-1066975756jd03"
+Message-Id: <1066975761.4263.70.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 23:09:21 -0700
+
+
+--=-1066975756jd03
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+When searching for a suitable name to suggest for a filename,
+the MUA should probably follow this order.  First, look for
+Content-Disposition's filename attribute.  If that is missing,
+look for Content-Type's file attribute.  If that is also missing,
+I would recomment taking the Content-Description, stripping off
+any characters that cannot be used in a filename, and suggesting
+that.
+
+If none of those fields are available, the MUA could just make
+up a random filename.  SOMETHING is better than nothing.
+
+--=-1066975756jd03
+Content-Disposition: attachment
+Content-Transfer-Encoding: base64
+Content-Description: I'm getting sick of witty things to say
+Content-Type: application/x-gzip
+
+H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA
+
+--=-1066975756jd03--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Friends! Help! A guinea pig tricked me! --Zoidberg
+Content-Type: message/rfc822
+
+Subject: html and text, both inline
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-ZCKMfHzvHMyK1iBu4kff"
+Message-Id: <1066974044.4264.62.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:40:45 -0700
+
+
+--=-ZCKMfHzvHMyK1iBu4kff
+Content-Type: text/html; CHARSET=utf-8
+Content-Transfer-Encoding: 8bit
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<HTML>
+<HEAD>
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
+  <META NAME="GENERATOR" CONTENT="GtkHTML/1.1.10">
+</HEAD>
+<BODY>
+<FONT COLOR="#f8cc00">This is the HTML part.</FONT><BR>
+It should be displayed inline.
+</BODY>
+</HTML>
+
+--=-ZCKMfHzvHMyK1iBu4kff
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+This is the text part.
+It should ALSO be displayed inline.
+
+--=-ZCKMfHzvHMyK1iBu4kff--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Smeesh! --Amy
+Content-Type: message/rfc822
+
+Subject: text and text, both inline
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-pNc4wtlOIxs8RcX7H/AK"
+Message-Id: <1066974089.4265.64.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:41:29 -0700
+
+
+--=-pNc4wtlOIxs8RcX7H/AK
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+This is the first text part.
+It should be displayed inline.
+
+--=-pNc4wtlOIxs8RcX7H/AK
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+This is the second text part.
+It should also be displayed inline.
+
+--=-pNc4wtlOIxs8RcX7H/AK--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: That's not a cigar. Uh... and it's not mine. --Hermes
+Content-Type: message/rfc822
+
+Subject: HTML and...  HTML?
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/mixed; boundary="=-zxh/IezwzZITiphpcbJZ"
+Message-Id: <1066973957.4263.59.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:39:17 -0700
+
+
+--=-zxh/IezwzZITiphpcbJZ
+Content-Type: text/html; CHARSET=utf-8
+Content-Transfer-Encoding: 8bit
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<HTML>
+<HEAD>
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
+  <META NAME="GENERATOR" CONTENT="GtkHTML/1.1.10">
+</HEAD>
+<BODY>
+<B>Bold!!!</B><BR>
+<BR>
+What do we have here...  This message is an HTML message.  Also attached
+is an HTML FILE.  Both of these are in a multipart/mixed part.<BR>
+<BR>
+Now, the first HTML part (what you're reading now) should be displayed
+if the MUA is HTML-capable.  If it is not, the MUA could possibly offer
+this part up as an attachment to download, seeing as how no plaintext
+part is offered as an alternative.<BR>
+<BR>
+However, the second HTML part is listed with a disposition as
+attachment.  Therefore, it should be offered as an attachment, not
+displayed inline.
+</BODY>
+</HTML>
+
+--=-zxh/IezwzZITiphpcbJZ
+Content-Disposition: attachment; filename=htmlfile.html
+Content-Type: text/html; NAME=htmlfile.html; CHARSET=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<html>
+<head><title>This is an Attachment</title></head>
+<body>
+<p>The title says it all...</p>
+</body>
+</html>
+
+--=-zxh/IezwzZITiphpcbJZ--
+
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: The spirit is willing, but the flesh is spongy, and
+    bruised. --Zapp
+Content-Type: message/rfc822
+
+Subject: smiley!
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-vH3FQO9a8icUn1ROCoAi"
+Message-Id: <1066972996.4264.39.camel@localhost>
+Mime-Version: 1.0
+Date: 23 Oct 2003 22:23:16 -0700
+
+
+--=-vH3FQO9a8icUn1ROCoAi
+Content-Type: multipart/mixed; boundary="=-CgV5jm9HAY9VbUlAuneA"
+
+
+--=-CgV5jm9HAY9VbUlAuneA
+Content-Type: multipart/related; type="multipart/alternative";
+    boundary="=-GpwozF9CQ7NdF+fd+vMG"
+
+
+--=-GpwozF9CQ7NdF+fd+vMG
+Content-Type: multipart/alternative; boundary="=-dHujWM/Xizz57x/JOmDF"
+
+
+--=-dHujWM/Xizz57x/JOmDF
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
+
+If this sentence is red, you are viewing the HTML part.
+Wow, what a complicated message.  This message is laid out as so:
+
+multipart/signed
+| multipart/mixed
+| | mutipart/related
+| | | multipart/alternative
+| | | | text/plain
+| | | | text/html
+| | | image/png (smiley)
+| | image/gif (dot)
+| application/pgp-signature
+
+:)
+
+A smiley face should be embedded into the HTML part above (if you are
+viewing the HTML part), while the red square dot should be attached, not
+displayed inline.  Additionally, this whole message is PGP signed.
+
+This message introduces a few tricks that the MUA should cope with.=20
+First of all, the related / alternative combination doesn't make much
+sense.  Here's the current setup in pseudo-code:
+
+relationship between (alternative: HTML or text part) and PNG part
+
+Why would the text part be related in anyway to the PNG?  Instead, the
+correct and more logical way to do things would be:
+
+alternative: (relationship between HTML and PNG parts) or text part
+
+However, many MUAs compose a message using the first method, so this
+should be taken care of when parsing the message.
+
+Additionally, notice that the inline image has a disposition of
+"attachment".  Despite this being in there, the smiley should be
+embedded inline in the HTML part, not offered as an attachment.=20
+Conversely, the GIF image should be offered as an attachment, not
+displayed inline.
+
+If the MUA is not PGP capable, at the very least it should recognize
+multipart/signed the same as multipart/mixed, and offer the
+application/pgp-signature part as an attachment.
+
+--=-dHujWM/Xizz57x/JOmDF
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<HTML>
+<HEAD>
+  <META HTTP-EQUIV=3D"Content-Type" CONTENT=3D"text/html; CHARSET=3DUTF-8">
+  <META NAME=3D"GENERATOR" CONTENT=3D"GtkHTML/1.1.10">
+</HEAD>
+<BODY>
+<FONT COLOR=3D"#f80000">If this sentence is red, you are viewing the HTML p=
+art.</FONT><BR>
+Wow, what a complicated message.  This message is laid out as so:<BR>
+<BR>
+multipart/signed<BR>
+| multipart/mixed<BR>
+| | mutipart/related<BR>
+| | | multipart/alternative<BR>
+| | | | text/plain<BR>
+| | | | text/html<BR>
+| | | image/png (smiley)<BR>
+| | image/gif (dot)<BR>
+| application/pgp-signature<BR>
+<BR>
+<IMG SRC=3D"cid:1066971953.4232.15.camel@localhost" ALIGN=3D"bottom" ALT=3D=
+":)" BORDER=3D"0"><BR>
+<BR>
+A smiley face should be embedded into the HTML part above (if you are viewi=
+ng the HTML part), while the red square dot should be attached, not display=
+ed inline.  Additionally, this whole message is PGP signed.<BR>
+<BR>
+This message introduces a few tricks that the MUA should cope with.  F=
+irst of all, the related / alternative combination doesn't make much sense.=
+  Here's the current setup in pseudo-code:<BR>
+<BR>
+<I>relationship between (alternative: HTML or text part) and PNG part</I><B=
+R>
+<BR>
+Why would the text part be related in anyway to the PNG?  Instead, the=
+ correct and more logical way to do things would be:<BR>
+<BR>
+alternative: (relationship between HTML and PNG parts) or text part<BR>
+<BR>
+However, many MUAs compose a message using the first method, so this should=
+ be taken care of when parsing the message.<BR>
+<BR>
+Additionally, notice that the inline image has a disposition of "attac=
+hment".  Despite this being in there, the smiley should be embedd=
+ed inline in the HTML part, not offered as an attachment.  Conversely,=
+ the GIF image should be offered as an attachment, not displayed inline.<BR=
+>
+<BR>
+If the MUA is not PGP capable, at the very least it should recognize multip=
+art/signed the same as multipart/mixed, and offer the application/pgp-signa=
+ture part as an attachment.
+</BODY>
+</HTML>
+
+--=-dHujWM/Xizz57x/JOmDF--
+
+--=-GpwozF9CQ7NdF+fd+vMG
+Content-ID: <1066971953.4232.15.camel@localhost>
+Content-Disposition: attachment; filename=smiley-3.png
+Content-Type: image/png; name=smiley-3.png
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC+klEQVR42n2TbUjVdxTHP/+H69Xd
+a2VWlFe69rzthZJUoxeNOWoFGxEhYRRFmZSVW2u9ab2KejWE1qDNBkEQhS82VoiaZkVPmoWaKNM5
+mA+opbd771//997//T/+epHBarEPHA6Hc84XDnwP/JcwcBS4AVgzcR04ONN7C+md+pcPCz44dPLA
+arZs/gg1UABuGkvvp7X1Iad+itE/YtUAle8TuH26sujzqq/LkJQsnOQQVmIASVJQMhehZORiJwc5
+d76FH2pf3gY2Aigzy7+eObqmtOqbXbjGGHZqCM+eQpJ9AHhWFCc5CAjWf1KAkppc+qg3vRCol4Fw
+0aqcisOVW3HTE7hmBElSKD/5GFkNMhH1KDvegST78CwNSfZxeM88VuYrh4CwAuxqvxL6MnPuWiy9
+H1kNUPH9fZofDKPpHn8/z+Z6Yw8JK5stX5VhRO6h+OfiV3WaHxtPVKAwmF+KqXUDMkgqZ0+UoKcE
+P57/GXOqh46ODqrPXUQfufb6YOGxJOQD2CaHQnnlAJ4zDXggHBYvK6ap6Rau+RIz1k7djd+YHrqM
+pXUC4KQnWTRPAdiuRqNRkFQG/omRNJOsKVQw408xtS4QDsI10AaqEY6O8Fzq70fJy3XI8gsA5HTa
+rBdOkvwFKj39EWrr/sJzEnj29OvsphGugfBsLlwbZnjcYN36LxiLuADtMtCUetFAcE4ee8s+pbHV
+YtOemwhHx3MSaPEY3X9OUnqsk5a2OMeP7KC3t4u+3gRALUC4cEW2eN62Q4ze3SAiz74TDxvOiI+X
+BcTsoCoyfJKYn6OKmrMbxGRnlXhyJSSqv80Vq0KSAFa+ceKl0wcK9lfsW42TGsE/pxhfcDmKfz6e
+FUPg4iRH6Ov6g9EJh1t341xusWuAyn9b+c7BrbklJ8oDZGTOQpL9ePY08SmDpCEwbcHwuE370yku
+Nlj3gM/e90yXliyU9+8sCVJYlEUgU8IwBZruMThm83uzxsAYV4Hd/A9h4BjQBthAFOgDLgDF7w6/
+ArI6YJ0eTQeGAAAAAElFTkSuQmCC
+
+--=-GpwozF9CQ7NdF+fd+vMG--
+
+--=-CgV5jm9HAY9VbUlAuneA
+Content-Disposition: attachment; filename=dot.gif
+Content-Type: image/gif; name=dot.gif
+Content-Transfer-Encoding: base64
+
+R0lGODdhCgAKAKEAAAAAANUAAP///8PDwywAAAAACgAKAEACHZSPMssLKoIMYLyR1I2z3sZsE2VB
+owcBqlqurloAADs=
+
+--=-CgV5jm9HAY9VbUlAuneA--
+
+--=-vH3FQO9a8icUn1ROCoAi
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.2 (GNU/Linux)
+
+iD8DBQA/mLdEKZYQqSA+yiURAjAnAJ90G22jbX/Broy0F541R0UUbsb6zgCeJn0d
+02Vq9Sv6aXE+YM0lRn3jZDc=
+=uwCM
+-----END PGP SIGNATURE-----
+
+--=-vH3FQO9a8icUn1ROCoAi--
+--=-qYxqvD9rbH0PNeExagh1
+Content-Disposition: inline
+Content-Description: Kittens give Morbo gas. --Morbo
+Content-Type: message/rfc822
+
+Subject: the PROPER way to do alternative/related
+From: Ryan Finnie <rfinnie@domain.dom>
+To: bob@domain.dom
+Content-Type: multipart/alternative; type="multipart/alternative"; boundary="=-tyGlQ9JvB5uvPWzozI+y"
+Message-Id: <1066973557.4265.51.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Not Evolution
+Date: 23 Oct 2003 22:32:37 -0700
+
+
+--=-tyGlQ9JvB5uvPWzozI+y
+Content-Type: text/plain; CHARSET=US-ASCII
+Content-Transfer-Encoding: 8bit
+
+If this sentence is green, you're viewing the HTML part.
+
+Now, this is the way that all MUAs SHOULD treat this kind of situation.
+The layout is like so:
+
+multipart/alternative
+| text/plain
+| multipart/related
+| | text/html
+| | image/gif
+
+See?  The GIF (which by the way should be inline towards the top of this
+message) is related to the HTML, and that whole block is an alternative
+to a text/plain part.  This is the opposite of the way shown in the
+previous email.
+
+Also, the embedded image here does not have a filename.  As mentioned
+above, the MUA should suggest something as a filename, even here (the
+user may want to save the embedded image, so a filename would be
+helpful).  In this case, I would recommend appending the random text
+to be suggested to the user with the part's subtype, in this case
+something like c20vsidlkvm.gif.
+
+--=-tyGlQ9JvB5uvPWzozI+y
+Content-Type: multipart/related; boundary="=-bFkxH1S3HVGcxi+o/5jG"
+
+
+--=-bFkxH1S3HVGcxi+o/5jG
+Content-Type: text/html; CHARSET=utf-8
+Content-Transfer-Encoding: 8bit
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<HTML>
+<HEAD>
+  <META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=UTF-8">
+  <META NAME="GENERATOR" CONTENT="GtkHTML/1.1.10">
+</HEAD>
+<BODY>
+<FONT COLOR="#00fc00">If this sentence is green, you're viewing the HTML part.</FONT><BR>
+<IMG SRC="cid:1066973340.4232.46.camel@localhost" ALIGN="top" ALT="" BORDER="0"><BR>
+Now, this is the way that all MUAs <B>SHOULD</B> treat this kind of situation.  The layout is like so:<BR>
+<BR>
+multipart/alternative<BR>
+| text/plain<BR>
+| multipart/related<BR>
+| | text/html<BR>
+| | image/gif<BR>
+<BR>
+See?  The GIF (which by the way should be inline towards the top of this message) is related to the HTML, and that whole block is an alternative to a text/plain part.  This is the opposite of the way shown in the previous email.<BR>
+<BR>
+Also, the embedded image here does not have a filename.   As mentioned above, the MUA should suggest something as a filename, even here (the user may want to save the embedded image, so a filename would be helpful).   In this case, I would recommend appending the random text to be suggested to the user with the part's subtype, in this case something like c20vsidlkvm.gif.
+</BODY>
+</HTML>
+
+--=-bFkxH1S3HVGcxi+o/5jG
+Content-ID: <1066973340.4232.46.camel@localhost>
+Content-Transfer-Encoding: base64
+Content-Type: image/gif
+
+R0lGODlhBQALAPIAAKIA/64A/8ZL/////8BS/2QDANZ//wAAACH5BAEAAAMALAAAAAAFAAsAAAMY
+OBIytsIYEoiEl0lqFWgKM4zkUJzjWQwJADs=
+
+--=-bFkxH1S3HVGcxi+o/5jG--
+
+--=-tyGlQ9JvB5uvPWzozI+y--
+
+--=-qYxqvD9rbH0PNeExagh1--

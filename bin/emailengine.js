@@ -169,7 +169,7 @@ function run() {
                 switch (tokensCmd) {
                     case 'issue':
                         {
-                            let allowedScopes = ['*', 'api', 'metrics', 'smtp'];
+                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'];
                             let scopes = []
                                 .concat(argv.scope || [])
                                 .concat(argv.s || [])

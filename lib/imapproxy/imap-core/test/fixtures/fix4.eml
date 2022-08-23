@@ -1,0 +1,6 @@
+from: sender@example.com
+to: to@example.com
+cc: cc@example.com
+subject: test
+
+Hello World!

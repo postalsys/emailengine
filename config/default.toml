@@ -2,6 +2,7 @@
 [workers]
 imap = 4
 webhooks = 1
+"imapProxy" = 1
 
 [queues]
 # concurrency values
