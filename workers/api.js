@@ -21,7 +21,8 @@ const {
     getWorkerCount,
     assertPreconditions,
     matcher,
-    readEnvValue
+    readEnvValue,
+    matchIp
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -609,7 +610,7 @@ When making API calls remember that requests against the same account are queued
             }
 
             if (tokenData.restrictions) {
-                if (tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(request.app.ip)) {
+                if (tokenData.restrictions.addresses && !matchIp(request.app.ip, tokenData.restrictions.addresses)) {
                     logger.error({
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
@@ -1279,7 +1280,7 @@ When making API calls remember that requests against the same account are queued
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
-                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp')).default(['api']).required().label('Scopes'),
+                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp', 'imap-proxy')).single().default(['api']).required().label('Scopes'),
 
                     metadata: Joi.string()
                         .empty('')
@@ -1301,6 +1302,7 @@ When making API calls remember that requests against the same account are queued
                         referrers: Joi.array()
                             .items(Joi.string())
                             .empty('')
+                            .single()
                             .allow(false)
                             .default(false)
                             .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
@@ -1310,13 +1312,14 @@ When making API calls remember that requests against the same account are queued
                             .items(
                                 Joi.string().ip({
                                     version: ['ipv4', 'ipv6'],
-                                    cidr: 'forbidden'
+                                    cidr: 'optional'
                                 })
                             )
                             .empty('')
+                            .single()
                             .allow(false)
                             .default(false)
-                            .example(['1.2.3.4', '5.6.7.8'])
+                            .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
                             .label('AddressAllowlist')
                             .description('IP address allowlist')
                     })
@@ -1557,13 +1560,13 @@ When making API calls remember that requests against the same account are queued
                                         .items(
                                             Joi.string().ip({
                                                 version: ['ipv4', 'ipv6'],
-                                                cidr: 'forbidden'
+                                                cidr: 'optional'
                                             })
                                         )
                                         .empty('')
                                         .allow(false)
                                         .default(false)
-                                        .example(['1.2.3.4', '5.6.7.8'])
+                                        .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
                                         .label('AddressAllowlist')
                                         .description('IP address allowlist')
                                 })

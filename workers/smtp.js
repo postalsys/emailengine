@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, matchIp } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -156,7 +156,7 @@ async function onAuth(auth, session) {
                     throw new Error('Access denied, invalid scope');
                 }
 
-                if (tokenData.restrictions && tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(session.remoteAddress)) {
+                if (tokenData.restrictions && tokenData.restrictions.addresses && !matchIp(session.remoteAddress, tokenData.restrictions.addresses)) {
                     logger.error({
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
