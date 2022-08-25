@@ -675,6 +675,9 @@ let spawnWorker = async type => {
                 if (message.statusCode) {
                     err.statusCode = message.statusCode;
                 }
+                if (message.info) {
+                    err.info = message.info;
+                }
                 return reject(err);
             } else {
                 return resolve(message.response);
@@ -702,7 +705,8 @@ let spawnWorker = async type => {
                         mid: message.mid,
                         error: err.message,
                         code: err.code,
-                        statusCode: err.statusCode
+                        statusCode: err.statusCode,
+                        info: err.info
                     };
 
                     try {
