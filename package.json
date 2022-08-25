@@ -109,7 +109,7 @@
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.0",
         "jsxgettext": "0.11.0",
-        "pino-pretty": "9.0.1",
+        "pino-pretty": "9.1.0",
         "pkg": "5.8.0",
         "xgettext-template": "4.1.1"
     },

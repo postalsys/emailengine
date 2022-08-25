@@ -625,7 +625,8 @@ parentPort.on('message', message => {
                     mid: message.mid,
                     error: err.message,
                     code: err.code,
-                    statusCode: err.statusCode
+                    statusCode: err.statusCode,
+                    info: err.info
                 });
             });
     }

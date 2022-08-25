@@ -295,6 +295,9 @@ parentPort.on('message', message => {
             if (message.statusCode) {
                 err.statusCode = message.statusCode;
             }
+            if (message.info) {
+                err.info = message.info;
+            }
             return reject(err);
         } else {
             return resolve(message.response);
@@ -3317,6 +3320,9 @@ When making API calls remember that requests against the same account are queued
                 let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
                 if (err.code) {
                     error.output.payload.code = err.code;
+                }
+                if (err.info) {
+                    error.output.payload.info = err.info;
                 }
                 throw error;
             }
