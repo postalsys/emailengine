@@ -85,6 +85,7 @@ const {
     ACCOUNT_ADDED_NOTIFY,
     ACCOUNT_DELETED_NOTIFY
 } = require('./lib/consts');
+
 const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
@@ -130,6 +131,8 @@ const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.se
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
+
+const CONNECION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECION_SETUP_DELAY') || config.service.setupDelay) || 0;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -411,18 +414,6 @@ const metrics = {
         labelNames: ['command', 'status']
     })
 };
-
-/*
-Object.keys(metrics).forEach(key => {
-    if (metrics[key] && metrics[key].name) {
-        console.log(
-            `  * **${metrics[key].name}** (*${metrics[key].constructor.name}*) – ${metrics[key].help} ${
-                metrics[key].labelNames && metrics[key].labelNames.length ? ` [labels: *"${metrics[key].labelNames.join('"*, *"')}"*]` : ''
-            }`
-        );
-    }
-});
-*/
 
 let callQueue = new Map();
 let mids = 0;
@@ -894,6 +885,13 @@ async function assignAccounts() {
             return;
         }
 
+        logger.info({
+            msg: 'Assigning connections',
+            unassigned: unassigned.size,
+            workersAvailable: availableIMAPWorkers.size,
+            setupDelay: CONNECION_SETUP_DELAY
+        });
+
         for (let account of unassigned) {
             if (!availableIMAPWorkers.size) {
                 // out of workers
@@ -914,6 +912,10 @@ async function assignAccounts() {
                 cmd: 'assign',
                 account
             });
+
+            if (CONNECION_SETUP_DELAY) {
+                await new Promise(r => setTimeout(r, CONNECION_SETUP_DELAY));
+            }
         }
     } finally {
         assigning = false;

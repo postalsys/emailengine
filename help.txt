@@ -25,6 +25,8 @@ Options:
   --settings                Prepared settings                       [json-string]
   --service.secret          Encryption secret                            [string]
   --service.commandTimeout  Max command duration [number/string] [default: "10s"]
+  --service.setupDelay      Delay between assigning connections to workers
+                                                 [number/string] [default: "0ms"]
   --log.level               Log level                 [string] [default: "trace"]
   --log.raw                 Log raw data               [boolean] [default: false]
   --workers.webhooks        Webhook Worker count            [number] [default: 1]
