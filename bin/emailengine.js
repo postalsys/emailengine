@@ -71,7 +71,6 @@ function run() {
                     .then(res => {
                         let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
                         process.stdout.write(returnValue);
-                        console.error('');
                         return process.exit(0);
                     })
                     .catch(err => {
@@ -91,7 +90,6 @@ function run() {
                     return process.exit(1);
                 }
                 console.error(helpText.toString().trim());
-                console.error('');
                 process.exit();
             });
             break;
@@ -109,7 +107,6 @@ function run() {
                         .exportLicense()
                         .then(license => {
                             process.stdout.write(license);
-                            console.error('');
                             return process.exit(0);
                         })
                         .catch(err => {
@@ -205,7 +202,6 @@ function run() {
                                 })
                                 .then(token => {
                                     process.stdout.write(token);
-                                    console.error('');
                                     process.exit();
                                 })
                                 .catch(err => {
@@ -223,7 +219,6 @@ function run() {
                                 .then(tokenData => {
                                     let encoded = msgpack.encode(tokenData);
                                     process.stdout.write(encoded.toString('base64url'));
-                                    console.error('');
                                     process.exit();
                                 })
                                 .catch(err => {
