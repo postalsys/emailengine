@@ -3210,7 +3210,6 @@ When making API calls remember that requests against the same account are queued
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
-                        .default(false)
                         .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
                         .label('exposeQuery')
                         .when('documentStore', {
