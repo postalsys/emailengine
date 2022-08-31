@@ -3210,7 +3210,6 @@ When making API calls remember that requests against the same account are queued
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
-                        .default(false)
                         .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
                         .label('exposeQuery')
                         .when('documentStore', {
@@ -3287,7 +3286,12 @@ When making API calls remember that requests against the same account are queued
                         emailId: Joi.string().max(256).description('Match specific Gmail unique email UD'),
                         threadId: Joi.string().max(256).description('Match specific Gmail unique thread UD'),
 
-                        header: Joi.object().description('Headers to match against').label('Headers').unknown()
+                        header: Joi.object().description('Headers to match against').label('Headers').unknown(),
+
+                        gmailRaw: Joi.string()
+                            .max(1024)
+                            .example('has:attachment in:unread')
+                            .description('Raw Gmail search string. Will return an error if used for other account types.')
                     })
                         .required()
                         .description('Search query to filter messages')
