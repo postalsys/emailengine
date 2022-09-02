@@ -33,13 +33,15 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 
 const { Connection } = require('../lib/connection');
 const { Account } = require('../lib/account');
-const { redis, notifyQueue, submitQueue, documentsQueue } = require('../lib/db');
+const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
 const getSecret = require('../lib/get-secret');
+
+const flowProducer = getFlowProducer();
 
 config.service = config.service || {};
 
@@ -133,6 +135,7 @@ class ConnectionHandler {
             notifyQueue,
             submitQueue,
             documentsQueue,
+            flowProducer,
             accountLogger,
             logRaw: EENGINE_LOG_RAW
         });
