@@ -36,7 +36,7 @@
     "homepage": "https://emailengine.app/",
     "dependencies": {
         "@bugsnag/js": "7.17.0",
-        "@elastic/elasticsearch": "8.2.1",
+        "@elastic/elasticsearch": "8.4.0",
         "@hapi/boom": "10.0.0",
         "@hapi/cookie": "11.0.2",
         "@hapi/crumb": "8.0.1",
