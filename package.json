@@ -87,7 +87,7 @@
         "node-gettext": "3.0.0",
         "node-vault": "0.9.22",
         "nodemailer": "6.7.8",
-        "pino": "8.4.2",
+        "pino": "8.5.0",
         "prom-client": "14.1.0",
         "psl": "1.9.0",
         "pubface": "1.0.3",
