@@ -29,13 +29,13 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
     });
 }
 
-const { queueConf } = require('../lib/db');
+const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { getESClient } = require('../lib/document-store');
 const { getThread } = require('../lib/threads');
 const { generateTextPreview } = require('../lib/generate-text-preview');
 
-const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
+const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY, REDIS_PREFIX } = require('../lib/consts');
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -111,6 +111,12 @@ const documentsWorker = new Worker(
 
             case MESSAGE_NEW_NOTIFY:
                 {
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
+                        return;
+                    }
+
                     const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
@@ -269,6 +275,12 @@ const documentsWorker = new Worker(
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
+                        return;
+                    }
+
                     const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
@@ -350,6 +362,12 @@ const documentsWorker = new Worker(
                     let messageId = bounceData.id;
                     if (!messageId) {
                         // nothing to do here, the bounce was not matched to a message
+                        return;
+                    }
+
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
                         return;
                     }
 

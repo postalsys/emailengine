@@ -96,7 +96,7 @@
         "socks": "2.7.0",
         "timezones-list": "3.0.1",
         "tlds": "1.231.0",
-        "uuid": "8.3.2",
+        "uuid": "9.0.0",
         "wild-config": "1.6.1",
         "xml2js": "0.4.23"
     },

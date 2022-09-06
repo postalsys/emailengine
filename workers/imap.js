@@ -257,6 +257,18 @@ class ConnectionHandler {
         return await accountData.connection.updateMessage(message.message, message.updates);
     }
 
+    async updateMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+        return await accountData.connection.updateMessages(message.path, message.search, message.updates);
+    }
+
     async listMailboxes(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -491,6 +503,9 @@ class ConnectionHandler {
 
             case 'updateMessage':
                 return await this.updateMessage(message);
+
+            case 'updateMessages':
+                return await this.updateMessages(message);
 
             case 'listMailboxes':
                 return await this.listMailboxes(message);
