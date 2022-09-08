@@ -3219,6 +3219,75 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/delete',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.deleteMessages(request.query.path, request.payload.search, request.query.force);
+            } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Delete messages',
+            notes: 'Move messages to Trash or delete these if already in Trash',
+            tags: ['api', 'Message Search'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path'),
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Delete messages even if not in Trash')
+                        .label('ForceDelete')
+                }).label('MessagesDeleteQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema
+                }).label('MessagesDeleteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath')
+                }).label('MessagesDeleteResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'GET',
         path: '/v1/account/{account}/text/{text}',
 

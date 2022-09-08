@@ -321,6 +321,19 @@ class ConnectionHandler {
         return await accountData.connection.deleteMessage(message.message, message.force);
     }
 
+    async deleteMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.deleteMessages(message.path, message.search, message.force);
+    }
+
     async submitMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -531,6 +544,9 @@ class ConnectionHandler {
 
             case 'deleteMessage':
                 return await this.deleteMessage(message);
+
+            case 'deleteMessages':
+                return await this.deleteMessages(message);
 
             case 'getRawMessage':
                 return await this.getRawMessage(message);
