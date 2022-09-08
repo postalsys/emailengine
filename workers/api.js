@@ -108,7 +108,9 @@ const {
     licenseSchema,
     lastErrorSchema,
     templateSchemas,
-    documentStoreSchema
+    documentStoreSchema,
+    searchSchema,
+    messageUpdateSchema
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -2930,27 +2932,78 @@ When making API calls remember that requests against the same account are queued
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
-                payload: Joi.object({
+                payload: messageUpdateSchema
+            },
+            response: {
+                schema: Joi.object({
                     flags: Joi.object({
-                        add: Joi.array().items(Joi.string().max(128)).description('Add new flags').example(['\\Seen']).label('AddFlags'),
-                        delete: Joi.array().items(Joi.string().max(128)).description('Delete specific flags').example(['\\Flagged']).label('DeleteFlags'),
-                        set: Joi.array().items(Joi.string().max(128)).description('Override all flags').example(['\\Seen', '\\Flagged']).label('SetFlags')
-                    })
-                        .description('Flag updates')
-                        .label('FlagUpdate'),
-
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse'),
                     labels: Joi.object({
-                        add: Joi.array().items(Joi.string().max(128)).description('Add new labels').example(['Some label']).label('AddLabels'),
-                        delete: Joi.array().items(Joi.string().max(128)).description('Delete specific labels').example(['Some label']).label('DeleteLabels'),
-                        set: Joi.array()
-                            .items(Joi.string().max(128))
-                            .description('Override all labels')
-                            .example(['First label', 'Second label'])
-                            .label('SetLabels')
-                    })
-                        .description('Label updates')
-                        .label('LabelUpdate')
-                }).label('MessageUpdate')
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse')
+                }).label('MessageUpdateResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.updateMessages(request.query.path, request.payload.search, request.payload.update);
+            } catch (err) {
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Update messages',
+            notes: 'Update message information for matching emails',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path')
+                }).label('MessagesUpdateQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema,
+                    update: messageUpdateSchema
+                }).label('MessagesUpdateRequest')
             },
             response: {
                 schema: Joi.object({
@@ -3032,6 +3085,74 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/move',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.moveMessages(request.query.path, request.payload.search, { path: request.payload.path });
+            } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Move messages',
+            notes: 'Move messages matching to a search query to another folder',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Source mailbox folder path')
+                }).label('MessagesMoveQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema,
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path')
+                }).label('MessagesMoveRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+                    idMap: Joi.array()
+                        .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                        .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
+                        .description('An optional map of source and target ID values, if the server provided this info')
+                }).label('MessagesMoveResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'DELETE',
         path: '/v1/account/{account}/message/{message}',
 
@@ -3087,12 +3208,88 @@ When making API calls remember that requests against the same account are queued
             },
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().example(true).description('Present if message was actually deleted'),
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
                         message: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
                     }).description('Present if message was moved to Trash')
                 }).label('MessageDeleteResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/delete',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.deleteMessages(request.query.path, request.payload.search, request.query.force);
+            } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Delete messages',
+            notes: 'Move messages to Trash or delete these if already in Trash',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path'),
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Delete messages even if not in Trash')
+                        .label('ForceDelete')
+                }).label('MessagesDeleteQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema
+                }).label('MessagesDeleteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
+                    moved: Joi.object({
+                        destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
+                        idMap: Joi.array()
+                            .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                            .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
+                            .description('An optional map of source and target ID values, if the server provided this info')
+                    }).description('Present if messages were moved to Trash')
+                }).label('MessagesDeleteResponse'),
                 failAction: 'log'
             }
         }
@@ -3353,83 +3550,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 payload: Joi.object({
-                    search: Joi.object({
-                        seq: Joi.string().max(256).description('Sequence number range. Not allowed with `documentStore`.'),
-
-                        answered: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is answered or not')
-                            .label('AnsweredFlag'),
-                        deleted: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked for being deleted or not')
-                            .label('DeletedFlag'),
-                        draft: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is a draft').label('DraftFlag'),
-                        unseen: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked as unseen or not')
-                            .label('UnseenFlag'),
-                        flagged: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is flagged or not')
-                            .label('Flagged'),
-                        seen: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked as seen or not')
-                            .label('SeenFlag'),
-
-                        from: Joi.string().max(256).description('Match From: header').label('From'),
-                        to: Joi.string().max(256).description('Match To: header').label('To'),
-                        cc: Joi.string().max(256).description('Match Cc: header').label('Cc'),
-                        bcc: Joi.string().max(256).description('Match Bcc: header').label('Bcc'),
-
-                        body: Joi.string().max(256).description('Match text body').label('MessageBody'),
-                        subject: Joi.string().max(256).description('Match message subject').label('Subject'),
-
-                        larger: Joi.number()
-                            .min(0)
-                            .max(1024 * 1024 * 1024)
-                            .description('Matches messages larger than value')
-                            .label('MessageLarger'),
-
-                        smaller: Joi.number()
-                            .min(0)
-                            .max(1024 * 1024 * 1024)
-                            .description('Matches messages smaller than value')
-                            .label('MessageSmaller'),
-
-                        uid: Joi.string().max(256).description('UID range').label('UIDRange'),
-
-                        modseq: Joi.number()
-                            .min(0)
-                            .description('Matches messages with modseq higher than value. Not allowed with `documentStore`.')
-                            .label('ModseqLarger'),
-
-                        before: Joi.date().description('Matches messages received before date').label('EnvelopeBefore'),
-                        since: Joi.date().description('Matches messages received after date').label('EnvelopeSince'),
-
-                        sentBefore: Joi.date().description('Matches messages sent before date').label('HeaderBefore'),
-                        sentSince: Joi.date().description('Matches messages sent after date').label('HeaderSince'),
-
-                        emailId: Joi.string().max(256).description('Match specific Gmail unique email UD'),
-                        threadId: Joi.string().max(256).description('Match specific Gmail unique thread UD'),
-
-                        header: Joi.object().description('Headers to match against').label('Headers').unknown(),
-
-                        gmailRaw: Joi.string()
-                            .max(1024)
-                            .example('has:attachment in:unread')
-                            .description('Raw Gmail search string. Will return an error if used for other account types.')
-                    })
-                        .required()
-                        .description('Search query to filter messages')
-                        .label('SearchQuery'),
-
+                    search: searchSchema,
                     documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
                 }).label('SearchQuery')
             },

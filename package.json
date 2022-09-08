@@ -35,7 +35,7 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bugsnag/js": "7.17.0",
+        "@bugsnag/js": "7.17.4",
         "@elastic/elasticsearch": "8.4.0",
         "@hapi/boom": "10.0.0",
         "@hapi/cookie": "11.0.2",
@@ -48,7 +48,7 @@
         "@postalsys/certs": "1.0.2",
         "@postalsys/email-text-tools": "1.0.0",
         "@postalsys/templates": "1.0.1",
-        "ace-builds": "1.10.0",
+        "ace-builds": "1.10.1",
         "base32.js": "0.1.0",
         "bull-arena": "3.29.5",
         "bullmq": "1.87.2",
@@ -60,7 +60,7 @@
         "gettext-parser": "6.0.0",
         "handlebars": "4.7.7",
         "hapi-auth-bearer-token": "8.0.0",
-        "hapi-pino": "10.2.0",
+        "hapi-pino": "11.0.0",
         "hapi-swagger": "14.5.5",
         "he": "1.2.0",
         "html-to-text": "8.2.1",
@@ -96,8 +96,8 @@
         "socks": "2.7.0",
         "timezones-list": "3.0.1",
         "tlds": "1.231.0",
-        "uuid": "8.3.2",
-        "wild-config": "1.6.1",
+        "uuid": "9.0.0",
+        "wild-config": "1.7.0",
         "xml2js": "0.4.23"
     },
     "devDependencies": {

@@ -257,6 +257,18 @@ class ConnectionHandler {
         return await accountData.connection.updateMessage(message.message, message.updates);
     }
 
+    async updateMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+        return await accountData.connection.updateMessages(message.path, message.search, message.updates);
+    }
+
     async listMailboxes(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -283,6 +295,19 @@ class ConnectionHandler {
         return await accountData.connection.moveMessage(message.message, message.target);
     }
 
+    async moveMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.moveMessages(message.source, message.search, message.target);
+    }
+
     async deleteMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -294,6 +319,19 @@ class ConnectionHandler {
         }
 
         return await accountData.connection.deleteMessage(message.message, message.force);
+    }
+
+    async deleteMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.deleteMessages(message.path, message.search, message.force);
     }
 
     async submitMessage(message) {
@@ -492,14 +530,23 @@ class ConnectionHandler {
             case 'updateMessage':
                 return await this.updateMessage(message);
 
+            case 'updateMessages':
+                return await this.updateMessages(message);
+
             case 'listMailboxes':
                 return await this.listMailboxes(message);
 
             case 'moveMessage':
                 return await this.moveMessage(message);
 
+            case 'moveMessages':
+                return await this.moveMessages(message);
+
             case 'deleteMessage':
                 return await this.deleteMessage(message);
+
+            case 'deleteMessages':
+                return await this.deleteMessages(message);
 
             case 'getRawMessage':
                 return await this.getRawMessage(message);
