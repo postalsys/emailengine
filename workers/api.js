@@ -2975,7 +2975,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Update messages',
             notes: 'Update message information for matching emails',
-            tags: ['api', 'Message Search'],
+            tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
 
@@ -3108,7 +3108,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Move messages',
             notes: 'Move messages matching to a search query to another folder',
-            tags: ['api', 'Message Search'],
+            tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
 
@@ -3142,8 +3142,9 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
-                    moveMap: Joi.array()
-                        .items(Joi.array().length(2).items(Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')))
+                    idMap: Joi.array()
+                        .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                        .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
                         .description('An optional map of source and target ID values, if the server provided this info')
                 }).label('MessagesMoveResponse'),
                 failAction: 'log'
@@ -3207,7 +3208,7 @@ When making API calls remember that requests against the same account are queued
             },
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().example(true).description('Present if message was actually deleted'),
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
                         message: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
@@ -3242,7 +3243,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Delete messages',
             notes: 'Move messages to Trash or delete these if already in Trash',
-            tags: ['api', 'Message Search'],
+            tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
 
@@ -3280,7 +3281,14 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath')
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
+                    moved: Joi.object({
+                        destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
+                        idMap: Joi.array()
+                            .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                            .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
+                            .description('An optional map of source and target ID values, if the server provided this info')
+                    }).description('Present if messages were moved to Trash')
                 }).label('MessagesDeleteResponse'),
                 failAction: 'log'
             }
@@ -3491,7 +3499,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Search for messages',
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific folder and not for the entire account.',
-            tags: ['api', 'Message Search'],
+            tags: ['api', 'Message'],
 
             plugins: {},
 
