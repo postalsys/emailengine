@@ -2975,7 +2975,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Update messages',
             notes: 'Update message information for matching emails',
-            tags: ['api', 'Message'],
+            tags: ['api', 'Message Search'],
 
             plugins: {},
 
@@ -3079,6 +3079,73 @@ When making API calls remember that requests against the same account are queued
                     id: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
                     uid: Joi.number().example(12345).description('UID of moved message')
                 }).label('MessageMoveResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/move',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.moveMessages(request.query.path, request.payload.search, { path: request.payload.path });
+            } catch (err) {
+                request.logger.error({ msg: 'Request processing failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Move messages',
+            notes: 'Move messages matching to a search query to another folder',
+            tags: ['api', 'Message Search'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Source mailbox folder path')
+                }).label('MessagesMoveQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema,
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path')
+                }).label('MessagesMoveRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+                    moveMap: Joi.array()
+                        .items(Joi.array().length(2).items(Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')))
+                        .description('An optional map of source and target ID values, if the server provided this info')
+                }).label('MessagesMoveResponse'),
                 failAction: 'log'
             }
         }
@@ -3355,7 +3422,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Search for messages',
             notes: 'Filter messages from a mailbox folder by search options. Search is performed against a specific folder and not for the entire account.',
-            tags: ['api', 'Message'],
+            tags: ['api', 'Message Search'],
 
             plugins: {},
 

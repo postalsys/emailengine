@@ -1304,6 +1304,7 @@ async function onCommand(worker, message) {
         case 'updateMessages':
         case 'listMailboxes':
         case 'moveMessage':
+        case 'moveMessages':
         case 'deleteMessage':
         case 'createMailbox':
         case 'deleteMailbox':

@@ -295,6 +295,19 @@ class ConnectionHandler {
         return await accountData.connection.moveMessage(message.message, message.target);
     }
 
+    async moveMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.moveMessages(message.source, message.search, message.target);
+    }
+
     async deleteMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -512,6 +525,9 @@ class ConnectionHandler {
 
             case 'moveMessage':
                 return await this.moveMessage(message);
+
+            case 'moveMessages':
+                return await this.moveMessages(message);
 
             case 'deleteMessage':
                 return await this.deleteMessage(message);
