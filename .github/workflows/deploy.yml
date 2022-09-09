@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-imap-proxy
+            - feature-cors-config
 
 name: Deploy test instance
 

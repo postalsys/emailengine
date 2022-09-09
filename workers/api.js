@@ -89,7 +89,16 @@ const { Certs } = require('@postalsys/certs');
 const net = require('net');
 
 const consts = require('../lib/consts');
-const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY, REDIS_PREFIX, MAX_DAYS_STATS, RENEW_TLS_AFTER, BLOCK_TLS_RENEW, TLS_RENEW_CHECK_INTERVAL } = consts;
+const {
+    TRACK_OPEN_NOTIFY,
+    TRACK_CLICK_NOTIFY,
+    REDIS_PREFIX,
+    MAX_DAYS_STATS,
+    RENEW_TLS_AFTER,
+    BLOCK_TLS_RENEW,
+    TLS_RENEW_CHECK_INTERVAL,
+    DEFAULT_CORS_MAX_AGE
+} = consts;
 
 const {
     settingsSchema,
@@ -138,6 +147,36 @@ const API_PORT =
 const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
+
+// CORS configuration for API requests
+// By default, CORS is not enabled
+const CORS_ORIGINS = readEnvValue('EENGINE_CORS_ORIGIN') || (config.cors && config.cors.origin);
+const CORS_CONFIG = !CORS_ORIGINS
+    ? false
+    : {
+          // crux to convert --cors.origin=".." and EENGINE_CORS_ORIGIN="..." into an array of origins
+          origin: [].concat(
+              Array.from(
+                  new Set(
+                      []
+                          .concat(CORS_ORIGINS || [])
+                          .flatMap(origin => origin)
+                          .flatMap(origin => origin && origin.toString().trim().split(/\s+/))
+                          .filter(origin => origin)
+                  )
+              ) || ['*']
+          ),
+          headers: ['Authorization'],
+          exposedHeaders: ['Accept'],
+          additionalExposedHeaders: [],
+          maxAge:
+              getDuration(readEnvValue('EENGINE_CORS_MAX_AGE') || (config.cors && config.cors.maxAge), {
+                  seconds: true
+              }) || DEFAULT_CORS_MAX_AGE,
+          credentials: true
+      };
+
+logger.debug({ msg: 'CORS config for API requests', cors: CORS_CONFIG });
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
@@ -539,7 +578,10 @@ When making API calls remember that requests against the same account are queued
                 in: 'query'
             }
         },
-        security: [{ bearerAuth: [] }]
+
+        security: [{ bearerAuth: [] }],
+
+        cors: !!CORS_CONFIG
     };
 
     await server.register(AuthBearer);
@@ -1272,6 +1314,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1384,6 +1427,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1437,6 +1481,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1517,6 +1562,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1681,6 +1727,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1820,6 +1867,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1905,6 +1953,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1993,6 +2042,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2051,6 +2101,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2115,6 +2166,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2171,6 +2223,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2314,6 +2367,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2390,6 +2444,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2454,6 +2509,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2519,6 +2575,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2576,6 +2633,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2628,6 +2686,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2686,6 +2745,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2759,6 +2819,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2918,6 +2979,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2983,6 +3045,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3054,6 +3117,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3116,6 +3180,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3183,6 +3248,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3251,6 +3317,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3331,6 +3398,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3413,6 +3481,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3507,6 +3576,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3602,6 +3672,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3903,6 +3974,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3955,6 +4027,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3992,6 +4065,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4024,6 +4098,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4099,6 +4174,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4179,6 +4255,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             response: {
                 schema: licenseSchema.label('LicenseResponse'),
@@ -4222,6 +4299,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             response: {
                 schema: Joi.object({
@@ -4269,6 +4347,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4321,6 +4400,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4407,6 +4487,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4511,6 +4592,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4578,6 +4660,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4660,6 +4743,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4742,6 +4826,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4828,6 +4913,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4903,6 +4989,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4962,6 +5049,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5028,6 +5116,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5115,6 +5204,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5194,6 +5284,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5270,6 +5361,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5350,6 +5442,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5454,6 +5547,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
