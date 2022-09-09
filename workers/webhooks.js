@@ -175,7 +175,15 @@ const notifyWorker = new Worker(
             // normalize text content
             let notifyText = await settings.get('notifyText');
             if (!notifyText) {
-                delete job.data.data.text;
+                // remove text content if any
+                for (let key of Object.keys(job.data.data.text)) {
+                    if (!['id', 'encodedSize'].includes(key)) {
+                        delete job.data.data.text[key];
+                    }
+                }
+                if (!Object.keys(job.data.data.text).length) {
+                    delete job.data.data.text;
+                }
             } else {
                 let notifyTextSize = await settings.get('notifyTextSize');
                 if (notifyTextSize) {
@@ -201,6 +209,10 @@ const notifyWorker = new Worker(
                         delete job.data.data.headers[header];
                     }
                 }
+            }
+
+            if (!Object.keys(job.data.data.headers).length) {
+                delete job.data.data.headers;
             }
         }
 
