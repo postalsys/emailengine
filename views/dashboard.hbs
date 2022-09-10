@@ -232,6 +232,18 @@
             } catch (err) {
                 console.error(err);
             }
+
+            try {
+                // load swagger file to trigger caching
+                const res = await fetch('/swagger.json', {
+                    method: 'get'
+                });
+                if (!res.ok) {
+                    console.error('Failed to fetch swagger definition');
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         sendBrowserInfo().catch(err => console.error(err))
