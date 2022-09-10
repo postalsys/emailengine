@@ -581,7 +581,10 @@ When making API calls remember that requests against the same account are queued
 
         security: [{ bearerAuth: [] }],
 
-        cors: !!CORS_CONFIG
+        cors: !!CORS_CONFIG,
+        cache: {
+            expiresIn: 24 * 60 * 60 * 1000
+        }
     };
 
     await server.register(AuthBearer);
