@@ -583,7 +583,7 @@ When making API calls remember that requests against the same account are queued
 
         cors: !!CORS_CONFIG,
         cache: {
-            expiresIn: 24 * 60 * 60 * 1000
+            expiresIn: 7 * 24 * 60 * 60 * 1000
         }
     };
 
@@ -3645,6 +3645,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.queueMessage(request.payload, { source: 'api' });
             } catch (err) {
+                request.logger.error({ err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3804,7 +3805,11 @@ When making API calls remember that requests against the same account are queued
                             Joi.object({
                                 to: addressSchema.label('ToAddress').required(),
                                 messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                                params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                                params: Joi.object().label('RenderValues').description('An object of variables for the template renderer'),
+                                sendAt: Joi.date()
+                                    .iso()
+                                    .example('2021-07-08T07:06:34.336Z')
+                                    .description('Send message at specified time. Overrides message level `sendAt` value.')
                             }).label('MailMergeListEntry')
                         )
                         .min(1)
@@ -3923,7 +3928,8 @@ When making API calls remember that requests against the same account are queued
                                     reference: {
                                         message: 'AAAAAQAACnA',
                                         success: true
-                                    }
+                                    },
+                                    sendAt: '2021-07-08T07:06:34.336Z'
                                 })
                                 .unknown()
                         )
@@ -5860,6 +5866,21 @@ When making API calls remember that requests against the same account are queued
     });
 
     await server.start();
+
+    // trigger a request to cache swagger.json
+    setImmediate(() => {
+        server
+            .inject({
+                method: 'get',
+                url: '/swagger.json'
+            })
+            .then(res => {
+                logger.debug({ msg: 'Triggered swagger caching request', statusCode: res.statusCode });
+            })
+            .catch(err => {
+                logger.debug({ msg: 'Failed to trigger swagger caching request', err });
+            });
+    });
 
     // renew TLS certificates if needed
     setInterval(() => {
