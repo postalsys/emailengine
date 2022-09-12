@@ -42,6 +42,13 @@
                 </a>
 
                 {{#if canSend}}
+                {{#unless gateways}}
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
+                    title="Test SMTP delivery settings for this account" data-account="{{account.account}}"
+                    id="test-smtp-btn" data-placement="top">
+                    <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
+                </button>
+                {{else}}
                 <div class="btn-group">
                     <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown"
                         aria-expanded="false" title="Test SMTP delivery settings for this account" id="test-smtp-btn">
@@ -62,6 +69,7 @@
                         {{/each}}
                     </div>
                 </div>
+                {{/unless}}
                 {{/if}}
 
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
@@ -73,17 +81,12 @@
 
             {{#if oauth2ProviderEnabled}}
             <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
-                <form method="post" action="/accounts/new">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" name="type" value="{{account.oauth2.provider}}">
-                    <input type="hidden" name="data" value="{{accountForm.data}}">
-                    <input type="hidden" name="sig" value="{{accountForm.signature}}">
-                    <button type="submit" class="btn btn-light">
-                        {{#if account.type.icon}}
-                        <i class="{{account.type.icon}} fa-fw"></i>
-                        {{/if}} Renew grant
-                    </button>
-                </form>
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#renewGrantModal"
+                    title="Re-authenticate OAuth2 account" id="renew-grant-btn" data-placement="top">
+                    {{#if account.type.icon}}
+                    <i class="{{account.type.icon}} fa-fw"></i>
+                    {{/if}} Renew grant
+                </button>
             </div>
             {{/if}}
         </div>
@@ -383,6 +386,40 @@
 </div>
 {{/if}}
 
+<div class="modal fade" id="renewGrantModal" tabindex="-1" aria-labelledby="renewGrantLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renewGrantLabel">Renew grant</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    When renewing the OAuth2 grant, ensure you are not logged in to another account for the same
+                    provider in this browser. Otherwise, that account might override the settings and messages for
+                    <em>{{account.name}}</em> in EmailEngine.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/accounts/new">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" name="type" value="{{account.oauth2.provider}}">
+                    <input type="hidden" name="data" value="{{accountForm.data}}">
+                    <input type="hidden" name="sig" value="{{accountForm.signature}}">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">
+                        {{#if account.type.icon}}
+                        <i class="{{account.type.icon}} fa-fw"></i>
+                        {{/if}} Renew grant
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -623,8 +660,12 @@
         // not set up by default as this element has a different data-toggle
         $('#delete-btn').tooltip();
         $('#delete-btn').click(() => $('#delete-btn').tooltip('hide'));
+
         $('#test-smtp-btn').tooltip();
         $('#test-smtp-btn').click(() => $('#test-smtp-btn').tooltip('hide'));
+
+        $('#renew-grant-btn').tooltip();
+        $('#renew-grant-btn').click(() => $('#renew-grant-btn').tooltip('hide'));
     });
 </script>
 
