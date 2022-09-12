@@ -1830,7 +1830,7 @@ When making API calls remember that requests against the same account are queued
 
                 for (let accountType of ['gmail', 'outlook', 'mailRu']) {
                     let typeEnabled = await settings.get(`${accountType}Enabled`);
-                    if (typeEnabled && (!(await settings.get(`${accountType}gmailClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
+                    if (typeEnabled && (!(await settings.get(`${accountType}ClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
                         typeEnabled = false;
                         if (type === accountType) {
                             type = false;
