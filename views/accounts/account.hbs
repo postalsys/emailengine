@@ -395,8 +395,11 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the account for {{account.name}}? This action is not
-                    recoverable.</p>
+                <p>
+                    When renewing the OAuth2 grant, ensure you are not logged in to another account for the same
+                    provider in this browser. Otherwise, that account might override the settings and messages for
+                    <em>{{account.name}}</em> in EmailEngine.
+                </p>
             </div>
             <div class="modal-footer">
                 <form method="post" action="/accounts/new">
