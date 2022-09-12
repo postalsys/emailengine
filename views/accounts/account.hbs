@@ -44,7 +44,8 @@
                 {{#if canSend}}
                 {{#unless gateways}}
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
-                    title="Test SMTP delivery settings for this account" id="test-smtp-btn" data-placement="top">
+                    title="Test SMTP delivery settings for this account" data-account="{{account.account}}"
+                    id="test-smtp-btn" data-placement="top">
                     <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
                 </button>
                 {{else}}
