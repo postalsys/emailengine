@@ -1295,6 +1295,7 @@ When making API calls remember that requests against the same account are queued
 
                 return { token };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1409,6 +1410,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { deleted: await tokens.delete(request.params.token, { remoteAddress: request.app.ip }) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1458,10 +1460,11 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/tokens',
 
-        async handler() {
+        async handler(request) {
             try {
                 return { tokens: await tokens.list() };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1543,6 +1546,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { tokens: await tokens.list(request.params.account) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1708,6 +1712,7 @@ When making API calls remember that requests against the same account are queued
                 let result = await accountObject.create(request.payload);
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1848,6 +1853,7 @@ When making API calls remember that requests against the same account are queued
                     url: url.href
                 };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1935,6 +1941,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.update(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2024,6 +2031,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { reconnect: await accountObject.requestReconnect(request.payload) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2083,6 +2091,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { sync: await accountObject.requestSync(request.payload) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2148,6 +2157,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.delete();
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2204,6 +2214,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await accountObject.listAccounts(request.query.state, request.query.query, request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2351,6 +2362,7 @@ When making API calls remember that requests against the same account are queued
 
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2427,6 +2439,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { mailboxes: await accountObject.getMailboxListing(request.query) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2490,6 +2503,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.createMailbox(request.payload.path);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2556,6 +2570,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.deleteMailbox(request.query.path);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2617,6 +2632,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getRawMessage(request.params.message);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2670,6 +2686,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getAttachment(request.params.attachment);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2728,7 +2745,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getMessage(request.params.message, request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2795,6 +2812,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.uploadMessage(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2961,6 +2979,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.updateMessage(request.params.message, request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3027,6 +3046,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.updateMessages(request.query.path, request.payload.search, request.payload.update);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3099,6 +3119,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.moveMessage(request.params.message, request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3161,7 +3182,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.moveMessages(request.query.path, request.payload.search, { path: request.payload.path });
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3230,6 +3251,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.deleteMessage(request.params.message, request.query.force);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3298,7 +3320,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.deleteMessages(request.query.path, request.payload.search, request.query.force);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3381,7 +3403,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getText(request.params.text, request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3464,7 +3486,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.listMessages(request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3557,7 +3579,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.searchMessages(Object.assign(request.query, request.payload));
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3645,7 +3667,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.queueMessage(request.payload, { source: 'api' });
             } catch (err) {
-                request.logger.error({ err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4162,6 +4184,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await verifyAccountInfo(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4235,7 +4258,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/license',
 
-        async handler() {
+        async handler(request) {
             try {
                 const licenseInfo = await call({ cmd: 'license' });
                 if (!licenseInfo) {
@@ -4245,6 +4268,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4277,7 +4301,7 @@ When making API calls remember that requests against the same account are queued
         method: 'DELETE',
         path: '/v1/license',
 
-        async handler() {
+        async handler(request) {
             try {
                 const licenseInfo = await call({ cmd: 'removeLicense' });
                 if (!licenseInfo) {
@@ -4287,6 +4311,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4335,6 +4360,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4391,6 +4417,7 @@ When making API calls remember that requests against the same account are queued
                 let serverSettings = await autodetectImapSettings(request.query.email);
                 return serverSettings;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4474,6 +4501,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await outbox.list(Object.assign({ logger }, request.query));
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4580,6 +4608,7 @@ When making API calls remember that requests against the same account are queued
                     deleted: await outbox.del({ queueId: request.params.queueId, logger })
                 };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4647,6 +4676,7 @@ When making API calls remember that requests against the same account are queued
                     request.payload.content
                 );
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4730,6 +4760,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.update(request.params.template, meta, request.payload.content);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4813,6 +4844,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.list(request.query.account, request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4900,6 +4932,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await templates.get(request.params.template);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4977,6 +5010,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await templates.del(request.params.template);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5037,6 +5071,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.flush(request.params.account);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5103,6 +5138,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await gatewayObject.listGateways(request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5194,6 +5230,7 @@ When making API calls remember that requests against the same account are queued
 
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5271,6 +5308,7 @@ When making API calls remember that requests against the same account are queued
                 let result = await gatewayObject.create(request.payload);
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5349,6 +5387,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await gatewayObject.update(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5430,6 +5469,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await gatewayObject.delete();
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5534,6 +5574,7 @@ When making API calls remember that requests against the same account are queued
                     cached
                 };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
