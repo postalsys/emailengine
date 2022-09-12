@@ -1072,7 +1072,7 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
-                    accountData.email = accountData.email || (isEmail(profileRes.emailAddress) ? profileRes.emailAddress : '');
+                    accountData.email = isEmail(profileRes.emailAddress) ? profileRes.emailAddress : accountData.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1140,7 +1140,7 @@ When making API calls remember that requests against the same account are queued
                     }
 
                     accountData.name = accountData.name || userInfo.name || '';
-                    accountData.email = accountData.email || userInfo.email;
+                    accountData.email = userInfo.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1187,7 +1187,7 @@ When making API calls remember that requests against the same account are queued
                     }
 
                     accountData.name = accountData.name || profileRes.name || '';
-                    accountData.email = accountData.email || (isEmail(profileRes.email) ? profileRes.email : '');
+                    accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},

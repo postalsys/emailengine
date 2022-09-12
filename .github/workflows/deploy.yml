@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - cache-swagger-json
+            - oauth-prefer-account-email
 
 name: Deploy test instance
 
