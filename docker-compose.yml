@@ -2,7 +2,7 @@ version: '3.7'
 services:
     emailengine:
         restart: always
-        image: andris9/emailengine:v2
+        image: andris9/emailengine:latest
         ports:
             # API and web interface
             - '3000:3000'
