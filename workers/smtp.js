@@ -499,6 +499,6 @@ init()
         });
     })
     .catch(err => {
-        logger.error(err);
+        logger.error({ msg: 'Failed to initialize SMTP', err });
         setImmediate(() => process.exit(3));
     });

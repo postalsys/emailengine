@@ -5950,13 +5950,13 @@ When making API calls remember that requests against the same account are queued
                     try {
                         await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
                     } catch (err) {
-                        logger.error(err);
+                        logger.error({ msg: 'Failed to set certificate data', serviceDomain, err });
                     }
                 }
             }
         }
 
-        handler().catch(err => logger.error(err));
+        handler().catch(err => logger.error({ msg: 'Failed to run certificate handler', err }));
     }, TLS_RENEW_CHECK_INTERVAL).unref();
 };
 
@@ -5972,6 +5972,6 @@ init()
         });
     })
     .catch(err => {
-        logger.error(err);
+        logger.error({ msg: 'Failed to initialize API', err });
         setImmediate(() => process.exit(3));
     });

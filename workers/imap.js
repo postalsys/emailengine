@@ -104,7 +104,7 @@ class ConnectionHandler {
                     .rpush(logKey, logRow)
                     .ltrim(logKey, -this.maxLogLines, -1)
                     .exec()
-                    .catch(err => this.logger.error(err));
+                    .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
             },
             async reload() {
                 logging = await settings.getLoggingInfo(account);
@@ -681,7 +681,7 @@ parentPort.on('message', message => {
             });
     }
 
-    connectionHandler.onMessage(message).catch(err => logger.error(err));
+    connectionHandler.onMessage(message).catch(err => logger.error({ msg: 'Failed to process IPC message', err }));
 });
 
 process.on('SIGTERM', () => {

@@ -620,7 +620,7 @@ let spawnWorker = async type => {
                         .finally(() => {
                             unassigned.add(account);
                             if (shouldReassign) {
-                                assignAccounts().catch(err => logger.error(err));
+                                assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
                             }
                         });
                 });
@@ -830,7 +830,7 @@ function processImapWorkerMessage(worker, message) {
         case 'ready':
             availableIMAPWorkers.add(worker);
             // assign pending accounts
-            assignAccounts().catch(err => logger.error(err));
+            assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 2, err }));
             break;
     }
 }
@@ -1154,7 +1154,7 @@ async function updateQueueCounters() {
         metrics.redisLastSaveTime.set(Number(redisInfo.rdb_last_save_time) || 0);
         metrics.redisOpsPerSec.set(Number(redisInfo.instantaneous_ops_per_sec) || 0);
     } catch (err) {
-        logger.error(err);
+        logger.error({ msg: 'Failed to update query counters', err });
     }
 }
 
@@ -1243,7 +1243,7 @@ async function onCommand(worker, message) {
             unassigned.add(message.account);
             assignAccounts()
                 .then(sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-                .catch(err => logger.error(err));
+                .catch(err => logger.error({ msg: 'Failed to assign accounts', n: 3, err }));
             return;
 
         case 'delete':
@@ -1261,9 +1261,11 @@ async function onCommand(worker, message) {
 
                 call(assignedWorker, message)
                     .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error(err));
+                    .catch(err => logger.error({ msg: 'Failed to clean an assigned worker', err }));
             }
-            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err => logger.error(err));
+            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
+                logger.error({ msg: 'Failed to send a deletion webhook', err })
+            );
             return;
 
         case 'update':
@@ -1272,7 +1274,7 @@ async function onCommand(worker, message) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
                     .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error(err));
+                    .catch(err => logger.error({ msg: 'Failed to call sync from a worker', err }));
             }
             return;
 
@@ -1358,7 +1360,7 @@ async function collectMetrics() {
                     metricsResult[status] += Number(workerStats[status]) || 0;
                 });
             } catch (err) {
-                logger.error(err);
+                logger.error({ msg: 'Failed to count connections', err });
             }
         }
     }
