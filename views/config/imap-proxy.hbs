@@ -221,6 +221,10 @@
                             href="#example-node-imap" role="tab" aria-controls="example-node-imap"
                             aria-selected="true">node-imap</a>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="example-php-imap-tab" data-toggle="tab" href="#example-php-imap"
+                            role="tab" aria-controls="example-php-imap">PHP-IMAP</a>
+                    </li>
                 </ul>
 
                 <!-- Tab panes -->
@@ -229,6 +233,12 @@
                         aria-labelledby="example-node-imap-tab">
 
                         <pre><code id="example-node-imap-code"></code></pre>
+
+                    </div>
+
+                    <div class="tab-pane" id="example-php-imap" role="tabpanel" aria-labelledby="example-php-imap-tab">
+
+                        <pre><code id="example-php-imap-code"></code></pre>
 
                     </div>
                 </div>
@@ -323,15 +333,26 @@
   host: 'HOST',
   port: PORT,
   tls: USE_TLS
-});`}
+});`},
+            phpImap: {
+                lang: 'php',
+                codeAuth: `// https://www.php-imap.com/configuration/account/account
+$client = $cm->make([
+    'host' => 'HOST',
+    'port' => PORT,
+    'encryption' => PHPIMAP_TLS,
+    'username' => 'USERNAME',
+    'password' => 'PASSWORD',
+    'protocol' => 'imap'
+]);`}
         };
 
         let renderTemplate = (templateKey) => {
             let template = codeTemplates[templateKey]['codeAuth'];
 
-            template = `// Replace "USERNAME" with the account id of a registered user you want to connect as
-// Replace "HOST" with the hostname or IP address of the IMAP proxy interface
-// NB! Make sure that firewall settings allow accessing the IMAP proxy interface
+            template = `// Replace "USERNAME" with the account id of a registered user you want to connect as.
+// Replace "HOST" with the hostname or IP address of the IMAP proxy interface.
+// NB! Make sure that firewall settings allow accessing the IMAP proxy interface.
 
 ` + template;
 
@@ -343,6 +364,7 @@
                 replace(/USE_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? 'true' : 'false').
                 replace(/NODEMAILER_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? 'true' : 'false').
                 replace(/PHPMAILER_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? 'tls' : '').
+                replace(/PHPIMAP_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? "'ssl'" : 'false').
                 replace(/USERNAME/g, 'account_id').
                 replace(/PASSWORD/g, password);
 
@@ -351,6 +373,7 @@
 
         let renderExamples = () => {
             document.getElementById('example-node-imap-code').innerHTML = renderTemplate('nodeImap');
+            document.getElementById('example-php-imap-code').innerHTML = renderTemplate('phpImap');
 
             document.getElementById('exampleShowPassword').disabled = !document.getElementById('imapProxyServerPassword').value;
         }
