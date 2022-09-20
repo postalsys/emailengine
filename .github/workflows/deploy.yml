@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - oauth-prefer-account-email
+            - oauth-ms-graph
 
 name: Deploy test instance
 
