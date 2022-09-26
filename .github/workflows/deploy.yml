@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - oauth-prefer-account-email
+            - feature-arf-webhook
 
 name: Deploy test instance
 
