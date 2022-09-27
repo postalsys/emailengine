@@ -171,7 +171,7 @@ const notifyWorker = new Worker(
             headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
         }
 
-        if (job.data && job.data.data && job.data.data.text) {
+        if (job.name === 'messageNew' && job.data && job.data.data && job.data.data.text) {
             // normalize text content
             let notifyText = await settings.get('notifyText');
             if (!notifyText) {
@@ -197,7 +197,7 @@ const notifyWorker = new Worker(
             }
         }
 
-        if (job.data && job.data.data && job.data.data.headers) {
+        if (job.name === 'messageNew' && job.data && job.data.data && job.data.data.headers) {
             // normalize headers
             let notifyHeaders = await settings.get('notifyHeaders');
             if (!notifyHeaders) {
