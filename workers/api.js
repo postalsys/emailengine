@@ -1102,6 +1102,13 @@ When making API calls remember that requests against the same account are queued
 
                     let userInfo = {};
 
+                    let userData = await oAuth2Client.request(r.access_token, 'https://graph.microsoft.com/v1.0/me');
+                    console.log('USER INFO RESPONSE', JSON.stringify(userData));
+                    if (userData) {
+                        userInfo.name = userData.displayName;
+                        userInfo.email = userData.userPrincipalName;
+                    }
+
                     let clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString()) : false;
 
                     if (clientInfo && typeof clientInfo.name === 'string') {
