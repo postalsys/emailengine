@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-arf-webhook
+            - outlook-graph-support
 
 name: Deploy test instance
 
