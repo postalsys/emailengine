@@ -2789,6 +2789,12 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
+                    embedAttachedImages: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
+                        .label('EmbedImages'),
                     documentStore: documentStoreSchema.default(false)
                 }),
 
