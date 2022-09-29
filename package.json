@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.26.5",
+    "version": "2.26.6",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
@@ -86,8 +86,8 @@
         "node-fetch": "2.6.7",
         "node-gettext": "3.0.0",
         "node-vault": "0.9.22",
-        "nodemailer": "6.7.8",
-        "pino": "8.6.0",
+        "nodemailer": "6.8.0",
+        "pino": "8.6.1",
         "prom-client": "14.1.0",
         "psl": "1.9.0",
         "pubface": "1.0.3",
