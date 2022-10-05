@@ -119,7 +119,8 @@ const {
     templateSchemas,
     documentStoreSchema,
     searchSchema,
-    messageUpdateSchema
+    messageUpdateSchema,
+    accountSchemas
 } = require('../lib/schemas');
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -1775,7 +1776,8 @@ When making API calls remember that requests against the same account are queued
 
                     logs: Joi.boolean().example(false).description('Store recent logs').default(false),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now'),
+                    notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    syncFrom: accountSchemas.syncFrom.default(null),
 
                     proxy: settingsSchema.proxyUrl,
 
@@ -1810,6 +1812,7 @@ When making API calls remember that requests against the same account are queued
                     account: request.payload.account,
                     name: request.payload.name,
                     email: request.payload.email,
+                    syncFrom: request.payload.syncFrom,
                     redirectUrl: request.payload.redirectUrl
                 });
 
@@ -1902,6 +1905,8 @@ When making API calls remember that requests against the same account are queued
 
                     name: Joi.string().empty('').max(256).example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
+
+                    syncFrom: accountSchemas.syncFrom,
 
                     redirectUrl: Joi.string()
                         .empty('')
@@ -2002,7 +2007,8 @@ When making API calls remember that requests against the same account are queued
 
                     logs: Joi.boolean().example(false).description('Store recent logs'),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
+                    notifyFrom: accountSchemas.notifyFrom,
+                    syncFrom: accountSchemas.syncFrom,
 
                     proxy: settingsSchema.proxyUrl,
 
@@ -2340,6 +2346,7 @@ When making API calls remember that requests against the same account are queued
                     'email',
                     'copy',
                     'notifyFrom',
+                    'syncFrom',
                     'imap',
                     'smtp',
                     'oauth2',
@@ -2410,7 +2417,8 @@ When making API calls remember that requests against the same account are queued
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder'),
                     logs: Joi.boolean().example(false).description('Store recent logs'),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
+                    notifyFrom: accountSchemas.notifyFrom,
+                    syncFrom: accountSchemas.syncFrom,
 
                     webhooks: Joi.string()
                         .uri({
