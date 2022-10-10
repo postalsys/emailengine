@@ -1,0 +1,252 @@
+Delivered-To: andris.reinman@gmail.com
+Received: by 2002:a05:6358:44d:b0:b5:cc1d:14a6 with SMTP id 13csp2168397rwe;
+        Sun, 9 Oct 2022 22:30:57 -0700 (PDT)
+X-Received: by 2002:a05:6870:1685:b0:132:d9b7:5fd6 with SMTP id j5-20020a056870168500b00132d9b75fd6mr8745816oae.252.1665379857405;
+        Sun, 09 Oct 2022 22:30:57 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1665379857; cv=none;
+        d=google.com; s=arc-20160816;
+        b=n6mBiOPXiNCsHrEPjPE13Ud+ZTZbsJ+84lFsb4RRmQOxzFHl/ZnsEsRG0uXZ6TdS3g
+         1TXlhCLDFMpexoU0pIz4IeKhoVWJcMRRdfXaHWklhMEAndaKe4T8KJ05UAqUagkxy9Za
+         x47wLapx/EAbc1ZyL0TZATZ5htocw6p+71xtMmNSaC5TRzaw8NLeWOyypwZuekSXecQM
+         0QVvyjJSbJRMilrpncJllpozXvZHmoDidTWg+lptmTJhlXOhVysJ/eiz+eAkx9QMMuJR
+         DJVQdFYsX4k7JrrhYBpV9O/7vo5Tk6UNV4focnf8jFf1cHgt/cWZhtb66U23rX7f1k+f
+         Z55w==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=in-reply-to:references:subject:from:date:message-id:auto-submitted
+         :to:dkim-signature;
+        bh=zPWlpisfdLZYYsiwZeJv+TuYWBUB3JVY6/Smynzi/8A=;
+        b=gVdoVdUG+UFZ+V3kHmAUNGJMbOBg7cI7+LZBTVrStjTBqKL5ppdkM7r2750EhDrYPA
+         C7ox+4ZP7CeacsuGHCL9+FXFAnr9loRXd3TjK9YHh0s1aelIFK5rk4ul6CKeSpQGy2DE
+         x7CLyzQdgmRFVDnWhk81lpWXmCN2MHY7nWzB3MAXtWjIeziW2rPgLZLpfwBUgclrQ4m8
+         44BbrWbjqzj2LksrGia8yIa3n4UuN4JIX7jQLL5xxsmFFhpcRCiWvPN8psILCaRRxRma
+         Pmy15hyCDW3v24+k3XSM9Tm6cBgBWv7KvOJfyZUcDVYEY+bkFW7S+NYDw7o67n7bgu3m
+         r5CA==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@googlemail.com header.s=20210112 header.b=epwhRMEX;
+       spf=pass (google.com: best guess record for domain of postmaster@mail-sor-f69.google.com designates 209.85.220.69 as permitted sender) smtp.helo=mail-sor-f69.google.com;
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=googlemail.com
+Return-Path: <>
+Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+        by mx.google.com with SMTPS id r7-20020aca4407000000b003537eea70desor2132402oia.2.2022.10.09.22.30.57
+        for <andris.reinman@gmail.com>
+        (Google Transport Security);
+        Sun, 09 Oct 2022 22:30:57 -0700 (PDT)
+Received-SPF: pass (google.com: best guess record for domain of postmaster@mail-sor-f69.google.com designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@googlemail.com header.s=20210112 header.b=epwhRMEX;
+       spf=pass (google.com: best guess record for domain of postmaster@mail-sor-f69.google.com designates 209.85.220.69 as permitted sender) smtp.helo=mail-sor-f69.google.com;
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=googlemail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=googlemail.com; s=20210112;
+        h=in-reply-to:references:subject:from:date:message-id:auto-submitted
+         :to:from:to:cc:subject:date:message-id:reply-to;
+        bh=zPWlpisfdLZYYsiwZeJv+TuYWBUB3JVY6/Smynzi/8A=;
+        b=epwhRMEXqgeSFMOZ8cdmc+V2OMsARHLN86jLc8v86MX/YL9A+fAQzhrsU0WR0OPQrp
+         ezOtZRfy5rgLkU3V5wU3L9Q8+M/HERsb8ul+q8MM+lVTSxLeGLJBjNv5HAPMG93VrZIW
+         za2ZKmuD7K4JJECd3h7N6ch4er6mh8fqNCthwsp05HSzH+NUtVAyA0M7rfZlrEFUu5ix
+         haT9guBg60N9MMgrB5F8XprvEXjdXsBAQuQNn1GEqtGzYdpBUMpKThdjuQI6qD6gur+s
+         kocSV0pzIU4loDwHgW2jpXgY4iwUcYmb4z5uk7Im4CAL6Mp8PByqLDNDhyEJXxaBjFo4
+         J3zg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=in-reply-to:references:subject:from:date:message-id:auto-submitted
+         :to:x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+        bh=zPWlpisfdLZYYsiwZeJv+TuYWBUB3JVY6/Smynzi/8A=;
+        b=I7B8ZDu/2hszBjggpfpiOquce3Zwc/npHh7bxqjlejMN/Jg38wNhteS06m/pEG2JOY
+         FI8WNDAveTvsbmOeNW2HkXTvH9SjeR8lyaiG2IMFOFzOWzBTYbwKsqlYUsSa0Lw92d4S
+         Ut/cSDqb9PeA8Pr2jOPupt6IglaJroIYgG4sl8NnxTLTmGRr6Ff8o8nyDd5c7h0iSWF+
+         dWT41HxpjmODIRwto00EENFzaCljZf2GcewwaDnBXptDbslyZ6ecYTvIv2925+9NYeg2
+         /9rayKw3j6JS2OO3nZJ6zHDCLMp8dh3dx5zvn5Vv3MVI1PS0G8T3HZhxXHYkzysWrAyf
+         rq0g==
+X-Gm-Message-State: ACrzQf2B/quvpE3cdWHUFDEdmje/2DDUYmJ5YTJa0Sjlu6u0QVwg0Dkw
+	miOCslynJzXoPSauR3C/A08W07FpytzeKyt5SePbyg==
+X-Google-Smtp-Source: AMsMyM6CVZwoeyfXVjc/UrScBWi0R7KwyoIR3Lg34aBP4o9CWl4eK89DqhsYzbdgaoYhFfyYnwSRDVwob1MuFzAgK2plRWqip9ffJsM=
+X-Received: by 2002:a05:6808:1496:b0:350:4640:5462 with SMTP id e22-20020a056808149600b0035046405462mr13351725oiw.47.1665379857284;
+        Sun, 09 Oct 2022 22:30:57 -0700 (PDT)
+Content-Type: multipart/report; boundary="000000000000cf33c605eaa776f8"; report-type=delivery-status
+To: andris.reinman@gmail.com
+Received: by 2002:a05:6808:1496:b0:350:4640:5462 with SMTP id
+ e22-20020a056808149600b0035046405462mr11322463oiw.47; Sun, 09 Oct 2022
+ 22:30:57 -0700 (PDT)
+Return-Path: <>
+Auto-Submitted: auto-replied
+Message-ID: <6343ae11.050a0220.d9258.3a6c.GMR@mx.google.com>
+Date: Sun, 09 Oct 2022 22:30:57 -0700 (PDT)
+From: Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+Subject: Delivery Status Notification (Failure)
+References: <CAPacwgw3pCyVcmW4nVy8VPX5u5ksn_wZB2jZ_tLUM2es7LaiEA@mail.gmail.com>
+In-Reply-To: <CAPacwgw3pCyVcmW4nVy8VPX5u5ksn_wZB2jZ_tLUM2es7LaiEA@mail.gmail.com>
+X-Failed-Recipients: jhfthgfuyfhvjkugjhvjuyfv@hot.ee
+
+--000000000000cf33c605eaa776f8
+Content-Type: multipart/related; boundary="000000000000cf397605eaa776f9"
+
+--000000000000cf397605eaa776f9
+Content-Type: multipart/alternative; boundary="000000000000cf398105eaa776fa"
+
+--000000000000cf398105eaa776fa
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+
+** Aadressi ei leitud **
+
+Teie kirja kontole jhfthgfuyfhvjkugjhvjuyfv@hot.ee ei saadetud, kuna aadres=
+si ei leitud v=C3=B5i see ei saa meile vastu v=C3=B5tta.
+
+
+
+Vastus kaugserverist oli j=C3=A4rgmine:
+550 5.1.1 <jhfthgfuyfhvjkugjhvjuyfv@hot.ee>: Recipient address rejected: Us=
+er unknown in relay recipient table
+
+--000000000000cf398105eaa776fa
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+
+<html>
+<head>
+<style>
+* {
+font-family:Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+</style>
+</head>
+<body>
+<table cellpadding=3D"0" cellspacing=3D"0" class=3D"email-wrapper" style=3D=
+"padding-top:32px;background-color:#ffffff;"><tbody>
+<tr><td>
+<table cellpadding=3D0 cellspacing=3D0><tbody>
+<tr><td style=3D"max-width:560px;padding:24px 24px 32px;background-color:#f=
+afafa;border:1px solid #e0e0e0;border-radius:2px">
+<img style=3D"padding:0 24px 16px 0;float:left" width=3D72 height=3D72 alt=
+=3D"Veaikoon" src=3D"cid:icon.png">
+<table style=3D"min-width:272px;padding-top:8px"><tbody>
+<tr><td><h2 style=3D"font-size:20px;color:#212121;font-weight:bold;margin:0=
+">
+Aadressi ei leitud
+</h2></td></tr>
+<tr><td style=3D"padding-top:20px;color:#757575;font-size:16px;font-weight:=
+normal;text-align:left">
+Teie kirja kontole <a style=3D'color:#212121;text-decoration:none'><b>jhfth=
+gfuyfhvjkugjhvjuyfv@hot.ee</b></a> ei saadetud, kuna aadressi ei leitud v=
+=C3=B5i see ei saa meile vastu v=C3=B5tta.
+</td></tr>
+</tbody></table>
+</td></tr>
+</tbody></table>
+</td></tr>
+<tr style=3D"border:none;background-color:#fff;font-size:12.8px;width:90%">
+<td align=3D"left" style=3D"padding:48px 10px">
+Kaugserver esitas vastuse:<br/>
+<p style=3D"font-family:monospace">
+550 5.1.1 &lt;jhfthgfuyfhvjkugjhvjuyfv@hot.ee&gt;: Recipient address reject=
+ed: User unknown in relay recipient table
+</p>
+</td>
+</tr>
+</tbody></table>
+</body>
+</html>
+
+--000000000000cf398105eaa776fa--
+--000000000000cf397605eaa776f9
+Content-Type: image/png; name="icon.png"
+Content-Disposition: attachment; filename="icon.png"
+Content-Transfer-Encoding: base64
+Content-ID: <icon.png>
+
+iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAYAAADnRuK4AAAACXBIWXMAABYlAAAWJQFJUiTwAAAA
+GXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAABTdJREFUeNrsnD9sFEcUh5+PRMqZ
+yA0SPhAUQAQFUkyTgiBASARo6QApqVIkfdxGFJFSgGhJAUIiBaQB0ZIOKVCkwUgURjIg2fxL4kS+
+YDvkbC/388bi8N16Z4/d7J/5PsniuD3fyePP772ZeTsDQRAYQL/UGAJAIEAgQCBAIAAEAgQCBAIE
+AkAgyJT3Mv+Eq7vYK8mTE+MDRCAghQECAeRQA5V2ZOpmg5vDx3NPzRbmGRMEcmTrEbNNB8zWfRD+
+f/Efs2e3zCZvMjaksBg27TfbcuSNPEKP9ZyuAQKtHX2O9ncNgWC57umMPKvRNb0GEKgnLoUyxTQC
+rcns0/6uIRAs8/hGf9cQCJZpTpjdO2f25/03z+mxntM1eLtsZAgiUtX4JcaBCAQIBAgECARQ8CJa
+G5jab4J4pm4WZmO3OALVh802fIwcLkyPkcKAGggAgQCBAIEAgQCBABAIEAjKA/1AnahhbO5FdOOY
+VsrrDbPBYcYKgf5D2wLaV3p+22xh1u17tO3S+DTcvxvagUDeivPgx/a/95J/73w7Sj26Hn4pKo2M
+ehuV/KyBJM6d0f7k6RKx/R63vvL2tmf/ItDdM2ZTP6f7nkp9Y2fDx1v9akmpIU+KSCLVUghUQfSL
+zVKeTklbLxGoctw/nzC5rw8L5KRNbkpnKq6pgSqEClzNnFzY+XnYWrt6VpVk1vbwWvg+RKCKMOUw
+Q1LEOXA+/MX3mpJvGDHb265xtnzmFoUK1HaKQGlMtePYM+q2KKjXuaS1NJYIEKgI8jhEgqHt4cqy
+Ky53j3hyHz2bqSLp2o2LbJ7MxKovkGqXteoWpaOk96O9/yF/dF7NwlS36AuIQIBA5celQK4PIxBE
+4LLzrtoLgaALdSy6CJRkWQCBPGLsTHznomZ9nszUECgJ2ml3WWHe+QVFNPSQx6UdZNtxr9pbEShN
+eTTz8mQXHoHSlke7+Z+c9m6VGoHSkEfs/trLW3wQKApN1V3lGfnGu2Z6BFoLtYCs3GWBPAiUCLVh
+/HoaeRCoT9R873KLM/IgUBfapnCpe5AHgXry4pf412ihEHkQqCdxd5VqrcezhUIESsJMTJ+Pdthp
+Z0WgyNlXXPHc2Mc4IVAELl2Gnh8mhUDvCkfbIVAkcbf/aOoO3fMKhqAD3frTa4quwpn0hUDOkQhI
+YYBAgECAQAAU0QlYObl+5Ug8NcprZkZxjUCxRPVA6zmtEXHCBykskrhjgHXN09PoEcgFl4M4H11j
+nBAoApcj6ZoPGScEAgTKApcDoTw5sgWB+sGlz1n90IBAPdE6j1o21PfcC11jLagL1oFWRyGlKU3p
+OxcSJQ7NZAjkhHp/uG2HFAYIBAgECASAQIBAgECAQAAIBOkxEARBtp9wdVfAMOfIifEBIhCQwgCB
+ABAI0oV2jhxZ+nfBatuPZfgBCy0Eqqo8c01b+uu51XZvzOgDWoHNTGR+pCwpLEd5svuAZXlO2uEr
+PyEQ8hRWHgRCHmqg0sjTnLalv6crJQ8C/U8stqNO0I4+VZOHFIY8COS1PGL2ybd5yUMKK7s8zYmL
+dujyd3n+nESgcsvzZd4/KwIhDwIhT35QA6UyE1qyxZnfvJMHgdKS549JC1qvvJOHFIY8CFR5eV5O
+XimqPAhUdHnmfx+zgxdOFXkoqIGKKs/cswnb/8Oeog8HEai48nxUhiFBIORBIOShBioskkbySCLk
+IQIhDwIhj28p7FApR6b1qlEbHGpkO/rr6215vi/zH1r2x7tApSGFAQIBAgECAQIBIBAgECAQIBBA
+LK8FGADCTxYrr+EVJgAAAABJRU5ErkJggg==
+--000000000000cf397605eaa776f9--
+--000000000000cf33c605eaa776f8
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; googlemail.com
+Arrival-Date: Sun, 09 Oct 2022 22:30:54 -0700 (PDT)
+X-Original-Message-ID: <CAPacwgw3pCyVcmW4nVy8VPX5u5ksn_wZB2jZ_tLUM2es7LaiEA@mail.gmail.com>
+
+Final-Recipient: rfc822; jhfthgfuyfhvjkugjhvjuyfv@hot.ee
+Action: failed
+Status: 5.1.1
+Remote-MTA: dns; mx1.hot.ee. (194.126.101.119, the server for the domain hot.ee.)
+Diagnostic-Code: smtp; 550 5.1.1 <jhfthgfuyfhvjkugjhvjuyfv@hot.ee>: Recipient address rejected: User unknown in relay recipient table
+Last-Attempt-Date: Sun, 09 Oct 2022 22:30:57 -0700 (PDT)
+
+--000000000000cf33c605eaa776f8
+Content-Type: message/rfc822
+
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20210112;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=nnVtM9pzwXTdt1o/7mH+EPq2FJKPRxlOpHKe5Ce3xwM=;
+        b=N+jZ2z1r/8wpUfnjALBvs9dXcv85Dn1Rdf0dMRImaU2LhWSLhJFaVCl4PqgLhIYfi+
+         zvgNebGi2TGtiTcjLxFpO7pm74fMEMVSixs3GH3kcfoooMwzrsAnOXXep/c9o297WUCb
+         JEIc6SodAJY7TZ0adQF/GSz9YwttlX6SsH3RjmYGyQ9WRmvUPnkT/dTqgRbCBsi21C4a
+         SzUNq9QyB/9UL3S32ml3ERDCQMzak07e5gCgO6MQ0Q6q0vyy6xdIvMhaD+Yjymfdvbhn
+         fAhiTXsyu4kyGyK9kYWw6eP+n7gj9zi+yKQ0oIrUtudMCk7siGTffTaSnE6Jb/zPREhs
+         uL2Q==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=to:subject:message-id:date:from:mime-version:x-gm-message-state
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=nnVtM9pzwXTdt1o/7mH+EPq2FJKPRxlOpHKe5Ce3xwM=;
+        b=YrFJJxET1RwNI93lmTtJ50UFWJV9sTm1XClaEul/PqPn1gTCjXUNRkJ9DtitLOHMJB
+         Ga87yiUWUN6ugIjHBcF0HhtCeZVcZsykcmFFu+7/jTcE3hICNcOF7hGSt00bHQSnbv3P
+         xW+xny64O4UiT5iplp+iX69+099SilfdWWXRK869uXTbZxQAmtQfEYNmYyP/xJD5wi6N
+         BFwpUeqpC9opTTSdTDqplW2JwxbIZWziHFYylf2/n+ydHF90tCNfQvqzC7fu+ckBxH2n
+         mYh6hJ0psgFm4qQKR6W3UDnQWDiqrtfywY3DNMC5ByCxPXYw9VD5CtNT5lmpht83baB2
+         BNhQ==
+X-Gm-Message-State: ACrzQf1eWMQxiNhAw5CTEw9p0C/C0M1RPAWtOhT6SJcxAihNRjFJtKK1
+	x7rPqtI7lclUIePZ4Xv0kxE7I12ypOecjhsWU33m6ujw
+X-Google-Smtp-Source: AMsMyM6wJHR9A+WGVXLLtAlCAiAUPM2ILV/b0k2vK90km/32hWIh8aD6wHRBlpUSh+CHxM8ng1MnMTWOw2r7Aa/VP9M=
+X-Received: by 2002:a05:6808:1496:b0:350:4640:5462 with SMTP id
+ e22-20020a056808149600b0035046405462mr13351667oiw.47.1665379854972; Sun, 09
+ Oct 2022 22:30:54 -0700 (PDT)
+MIME-Version: 1.0
+From: Andris Reinman <andris.reinman@gmail.com>
+Date: Mon, 10 Oct 2022 08:30:44 +0300
+Message-ID: <CAPacwgw3pCyVcmW4nVy8VPX5u5ksn_wZB2jZ_tLUM2es7LaiEA@mail.gmail.com>
+Subject: proovikiri
+To: jhfthgfuyfhvjkugjhvjuyfv@hot.ee
+Content-Type: multipart/alternative; boundary="000000000000abfb3b05eaa77631"
+
+--000000000000abfb3b05eaa77631
+Content-Type: text/plain; charset="UTF-8"
+
+see on proovikiri
+
+--000000000000abfb3b05eaa77631
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr">see on proovikiri</div>
+
+--000000000000abfb3b05eaa77631--
+
+--000000000000cf33c605eaa776f8--

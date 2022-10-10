@@ -1,0 +1,101 @@
+Return-Path: <MAILER-DAEMON>
+Delivered-To: andris@ekiri.ee
+Received: by uvn-67-33.tll01.zonevs.eu (Postfix)
+	id 5FC8B823C7; Mon, 10 Oct 2022 08:23:52 +0300 (EEST)
+Date: Mon, 10 Oct 2022 08:23:52 +0300 (EEST)
+From: MAILER-DAEMON@uvn-67-33.tll01.zonevs.eu (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender
+To: andris@ekiri.ee
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="DF59B82305.1665379432/uvn-67-33.tll01.zonevs.eu"
+Message-Id: <20221010052352.5FC8B823C7@uvn-67-33.tll01.zonevs.eu>
+
+This is a MIME-encapsulated message.
+
+--DF59B82305.1665379432/uvn-67-33.tll01.zonevs.eu
+Content-Description: Notification
+Content-Type: text/plain; charset=us-ascii
+
+This is the mail system at host uvn-67-33.tll01.zonevs.eu.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to postmaster.
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<sdagfsdfgdasfsdf@hot.ee>: host mx1.hot.ee[194.126.101.119] said: 550 5.1.1
+    <sdagfsdfgdasfsdf@hot.ee>: Recipient address rejected: User unknown in
+    relay recipient table (in reply to RCPT TO command)
+
+--DF59B82305.1665379432/uvn-67-33.tll01.zonevs.eu
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; uvn-67-33.tll01.zonevs.eu
+X-Postfix-Queue-ID: DF59B82305
+X-Postfix-Sender: rfc822; andris@ekiri.ee
+Arrival-Date: Mon, 10 Oct 2022 08:23:51 +0300 (EEST)
+
+Final-Recipient: rfc822; sdagfsdfgdasfsdf@hot.ee
+Original-Recipient: rfc822;sdagfsdfgdasfsdf@hot.ee
+Action: failed
+Status: 5.1.1
+Remote-MTA: dns; mx1.hot.ee
+Diagnostic-Code: smtp; 550 5.1.1 <sdagfsdfgdasfsdf@hot.ee>: Recipient address
+    rejected: User unknown in relay recipient table
+
+--DF59B82305.1665379432/uvn-67-33.tll01.zonevs.eu
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+
+Return-Path: <andris@ekiri.ee>
+Received: from turvaline.ekiri.ee (localhost.localdomain [127.0.0.1])
+	by uvn-67-33.tll01.zonevs.eu (Postfix) with ESMTP id DF59B82305
+	for <sdagfsdfgdasfsdf@hot.ee>; Mon, 10 Oct 2022 08:23:51 +0300 (EEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=ekiri.ee; s=default;
+	t=1665379431; bh=IP93/XJyNpbKriYfJ+zyC8Je46iWUylwjWuuYVEU4Vc=;
+	h=Date:From:To:Subject;
+	b=ZpWbcgMo5chcXQ6vDunnP2Q/49yN7//QfuHmN8CP60nN8ZAs8T+s3rXfWSyfSIWaW
+	 jy3WH2QjJ9mq5msHEpEJUKn501r8GgedlgygmtUZe2J0XkJHh5jFaEjhmvb08UP4f+
+	 G2nLkgn5Di83zrillwNA236rtp8IWRLfYFbjeMS4=
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="=_c1963e55830646fc56388b60f4b595d9"
+Date: Mon, 10 Oct 2022 08:23:51 +0300
+From: andris <andris@ekiri.ee>
+To: sdagfsdfgdasfsdf@hot.ee
+Subject: proovikas
+Message-ID: <0f51267b17be7a93bb0017205b6c4fca@ekiri.ee>
+X-Sender: andris@ekiri.ee
+User-Agent: Roundcube Webmail/1.1-git
+
+--=_c1963e55830646fc56388b60f4b595d9
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+
+ 
+
+proov 
+ 
+--=_c1963e55830646fc56388b60f4b595d9
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
+<html><body style=3D'font-size: 10pt; font-family: Verdana,Geneva,sans-seri=
+f'>
+<p>proov</p>
+<div>&nbsp;</div>
+</body></html>
+
+--=_c1963e55830646fc56388b60f4b595d9--
+
+
+--DF59B82305.1665379432/uvn-67-33.tll01.zonevs.eu--
