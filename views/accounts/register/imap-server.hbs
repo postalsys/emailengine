@@ -4,6 +4,12 @@
     <input type="hidden" name="sig" value="{{values.sig}}">
     <input type="hidden" name="email" value="{{values.email}}">
     <input type="hidden" name="name" value="{{values.name}}">
+
+    <input type="hidden" name="appPassword_required" value="{{values.appPassword_required}}">
+    <input type="hidden" name="appPassword_provider" value="{{values.appPassword_provider}}">
+    <input type="hidden" name="appPassword_instructions" value="{{values.appPassword_instructions}}">
+
+
     <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
 
     <div class="container">
@@ -22,7 +28,27 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="imap_auth_pass">{{_ "Password" }}</label>
+
+                    {{#unless values.appPassword_required}}
+
+                    <label for="imap_auth_pass">
+                        {{_ "Password" }}
+                    </label>
+
+                    {{else}}
+
+                    <a target="_blank" class="float-right" href="{{values.appPassword_instructions}}" tabindex="-1"
+                        data-toggle="popover" data-trigger="hover" data-title="{{_ 'Application Password' }}"
+                        data-content="{{_ '%s accounts require to use an application password for %s.' values.appPassword_provider "
+                        IMAP" }}">{{_ 'Instructions' }}</a>
+
+                    <label for="imap_auth_pass">
+                        {{_ "Application Password" }}
+                    </label>
+
+                    {{/unless}}
+
+                    </label>
                     <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
                         id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
                         autocomplete="off" required tabindex="2" />
@@ -81,7 +107,27 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="smtp_auth_pass">{{_ "Password" }}</label>
+
+                    {{#unless values.appPassword_required}}
+
+                    <label for="smtp_auth_pass">
+                        {{_ "Password" }}
+                    </label>
+
+                    {{else}}
+
+                    <a target="_blank" class="float-right" href="{{values.appPassword_instructions}}" tabindex="-1"
+                        data-toggle="popover" data-trigger="hover" data-title="{{_ 'Application Password' }}"
+                        data-content="{{_ '%s accounts require to use an application password for %s.' values.appPassword_provider "
+                        SMTP" }}">{{_ 'Instructions' }}</a>
+
+                    <label for="smtp_auth_pass">
+                        {{_ "Application Password" }}
+                    </label>
+
+                    {{/unless}}
+
+
                     <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
                         id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
                         autocomplete="off" required tabindex="7" />
