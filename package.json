@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.26.9",
+    "version": "2.26.10",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
@@ -69,7 +69,7 @@
         "imapflow": "1.0.110",
         "ioredis": "5.2.3",
         "ipaddr.js": "2.0.1",
-        "joi": "17.6.2",
+        "joi": "17.6.3",
         "joi18n": "2.0.3",
         "jquery": "3.6.1",
         "js-beautify": "1.14.6",
