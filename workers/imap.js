@@ -123,7 +123,7 @@ class ConnectionHandler {
             redis,
             account,
             secret,
-            esClient: await getESClient(accountLogger)
+            esClient: await getESClient(logger)
         });
 
         this.accounts.set(account, accountObject);
