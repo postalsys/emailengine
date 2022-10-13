@@ -61,7 +61,7 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const tokens = require('./lib/tokens');
 
-const { QueueScheduler } = require('bullmq');
+const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
 
@@ -193,9 +193,7 @@ const licenseInfo = {
     type: packageData.license
 };
 
-let notifyScheduler;
-let submitScheduler;
-let documentsScheduler;
+const queueEvents = {};
 
 let preparedSettings = false;
 const preparedSettingsString = readEnvValue('EENGINE_SETTINGS') || config.settings;
@@ -1372,16 +1370,16 @@ async function collectMetrics() {
 
 const closeQueues = cb => {
     let proms = [];
-    if (notifyScheduler) {
-        proms.push(notifyScheduler.close());
+    if (queueEvents.notify) {
+        proms.push(queueEvents.notify.close());
     }
 
-    if (submitScheduler) {
-        proms.push(submitScheduler.close());
+    if (queueEvents.submit) {
+        proms.push(queueEvents.submit.close());
     }
 
-    if (documentsScheduler) {
-        proms.push(documentsScheduler.close());
+    if (queueEvents.documents) {
+        proms.push(queueEvents.documents.close());
     }
 
     if (!proms.length) {
@@ -1655,9 +1653,9 @@ startApplication()
         upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
         upgradeCheckTimer.unref();
 
-        notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
-        submitScheduler = new QueueScheduler('submit', Object.assign({}, queueConf));
-        documentsScheduler = new QueueScheduler('documents', Object.assign({}, queueConf));
+        queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
+        queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
+        queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });
