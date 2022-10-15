@@ -414,6 +414,9 @@ async function init() {
                 serverOptions.key = certificateData.privateKey;
             }
         }
+    } else {
+        serverOptions.disabledCommands = ['STARTTLS'];
+        serverOptions.hideSTARTTLS = true;
     }
 
     server = new SMTPServer(serverOptions);
