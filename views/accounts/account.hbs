@@ -226,6 +226,41 @@
 
         </dl>
 
+        <h5>Server info</h5>
+
+        <dl class="row">
+
+            {{#if account.imapServerInfo.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{account.imapServerInfo.name}}</dd>
+            {{/if}}
+
+            {{#if account.imapServerInfo.vendor}}
+            <dt class="col-sm-3">Vendor</dt>
+            <dd class="col-sm-9">{{account.imapServerInfo.vendor}}</dd>
+            {{/if}}
+
+            {{#if account.imapServerInfo.version}}
+            <dt class="col-sm-3">Version</dt>
+            <dd class="col-sm-9">{{account.imapServerInfo.version}}</dd>
+            {{/if}}
+
+            {{#if account.imapServerInfo.[support-url]}}
+            <dt class="col-sm-3">Support URL</dt>
+            <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}"
+                    target="_blank">{{account.imapServerInfo.[support-url]}}</a></dd>
+            {{/if}}
+
+            <dt class="col-sm-3">Capabilities</dt>
+            <dd class="col-sm-9">
+                {{#each account.imapServerInfo.capabilities}}
+                <span data-toggle="tooltip" data-placement="top" title="{{@this}}"
+                    style="cursor: default;">{{@this}}</span>
+                {{/each}}
+            </dd>
+
+        </dl>
+
     </div>
 </div>
 
