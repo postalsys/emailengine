@@ -38,8 +38,30 @@
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">webhooksEnabled</a>]
+                </div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.webhooksEnabled}}is-invalid{{/if}}"
+                    id="webhooks_enabled" name="webhooksEnabled" {{#if values.webhooksEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="webhooks_enabled">Enable webhooks</label>
+                {{#if errors.webhooksEnabled}}
+                <span class="invalid-feedback">{{errors.webhooksEnabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If enabled, EmailEngine makes POST requests with a JSON payload
+                    against all matching webhook targets.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Webhook settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Default webhook</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -51,29 +73,11 @@
                     <a class="dropdown-item webhooks-status" href="#" id="test-payload-btn">
                         <i class="fas fa-cloud-upload-alt fa-sm"></i> <span>Send test webhook</span>
                     </a>
-
                 </div>
             </div>
         </div>
 
         <div class="card-body">
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">webhooksEnabled</a>]
-                </div>
-
-                <input type="checkbox"
-                    class="form-check-input webhooks-status {{#if errors.webhooksEnabled}}is-invalid{{/if}}"
-                    id="webhooks_enabled" name="webhooksEnabled" {{#if values.webhooksEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="webhooks_enabled">Enable webhooks</label>
-                {{#if errors.webhooksEnabled}}
-                <span class="invalid-feedback">{{errors.webhooksEnabled}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Webhooks are automatically disabled if the registered webhook URL
-                    responds with a 410 response code.</small>
-            </div>
-
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">webhooks</a>]
@@ -89,18 +93,12 @@
                 {{#if errors.webhooks}}
                 <span class="invalid-feedback">{{errors.webhooks}}</span>
                 {{/if}}
-                <small class="form-text text-muted">EmailEngine makes a POST request with a JSON payload against this
-                    URL.</small>
+                <small class="form-text text-muted">This is the default webhook target that matches all events selected
+                    below. Each account can have its specific webhook URL set; in that case, the default webhook URL is
+                    ignored for such an account, and the account-specific URL is used instead. Leave it empty to
+                    disable.</small>
             </div>
 
-        </div>
-    </div>
-
-    <div class="card mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Events</h6>
-        </div>
-        <div class="card-body">
             <p>Select the event types you want to receive webhook notifications for. You should avoid selecting all the
                 events if you have a lot of accounts registered, or you might fill the event queue in memory.</p>
 
@@ -202,8 +200,7 @@
 
             <p>By default, only message metadata without any text content is included in the webhook payload for new
                 emails. If needed, you can configure EmailEngine to include plaintext and HTML content in the
-                payload as
-                well.</p>
+                payload as well.</p>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"

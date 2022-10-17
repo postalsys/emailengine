@@ -18,7 +18,6 @@
     font-size: 0.8em;
 }
 
-
 .code-editor {
     width: 100%;
     height: 20rem;
@@ -26,6 +25,12 @@
     border-radius: 3px;
 }
 
+.code-editor-low {
+    width: 100%;
+    height: 10rem;
+    border: 1px solid #f8f8f8;
+    border-radius: 3px;
+}
 
 input.form-control::placeholder, textarea.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
     color: #AAA;
@@ -47,4 +52,37 @@ input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-plac
 
 .certinfo dt, .certinfo dd {
     font-size: 0.8rem;
+}
+
+.editor-embed-block {
+    text-align: left;
+    padding-top: 0;
+    margin-top: -2px;
+}
+.editor-embed-content {
+    font-weight: 100;
+    font-family: helvetica;
+    font-size: 13px;
+    display: inline-block;
+    padding: 2px 10px;
+    background: #fefefe;
+    border: 1px solid #f8f8f8;
+    border-top: none;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    text-shadow: 0px 1px 0px rgba(255, 255, 255, 1);
+    text-decoration: none;
+}
+
+.editor-embed-content-left {
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 0;
+    margin-right: -4px;
+}
+
+.editor-embed-content-right {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+    border-left: 0;
+    margin-left: 0;
 }

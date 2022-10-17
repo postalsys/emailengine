@@ -1,0 +1,239 @@
+[
+    {
+        "key": "messageNew",
+        "name": "messageNew – message received",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "testaccount",
+            "date": "2022-10-17T06:42:25.056Z",
+            "path": "INBOX",
+            "specialUse": "\\Inbox",
+            "event": "messageNew",
+            "data": {
+                "id": "AAAADAAABy4",
+                "uid": 1838,
+                "path": "INBOX",
+                "date": "2022-10-17T06:42:07.000Z",
+                "flags": [],
+                "unseen": true,
+                "size": 549725,
+                "subject": "See on proovikiri 🤡",
+                "from": {
+                    "name": "Andris Reinman",
+                    "address": "andris.reinman@gmail.com"
+                },
+                "replyTo": [
+                    {
+                        "name": "Andris Reinman",
+                        "address": "andris.reinman@gmail.com"
+                    }
+                ],
+                "sender": {
+                    "name": "Andris Reinman",
+                    "address": "andris.reinman@gmail.com"
+                },
+                "to": [
+                    {
+                        "name": "andris",
+                        "address": "andris@example.com"
+                    }
+                ],
+                "attachments": [
+                    {
+                        "id": "AAAADAAABy4y",
+                        "contentType": "image/png",
+                        "encodedSize": 546048,
+                        "filename": "Screenshot 2022-10-16 at 13.11.32.png",
+                        "embedded": false,
+                        "inline": false,
+                        "contentId": "<f_l9cesh3j0>"
+                    }
+                ],
+                "messageId": "<CAPacwgyZ1iZOe=wbQS0mMsZzvuC3rJg4gv3rfLucHTP09HMkzQ@mail.gmail.com>",
+                "headers": {
+                    "return-path": ["<andris.reinman@gmail.com>"],
+                    "delivered-to": ["andris@example.com"],
+                    "received": [
+                        "from mail-oi1-f172.google.com (mail-oi1-f172.google.com [209.85.167.172]) (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits)) (No client certificate requested) by uvn-67-33.tll01.zonevs.eu (Postfix) with ESMTPS id EAA038220E for <andris@example.com>; Mon, 17 Oct 2022 09:42:21 +0300 (EEST)",
+                        "by mail-oi1-f172.google.com with SMTP id p127so10478619oih.9 for <andris@example.com>; Sun, 16 Oct 2022 23:42:21 -0700 (PDT)"
+                    ],
+                    "authentication-results": [
+                        "uvn-67-33.tll01.zonevs.eu; dkim=pass reason=\"2048-bit key; insecure key\" header.d=gmail.com header.i=@gmail.com header.b=b2ulrUw6; dkim-adsp=pass; dkim-atps=neutral"
+                    ],
+                    "dkim-signature": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20210112; h=to:subject:message-id:date:from:mime-version:from:to:cc:subject :date:message-id:reply-to; bh=R48heWmmUE1QeHul/M3PSSvrO0cJVJYsPWYTsQ17vCQ=; b=b2ulrUw60eZ9eYxhl4B0Xu+mxwtvrHm0BFhJFtbzRqfkl/5KgVbTql60N+4HLKFHhL S5kJ0CUpgCA05nIeL3yYfPM2ro3C6jTSUj5zr7c3Jq/M0UUH86FUDHos+jfdrSWeQaT+ vD0Og+MMbvNouNPp59RX0kVF4l3xwqlXhUDWON+mAlZjn0bq7PKpg+JJLOtFCU/msnEr Z0Ac8YnUzQWw05j0NmUXsSGKlyUQRnWEuyGBdi85z2mqU7SZ9A1DDMU2a9kjSxwEsaaU UWZ3KefikuaEzxxyqNAEtx1F3lkBYSQh73y5B9gaoIls/NHpr31k0u/Yxs4cV9fMNvuN +67A=="
+                    ],
+                    "x-google-dkim-signature": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20210112; h=to:subject:message-id:date:from:mime-version:x-gm-message-state :from:to:cc:subject:date:message-id:reply-to; bh=R48heWmmUE1QeHul/M3PSSvrO0cJVJYsPWYTsQ17vCQ=; b=jqi+o1yZ50Wj9vrWbrMP0ObdogQyjeNB+rNdO2qFlxDvL4dG+GDF/aOVbp3rvHCYb2 HlU2EkhHvb+V5+JrzOYGrjuW6RLwSgB/9Qv2lcmGSLR3j9Tc5W2YMnH94WQhay2P1cSp DY0hS2Jw0VwNRoahDEKoCZ+Zcc61kUv05+3B6spKWccZ9jq9wpwSmxDQrfZyKaoVfV+6 Jj1GUipj/MNm/avudYHSQswxB/hRNU6dmLk3hhO71rDB6NlxKGTshaoKl92h5oCQmydA 1VCxQE7xgmis/KVQ9UwbTAEFgR49l7rP2zSPiDaGvvKOQ5RSQQHC5WoneuTUzSBGgI/q jjZg=="
+                    ],
+                    "x-gm-message-state": ["ACrzQf17KI+R6gA33tErF8KYciRGVxJ64H+IqBSvG1M1L7sX9ca0Xvo1 pUYLNhoB/RvT0npiYaKKj7L3Iqy6irfdFl6eqbA5dS9qdSQ="],
+                    "x-google-smtp-source": ["AMsMyM6yUaKF5rRDfLG/ZO66xWfqSDV8eMjK9lgOFtsvELX56882YT2017iHocdd7OeRZ3OZP13w8yU0Uy7nOT6306s="],
+                    "x-received": [
+                        "by 2002:aca:de41:0:b0:355:2605:fed1 with SMTP id v62-20020acade41000000b003552605fed1mr4715242oig.47.1665988938752; Sun, 16 Oct 2022 23:42:18 -0700 (PDT)"
+                    ],
+                    "mime-version": ["1.0"],
+                    "from": ["Andris Reinman <andris.reinman@gmail.com>"],
+                    "date": ["Mon, 17 Oct 2022 09:42:07 +0300"],
+                    "message-id": ["<CAPacwgyZ1iZOe=wbQS0mMsZzvuC3rJg4gv3rfLucHTP09HMkzQ@mail.gmail.com>"],
+                    "subject": ["=?UTF-8?Q?See_on_proovikiri_=F0=9F=A4=A1?="],
+                    "to": ["andris <andris@example.com>"],
+                    "content-type": ["multipart/mixed; boundary=\"000000000000e5054305eb354628\""]
+                },
+                "text": {
+                    "id": "AAAADAAABy6TkaMxLjGRozEuMpA",
+                    "encodedSize": {
+                        "plain": 34,
+                        "html": 66
+                    }
+                },
+                "seemsLikeNew": true
+            }
+        }
+    },
+    {
+        "key": "messageUpdated",
+        "name": "messageUpdated – marked as Seen",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "testaccount",
+            "date": "2022-10-17T06:43:46.195Z",
+            "path": "INBOX",
+            "specialUse": "\\Inbox",
+            "event": "messageUpdated",
+            "data": { "id": "AAAADAAABy4", "uid": 1838, "changes": { "flags": { "added": ["\\Seen"], "value": ["\\Seen"] } } }
+        }
+    },
+    {
+        "key": "messageDeleted",
+        "name": "messageDeleted – message was deleted",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "testaccount",
+            "date": "2022-10-17T06:44:14.660Z",
+            "path": "INBOX",
+            "specialUse": "\\Inbox",
+            "event": "messageDeleted",
+            "data": { "id": "AAAADAAABy4", "uid": 1838 }
+        }
+    },
+    {
+        "key": "messageSent",
+        "name": "messageSent – message was relayed to SMTP server",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "testaccount",
+            "date": "2022-10-17T06:46:26.954Z",
+            "event": "messageSent",
+            "data": {
+                "messageId": "<305eabf4-9538-2747-acec-dc32cb651a0e@example.com>",
+                "response": "250 2.0.0 Ok: queued as 9441D8220E",
+                "queueId": "183e4b18f0ffe977476",
+                "envelope": { "from": "andris@example.com", "to": ["missing@ethereal.email"] }
+            }
+        }
+    },
+    {
+        "key": "messageBounce",
+        "name": "messageBounce –  a bounce email was received",
+        "content": {
+            "serviceUrl": "https://localdev.kreata.ee",
+            "account": "testaccount",
+            "date": "2022-10-17T06:46:29.436Z",
+            "event": "messageBounce",
+            "data": {
+                "bounceMessage": "AAAAAQAABy8",
+                "recipient": "missing@ethereal.email",
+                "action": "failed",
+                "response": { "source": "smtp", "message": "550 No such user here", "status": "5.0.0" },
+                "mta": "mx.ethereal.email",
+                "queueId": "9441D8220E",
+                "messageId": "<305eabf4-9538-2747-acec-dc32cb651a0e@example.com>",
+                "messageHeaders": {
+                    "return-path": ["<andris@example.com>"],
+                    "received": [
+                        "from emailengine.srv.dev (srv-01.srv.dev [141.94.68.31])\r\n\t(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))\r\n\t(No client certificate requested)\r\n\t(Authenticated sender: andris@example.com)\r\n\tby uvn-67-33.tll01.zonevs.eu (Postfix) with ESMTPSA id 9441D8220E\r\n\tfor <missing@ethereal.email>; Mon, 17 Oct 2022 09:46:26 +0300 (EEST)"
+                    ],
+                    "dkim-signature": [
+                        "v=1; a=rsa-sha256; c=relaxed/simple; d=example.com; s=default;\r\n\tt=1665989186; bh=MVuXW9A1pf6LI/KzsMmIVvjzG8yUij+Kh4uM8TR4g0s=;\r\n\th=From:To:Subject:Date;\r\n\tb=52NDCUhL0Q48mmBA7vLZkN4cGj6DpwexWXsGtS3mw4mRcU8siwSLpUu06suHgqB6o\r\n\t NdMexiz0Rc3sSuVRNDttCBGa1KA8yFgfW7P5Ynw1V/m4Pl05l9nIrIkHKalixYjw/7\r\n\t texO6zW36puvkaaQvZMtWqKKasVMZEj3Ax0lyjYw="
+                    ],
+                    "content-type": ["multipart/alternative;\r\n boundary=\"--_NmP-96ee253fdf704e6a-Part_1\""],
+                    "from": ["Andris Ekiri <andris@example.com>"],
+                    "to": ["Missing Accoint <missing@ethereal.email>"],
+                    "subject": ["Test message"],
+                    "message-id": ["<305eabf4-9538-2747-acec-dc32cb651a0e@example.com>"],
+                    "date": ["Mon, 17 Oct 2022 06:46:25 +0000"],
+                    "mime-version": ["1.0"]
+                }
+            }
+        }
+    },
+    {
+        "key": "trackOpen",
+        "name": "trackOpen – tracking beacon was loaded",
+        "content": {
+            "account": "testaccount",
+            "date": "2022-10-17T06:56:01.430Z",
+            "event": "trackOpen",
+            "data": {
+                "messageId": "<0ee381d9-581a-2a57-6038-15e64c76f108@example.com>",
+                "remoteAddress": "127.0.0.1",
+                "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+            }
+        }
+    },
+    {
+        "key": "trackClick",
+        "name": "trackClick – click tracking beacon was loaded",
+        "content": {
+            "account": "testaccount",
+            "date": "2022-10-17T06:56:27.882Z",
+            "event": "trackClick",
+            "data": {
+                "messageId": "<0ee381d9-581a-2a57-6038-15e64c76f108@example.com>",
+                "url": "http://kreata.ee",
+                "remoteAddress": "127.0.0.1",
+                "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36"
+            }
+        }
+    },
+    {
+        "key": "authenticationSuccess",
+        "name": "authenticationSuccess – IMAP session was established",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "163",
+            "date": "2022-10-17T06:49:22.157Z",
+            "event": "authenticationSuccess",
+            "data": { "user": "andris@example.com" }
+        }
+    },
+    {
+        "key": "messageComplaint",
+        "name": "messageComplaint",
+        "content": {
+            "serviceUrl": "https://emailengine.srv.dev",
+            "account": "testaccount",
+            "date": "2022-10-17T07:06:11.697Z",
+            "event": "messageComplaint",
+            "data": {
+                "complaintMessage": "AAAAAQAABzE",
+                "arf": {
+                    "source": "Hotmail",
+                    "feedbackType": "abuse",
+                    "abuseType": "complaint",
+                    "originalMailFrom": "andris.reinman@gmail.com",
+                    "originalRcptTo": ["andris.reinman@hotmail.com"],
+                    "sourceIp": "127.0.0.1",
+                    "arrivalDate": "2022-10-17T07:06:35.021Z"
+                },
+                "headers": {
+                    "messageId": "<57f34982-43cc-6534-40f9-0f72f1c8a158@gmail.com>",
+                    "from": "andris.reinman@gmail.com",
+                    "to": ["andris.reinman@hotmail.com"],
+                    "subject": "Don't let your brand idea die!",
+                    "date": "2022-10-17T07:06:34.000Z"
+                }
+            }
+        }
+    }
+]

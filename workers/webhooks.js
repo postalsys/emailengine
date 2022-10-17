@@ -267,6 +267,8 @@ const notifyWorker = new Worker(
                 status: 'success'
             });
         } catch (err) {
+            /*
+            // do not disable by default
             if (err.status === 410) {
                 // disable webhook
                 logger.error({
@@ -285,7 +287,7 @@ const notifyWorker = new Worker(
                 await settings.set('webhooksEnabled', false);
                 return;
             }
-
+            */
             logger.error({
                 msg: 'Failed posting webhook',
                 action: 'webhook',
