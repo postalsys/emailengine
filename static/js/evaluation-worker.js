@@ -3,7 +3,6 @@
 'use strict';
 
 onmessage = e => {
-    console.log('Message received from main script', e.data);
     try {
         let fn = new Function('payload', e.data.code);
         let result = fn(e.data.payload);
