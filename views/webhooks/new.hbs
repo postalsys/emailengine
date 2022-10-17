@@ -157,7 +157,7 @@
 
             let fn = new Function('payload', filterVal);
             filtered = fn(testPayload.content)
-            updateFilterResult(null, filtered);
+            updateFilterResult(null, filtered === true);
         } catch (err) {
             updateFilterResult(err);
         }
@@ -166,7 +166,7 @@
             try {
                 let fn = new Function('payload', mapVal);
                 mapping = fn({ data: {} })
-                updateFilterResult(null, mapping);
+                updateMapResult(null, mapping);
             } catch (err) {
                 updateMapResult(err);
             }

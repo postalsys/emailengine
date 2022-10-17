@@ -38,27 +38,34 @@
 
         <div class="form-group">
             <label for="editor-fn">Filter function</label>
+            <div style="line-height: 1; margin-bottom: 10px;">
+                <small>JavaScript code to determine if the webhook should be sent. If the code evaluates to
+                    <code>true</code> then the webhook is sent, otherwise it is skipped.
+                    The script includes <code>payload</code> as a global variable that contains the webhook
+                    payload.</small>
+            </div>
             <div id="editor-fn" class="code-editor"></div>
             <div class="editor-embed-block">
                 <div class="editor-embed-content editor-embed-content-left">
                     <a href="#" id="test-payload-btn">Set test payload</a>
                 </div>
                 <div class="editor-embed-content editor-embed-content-right">
-                    <em>Evaluation
-                        result:</em>
+                    Evaluation result:
                     <span id="filter-res" class="evalres text-info">no match</span>
                 </div>
             </div>
-            <small>JavaScript code to determine if the webhook should be sent. If the code evaluates to
-                <code>true</code> then the webhook is sent, otherwise it is skipped.
-                The script includes <code>payload</code> as a global variable that contains the webhook payload.</small>
+
         </div>
 
         <div class="form-group">
             <label for="editor-map">Map function</label>
+            <div style="line-height: 1; margin-bottom: 10px;">
+                <small>JavaScript code to modify webhook payload output. Some services might expect incoming data using
+                    a specific format. Whatever is returned by this function will be used as the webhook
+                    payload.</small>
+            </div>
+
             <div id="editor-map" class="code-editor"></div>
-            <small>JavaScript code to modify webhook payload. Some services might expect incoming data using a specific
-                format. Whatever is returned by this function will be used as the webhook payload.</small>
         </div>
 
     </div>
