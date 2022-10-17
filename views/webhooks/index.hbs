@@ -19,9 +19,6 @@
             <thead class="">
                 <tr>
                     <th class="p-0">
-                        <div class="p-2">ID</div>
-                    </th>
-                    <th class="p-0">
                         <div class="p-2">Name</div>
                     </th>
                     <th class="p-0">
@@ -36,12 +33,6 @@
             <tbody>
                 {{#each webhooks}}
                 <tr>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/webhooks/webhook/{{id}}" class="stretched-link"></a>
-                            {{id}}
-                        </div>
-                    </td>
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/webhooks/webhook/{{id}}"
