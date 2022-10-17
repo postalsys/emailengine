@@ -61,6 +61,8 @@
 
 <script>
 
+    const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
+
     const editorFn = ace.edit("editor-fn", {
         enableBasicAutocompletion: true,
         enableSnippets: true,
@@ -143,6 +145,38 @@
 
     }
 
+    evaluationWorker.onmessage = e => {
+        const { type, result, error } = e && e.data || {};
+        switch (type) {
+            case 'filter':
+                if (!error) {
+                    updateFilterResult(null, result === true);
+
+                    if (result === true) {
+                        try {
+                            evaluationWorker.postMessage({ type: 'map', code: mapVal, payload: testPayload.content });
+                        } catch (err) {
+                            updateMapResult(err);
+                        }
+                    } else {
+                        updateMapResult(false);
+                    }
+
+                } else {
+                    updateFilterResult(new Error(error));
+
+                }
+                break;
+            case 'map':
+                if (error) {
+                    updateMapResult(null, result);
+                } else {
+                    updateMapResult(new Error(error));
+                }
+                break;;
+        }
+    }
+
     const updateExampleResult = () => {
         const filterVal = editorFn.getValue();
         const mapVal = editorMap.getValue();
@@ -154,26 +188,12 @@
             if (testPayload.error) {
                 throw testPayload.error;
             }
-
-            let fn = new Function('payload', filterVal);
-            filtered = fn(testPayload.content)
-            updateFilterResult(null, filtered === true);
+            evaluationWorker.postMessage({
+                type: 'filter', code: filterVal, payload: testPayload.content
+            });
         } catch (err) {
             updateFilterResult(err);
         }
-
-        if (filtered) {
-            try {
-                let fn = new Function('payload', mapVal);
-                mapping = fn({ data: {} })
-                updateMapResult(null, mapping);
-            } catch (err) {
-                updateMapResult(err);
-            }
-        } else {
-            updateMapResult(false);
-        }
-
     }
 
     let validateTimer = false;
