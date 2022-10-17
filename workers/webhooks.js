@@ -227,7 +227,6 @@ const notifyWorker = new Worker(
 
             try {
                 if (customRoute) {
-                    // TODO: clear webhook error for route
                     await redis.hset(Webhooks.getWebhooksContentKey(), `${customRoute.id}:webhookErrorFlag`, JSON.stringify({}));
                 } else if (accountWebhooks) {
                     await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));

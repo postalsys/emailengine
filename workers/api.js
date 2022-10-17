@@ -937,8 +937,6 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/open.gif',
         async handler(request, h) {
-            // TODO: track an open
-
             let data = Buffer.from(request.query.data, 'base64url').toString();
             let serviceSecret = await settings.get('serviceSecret');
             if (serviceSecret) {
