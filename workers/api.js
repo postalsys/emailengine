@@ -8,6 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
+const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const {
     getByteSize,
@@ -74,7 +75,7 @@ const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
 
-const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
+const { redis, REDIS_CONF, documentsQeueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -284,7 +285,10 @@ async function sendWebhook(account, event, data) {
         event
     });
 
+    let serviceUrl = (await settings.get('serviceUrl')) || true;
+
     let payload = {
+        serviceUrl,
         account,
         date: new Date().toISOString()
     };
@@ -297,16 +301,7 @@ async function sendWebhook(account, event, data) {
         payload.data = data;
     }
 
-    let queueKeep = (await settings.get('queueKeep')) || true;
-    await notifyQueue.add(event, payload, {
-        removeOnComplete: queueKeep,
-        removeOnFail: queueKeep,
-        attempts: 10,
-        backoff: {
-            type: 'exponential',
-            delay: 5000
-        }
-    });
+    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
 async function onCommand(command) {
