@@ -112,12 +112,12 @@
         <div class="tab-content mt-3" id="myTabContent">
             <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
 
-                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.html}}</textarea>
+                <div id="html-preview" class="code-editor">{{template.content.html}}</div>
 
             </div>
             <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
 
-                <textarea class="form-control text-monospace" rows="10" readonly>{{template.content.text}}</textarea>
+                <div id="text-preview" class="code-editor">{{template.content.text}}</div>
 
             </div>
         </div>
@@ -134,7 +134,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete <strong>{{account.name}}</strong>? This action is not
+                <p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action is not
                     recoverable.</p>
             </div>
             <div class="modal-footer">
@@ -396,5 +396,30 @@
         }
 
         sendTestBtn.addEventListener('click', sendTestEmail);
+
+
+        const editorHtml = ace.edit("html-preview", {
+            showGutter: true
+        });
+
+        const editorText = ace.edit("text-preview", {
+            showGutter: true
+        });
+
+
+        editorHtml.setReadOnly(true);
+        editorHtml.setShowPrintMargin(false);
+        editorHtml.setHighlightActiveLine(false);
+
+        editorText.setReadOnly(true);
+        editorText.setShowPrintMargin(false);
+        editorText.setHighlightActiveLine(false);
+
+        editorHtml.setTheme("ace/theme/xcode");
+        editorHtml.session.setMode("ace/mode/handlebars");
+
+        editorText.setTheme("ace/theme/xcode");
+        editorText.session.setMode("ace/mode/handlebars");
+
     });
 </script>

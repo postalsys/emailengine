@@ -27,6 +27,9 @@
                     <th class="p-0">
                         <div class="p-2">Description</div>
                     </th>
+                    <th class="p-0">
+                        <div class="p-2">Enabled</div>
+                    </th>
                 </tr>
             </thead>
 
@@ -51,6 +54,16 @@
                         </div>
                     </td>
 
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/webhooks/webhook/{{id}}" class="stretched-link"></a>
+                            {{#if enabled}}
+                            <i class="fas fa-check-circle text-success"></i>
+                            {{else}}
+                            <i class="fas fa-times-circle text-warning"></i>
+                            {{/if}}
+                        </div>
+                    </td>
                 </tr>
                 {{/each}}
             </tbody>
