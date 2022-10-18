@@ -9,6 +9,12 @@
 
 {{> webhooks_header}}
 
+
+{{#unless webhooksEnabled}}
+<div class="alert alert-warning mt-3"><strong>NB!</strong> Webhook processing is currently disabled for EmailEngine.
+    Enable webhooks on the configuration page <a href="/admin/config/webhooks">here</a>.</div>
+{{/unless}}
+
 <p>Webhook Routing allows you to define custom conditions that trigger a webhook against a specific target.</p>
 
 <div class="card border-left-info shadow mt-4 mb-4">
