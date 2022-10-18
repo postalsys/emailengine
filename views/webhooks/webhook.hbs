@@ -56,13 +56,16 @@
             {{#if webhook.targetUrlShort}}
             <dt class="col-sm-3">Webhook Target</dt>
             <dd class="col-sm-9">
-                <em>{{webhook.targetUrlShort}}</em>
+                <em data-toggle="tooltip" data-placement="top" style="cursor:default"
+                    title="{{webhook.targetUrl}}">{{webhook.targetUrlShort}}</em>
             </dd>
             {{/if}}
 
             <dt class="col-sm-3">Trigger count</dt>
             <dd class="col-sm-9">
-                <span class="badge badge-pill badge-light">{{webhook.tcount}}</span>
+                <span class="badge badge-pill badge-light" data-toggle="tooltip" data-placement="top"
+                    title="How many times this route has been triggered"
+                    style="cursor:default">{{webhook.tcount}}</span>
             </dd>
 
             <dt class="col-sm-3">Status</dt>
