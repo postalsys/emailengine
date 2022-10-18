@@ -1,0 +1,103 @@
+<input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
+<input type="hidden" id="map-content-element" name="contentMapJson" value="{{values.contentMapJson}}">
+
+<div class="card mb-4">
+    <div class="card-body">
+
+
+        <div class="form-group">
+            <label for="inputName">Name</label>
+            <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" name="name" id="inputName"
+                aria-describedby="inputNameHelp" value="{{values.name}}" required>
+            {{#if errors.name}}
+            <span class="invalid-feedback">{{errors.name}}</span>
+            {{/if}}
+            <small id="inputNameHelp" class="form-text text-muted">Name for this routing.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="inputDescription">Description</label>
+            <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" name="description"
+                id="inputDescription" aria-describedby="inputDescriptionHelp" value="{{values.description}}">
+            {{#if errors.description}}
+            <span class="invalid-feedback">{{errors.description}}</span>
+            {{/if}}
+            <small id="inputDescriptionHelp" class="form-text text-muted">Description for this routing.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="inputTargetUrl">Target URL</label>
+            <input type="url" class="form-control {{#if errors.targetUrl}}is-invalid{{/if}}" name="targetUrl"
+                id="inputTargetUrl" aria-describedby="inputTargetUrlHelp" value="{{values.targetUrl}}"
+                placeholder="URL like &quot;https://myservice.com/imap/webhooks&quot;" required>
+            {{#if errors.targetUrl}}
+            <span class="invalid-feedback">{{errors.targetUrl}}</span>
+            {{/if}}
+            <small id="inputTargetUrlHelp" class="form-text text-muted">Webhook target URL for this routing.</small>
+        </div>
+
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                name="enabled" {{#if values.enabled}}checked{{/if}} />
+            <label class="form-check-label" for="enabled">Enable this Webhook Routing</label>
+            {{#if errors.enabled}}
+            <span class="invalid-feedback">{{errors.enabled}}</span>
+            {{/if}}
+            <small id="inputEnabledHelp" class="form-text text-muted">Webhook routings are not enabled by
+                default.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="editor-fn">Filter function</label>
+            <div style="line-height: 1; margin-bottom: 10px;">
+                <small>JavaScript code to determine if the webhook should be sent. If the code evaluates to
+                    <code>true</code> then the webhook is sent, otherwise it is skipped.
+                    The script includes <code>payload</code> as a global variable that contains the webhook
+                    payload.</small>
+            </div>
+            <div id="editor-fn" class="code-editor"></div>
+            <div class="editor-embed-block">
+                <div class="editor-embed-content editor-embed-content-left">
+                    <a href="#" id="test-payload-btn">Set test payload</a>
+                </div>
+                <div class="editor-embed-content editor-embed-content-right">
+                    Evaluation result:
+                    <span id="filter-res" class="evalres text-info">no match</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="form-group">
+            <label for="editor-map">Map function</label>
+            <div style="line-height: 1; margin-bottom: 10px;">
+                <small>JavaScript code to modify webhook payload output. Some services might expect incoming data using
+                    a specific format. Whatever is returned by this function will be used as the webhook
+                    payload.</small>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-7">
+                    <div id="editor-map" class="code-editor"></div>
+                    <div class="editor-embed-block">
+                        <div class="editor-embed-content">
+                            Mapping function
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-5">
+                    <div id="editor-map-preview" class="code-editor"></div>
+                    <div class="editor-embed-block">
+                        <div class="editor-embed-content editor-embed-content-left">
+                            Mapping preview
+                        </div>
+                        <div class="editor-embed-content editor-embed-content-right">
+                            <a href="#" id="test-send-btn">Send webhook preview</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

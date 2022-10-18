@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-arf-webhook
+            - webhook-routing
 
 name: Deploy test instance
 

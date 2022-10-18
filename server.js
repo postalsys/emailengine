@@ -25,6 +25,7 @@ const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
 const { readEnvValue, hasEnvValue } = require('./lib/tools');
+const { webhooks: Webhooks } = require('./lib/webhooks');
 const nodeFetch = require('node-fetch');
 const fetchCmd = global.fetch || nodeFetch;
 
@@ -51,7 +52,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const pathlib = require('path');
-const { redis, queueConf, notifyQueue } = require('./lib/db');
+const { redis, queueConf } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -521,7 +522,10 @@ let updateServerState = async (type, state, payload) => {
 };
 
 async function sendWebhook(account, event, data) {
+    let serviceUrl = (await settings.get('serviceUrl')) || true;
+
     let payload = {
+        serviceUrl,
         account,
         date: new Date().toISOString()
     };
@@ -534,16 +538,7 @@ async function sendWebhook(account, event, data) {
         payload.data = data;
     }
 
-    let queueKeep = (await settings.get('queueKeep')) || true;
-    await notifyQueue.add(event, payload, {
-        removeOnComplete: queueKeep,
-        removeOnFail: queueKeep,
-        attempts: 10,
-        backoff: {
-            type: 'exponential',
-            delay: 5000
-        }
-    });
+    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
 let spawnWorker = async type => {

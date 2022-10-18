@@ -8,6 +8,8 @@ const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
 const { getDuration, readEnvValue } = require('../lib/tools');
+const { webhooks: Webhooks } = require('../lib/webhooks');
+const settings = require('../lib/settings');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -32,11 +34,10 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const util = require('util');
-const { redis, notifyQueue, queueConf } = require('../lib/db');
+const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
@@ -103,7 +104,10 @@ async function notify(account, event, data) {
         event
     });
 
+    let serviceUrl = (await settings.get('serviceUrl')) || true;
+
     let payload = {
+        serviceUrl,
         account,
         date: new Date().toISOString()
     };
@@ -116,16 +120,7 @@ async function notify(account, event, data) {
         payload.data = data;
     }
 
-    let queueKeep = (await settings.get('queueKeep')) || true;
-    await notifyQueue.add(event, payload, {
-        removeOnComplete: queueKeep,
-        removeOnFail: queueKeep,
-        attempts: 10,
-        backoff: {
-            type: 'exponential',
-            delay: 5000
-        }
-    });
+    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
 const smtpLogger = {};
