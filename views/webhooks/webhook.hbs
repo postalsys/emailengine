@@ -11,6 +11,7 @@
 <div class="card mb-4">
     <div class="card-body">
 
+
         <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
@@ -23,10 +24,22 @@
                     title="Delete this Webhook Route" id="delete-btn" data-placement="top">
                     <i class="fas fa-trash-alt fa-fw"></i> Delete
                 </button>
-
             </div>
-
         </div>
+
+
+        {{#if webhook.webhookErrorFlag.message}}
+        <div class="mt-3 mb-3 alert alert-danger">
+            <p><strong>NB!</strong> The last attempted webhook failed with the response below.</p>
+            <hr>
+            <p class="mb-0">
+                <code>
+            {{webhook.webhookErrorFlag.message}}
+        </code>
+            </p>
+        </div>
+        {{/if}}
+
 
         <dl class="row">
 
@@ -40,18 +53,30 @@
             <dd class="col-sm-9">{{webhook.description}}</dd>
             {{/if}}
 
-            {{#if webhook.targetUrl}}
-            <dt class="col-sm-3">Target URL</dt>
+            {{#if webhook.targetUrlShort}}
+            <dt class="col-sm-3">Webhook Target</dt>
             <dd class="col-sm-9">
-                <a href="{{webhook.targetUrl}}" target="_blank">{{webhook.targetUrl}}</a>
+                <em>{{webhook.targetUrlShort}}</em>
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Enabled</dt>
-            <dd class="col-sm-9"><strong>{{#if webhook.enabled}}Yes{{else}}No{{/if}}</strong></dd>
+            <dt class="col-sm-3">Trigger count</dt>
+            <dd class="col-sm-9">
+                <span class="badge badge-pill badge-light">{{webhook.tcount}}</span>
+            </dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                <strong>
+                    {{#if webhook.enabled}}
+                    <span class="badge badge-success">Enabled</span>
+                    {{else}}
+                    <span class="badge badge-warning">Disabled</span>
+                    {{/if}}
+                </strong>
+            </dd>
 
         </dl>
-
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">

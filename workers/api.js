@@ -20,7 +20,7 @@ const {
     isEmail,
     getLogs,
     getWorkerCount,
-    assertPreconditions,
+    runPrechecks,
     matcher,
     readEnvValue,
     matchIp,
@@ -714,20 +714,21 @@ When making API calls remember that requests against the same account are queued
         },
         appendNext: true,
         redirectTo: '/admin/login',
-        validateFunc: async (request, session) => {
+
+        async validate(request, session) {
             const authData = await settings.get('authData');
             if (!authData) {
-                return { valid: true, credentials: { enabled: false } };
+                return { isValid: true, credentials: { enabled: false } };
             }
 
             const account = authData.user === session.user;
 
             if (!account) {
-                return { valid: false };
+                return { isValid: false };
             }
 
             return {
-                valid: true,
+                isValid: true,
                 credentials: {
                     enabled: true,
                     user: authData.user
@@ -5953,7 +5954,7 @@ When making API calls remember that requests against the same account are queued
             let currentCert = await certHandler.getCertificate(serviceDomain, true);
 
             try {
-                await assertPreconditions(redis);
+                await runPrechecks(redis);
                 assertPreconditionResult = false;
             } catch (err) {
                 assertPreconditionResult = Boom.boomify(err);

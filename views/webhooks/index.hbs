@@ -11,6 +11,22 @@
 
 <p>Webhook Routing allows you to define custom conditions that trigger a webhook against a specific target.</p>
 
+<div class="card border-left-info shadow mt-4 mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <p>
+                    Whenever an event happens, it is tested against the <em>filter function</em> of each webhook route.
+                    For matching routes, a distinct webhook is scheduled against the target URL of that route. Webhook
+                    payload for a route can be modified using the optional <em>mapping function</em>.
+                </p>
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
 
 {{#if webhooks}}
 <div class="card mt-4 mb-4">

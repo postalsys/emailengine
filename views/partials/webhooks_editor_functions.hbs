@@ -112,19 +112,19 @@
     const updateFilterResult = (err, result) => {
         let resultElm = document.getElementById('filter-res');
         if (err) {
-            resultElm.classList.remove('text-info', 'text-success');
+            resultElm.classList.remove('text-warning', 'text-success');
             resultElm.classList.add('text-danger');
             resultElm.textContent = `validation failed (${err.message})`
             return;
         }
 
         if (result) {
-            resultElm.classList.remove('text-info', 'text-danger');
+            resultElm.classList.remove('text-warning', 'text-danger');
             resultElm.classList.add('text-success');
             resultElm.textContent = `filter matches`
         } else {
             resultElm.classList.remove('text-success', 'text-danger');
-            resultElm.classList.add('text-info');
+            resultElm.classList.add('text-warning');
             resultElm.textContent = `no match`
         }
     }
@@ -140,7 +140,10 @@ ${err.message}
 \`\`\``);
         } else if (err === false) {
             editorMapPreview.session.setMode("ace/mode/markdown");
-            editorMapPreview.setValue('Filter function must return `true` to map the output');
+            editorMapPreview.setValue(`Filter function must return \`true\` to activate output mapping.
+
+Either modify the filter function or click on
+the *Set test payload* button to change the filter payload.`);
         } else {
             editorMapPreview.session.setMode("ace/mode/json");
             editorMapPreview.setValue(JSON.stringify(result, false, 2));
@@ -254,6 +257,38 @@ ${err.message}
     testPayloadBtn.addEventListener('click', e => {
         e.preventDefault();
         $('#setPayloadModal').modal('show');
+    });
+
+
+    const sendTestPayload = async () => {
+        const webhooks = document.getElementById('inputTargetUrl').value.trim();
+        const payload = editorMapPreview.getValue().trim();
+
+        const res = await fetch('/admin/config/webhooks/test', {
+            method: 'post',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                crumb: document.getElementById('crumb').value,
+                webhooks,
+                payload
+            })
+        })
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const data = await res.json();
+
+        return data;
+    }
+
+    const testSendBtn = document.getElementById('test-send-btn');
+    testSendBtn.addEventListener('click', e => {
+        e.preventDefault();
+        sendTestPayload().then(data => {
+            showToast(data.error ? data.error : (data.success ? 'Test payload sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
+        }).catch(err => {
+            showToast('Request failed\n' + err.message, 'alert-triangle');
+        })
     });
 
     let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value);
