@@ -1,6 +1,0 @@
-{
-    "yaml.schemas": {
-        "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yml",
-        "https://json.schemastore.org/github-workflow.json": "file:///Users/andris/Projects/emailengine/.github/workflows/deploy.yml"
-    }
-}
