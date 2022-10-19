@@ -85,10 +85,19 @@
                 <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
                     aria-selected="true">Filter function</a>
             </li>
+
             <li class="nav-item" role="presentation">
                 <a class="nav-link" id="map-tab" data-toggle="tab" href="#map" role="tab" aria-controls="map"
                     aria-selected="false">Map function</a>
             </li>
+
+            {{#if errorLog}}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab" aria-controls="errors"
+                    aria-selected="false">Error log</a>
+            </li>
+            {{/if}}
+
         </ul>
         <div class="tab-content mt-3" id="myTabContent">
             <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
@@ -101,6 +110,54 @@
                 <div id="map-preview" class="code-editor">{{webhook.content.map}}</div>
 
             </div>
+
+
+            <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+
+
+                <p>The following errors were thrown when executing the functions for this route. Only the most recent
+                    errors are shown.</p>
+
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Function</th>
+                            <th width="40%">Error</th>
+                            <th width="40%">Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each errorLog}}
+
+                        <tr>
+
+                            <td>
+                                <span class="relative-time" data-time="{{created}}"></span>
+                            </td>
+
+                            <td>
+                                <strong>{{type}}</strong>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{error}}</textarea>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                            </td>
+
+                        </tr>
+
+                        {{/each}}
+                    </tbody>
+
+                </table>
+
+            </div>
+
         </div>
     </div>
 </div>
@@ -179,5 +236,14 @@
                 }
             }
         });
+
+        let errorFields = document.querySelectorAll('.error-log-field');
+        for (let i = 0; i < errorFields.length; i++) {
+            let errorField = errorFields[i];
+            errorField.addEventListener('focus', e => {
+                errorField.select();
+            });
+        }
+
     })
 </script>
