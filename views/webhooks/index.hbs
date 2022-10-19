@@ -47,7 +47,10 @@
                         <div class="p-2">Description</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Enabled</div>
+                        <div class="p-2">Triggered</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Status</div>
                     </th>
                 </tr>
             </thead>
@@ -61,6 +64,7 @@
                                 class="stretched-link"></a><strong>{{name}}</strong>
                         </div>
                     </td>
+
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/webhooks/webhook/{{id}}" class="stretched-link"></a>{{description}}
@@ -69,11 +73,22 @@
 
                     <td class="p-0">
                         <div class="position-relative p-2">
+                            <a href="/admin/webhooks/webhook/{{id}}" class="stretched-link"></a>{{tcount}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
                             <a href="/admin/webhooks/webhook/{{id}}" class="stretched-link"></a>
                             {{#if enabled}}
-                            <i class="fas fa-check-circle text-success"></i>
+
+                            {{#if webhookErrorFlag.message}}
+                            <span class="badge badge-danger">Failing</span>
                             {{else}}
-                            <i class="fas fa-times-circle text-warning"></i>
+                            <span class="badge badge-success">Enabled</span>
+                            {{/if}}
+                            {{else}}
+                            <span class="badge badge-warning">Disabled</span>
                             {{/if}}
                         </div>
                     </td>

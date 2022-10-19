@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - webhook-routing
+            - webhook-exec-errors
 
 name: Deploy test instance
 
