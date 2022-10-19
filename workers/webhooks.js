@@ -113,8 +113,8 @@ const notifyWorker = new Worker(
 
         if (!customRoute) {
             // custom routes have their own mappings
-            let webhookEvents = await settings.get('webhookEvents');
-            if (webhookEvents && !webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
+            let webhookEvents = (await settings.get('webhookEvents')) || [];
+            if (!webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
                 logger.trace({
                     msg: 'Webhook event not in whitelist',
                     action: 'webhook',
