@@ -34,7 +34,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const util = require('util');
-const { redis, queueConf } = require('../lib/db');
+const { redis, queueConf, submitQueue } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
@@ -66,12 +66,14 @@ async function call(message, transferList) {
     return new Promise((resolve, reject) => {
         let mid = `${Date.now()}:${++mids}`;
 
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T5]');
             err.statusCode = 504;
             err.code = 'Timeout';
+            err.ttl = ttl;
             reject(err);
-        }, message.timeout || EENGINE_TIMEOUT);
+        }, ttl);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -203,6 +205,7 @@ const submitWorker = new Worker(
             let nextAttempt = job.attemptsMade < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
 
             queueEntry.job = {
+                id: job.id,
                 attemptsMade: job.attemptsMade,
                 attempts: job.opts.attempts,
                 nextAttempt: new Date(nextAttempt).toISOString()
@@ -231,6 +234,31 @@ const submitWorker = new Worker(
                 // ignore
             }
         } catch (err) {
+            try {
+                const submitJobEntry = await submitQueue.getJob(job.id);
+                if (submitJobEntry && submitJobEntry.progress && ['submitted', 'smtp-completed'].includes(submitJobEntry.progress.status)) {
+                    // SMTP transition succeeded, can accept even if the process yielded in error
+                    logger.trace({
+                        msg: 'Submitted queued message for delivery',
+                        action: 'submit',
+                        queue: job.queue.name,
+                        code: 'result_success',
+                        job: job.id,
+                        event: job.name,
+                        data: job.data,
+                        account: job.data.account,
+                        err
+                    });
+                    return;
+                }
+            } catch (err) {
+                logger.error({
+                    msg: 'Job listing failed',
+                    job: job.id,
+                    err
+                });
+            }
+
             logger.error({
                 msg: 'Message submission failed',
                 action: 'submit',
