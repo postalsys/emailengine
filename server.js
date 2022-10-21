@@ -278,6 +278,16 @@ const metrics = {
         labelNames: ['response', 'code']
     }),
 
+    imapBytesSent: new promClient.Counter({
+        name: 'imap_bytes_sent',
+        help: 'IMAP bytes sent'
+    }),
+
+    imapBytesReceived: new promClient.Counter({
+        name: 'imap_bytes_received',
+        help: 'IMAP bytes received'
+    }),
+
     webhooks: new promClient.Counter({
         name: 'webhooks',
         help: 'Webhooks sent',
