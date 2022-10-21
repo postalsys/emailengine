@@ -842,13 +842,14 @@ async function call(worker, message, transferList) {
     return new Promise((resolve, reject) => {
         let mid = `${Date.now()}:${++mids}`;
 
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T1]');
             err.statusCode = 504;
             err.code = 'Timeout';
-            err.payload = message;
+            err.ttl = ttl;
             reject(err);
-        }, message.timeout || EENGINE_TIMEOUT);
+        }, ttl);
 
         callQueue.set(mid, { resolve, reject, timer });
 

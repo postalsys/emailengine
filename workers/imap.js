@@ -603,12 +603,14 @@ class ConnectionHandler {
         return new Promise((resolve, reject) => {
             let mid = `${Date.now()}:${++this.mids}`;
 
+            let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
             let timer = setTimeout(() => {
                 let err = new Error('Timeout waiting for command response [T3]');
                 err.statusCode = 504;
                 err.code = 'Timeout';
+                err.ttl = ttl;
                 reject(err);
-            }, message.timeout || EENGINE_TIMEOUT);
+            }, ttl);
 
             this.callQueue.set(mid, { resolve, reject, timer });
             parentPort.postMessage({
