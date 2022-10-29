@@ -65,9 +65,9 @@
                         data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
                         style="cursor: default;">public pages</u>, e.g., for the <a
                         href="https://emailengine.app/hosted-authentication" target="_blank"
-                        referrerpolicy="no-referrer">hosted authentication</a>
+                        referrerpolicy="{{referrerPolicy}}">hosted authentication</a>
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md"
-                        target="_blank" referrerpolicy="no-referrer">See
+                        target="_blank" referrerpolicy="{{referrerPolicy}}">See
                         here</a>
                     if you would like to add an additional translation.</small>
             </div>
@@ -143,7 +143,7 @@
 
                 <div class="text-muted float-right code-link">[<a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="no-referrer">EENGINE_SECRET</a>]</div>
+                        referrerpolicy="{{referrerPolicy}}">EENGINE_SECRET</a>]</div>
 
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
@@ -157,7 +157,7 @@
                     <code>EENGINE_SECRET</code>
                     environment variable when starting EmailEngine to enable encryption. Read more <a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="no-referrer">from the
+                        referrerpolicy="{{referrerPolicy}}">from the
                         documentation</a>.</small>
             </div>
 
@@ -283,7 +283,7 @@
                 <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
                     through EmailEngine to track opens and clicks. You can also set this in the message level to
                     override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
-                        target="_blank" referrerpolicy="no-referrer">documentation</a> for details.<br />
+                        target="_blank" referrerpolicy="{{referrerPolicy}}">documentation</a> for details.<br />
                     <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
                     be publicly accessible for tracking to work.</small>
             </div>
@@ -327,8 +327,8 @@
                 <span class="invalid-feedback">{{errors.labsMailRu}}</span>
                 {{/if}}
                 <small class="form-text text-muted"><a href="https://oauth.mail.ru/docs" target="_blank"
-                        referrerpolicy="no-referrer">OAuth2 for
-                        Mail.ru</a> is disabled by default due to insufficient
+                        referrerpolicy="{{referrerPolicy}}">OAuth2 for Mail.ru</a> is disabled by default due to
+                    insufficient
                     testing. It might or might not work as intended. Make sure that your OAuth2 app has the required
                     email scopes.</small>
             </div>

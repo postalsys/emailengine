@@ -783,8 +783,14 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/',
-        handler: {
-            file: { path: pathlib.join(__dirname, '..', 'static', 'index.html'), confine: false }
+        async handler(request, h) {
+            return h.view(
+                'index',
+                {},
+                {
+                    layout: 'main'
+                }
+            );
         },
         options: {
             auth: false
@@ -6056,6 +6062,8 @@ When making API calls remember that requests against the same account are queued
 
             let licenseDetails = Object.assign({}, (request.app.licenseInfo && request.app.licenseInfo.details) || {});
 
+            let referrerPolicy = licenseDetails.trial ? 'origin' : 'no-referrer';
+
             if (licenseDetails.expires) {
                 let delayMs = new Date(licenseDetails.expires) - Date.now();
                 licenseDetails.expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
@@ -6090,6 +6098,7 @@ When making API calls remember that requests against the same account are queued
                 licenseDetails,
                 authEnabled: !!(authData && authData.password),
                 trialPossible: !(await settings.get('tract')),
+                referrerPolicy,
                 authData,
                 packageData,
                 systemAlerts,

@@ -28,9 +28,9 @@
                 {{#if isGeneral}}
                 <p class="mb-4">To upgrade EmailEngine to the latest version, download the latest version from the <a
                         href="https://emailengine.app/#downloads" target="_blank"
-                        referrerpolicy="no-referrer">EmailEngine's
-                        homepage</a>, replace the binary and
-                    restart the application.</p>
+                        referrerpolicy="{{referrerPolicy}}">EmailEngine's homepage</a>, replace the binary and restart
+                    the
+                    application.</p>
                 {{/if}}
 
             </div>
@@ -46,8 +46,9 @@
 <div class="card mt-4 mb-4">
     <div class="card-body">
         <p class="mb-4">To upgrade EmailEngine to the latest version, log in to your Render <a
-                href="https://dashboard.render.com/">Dashboard</a>, select EmailEngine and run a manual deploy as shown
-            on the screenshot below.
+                href="https://dashboard.render.com/" target="_blank" referrerpolicy="{{referrerPolicy}}">Dashboard</a>,
+            select
+            EmailEngine and run a manual deploy as shown on the screenshot below.
         </p>
         <p><img src="/static/preview/render.png" class="img-fluid img-thumbnail"></p>
     </div>

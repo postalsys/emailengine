@@ -28,23 +28,46 @@ if [ "$DOMAIN_NAME" = "-h" ]; then
     exit
 fi
 
+echo
+
+echo "NB! This install script works on public-facing servers, do not run it on local instances."
+echo "The installer tries to provision an HTTPS certificate, and the process will fail if the server
+is inaccessible from the public web.
+"
+read -n 1 -s -r -p "Press any key to continue..."
+echo "
+"
+
+if ! [ -x `command -v curl` ]; then
+    apt-get update
+    apt-get install curl -q -y
+    echo ""
+fi
+
 if [[ -z $DOMAIN_NAME ]]; then
 
     echo "Enter the domain name for your new EmailEngine installation."
     echo "(ex. example.com or test.example.com)"
+    echo "Leave emtpy to autogenerate a domain name."
 
     while [ -z "$DOMAIN_NAME" ]
     do
         #echo -en "\n"
         read -p "Domain/Subdomain name: " DOMAIN_NAME
+
+        if [ -z "$DOMAIN_NAME" ]
+        then
+            DOMAIN_NAME=$(curl --silent --fail -XPOST "https://api.nodemailer.com/autoassign" -H "Content-Type: application/json" -d '{
+                "prefix": "engine",
+                "version": "1",
+                "requestor": "install"
+            }')
+        fi
     done
 
 fi
 
-if ! [ -x `command -v curl` ]; then
-    apt-get update
-    apt-get install curl -q -y
-fi
+echo "Using the domain name \"${DOMAIN_NAME}\" for this installation."
 
 # Prepare Caddy
 apt install -y debian-keyring debian-archive-keyring apt-transport-https

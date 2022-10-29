@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="EmailEngine Homepage" />
+    <title>EmailEngine</title>
+
+    <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
+    <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/static/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
+    <link rel="manifest" href="/static/favicon/manifest.json" />
+    <link rel="icon" href="/favicon.ico" />
+
+    <link href="/static/bootstrap-4.6.0-dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/static/css/callout.css" rel="stylesheet" />
+    <link href="/static/css/emailengine.css" rel="stylesheet" />
+</head>
+
+<body class="d-flex flex-column h-100">
+    <main role="main" class="flex-shrink-0">
+
+        <div class="container mt-4">
+            <img src="/static/logo.png"
+                style="display: block; float: left; margin: 10px 10px 0 0; max-width: 32px; max-height: 32px" />
+
+            <h1>EmailEngine</h1>
+
+            {{> alerts}}
+
+            {{{content}}}
+
+
+        </div>
+    </main>
+
+    <footer class="footer mt-auto py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-8">
+                    <a href="{{packageData.homepage}}" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">EmailEngine</a>
+                    <span class="text-muted">&copy; 2020-{{currentYear}}</span>
+                    <a class="text-muted" href="mailto:info@postalsys.com" target="_blank">Postal Systems OÜ</a>.
+                    <!-- v{{packageData.version}}:{{licenseDetails.key}} -->
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+    <script src="/static/bootstrap-4.6.0-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+
+</html>

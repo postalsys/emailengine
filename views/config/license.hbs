@@ -51,7 +51,7 @@
 
                 <div>
                     <a href="https://postalsys.com/plans" class="btn btn-primary btn-icon-split" target="_blank"
-                        referrerpolicy="no-referrer">
+                        referrerpolicy="{{referrerPolicy}}">
                         <span class="icon text-white-50">
                             <i class="fas fa-arrow-right"></i>
                         </span>
@@ -73,7 +73,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <div class="float-right ml-4">
-            <a href="https://postalsys.com/licenses" target="_blank" referrerpolicy="no-referrer"
+            <a href="https://postalsys.com/licenses" target="_blank" referrerpolicy="{{referrerPolicy}}"
                 class="btn btn-primary btn-icon-split">
                 <span class="icon text-white-50">
                     <i class="fas fa-arrow-right"></i>
@@ -83,7 +83,7 @@
         </div>
         <p class="mb-4">
             License keys for EmailEngine can be provisioned from the Postal Systems' <a
-                href="https://postalsys.com/licenses" target="_blank" referrerpolicy="no-referrer">license
+                href="https://postalsys.com/licenses" target="_blank" referrerpolicy="{{referrerPolicy}}">license
                 central</a>
             (requires a paid subscription).
         </p>
@@ -151,7 +151,7 @@
 
             {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new license
                 key from the Postal Systems' <a href="https://postalsys.com/licenses" target="_blank"
-                    referrerpolicy="no-referrer">license
+                    referrerpolicy="{{referrerPolicy}}">license
                     central</a> (requires a paid subscription).</p>{{/if}}
 
             <form method="post" action="/admin/config/license">

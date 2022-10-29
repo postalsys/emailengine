@@ -18,7 +18,7 @@
                     </p>
                     <p>You can add email accounts by using the API endpoint for <a
                             href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
-                            referrerpolicy="no-referrer">registering
+                            referrerpolicy="{{referrerPolicy}}">registering
                             accounts</a> or the hosted authentication form.
                     </p>
                     <div>
@@ -198,7 +198,8 @@
             <li class="list-group-item">ImapFlow v{{stats.imapflow}}</li>
             {{#if stats.build.commit}}
             <li class="list-group-item">Code version: <a
-                    href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}">{{stats.build.commit}}</a>
+                    href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}">{{stats.build.commit}}</a>
             </li>
             {{/if}}
         </ul>
