@@ -35,6 +35,7 @@
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input or-else-all scope-entry" data-target="scope-list"
                             id="scopesAll" data-scope="*" name="scopesAll" {{#if values.scopesAll}}checked{{/if}} />
+                        <div class="text-muted float-right code-link">["*"]</div>
                         <label class="form-check-label" for="scopesAll">All
                             scopes</label>
                     </div>
@@ -44,6 +45,7 @@
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesAPI"
                             name="scopesAPI" data-scope="api" {{#if values.scopesAPI}}checked{{/if}} />
+                        <div class="text-muted float-right code-link">["api"]</div>
                         <label class="form-check-label" for="scopesAPI">API</label>
                     </div>
                 </li>
@@ -52,6 +54,7 @@
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesSMTP"
                             name="scopesSMTP" data-scope="smtp" {{#if values.scopesSMTP}}checked{{/if}} />
+                        <div class="text-muted float-right code-link">["smtp"]</div>
                         <label class="form-check-label" for="scopesSMTP">SMTP</label>
                     </div>
                 </li>
@@ -61,6 +64,7 @@
                         <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesImapProxy"
                             name="scopesImapProxy" data-scope="imap-proxy" {{#if
                             values.scopesImapProxy}}checked{{/if}} />
+                        <div class="text-muted float-right code-link">["imap-proxy"]</div>
                         <label class="form-check-label" for="scopesImapProxy">IMAP Proxy</label>
                     </div>
                 </li>
@@ -69,6 +73,7 @@
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesMetrics"
                             name="scopesMetrics" data-scope="metrics" {{#if values.scopesMetrics}}checked{{/if}} />
+                        <div class="text-muted float-right code-link">["metrics"]</div>
                         <label class="form-check-label" for="scopesMetrics">Metrics</label>
                     </div>
                 </li>
