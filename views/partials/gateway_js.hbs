@@ -55,6 +55,7 @@
 
             const payload = {
                 crumb: document.getElementById('crumb').value,
+                gateway: document.getElementById('gateway').value || '',
                 host: document.getElementById('host').value,
                 port: Number(document.getElementById('port').value) || 0,
                 user: document.getElementById('user').value || '',
