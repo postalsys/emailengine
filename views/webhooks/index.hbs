@@ -22,10 +22,13 @@
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
                 <p>
-                    Whenever an event happens, it is tested against the <em>filter function</em> of each webhook route.
-                    For matching routes, a distinct webhook is scheduled against the target URL of that route. Webhook
-                    payload for a route can be modified using the optional <em>mapping function</em>.
+                    EmailEngine tests all occurring events against <em>filter functions</em> of webhook routes. If such
+                    a filter matches, EmailEngine will post a webhook against the target URL of the matching route. If
+                    the webhook target requires the payload in a specific format, you can define a <em>mapping
+                        function</em> that modifies the payload before posting.
                 </p>
+                <p>Read more about using webhook routes <a href="https://docs.emailengine.app/low-code-integrations/"
+                        target="_blank" referrerpolicy="{{referrerPolicy}}">here</a>.</p>
             </div>
             <div class="col-auto">
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>
