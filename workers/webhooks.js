@@ -327,12 +327,7 @@ route: customRoute && customRoute.id,
     },
     Object.assign(
         {
-            concurrency: NOTIFY_QC,
-            limiter: {
-                max: 10,
-                duration: 1000,
-                groupKey: 'account'
-            }
+            concurrency: NOTIFY_QC
         },
         queueConf
     )

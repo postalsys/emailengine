@@ -457,12 +457,7 @@ if( ctx._source.bounces != null) {
     },
     Object.assign(
         {
-            concurrency: 1,
-            limiter: {
-                max: 10,
-                duration: 1000,
-                groupKey: 'account'
-            }
+            concurrency: 1
         },
         queueConf
     )
