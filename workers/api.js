@@ -129,6 +129,7 @@ const {
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
@@ -154,6 +155,10 @@ const API_PORT =
 const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
+
+// Max POST body size for message uploads
+// NB! the default for other requests is 1MB
+const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE')) || DEFAULT_MAX_BODY_SIZE;
 
 // CORS configuration for API requests
 // By default, CORS is not enabled
@@ -2849,9 +2854,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             payload: {
-                // allow message uploads up to 50MB
-                // TODO: should it be configurable instead?
-                maxBytes: 50 * 1024 * 1024
+                maxBytes: MAX_BODY_SIZE
             },
 
             description: 'Upload message',
@@ -3707,9 +3710,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             payload: {
-                // allow message uploads up to 50MB
-                // TODO: should it be configurable instead?
-                maxBytes: 50 * 1024 * 1024
+                maxBytes: MAX_BODY_SIZE
             },
 
             description: 'Submit message for delivery',
@@ -6295,6 +6296,7 @@ init()
             port: API_PORT,
             host: API_HOST,
             maxSize: MAX_ATTACHMENT_SIZE,
+            maxBodySize: MAX_BODY_SIZE,
             version: packageData.version
         });
     })
