@@ -158,7 +158,7 @@ const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (con
 
 // Max POST body size for message uploads
 // NB! the default for other requests is 1MB
-const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE')) || DEFAULT_MAX_BODY_SIZE;
+const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE') || config.api.maxBodySize) || DEFAULT_MAX_BODY_SIZE;
 
 // CORS configuration for API requests
 // By default, CORS is not enabled
