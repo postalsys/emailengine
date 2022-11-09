@@ -11,9 +11,9 @@
         "raw": "NODE_OPTIONS=--no-experimental-fetch EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
-        "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --omit=dev --legacy-peer-deps && rm -rf package-lock.json && ./update-info.sh",
-        "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
-        "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install",
+        "build-source": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && npm run licenses && rm -rf node_modules package-lock.json && npm install --omit=dev --legacy-peer-deps && rm -rf package-lock.json && ./update-info.sh",
+        "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install --legacy-peer-deps",
+        "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install --legacy-peer-deps",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses",
         "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -j -o translations/messages.pot"
