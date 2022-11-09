@@ -75,7 +75,7 @@ const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
 
-const { redis, REDIS_CONF, documentsQeueue } = require('../lib/db');
+const { redis, REDIS_CONF, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -2170,7 +2170,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({
                 redis,
                 account: request.params.account,
-                documentsQeueue,
+                documentsQueue,
                 call,
                 secret: await getSecret()
             });
