@@ -42,15 +42,15 @@ Environment="NODE_ENV=production"
 # NB! If you are using `npx` to run the application then you can ignore this section
 # and comment out `WorkingDirectory` as npx manages code files and dependencies itself.
 
-# Normally this folder would include a clean copy from the EmailEngine Github repository + `npm install --production`.
+# Normally this folder would include a clean copy from the EmailEngine Github repository + `npm install --omit=dev`.
 # To set up:
 #     git clone git://github.com/postalsys/emailengine.git
 #     cd emailengine
-#     npm install --production
+#     npm install --omit=dev
 
 # If EmailEngine files are cloned from Github then an easy way to upgrade the application would look like this:
 #    git pull origin master
-#    npm install --production
+#    npm install --omit=dev
 # And then (as root or a user with sudo privileges):
 #    sudo systemctl restart emailengine
 
