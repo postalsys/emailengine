@@ -101,7 +101,8 @@ const {
     RENEW_TLS_AFTER,
     BLOCK_TLS_RENEW,
     TLS_RENEW_CHECK_INTERVAL,
-    DEFAULT_CORS_MAX_AGE
+    DEFAULT_CORS_MAX_AGE,
+    LIST_UNSUBSCRIBE_NOTIFY
 } = consts;
 
 const {
@@ -1004,6 +1005,87 @@ When making API calls remember that requests against the same account are queued
                     data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
                     sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/unsubscribe',
+        async handler(request) {
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                    throw error;
+                }
+            }
+
+            data = JSON.parse(data);
+
+            if (!data || typeof data !== 'object' || data.act !== 'unsub') {
+                return 'not ok';
+            }
+
+            /*
+                {
+                act: 'unsub',
+                acc: 'pangalink',
+                list: 'my.list7',
+                rcpt: 'andris.reinman@gmail.com',
+                msg: '<44aa358f-4e14-48c4-85d2-c3a552d53fe9@pangalink.net>'
+                }
+            */
+
+            let isNew = await redis.eeListAdd(
+                `${REDIS_PREFIX}lists:unsub:lists`,
+                `${REDIS_PREFIX}lists:unsub:entries:${data.list}`,
+                data.list,
+                data.rcpt,
+                JSON.stringify(Object.assign({ created: Date.now() }, data))
+            );
+
+            if (isNew) {
+                await sendWebhook(data.acc, LIST_UNSUBSCRIBE_NOTIFY, {
+                    messageId: data.msg,
+                    recipient: data.rcpt,
+                    listId: data.list,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            }
+
+            return 'ok';
+        },
+        options: {
+            description: 'One-click unsubscribe',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
+                }).label('OneClickUnsubQuery'),
+
+                payload: Joi.object({
+                    'List-Unsubscribe': Joi.string().required().valid('One-Click')
+                }).label('OneClickUnsubPayload')
+            },
+
+            plugins: {
+                crumb: false
             },
 
             auth: false
@@ -3924,6 +4006,17 @@ When making API calls remember that requests against the same account are queued
                         .default(10),
 
                     gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
+
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.optional(),
+                            otherwise: Joi.forbidden()
+                        }),
 
                     dryRun: Joi.boolean()
                         .truthy('Y', 'true', '1')
