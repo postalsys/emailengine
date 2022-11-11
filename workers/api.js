@@ -1015,14 +1015,15 @@ When making API calls remember that requests against the same account are queued
         method: 'POST',
         path: '/unsubscribe',
         async handler(request) {
+            // NB! Avoid throwing errors
+
             let data = Buffer.from(request.query.data, 'base64url').toString();
             let serviceSecret = await settings.get('serviceSecret');
             if (serviceSecret) {
                 let hmac = crypto.createHmac('sha256', serviceSecret);
                 hmac.update(data);
                 if (hmac.digest('base64url') !== request.query.sig) {
-                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
-                    throw error;
+                    return 'data validation failed';
                 }
             }
 
@@ -1032,28 +1033,37 @@ When making API calls remember that requests against the same account are queued
                 return 'not ok';
             }
 
-            /*
-                {
-                act: 'unsub',
-                acc: 'pangalink',
-                list: 'my.list7',
-                rcpt: 'andris.reinman@gmail.com',
-                msg: '<44aa358f-4e14-48c4-85d2-c3a552d53fe9@pangalink.net>'
-                }
-            */
+            let accountObject = new Account({ redis, account: data.acc, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+            } catch (err) {
+                return 'unknown account';
+            }
 
             let isNew = await redis.eeListAdd(
                 `${REDIS_PREFIX}lists:unsub:lists`,
                 `${REDIS_PREFIX}lists:unsub:entries:${data.list}`,
                 data.list,
-                data.rcpt,
-                JSON.stringify(Object.assign({ created: Date.now() }, data))
+                data.rcpt.toLowerCase().trim(),
+                JSON.stringify({
+                    recipient: data.rcpt,
+                    account: data.acc,
+                    source: 'one-click',
+                    reason: 'unsubscribe',
+                    messageId: data.msg,
+                    listId: data.list,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent'],
+                    created: new Date().toISOString()
+                })
             );
 
             if (isNew) {
                 await sendWebhook(data.acc, LIST_UNSUBSCRIBE_NOTIFY, {
-                    messageId: data.msg,
                     recipient: data.rcpt,
+                    messageId: data.msg,
                     listId: data.list,
                     remoteAddress: request.info.remoteAddress,
                     userAgent: request.headers['user-agent']
@@ -6036,6 +6046,154 @@ When making API calls remember that requests against the same account are queued
                         .unknown()
                         .description('Primary DKIM signature. `status.aligned` should be set, otherwise DKIM check should not be considered as passed.')
                 }).label('DeliveryCheckResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/blocklists',
+
+        async handler(request) {
+            try {
+                let data = await redis.hgetall(`${REDIS_PREFIX}lists:unsub:lists`);
+                let result = [];
+                if (data) {
+                    for (let key of Object.keys(data)) {
+                        result.push({ listId: key, count: Number(data[key]) || 0 });
+                    }
+                }
+
+                return {
+                    blocklists: result.sort((a, b) => a.listId.localeCompare(b.listId))
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List blocklists',
+            notes: 'List blocklists with blocked addresses',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            response: {
+                schema: Joi.object({
+                    blocklists: Joi.array()
+                        .items(
+                            Joi.object({
+                                listId: Joi.string().max(256).required().example('example').description('List ID'),
+                                count: Joi.number().example(12).description('Count of blocked addresses in this list')
+                            }).label('BlocklistsResponseItem')
+                        )
+                        .label('BlocklistsEntries')
+                }).label('BlocklistsResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/blocklist/{listId}',
+
+        async handler(request) {
+            try {
+                let exists = await redis.hexists(`${REDIS_PREFIX}lists:unsub:lists`, request.params.listId);
+                if (!exists) {
+                    let message = 'Requested blocklist was not found';
+                    let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                    throw error;
+                }
+
+                let addresses = await redis.hgetall(`${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`);
+                let result = [];
+                if (addresses) {
+                    for (let key of Object.keys(addresses)) {
+                        try {
+                            result.push(JSON.parse(addresses[key]));
+                        } catch (err) {
+                            result.push({ address: key, error: 'Failed to parse record' });
+                        }
+                    }
+                }
+
+                return {
+                    listId: request.params.listId,
+                    addresses: result.sort((a, b) => a.address.localeCompare(b.address))
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List blocklist entries',
+            notes: 'List blocked addresses for a list',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    blocklists: Joi.array()
+                        .items(
+                            Joi.object({
+                                listId: Joi.string().max(256).required().example('example').description('List ID'),
+                                count: Joi.number().example(12).description('Count of blocked addresses in this list')
+                            }).label('BlocklistListResponseItem')
+                        )
+                        .label('BlocklistListEntries')
+                }).label('BlocklistListResponse'),
                 failAction: 'log'
             }
         }

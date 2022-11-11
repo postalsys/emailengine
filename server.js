@@ -84,7 +84,9 @@ const {
     CONNECT_ERROR_NOTIFY,
     REDIS_PREFIX,
     ACCOUNT_ADDED_NOTIFY,
-    ACCOUNT_DELETED_NOTIFY
+    ACCOUNT_DELETED_NOTIFY,
+    LIST_UNSUBSCRIBE_NOTIFY,
+    LIST_SUBSCRIBE_NOTIFY
 } = require('./lib/consts');
 
 const msgpack = require('msgpack5')();
@@ -1243,10 +1245,22 @@ async function onCommand(worker, message) {
             }
         }
 
+        case 'unsubscribe':
+            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Failed to send an unsubscribe webhook', err })
+            );
+            return;
+
+        case 'subscribe':
+            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Failed to send an subscribe webhook', err })
+            );
+            return;
+
         case 'new':
             unassigned.add(message.account);
             assignAccounts()
-                .then(sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
+                .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
                 .catch(err => logger.error({ msg: 'Failed to assign accounts', n: 3, err }));
             return;
 
