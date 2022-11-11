@@ -12,13 +12,13 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="resubscribeModalLabel">Re-subscribe</h5>
+                <h5 class="modal-title" id="resubscribeModalLabel">{{_ "Re-subscribe" }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to re-subscribe your email address <em>{{values.email}}</em>?
+                {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" values.email }}
             </div>
             <div class="modal-footer">
                 <form method="post" action="/unsubscribe/address">
@@ -28,8 +28,8 @@
                     <input type="hidden" name="listId" value="{{values.listId}}">
                     <input type="hidden" name="messageId" value="{{values.messageId}}">
                     <input type="hidden" name="email" value="{{values.email}}">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{_ "Close" }}</button>
+                    <button type="submit" class="btn btn-primary">{{_ "Subscribe" }}</button>
                 </form>
             </div>
 

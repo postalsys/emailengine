@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-10-11 07:39+0000\n"
+"POT-Creation-Date: 2022-11-11 10:19+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -13,20 +13,56 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
+#: views/unsubscribe.hbs:1
+#: views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:31
+#: views/accounts/register/imap-server.hbs:224
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:31
@@ -133,10 +169,6 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:224
-msgid "Close"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:293
 msgid "Failed to validate IMAP server settings"
 msgstr ""
@@ -157,39 +189,44 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: lib/routes-ui.js:2808
-#: lib/routes-ui.js:4076
-#: lib/routes-ui.js:4087
+#: lib/routes-ui.js:3460
+#: lib/routes-ui.js:4729
+#: lib/routes-ui.js:4740
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:2811
-#: lib/routes-ui.js:4079
-#: lib/routes-ui.js:4090
+#: lib/routes-ui.js:3463
+#: lib/routes-ui.js:4732
+#: lib/routes-ui.js:4743
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:2815
-#: lib/routes-ui.js:4094
+#: lib/routes-ui.js:3467
+#: lib/routes-ui.js:4747
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:3805
+#: lib/routes-ui.js:4459
 msgid "Unknown OAuth provider"
 msgstr ""
 
-#: lib/routes-ui.js:3845
-#: lib/routes-ui.js:3954
-#: lib/routes-ui.js:4179
+#: lib/routes-ui.js:4499
+#: lib/routes-ui.js:4608
+#: lib/routes-ui.js:4832
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:3894
-#: lib/routes-ui.js:3927
+#: lib/routes-ui.js:4548
+#: lib/routes-ui.js:4581
+#: lib/routes-ui.js:6664
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:4018
-#: lib/routes-ui.js:4261
+#: lib/routes-ui.js:4671
+#: lib/routes-ui.js:4914
 msgid "Failed to process account"
+msgstr ""
+
+#: lib/routes-ui.js:6764
+msgid "Failed to process request"
 msgstr ""
