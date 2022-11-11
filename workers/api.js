@@ -6411,6 +6411,43 @@ When making API calls remember that requests against the same account are queued
         }
     });
 
+    server.route({
+        method: 'GET',
+        path: '/v1/changes',
+
+        async handler(request, h) {
+            request.app.stream = new ResponseStream();
+            finished(request.app.stream, err => request.app.stream.finalize(err));
+            setImmediate(() => {
+                try {
+                    request.app.stream.write(`: EmailEngine v${packageData.version}\n\n`);
+                } catch (err) {
+                    // ignore
+                }
+            });
+            return h
+                .response(request.app.stream)
+                .header('X-Accel-Buffering', 'no')
+                .header('Connection', 'keep-alive')
+                .header('Cache-Control', 'no-cache')
+                .type('text/event-stream');
+        },
+
+        options: {
+            description: 'Stream state changes',
+            notes: 'Stream account state changes as an EventSource',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG
+        }
+    });
+
     // Web UI routes
 
     await server.register({
