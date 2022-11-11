@@ -1053,7 +1053,6 @@ When making API calls remember that requests against the same account are queued
                     source: 'one-click',
                     reason: 'unsubscribe',
                     messageId: data.msg,
-                    listId: data.list,
                     remoteAddress: request.info.remoteAddress,
                     userAgent: request.headers['user-agent'],
                     created: new Date().toISOString()
@@ -4020,7 +4019,7 @@ When making API calls remember that requests against the same account are queued
                     listId: Joi.string()
                         .hostname()
                         .example('test-list')
-                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .description('List ID for Mail Merge. Lists are registered ad-hoc, so a new identifier defines a new list.')
                         .label('ListID')
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
@@ -6185,15 +6184,96 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    blocklists: Joi.array()
+                    listId: Joi.string().max(256).required().example('example').description('List ID'),
+                    addresses: Joi.array()
                         .items(
                             Joi.object({
-                                listId: Joi.string().max(256).required().example('example').description('List ID'),
-                                count: Joi.number().example(12).description('Count of blocked addresses in this list')
+                                recipient: Joi.string().empty('').email().example('user@example.com').description('Listed email address').required(),
+                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID')
                             }).label('BlocklistListResponseItem')
                         )
                         .label('BlocklistListEntries')
                 }).label('BlocklistListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/blocklist/{listId}',
+
+        async handler(request) {
+            try {
+                let exists = await redis.hexists(`${REDIS_PREFIX}lists:unsub:lists`, request.params.listId);
+                if (!exists) {
+                    let message = 'Requested blocklist was not found';
+                    let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                    throw error;
+                }
+
+                let deleted = await redis.eeListRemove(
+                    `${REDIS_PREFIX}lists:unsub:lists`,
+                    `${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`,
+                    request.params.listId,
+                    request.query.recipient.toLowerCase().trim()
+                );
+
+                return {
+                    deleted: !!deleted
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove from blocklist',
+            notes: 'Delete a blocked email address from a list',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest'),
+
+                query: Joi.object({
+                    recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to remove from the list').required()
+                }).label('RecipientQuery')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the address removed from the list')
+                }).label('DeleteBlocklistResponse'),
                 failAction: 'log'
             }
         }
