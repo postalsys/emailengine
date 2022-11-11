@@ -1917,6 +1917,7 @@ When making API calls remember that requests against the same account are queued
                     name: request.payload.name,
                     email: request.payload.email,
                     syncFrom: request.payload.syncFrom,
+                    notifyFrom: request.payload.notifyFrom,
                     redirectUrl: request.payload.redirectUrl
                 });
 
@@ -2011,6 +2012,7 @@ When making API calls remember that requests against the same account are queued
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     syncFrom: accountSchemas.syncFrom,
+                    notifyFrom: accountSchemas.notifyFrom,
 
                     redirectUrl: Joi.string()
                         .empty('')
