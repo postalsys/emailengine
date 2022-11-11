@@ -135,6 +135,7 @@ const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
+const { homedir } = require('os');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -4075,9 +4076,48 @@ When making API calls remember that requests against the same account are queued
                         .description('Base64 encoded RFC822 email if a preview was requested')
                         .label('ResponsePreview'),
 
-                    bulk: Joi.array()
+                    mailMerge: Joi.array()
                         .items(
-                            Joi.object()
+                            Joi.object({
+                                success: Joi.boolean()
+                                    .example(true)
+                                    .description('Was the referenced message processed successfully')
+                                    .label('ResponseReferenceSuccess'),
+                                to: addressSchema.label('ToAddressSingle'),
+                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
+                                queueId: Joi.string()
+                                    .example('d41f0423195f271f')
+                                    .description('Queue identifier for scheduled email. Not present for bulk messages.'),
+                                reference: Joi.object({
+                                    message: Joi.string()
+                                        .base64({ paddingRequired: false, urlSafe: true })
+                                        .max(256)
+                                        .required()
+                                        .example('AAAAAQAACnA')
+                                        .description('Referenced message ID'),
+                                    documentStore: Joi.boolean()
+                                        .example(true)
+                                        .description('Was the message dat aloaded from the document store')
+                                        .label('ResponseDocumentStore'),
+                                    success: Joi.boolean()
+                                        .example(true)
+                                        .description('Was the referenced message processed successfully')
+                                        .label('ResponseReferenceSuccess'),
+                                    error: Joi.string()
+                                        .example('Referenced message was not found')
+                                        .description('An error message if referenced message processing failed')
+                                })
+                                    .description('Reference info if referencing was requested')
+                                    .label('ResponseReference'),
+                                sendAt: Joi.date()
+                                    .iso()
+                                    .example('2021-07-08T07:06:34.336Z')
+                                    .description('Send message at specified time. Overrides message level `sendAt` value.'),
+                                skipped: Joi.object({
+                                    reason: Joi.string().example('unsubscribe').description('Why this message was skipped'),
+                                    listId: Joi.string().example('test-list')
+                                }).description('Info about skipped message. If this value is set, then the message was not sent')
+                            })
                                 .label('BulkResponseEntry')
                                 .example({
                                     success: true,
@@ -6195,6 +6235,96 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('BlocklistListEntries')
                 }).label('BlocklistListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/blocklist/{listId}',
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                let added = await redis.eeListAdd(
+                    `${REDIS_PREFIX}lists:unsub:lists`,
+                    `${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`,
+                    request.params.listId,
+                    request.payload.recipient.toLowerCase().trim(),
+                    JSON.stringify({
+                        recipient: request.payload.recipient,
+                        account: request.payload.account,
+                        source: 'api',
+                        reason: request.payload.reason,
+                        remoteAddress: request.info.remoteAddress,
+                        userAgent: request.headers['user-agent'],
+                        created: new Date().toISOString()
+                    })
+                );
+
+                return {
+                    success: true,
+                    added: !!added
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                if (err.details) {
+                    error.output.payload.details = err.details;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Add to blocklist',
+            notes: 'Add an email address to a blocklist',
+            tags: ['api', 'Blocklists'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest'),
+
+                payload: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to add to the list').required(),
+                    reason: Joi.string().empty('').default('block').description('Identifier for the blocking reason')
+                }).label('BlocklistListAddPayload')
+            },
+
+            response: {
+                schema: Joi.object({
+                    success: Joi.boolean().example(true).description('Was the request successfuk').label('BlocklistListAddSuccess'),
+                    added: Joi.boolean().example(true).description('Was the address added to the list')
+                }).label('BlocklistListAddResponse'),
                 failAction: 'log'
             }
         }
