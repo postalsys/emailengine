@@ -32,7 +32,8 @@ msgstr "Teie e-posti aadress on kustutatud."
 
 #: views/unsubscribe.hbs:7
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "Kas see oli viga? Klõpsake <a%s>siin</a>, et uuesti tellida."
+msgstr ""
+"Kas see oli viga? Klõpsake <a%s>siin</a>, et end uuesti tellijaks lisada."
 
 #: views/unsubscribe.hbs:15
 msgid "Re-subscribe"
@@ -41,7 +42,8 @@ msgstr "Uuesti tellimine"
 #: views/unsubscribe.hbs:21
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr ""
-"Kas olete kindel, et soovite oma e-posti aadressi <em>%s</em> uuesti tellida?"
+"Kas olete kindel, et soovite oma e-posti aadressi <em>%s</em> uuesti "
+"tellijaks märkida?"
 
 #: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:224
 msgid "Close"
@@ -53,7 +55,7 @@ msgstr "Telli"
 
 #: views/unsubscribe.hbs:54
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "Teie e-posti aadress <em>%s</em> on uuesti tellitud."
+msgstr "Teie e-posti aadress <em>%s</em> lisati uuesti tellijate nimekirja."
 
 #: views/unsubscribe.hbs:69 views/accounts/register/imap.hbs:21
 msgid "Email address"
