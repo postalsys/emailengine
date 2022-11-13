@@ -9,7 +9,7 @@ services:
       env: node
       repo: https://github.com/postalsys/emailengine.git
       #healthCheckPath: /health
-      buildCommand: ./update-info.sh && npm install --omit=dev --legacy-peer-deps
+      buildCommand: ./update-info.sh && npm install --omit=dev
       startCommand: npm start
       envVars:
           - key: EENGINE_REDIS

@@ -70,7 +70,7 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
-const Hecks = require('@hapipal/hecks');
+const Hecks = require('@postalsys/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');

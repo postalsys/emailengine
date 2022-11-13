@@ -5,7 +5,7 @@ RUN apk add --no-cache dumb-init
 WORKDIR /emailengine
 COPY . .
 
-RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev
 
 ENV EENGINE_APPDIR=/emailengine
 ENV EENGINE_HOST=0.0.0.0
