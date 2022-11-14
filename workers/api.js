@@ -4023,7 +4023,9 @@ When making API calls remember that requests against the same account are queued
                     listId: Joi.string()
                         .hostname()
                         .example('test-list')
-                        .description('List ID for Mail Merge. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .description(
+                            'List ID for Mail Merge. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.'
+                        )
                         .label('ListID')
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
@@ -6211,7 +6213,7 @@ When making API calls remember that requests against the same account are queued
                     listId: Joi.string()
                         .hostname()
                         .example('test-list')
-                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
                         .label('ListID')
                         .required()
                 }).label('BlocklistListRequest'),
@@ -6327,7 +6329,7 @@ When making API calls remember that requests against the same account are queued
                     listId: Joi.string()
                         .hostname()
                         .example('test-list')
-                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
                         .label('ListID')
                         .required()
                 }).label('BlocklistListRequest'),
@@ -6409,7 +6411,7 @@ When making API calls remember that requests against the same account are queued
                     listId: Joi.string()
                         .hostname()
                         .example('test-list')
-                        .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
                         .label('ListID')
                         .required()
                 }).label('BlocklistListRequest'),
