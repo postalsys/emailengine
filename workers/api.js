@@ -74,6 +74,7 @@ const Hecks = require('@postalsys/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
+const { lists } = require('../lib/lists');
 
 const { redis, REDIS_CONF, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -6098,17 +6099,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                let data = await redis.hgetall(`${REDIS_PREFIX}lists:unsub:lists`);
-                let result = [];
-                if (data) {
-                    for (let key of Object.keys(data)) {
-                        result.push({ listId: key, count: Number(data[key]) || 0 });
-                    }
-                }
-
-                return {
-                    blocklists: result.sort((a, b) => a.listId.localeCompare(b.listId))
-                };
+                return await lists.list(request.query.page, request.query.pageSize);
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -6135,8 +6126,32 @@ When making API calls remember that requests against the same account are queued
             },
             cors: CORS_CONFIG,
 
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('PageListsRequest')
+            },
+
             response: {
                 schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
                     blocklists: Joi.array()
                         .items(
                             Joi.object({
@@ -6157,29 +6172,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                let exists = await redis.hexists(`${REDIS_PREFIX}lists:unsub:lists`, request.params.listId);
-                if (!exists) {
-                    let message = 'Requested blocklist was not found';
-                    let error = Boom.boomify(new Error(message), { statusCode: 404 });
-                    throw error;
-                }
-
-                let addresses = await redis.hgetall(`${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`);
-                let result = [];
-                if (addresses) {
-                    for (let key of Object.keys(addresses)) {
-                        try {
-                            result.push(JSON.parse(addresses[key]));
-                        } catch (err) {
-                            result.push({ address: key, error: 'Failed to parse record' });
-                        }
-                    }
-                }
-
-                return {
-                    listId: request.params.listId,
-                    addresses: result.sort((a, b) => a.address.localeCompare(b.address))
-                };
+                return await lists.listContent(request.params.listId, request.query.page, request.query.pageSize);
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -6221,18 +6214,42 @@ When making API calls remember that requests against the same account are queued
                         .description('List ID. Lists are registered ad-hoc, so a new identifier defines a new list.')
                         .label('ListID')
                         .required()
-                }).label('BlocklistListRequest')
+                }).label('BlocklistListRequest'),
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('PageListsRequest')
             },
 
             response: {
                 schema: Joi.object({
                     listId: Joi.string().max(256).required().example('example').description('List ID'),
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
                     addresses: Joi.array()
                         .items(
                             Joi.object({
-                                recipient: Joi.string().empty('').email().example('user@example.com').description('Listed email address').required(),
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
-                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID')
+                                recipient: Joi.string().email().example('user@example.com').description('Listed email address').required(),
+                                account: Joi.string().max(256).required().example('example').description('Account ID').required(),
+                                messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
+                                source: Joi.string().example('api').description('Which mechanism was used to add the entry'),
+                                reason: Joi.string().example('api').description('Why this entry was added'),
+                                remoteAddress: Joi.string()
+                                    .ip({
+                                        version: ['ipv4', 'ipv6'],
+                                        cidr: 'optional'
+                                    })
+                                    .description('Which IP address triggered the entry'),
+                                userAgent: Joi.string().example('Mozilla/5.0 (Macintosh)').description('Which user agent triggered the entry'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was added or updated').required()
                             }).label('BlocklistListResponseItem')
                         )
                         .label('BlocklistListEntries')
