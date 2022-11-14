@@ -81,6 +81,14 @@ Type=simple
 Restart=always
 RestartSec=5
 
+# Increse limits
+# file size, ulimit -f
+LimitFSIZE=infinity
+# open files, ulimit -n
+LimitNOFILE=500000
+# processes/threads, ulimit -u
+LimitNPROC=500000
+
 # --- Logging ---
 
 SyslogIdentifier=emailengine
