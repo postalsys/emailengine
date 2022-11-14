@@ -98,13 +98,22 @@ class ConnectionHandler {
                     return;
                 }
 
-                let logRow = msgpack.encode(entry);
-                redis
-                    .multi()
-                    .rpush(logKey, logRow)
-                    .ltrim(logKey, -this.maxLogLines, -1)
-                    .exec()
-                    .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
+                if (entry.err && entry.err.cert) {
+                    delete entry.err.cert;
+                }
+
+                let logRow;
+                try {
+                    logRow = msgpack.encode(entry);
+                    redis
+                        .multi()
+                        .rpush(logKey, logRow)
+                        .ltrim(logKey, -this.maxLogLines, -1)
+                        .exec()
+                        .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
+                } catch (err) {
+                    this.logger.error({ msg: 'Failed to encode log entry', account, entry, err });
+                }
             },
             async reload() {
                 logging = await settings.getLoggingInfo(account);
