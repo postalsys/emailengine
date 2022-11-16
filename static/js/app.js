@@ -205,6 +205,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             errorMessage =
                                 'The server unexpectedly closed the connection. This usually happens when you try to connect to a TLS port without having TLS enabled.';
                             break;
+                        case 'ECONNREFUSED':
+                            errorMessage =
+                                'The server refused the connection. This usually happens when the server is not running, is overloaded, or you are connecting to a wrong host or port.';
+                            break;
                     }
                 }
 

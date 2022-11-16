@@ -103,6 +103,18 @@
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
 
+                        {{#if licenseInfo.suspended}}
+                        <li class="nav-item mx-1">
+                            <div class="text-danger nav-link" style="cursor: default;"
+                                title="EmailEngine is currently not running and does not process any email accounts"
+                                data-toggle="tooltip" data-placement="left">
+                                <div>
+                                    <i class="fas fa-heartbeat"></i> Engine is <strong>stopped</strong>
+                                </div>
+                            </div>
+                        </li>
+                        {{/if}}
+
                         {{#if systemAlerts}}
 
                         <!-- Nav Item - Alerts -->
