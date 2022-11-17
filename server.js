@@ -747,6 +747,14 @@ let spawnWorker = async type => {
                         statUpdateKey = `${message.key}:${success ? 'success' : 'fail'}`;
                         break;
                     }
+
+                    case 'queuesProcessed': {
+                        let { queue, status } = message.args[0] || {};
+                        if (['submit'].includes(queue)) {
+                            statUpdateKey = `${queue}:${status === 'completed' ? 'success' : 'fail'}`;
+                        }
+                        break;
+                    }
                 }
 
                 if (statUpdateKey) {

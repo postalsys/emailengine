@@ -45,14 +45,14 @@
 
         <div class="col-xl-3 col-md-6 mb-4">
 
-            <div class="card border-left-primary shadow">
+            <div class="card border-left-light shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Accounts total</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800"><a
-                                    href="/admin/accounts">{{stats.accounts}}</a></div>
+                                <a href="/admin/accounts">Accounts total</a>
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.accounts}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -62,12 +62,13 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow">
+            <div class="card border-left-light shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Accounts active</div>
+                                <a href="/admin/accounts?state=connected">Accounts active</a>
+                            </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.connectedAccounts}}</div>
                         </div>
                         <div class="col-auto">
@@ -99,11 +100,9 @@
             </div>
         </div>
         {{/each}}
-    </div>
 
-    <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow">
+            <div class="card border-left-light shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -129,7 +128,7 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow">
+            <div class="card border-left-light shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
@@ -157,7 +156,7 @@
 
         {{#if showDocumentStore}}
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow">
+            <div class="card border-left-light shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
