@@ -45,11 +45,13 @@
 
         <div class="col-xl-3 col-md-6 mb-4">
 
-            <div class="card border-left-light shadow">
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="The number of accounts registered with EmailEngine" data-toggle="tooltip"
+                                data-placement="top" style="cursor: default;">
                                 <a href="/admin/accounts">Accounts total</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.accounts}}</div>
@@ -62,11 +64,13 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-light shadow">
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="The number of accounts currently in the &quot;connected&quot; state"
+                                data-toggle="tooltip" data-placement="top" style="cursor: default;">
                                 <a href="/admin/accounts?state=connected">Accounts active</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.connectedAccounts}}</div>
@@ -86,7 +90,9 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-gray-800 text-uppercase mb-1" {{#if
+                                comment}}title="{{comment}}" data-toggle="tooltip" data-placement="top" {{/if}}
+                                style="cursor: default;">
                                 {{title}}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                 {{value}}
@@ -102,15 +108,21 @@
         {{/each}}
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-light shadow">
+            {{#if
+            stats.queues.notify.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue processes webhook notifications" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/notify">Webhooks queue</a>{{#if
-                                stats.queues.notify.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/notify">Webhooks queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
@@ -128,15 +140,21 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-light shadow">
+            {{#if
+            stats.queues.submit.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue processes emails to be sent to SMTP" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/submit">Submission queue</a>{{#if
-                                stats.queues.submit.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/submit">Submission queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
@@ -156,15 +174,21 @@
 
         {{#if showDocumentStore}}
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-light shadow">
+            {{#if
+            stats.queues.documents.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue indexes mailbox changes to ElasticSearch" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/documents">Documents queue</a>{{#if
-                                stats.queues.documents.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/documents">Documents queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip" data-placement="top"></span>
