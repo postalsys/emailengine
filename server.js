@@ -858,6 +858,7 @@ async function call(worker, message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             err.ttl = ttl;
+            err.command = message;
             reject(err);
         }, ttl);
 
