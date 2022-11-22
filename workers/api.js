@@ -2628,6 +2628,9 @@ When making API calls remember that requests against the same account are queued
                 if (err.code) {
                     error.output.payload.code = err.code;
                 }
+                if (err.info) {
+                    error.output.payload.details = err.info;
+                }
                 throw error;
             }
         },
@@ -2695,6 +2698,9 @@ When making API calls remember that requests against the same account are queued
                 let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
                 if (err.code) {
                     error.output.payload.code = err.code;
+                }
+                if (err.info) {
+                    error.output.payload.details = err.info;
                 }
                 throw error;
             }
