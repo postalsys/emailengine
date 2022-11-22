@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - fix-network-scan
+            - docstore-mailbox-delete
 
 name: Deploy test instance
 
