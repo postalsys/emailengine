@@ -136,7 +136,6 @@ const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
-const { homedir } = require('os');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
