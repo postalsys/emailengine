@@ -64,12 +64,13 @@ const documentsWorker = new Worker(
         switch (job.data.event) {
             case ACCOUNT_DELETED:
                 {
-                    const { index: indexName, client } = await getESClient(logger);
+                    const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
 
                     let deleteResult = {};
+                    let deletedCount = 0;
 
                     let filterQuery = {
                         match: {
@@ -77,37 +78,41 @@ const documentsWorker = new Worker(
                         }
                     };
 
-                    try {
-                        deleteResult[indexName] = await client.deleteByQuery({
-                            index: indexName,
-                            query: filterQuery
-                        });
-                    } catch (err) {
-                        logger.error({
-                            msg: 'Failed to delete account data',
-                            action: 'document',
-                            queue: job.queue.name,
-                            code: 'document_delete_account_error',
-                            job: job.id,
-                            event: job.name,
-                            account: job.data.account,
-                            request: {
+                    for (let indexName of [index, `${index}.threads`]) {
+                        try {
+                            deleteResult[indexName] = await client.deleteByQuery({
                                 index: indexName,
                                 query: filterQuery
-                            },
-                            err
-                        });
-                        throw err;
+                            });
+                            deletedCount += deleteResult[indexName].deleted || 0;
+                        } catch (err) {
+                            logger.error({
+                                msg: 'Failed to delete account emails from index',
+                                action: 'document',
+                                queue: job.queue.name,
+                                code: 'document_delete_account_error',
+                                job: job.id,
+                                event: job.name,
+                                account: job.data.account,
+                                index: indexName,
+                                request: filterQuery,
+                                err
+                            });
+                            if (indexName === index) {
+                                throw err;
+                            }
+                        }
                     }
 
                     logger.trace({
-                        msg: 'Deleted account data',
+                        msg: 'Deleted account emails from index',
                         action: 'document',
                         queue: job.queue.name,
                         code: 'document_delete_account',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        deletedCount,
                         deleteResult
                     });
                 }
@@ -120,7 +125,7 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult = {};
+                    let deleteResult = null;
 
                     let filterQuery = {
                         bool: {
@@ -141,7 +146,7 @@ const documentsWorker = new Worker(
                     };
 
                     try {
-                        deleteResult[indexName] = await client.deleteByQuery({
+                        deleteResult = await client.deleteByQuery({
                             index: indexName,
                             query: filterQuery
                         });
@@ -155,10 +160,8 @@ const documentsWorker = new Worker(
                             event: job.name,
                             account: job.data.account,
                             path: job.data.path,
-                            request: {
-                                index: indexName,
-                                query: filterQuery
-                            },
+                            index: indexName,
+                            request: filterQuery,
                             err
                         });
                         throw err;
@@ -168,11 +171,13 @@ const documentsWorker = new Worker(
                         msg: 'Deleted mailbox messages',
                         action: 'document',
                         queue: job.queue.name,
-                        code: 'document_delete_mailboxt',
+                        code: 'document_delete_mailbox',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
                         path: job.data.path,
+                        index: indexName,
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }
@@ -291,7 +296,8 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult;
+                    let deleteResult = null;
+
                     try {
                         deleteResult = await client.delete({
                             index,
@@ -312,8 +318,8 @@ const documentsWorker = new Worker(
                                     job: job.id,
                                     event: job.name,
                                     account: job.data.account,
+                                    index,
                                     request: {
-                                        index,
                                         id: `${job.data.account}:${messageId}`
                                     },
                                     err
@@ -330,10 +336,11 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        index,
                         request: {
-                            index,
                             id: `${job.data.account}:${messageId}`
                         },
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }

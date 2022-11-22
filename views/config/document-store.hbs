@@ -1,21 +1,19 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
         <small><i class="fas fa-database fa-fw"></i></small>
-        Document Store <span class="badge badge-dark">beta</span></label>
+        Document Store</label>
     </h1>
 </div>
 
 <p class="mb-4">
-    EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch is supported.
+    EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch v8+ is supported.
 </p>
 
-<div class="card border-left-info shadow mb-4">
+<div class="card border-left-warning shadow mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
-                <p>Document Store is in beta, which means the application might change in the future without a
-                    possible migration path.</p>
                 <p>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
                     some data. Email attachments are not stored in the Document Store.</p>
                 <p>Enable Document Store before adding any accounts. Otherwise, emails that have been already
