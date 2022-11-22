@@ -21,7 +21,12 @@
                         EmailEngine might miss some data.</li>
                     <li>Email attachments are not stored in the Document Store.</li>
                     <li>Enable Document Store before adding any accounts that need to be indexed. Emails that are
-                        processed while Document Store is <em>not enabled</em> will not be added to the Document Store.
+                        processed while Document Store is not enabled <em>will not be synced</em> to the Document Store.
+                    </li>
+                    <li>You <em>can</em> modify entries stored in the Document Store. Adding new fields is allowed.
+                        Changing existing field values is allowed if you do not change the type. Do not modify system
+                        fields <code>_id</code>, <code>id</code>, <code>account</code>, <code>uid</code> and
+                        <code>path</code>.
                     </li>
                 </ul>
             </div>
