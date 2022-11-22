@@ -35,7 +35,15 @@ const { getESClient } = require('../lib/document-store');
 const { getThread } = require('../lib/threads');
 const { generateTextPreview } = require('../lib/generate-text-preview');
 
-const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY, REDIS_PREFIX } = require('../lib/consts');
+const {
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    MESSAGE_UPDATED_NOTIFY,
+    ACCOUNT_DELETED,
+    EMAIL_BOUNCE_NOTIFY,
+    MAILBOX_DELETED_NOTIFY,
+    REDIS_PREFIX
+} = require('../lib/consts');
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -62,48 +70,114 @@ const documentsWorker = new Worker(
                     }
 
                     let deleteResult = {};
+                    let deletedCount = 0;
 
-                    for (let indexName of [index]) {
+                    let filterQuery = {
+                        match: {
+                            account: job.data.account
+                        }
+                    };
+
+                    for (let indexName of [index, `${index}.threads`]) {
                         try {
                             deleteResult[indexName] = await client.deleteByQuery({
                                 index: indexName,
-                                query: {
-                                    match: {
-                                        account: job.data.account
-                                    }
-                                }
+                                query: filterQuery
                             });
+                            deletedCount += deleteResult[indexName].deleted || 0;
                         } catch (err) {
                             logger.error({
-                                msg: 'Failed to delete account data',
+                                msg: 'Failed to delete account emails from index',
                                 action: 'document',
                                 queue: job.queue.name,
                                 code: 'document_delete_account_error',
                                 job: job.id,
                                 event: job.name,
                                 account: job.data.account,
-                                request: {
-                                    index: indexName,
-                                    query: {
-                                        match: {
-                                            account: job.data.account
-                                        }
-                                    }
-                                },
+                                index: indexName,
+                                request: filterQuery,
                                 err
                             });
-                            throw err;
+                            if (indexName === index) {
+                                throw err;
+                            }
                         }
                     }
 
                     logger.trace({
-                        msg: 'Deleted account data',
+                        msg: 'Deleted account emails from index',
                         action: 'document',
                         queue: job.queue.name,
                         code: 'document_delete_account',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        deletedCount,
+                        deleteResult
+                    });
+                }
+                break;
+
+            case MAILBOX_DELETED_NOTIFY:
+                {
+                    const { index: indexName, client } = await getESClient(logger);
+                    if (!client) {
+                        return;
+                    }
+
+                    let deleteResult = null;
+
+                    let filterQuery = {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        account: job.data.account
+                                    }
+                                },
+
+                                {
+                                    term: {
+                                        path: job.data.path
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    try {
+                        deleteResult = await client.deleteByQuery({
+                            index: indexName,
+                            query: filterQuery
+                        });
+                    } catch (err) {
+                        logger.error({
+                            msg: 'Failed to delete messages from a mailbox',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_delete_mailbox_error',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account,
+                            path: job.data.path,
+                            index: indexName,
+                            request: filterQuery,
+                            err
+                        });
+                        throw err;
+                    }
+
+                    logger.trace({
+                        msg: 'Deleted mailbox messages',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_delete_mailbox',
+                        job: job.id,
+                        event: job.name,
+                        account: job.data.account,
+                        path: job.data.path,
+                        index: indexName,
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }
@@ -222,7 +296,8 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult;
+                    let deleteResult = null;
+
                     try {
                         deleteResult = await client.delete({
                             index,
@@ -243,8 +318,8 @@ const documentsWorker = new Worker(
                                     job: job.id,
                                     event: job.name,
                                     account: job.data.account,
+                                    index,
                                     request: {
-                                        index,
                                         id: `${job.data.account}:${messageId}`
                                     },
                                     err
@@ -261,10 +336,11 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        index,
                         request: {
-                            index,
                             id: `${job.data.account}:${messageId}`
                         },
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }

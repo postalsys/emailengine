@@ -136,7 +136,6 @@ const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
-const { homedir } = require('os');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -6624,7 +6623,7 @@ When making API calls remember that requests against the same account are queued
                 systemAlerts,
                 embeddedTemplateHeader: await settings.get('templateHeader'),
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: (await settings.get('labsDocumentStore')) || (await settings.get('documentStoreEnabled')),
+                showDocumentStore: await settings.get('documentStoreEnabled'),
                 showMailRu: (await settings.get('labsMailRu')) || (await settings.get('mailRuEnabled'))
             };
         }

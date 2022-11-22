@@ -307,19 +307,6 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
-                <input type="checkbox" class="form-check-input {{#if errors.labsDocumentStore}}is-invalid{{/if}}"
-                    id="labsDocumentStore" name="labsDocumentStore" {{#if values.labsDocumentStore}}checked{{/if}} />
-                <label class="form-check-label" for="labsDocumentStore">Allow to use Document Store</label>
-                {{#if errors.labsDocumentStore}}
-                <span class="invalid-feedback">{{errors.labsDocumentStore}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Document Store allows to sync messages to external storage
-                    (ElasticSearch). Enabling this option will add a new configuration menu option you can
-                    use to set up document store syncing.</small>
-            </div>
-
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.labsMailRu}}is-invalid{{/if}}"
                     id="labsMailRu" name="labsMailRu" {{#if values.labsMailRu}}checked{{/if}} />
                 <label class="form-check-label" for="labsMailRu">Allow to use OAuth2 with Mail.ru</label>

@@ -1,30 +1,38 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
         <small><i class="fas fa-database fa-fw"></i></small>
-        Document Store <span class="badge badge-dark">beta</span></label>
+        Document Store</label>
     </h1>
 </div>
 
 <p class="mb-4">
-    EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch is supported.
+    EmailEngine can sync emails to a document store for local processing.
 </p>
 
-<div class="card border-left-info shadow mb-4">
+<div class="card border-left-warning shadow mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
-                <p>Document Store is in beta, which means the application might change in the future without a
-                    possible migration path.</p>
-                <p>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
-                    some data. Email attachments are not stored in the Document Store.</p>
-                <p>Enable Document Store before adding any accounts. Otherwise, emails that have been already
-                    processed will not be indexed.</p>
-
+                <ul>
+                    <li>Only ElasticSearch v8+ is supported as a Document Store backend. Older versions of
+                        ElasticSearch and alternatives like OpenSearch are not supported.</li>
+                    <li>Syncing emails to the Document Store is not transactional but <em>best effort</em>.
+                        EmailEngine might miss some data.</li>
+                    <li>Email attachments are not stored in the Document Store.</li>
+                    <li>Enable Document Store before adding any accounts that need to be indexed. Emails that are
+                        processed while Document Store is not enabled <em>will not be synced</em> to the Document Store.
+                    </li>
+                    <li>You <em>can</em> modify entries stored in the Document Store. Adding new fields is allowed.
+                        Changing existing field values is allowed if you do not change the type. Do not modify system
+                        fields <code>_id</code>, <code>id</code>, <code>account</code>, <code>uid</code> and
+                        <code>path</code>.
+                    </li>
+                </ul>
             </div>
 
             <div class="col-auto">
-                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
             </div>
         </div>
     </div>
