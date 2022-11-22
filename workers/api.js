@@ -2660,8 +2660,9 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     path: Joi.array()
                         .items(Joi.string().max(256))
+                        .single()
                         .example(['Parent folder', 'Subfolder'])
-                        .description('Mailbox path as an array. If account is namespaced then namespace prefix is added by default.')
+                        .description('Mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.')
                         .label('MailboxPath')
                 }).label('CreateMailbox')
             },
@@ -2672,6 +2673,75 @@ When making API calls remember that requests against the same account are queued
                     mailboxId: Joi.string().example('1439876283476').description('Mailbox ID (if server has support)').label('MailboxId'),
                     created: Joi.boolean().example(true).description('Was the mailbox created')
                 }).label('CreateMailboxResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/mailbox',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.renameMailbox(request.payload.path, request.payload.newPath);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Rename mailbox',
+            notes: 'Rename an existing mailbox folder',
+            tags: ['api', 'Mailbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    newPath: Joi.array()
+                        .items(Joi.string().max(256))
+                        .single()
+                        .example(['Parent folder', 'Subfolder'])
+                        .description('New mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.')
+                        .label('TargetMailboxPath')
+                }).label('RenameMailbox')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    newPath: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('NewMailboxPath'),
+                    renamed: Joi.boolean().example(true).description('Was the mailbox renamed')
+                }).label('RenameMailboxResponse'),
                 failAction: 'log'
             }
         }

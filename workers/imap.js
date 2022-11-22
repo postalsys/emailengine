@@ -395,6 +395,19 @@ class ConnectionHandler {
         return await accountData.connection.createMailbox(message.path);
     }
 
+    async renameMailbox(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.renameMailbox(message.path, message.newPath);
+    }
+
     async deleteMailbox(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -516,67 +529,30 @@ class ConnectionHandler {
     async onCommand(message) {
         switch (message.cmd) {
             case 'assign':
-                return await this.assignConnection(message.account);
-
             case 'delete':
-                return await this.deleteConnection(message.account);
-
             case 'update':
-                return await this.updateConnection(message.account);
-
             case 'sync':
-                return await this.syncConnection(message.account);
+                return await this[`${message.cmd}Connection`](message.account);
 
             case 'listMessages':
-                return await this.listMessages(message);
-
             case 'getText':
-                return await this.getText(message);
-
             case 'getMessage':
-                return await this.getMessage(message);
-
             case 'updateMessage':
-                return await this.updateMessage(message);
-
             case 'updateMessages':
-                return await this.updateMessages(message);
-
             case 'listMailboxes':
-                return await this.listMailboxes(message);
-
             case 'moveMessage':
-                return await this.moveMessage(message);
-
             case 'moveMessages':
-                return await this.moveMessages(message);
-
             case 'deleteMessage':
-                return await this.deleteMessage(message);
-
             case 'deleteMessages':
-                return await this.deleteMessages(message);
-
             case 'getRawMessage':
-                return await this.getRawMessage(message);
-
             case 'createMailbox':
-                return await this.createMailbox(message);
-
+            case 'renameMailbox':
             case 'deleteMailbox':
-                return await this.deleteMailbox(message);
-
             case 'getAttachment':
-                return await this.getAttachment(message);
-
             case 'submitMessage':
-                return await this.submitMessage(message);
-
             case 'queueMessage':
-                return await this.queueMessage(message);
-
             case 'uploadMessage':
-                return await this.uploadMessage(message);
+                return await this[message.cmd](message);
 
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
