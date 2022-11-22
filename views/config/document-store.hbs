@@ -6,7 +6,7 @@
 </div>
 
 <p class="mb-4">
-    EmailEngine can sync emails to a document store for local processing. Currently only ElasticSearch v8+ is supported.
+    EmailEngine can sync emails to a document store for local processing.
 </p>
 
 <div class="card border-left-warning shadow mb-4">
@@ -14,15 +14,20 @@
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
-                <p>Syncing emails and changes to the Document Store is <em>best effort</em>. EmailEngine might miss
-                    some data. Email attachments are not stored in the Document Store.</p>
-                <p>Enable Document Store before adding any accounts. Otherwise, emails that have been already
-                    processed will not be indexed.</p>
-
+                <ul>
+                    <li>Only ElasticSearch v8+ is supported as a Document Store backend. Older versions of
+                        ElasticSearch and alternatives like OpenSearch are not supported.</li>
+                    <li>Syncing emails to the Document Store is not transactional but <em>best effort</em>.
+                        EmailEngine might miss some data.</li>
+                    <li>Email attachments are not stored in the Document Store.</li>
+                    <li>Enable Document Store before adding any accounts that need to be indexed. Emails that are
+                        processed while Document Store is <em>not enabled</em> will not be added to the Document Store.
+                    </li>
+                </ul>
             </div>
 
             <div class="col-auto">
-                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
             </div>
         </div>
     </div>
