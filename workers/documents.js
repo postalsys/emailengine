@@ -4,6 +4,7 @@ const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
+const { preProcess } = require('../lib/pre-process');
 
 const { readEnvValue } = require('../lib/tools');
 
@@ -248,12 +249,27 @@ const documentsWorker = new Worker(
 
                     messageData.preview = generateTextPreview(textContent, 220);
 
+                    let emailDocument = await preProcess.run(messageData);
+                    if (!emailDocument) {
+                        // skip
+                        logger.trace({
+                            msg: 'Skipped new email',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_index',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account
+                        });
+                        break;
+                    }
+
                     let indexResult;
                     try {
                         indexResult = await client.index({
                             index,
                             id: `${job.data.account}:${messageId}`,
-                            document: messageData
+                            document: emailDocument
                         });
                     } catch (err) {
                         logger.error({

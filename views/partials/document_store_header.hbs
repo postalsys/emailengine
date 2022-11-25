@@ -1,0 +1,20 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+        <small><i class="fas fa-database fa-fw"></i></small>
+        Document Store</label>
+    </h1>
+</div>
+
+<p class="mb-4">
+    EmailEngine can sync emails to a document store for caching local processing.
+</p>
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link {{#if documentStoreSettings}}active{{/if}}" href="/admin/config/document-store">Settings</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{#if documentStorePreProcessing}}active{{/if}}"
+            href="/admin/config/document-store/pre-processing">Pre-processing</a>
+    </li>
+</ul>

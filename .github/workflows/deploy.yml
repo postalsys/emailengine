@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - docstore-mailbox-delete
+            - docstore-preprocess
 
 name: Deploy test instance
 
