@@ -1,7 +1,89 @@
+{{> document_store_header}}
+
+<form method="post" action="/admin/config/document-store/pre-processing" id="edit-form">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
+    <input type="hidden" id="map-content-element" name="contentMapJson" value="{{values.contentMapJson}}">
+
+    <div class="card mb-4">
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                    name="enabled" {{#if values.enabled}}checked{{/if}} />
+                <label class="form-check-label" for="enabled">Enable pre-processing</label>
+                {{#if errors.enabled}}
+                <span class="invalid-feedback">{{errors.enabled}}</span>
+                {{/if}}
+                <small id="inputEnabledHelp" class="form-text text-muted">Document Store pre-processing is not enabled
+                    by
+                    default.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="editor-fn">Filter function</label>
+                <div style="line-height: 1; margin-bottom: 10px;">
+                    <small>JavaScript code to determine if the email should be stored. If the code evaluates to
+                        <code>true</code> then the email is synced to the document store, otherwise it is skipped. The
+                        script includes <code>payload</code> as a global variable that contains the email data.</small>
+                </div>
+                <div id="editor-fn" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        <a href="#" id="test-payload-btn">Set test payload</a>
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        Evaluation result:
+                        <span id="filter-res" class="evalres text-info">no match</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="form-group">
+                <label for="editor-map">Map function</label>
+                <div style="line-height: 1; margin-bottom: 10px;">
+                    <small>JavaScript code to modify email payload structure. Protected fields like <code>id</code>,
+                        <code>account</code> and <code>path</code> can not be modified.</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-7">
+                        <div id="editor-map" class="code-editor"></div>
+                        <div class="editor-embed-block">
+                            <div class="editor-embed-content">
+                                Mapping function
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-5">
+                        <div id="editor-map-preview" class="code-editor"></div>
+                        <div class="editor-embed-block">
+                            <div class="editor-embed-content">
+                                Mapping preview
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update config</span>
+        </button>
+    </div>
+</form>
+
 <script src="/static/js/ace/ace.js"></script>
 <script src="/static/js/ace/ext-language_tools.js"></script>
 
-<input type="hidden" id="notificationTypesJson" value="{{notificationTypesJson}}">
 <input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
 
 <div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
@@ -60,22 +142,7 @@
     editorMapPreview.setShowPrintMargin(false);
     editorMapPreview.setHighlightActiveLine(false);
 
-    // data stub:
-    const notificationTypes = JSON.parse(document.getElementById('notificationTypesJson').value.trim())
-    const notificationTypesCompleter = {
-        getCompletions: function (editor, session, pos, prefix, callback) {
-            callback(null, notificationTypes.map((notificationType) => {
-                return {
-                    caption: notificationType.description,
-                    value: `"${notificationType.name}"`,
-                    meta: "Event"
-                };
-            }));
-        }
-    };
-
     const langTools = ace.require('ace/ext/language_tools');
-    langTools.addCompleter(notificationTypesCompleter);
 
     editorFn.setTheme("ace/theme/xcode");
     editorFn.session.setMode("ace/mode/javascript");
@@ -108,7 +175,7 @@
     editorMapPreview.setTheme("ace/theme/kuroir");
     editorMapPreview.session.setMode("ace/mode/json");
 
-    const testPayload = { content: { data: {} }, error: null };
+    const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
     const updateFilterResult = (err, result) => {
         let resultElm = document.getElementById('filter-res');
         if (err) {
@@ -257,38 +324,6 @@ the *Set test payload* button to change the filter payload.`);
     testPayloadBtn.addEventListener('click', e => {
         e.preventDefault();
         $('#setPayloadModal').modal('show');
-    });
-
-
-    const sendTestPayload = async () => {
-        const webhooks = document.getElementById('inputTargetUrl').value.trim();
-        const payload = editorMapPreview.getValue().trim();
-
-        const res = await fetch('/admin/config/webhooks/test', {
-            method: 'post',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                crumb: document.getElementById('crumb').value,
-                webhooks,
-                payload
-            })
-        })
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-
-        return data;
-    }
-
-    const testSendBtn = document.getElementById('test-send-btn');
-    testSendBtn.addEventListener('click', e => {
-        e.preventDefault();
-        sendTestPayload().then(data => {
-            showToast(data.error ? data.error : (data.success ? 'Test payload sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
-        }).catch(err => {
-            showToast('Request failed\n' + err.message, 'alert-triangle');
-        })
     });
 
     let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value);
