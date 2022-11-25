@@ -1,6 +1,6 @@
 {{> document_store_header}}
 
-<form method="post" action="/admin/config/document-store/pre-processing" id="edit-form">
+<form method="post" action="/admin/config/document-store/pre-processing/edit" id="edit-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
@@ -10,6 +10,10 @@
         <div class="card-body">
 
             <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStorePreProcessingEnabled</a>]</div>
+
                 <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
                     name="enabled" {{#if values.enabled}}checked{{/if}} />
                 <label class="form-check-label" for="enabled">Enable pre-processing</label>
@@ -72,6 +76,7 @@
     </div>
 
     <div class="mb-4">
+        <a href="/admin/config/document-store/pre-processing" class="btn btn-secondary">Cancel</a>
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
