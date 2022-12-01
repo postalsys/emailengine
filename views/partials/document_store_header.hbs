@@ -15,6 +15,10 @@
     </li>
     <li class="nav-item">
         <a class="nav-link {{#if documentStorePreProcessing}}active{{/if}}"
-            href="/admin/config/document-store/pre-processing">Pre-processing</a>
+            href="/admin/config/document-store/pre-processing">Pre-processing {{#if documentStorePreProcessingEnabled}}
+            <span class="badge badge-success">enabled</span>
+            {{else}}
+            <span class="badge badge-warning">disabled</span>
+            {{/if}}</a>
     </li>
 </ul>
