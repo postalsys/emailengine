@@ -5,11 +5,20 @@
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
+                <div class="mb-2">
+                    Document pre-processing allows modifying emails before these are stored in the document store. You
+                    can
+                    also filter out messages you do not want to be stored at all. You can add new fields to the document
+                    and
+                    edit the contents of existing fields. The following fields can not be edited: <em>id</em>,
+                    <em>account</em>, <em>path</em>, <em>uid</em>, <em>specialUse</em>, <em>messageId</em>.
+                </div>
+                <div>
+                    <strong>NB!</strong> When adding new fields to email documents, EmailEngine does not create type
+                    mappings for these new fields. Instead, ElasticSearch creates the mappings automatically. Sometimes
+                    it might not be what you want, so you’d have to create these mappings manually.
+                </div>
 
-                Document pre-processing allows modifying emails before these are stored in the document store. You can
-                also filter out messages you do not want to be stored at all. You can add new fields to the document and
-                edit the contents of existing fields. The following fields can not be edited: <em>id</em>,
-                <em>account</em>, <em>path</em>, <em>uid</em>, <em>specialUse</em>, <em>messageId</em>.
             </div>
 
             <div class="col-auto">
@@ -36,20 +45,6 @@
             </div>
         </div>
 
-        <dl class="row">
-
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9">
-                <strong>
-                    {{#if values.enabled}}
-                    <span class="badge badge-success">Enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning">Disabled</span>
-                    {{/if}}
-                </strong>
-            </dd>
-
-        </dl>
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
