@@ -253,9 +253,14 @@
 
             <dt class="col-sm-3">Capabilities</dt>
             <dd class="col-sm-9">
-                {{#each account.imapServerInfo.capabilities}}
-                <span data-toggle="tooltip" data-placement="top" title="{{@this}}"
-                    style="cursor: default;">{{@this}}</span>
+                {{#each capabilities}}
+                {{#if url}}
+                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}"
+                    target="_blank">{{capability}}</a>
+                {{else}}
+                <span data-toggle="tooltip" data-placement="top" title="{{capability}}"
+                    style="cursor: default;">{{capability}}</span>
+                {{/if}}
                 {{/each}}
             </dd>
 
