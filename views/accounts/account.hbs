@@ -247,19 +247,18 @@
 
             {{#if account.imapServerInfo.[support-url]}}
             <dt class="col-sm-3">Support URL</dt>
-            <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}"
-                    target="_blank">{{account.imapServerInfo.[support-url]}}</a></dd>
+            <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}">{{account.imapServerInfo.[support-url]}}</a></dd>
             {{/if}}
 
             <dt class="col-sm-3">Capabilities</dt>
             <dd class="col-sm-9">
                 {{#each capabilities}}
                 {{#if url}}
-                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}"
-                    target="_blank">{{capability}}</a>
+                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}">{{capability}}</a>
                 {{else}}
-                <span data-toggle="tooltip" data-placement="top" title="{{capability}}"
-                    style="cursor: default;">{{capability}}</span>
+                <span style="cursor: default;">{{capability}}</span>
                 {{/if}}
                 {{/each}}
             </dd>
