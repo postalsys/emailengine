@@ -49,6 +49,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const pathlib = require('path');

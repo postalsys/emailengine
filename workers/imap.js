@@ -29,6 +29,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const { Connection } = require('../lib/connection');

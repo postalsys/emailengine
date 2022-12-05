@@ -47,6 +47,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const Hapi = require('@hapi/hapi');
