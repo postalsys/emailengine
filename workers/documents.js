@@ -214,6 +214,14 @@ const documentsWorker = new Worker(
                             messageData.threadId = thread;
                         }
                     } catch (err) {
+                        if (logger.notifyError) {
+                            logger.notifyError(err, event => {
+                                event.setUser(job.data.account);
+                                event.addMetadata('ee', {
+                                    index
+                                });
+                            });
+                        }
                         logger.error({ msg: 'Failed to resolve thread', err });
                     }
 
