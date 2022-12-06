@@ -66,7 +66,8 @@ const DEFAULT_STATES = {
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
-    statusCode: 503
+    statusCode: 503,
+    code: 'WorkerNotAvailable'
 };
 
 class ConnectionHandler {
