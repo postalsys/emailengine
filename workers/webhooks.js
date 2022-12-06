@@ -36,7 +36,7 @@ const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 const nodeFetch = require('node-fetch');
@@ -131,7 +131,7 @@ const notifyWorker = new Worker(
             }
 
             switch (job.data.event) {
-                case 'messageNew': {
+                case MESSAGE_NEW_NOTIFY: {
                     // check if we need to send this event or not
                     let isInbox = false;
                     if (
