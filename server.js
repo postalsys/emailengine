@@ -184,7 +184,8 @@ logger.info({
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
-    statusCode: 503
+    statusCode: 503,
+    code: 'WorkerNotAvailable'
 };
 
 // check for upgrades once in 8 hours
