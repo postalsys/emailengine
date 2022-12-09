@@ -1,0 +1,72 @@
+{{> document_store_header}}
+
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <div class="mb-2">
+                    Here you can define additional field type mappings for email documents stored in ElasticSearch.
+                    EmailEngine automatically maps types for all the fields it uses. For other fields, for example, the
+                    custom fields added with the Document Store pre-processing functions, EmailEngine does not set any
+                    type mappings. Sometimes it is fine to let ElasticSearch handle types automatically, as the dynamic
+                    mapper is good enough. Not always, though.
+                </div>
+                <div>
+                    <strong>NB!</strong> Beware, once a field mapping has been set, you can't modify it unless you
+                    migrate the entire index. The same applies to dynamically mapped fields – if ElasticSearch finds a
+                    field value without a type mapping, it will set it dynamically, and you can't modify that type
+                    later. So define any mappings you want to use before storing data in ElasticSearch.
+                </div>
+
+            </div>
+
+            <div class="col-auto">
+                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/config/document-store/pre-processing/edit"
+                    title="Create mapping for a new field" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-plus fa-fw"></i> Add new mapping
+                </a>
+
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Searchable</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {{#each defaultMappingsList}}
+                <tr>
+                    <th>{{key}}</th>
+                    <td>{{type}}</td>
+                    <td>
+                        <span class="badge {{#if indexed}}badge-success{{else}}badge-warning{{/if}}">{{#if
+                            indexed}}Yes{{else}}No{{/if}}</span>
+                    </td>
+
+                </tr>
+                {{/each}}
+
+            </tbody>
+        </table>
+
+    </div>
+</div>
