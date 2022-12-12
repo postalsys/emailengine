@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - docstore-preprocess
+            - custom-mapping
 
 name: Deploy test instance
 
