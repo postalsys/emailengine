@@ -29,44 +29,89 @@
 </div>
 
 <div class="card mb-4">
-    <div class="card-body">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Custom mappings</h6>
+    </div>
 
+    <div class="card-body">
 
         <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
-                <a type="button" class="btn btn-light" href="/admin/config/document-store/pre-processing/edit"
+                <a type="button" class="btn btn-light" href="/admin/config/document-store/mappings/new"
                     title="Create mapping for a new field" data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-plus fa-fw"></i> Add new mapping
                 </a>
 
             </div>
         </div>
-
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Field</th>
-                    <th>Type</th>
-                    <th>Searchable</th>
-                </tr>
-            </thead>
-            <tbody>
-
-                {{#each defaultMappingsList}}
-                <tr>
-                    <th>{{key}}</th>
-                    <td>{{type}}</td>
-                    <td>
-                        <span class="badge {{#if indexed}}badge-success{{else}}badge-warning{{/if}}">{{#if
-                            indexed}}Yes{{else}}No{{/if}}</span>
-                    </td>
-
-                </tr>
-                {{/each}}
-
-            </tbody>
-        </table>
-
     </div>
+
+    <table class="table">
+        <thead>
+
+            <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Searchable</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {{#if customMappingsList}}
+
+            {{#each customMappingsList}}
+            <tr>
+                <th>{{key}}</th>
+                <td>{{type}}</td>
+                <td>
+                    <span class="badge {{#if indexed}}badge-success{{else}}badge-warning{{/if}}">{{#if
+                        indexed}}Yes{{else}}No{{/if}}</span>
+                </td>
+
+            </tr>
+            {{/each}}
+
+            {{else}}
+            <tr>
+                <td colspan="3">No custom mappings defined</td>
+            </tr>
+            {{/if}}
+        </tbody>
+    </table>
+
+
+</div>
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Built-in mappings</h6>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Searchable</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            {{#each defaultMappingsList}}
+            <tr>
+                <th>{{key}}</th>
+                <td>{{type}}</td>
+                <td>
+                    <span class="badge {{#if indexed}}badge-success{{else}}badge-warning{{/if}}">{{#if
+                        indexed}}Yes{{else}}No{{/if}}</span>
+                </td>
+
+            </tr>
+            {{/each}}
+
+        </tbody>
+    </table>
+
 </div>
