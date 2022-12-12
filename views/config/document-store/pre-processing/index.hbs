@@ -7,16 +7,16 @@
 
                 <div class="mb-2">
                     Document pre-processing allows modifying emails before these are stored in the document store. You
-                    can
-                    also filter out messages you do not want to be stored at all. You can add new fields to the document
-                    and
-                    edit the contents of existing fields. The following fields can not be edited: <em>id</em>,
-                    <em>account</em>, <em>path</em>, <em>uid</em>, <em>specialUse</em>, <em>messageId</em>.
+                    can also filter out messages you do not want to be stored at all. You can add new fields to the
+                    document and edit the contents of existing fields. The following fields can not be edited:
+                    <em>id</em>, <em>account</em>, <em>path</em>, <em>uid</em>, <em>specialUse</em>, <em>messageId</em>.
                 </div>
                 <div>
                     <strong>NB!</strong> When adding new fields to email documents, EmailEngine does not create type
                     mappings for these new fields. Instead, ElasticSearch creates the mappings automatically. Sometimes
-                    it might not be what you want, so you’d have to create these mappings manually.
+                    it might not be what you want, so you’d have to create these mappings <a
+                        href="/admin/config/document-store/mappings/new">manually</a>. You must define mappings
+                    <em>before</em> any document with that field is stored in ElasticSearch.
                 </div>
 
             </div>
