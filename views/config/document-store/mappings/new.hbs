@@ -1,0 +1,95 @@
+{{> document_store_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/config/document-store">Document Store</a></li>
+        <li class="breadcrumb-item"><a href="/admin/config/document-store/mappings">Field mappings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">New mapping</li>
+    </ol>
+</nav>
+
+<form method="post" action="/admin/config/document-store/mappings/new">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}">
+
+    <div class="card mb-4">
+
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Field data</h6>
+        </div>
+
+        <div class="card-body">
+
+            <div class="form-group">
+                <label for="field">Field name</label>
+                <input type="text" class="form-control {{#if errors.field}}is-invalid{{/if}}" id="field" name="field"
+                    value="{{values.field}}" style="text-transform: lowercase;"
+                    placeholder="For example &quot;type&quot;" data-lpignore="true" autocomplete="off" required />
+                {{#if errors.field}}
+                <span class="invalid-feedback">{{errors.field}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Field name to create the mapping for. Must be a new field without
+                    existing mapping.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="type">Field type</label>
+                <select class="form-control {{#if errors.type}}is-invalid{{/if}}" id="type" name="type" required>
+                    {{#each fieldTypes}}
+                    <option value="{{type}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.type}}
+                <span class="invalid-feedback">{{errors.type}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Only basic types are available. Complex types like nested objects
+                    must be managed manually.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input {{#if errors.indexed}}is-invalid{{/if}}" id="indexed"
+                    name="indexed" {{#if values.indexed}}checked{{/if}} />
+                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
+                    data-title="Index status"
+                    data-content="If a field is not searchable, then it is stored in the Document Store, but it is not part of the index. When listing documents, the field is included in the result."><i
+                        class="fas fa-question-circle"></i></a>
+                <label class="form-check-label" for="indexed">Searchable
+                </label>
+                {{#if errors.indexed}}
+                <span class="invalid-feedback">{{errors.indexed}}</span>
+                {{/if}}
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal" data-target="#submitModal">
+            <span class="icon text-white-50">
+                <i class="fas fa-plus"></i>
+            </span>
+            <span class="text">Add mapping</span>
+        </button>
+    </div>
+
+    <div class="modal fade" id="submitModal" tabindex="-1" aria-labelledby="submitModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="submitModalLabel">Add mapping</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to add this mapping? You would have to reindex everything to delete or
+                        modify an existing mapping.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add mapping</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>

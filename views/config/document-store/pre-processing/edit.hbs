@@ -1,5 +1,13 @@
 {{> document_store_header}}
 
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/config/document-store">Document Store</a></li>
+        <li class="breadcrumb-item"><a href="/admin/config/document-store/pre-processing">Pre-processing</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit rules</li>
+    </ol>
+</nav>
+
 <form method="post" action="/admin/config/document-store/pre-processing/edit" id="edit-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
