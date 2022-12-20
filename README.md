@@ -1,4 +1,4 @@
-![twitter_header_photo_2](https://user-images.githubusercontent.com/132242/127487204-e27c980b-04b5-448c-b92f-e692fbefc1c5.png)
+![logo](https://raw.githubusercontent.com/postalsys/emailengine/master/static/logo/EmailEngine_logo_vert.png)
 
 # EmailEngine Email API
 
