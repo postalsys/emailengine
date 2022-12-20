@@ -98,3 +98,10 @@ input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-plac
     height: 5rem;
     color: #888888;
 }
+
+.bg-gradient-primary{
+    background-color: #407ec9;
+/*#407ec9;*/
+    background-image: none;
+    background-size:cover
+}
