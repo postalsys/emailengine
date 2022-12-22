@@ -130,6 +130,8 @@ const {
     accountSchemas
 } = require('../lib/schemas');
 
+const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
+
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
@@ -2555,7 +2557,25 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return { mailboxes: await accountObject.getMailboxListing(request.query) };
+                let mailboxes = await accountObject.getMailboxListing(request.query);
+
+                if (mailboxes && Array.isArray(mailboxes)) {
+                    mailboxes = mailboxes.sort((a, b) => {
+                        if (a.specialUse && !b.specialUse) {
+                            return -1;
+                        }
+                        if (!a.specialUse && b.specialUse) {
+                            return 1;
+                        }
+                        if (a.specialUse && b.specialUse) {
+                            return FLAG_SORT_ORDER.indexOf(a.specialUse) - FLAG_SORT_ORDER.indexOf(b.specialUse);
+                        }
+
+                        return a.path.localeCompare(b.path);
+                    });
+                }
+
+                return { mailboxes };
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
