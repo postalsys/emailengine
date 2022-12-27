@@ -64,7 +64,7 @@ const pathlib = require('path');
 
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
-const { getOAuth2Client } = require('../lib/oauth');
+const { oauth2Apps } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -136,9 +136,9 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
-const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
-const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
-const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
+const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
+const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
+const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -1145,9 +1145,16 @@ When making API calls remember that requests against the same account are queued
 
             const provider = accountData.oauth2.provider;
 
-            const oAuth2Client = await getOAuth2Client(provider);
+            const oauth2App = await oauth2Apps.get(provider);
+            if (!oauth2App || !oauth2App.active) {
+                let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
+                throw error;
+            }
 
-            switch (provider) {
+            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
+
+            // `app.provider` is for example "gmail", `provider` is oauth2 app id
+            switch (oauth2App.provider) {
                 case 'gmail': {
                     const r = await oAuth2Client.getToken(request.query.code);
                     if (!r || !r.access_token) {
@@ -1771,7 +1778,7 @@ When making API calls remember that requests against the same account are queued
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
                     // redirect to OAuth2 consent screen
 
-                    const oAuth2Client = await getOAuth2Client(request.payload.oauth2.provider);
+                    const oAuth2Client = await oauth2Apps.getClient(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
                     delete request.payload.oauth2.authorize; // do not store this property
@@ -5897,7 +5904,7 @@ When making API calls remember that requests against the same account are queued
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
                     accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
-                    provider: Joi.string().max(256).required().example('google').description('OAuth2 provider')
+                    provider: Joi.string().max(256).example('gmail').description('OAuth2 provider')
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
             }
