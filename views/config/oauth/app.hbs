@@ -1,0 +1,200 @@
+{{> oauth_config_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/config/oauth">OAuth2</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{app.name}}</li>
+    </ol>
+</nav>
+
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                {{#if activeGmail}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"https://mail.google.com/"</code>
+                </ul>
+                <div>Read about setting up the OAuth2 project in Google Cloud from <a
+                        href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                </div>
+                {{/if}}
+
+                {{#if activeGmailService}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"https://mail.google.com/"</code>
+                </ul>
+                <div>Read about setting up Google service accounts from <a
+                        href="https://docs.emailengine.app/oauth-legacy/gmail-service-accounts/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
+
+                </div>
+                {{/if}}
+
+                {{#if activeOutlook}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"IMAP.AccessAsUser.All"</code>
+                    <li><code>"SMTP.Send"</code>
+                    <li><code>"offline_access"</code>
+                </ul>
+                <div>
+                    Read about setting up the OAuth2 project in Azure Active Directory from <a
+                        href="https://docs.emailengine.app/setting-up-oauth2-with-outlook/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                </div>
+                {{/if}}
+
+                {{#if activeMailRu}}
+                <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+                <ul>
+                    <li><code>"userinfo"</code>
+                    <li><code>"mail.imap"</code>
+                </ul>
+
+                <div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
+                    for your <a href="https://oauth.mail.ru/app/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">OAuth2
+                        apps</a> by default.</div>
+                {{/if}}
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/config/oauth/edit/{{app.id}}"
+                    title="Edit OAuth2 application" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-user-edit fa-fw"></i> Edit
+                </a>
+
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this application" id="delete-btn" data-placement="top">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        {{#if app.meta.authFlag}}
+        <dl class="row">
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{app.meta.authFlag}}</dd>
+        </dl>
+        <hr>
+        {{/if}}
+
+        <dl class="row">
+            <dt class="col-sm-3">Application ID</dt>
+            <dd class="col-sm-9">
+                <div class="input-group">
+                    <input type="text" id="appIdValue" class="form-control bg-light border-0 small" aria-label="ID"
+                        aria-describedby="basic-addon2" value="{{app.id}}" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
+                            data-clipboard-target="#appIdValue" title="Copy to clipboard" data-toggle="tooltip"
+                            data-placement="top">
+                            <i class="fas fa-copy fa-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <small id="inputDescriptionHelp" class="form-text text-muted">Use this ID value as the
+                    <em>"provider"</em> property in the account's OAuth2 options.</small>
+            </dd>
+
+            {{#if app.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{app.name}}</dd>
+            {{/if}}
+
+            {{#if app.description}}
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">{{app.description}}</dd>
+            {{/if}}
+
+            {{#if app.clientId}}
+            <dt class="col-sm-3">Client ID</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.clientId}}</small></dd>
+            {{/if}}
+
+            {{#if app.serviceClient}}
+            <dt class="col-sm-3">Service client</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.serviceClient}}</small></dd>
+            {{/if}}
+
+            {{#if app.clientSecret}}
+            <dt class="col-sm-3">Client Secret</dt>
+            <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
+            {{/if}}
+
+            {{#if app.serviceKey}}
+            <dt class="col-sm-3">Secret service key</dt>
+            <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
+            {{/if}}
+
+            {{#if app.redirectUrl}}
+            <dt class="col-sm-3">Redirect URL</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.redirectUrl}}</small></dd>
+            {{/if}}
+
+            {{#if app.extraScopes}}
+            <dt class="col-sm-3">Custom OAuth2 scopes</dt>
+            <dd class="col-sm-9">
+                <ul>
+                    {{#each app.extraScopes}}
+                    <li class="text-monospace"><small>{{ this }}</small></li>
+                    {{/each}}
+                </ul>
+            </dd>
+            {{/if}}
+
+        </dl>
+
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete application</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action is not
+                    recoverable.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/config/oauth/delete">
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <input type="hidden" name="app" value="{{app.id}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // not set up by default as this element has a different data-toggle
+        $('#delete-btn').tooltip();
+    });
+</script>
