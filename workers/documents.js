@@ -4,6 +4,7 @@ const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
+const { preProcess } = require('../lib/pre-process');
 
 const { readEnvValue } = require('../lib/tools');
 
@@ -27,15 +28,24 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
-const { queueConf } = require('../lib/db');
+const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { getESClient } = require('../lib/document-store');
 const { getThread } = require('../lib/threads');
 const { generateTextPreview } = require('../lib/generate-text-preview');
 
-const { MESSAGE_NEW_NOTIFY, MESSAGE_DELETED_NOTIFY, MESSAGE_UPDATED_NOTIFY, ACCOUNT_DELETED, EMAIL_BOUNCE_NOTIFY } = require('../lib/consts');
+const {
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    MESSAGE_UPDATED_NOTIFY,
+    ACCOUNT_DELETED,
+    EMAIL_BOUNCE_NOTIFY,
+    MAILBOX_DELETED_NOTIFY,
+    REDIS_PREFIX
+} = require('../lib/consts');
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -62,48 +72,114 @@ const documentsWorker = new Worker(
                     }
 
                     let deleteResult = {};
+                    let deletedCount = 0;
 
-                    for (let indexName of [index]) {
+                    let filterQuery = {
+                        match: {
+                            account: job.data.account
+                        }
+                    };
+
+                    for (let indexName of [index, `${index}.threads`]) {
                         try {
                             deleteResult[indexName] = await client.deleteByQuery({
                                 index: indexName,
-                                query: {
-                                    match: {
-                                        account: job.data.account
-                                    }
-                                }
+                                query: filterQuery
                             });
+                            deletedCount += deleteResult[indexName].deleted || 0;
                         } catch (err) {
                             logger.error({
-                                msg: 'Failed to delete account data',
+                                msg: 'Failed to delete account emails from index',
                                 action: 'document',
                                 queue: job.queue.name,
                                 code: 'document_delete_account_error',
                                 job: job.id,
                                 event: job.name,
                                 account: job.data.account,
-                                request: {
-                                    index: indexName,
-                                    query: {
-                                        match: {
-                                            account: job.data.account
-                                        }
-                                    }
-                                },
+                                index: indexName,
+                                request: filterQuery,
                                 err
                             });
-                            throw err;
+                            if (indexName === index) {
+                                throw err;
+                            }
                         }
                     }
 
                     logger.trace({
-                        msg: 'Deleted account data',
+                        msg: 'Deleted account emails from index',
                         action: 'document',
                         queue: job.queue.name,
                         code: 'document_delete_account',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        deletedCount,
+                        deleteResult
+                    });
+                }
+                break;
+
+            case MAILBOX_DELETED_NOTIFY:
+                {
+                    const { index: indexName, client } = await getESClient(logger);
+                    if (!client) {
+                        return;
+                    }
+
+                    let deleteResult = null;
+
+                    let filterQuery = {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        account: job.data.account
+                                    }
+                                },
+
+                                {
+                                    term: {
+                                        path: job.data.path
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    try {
+                        deleteResult = await client.deleteByQuery({
+                            index: indexName,
+                            query: filterQuery
+                        });
+                    } catch (err) {
+                        logger.error({
+                            msg: 'Failed to delete messages from a mailbox',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_delete_mailbox_error',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account,
+                            path: job.data.path,
+                            index: indexName,
+                            request: filterQuery,
+                            err
+                        });
+                        throw err;
+                    }
+
+                    logger.trace({
+                        msg: 'Deleted mailbox messages',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_delete_mailbox',
+                        job: job.id,
+                        event: job.name,
+                        account: job.data.account,
+                        path: job.data.path,
+                        index: indexName,
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }
@@ -111,6 +187,12 @@ const documentsWorker = new Worker(
 
             case MESSAGE_NEW_NOTIFY:
                 {
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
+                        return;
+                    }
+
                     const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
@@ -132,6 +214,14 @@ const documentsWorker = new Worker(
                             messageData.threadId = thread;
                         }
                     } catch (err) {
+                        if (logger.notifyError) {
+                            logger.notifyError(err, event => {
+                                event.setUser(job.data.account);
+                                event.addMetadata('ee', {
+                                    index
+                                });
+                            });
+                        }
                         logger.error({ msg: 'Failed to resolve thread', err });
                     }
 
@@ -168,12 +258,27 @@ const documentsWorker = new Worker(
 
                     messageData.preview = generateTextPreview(textContent, 220);
 
+                    let emailDocument = await preProcess.run(messageData);
+                    if (!emailDocument) {
+                        // skip
+                        logger.trace({
+                            msg: 'Skipped new email',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_index',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account
+                        });
+                        break;
+                    }
+
                     let indexResult;
                     try {
                         indexResult = await client.index({
                             index,
                             id: `${job.data.account}:${messageId}`,
-                            document: messageData
+                            document: emailDocument
                         });
                     } catch (err) {
                         logger.error({
@@ -216,7 +321,8 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult;
+                    let deleteResult = null;
+
                     try {
                         deleteResult = await client.delete({
                             index,
@@ -237,8 +343,8 @@ const documentsWorker = new Worker(
                                     job: job.id,
                                     event: job.name,
                                     account: job.data.account,
+                                    index,
                                     request: {
-                                        index,
                                         id: `${job.data.account}:${messageId}`
                                     },
                                     err
@@ -255,10 +361,11 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        index,
                         request: {
-                            index,
                             id: `${job.data.account}:${messageId}`
                         },
+                        deletedCount: (deleteResult && deleteResult.deleted) || 0,
                         deleteResult
                     });
                 }
@@ -268,6 +375,12 @@ const documentsWorker = new Worker(
                 {
                     let messageData = job.data.data;
                     let messageId = messageData.id;
+
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
+                        return;
+                    }
 
                     const { index, client } = await getESClient(logger);
                     if (!client) {
@@ -350,6 +463,12 @@ const documentsWorker = new Worker(
                     let messageId = bounceData.id;
                     if (!messageId) {
                         // nothing to do here, the bounce was not matched to a message
+                        return;
+                    }
+
+                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    if (!accountExists) {
+                        // deleted account?
                         return;
                     }
 
@@ -439,12 +558,7 @@ if( ctx._source.bounces != null) {
     },
     Object.assign(
         {
-            concurrency: 1,
-            limiter: {
-                max: 10,
-                duration: 1000,
-                groupKey: 'account'
-            }
+            concurrency: 1
         },
         queueConf
     )

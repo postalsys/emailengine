@@ -1,0 +1,1411 @@
+{
+    "childNodes": [{
+        "header": [
+            "Content-Type: text/plain; CHARSET=US-ASCII",
+            "Content-Transfer-Encoding: 8bit"
+        ],
+        "parsedHeader": {
+            "content-transfer-encoding": "8bit",
+            "content-type": {
+                "value": "text/plain",
+                "type": "text",
+                "subtype": "plain",
+                "params": {
+                    "charset": "US-ASCII"
+                },
+                "hasParams": true
+            }
+        },
+        "body": "Welcome to Ryan Finnie's MIME torture test.  This message was designed\r\nto introduce a couple of the newer features of MIME-aware MUAs, features\r\nthat have come around since the days of the original MIME torture test.\r\n\r\nJust to be clear, this message SUPPLEMENTS the original torture test,\r\nnot replaces it.  The original test is still very much valid these days,\r\nand new MUAs should strive to first pass the original test, then this\r\none.\r\n\r\nBy the way, the message/rfc822 parts have Content-Descriptions\r\ncontaining Futurama quotes.  Bonus points if the MUA display these\r\nsomewhere.\r\n\r\nHave fun!\r\n\r\nRyan Finnie\r\n",
+        "multipart": false,
+        "boundary": false,
+        "lineCount": 17,
+        "size": 617
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: I'll be whatever I wanna do. --Fry",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "I'll be whatever I wanna do. --Fry",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: plain jane message\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nMessage-Id: <1066973156.4264.42.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:25:56 -0700\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nSubject: plain jane message\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: text/plain\r\nMessage-Id: <1066973156.4264.42.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:25:56 -0700\r\nContent-Transfer-Encoding: 7bit\r\n\r\nThis is a plain text/plain message.  Nothing fancy here...",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "header": [
+                "Subject: plain jane message",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Message-Id: <1066973156.4264.42.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:25:56 -0700",
+                "Content-Type: text/plain; CHARSET=US-ASCII",
+                "Content-Transfer-Encoding: 8bit"
+            ],
+            "parsedHeader": {
+                "content-transfer-encoding": "8bit",
+                "content-type": {
+                    "value": "text/plain",
+                    "type": "text",
+                    "subtype": "plain",
+                    "params": {
+                        "charset": "US-ASCII"
+                    },
+                    "hasParams": true
+                },
+                "date": "23 Oct 2003 22:25:56 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066973156.4264.42.camel@localhost>",
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "plain jane message"
+            },
+            "body": "Subject: plain jane message\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: text/plain\r\nMessage-Id: <1066973156.4264.42.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:25:56 -0700\r\nContent-Transfer-Encoding: 7bit\r\n\r\nThis is a plain text/plain message.  Nothing fancy here...",
+            "multipart": false,
+            "boundary": false,
+            "lineCount": 10,
+            "size": 311
+        },
+        "lineCount": 19,
+        "size": 582
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Would you kindly shut your noise-hole? --Bender",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Would you kindly shut your noise-hole? --Bender",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: messages inside messages inside...\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-9Brg7LoMERBrIDtMRose\"\r\nMessage-Id: <1066976111.4263.74.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 23:15:11 -0700\r\n\r\n\r\n--=-9Brg7LoMERBrIDtMRose\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nWhile a message/rfc822 part inside another message/rfc822 part in a\r\nmessage isn't too strange, 200 iterations of that would be.  The MUA\r\nshould have some sense when to stop looping through.\r\n\r\n--=-9Brg7LoMERBrIDtMRose\r\nContent-Disposition: inline\r\nContent-Description: At the risk of sounding negative, no. --Leela\r\nContent-Type: message/rfc822\r\n\r\nSubject: the original message\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-XFYecI7w+0shpolXq8bb\"\r\nMessage-Id: <1066975745.4263.70.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 23:09:05 -0700\r\n\r\n\r\n--=-XFYecI7w+0shpolXq8bb\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nby this point, I should be the 3rd layer deep!\r\n\r\nI also have an attachment.\r\n\r\n--=-XFYecI7w+0shpolXq8bb\r\nContent-Disposition: attachment; filename=foo.gz\r\nContent-Transfer-Encoding: base64\r\nContent-Type: application/x-gzip; NAME=foo.gz\r\n\r\nH4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n\r\n--=-XFYecI7w+0shpolXq8bb--\r\n\r\n--=-9Brg7LoMERBrIDtMRose--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "While a message/rfc822 part inside another message/rfc822 part in a\r\nmessage isn't too strange, 200 iterations of that would be.  The MUA\r\nshould have some sense when to stop looping through.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 4,
+                "size": 193
+            }, {
+                "header": [
+                    "Content-Disposition: inline",
+                    "Content-Description: At the risk of sounding negative, no. --Leela",
+                    "Content-Type: message/rfc822"
+                ],
+                "parsedHeader": {
+                    "content-type": {
+                        "value": "message/rfc822",
+                        "type": "message",
+                        "subtype": "rfc822",
+                        "params": {}
+                    },
+                    "content-description": "At the risk of sounding negative, no. --Leela",
+                    "content-disposition": {
+                        "value": "inline",
+                        "type": "inline",
+                        "subtype": "",
+                        "params": {}
+                    }
+                },
+                "body": "Subject: the original message\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-XFYecI7w+0shpolXq8bb\"\r\nMessage-Id: <1066975745.4263.70.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 23:09:05 -0700\r\n\r\n\r\n--=-XFYecI7w+0shpolXq8bb\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nby this point, I should be the 3rd layer deep!\r\n\r\nI also have an attachment.\r\n\r\n--=-XFYecI7w+0shpolXq8bb\r\nContent-Disposition: attachment; filename=foo.gz\r\nContent-Transfer-Encoding: base64\r\nContent-Type: application/x-gzip; NAME=foo.gz\r\n\r\nH4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n\r\n--=-XFYecI7w+0shpolXq8bb--\r\n",
+                "multipart": false,
+                "boundary": false,
+                "message": {
+                    "childNodes": [{
+                        "header": [
+                            "Content-Type: text/plain; CHARSET=US-ASCII",
+                            "Content-Transfer-Encoding: 8bit"
+                        ],
+                        "parsedHeader": {
+                            "content-transfer-encoding": "8bit",
+                            "content-type": {
+                                "value": "text/plain",
+                                "type": "text",
+                                "subtype": "plain",
+                                "params": {
+                                    "charset": "US-ASCII"
+                                },
+                                "hasParams": true
+                            }
+                        },
+                        "body": "by this point, I should be the 3rd layer deep!\r\n\r\nI also have an attachment.\r\n",
+                        "multipart": false,
+                        "boundary": false,
+                        "lineCount": 4,
+                        "size": 78
+                    }, {
+                        "header": [
+                            "Content-Disposition: attachment; filename=foo.gz",
+                            "Content-Transfer-Encoding: base64",
+                            "Content-Type: application/x-gzip; NAME=foo.gz"
+                        ],
+                        "parsedHeader": {
+                            "content-type": {
+                                "value": "application/x-gzip",
+                                "type": "application",
+                                "subtype": "x-gzip",
+                                "params": {
+                                    "name": "foo.gz"
+                                },
+                                "hasParams": true
+                            },
+                            "content-transfer-encoding": "base64",
+                            "content-disposition": {
+                                "value": "attachment",
+                                "type": "attachment",
+                                "subtype": "",
+                                "params": {
+                                    "filename": "foo.gz"
+                                },
+                                "hasParams": true
+                            }
+                        },
+                        "body": "H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n",
+                        "multipart": false,
+                        "boundary": false,
+                        "lineCount": 2,
+                        "size": 58
+                    }],
+                    "header": [
+                        "Subject: the original message",
+                        "From: Ryan Finnie <rfinnie@domain.dom>",
+                        "To: bob@domain.dom",
+                        "Content-Type: multipart/mixed; boundary=\"=-XFYecI7w+0shpolXq8bb\"",
+                        "Message-Id: <1066975745.4263.70.camel@localhost>",
+                        "Mime-Version: 1.0",
+                        "Date: 23 Oct 2003 23:09:05 -0700"
+                    ],
+                    "parsedHeader": {
+                        "date": "23 Oct 2003 23:09:05 -0700",
+                        "mime-version": "1.0",
+                        "message-id": "<1066975745.4263.70.camel@localhost>",
+                        "content-type": {
+                            "value": "multipart/mixed",
+                            "type": "multipart",
+                            "subtype": "mixed",
+                            "params": {
+                                "boundary": "=-XFYecI7w+0shpolXq8bb"
+                            },
+                            "hasParams": true
+                        },
+                        "to": [{
+                            "address": "bob@domain.dom",
+                            "name": ""
+                        }],
+                        "from": [{
+                            "address": "rfinnie@domain.dom",
+                            "name": "Ryan Finnie"
+                        }],
+                        "subject": "the original message"
+                    },
+                    "body": "\r\n",
+                    "multipart": "mixed",
+                    "boundary": "=-XFYecI7w+0shpolXq8bb",
+                    "lineCount": 2,
+                    "size": 2
+                },
+                "lineCount": 26,
+                "size": 697
+            }],
+            "header": [
+                "Subject: messages inside messages inside...",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-9Brg7LoMERBrIDtMRose\"",
+                "Message-Id: <1066976111.4263.74.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 23:15:11 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 23:15:11 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066976111.4263.74.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-9Brg7LoMERBrIDtMRose"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "messages inside messages inside..."
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-9Brg7LoMERBrIDtMRose",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 50,
+        "size": 1460
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Dirt doesn't need luck! --Professor",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Dirt doesn't need luck! --Professor",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: this message JUST contains an attachment\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Disposition: attachment; filename=blah.gz\r\nContent-Transfer-Encoding: base64\r\nContent-Description: Attachment has identical content to above foo.gz\r\nMessage-Id: <1066974048.4264.62.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:40:49 -0700\r\nContent-Type: application/x-gzip; NAME=blah.gz\r\n\r\nSubjectthismessageJUSTcontainsanattachmentFromRyanFinnierfinniedomaindomTobo\r\nbdomaindomContentDispositionattachmentfilenameAblahgzContentTypeapplication/\r\nxgzipnameAblahgzContentTransferEncodingbase64ContentDescriptionAttachmenthas\r\nidenticalcontenttoabovefoogzMessageId1066974048426462camellocalhostMimeVersi\r\non10Date23Oct20032240490700H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe7\r\n64WA\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "header": [
+                "Subject: this message JUST contains an attachment",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Disposition: attachment; filename=blah.gz",
+                "Content-Transfer-Encoding: base64",
+                "Content-Description: Attachment has identical content to above foo.gz",
+                "Message-Id: <1066974048.4264.62.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:40:49 -0700",
+                "Content-Type: application/x-gzip; NAME=blah.gz"
+            ],
+            "parsedHeader": {
+                "content-type": {
+                    "value": "application/x-gzip",
+                    "type": "application",
+                    "subtype": "x-gzip",
+                    "params": {
+                        "name": "blah.gz"
+                    },
+                    "hasParams": true
+                },
+                "date": "23 Oct 2003 22:40:49 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066974048.4264.62.camel@localhost>",
+                "content-description": "Attachment has identical content to above foo.gz",
+                "content-transfer-encoding": "base64",
+                "content-disposition": {
+                    "value": "attachment",
+                    "type": "attachment",
+                    "subtype": "",
+                    "params": {
+                        "filename": "blah.gz"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "this message JUST contains an attachment"
+            },
+            "body": "SubjectthismessageJUSTcontainsanattachmentFromRyanFinnierfinniedomaindomTobo\r\nbdomaindomContentDispositionattachmentfilenameAblahgzContentTypeapplication/\r\nxgzipnameAblahgzContentTransferEncodingbase64ContentDescriptionAttachmenthas\r\nidenticalcontenttoabovefoogzMessageId1066974048426462camellocalhostMimeVersi\r\non10Date23Oct20032240490700H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe7\r\n64WA\r\n",
+            "multipart": false,
+            "boundary": false,
+            "lineCount": 7,
+            "size": 396
+        },
+        "lineCount": 18,
+        "size": 817
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Hold still, I don't have good depth perception! --Leela",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Hold still, I don't have good depth perception! --Leela",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: Attachment filename vs. name\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-1066975756jd02\"\r\nMessage-Id: <1066975756.4263.70.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 23:09:16 -0700\r\n\r\n\r\n--=-1066975756jd02\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nIn this message's attachment, the Content-Disposition has a\r\nfilename of blah1.gz, while the Content-Type has a name of\r\nblah2.gz.  What should be done?  Well, since this is an attachment\r\n(as indicated in the Content-Disposition), the MUA should\r\nsuggest a filename of blah1.gz.  The MUA *COULD* find a way to\r\nrepresent the name of blah2.gz somewhere else, it's not needed.\r\n\r\n--=-1066975756jd02\r\nContent-Disposition: attachment; filename=blah1.gz\r\nContent-Transfer-Encoding: base64\r\nContent-Description: filename is blah1.gz, name is blah2.gz\r\nContent-Type: application/x-gzip; NAME=blah2.gz\r\n\r\nH4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n\r\n--=-1066975756jd02--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "In this message's attachment, the Content-Disposition has a\r\nfilename of blah1.gz, while the Content-Type has a name of\r\nblah2.gz.  What should be done?  Well, since this is an attachment\r\n(as indicated in the Content-Disposition), the MUA should\r\nsuggest a filename of blah1.gz.  The MUA *COULD* find a way to\r\nrepresent the name of blah2.gz somewhere else, it's not needed.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 7,
+                "size": 377
+            }, {
+                "header": [
+                    "Content-Disposition: attachment; filename=blah1.gz",
+                    "Content-Transfer-Encoding: base64",
+                    "Content-Description: filename is blah1.gz, name is blah2.gz",
+                    "Content-Type: application/x-gzip; NAME=blah2.gz"
+                ],
+                "parsedHeader": {
+                    "content-type": {
+                        "value": "application/x-gzip",
+                        "type": "application",
+                        "subtype": "x-gzip",
+                        "params": {
+                            "name": "blah2.gz"
+                        },
+                        "hasParams": true
+                    },
+                    "content-description": "filename is blah1.gz, name is blah2.gz",
+                    "content-transfer-encoding": "base64",
+                    "content-disposition": {
+                        "value": "attachment",
+                        "type": "attachment",
+                        "subtype": "",
+                        "params": {
+                            "filename": "blah1.gz"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 2,
+                "size": 58
+            }],
+            "header": [
+                "Subject: Attachment filename vs. name",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-1066975756jd02\"",
+                "Message-Id: <1066975756.4263.70.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 23:09:16 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 23:09:16 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066975756.4263.70.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-1066975756jd02"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "Attachment filename vs. name"
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-1066975756jd02",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 30,
+        "size": 1045
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Hello little man.  I WILL DESTROY YOU! --Moro",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Hello little man.  I WILL DESTROY YOU! --Moro",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: No filename?  No problem!\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-1066975756jd03\"\r\nMessage-Id: <1066975761.4263.70.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 23:09:21 -0700\r\n\r\n\r\n--=-1066975756jd03\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nWhen searching for a suitable name to suggest for a filename,\r\nthe MUA should probably follow this order.  First, look for\r\nContent-Disposition's filename attribute.  If that is missing,\r\nlook for Content-Type's file attribute.  If that is also missing,\r\nI would recomment taking the Content-Description, stripping off\r\nany characters that cannot be used in a filename, and suggesting\r\nthat.\r\n\r\nIf none of those fields are available, the MUA could just make\r\nup a random filename.  SOMETHING is better than nothing.\r\n\r\n--=-1066975756jd03\r\nContent-Disposition: attachment\r\nContent-Transfer-Encoding: base64\r\nContent-Description: I'm getting sick of witty things to say\r\nContent-Type: application/x-gzip\r\n\r\nH4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n\r\n--=-1066975756jd03--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "When searching for a suitable name to suggest for a filename,\r\nthe MUA should probably follow this order.  First, look for\r\nContent-Disposition's filename attribute.  If that is missing,\r\nlook for Content-Type's file attribute.  If that is also missing,\r\nI would recomment taking the Content-Description, stripping off\r\nany characters that cannot be used in a filename, and suggesting\r\nthat.\r\n\r\nIf none of those fields are available, the MUA could just make\r\nup a random filename.  SOMETHING is better than nothing.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 11,
+                "size": 517
+            }, {
+                "header": [
+                    "Content-Disposition: attachment",
+                    "Content-Transfer-Encoding: base64",
+                    "Content-Description: I'm getting sick of witty things to say",
+                    "Content-Type: application/x-gzip"
+                ],
+                "parsedHeader": {
+                    "content-type": {
+                        "value": "application/x-gzip",
+                        "type": "application",
+                        "subtype": "x-gzip",
+                        "params": {}
+                    },
+                    "content-description": "I'm getting sick of witty things to say",
+                    "content-transfer-encoding": "base64",
+                    "content-disposition": {
+                        "value": "attachment",
+                        "type": "attachment",
+                        "subtype": "",
+                        "params": {}
+                    }
+                },
+                "body": "H4sIAOHBmD8AA4vML1XPyVHISy1LLVJIy8xLUchNVeQCAHbe764WAAAA\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 2,
+                "size": 58
+            }],
+            "header": [
+                "Subject: No filename?  No problem!",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-1066975756jd03\"",
+                "Message-Id: <1066975761.4263.70.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 23:09:21 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 23:09:21 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066975761.4263.70.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-1066975756jd03"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "No filename?  No problem!"
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-1066975756jd03",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 34,
+        "size": 1149
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Friends! Help! A guinea pig tricked me! --Zoidberg",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Friends! Help! A guinea pig tricked me! --Zoidberg",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: html and text, both inline\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-ZCKMfHzvHMyK1iBu4kff\"\r\nMessage-Id: <1066974044.4264.62.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:40:45 -0700\r\n\r\n\r\n--=-ZCKMfHzvHMyK1iBu4kff\r\nContent-Type: text/html; CHARSET=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=\"#f8cc00\">This is the HTML part.</FONT><BR>\r\nIt should be displayed inline.\r\n</BODY>\r\n</HTML>\r\n\r\n--=-ZCKMfHzvHMyK1iBu4kff\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nThis is the text part.\r\nIt should ALSO be displayed inline.\r\n\r\n--=-ZCKMfHzvHMyK1iBu4kff--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/html; CHARSET=utf-8",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/html",
+                        "type": "text",
+                        "subtype": "html",
+                        "params": {
+                            "charset": "utf-8"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=\"#f8cc00\">This is the HTML part.</FONT><BR>\r\nIt should be displayed inline.\r\n</BODY>\r\n</HTML>\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 12,
+                "size": 327
+            }, {
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "This is the text part.\r\nIt should ALSO be displayed inline.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 3,
+                "size": 61
+            }],
+            "header": [
+                "Subject: html and text, both inline",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-ZCKMfHzvHMyK1iBu4kff\"",
+                "Message-Id: <1066974044.4264.62.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:40:45 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 22:40:45 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066974044.4264.62.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-ZCKMfHzvHMyK1iBu4kff"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "html and text, both inline"
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-ZCKMfHzvHMyK1iBu4kff",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 34,
+        "size": 896
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Smeesh! --Amy",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Smeesh! --Amy",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: text and text, both inline\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-pNc4wtlOIxs8RcX7H/AK\"\r\nMessage-Id: <1066974089.4265.64.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:41:29 -0700\r\n\r\n\r\n--=-pNc4wtlOIxs8RcX7H/AK\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nThis is the first text part.\r\nIt should be displayed inline.\r\n\r\n--=-pNc4wtlOIxs8RcX7H/AK\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nThis is the second text part.\r\nIt should also be displayed inline.\r\n\r\n--=-pNc4wtlOIxs8RcX7H/AK--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "This is the first text part.\r\nIt should be displayed inline.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 3,
+                "size": 62
+            }, {
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "This is the second text part.\r\nIt should also be displayed inline.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 3,
+                "size": 68
+            }],
+            "header": [
+                "Subject: text and text, both inline",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-pNc4wtlOIxs8RcX7H/AK\"",
+                "Message-Id: <1066974089.4265.64.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:41:29 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 22:41:29 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066974089.4265.64.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-pNc4wtlOIxs8RcX7H/AK"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "text and text, both inline"
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-pNc4wtlOIxs8RcX7H/AK",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 25,
+        "size": 642
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: That's not a cigar. Uh... and it's not mine. --Hermes",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "That's not a cigar. Uh... and it's not mine. --Hermes",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: HTML and...  HTML?\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/mixed; boundary=\"=-zxh/IezwzZITiphpcbJZ\"\r\nMessage-Id: <1066973957.4263.59.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:39:17 -0700\r\n\r\n\r\n--=-zxh/IezwzZITiphpcbJZ\r\nContent-Type: text/html; CHARSET=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<B>Bold!!!</B><BR>\r\n<BR>\r\nWhat do we have here...  This message is an HTML message.  Also attached\r\nis an HTML FILE.  Both of these are in a multipart/mixed part.<BR>\r\n<BR>\r\nNow, the first HTML part (what you're reading now) should be displayed\r\nif the MUA is HTML-capable.  If it is not, the MUA could possibly offer\r\nthis part up as an attachment to download, seeing as how no plaintext\r\npart is offered as an alternative.<BR>\r\n<BR>\r\nHowever, the second HTML part is listed with a disposition as\r\nattachment.  Therefore, it should be offered as an attachment, not\r\ndisplayed inline.\r\n</BODY>\r\n</HTML>\r\n\r\n--=-zxh/IezwzZITiphpcbJZ\r\nContent-Disposition: attachment; filename=htmlfile.html\r\nContent-Type: text/html; NAME=htmlfile.html; CHARSET=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n<html>\r\n<head><title>This is an Attachment</title></head>\r\n<body>\r\n<p>The title says it all...</p>\r\n</body>\r\n</html>\r\n\r\n--=-zxh/IezwzZITiphpcbJZ--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/html; CHARSET=utf-8",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/html",
+                        "type": "text",
+                        "subtype": "html",
+                        "params": {
+                            "charset": "utf-8"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<B>Bold!!!</B><BR>\r\n<BR>\r\nWhat do we have here...  This message is an HTML message.  Also attached\r\nis an HTML FILE.  Both of these are in a multipart/mixed part.<BR>\r\n<BR>\r\nNow, the first HTML part (what you're reading now) should be displayed\r\nif the MUA is HTML-capable.  If it is not, the MUA could possibly offer\r\nthis part up as an attachment to download, seeing as how no plaintext\r\npart is offered as an alternative.<BR>\r\n<BR>\r\nHowever, the second HTML part is listed with a disposition as\r\nattachment.  Therefore, it should be offered as an attachment, not\r\ndisplayed inline.\r\n</BODY>\r\n</HTML>\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 23,
+                "size": 824
+            }, {
+                "header": [
+                    "Content-Disposition: attachment; filename=htmlfile.html",
+                    "Content-Type: text/html; NAME=htmlfile.html; CHARSET=UTF-8",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/html",
+                        "type": "text",
+                        "subtype": "html",
+                        "params": {
+                            "name": "htmlfile.html",
+                            "charset": "UTF-8"
+                        },
+                        "hasParams": true
+                    },
+                    "content-disposition": {
+                        "value": "attachment",
+                        "type": "attachment",
+                        "subtype": "",
+                        "params": {
+                            "filename": "htmlfile.html"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "<html>\r\n<head><title>This is an Attachment</title></head>\r\n<body>\r\n<p>The title says it all...</p>\r\n</body>\r\n</html>\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 7,
+                "size": 118
+            }],
+            "header": [
+                "Subject: HTML and...  HTML?",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/mixed; boundary=\"=-zxh/IezwzZITiphpcbJZ\"",
+                "Message-Id: <1066973957.4263.59.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:39:17 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 22:39:17 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066973957.4263.59.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/mixed",
+                    "type": "multipart",
+                    "subtype": "mixed",
+                    "params": {
+                        "boundary": "=-zxh/IezwzZITiphpcbJZ"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "HTML and...  HTML?"
+            },
+            "body": "\r\n",
+            "multipart": "mixed",
+            "boundary": "=-zxh/IezwzZITiphpcbJZ",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 50,
+        "size": 1515
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: The spirit is willing, but the flesh is spongy, and\r\n    bruised. --Zapp",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "The spirit is willing, but the flesh is spongy, and bruised. --Zapp",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: smiley!\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/signed; micalg=pgp-sha1; protocol=\"application/pgp-signature\"; boundary=\"=-vH3FQO9a8icUn1ROCoAi\"\r\nMessage-Id: <1066972996.4264.39.camel@localhost>\r\nMime-Version: 1.0\r\nDate: 23 Oct 2003 22:23:16 -0700\r\n\r\n\r\n--=-vH3FQO9a8icUn1ROCoAi\r\nContent-Type: multipart/mixed; boundary=\"=-CgV5jm9HAY9VbUlAuneA\"\r\n\r\n\r\n--=-CgV5jm9HAY9VbUlAuneA\r\nContent-Type: multipart/related; type=\"multipart/alternative\";\r\n    boundary=\"=-GpwozF9CQ7NdF+fd+vMG\"\r\n\r\n\r\n--=-GpwozF9CQ7NdF+fd+vMG\r\nContent-Type: multipart/alternative; boundary=\"=-dHujWM/Xizz57x/JOmDF\"\r\n\r\n\r\n--=-dHujWM/Xizz57x/JOmDF\r\nContent-Type: text/plain\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nIf this sentence is red, you are viewing the HTML part.\r\nWow, what a complicated message.  This message is laid out as so:\r\n\r\nmultipart/signed\r\n| multipart/mixed\r\n| | mutipart/related\r\n| | | multipart/alternative\r\n| | | | text/plain\r\n| | | | text/html\r\n| | | image/png (smiley)\r\n| | image/gif (dot)\r\n| application/pgp-signature\r\n\r\n:)\r\n\r\nA smiley face should be embedded into the HTML part above (if you are\r\nviewing the HTML part), while the red square dot should be attached, not\r\ndisplayed inline.  Additionally, this whole message is PGP signed.\r\n\r\nThis message introduces a few tricks that the MUA should cope with.=20\r\nFirst of all, the related / alternative combination doesn't make much\r\nsense.  Here's the current setup in pseudo-code:\r\n\r\nrelationship between (alternative: HTML or text part) and PNG part\r\n\r\nWhy would the text part be related in anyway to the PNG?  Instead, the\r\ncorrect and more logical way to do things would be:\r\n\r\nalternative: (relationship between HTML and PNG parts) or text part\r\n\r\nHowever, many MUAs compose a message using the first method, so this\r\nshould be taken care of when parsing the message.\r\n\r\nAdditionally, notice that the inline image has a disposition of\r\n\"attachment\".  Despite this being in there, the smiley should be\r\nembedded inline in the HTML part, not offered as an attachment.=20\r\nConversely, the GIF image should be offered as an attachment, not\r\ndisplayed inline.\r\n\r\nIf the MUA is not PGP capable, at the very least it should recognize\r\nmultipart/signed the same as multipart/mixed, and offer the\r\napplication/pgp-signature part as an attachment.\r\n\r\n--=-dHujWM/Xizz57x/JOmDF\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=3D\"Content-Type\" CONTENT=3D\"text/html; CHARSET=3DUTF-8\">\r\n  <META NAME=3D\"GENERATOR\" CONTENT=3D\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=3D\"#f80000\">If this sentence is red, you are viewing the HTML p=\r\nart.</FONT><BR>\r\nWow, what a complicated message.Â  This message is laid out as so:<BR>\r\n<BR>\r\nmultipart/signed<BR>\r\n| multipart/mixed<BR>\r\n| | mutipart/related<BR>\r\n| | | multipart/alternative<BR>\r\n| | | | text/plain<BR>\r\n| | | | text/html<BR>\r\n| | | image/png (smiley)<BR>\r\n| | image/gif (dot)<BR>\r\n| application/pgp-signature<BR>\r\n<BR>\r\n<IMG SRC=3D\"cid:1066971953.4232.15.camel@localhost\" ALIGN=3D\"bottom\" ALT=3D=\r\n\":)\" BORDER=3D\"0\"><BR>\r\n<BR>\r\nA smiley face should be embedded into the HTML part above (if you are viewi=\r\nng the HTML part), while the red square dot should be attached, not display=\r\ned inline.Â  Additionally, this whole message is PGP signed.<BR>\r\n<BR>\r\nThis message introduces a few tricks that the MUA should cope with.Â  F=\r\nirst of all, the related / alternative combination doesn't make much sense.=\r\nÂ  Here's the current setup in pseudo-code:<BR>\r\n<BR>\r\n<I>relationship between (alternative: HTML or text part) and PNG part</I><B=\r\nR>\r\n<BR>\r\nWhy would the text part be related in anyway to the PNG?Â  Instead, the=\r\n correct and more logical way to do things would be:<BR>\r\n<BR>\r\nalternative: (relationship between HTML and PNG parts) or text part<BR>\r\n<BR>\r\nHowever, many MUAs compose a message using the first method, so this should=\r\n be taken care of when parsing the message.<BR>\r\n<BR>\r\nAdditionally, notice that the inline image has a disposition of \"attac=\r\nhment\".Â  Despite this being in there, the smiley should be embedd=\r\ned inline in the HTML part, not offered as an attachment.Â  Conversely,=\r\n the GIF image should be offered as an attachment, not displayed inline.<BR=\r\n>\r\n<BR>\r\nIf the MUA is not PGP capable, at the very least it should recognize multip=\r\nart/signed the same as multipart/mixed, and offer the application/pgp-signa=\r\nture part as an attachment.\r\n</BODY>\r\n</HTML>\r\n\r\n--=-dHujWM/Xizz57x/JOmDF--\r\n\r\n--=-GpwozF9CQ7NdF+fd+vMG\r\nContent-ID: <1066971953.4232.15.camel@localhost>\r\nContent-Disposition: attachment; filename=smiley-3.png\r\nContent-Type: image/png; name=smiley-3.png\r\nContent-Transfer-Encoding: base64\r\n\r\niVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC+klEQVR42n2TbUjVdxTHP/+H69Xd\r\na2VWlFe69rzthZJUoxeNOWoFGxEhYRRFmZSVW2u9ab2KejWE1qDNBkEQhS82VoiaZkVPmoWaKNM5\r\nmA+opbd771//997//T/+epHBarEPHA6Hc84XDnwP/JcwcBS4AVgzcR04ONN7C+md+pcPCz44dPLA\r\narZs/gg1UABuGkvvp7X1Iad+itE/YtUAle8TuH26sujzqq/LkJQsnOQQVmIASVJQMhehZORiJwc5\r\nd76FH2pf3gY2Aigzy7+eObqmtOqbXbjGGHZqCM+eQpJ9AHhWFCc5CAjWf1KAkppc+qg3vRCol4Fw\r\n0aqcisOVW3HTE7hmBElSKD/5GFkNMhH1KDvegST78CwNSfZxeM88VuYrh4CwAuxqvxL6MnPuWiy9\r\nH1kNUPH9fZofDKPpHn8/z+Z6Yw8JK5stX5VhRO6h+OfiV3WaHxtPVKAwmF+KqXUDMkgqZ0+UoKcE\r\nP57/GXOqh46ODqrPXUQfufb6YOGxJOQD2CaHQnnlAJ4zDXggHBYvK6ap6Rau+RIz1k7djd+YHrqM\r\npXUC4KQnWTRPAdiuRqNRkFQG/omRNJOsKVQw408xtS4QDsI10AaqEY6O8Fzq70fJy3XI8gsA5HTa\r\nrBdOkvwFKj39EWrr/sJzEnj29OvsphGugfBsLlwbZnjcYN36LxiLuADtMtCUetFAcE4ee8s+pbHV\r\nYtOemwhHx3MSaPEY3X9OUnqsk5a2OMeP7KC3t4u+3gRALUC4cEW2eN62Q4ze3SAiz74TDxvOiI+X\r\nBcTsoCoyfJKYn6OKmrMbxGRnlXhyJSSqv80Vq0KSAFa+ceKl0wcK9lfsW42TGsE/pxhfcDmKfz6e\r\nFUPg4iRH6Ov6g9EJh1t341xusWuAyn9b+c7BrbklJ8oDZGTOQpL9ePY08SmDpCEwbcHwuE370yku\r\nNlj3gM/e90yXliyU9+8sCVJYlEUgU8IwBZruMThm83uzxsAYV4Hd/A9h4BjQBthAFOgDLgDF7w6/\r\nArI6YJ0eTQeGAAAAAElFTkSuQmCC\r\n\r\n--=-GpwozF9CQ7NdF+fd+vMG--\r\n\r\n--=-CgV5jm9HAY9VbUlAuneA\r\nContent-Disposition: attachment; filename=dot.gif\r\nContent-Type: image/gif; name=dot.gif\r\nContent-Transfer-Encoding: base64\r\n\r\nR0lGODdhCgAKAKEAAAAAANUAAP///8PDwywAAAAACgAKAEACHZSPMssLKoIMYLyR1I2z3sZsE2VB\r\nowcBqlqurloAADs=\r\n\r\n--=-CgV5jm9HAY9VbUlAuneA--\r\n\r\n--=-vH3FQO9a8icUn1ROCoAi\r\nContent-Type: application/pgp-signature; name=signature.asc\r\nContent-Description: This is a digitally signed message part\r\n\r\n-----BEGIN PGP SIGNATURE-----\r\nVersion: GnuPG v1.2.2 (GNU/Linux)\r\n\r\niD8DBQA/mLdEKZYQqSA+yiURAjAnAJ90G22jbX/Broy0F541R0UUbsb6zgCeJn0d\r\n02Vq9Sv6aXE+YM0lRn3jZDc=\r\n=uwCM\r\n-----END PGP SIGNATURE-----\r\n\r\n--=-vH3FQO9a8icUn1ROCoAi--",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "childNodes": [{
+                    "childNodes": [{
+                        "childNodes": [{
+                            "header": [
+                                "Content-Type: text/plain",
+                                "Content-Transfer-Encoding: quoted-printable"
+                            ],
+                            "parsedHeader": {
+                                "content-transfer-encoding": "quoted-printable",
+                                "content-type": {
+                                    "value": "text/plain",
+                                    "type": "text",
+                                    "subtype": "plain",
+                                    "params": {}
+                                }
+                            },
+                            "body": "If this sentence is red, you are viewing the HTML part.\r\nWow, what a complicated message.  This message is laid out as so:\r\n\r\nmultipart/signed\r\n| multipart/mixed\r\n| | mutipart/related\r\n| | | multipart/alternative\r\n| | | | text/plain\r\n| | | | text/html\r\n| | | image/png (smiley)\r\n| | image/gif (dot)\r\n| application/pgp-signature\r\n\r\n:)\r\n\r\nA smiley face should be embedded into the HTML part above (if you are\r\nviewing the HTML part), while the red square dot should be attached, not\r\ndisplayed inline.  Additionally, this whole message is PGP signed.\r\n\r\nThis message introduces a few tricks that the MUA should cope with.=20\r\nFirst of all, the related / alternative combination doesn't make much\r\nsense.  Here's the current setup in pseudo-code:\r\n\r\nrelationship between (alternative: HTML or text part) and PNG part\r\n\r\nWhy would the text part be related in anyway to the PNG?  Instead, the\r\ncorrect and more logical way to do things would be:\r\n\r\nalternative: (relationship between HTML and PNG parts) or text part\r\n\r\nHowever, many MUAs compose a message using the first method, so this\r\nshould be taken care of when parsing the message.\r\n\r\nAdditionally, notice that the inline image has a disposition of\r\n\"attachment\".  Despite this being in there, the smiley should be\r\nembedded inline in the HTML part, not offered as an attachment.=20\r\nConversely, the GIF image should be offered as an attachment, not\r\ndisplayed inline.\r\n\r\nIf the MUA is not PGP capable, at the very least it should recognize\r\nmultipart/signed the same as multipart/mixed, and offer the\r\napplication/pgp-signature part as an attachment.\r\n",
+                            "multipart": false,
+                            "boundary": false,
+                            "lineCount": 43,
+                            "size": 1606
+                        }, {
+                            "header": [
+                                "Content-Type: text/html; charset=utf-8",
+                                "Content-Transfer-Encoding: quoted-printable"
+                            ],
+                            "parsedHeader": {
+                                "content-transfer-encoding": "quoted-printable",
+                                "content-type": {
+                                    "value": "text/html",
+                                    "type": "text",
+                                    "subtype": "html",
+                                    "params": {
+                                        "charset": "utf-8"
+                                    },
+                                    "hasParams": true
+                                }
+                            },
+                            "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=3D\"Content-Type\" CONTENT=3D\"text/html; CHARSET=3DUTF-8\">\r\n  <META NAME=3D\"GENERATOR\" CONTENT=3D\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=3D\"#f80000\">If this sentence is red, you are viewing the HTML p=\r\nart.</FONT><BR>\r\nWow, what a complicated message.Â  This message is laid out as so:<BR>\r\n<BR>\r\nmultipart/signed<BR>\r\n| multipart/mixed<BR>\r\n| | mutipart/related<BR>\r\n| | | multipart/alternative<BR>\r\n| | | | text/plain<BR>\r\n| | | | text/html<BR>\r\n| | | image/png (smiley)<BR>\r\n| | image/gif (dot)<BR>\r\n| application/pgp-signature<BR>\r\n<BR>\r\n<IMG SRC=3D\"cid:1066971953.4232.15.camel@localhost\" ALIGN=3D\"bottom\" ALT=3D=\r\n\":)\" BORDER=3D\"0\"><BR>\r\n<BR>\r\nA smiley face should be embedded into the HTML part above (if you are viewi=\r\nng the HTML part), while the red square dot should be attached, not display=\r\ned inline.Â  Additionally, this whole message is PGP signed.<BR>\r\n<BR>\r\nThis message introduces a few tricks that the MUA should cope with.Â  F=\r\nirst of all, the related / alternative combination doesn't make much sense.=\r\nÂ  Here's the current setup in pseudo-code:<BR>\r\n<BR>\r\n<I>relationship between (alternative: HTML or text part) and PNG part</I><B=\r\nR>\r\n<BR>\r\nWhy would the text part be related in anyway to the PNG?Â  Instead, the=\r\n correct and more logical way to do things would be:<BR>\r\n<BR>\r\nalternative: (relationship between HTML and PNG parts) or text part<BR>\r\n<BR>\r\nHowever, many MUAs compose a message using the first method, so this should=\r\n be taken care of when parsing the message.<BR>\r\n<BR>\r\nAdditionally, notice that the inline image has a disposition of \"attac=\r\nhment\".Â  Despite this being in there, the smiley should be embedd=\r\ned inline in the HTML part, not offered as an attachment.Â  Conversely,=\r\n the GIF image should be offered as an attachment, not displayed inline.<BR=\r\n>\r\n<BR>\r\nIf the MUA is not PGP capable, at the very least it should recognize multip=\r\nart/signed the same as multipart/mixed, and offer the application/pgp-signa=\r\nture part as an attachment.\r\n</BODY>\r\n</HTML>\r\n",
+                            "multipart": false,
+                            "boundary": false,
+                            "lineCount": 55,
+                            "size": 2135
+                        }],
+                        "header": [
+                            "Content-Type: multipart/alternative; boundary=\"=-dHujWM/Xizz57x/JOmDF\""
+                        ],
+                        "parsedHeader": {
+                            "content-type": {
+                                "value": "multipart/alternative",
+                                "type": "multipart",
+                                "subtype": "alternative",
+                                "params": {
+                                    "boundary": "=-dHujWM/Xizz57x/JOmDF"
+                                },
+                                "hasParams": true
+                            }
+                        },
+                        "body": "\r\n",
+                        "multipart": "alternative",
+                        "boundary": "=-dHujWM/Xizz57x/JOmDF",
+                        "lineCount": 2,
+                        "size": 2
+                    }, {
+                        "header": [
+                            "Content-ID: <1066971953.4232.15.camel@localhost>",
+                            "Content-Disposition: attachment; filename=smiley-3.png",
+                            "Content-Type: image/png; name=smiley-3.png",
+                            "Content-Transfer-Encoding: base64"
+                        ],
+                        "parsedHeader": {
+                            "content-transfer-encoding": "base64",
+                            "content-type": {
+                                "value": "image/png",
+                                "type": "image",
+                                "subtype": "png",
+                                "params": {
+                                    "name": "smiley-3.png"
+                                },
+                                "hasParams": true
+                            },
+                            "content-disposition": {
+                                "value": "attachment",
+                                "type": "attachment",
+                                "subtype": "",
+                                "params": {
+                                    "filename": "smiley-3.png"
+                                },
+                                "hasParams": true
+                            },
+                            "content-id": "<1066971953.4232.15.camel@localhost>"
+                        },
+                        "body": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC+klEQVR42n2TbUjVdxTHP/+H69Xd\r\na2VWlFe69rzthZJUoxeNOWoFGxEhYRRFmZSVW2u9ab2KejWE1qDNBkEQhS82VoiaZkVPmoWaKNM5\r\nmA+opbd771//997//T/+epHBarEPHA6Hc84XDnwP/JcwcBS4AVgzcR04ONN7C+md+pcPCz44dPLA\r\narZs/gg1UABuGkvvp7X1Iad+itE/YtUAle8TuH26sujzqq/LkJQsnOQQVmIASVJQMhehZORiJwc5\r\nd76FH2pf3gY2Aigzy7+eObqmtOqbXbjGGHZqCM+eQpJ9AHhWFCc5CAjWf1KAkppc+qg3vRCol4Fw\r\n0aqcisOVW3HTE7hmBElSKD/5GFkNMhH1KDvegST78CwNSfZxeM88VuYrh4CwAuxqvxL6MnPuWiy9\r\nH1kNUPH9fZofDKPpHn8/z+Z6Yw8JK5stX5VhRO6h+OfiV3WaHxtPVKAwmF+KqXUDMkgqZ0+UoKcE\r\nP57/GXOqh46ODqrPXUQfufb6YOGxJOQD2CaHQnnlAJ4zDXggHBYvK6ap6Rau+RIz1k7djd+YHrqM\r\npXUC4KQnWTRPAdiuRqNRkFQG/omRNJOsKVQw408xtS4QDsI10AaqEY6O8Fzq70fJy3XI8gsA5HTa\r\nrBdOkvwFKj39EWrr/sJzEnj29OvsphGugfBsLlwbZnjcYN36LxiLuADtMtCUetFAcE4ee8s+pbHV\r\nYtOemwhHx3MSaPEY3X9OUnqsk5a2OMeP7KC3t4u+3gRALUC4cEW2eN62Q4ze3SAiz74TDxvOiI+X\r\nBcTsoCoyfJKYn6OKmrMbxGRnlXhyJSSqv80Vq0KSAFa+ceKl0wcK9lfsW42TGsE/pxhfcDmKfz6e\r\nFUPg4iRH6Ov6g9EJh1t341xusWuAyn9b+c7BrbklJ8oDZGTOQpL9ePY08SmDpCEwbcHwuE370yku\r\nNlj3gM/e90yXliyU9+8sCVJYlEUgU8IwBZruMThm83uzxsAYV4Hd/A9h4BjQBthAFOgDLgDF7w6/\r\nArI6YJ0eTQeGAAAAAElFTkSuQmCC\r\n",
+                        "multipart": false,
+                        "boundary": false,
+                        "lineCount": 16,
+                        "size": 1122
+                    }],
+                    "header": [
+                        "Content-Type: multipart/related; type=\"multipart/alternative\";\r\n    boundary=\"=-GpwozF9CQ7NdF+fd+vMG\""
+                    ],
+                    "parsedHeader": {
+                        "content-type": {
+                            "value": "multipart/related",
+                            "type": "multipart",
+                            "subtype": "related",
+                            "params": {
+                                "type": "multipart/alternative",
+                                "boundary": "=-GpwozF9CQ7NdF+fd+vMG"
+                            },
+                            "hasParams": true
+                        }
+                    },
+                    "body": "\r\n",
+                    "multipart": "related",
+                    "boundary": "=-GpwozF9CQ7NdF+fd+vMG",
+                    "lineCount": 2,
+                    "size": 2
+                }, {
+                    "header": [
+                        "Content-Disposition: attachment; filename=dot.gif",
+                        "Content-Type: image/gif; name=dot.gif",
+                        "Content-Transfer-Encoding: base64"
+                    ],
+                    "parsedHeader": {
+                        "content-transfer-encoding": "base64",
+                        "content-type": {
+                            "value": "image/gif",
+                            "type": "image",
+                            "subtype": "gif",
+                            "params": {
+                                "name": "dot.gif"
+                            },
+                            "hasParams": true
+                        },
+                        "content-disposition": {
+                            "value": "attachment",
+                            "type": "attachment",
+                            "subtype": "",
+                            "params": {
+                                "filename": "dot.gif"
+                            },
+                            "hasParams": true
+                        }
+                    },
+                    "body": "R0lGODdhCgAKAKEAAAAAANUAAP///8PDwywAAAAACgAKAEACHZSPMssLKoIMYLyR1I2z3sZsE2VB\r\nowcBqlqurloAADs=\r\n",
+                    "multipart": false,
+                    "boundary": false,
+                    "lineCount": 3,
+                    "size": 96
+                }],
+                "header": [
+                    "Content-Type: multipart/mixed; boundary=\"=-CgV5jm9HAY9VbUlAuneA\""
+                ],
+                "parsedHeader": {
+                    "content-type": {
+                        "value": "multipart/mixed",
+                        "type": "multipart",
+                        "subtype": "mixed",
+                        "params": {
+                            "boundary": "=-CgV5jm9HAY9VbUlAuneA"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "\r\n",
+                "multipart": "mixed",
+                "boundary": "=-CgV5jm9HAY9VbUlAuneA",
+                "lineCount": 2,
+                "size": 2
+            }, {
+                "header": [
+                    "Content-Type: application/pgp-signature; name=signature.asc",
+                    "Content-Description: This is a digitally signed message part"
+                ],
+                "parsedHeader": {
+                    "content-description": "This is a digitally signed message part",
+                    "content-type": {
+                        "value": "application/pgp-signature",
+                        "type": "application",
+                        "subtype": "pgp-signature",
+                        "params": {
+                            "name": "signature.asc"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "-----BEGIN PGP SIGNATURE-----\r\nVersion: GnuPG v1.2.2 (GNU/Linux)\r\n\r\niD8DBQA/mLdEKZYQqSA+yiURAjAnAJ90G22jbX/Broy0F541R0UUbsb6zgCeJn0d\r\n02Vq9Sv6aXE+YM0lRn3jZDc=\r\n=uwCM\r\n-----END PGP SIGNATURE-----\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 8,
+                "size": 196
+            }],
+            "header": [
+                "Subject: smiley!",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/signed; micalg=pgp-sha1; protocol=\"application/pgp-signature\"; boundary=\"=-vH3FQO9a8icUn1ROCoAi\"",
+                "Message-Id: <1066972996.4264.39.camel@localhost>",
+                "Mime-Version: 1.0",
+                "Date: 23 Oct 2003 22:23:16 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 22:23:16 -0700",
+                "mime-version": "1.0",
+                "message-id": "<1066972996.4264.39.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/signed",
+                    "type": "multipart",
+                    "subtype": "signed",
+                    "params": {
+                        "micalg": "pgp-sha1",
+                        "protocol": "application/pgp-signature",
+                        "boundary": "=-vH3FQO9a8icUn1ROCoAi"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "smiley!"
+            },
+            "body": "",
+            "multipart": "signed",
+            "boundary": "=-vH3FQO9a8icUn1ROCoAi",
+            "lineCount": 1,
+            "size": 0
+        },
+        "lineCount": 177,
+        "size": 6648
+    }, {
+        "header": [
+            "Content-Disposition: inline",
+            "Content-Description: Kittens give Morbo gas. --Morbo",
+            "Content-Type: message/rfc822"
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "message/rfc822",
+                "type": "message",
+                "subtype": "rfc822",
+                "params": {}
+            },
+            "content-description": "Kittens give Morbo gas. --Morbo",
+            "content-disposition": {
+                "value": "inline",
+                "type": "inline",
+                "subtype": "",
+                "params": {}
+            }
+        },
+        "body": "Subject: the PROPER way to do alternative/related\r\nFrom: Ryan Finnie <rfinnie@domain.dom>\r\nTo: bob@domain.dom\r\nContent-Type: multipart/alternative; type=\"multipart/alternative\"; boundary=\"=-tyGlQ9JvB5uvPWzozI+y\"\r\nMessage-Id: <1066973557.4265.51.camel@localhost>\r\nMime-Version: 1.0\r\nX-Mailer: Not Evolution\r\nDate: 23 Oct 2003 22:32:37 -0700\r\n\r\n\r\n--=-tyGlQ9JvB5uvPWzozI+y\r\nContent-Type: text/plain; CHARSET=US-ASCII\r\nContent-Transfer-Encoding: 8bit\r\n\r\nIf this sentence is green, you're viewing the HTML part.\r\n\r\nNow, this is the way that all MUAs SHOULD treat this kind of situation.\r\nThe layout is like so:\r\n\r\nmultipart/alternative\r\n| text/plain\r\n| multipart/related\r\n| | text/html\r\n| | image/gif\r\n\r\nSee?  The GIF (which by the way should be inline towards the top of this\r\nmessage) is related to the HTML, and that whole block is an alternative\r\nto a text/plain part.  This is the opposite of the way shown in the\r\nprevious email.\r\n\r\nAlso, the embedded image here does not have a filename.  As mentioned\r\nabove, the MUA should suggest something as a filename, even here (the\r\nuser may want to save the embedded image, so a filename would be\r\nhelpful).  In this case, I would recommend appending the random text\r\nto be suggested to the user with the part's subtype, in this case\r\nsomething like c20vsidlkvm.gif.\r\n\r\n--=-tyGlQ9JvB5uvPWzozI+y\r\nContent-Type: multipart/related; boundary=\"=-bFkxH1S3HVGcxi+o/5jG\"\r\n\r\n\r\n--=-bFkxH1S3HVGcxi+o/5jG\r\nContent-Type: text/html; CHARSET=utf-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=\"#00fc00\">If this sentence is green, you're viewing the HTML part.</FONT><BR>\r\n<IMG SRC=\"cid:1066973340.4232.46.camel@localhost\" ALIGN=\"top\" ALT=\"\" BORDER=\"0\"><BR>\r\nNow, this is the way that all MUAs <B>SHOULD</B> treat this kind of situation.Â  The layout is like so:<BR>\r\n<BR>\r\nmultipart/alternative<BR>\r\n| text/plain<BR>\r\n| multipart/related<BR>\r\n| | text/html<BR>\r\n| | image/gif<BR>\r\n<BR>\r\nSee?Â  The GIF (which by the way should be inline towards the top of this message) is related to the HTML, and that whole block is an alternative to a text/plain part.Â  This is the opposite of the way shown in the previous email.<BR>\r\n<BR>\r\nAlso, the embedded image here does not have a filename.Â   As mentioned above, the MUA should suggest something as a filename, even here (the user may want to save the embedded image, so a filename would be helpful).Â   In this case, I would recommend appending the random text to be suggested to the user with the part's subtype, in this case something like c20vsidlkvm.gif.\r\n</BODY>\r\n</HTML>\r\n\r\n--=-bFkxH1S3HVGcxi+o/5jG\r\nContent-ID: <1066973340.4232.46.camel@localhost>\r\nContent-Transfer-Encoding: base64\r\nContent-Type: image/gif\r\n\r\nR0lGODlhBQALAPIAAKIA/64A/8ZL/////8BS/2QDANZ//wAAACH5BAEAAAMALAAAAAAFAAsAAAMY\r\nOBIytsIYEoiEl0lqFWgKM4zkUJzjWQwJADs=\r\n\r\n--=-bFkxH1S3HVGcxi+o/5jG--\r\n\r\n--=-tyGlQ9JvB5uvPWzozI+y--\r\n",
+        "multipart": false,
+        "boundary": false,
+        "message": {
+            "childNodes": [{
+                "header": [
+                    "Content-Type: text/plain; CHARSET=US-ASCII",
+                    "Content-Transfer-Encoding: 8bit"
+                ],
+                "parsedHeader": {
+                    "content-transfer-encoding": "8bit",
+                    "content-type": {
+                        "value": "text/plain",
+                        "type": "text",
+                        "subtype": "plain",
+                        "params": {
+                            "charset": "US-ASCII"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "If this sentence is green, you're viewing the HTML part.\r\n\r\nNow, this is the way that all MUAs SHOULD treat this kind of situation.\r\nThe layout is like so:\r\n\r\nmultipart/alternative\r\n| text/plain\r\n| multipart/related\r\n| | text/html\r\n| | image/gif\r\n\r\nSee?  The GIF (which by the way should be inline towards the top of this\r\nmessage) is related to the HTML, and that whole block is an alternative\r\nto a text/plain part.  This is the opposite of the way shown in the\r\nprevious email.\r\n\r\nAlso, the embedded image here does not have a filename.  As mentioned\r\nabove, the MUA should suggest something as a filename, even here (the\r\nuser may want to save the embedded image, so a filename would be\r\nhelpful).  In this case, I would recommend appending the random text\r\nto be suggested to the user with the part's subtype, in this case\r\nsomething like c20vsidlkvm.gif.\r\n",
+                "multipart": false,
+                "boundary": false,
+                "lineCount": 23,
+                "size": 862
+            }, {
+                "childNodes": [{
+                    "header": [
+                        "Content-Type: text/html; CHARSET=utf-8",
+                        "Content-Transfer-Encoding: 8bit"
+                    ],
+                    "parsedHeader": {
+                        "content-transfer-encoding": "8bit",
+                        "content-type": {
+                            "value": "text/html",
+                            "type": "text",
+                            "subtype": "html",
+                            "params": {
+                                "charset": "utf-8"
+                            },
+                            "hasParams": true
+                        }
+                    },
+                    "body": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 TRANSITIONAL//EN\">\r\n<HTML>\r\n<HEAD>\r\n  <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; CHARSET=UTF-8\">\r\n  <META NAME=\"GENERATOR\" CONTENT=\"GtkHTML/1.1.10\">\r\n</HEAD>\r\n<BODY>\r\n<FONT COLOR=\"#00fc00\">If this sentence is green, you're viewing the HTML part.</FONT><BR>\r\n<IMG SRC=\"cid:1066973340.4232.46.camel@localhost\" ALIGN=\"top\" ALT=\"\" BORDER=\"0\"><BR>\r\nNow, this is the way that all MUAs <B>SHOULD</B> treat this kind of situation.Â  The layout is like so:<BR>\r\n<BR>\r\nmultipart/alternative<BR>\r\n| text/plain<BR>\r\n| multipart/related<BR>\r\n| | text/html<BR>\r\n| | image/gif<BR>\r\n<BR>\r\nSee?Â  The GIF (which by the way should be inline towards the top of this message) is related to the HTML, and that whole block is an alternative to a text/plain part.Â  This is the opposite of the way shown in the previous email.<BR>\r\n<BR>\r\nAlso, the embedded image here does not have a filename.Â   As mentioned above, the MUA should suggest something as a filename, even here (the user may want to save the embedded image, so a filename would be helpful).Â   In this case, I would recommend appending the random text to be suggested to the user with the part's subtype, in this case something like c20vsidlkvm.gif.\r\n</BODY>\r\n</HTML>\r\n",
+                    "multipart": false,
+                    "boundary": false,
+                    "lineCount": 23,
+                    "size": 1263
+                }, {
+                    "header": [
+                        "Content-ID: <1066973340.4232.46.camel@localhost>",
+                        "Content-Transfer-Encoding: base64",
+                        "Content-Type: image/gif"
+                    ],
+                    "parsedHeader": {
+                        "content-type": {
+                            "value": "image/gif",
+                            "type": "image",
+                            "subtype": "gif",
+                            "params": {}
+                        },
+                        "content-transfer-encoding": "base64",
+                        "content-id": "<1066973340.4232.46.camel@localhost>"
+                    },
+                    "body": "R0lGODlhBQALAPIAAKIA/64A/8ZL/////8BS/2QDANZ//wAAACH5BAEAAAMALAAAAAAFAAsAAAMY\r\nOBIytsIYEoiEl0lqFWgKM4zkUJzjWQwJADs=\r\n",
+                    "multipart": false,
+                    "boundary": false,
+                    "lineCount": 3,
+                    "size": 116
+                }],
+                "header": [
+                    "Content-Type: multipart/related; boundary=\"=-bFkxH1S3HVGcxi+o/5jG\""
+                ],
+                "parsedHeader": {
+                    "content-type": {
+                        "value": "multipart/related",
+                        "type": "multipart",
+                        "subtype": "related",
+                        "params": {
+                            "boundary": "=-bFkxH1S3HVGcxi+o/5jG"
+                        },
+                        "hasParams": true
+                    }
+                },
+                "body": "\r\n",
+                "multipart": "related",
+                "boundary": "=-bFkxH1S3HVGcxi+o/5jG",
+                "lineCount": 2,
+                "size": 2
+            }],
+            "header": [
+                "Subject: the PROPER way to do alternative/related",
+                "From: Ryan Finnie <rfinnie@domain.dom>",
+                "To: bob@domain.dom",
+                "Content-Type: multipart/alternative; type=\"multipart/alternative\"; boundary=\"=-tyGlQ9JvB5uvPWzozI+y\"",
+                "Message-Id: <1066973557.4265.51.camel@localhost>",
+                "Mime-Version: 1.0",
+                "X-Mailer: Not Evolution",
+                "Date: 23 Oct 2003 22:32:37 -0700"
+            ],
+            "parsedHeader": {
+                "date": "23 Oct 2003 22:32:37 -0700",
+                "x-mailer": "Not Evolution",
+                "mime-version": "1.0",
+                "message-id": "<1066973557.4265.51.camel@localhost>",
+                "content-type": {
+                    "value": "multipart/alternative",
+                    "type": "multipart",
+                    "subtype": "alternative",
+                    "params": {
+                        "type": "multipart/alternative",
+                        "boundary": "=-tyGlQ9JvB5uvPWzozI+y"
+                    },
+                    "hasParams": true
+                },
+                "to": [{
+                    "address": "bob@domain.dom",
+                    "name": ""
+                }],
+                "from": [{
+                    "address": "rfinnie@domain.dom",
+                    "name": "Ryan Finnie"
+                }],
+                "subject": "the PROPER way to do alternative/related"
+            },
+            "body": "\r\n",
+            "multipart": "alternative",
+            "boundary": "=-tyGlQ9JvB5uvPWzozI+y",
+            "lineCount": 2,
+            "size": 2
+        },
+        "lineCount": 80,
+        "size": 3092
+    }],
+    "header": [
+        "Subject: Ryan Finnie's MIME Torture Test v1.0",
+        "From: Ryan Finnie <rfinnie@domain.dom>",
+        "To: bob@domain.dom",
+        "Content-Type: multipart/mixed; boundary=\"=-qYxqvD9rbH0PNeExagh1\"",
+        "Message-Id: <1066976914.4721.5.camel@localhost>",
+        "Mime-Version: 1.0",
+        "Date: 23 Oct 2003 23:28:34 -0700"
+    ],
+    "parsedHeader": {
+        "date": "23 Oct 2003 23:28:34 -0700",
+        "mime-version": "1.0",
+        "message-id": "<1066976914.4721.5.camel@localhost>",
+        "content-type": {
+            "value": "multipart/mixed",
+            "type": "multipart",
+            "subtype": "mixed",
+            "params": {
+                "boundary": "=-qYxqvD9rbH0PNeExagh1"
+            },
+            "hasParams": true
+        },
+        "to": [{
+            "address": "bob@domain.dom",
+            "name": ""
+        }],
+        "from": [{
+            "address": "rfinnie@domain.dom",
+            "name": "Ryan Finnie"
+        }],
+        "subject": "Ryan Finnie's MIME Torture Test v1.0"
+    },
+    "body": "\r\n",
+    "multipart": "mixed",
+    "boundary": "=-qYxqvD9rbH0PNeExagh1",
+    "lineCount": 2,
+    "size": 2
+}

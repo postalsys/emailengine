@@ -2,29 +2,31 @@
 [workers]
 imap = 4
 webhooks = 1
+"imapProxy" = 1
 
 [queues]
 # concurrency values
-submit=1
-notify=1
+submit = 1
+notify = 1
 
 [service]
 #commandTimeout = "10s" # how much time to wait until IMAP command is deemed as failed
 #localAddresses = "ip1,ip2" # somma separated list of local IP addresses to use for tcp connections
 #secret = "secret_encryption_key" # key to encrypt passwords and Oauth tokens in DB
+#setupDelay = "0ms" # how much time to wait until assigning next IMAP connection to a worker
 
 [api]
 port = 3000
 host = "127.0.0.1" # by default API server is accessible from localhost only
-maxSize = "5M" # maximum size of an attachment when submitting or uploading messages
+maxSize = "5M"     # maximum size of an attachment when submitting or uploading messages
 #auth = "user:pass" # If set then uses Basic Auth
 
 [smtp]
 enabled = false
 port = 2525
 host = "127.0.0.1"
-secret = "" # client password, if not set allows any password
-proxy = false # Set to true if using HAProxy with send-proxy option
+secret = ""        # client password, if not set allows any password
+proxy = false      # Set to true if using HAProxy with send-proxy option
 
 [dbs]
 # redis connection

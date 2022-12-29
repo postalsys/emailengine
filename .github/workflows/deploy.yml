@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - feature-smtp-test
+            - custom-mapping
 
 name: Deploy test instance
 
@@ -30,7 +30,7 @@ jobs:
               run: |
                   echo $GITHUB_SHA > commit.txt
                   ./update-info.sh
-                  npm install --production
+                  npm install --omit=dev
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
                   scp /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_01}:
                   ssh deploy@$TARGET_HOST_01 "/opt/deploy.sh ${SERVICE_NAME}"

@@ -25,6 +25,7 @@ const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
 const { readEnvValue, hasEnvValue } = require('./lib/tools');
+const { webhooks: Webhooks } = require('./lib/webhooks');
 const nodeFetch = require('node-fetch');
 const fetchCmd = global.fetch || nodeFetch;
 
@@ -48,10 +49,11 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const pathlib = require('path');
-const { redis, queueConf, notifyQueue } = require('./lib/db');
+const { redis, queueConf } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -61,7 +63,7 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const tokens = require('./lib/tokens');
 
-const { QueueScheduler } = require('bullmq');
+const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
 
@@ -83,8 +85,11 @@ const {
     CONNECT_ERROR_NOTIFY,
     REDIS_PREFIX,
     ACCOUNT_ADDED_NOTIFY,
-    ACCOUNT_DELETED_NOTIFY
+    ACCOUNT_DELETED_NOTIFY,
+    LIST_UNSUBSCRIBE_NOTIFY,
+    LIST_SUBSCRIBE_NOTIFY
 } = require('./lib/consts');
+
 const msgpack = require('msgpack5')();
 
 config.service = config.service || {};
@@ -92,7 +97,8 @@ config.service = config.service || {};
 config.workers = config.workers || {
     imap: 4,
     webhooks: 1,
-    submit: 1
+    submit: 1,
+    imapProxy: 1
 };
 
 config.dbs = config.dbs || {
@@ -116,11 +122,21 @@ config.smtp = config.smtp || {
     proxy: false
 };
 
+config['imap-proxy'] = config['imap-proxy'] || {
+    enabled: false,
+    port: 2993,
+    host: '127.0.0.1',
+    secret: '',
+    proxy: false
+};
+
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
+
+const CONNECION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECION_SETUP_DELAY') || config.service.setupDelay) || 0;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -143,6 +159,17 @@ const SMTP_PORT = (readEnvValue('EENGINE_SMTP_PORT') && Number(readEnvValue('EEN
 const SMTP_HOST = readEnvValue('EENGINE_SMTP_HOST') || config.smtp.host || '127.0.0.1';
 const SMTP_PROXY = hasEnvValue('EENGINE_SMTP_PROXY') ? getBoolean(readEnvValue('EENGINE_SMTP_PROXY')) : getBoolean(config.smtp.proxy);
 
+const IMAP_PROXY_ENABLED = hasEnvValue('EENGINE_IMAP_PROXY_ENABLED')
+    ? getBoolean(readEnvValue('EENGINE_IMAP_PROXY_ENABLED'))
+    : getBoolean(config['imap-proxy'].enabled);
+const IMAP_PROXY_SECRET = readEnvValue('EENGINE_IMAP_PROXY_SECRET') || config['imap-proxy'].secret;
+const IMAP_PROXY_PORT =
+    (readEnvValue('EENGINE_IMAP_PROXY_PORT') && Number(readEnvValue('EENGINE_IMAP_PROXY_PORT'))) || Number(config['imap-proxy'].port) || 2993;
+const IMAP_PROXY_HOST = readEnvValue('EENGINE_IMAP_PROXY_HOST') || config['imap-proxy'].host || '127.0.0.1';
+const IMAP_PROXY_PROXY = hasEnvValue('EENGINE_IMAP_PROXY_PROXY')
+    ? getBoolean(readEnvValue('EENGINE_IMAP_PROXY_PROXY'))
+    : getBoolean(config['imap-proxy'].proxy);
+
 const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
 logger.info({
@@ -157,7 +184,8 @@ logger.info({
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
-    statusCode: 503
+    statusCode: 503,
+    code: 'WorkerNotAvailable'
 };
 
 // check for upgrades once in 8 hours
@@ -170,9 +198,7 @@ const licenseInfo = {
     type: packageData.license
 };
 
-let notifyScheduler;
-let submitScheduler;
-let documentsScheduler;
+const queueEvents = {};
 
 let preparedSettings = false;
 const preparedSettingsString = readEnvValue('EENGINE_SETTINGS') || config.settings;
@@ -254,6 +280,16 @@ const metrics = {
         name: 'imap_responses',
         help: 'IMAP responses',
         labelNames: ['response', 'code']
+    }),
+
+    imapBytesSent: new promClient.Counter({
+        name: 'imap_bytes_sent',
+        help: 'IMAP bytes sent'
+    }),
+
+    imapBytesReceived: new promClient.Counter({
+        name: 'imap_bytes_received',
+        help: 'IMAP bytes received'
     }),
 
     webhooks: new promClient.Counter({
@@ -392,18 +428,6 @@ const metrics = {
     })
 };
 
-/*
-Object.keys(metrics).forEach(key => {
-    if (metrics[key] && metrics[key].name) {
-        console.log(
-            `  * **${metrics[key].name}** (*${metrics[key].constructor.name}*) – ${metrics[key].help} ${
-                metrics[key].labelNames && metrics[key].labelNames.length ? ` [labels: *"${metrics[key].labelNames.join('"*, *"')}"*]` : ''
-            }`
-        );
-    }
-});
-*/
-
 let callQueue = new Map();
 let mids = 0;
 
@@ -487,17 +511,17 @@ let clearUnassignmentCounter = account => {
     unassignCounter.delete(account);
 };
 
-let updateSmtpServerState = async (state, payload) => {
-    await redis.hset(`${REDIS_PREFIX}smtp`, 'state', state);
+let updateServerState = async (type, state, payload) => {
+    await redis.hset(`${REDIS_PREFIX}${type}`, 'state', state);
     if (payload) {
-        await redis.hset(`${REDIS_PREFIX}smtp`, 'payload', JSON.stringify(payload));
+        await redis.hset(`${REDIS_PREFIX}${type}`, 'payload', JSON.stringify(payload));
     }
 
     if (workers.has('api')) {
         for (let worker of workers.get('api')) {
             let callPayload = {
                 cmd: 'change',
-                type: 'smtpServerState',
+                type: '${type}ServerState',
                 key: state,
                 payload: payload || null
             };
@@ -512,7 +536,10 @@ let updateSmtpServerState = async (state, payload) => {
 };
 
 async function sendWebhook(account, event, data) {
+    let serviceUrl = (await settings.get('serviceUrl')) || true;
+
     let payload = {
+        serviceUrl,
         account,
         date: new Date().toISOString()
     };
@@ -525,16 +552,7 @@ async function sendWebhook(account, event, data) {
         payload.data = data;
     }
 
-    let queueKeep = (await settings.get('queueKeep')) || true;
-    await notifyQueue.add(event, payload, {
-        removeOnComplete: queueKeep,
-        removeOnFail: queueKeep,
-        attempts: 10,
-        backoff: {
-            type: 'exponential',
-            delay: 5000
-        }
-    });
+    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
 let spawnWorker = async type => {
@@ -547,23 +565,23 @@ let spawnWorker = async type => {
     }
 
     if (suspendedWorkerTypes.has(type)) {
-        if (type === 'smtp') {
-            await updateSmtpServerState('suspended', {});
+        if (['smtp', 'imapProxy'].includes(type)) {
+            await updateServerState(type, 'suspended', {});
         }
         return;
     }
 
-    if (type === 'smtp') {
-        let smtpEnabled = await settings.get('smtpServerEnabled');
-        if (!smtpEnabled) {
-            await updateSmtpServerState('disabled', {});
+    if (['smtp', 'imapProxy'].includes(type)) {
+        let serverEnabled = await settings.get(`${type}ServerEnabled`);
+        if (!serverEnabled) {
+            await updateServerState(type, 'disabled', {});
             return;
         }
 
-        await updateSmtpServerState('spawning');
+        await updateServerState(type, 'spawning');
     }
 
-    let worker = new Worker(pathlib.join(__dirname, 'workers', `${type}.js`), {
+    let worker = new Worker(pathlib.join(__dirname, 'workers', `${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.js`), {
         argv,
         env: SHARE_ENV,
         trackUnmanagedFds: true
@@ -573,8 +591,8 @@ let spawnWorker = async type => {
     workers.get(type).add(worker);
 
     worker.on('online', () => {
-        if (type === 'smtp') {
-            updateSmtpServerState('initializing').catch(err => logger.error({ msg: 'Failed to update smtp server state', err }));
+        if (['smtp', 'imapProxy'].includes(type)) {
+            updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Failed to update ${type} server state`, err }));
         }
         onlineWorkers.add(worker);
     });
@@ -585,8 +603,8 @@ let spawnWorker = async type => {
 
         workers.get(type).delete(worker);
 
-        if (type === 'smtp') {
-            updateSmtpServerState(suspendedWorkerTypes.has(type) ? 'suspended' : 'exited');
+        if (['smtp', 'imapProxy'].includes(type)) {
+            updateServerState(type, suspendedWorkerTypes.has(type) ? 'suspended' : 'exited');
         }
 
         if (type === 'imap') {
@@ -609,7 +627,7 @@ let spawnWorker = async type => {
                         .finally(() => {
                             unassigned.add(account);
                             if (shouldReassign) {
-                                assignAccounts().catch(err => logger.error(err));
+                                assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
                             }
                         });
                 });
@@ -655,6 +673,9 @@ let spawnWorker = async type => {
                 if (message.statusCode) {
                     err.statusCode = message.statusCode;
                 }
+                if (message.info) {
+                    err.info = message.info;
+                }
                 return reject(err);
             } else {
                 return resolve(message.response);
@@ -682,7 +703,8 @@ let spawnWorker = async type => {
                         mid: message.mid,
                         error: err.message,
                         code: err.code,
-                        statusCode: err.statusCode
+                        statusCode: err.statusCode,
+                        info: err.info
                     };
 
                     try {
@@ -725,6 +747,14 @@ let spawnWorker = async type => {
                         let { statusCode } = message.args[0] || {};
                         let success = statusCode >= 200 && statusCode < 300;
                         statUpdateKey = `${message.key}:${success ? 'success' : 'fail'}`;
+                        break;
+                    }
+
+                    case 'queuesProcessed': {
+                        let { queue, status } = message.args[0] || {};
+                        if (['submit'].includes(queue)) {
+                            statUpdateKey = `${queue}:${status === 'completed' ? 'success' : 'fail'}`;
+                        }
                         break;
                     }
                 }
@@ -779,8 +809,11 @@ let spawnWorker = async type => {
             case 'change':
                 switch (message.type) {
                     case 'smtpServerState':
-                        updateSmtpServerState(message.key, message.payload).catch(err => logger.error({ msg: 'Failed to update smtp server state', err }));
+                    case 'imapProxyServerState': {
+                        let type = message.type.replace(/ServerState$/, '');
+                        updateServerState(type, message.key, message.payload).catch(err => logger.error({ msg: `Failed to update ${type} server state`, err }));
                         break;
+                    }
                     default:
                         // forward all state changes to the API worker
                         for (let worker of workers.get('api')) {
@@ -812,7 +845,7 @@ function processImapWorkerMessage(worker, message) {
         case 'ready':
             availableIMAPWorkers.add(worker);
             // assign pending accounts
-            assignAccounts().catch(err => logger.error(err));
+            assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 2, err }));
             break;
     }
 }
@@ -821,13 +854,15 @@ async function call(worker, message, transferList) {
     return new Promise((resolve, reject) => {
         let mid = `${Date.now()}:${++mids}`;
 
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T1]');
             err.statusCode = 504;
             err.code = 'Timeout';
-            err.payload = message;
+            err.ttl = ttl;
+            err.command = message;
             reject(err);
-        }, message.timeout || EENGINE_TIMEOUT);
+        }, ttl);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -867,6 +902,13 @@ async function assignAccounts() {
             return;
         }
 
+        logger.info({
+            msg: 'Assigning connections',
+            unassigned: unassigned.size,
+            workersAvailable: availableIMAPWorkers.size,
+            setupDelay: CONNECION_SETUP_DELAY
+        });
+
         for (let account of unassigned) {
             if (!availableIMAPWorkers.size) {
                 // out of workers
@@ -887,6 +929,10 @@ async function assignAccounts() {
                 cmd: 'assign',
                 account
             });
+
+            if (CONNECION_SETUP_DELAY) {
+                await new Promise(r => setTimeout(r, CONNECION_SETUP_DELAY));
+            }
         }
     } finally {
         assigning = false;
@@ -970,7 +1016,7 @@ let licenseCheckHandler = async opts => {
         if (!licenseInfo.active && !suspendedWorkerTypes.size) {
             logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
 
-            for (let type of ['imap', 'submit', 'smtp', 'webhooks']) {
+            for (let type of ['imap', 'submit', 'smtp', 'webhooks', 'imapProxy']) {
                 suspendedWorkerTypes.add(type);
                 if (workers.has(type)) {
                     for (let worker of workers.get(type).values()) {
@@ -984,9 +1030,13 @@ let licenseCheckHandler = async opts => {
                 suspendedWorkerTypes.delete(type);
                 switch (type) {
                     case 'smtp':
-                        if (SMTP_ENABLED) {
-                            // single SMTP interface worker
-                            await spawnWorker('smtp');
+                    case 'imapProxy':
+                        {
+                            let serverEnabled = await settings.get(`${type}ServerEnabled`);
+                            if (serverEnabled) {
+                                // single SMTP interface worker
+                                await spawnWorker(type);
+                            }
                         }
                         break;
                     default:
@@ -1121,7 +1171,7 @@ async function updateQueueCounters() {
         metrics.redisLastSaveTime.set(Number(redisInfo.rdb_last_save_time) || 0);
         metrics.redisOpsPerSec.set(Number(redisInfo.instantaneous_ops_per_sec) || 0);
     } catch (err) {
-        logger.error(err);
+        logger.error({ msg: 'Failed to update query counters', err });
     }
 }
 
@@ -1206,11 +1256,23 @@ async function onCommand(worker, message) {
             }
         }
 
+        case 'unsubscribe':
+            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Failed to send an unsubscribe webhook', err })
+            );
+            return;
+
+        case 'subscribe':
+            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Failed to send an subscribe webhook', err })
+            );
+            return;
+
         case 'new':
             unassigned.add(message.account);
             assignAccounts()
-                .then(sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-                .catch(err => logger.error(err));
+                .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
+                .catch(err => logger.error({ msg: 'Failed to assign accounts', n: 3, err }));
             return;
 
         case 'delete':
@@ -1228,9 +1290,11 @@ async function onCommand(worker, message) {
 
                 call(assignedWorker, message)
                     .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error(err));
+                    .catch(err => logger.error({ msg: 'Failed to clean an assigned worker', err }));
             }
-            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err => logger.error(err));
+            sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
+                logger.error({ msg: 'Failed to send a deletion webhook', err })
+            );
             return;
 
         case 'update':
@@ -1239,27 +1303,28 @@ async function onCommand(worker, message) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
                     .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error(err));
+                    .catch(err => logger.error({ msg: 'Failed to call sync from a worker', err }));
             }
             return;
 
         case 'smtpReload':
+        case 'imapProxyReload':
             {
-                let hasWorkers = workers.has('smtp') && workers.get('smtp').size;
+                let type = message.cmd.replace(/Reload$/, '');
+                let hasWorkers = workers.has(type) && workers.get(type).size;
                 // reload (or kill) SMTP submission worker
                 if (hasWorkers) {
-                    for (let worker of workers.get('smtp').values()) {
+                    for (let worker of workers.get(type).values()) {
                         worker.terminate();
                     }
                 } else {
-                    let smtpEnabled = await settings.get('smtpServerEnabled');
-                    if (smtpEnabled) {
+                    let serverEnabled = await settings.get(`${type}ServerEnabled`);
+                    if (serverEnabled) {
                         // spawn a new worker
-                        await spawnWorker('smtp');
+                        await spawnWorker(type);
                     }
                 }
             }
-
             break;
 
         case 'listMessages':
@@ -1267,10 +1332,14 @@ async function onCommand(worker, message) {
         case 'getText':
         case 'getMessage':
         case 'updateMessage':
+        case 'updateMessages':
         case 'listMailboxes':
         case 'moveMessage':
+        case 'moveMessages':
         case 'deleteMessage':
+        case 'deleteMessages':
         case 'createMailbox':
+        case 'renameMailbox':
         case 'deleteMailbox':
         case 'submitMessage':
         case 'queueMessage':
@@ -1321,7 +1390,7 @@ async function collectMetrics() {
                     metricsResult[status] += Number(workerStats[status]) || 0;
                 });
             } catch (err) {
-                logger.error(err);
+                logger.error({ msg: 'Failed to count connections', err });
             }
         }
     }
@@ -1333,16 +1402,16 @@ async function collectMetrics() {
 
 const closeQueues = cb => {
     let proms = [];
-    if (notifyScheduler) {
-        proms.push(notifyScheduler.close());
+    if (queueEvents.notify) {
+        proms.push(queueEvents.notify.close());
     }
 
-    if (submitScheduler) {
-        proms.push(submitScheduler.close());
+    if (queueEvents.submit) {
+        proms.push(queueEvents.submit.close());
     }
 
-    if (documentsScheduler) {
-        proms.push(documentsScheduler.close());
+    if (queueEvents.documents) {
+        proms.push(queueEvents.documents.close());
     }
 
     if (!proms.length) {
@@ -1479,13 +1548,13 @@ const startApplication = async () => {
         await settings.set('smtpServerEnabled', !!SMTP_ENABLED);
     }
 
-    let existingSecret = await settings.get('smtpServerPassword');
-    if (existingSecret === null) {
+    let existingSmtpSecret = await settings.get('smtpServerPassword');
+    if (existingSmtpSecret === null) {
         await settings.set('smtpServerPassword', SMTP_SECRET || null);
     }
 
     let existingSmtpAuthEnabled = await settings.get('smtpServerAuthEnabled');
-    if (existingSmtpAuthEnabled === null && (existingSecret || existingSecret === null)) {
+    if (existingSmtpAuthEnabled === null && (existingSmtpSecret || existingSmtpSecret === null)) {
         await settings.set('smtpServerAuthEnabled', true);
     }
 
@@ -1502,6 +1571,31 @@ const startApplication = async () => {
     let existingSmtpProxy = await settings.get('smtpServerProxy');
     if (existingSmtpProxy === null) {
         await settings.set('smtpServerProxy', SMTP_PROXY);
+    }
+
+    let existingImapProxyEnabled = await settings.get('imapProxyServerEnabled');
+    if (existingImapProxyEnabled === null) {
+        await settings.set('imapProxyServerEnabled', !!IMAP_PROXY_ENABLED);
+    }
+
+    let existingImapProxySecret = await settings.get('imapProxyServerPassword');
+    if (existingImapProxySecret === null) {
+        await settings.set('imapProxyServerPassword', IMAP_PROXY_SECRET || null);
+    }
+
+    let existingImapProxyPort = await settings.get('imapProxyServerPort');
+    if (existingImapProxyPort === null) {
+        await settings.set('imapProxyServerPort', IMAP_PROXY_PORT);
+    }
+
+    let existingImapProxyHost = await settings.get('imapProxyServerHost');
+    if (existingImapProxyHost === null) {
+        await settings.set('imapProxyServerHost', IMAP_PROXY_HOST);
+    }
+
+    let existingImapProxyProxy = await settings.get('imapProxyServerProxy');
+    if (existingImapProxyProxy === null) {
+        await settings.set('imapProxyServerProxy', IMAP_PROXY_PROXY);
     }
 
     let existingEnableApiProxy = await settings.get('enableApiProxy');
@@ -1579,6 +1673,11 @@ const startApplication = async () => {
         await spawnWorker('smtp');
     }
 
+    if (await settings.get('imapProxyServerEnabled')) {
+        // single IMAP proxy interface worker
+        await spawnWorker('imapProxy');
+    }
+
     // single worker for HTTP
     await spawnWorker('api');
 };
@@ -1596,9 +1695,9 @@ startApplication()
         upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
         upgradeCheckTimer.unref();
 
-        notifyScheduler = new QueueScheduler('notify', Object.assign({}, queueConf));
-        submitScheduler = new QueueScheduler('submit', Object.assign({}, queueConf));
-        documentsScheduler = new QueueScheduler('documents', Object.assign({}, queueConf));
+        queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
+        queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
+        queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
     })
     .catch(err => {
         logger.error({ msg: 'Failed to start application', err });

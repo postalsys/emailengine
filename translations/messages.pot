@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2022-08-11 19:55+0000\n"
+"POT-Creation-Date: 2022-11-11 10:19+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -13,6 +13,50 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
+#: views/unsubscribe.hbs:1
+#: views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:31
+#: views/accounts/register/imap-server.hbs:224
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -21,17 +65,9 @@ msgstr ""
 msgid "Enter your full name"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:25
-#: views/accounts/register/imap-server.hbs:84
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:114
 msgid "Password"
 msgstr ""
 
@@ -40,96 +76,8 @@ msgid "Enter your account password"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:146
+#: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:12
-msgid "IMAP"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:15
-#: views/accounts/register/imap-server.hbs:74
-msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:94
-msgid "Hostname"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:45
-#: views/accounts/register/imap-server.hbs:104
-msgid "Port"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:59
-msgid "TLS for IMAP"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:60
-msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:62
-#: views/accounts/register/imap-server.hbs:121
-msgid "Use TLS"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:71
-msgid "SMTP"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:118
-msgid "TLS for SMTP"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:119
-msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:137
-msgid "Test settings"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:154
-msgid "Continue without testing"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:168
-msgid "Test failed"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:174
-msgid "Failed to validate provided email server settings."
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:178
-msgid "Close"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate IMAP server settings"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:249
-msgid "IMAP Server responded with the following message:"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:256
-msgid "Failed to validate SMTP server settings"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:258
-msgid "SMTP Server responded with the following message:"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:307
-msgid "HTTP error!"
 msgstr ""
 
 #: views/accounts/register/index.hbs:2
@@ -140,39 +88,145 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
-#: lib/routes-ui.js:2798
-#: lib/routes-ui.js:4061
-#: lib/routes-ui.js:4072
+#: views/accounts/register/imap-server.hbs:18
+msgid "IMAP"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:21
+#: views/accounts/register/imap-server.hbs:100
+msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:41
+#: views/accounts/register/imap-server.hbs:46
+#: views/accounts/register/imap-server.hbs:120
+#: views/accounts/register/imap-server.hbs:125
+msgid "Application Password"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:42
+#: views/accounts/register/imap-server.hbs:121
+msgid "%s accounts require to use an application password for %s."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:43
+#: views/accounts/register/imap-server.hbs:122
+msgid "Instructions"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:61
+#: views/accounts/register/imap-server.hbs:140
+msgid "Hostname"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:71
+#: views/accounts/register/imap-server.hbs:150
+msgid "Port"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:85
+msgid "TLS for IMAP"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:86
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:88
+#: views/accounts/register/imap-server.hbs:167
+msgid "Use TLS"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:97
+msgid "SMTP"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:164
+msgid "TLS for SMTP"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:165
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:183
+msgid "Test settings"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:200
+msgid "Continue without testing"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:214
+msgid "Test failed"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:220
+msgid "Failed to validate provided email server settings."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:293
+msgid "Failed to validate IMAP server settings"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:295
+msgid "IMAP Server responded with the following message:"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:302
+msgid "Failed to validate SMTP server settings"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:304
+msgid "SMTP Server responded with the following message:"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:353
+msgid "HTTP error!"
+msgstr ""
+
+#: lib/routes-ui.js:3460
+#: lib/routes-ui.js:4729
+#: lib/routes-ui.js:4740
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:2801
-#: lib/routes-ui.js:4064
-#: lib/routes-ui.js:4075
+#: lib/routes-ui.js:3463
+#: lib/routes-ui.js:4732
+#: lib/routes-ui.js:4743
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:2805
-#: lib/routes-ui.js:4079
+#: lib/routes-ui.js:3467
+#: lib/routes-ui.js:4747
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:3791
+#: lib/routes-ui.js:4459
 msgid "Unknown OAuth provider"
 msgstr ""
 
-#: lib/routes-ui.js:3831
-#: lib/routes-ui.js:3940
-#: lib/routes-ui.js:4164
+#: lib/routes-ui.js:4499
+#: lib/routes-ui.js:4608
+#: lib/routes-ui.js:4832
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:3880
-#: lib/routes-ui.js:3913
+#: lib/routes-ui.js:4548
+#: lib/routes-ui.js:4581
+#: lib/routes-ui.js:6664
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:4003
-#: lib/routes-ui.js:4244
+#: lib/routes-ui.js:4671
+#: lib/routes-ui.js:4914
 msgid "Failed to process account"
+msgstr ""
+
+#: lib/routes-ui.js:6764
+msgid "Failed to process request"
 msgstr ""

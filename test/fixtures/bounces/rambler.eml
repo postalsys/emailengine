@@ -1,0 +1,116 @@
+Return-Path: <>
+Delivered-To: node.mailer@rambler.ru
+Received: from 2vm0010.prod.mail.rambler.tech ([10.99.0.12])
+	by 1vm0098.prod.mail.rambler.tech with LMTP
+	id MPonHBmxQ2MxdAAAMCdodQ:T195:P1
+	(envelope-from <>)
+	for <node.mailer@rambler.ru>; Mon, 10 Oct 2022 08:45:15 +0300
+Received: from mx1.mail.rambler.ru ([10.99.0.12])
+	by 2vm0010.prod.mail.rambler.tech with LMTP
+	id MPonHBmxQ2MxdAAAMCdodQ:T195
+	(envelope-from <>)
+	for <node.mailer@rambler.ru>; Mon, 10 Oct 2022 08:45:15 +0300
+Received: from mxout4.rambler.ru (mxout4.rambler.ru [81.19.78.115])
+	by mx1.mail.rambler.ru (Postfix) with ESMTP id 5BA15174C80F
+	for <node.mailer@rambler.ru>; Mon, 10 Oct 2022 08:45:15 +0300 (MSK)
+Received: from mxout4.rambler.ru (mxout4.rambler.ru [81.19.78.115])
+	by 0vm0064.prod.mail.rambler.tech (resmtp/Rambler) with ESMTP id jF1GJqbK;
+	Mon, 10 Oct 2022 05:45:15 +0000
+Received: by mxout4.rambler.ru (Postfix)
+	id 49434140263; Mon, 10 Oct 2022 08:45:15 +0300 (MSK)
+Date: Mon, 10 Oct 2022 08:45:15 +0300 (MSK)
+From: MAILER-DAEMON@mxout4.rambler.ru (Mail Delivery System)
+Subject: Undelivered Mail Returned to Sender =?windows-1251?B?KM/o8fzs7iDt5SDs7ubl8iDh+/L8IOTu8fLg4us=?= =?windows-1251?B?5e3uIOgg4u7n4vDg+eXt7iDu8u/w4OLo8uXr/ik=?=
+To: node.mailer@rambler.ru
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="600CA140267.1665380715/mxout4.rambler.ru"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20221010054515.49434140263@mxout4.rambler.ru>
+
+This is a MIME-encapsulated message.
+
+--600CA140267.1665380715/mxout4.rambler.ru
+Content-Description: Notification
+Content-Type: text/plain; charset=windows-1251
+
+Извините, мы вынуждены информировать Вас, что письмо,
+которое Вы отправили, не может быть доставлено одному или
+нескольким адресатам. Оно находится в прикрепленном файле.
+
+Переводы и объяснения наиболее распространенных сообщений об
+ошибках можно посмотреть здесь:
+	http://help.rambler.ru/mail/mail-soobsheniya-ob-oshibkah/1326/	
+
+Данное сообщение создано автоматически почтовой системой.
+Отвечать на него не нужно.
+
+We are sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+This message was created automatically by mail system, don't reply.
+
+
+<yhfgcvjyutfdchgyufthgc@ethereal.email>: host mx.ethereal.email[54.36.85.113]
+    said: 550 No such user here (in reply to RCPT TO command)
+
+--600CA140267.1665380715/mxout4.rambler.ru
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; mxout4.rambler.ru
+X-Postfix-Queue-ID: 600CA140267
+X-Postfix-Sender: rfc822; node.mailer@rambler.ru
+Arrival-Date: Mon, 10 Oct 2022 08:45:14 +0300 (MSK)
+
+Final-Recipient: rfc822; yhfgcvjyutfdchgyufthgc@ethereal.email
+Original-Recipient: rfc822;yhfgcvjyutfdchgyufthgc@ethereal.email
+Action: failed
+Status: 5.0.0
+Remote-MTA: dns; mx.ethereal.email
+Diagnostic-Code: smtp; 550 No such user here
+
+--600CA140267.1665380715/mxout4.rambler.ru
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <node.mailer@rambler.ru>
+Received: from localhost (1vm0068.prod.mail.rambler.tech [10.140.200.201])
+	by mxout4.rambler.ru (Postfix) with ESMTP id 600CA140267
+	for <yhfgcvjyutfdchgyufthgc@ethereal.email>; Mon, 10 Oct 2022 08:45:14 +0300 (MSK)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=rambler.ru; s=mail;
+	t=1665380714; bh=Uh4GFch7TqQv83t8nE2mzVIKyRYpQ3pa8Lotzz2shu0=;
+	h=Date:Reply-To:From:To:Subject;
+	b=gMujGjAVof/rDwF5cv0T2uLPpoH1/KWrP0oVN8wZHRcGVluNS7wI9uC79Ryzz7NLp
+	 COSCNf2kw52U+2FRTOsmpEERJYPCU9ctBXmoKTN0zKNGAi84uk7RPQPF4lN8YmFZAJ
+	 oBPTxDxPTCZXZJ7OXXwpqwjhPkkQLQaOqkNptlak=
+Date: Mon, 10 Oct 2022 05:45:14 +0000
+Mime-Version: 1.0
+Message-Id: <18c57ad7166403358c3893f62d7e3a7f@mail.rambler.ru>
+Reply-To: "Node Mailer" <node.mailer@rambler.ru>
+From: "Node Mailer" <node.mailer@rambler.ru>
+To: yhfgcvjyutfdchgyufthgc@ethereal.email
+Subject: Proovikiri
+Content-Transfer-Encoding: 7bit
+X-Mailer: Rambler Compose (2.6.0), https://mail.rambler.ru
+Content-Type: multipart/alternative;
+	boundary="==bound.0.81e1291358529a9894ca19cbac4ac173.mail.rambler.ru=="
+
+--==bound.0.81e1291358529a9894ca19cbac4ac173.mail.rambler.ru==
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
+
+See on proov
+
+--==bound.0.81e1291358529a9894ca19cbac4ac173.mail.rambler.ru==
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+Content-Type: text/html; charset=utf-8
+
+<div>See on proov</div>
+--==bound.0.81e1291358529a9894ca19cbac4ac173.mail.rambler.ru==--
+
+--600CA140267.1665380715/mxout4.rambler.ru--

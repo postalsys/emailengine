@@ -70,7 +70,7 @@ function run() {
                 updatePassword()
                     .then(res => {
                         let returnValue = argv.hash || argv.r ? Buffer.from(res.passwordHash).toString('base64url') : res.password;
-                        console.log(returnValue);
+                        process.stdout.write(returnValue);
                         return process.exit(0);
                     })
                     .catch(err => {
@@ -90,7 +90,6 @@ function run() {
                     return process.exit(1);
                 }
                 console.error(helpText.toString().trim());
-                console.error('');
                 process.exit();
             });
             break;
@@ -107,7 +106,7 @@ function run() {
                     return settings
                         .exportLicense()
                         .then(license => {
-                            console.log(license);
+                            process.stdout.write(license);
                             return process.exit(0);
                         })
                         .catch(err => {
@@ -145,8 +144,10 @@ function run() {
                     console.error('EmailEngine License');
                     console.error('===================');
 
-                    console.log(`EmailEngine v${packageData.version}`);
-                    console.error(`(c) 2020-${new Date().getFullYear()} Postal Systems`);
+                    // if only stdout is read, only this line is is seen:
+                    process.stdout.write(`EmailEngine v${packageData.version}`);
+
+                    console.error(`\n(c) 2020-${new Date().getFullYear()} Postal Systems`);
                     console.error(`${packageData.license}, full text follows`);
                     console.error('');
 
@@ -169,7 +170,7 @@ function run() {
                 switch (tokensCmd) {
                     case 'issue':
                         {
-                            let allowedScopes = ['*', 'api', 'metrics', 'smtp'];
+                            let allowedScopes = ['*', 'api', 'metrics', 'smtp', 'imap-proxy'];
                             let scopes = []
                                 .concat(argv.scope || [])
                                 .concat(argv.s || [])
@@ -182,7 +183,7 @@ function run() {
                             for (let scope of scopes) {
                                 if (!allowedScopes.includes(scope)) {
                                     console.error(`Unknown scope: ${scope}`);
-                                    console.log(`Allowed scopes: "${allowedScopes.join('", "')}"`);
+                                    console.error(`Allowed scopes: "${allowedScopes.join('", "')}"`);
                                     process.exit(1);
                                 }
                             }
@@ -200,7 +201,7 @@ function run() {
                                     nolog: true
                                 })
                                 .then(token => {
-                                    console.log(token);
+                                    process.stdout.write(token);
                                     process.exit();
                                 })
                                 .catch(err => {
@@ -217,7 +218,7 @@ function run() {
                                 .getRawData(token)
                                 .then(tokenData => {
                                     let encoded = msgpack.encode(tokenData);
-                                    console.log(encoded.toString('base64url'));
+                                    process.stdout.write(encoded.toString('base64url'));
                                     process.exit();
                                 })
                                 .catch(err => {

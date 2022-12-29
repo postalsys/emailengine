@@ -1,0 +1,139 @@
+Received: from 127.0.0.1
+ by atlas-production.v2-mail-prod1-gq1.omega.yahoo.com with HTTP; Mon, 10 Oct 2022 05:36:13 +0000
+Return-Path: <>
+X-Originating-Ip: [74.6.132.249]
+Received-SPF: none (domain of sonic314-5.consmr.mail.bf2.yahoo.com does not designate permitted sender hosts)
+Authentication-Results: atlas-production.v2-mail-prod1-gq1.omega.yahoo.com;
+ dkim=pass header.i=@yahoo.com header.s=bounce;
+ spf=none smtp.mailfrom=sonic314-5.consmr.mail.bf2.yahoo.com;
+ dmarc=pass(p=REJECT) header.from=yahoo.com;
+X-Apparently-To: andris.reinman@yahoo.com; Mon, 10 Oct 2022 05:36:14 +0000
+X-YMailAVSC: ctivxgY3bBv5FC9xnoYVd2aknHW927abD.RtPpB17A5Pml1
+ 3sB0VqPizNCtEm5NXQtMd0I767mBqA.B323xaBSLPyPgDY4P5tSS7vw9S_BE
+ xnO498VOoQOfVbEYw_EYu4ZTb7yYB6k7_LGNwyHJKlIzxUP40gLyU4WBQMQl
+ Go1JVn3ULR0yabQ2fMETUuKHeyl9BeEz7D0tKw4YmmhlcgC_YiF2m_3ghm7A
+ fA1GayWjTYjlt.F0fYKG7PjMAJZnvHiDrAQJq5UGtno.GgDPsff6DukrjivD
+ y0f9WJu70QIWiaLP4GaER9sxIS7D.2d.5IC21enOU_70L9_RsNvM.uxlBb5M
+ 5q22ALVWrKh.bQ0UuUKf9KYfWbBzxjJm4eVHjzmAM0mO2MVnSTEJBEvp.3xl
+ cXBxJVs9mQPMPoEMbPwabvBDVHrH.1Xj5lUCaLeZY34yAUeqMougZnfrQZ8Z
+ g6bDntjCNLx31UxmdH8VHSNHUNLOpduBwNdLUnsHFjBBEWiP.vXViiSyRL.m
+ OwId4PR6RZk8WP9v2fS3KMUdUwV4tw5FjaoZyikbl3..8h3U24TJ14jnIz0X
+ Wqa6.nHPX9n7y6IOonVPzew_gZDAEHwHHStvMmDzuTzT8POQ0XQ3UjaNoTuZ
+ wz1k3iYn2_5oNUvF1NN5z27DHRq7GgVXyBk4VeIeszngxqq0NhA2Z8Urszlj
+ 32L0HPloORFfd.lr4Q1tjK1Me0pEihs.KUVWLCxC_pcZ2eiRuJ5xoSNbL1g.
+ 8llcEjri9a_i7ziuMvwAS7mHIo.cQeMU96J0xaAsw99_2i.a.H9dYZSgGCab
+ pPiho_g.beRAMUtYe.O4Hzdy5tGY_T5r9KHhJAKZWU6gRcyZknfUxhq2GQfs
+ xF3E7Glc3Y0XXqQQB3c8PqKP0_oK_m1HNCAeCXF7un7yk0NFfCkOM51RWe2L
+ nsKIiicDaq6iIY.L.9lsbfFoXR_wXjN7EMj9Yhg--
+X-YMailISG: aolm8LoWLDubIVs4GgtGBHTrSXclug84U1lnLQEAE8Q74pH2
+ tyPZmAz0zGpxKotuH8YkDptpuGq6lmTi_79jL5bxxIAZz7CyM2WpENqQC1M6
+ 56q2b1m8HlP5tw3ZfCr9KQ6aIfDGMu0H_nYc6bs3Zpeb.OBJ8K45L2QnaSKi
+ _A.BuW72.yF1I8OHTsbYi6Z4VPvh3wuCNFPIFDksoSb0rtm.6ErPBYHpG01E
+ qdJIrFGYw3aagN5XauN620Og_QcJu3qOiH8AE.HtaHU8JGwidqDqHrCcybYq
+ 88CpXiYx5SlI9LKQMt2qT_WYYmx3pU6CxYl8R6zcWXjUYrqu1KDKVGy5wbOF
+ UiYscEVkd3V_7QBWTwiLWgVkFNX0mQamngowiy1mYwYiALTrovcJdf33csWW
+ Q06iuKlOC21K9zocXXEoQUHuEJ9NGsmnm0arsoGcJ53kuwcWm_7eL8sq5NfI
+ 9bTb2KA82m4dUHCXFTlKxIcz0MaDZJXWnevXVP10EJ3cdSEQxtUeRDafnvPi
+ QWvitkBWFENobOgP37CSIZ3Co1.McMDdchFDHsIwS05usGh4o8e4GfJq28Zm
+ goovFfed6tzWp8V9iNlWlqy2V0OsbvVjRceD7sJgGxqf7wuX171nU6hiJA3n
+ Tsu1rAYUbF0VDMb2n7c2EiBSTkgFay7qyJuRCQf.5cHIIIa9tEH.IfxgXLYb
+ yXtuI9RRZQuiz06LO3Qscr7OtgHNPR0hNbSfLsf7ce99_ZBoDH60RBjjA8BL
+ 4q5CAXA2iZ3_c46TwcTDEZGuX6UkmN6MW2l0Q0laszdr1rZvqocmffHWAunN
+ VblgfdsHiLXQSuxmsRhiou.zxgVF2amY21wu1L_AJQ7K1DJZPYrNJxnPG6ld
+ b2PpEQehkhPJtomayX90iEHJuBTf051ST1bWaftPkwsbLkF5gOjRr5tVRLWo
+ rvTeYS20EyEQimQ8EMRnSGi6de9wq6SdfFqgp1T5bL9O7xYL_0nRBZJdE4yc
+ 1uC8wnA5hEQFa5tzdJceHYOBxgOZ4k.uBIaxfeHI24sWfoXN99KNRz0HaLp1
+ 3JjdexjS9H3yOMuufST3MCyNqQW5d3dQh2mXbBzQqsGi4PX2Ac9IFDUodpQ9
+ HJTDdUToKnI7V0suWgJdUPDeezLnaTI2MKvc91IwmzTKCp84OJ0IqLsFv8pQ
+ 8ASkCZUTlljy_Kn2eIJEsQKGMb.CBiE.t5Upl1Q-
+Received: from 74.6.132.249 (EHLO sonic314-5.consmr.mail.bf2.yahoo.com)
+ by 10.253.231.24 with SMTPs
+ (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256);
+ Mon, 10 Oct 2022 05:36:13 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=bounce; t=1665380173; bh=THZratHHAANmTtGi755TanbKAn6zsLjGqKEWgEi3pPQ=; h=Date:From:To:Subject:From:Subject:Reply-To; b=Dewjbt+0JR0yhSWfqLuS2iJjM9aEzDgFtW7LiGg5cyehfqY0nDLb7LWqHFUqTxKRkFVETIybtWGhtzDg/W66FnV2fQCvYIQiXIfkBkT4TEMfeCJ0B4gwMhrIUjtZUyDPJEddYR5aLc85V4Km1ylm+y5Ww9NaB3HM02rD1KM8EYQ=
+X-SONIC-DKIM-SIGN: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s2048; t=1665380173; bh=onQ4N8gSej4T+Us3hZdwwbJz34W3NhHc6HL07QTrVtg=; h=X-Sonic-MF:Date:From:To:Subject:From:Subject; b=FpbOF7yDVtMGMXEL5nY3YieiRq9I94lPWDawWK7eb1DtFjdNN26VyhCq0dm17ScCdGC/rsy8yC5feJm0D5o8exsaLhzF/PsBRN1XY25jw+wV/Z3BHSLUSXjHnJjHTSJ4//nEqZMWm7+fK8SJYd/KMcWPt7utm4RYZ6PtFlyFDBYjGyALdWRHCrtdRbXV0cPB8Fge65xHkMj9EoRm3F49XsRWo+ubRUY86flhaSSYtAskR6ZvINv4+Kqy3+uIn3Iuv2xZDssiGX6R+2Vt4/tiOhQoMQgE0oqO+P0lNG1XEJLTF58QULt9Dcmgw365E/t1zfcBcRywU3lh9FRIFdI94Q==
+Message-ID: <1964613991.423405.1665380173412@yahoo.com>
+X-Sonic-MF: 
+Received: from sonic.gate.mail.ne1.yahoo.com by sonic314.consmr.mail.bf2.yahoo.com with HTTP; Mon, 10 Oct 2022 05:36:13 +0000
+Date: Mon, 10 Oct 2022 05:36:13 +0000
+From: MAILER-DAEMON@yahoo.com
+To: andris.reinman@yahoo.com
+Subject: Failure Notice
+Content-Type: multipart/report; report-type=delivery-status;
+ boundary="-=Part.4863e.f1d4a2031dce2596.183c064c664.4aa93abac4f414d2=-"
+Content-Length: 5202
+
+---=Part.4863e.f1d4a2031dce2596.183c064c664.4aa93abac4f414d2=-
+Content-Type: text/plain; charset=UTF-8
+
+Sorry, we were unable to deliver your message to the following address.
+
+<thgdcgrfchvutycfgxcvg@hot.ee>:
+550: 5.1.1 <thgdcgrfchvutycfgxcvg@hot.ee>: Recipient address rejected: User unknown in relay recipient table
+
+---------- Forwarded message ----------
+
+---=Part.4863e.f1d4a2031dce2596.183c064c664.4aa93abac4f414d2=-
+Content-Type: message/rfc822
+
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s2048; t=1665380171; bh=hxtr7lb7E5PcYlJdVTZ3d3gEJGpv7Dxja26+Oxf7THY=; h=Date:From:Reply-To:To:Subject:References:From:Subject:Reply-To; b=boUzqzCHoOd6OpOQifp1njIu9xSAgFTg3dGQwg4gq1uIiy84VLTnWo3DyvnMOOqSnzDPSr1Lh66kIfzy8v7YsmPY/M/qngxuCEjXwVPTYdQUaxUtJ80mnd5Kh14005wUhy+kWJlRO/d5bs96KDBUp7eSQQOps3HxGCeHp9BPZSU97v72FWpOCqjq/8him36iHGh7bxS89yu6gZVbJOIoDI4j5a3TaDU5hmMw6N8lLV1uneLt9UAvCG0s858E3uouLKuQLV6ZIme1K2PVx1bASfGAX1hwJXTtywWPpwoh3LHaD28rVownowcBj4gSDNadF+CqVt/whFWZTvIORGmDrw==
+X-SONIC-DKIM-SIGN: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s2048; t=1665380171; bh=YFzwe2yg1M5pRL0PTeV+5LdcM05pr5PJv2g9gnC/7AS=; h=X-Sonic-MF:Date:From:To:Subject:From:Subject; b=raxKyL0lE/RSYyEbrvz3TJnG4zIKkpqIg9QGBVSHFrjGdQg8JXFt3HELBTQfUMyXpRZnwBCJhYrJwHOTCqXYSouA/fS01ijvALzVFUiEbVkAI89mMP6fk1tvoCxAbIJcWCOKVdWoGwTPmqth4rZeNQM+b/gv/w5RHtLjpmh5WfXz2NRzZLdc83QfzI+Epep0zNyQjQREFxZXB44zm8SrLXIHbI2qjsxjDV5T2M9stNuKhLkLmq9PZA0829BMdEN7ofdWZ7FpiSElFO78G1eB3HRyWP5jWP3WETTeN5tdvzij9Zqp19kt3UJ7qSyUGqmvDPhCM4bJRdQDh8Qy1nJUJw==
+X-YMail-OSG: oKAI6q8VM1mUaKbZMIXdisXv51svQehTQrUHgkFMH2BT7zAueCqKykQPa19zKu.
+ tQyIJDrV7Emu_H2WkcoBR1V5Smja5.qeJcvfO0Jf2pbIedNuSdDrgH_FqltYfa1Bh_KGeKcD2sXz
+ i7WRL3prJn1ImQJgVnCmpeKGplrv3xdQ7jHZIb9WMABXAhzGPaBrfuGzi.Zmm5Kg6Pcj0.2TfpmH
+ g2jC8yv.sxg0ZLu9b29PDnkdlwjlb1rRVJw6jk4Aq6G8UkOtYqGPQMMPm5zh2ifI8L_Vg4NRYKjN
+ pXcAaK9Z9cP8cs72NCkH.q5ZHSap_qcVcrw5Ciothw9GnpS870GghPh2.FdHrbpxx0xxDaMSdQHo
+ QFKWtpIOMYjCNmistn2Bo4K0ier0DXRxWcRiUS.BWhx4115bV5W4N0bWeMQFKOueN.TfdoknK.le
+ mTpM.6isWQKjcJF6KmxItCpvuTb2gLcceulvLSjiaWweHqayNHJdTUumgsEo7ESr5LkPCuJ6j2FP
+ d4xIOxO6Z3EyK63Rug_JLnR5aLOP5d8ZWKWaRlB1aUHXmBEUh6pZEFcUddrGumgpuqAxwq_oEvWn
+ SpZNfzckcx8bW70OYm3vFjU27sgkN1ng3Se2cTxcVfeq2voRW.ZPVGp.KXqY0RysstdJ_GdOK6YY
+ ezd4jbGrvw512buWw85lwQZjhyNalCiesPpHJRFD5iU_lbtEEhEAsx1mEtf0_r76MQAR09wRb64y
+ FkmRI1JRfM.KAcnRkFLeOZyBoodCF2vlj6kL.sU7A7zb.MYSs.MLi0F0oO2lkK2m3r_EbljPU7tc
+ u_EMkMRawtcP5w9IeXGIzNhWQ67Z0U6SioKTNAi6Ek8wxGVV_36WRDrgY9uBlj1aVCfqe0QGh.zy
+ plHgvPa39r2uQgrcYwEM3mRaaBIlaQboNVoojA4dAWPPIZk65p8CZgsYQl2Cx7zV4_hEeqEQjOXa
+ aYtBv14k6NZD9cr7ze4DFDNUFOzIF3tBd5Cb5SJgPMj1yEkUvVoQfxNfGY4g4XmjQoIP5C6JhPVE
+ lhS5yo0MydPDheKJCMJR44koTbeI0NMB_MaQ8NPDb3uWA5l2B4KS9HIdfUduhsWFqeY_u3tVrwhU
+ qw80vbqqWvTa8IkTG4WOCAgVUqxCiGXjBbZpsyAyZXa32vuCKUBblKvAToqzWEV65HIV72vItW85
+ XUSqX3hSedSDg3MOQ7hfTwaXuayV9w29K.ezTpFSwbNEvlqvtNmjg0v3K44DLDHQZfnlWm0SRSI7
+ jJvPiltPU_9QYYbmheGq6g4j9WTNmeHLnUhJo7zdY3bTCL6nC.I_GOH9enNhk8GPXQnqpi1cAqT5
+ 53hFA2Px.aj0XZk.MnEx5kyiY.pNhPT04Wc1rXFGq1Oeh3aVe2oCnetO2o8vA6pJeSxbDvQXtGZL
+ 5oruFwouK0DGLnbxeCzYpgdsXLsQhjozNvOO8sLkrRdqni8HrB3qkgNGZfGPAgJHbwXwHKzd7KAS
+ idED1lwbCeSaBZNWrFhRdeJ6AOMVNz8VjJYGl.U7x0cLsYbnak9L3UqJ_XL1P9nN3zrAA6vy1ytj
+ O_zaGYUta7ZvxDpYfnGuEfo4Dqy8znSyEbWbQAbv7U6CZDkxnDR5zt1ZoqXlAMjtcqRxoXT2gjJC
+ eUMwIbZdD8d.L0y7LNUufbVP9Sdd.tAUfgtW_hG4g9gKZyBZ0rVriN77zNAT.GWDn5vs5Vdl10PZ
+ 0yzYexlQwXxX3M5HQnC04brTfy13huqh_aszlQ.PEGQnOZCQowHdL.icE1YxhaqHDMshzylS5gGR
+ Iw3THig5SoT1._WiJKjEc4TzKoFJ4DbDVSyFlyUJ66z7ZOa_tskJOUPzdNu0Si4cwuADLfEP41oC
+ nVFvXdeFYqgw8ylhav5h7zeCa6ihim0deFEjpFwlvSKW1SZ7MZheLiPtbYpszjx2caSryFxlnHRX
+ QoekjWuzsruYR3jD46zToJ2AxmnyecKY.HWk_4pEoExbWgvlnHR3KiJDBz2twZvvKXM0RVPNFe.w
+ 6KIYh6QGADY8ZSQq.cxqbIQU69q9VPL7iGGZ6PRcdXVpGk76K7K6Ah.iPEk8m9hKc.0L2.PnMGjT
+ DldjZBgR3IJ408H2_VPLA6abPpzFAtN6NqltpcRt23XgYquntuZAlBgEFMnkZ.u_1VkjwnNUK5mG
+ 1Pmh0AEFDa9HyR4AXp6kCCIiLV._Ojo0hcVPJL4oUYxVUUsJHPLXvVss6fczIcZmCoHmimdd2WwX
+ B0X5xbU.KPCkygrh2RJcoODjhZTVMC1RMhJV9kp2W
+X-Sonic-MF: <andris.reinman@yahoo.com>
+Received: from sonic.gate.mail.ne1.yahoo.com by sonic314.consmr.mail.bf2.yahoo.com with HTTP; Mon, 10 Oct 2022 05:36:11 +0000
+Date: Mon, 10 Oct 2022 05:34:09 +0000 (UTC)
+From: Andris Reinman <andris.reinman@yahoo.com>
+Reply-To: Andris Reinman <andris.reinman@yahoo.com>
+To: "thgdcgrfchvutycfgxcvg@hot.ee" <thgdcgrfchvutycfgxcvg@hot.ee>
+Message-ID: <1956854879.3770605.1665380049620@mail.yahoo.com>
+Subject: Proov
+MIME-Version: 1.0
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_3770604_1904401109.1665380049619"
+References: <1956854879.3770605.1665380049620.ref@mail.yahoo.com>
+X-Mailer: WebService/1.1.20702 YMailNorrin
+Content-Length: 518
+
+------=_Part_3770604_1904401109.1665380049619
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+See on proovikiri
+------=_Part_3770604_1904401109.1665380049619
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+<html><head></head><body><div class="yahoo-style-wrap" style="font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:13px;"><div dir="ltr" data-setdir="false">See on proovikiri</div></div></body></html>
+------=_Part_3770604_1904401109.1665380049619--
+
+---=Part.4863e.f1d4a2031dce2596.183c064c664.4aa93abac4f414d2=---

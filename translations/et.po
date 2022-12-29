@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2022-07-21 11:11+0000\n"
+"POT-Creation-Date: 2022-11-11 10:19+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,11 +10,60 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.1.1\n"
+"X-Generator: Poedit 3.2\n"
+
+#: views/config/license.hbs:48
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d päev"
+msgstr[1] "%d päeva"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
+
+#: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr "Loobu tellimusest"
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr "Teie e-posti aadress on kustutatud."
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+"Kas see oli viga? Klõpsake <a%s>siin</a>, et end uuesti tellijaks lisada."
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr "Uuesti tellimine"
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+"Kas olete kindel, et soovite oma e-posti aadressi <em>%s</em> uuesti "
+"tellijaks märkida?"
+
+#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:224
+msgid "Close"
+msgstr "Sulge"
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr "Telli"
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr "Teie e-posti aadress <em>%s</em> lisati uuesti tellijate nimekirja."
+
+#: views/unsubscribe.hbs:69 views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr "E-posti aadress"
+
+#: views/unsubscribe.hbs:75 views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr "Sisestage oma e-posti aadress"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -24,17 +73,9 @@ msgstr "Sinu nimi"
 msgid "Enter your full name"
 msgstr "Sisestage oma täisnimi"
 
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr "E-posti aadress"
-
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr "Sisestage oma e-posti aadress"
-
 #: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:24
-#: views/accounts/register/imap-server.hbs:83
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:114
 msgid "Password"
 msgstr "Parool"
 
@@ -43,7 +84,7 @@ msgid "Enter your account password"
 msgstr "Sisestage oma konto parool"
 
 #: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:145
+#: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
 msgstr "Jätka"
 
@@ -55,30 +96,47 @@ msgstr "Valige oma e-posti konto pakkuja"
 msgid "Standard IMAP"
 msgstr "Standardne IMAP"
 
-#: views/accounts/register/imap-server.hbs:11
+#: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
 msgstr "IMAP"
 
-#: views/accounts/register/imap-server.hbs:14
-#: views/accounts/register/imap-server.hbs:73
+#: views/accounts/register/imap-server.hbs:21
+#: views/accounts/register/imap-server.hbs:100
 msgid "Username"
 msgstr "Kasutajanimi"
 
-#: views/accounts/register/imap-server.hbs:34
-#: views/accounts/register/imap-server.hbs:93
+#: views/accounts/register/imap-server.hbs:41
+#: views/accounts/register/imap-server.hbs:46
+#: views/accounts/register/imap-server.hbs:120
+#: views/accounts/register/imap-server.hbs:125
+msgid "Application Password"
+msgstr "Rakenduse parool"
+
+#: views/accounts/register/imap-server.hbs:42
+#: views/accounts/register/imap-server.hbs:121
+msgid "%s accounts require to use an application password for %s."
+msgstr "%s kontod peavad kasutama %s jaoks rakenduse parooli."
+
+#: views/accounts/register/imap-server.hbs:43
+#: views/accounts/register/imap-server.hbs:122
+msgid "Instructions"
+msgstr "Juhend"
+
+#: views/accounts/register/imap-server.hbs:61
+#: views/accounts/register/imap-server.hbs:140
 msgid "Hostname"
 msgstr "Serveri nimi"
 
-#: views/accounts/register/imap-server.hbs:44
-#: views/accounts/register/imap-server.hbs:103
+#: views/accounts/register/imap-server.hbs:71
+#: views/accounts/register/imap-server.hbs:150
 msgid "Port"
 msgstr "Port"
 
-#: views/accounts/register/imap-server.hbs:58
+#: views/accounts/register/imap-server.hbs:85
 msgid "TLS for IMAP"
 msgstr "TLS IMAP serveris"
 
-#: views/accounts/register/imap-server.hbs:59
+#: views/accounts/register/imap-server.hbs:86
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -87,20 +145,20 @@ msgstr ""
 "porti 993. Teiste portide puhul kasutab EmailEngine STARTTLS-põhist "
 "krüpteerimist."
 
-#: views/accounts/register/imap-server.hbs:61
-#: views/accounts/register/imap-server.hbs:120
+#: views/accounts/register/imap-server.hbs:88
+#: views/accounts/register/imap-server.hbs:167
 msgid "Use TLS"
 msgstr "Kasuta TLS krüpteerimist"
 
-#: views/accounts/register/imap-server.hbs:70
+#: views/accounts/register/imap-server.hbs:97
 msgid "SMTP"
 msgstr "SMTP"
 
-#: views/accounts/register/imap-server.hbs:117
+#: views/accounts/register/imap-server.hbs:164
 msgid "TLS for SMTP"
 msgstr "TLS SMTP serveris"
 
-#: views/accounts/register/imap-server.hbs:118
+#: views/accounts/register/imap-server.hbs:165
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -109,70 +167,70 @@ msgstr ""
 "porti 465. Teiste portide puhul kasutab EmailEngine STARTTLS-põhist "
 "krüpteerimist."
 
-#: views/accounts/register/imap-server.hbs:136
+#: views/accounts/register/imap-server.hbs:183
 msgid "Test settings"
 msgstr "Kontrolli seadeid"
 
-#: views/accounts/register/imap-server.hbs:153
+#: views/accounts/register/imap-server.hbs:200
 msgid "Continue without testing"
 msgstr "Jätka ilma seadistusi kontrollimata"
 
-#: views/accounts/register/imap-server.hbs:167
+#: views/accounts/register/imap-server.hbs:214
 msgid "Test failed"
 msgstr "Test ebaõnnestus"
 
-#: views/accounts/register/imap-server.hbs:173
+#: views/accounts/register/imap-server.hbs:220
 msgid "Failed to validate provided email server settings."
 msgstr "Esitatud e-posti serveri seadete valideerimine ebaõnnestus."
 
-#: views/accounts/register/imap-server.hbs:177
-msgid "Close"
-msgstr "Sulge"
-
-#: views/accounts/register/imap-server.hbs:246
+#: views/accounts/register/imap-server.hbs:293
 msgid "Failed to validate IMAP server settings"
 msgstr "IMAP serveri seadete valideerimine ebaõnnestus"
 
-#: views/accounts/register/imap-server.hbs:248
+#: views/accounts/register/imap-server.hbs:295
 msgid "IMAP Server responded with the following message:"
 msgstr "IMAP server vastas järgmise teatega:"
 
-#: views/accounts/register/imap-server.hbs:255
+#: views/accounts/register/imap-server.hbs:302
 msgid "Failed to validate SMTP server settings"
 msgstr "SMTP serveri seadete valideerimine ebaõnnestus"
 
-#: views/accounts/register/imap-server.hbs:257
+#: views/accounts/register/imap-server.hbs:304
 msgid "SMTP Server responded with the following message:"
 msgstr "SMTP server vastas järgmise teatega:"
 
-#: views/accounts/register/imap-server.hbs:306
+#: views/accounts/register/imap-server.hbs:353
 msgid "HTTP error!"
 msgstr "HTTP viga!"
 
-#: lib/routes-ui.js:2764 lib/routes-ui.js:4009 lib/routes-ui.js:4020
+#: lib/routes-ui.js:3460 lib/routes-ui.js:4729 lib/routes-ui.js:4740
 msgid "Server hostname was not found"
 msgstr "Serverit ei leitud"
 
-#: lib/routes-ui.js:2767 lib/routes-ui.js:4012 lib/routes-ui.js:4023
+#: lib/routes-ui.js:3463 lib/routes-ui.js:4732 lib/routes-ui.js:4743
 msgid "Invalid username or password"
 msgstr "Vigane kasutajanimi või parool"
 
-#: lib/routes-ui.js:2771 lib/routes-ui.js:4027
+#: lib/routes-ui.js:3467 lib/routes-ui.js:4747
 msgid "TLS protocol error"
 msgstr "TLS protokolli viga"
 
-#: lib/routes-ui.js:3737
+#: lib/routes-ui.js:4459
 msgid "Unknown OAuth provider"
 msgstr "Tundmatu OAuth teenus"
 
-#: lib/routes-ui.js:3778 lib/routes-ui.js:3887 lib/routes-ui.js:4112
+#: lib/routes-ui.js:4499 lib/routes-ui.js:4608 lib/routes-ui.js:4832
 msgid "Signature validation failed"
 msgstr "Päringu allkirja kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:3827 lib/routes-ui.js:3860
+#: lib/routes-ui.js:4548 lib/routes-ui.js:4581 lib/routes-ui.js:6664
 msgid "Failed to validate request arguments"
 msgstr "Päringu argumentide kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:3950 lib/routes-ui.js:4190
+#: lib/routes-ui.js:4671 lib/routes-ui.js:4914
 msgid "Failed to process account"
 msgstr "Konto töötlemine ebaõnnestus"
+
+#: lib/routes-ui.js:6764
+msgid "Failed to process request"
+msgstr "Päringu töötlemine ebaõnnestus"

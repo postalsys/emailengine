@@ -1,0 +1,401 @@
+[
+    {
+        "key": "email-01",
+        "name": "Gmail \\Inbox label",
+        "content": {
+            "account": "testaccount",
+            "created": "2022-11-25T07:12:05.018Z",
+            "path": "[Gmail]/All Mail",
+            "specialUse": "\\All",
+            "id": "AAAAAQAAAPQ",
+            "uid": 244,
+            "emailId": "1750451165208415653",
+            "threadId": "1750451165208415653",
+            "date": "2022-11-25T07:11:46.000Z",
+            "flags": [],
+            "labels": ["\\Inbox"],
+            "unseen": true,
+            "size": 183171,
+            "subject": "Hello 👀",
+            "from": {
+                "name": "John Doe",
+                "address": "john.doe@example.com"
+            },
+            "replyTo": [
+                {
+                    "name": "John Doe",
+                    "address": "john.doe@example.com"
+                }
+            ],
+            "sender": {
+                "name": "John Doe",
+                "address": "john.doe@example.com"
+            },
+            "to": [
+                {
+                    "name": "Jane Doe",
+                    "address": "jane.doe@example.com"
+                }
+            ],
+            "attachments": [
+                {
+                    "id": "AAAAAQAAAPQy",
+                    "contentType": "image/png",
+                    "encodedSize": 177436,
+                    "filename": "Screenshot 2022-11-25 at 08.07.57.png",
+                    "embedded": false,
+                    "inline": false,
+                    "contentId": "<f_law60ulb0>"
+                }
+            ],
+            "messageId": "<CAPacwgzRtWi6EjFBuRgAYQ04dwTQs80Sm4Bj1e8G7cmkwBKp1A@mail.example.com>",
+            "headers": [
+                {
+                    "key": "delivered-to",
+                    "value": ["jane.doe@example.com"]
+                },
+                {
+                    "key": "received",
+                    "value": [
+                        "by 2002:a05:6f02:5a1:b0:26:a2c8:fda9 with SMTP id g33csp5364222rcc; Thu, 24 Nov 2022 23:11:58 -0800 (PST)",
+                        "from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41]) by mx.google.com with SMTPS id gn24-20020a056870d99800b0013bc263c8dfsor858441oab.75.2022.11.24.23.11.58 for <jane.doe@example.com> (Google Transport Security); Thu, 24 Nov 2022 23:11:58 -0800 (PST)"
+                    ]
+                },
+                {
+                    "key": "x-received",
+                    "value": [
+                        "by 2002:a05:6830:660f:b0:66e:36df:a0da with SMTP id cp15-20020a056830660f00b0066e36dfa0damr65016otb.309.1669360318288; Thu, 24 Nov 2022 23:11:58 -0800 (PST)",
+                        "by 2002:a05:6870:cb95:b0:13b:2f1f:82fa with SMTP id ov21-20020a056870cb9500b0013b2f1f82famr14112740oab.47.1669360316988; Thu, 24 Nov 2022 23:11:56 -0800 (PST)"
+                    ]
+                },
+                {
+                    "key": "arc-seal",
+                    "value": [
+                        "i=1; a=rsa-sha256; t=1669360318; cv=none; d=google.com; s=arc-20160816; b=Z8texWq30yXv4Ezqp2588rHHj+DO2ug0CJ0lEIeqnZ17nHyds3ptVMopiiSRfTAxtA s/joDoCrCTDvtmc3gTUwwmlsz5eOpCFiCTmk4G0hFbv07QsSK5p5A0Uh5gQPydKR0uDo olmBvJ4kGbZXFgT3hOFibRl46jbJBHDqoCkp41F9elo+IJYYvmi1hfGun4R/dEWt0ed/ 3JVTsryXQgyKEqRsEn3fmoKtwvkpiLHdYNzFveeHV8b4iNT4/lxZGipRpP2TEnpjosQl yIRx5v8HH7EeBFIuzKpNKTGAgWnATB8pZtU8X6IIP8Z1wgrd/TF2HbJVbIPamEU1EMZh NVww=="
+                    ]
+                },
+                {
+                    "key": "arc-message-signature",
+                    "value": [
+                        "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816; h=to:subject:message-id:date:from:mime-version:dkim-signature; bh=gLN7BKMB8YNlqim0bQ5aoBdCWE7rebvW4I5hpb2EphE=; b=dww++6m9k+UQ6G06IX45l5rz8K+tGrqQAG0EAcng5zcT+6fPP26rZFfTwKLizPNvPJ 64KsfsekKDLZEQGqyP3AA5ZQttWq9Q22idi9HzMujPtyU99AfOZ/YSzYT8cHfTd//RDt itsaB6auLAb7DSbqbJZ+O/YDlIwaRTAgDc/Z09eYNPGJ/9X/oVJzlCyESmyEprY7POx8 1wYCIWf7zcv8kmPGjVpG/C+DVDDNMyw5NEiV69/1QI09EGlgsC3h8mL6/xY50ahqei3P JGZfqwuqSK2WLaLuTWrtP+yDoq3JrBogEFerQVRxShlLS8U5+CLYWxOccxF5ptZvdRSJ nutA=="
+                    ]
+                },
+                {
+                    "key": "arc-authentication-results",
+                    "value": [
+                        "i=1; mx.google.com; dkim=pass header.i=@example.com header.s=20210112 header.b=HlgacI1Y; spf=pass (google.com: domain of john.doe@example.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=john.doe@example.com; dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=example.com"
+                    ]
+                },
+                {
+                    "key": "return-path",
+                    "value": ["<john.doe@example.com>"]
+                },
+                {
+                    "key": "received-spf",
+                    "value": ["pass (google.com: domain of john.doe@example.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;"]
+                },
+                {
+                    "key": "authentication-results",
+                    "value": [
+                        "mx.google.com; dkim=pass header.i=@example.com header.s=20210112 header.b=HlgacI1Y; spf=pass (google.com: domain of john.doe@example.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=john.doe@example.com; dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=example.com"
+                    ]
+                },
+                {
+                    "key": "dkim-signature",
+                    "value": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=20210112; h=to:subject:message-id:date:from:mime-version:from:to:cc:subject :date:message-id:reply-to; bh=gLN7BKMB8YNlqim0bQ5aoBdCWE7rebvW4I5hpb2EphE=; b=HlgacI1Y3mjUVfVcrf+GyCKOQdQgI5RagdYrB8luaQhFEljhM7MB3S9Vckqhh0aXIv 84HE9WITQLE0iYCpmHxnZKdesDCNtjgePk1KFZsQUaApgXpPlyrXmMit//Xv5NS/k0O1 Zj1udyxc9uA7YZKs0NrO/Y4vtwRVVwPUhZVrln4RjdzjCw5J+MTfME0+mzDxftHLxPpA 0ARhFJAZMCINLra6U3/uxrfdxlhWF5Z2pe8JnGY+XdaWLW96CdE4VKPmsnSBRJZRPdz/ xTJC+49lmiCjU57jTvSWgqFadUE2ZKwwsCBS1G3K2XddC4q+EOZfwjxgWTxq4MK5s6vu XQuQ=="
+                    ]
+                },
+                {
+                    "key": "x-google-dkim-signature",
+                    "value": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20210112; h=to:subject:message-id:date:from:mime-version:x-gm-message-state :from:to:cc:subject:date:message-id:reply-to; bh=gLN7BKMB8YNlqim0bQ5aoBdCWE7rebvW4I5hpb2EphE=; b=1bczd6mr4FhTfhSaOAPDw+kdwdE1u956+QUZAJGnMWMeijhhowkNfqUa3plEPpD8K/ DkbpqNRhhKjlpsazcqptXBDPFmLbVKWBrR9ir4dYDS3XDxVR/VWULE7CiqlaWvsAWyFv uKdzZEECSrMFeu1CkiZ8HARBPOOxm577T2Q9+ldDiT/zD23WrCwcaq4U+3+CUwW8Fs3l N5nT+Ce2aE3rRz07kua6JN8Pe4mghdYnyA/OarPEtuiDCHS4GX5csWy5XzT/rO5dq8uf VTf4ercKjb/dG/HhfThpAC+OsVFg68m+sZYdPXQAisFwv4427C9PyeY3PQ6h0ixLBbbo b1aA=="
+                    ]
+                },
+                {
+                    "key": "x-gm-message-state",
+                    "value": ["ANoB5pkRq1FGsLPDLb9X406hybJaLFC4GuHa9CPtQnuq5N+F/EC0wRfT NQdtplpZN7IDOdqOwxxf1hen1PZM5H9yj8tlJjRGb4cn3Xc="]
+                },
+                {
+                    "key": "x-google-smtp-source",
+                    "value": ["AA0mqf4rfMBjqiLT3O3j2dX25coLCyQnLX/lXfYkw7qfcalXR24bzwaq8qTO/Yf7olK11pSPE359pmVbyIbP+X7E7hs="]
+                },
+                {
+                    "key": "mime-version",
+                    "value": ["1.0"]
+                },
+                {
+                    "key": "from",
+                    "value": ["John Doe <john.doe@example.com>"]
+                },
+                {
+                    "key": "date",
+                    "value": ["Fri, 25 Nov 2022 09:11:46 +0200"]
+                },
+                {
+                    "key": "message-id",
+                    "value": ["<CAPacwgzRtWi6EjFBuRgAYQ04dwTQs80Sm4Bj1e8G7cmkwBKp1A@mail.example.com>"]
+                },
+                {
+                    "key": "subject",
+                    "value": ["=?UTF-8?B?SGVsbG8g8J+RgA==?="]
+                },
+                {
+                    "key": "to",
+                    "value": ["jane.doe@example.com"]
+                },
+                {
+                    "key": "content-type",
+                    "value": ["multipart/mixed; boundary=\"000000000000b25fb405ee463ce4\""]
+                }
+            ],
+            "text": {
+                "id": "AAAAAQAAAPSTkaMxLjGRozEuMpA",
+                "plain": "This is a test message *from* one Gmail account to another. 🏄‍♂️\n",
+                "html": "<div dir=\"ltr\">This is a test message <b>from</b> one Gmail account to another. 🏄‍♂️</div>\n",
+                "encodedSize": {
+                    "plain": 104,
+                    "html": 132
+                }
+            },
+            "seemsLikeNew": true,
+            "flagged": false,
+            "answered": false,
+            "draft": false,
+            "preview": "This is a test message from one Gmail account to another. 🏄‍♂️"
+        }
+    },
+
+    {
+        "key": "email-02",
+        "name": "Regular Inbox email",
+        "content": {
+            "account": "testaccount",
+            "created": "2022-11-25T07:14:12.797Z",
+            "path": "INBOX",
+            "specialUse": "\\Inbox",
+            "id": "AAAADAAAB5Q",
+            "uid": 1940,
+            "date": "2022-11-25T07:13:56.000Z",
+            "flags": [],
+            "unseen": true,
+            "size": 3142,
+            "subject": "Hello",
+            "from": {
+                "name": "John Doe",
+                "address": "john.doe@example.com"
+            },
+            "replyTo": [
+                {
+                    "name": "John Doe",
+                    "address": "john.doe@example.com"
+                }
+            ],
+            "sender": {
+                "name": "John Doe",
+                "address": "john.doe@example.com"
+            },
+            "to": [
+                {
+                    "name": "Peter Doe",
+                    "address": "peter.doe@example.com"
+                }
+            ],
+            "messageId": "<CAPacwgxjzGXByoYLxjZR12yPDEb+=4Urx76YGbHcjo0LdQoJQQ@mail.example.com>",
+            "headers": [
+                {
+                    "key": "return-path",
+                    "value": ["<john.doe@example.com>"]
+                },
+                {
+                    "key": "delivered-to",
+                    "value": ["peter.doe@example.com"]
+                },
+                {
+                    "key": "received",
+                    "value": [
+                        "from mail-oa1-f49.google.com (mail-oa1-f49.google.com [209.85.160.49]) (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits)) (No client certificate requested) by uvn-67-33.tll01.zonevs.eu (Postfix) with ESMTPS id 409D2822D5 for <peter.doe@example.com>; Fri, 25 Nov 2022 09:14:10 +0200 (EET)",
+                        "by mail-oa1-f49.google.com with SMTP id 586e51a60fabf-141ca09c2fbso4227446fac.6 for <peter.doe@example.com>; Thu, 24 Nov 2022 23:14:10 -0800 (PST)"
+                    ]
+                },
+                {
+                    "key": "authentication-results",
+                    "value": [
+                        "uvn-67-33.tll01.zonevs.eu; dkim=pass reason=\"2048-bit key; insecure key\" header.d=example.com header.i=@example.com header.b=IRw8W9Jw; dkim-adsp=pass; dkim-atps=neutral"
+                    ]
+                },
+                {
+                    "key": "dkim-signature",
+                    "value": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com; s=20210112; h=to:subject:message-id:date:from:mime-version:from:to:cc:subject :date:message-id:reply-to; bh=pG7WMNLCOwQ3qOIEKvCnfMh0Kr2NPqODKj0H90CiwlU=; b=IRw8W9JwIP1gbEAG+KLZSMFMKdIb+UlBHbVDod//ktOb8gzmRp93HHaisnbtgWUbGH V20Hgx6CNWWxqk6qgIeNCNmZmevPNDNH1Fnfhv76f9dYajnJs2Y1fB8EdimNqL9iC74P uum/VtTmZ+WEnRuQdppcPle3kl62f1dKxNWjqlgWP4OYOU6g5e5PthEZ4M8t8KDIoR1e UK9v1fchbrgXQEW1GogB+hj53jg/+dn9UI1HiyTn4TWYOt8EjSEGMIKZAeTNAhCzDuzm fvdcgtPSHLqyfx1OTHf0Ycvj2juOgAMarMzNDxv2T3unMUP+25X2WHCFgnWkQoDNomMl wP7g=="
+                    ]
+                },
+                {
+                    "key": "x-google-dkim-signature",
+                    "value": [
+                        "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20210112; h=to:subject:message-id:date:from:mime-version:x-gm-message-state :from:to:cc:subject:date:message-id:reply-to; bh=pG7WMNLCOwQ3qOIEKvCnfMh0Kr2NPqODKj0H90CiwlU=; b=Wc/sDZYHyVIv5lXGOFkA5PazzXtyh9jF7e1EN0b8jDidTFf+xXvSzYNw/aR3bsgaNF 1VCXMoelP+dt+refFoPqXp5qbpVm7LkEwYmBG3g3ePYbhwVnPTKwlRmoZqo92hehgCzJ SNr4i14K375G8O12Yx8VnQc/DFrRgU12wCwqTmJVE3i7t+Z3gy8DKgp22WDtPRMqElDd gDGG2jl/K1DEjFAPN5kqsypAbpInr1JKIw7K9c9ZZ+I+TjCxqiCDtsbgxu18GKeYsg/H SzDhEc6zvOrBKezhH7OYopnDKaepxtApVE8nchZPKDe2pptYJRkLebVGOtqTM71QgDMu c/Uw=="
+                    ]
+                },
+                {
+                    "key": "x-gm-message-state",
+                    "value": ["ANoB5pk+Fjt3XV/FL05zNj8AenGHCVFbyu/e93yBNDXhLZNY3g/Q59Mi U/7AGciTt79AdTc/7rpnvEv+g5XJJmgpbcAC/KPsu/77hWE="]
+                },
+                {
+                    "key": "x-google-smtp-source",
+                    "value": ["AA0mqf5bWDDezD3r5wniQB4H6fM9TJPjGsE1r0btmQ2UyxrUnRtdU6UFrd0fLe20Cx+S+t/1iRlFORfn1ppyu/aW9cw="]
+                },
+                {
+                    "key": "x-received",
+                    "value": [
+                        "by 2002:a05:6870:cb95:b0:13b:2f1f:82fa with SMTP id ov21-20020a056870cb9500b0013b2f1f82famr14116101oab.47.1669360447906; Thu, 24 Nov 2022 23:14:07 -0800 (PST)"
+                    ]
+                },
+                {
+                    "key": "mime-version",
+                    "value": ["1.0"]
+                },
+                {
+                    "key": "from",
+                    "value": ["John Doe <john.doe@example.com>"]
+                },
+                {
+                    "key": "date",
+                    "value": ["Fri, 25 Nov 2022 09:13:56 +0200"]
+                },
+                {
+                    "key": "message-id",
+                    "value": ["<CAPacwgxjzGXByoYLxjZR12yPDEb+=4Urx76YGbHcjo0LdQoJQQ@mail.example.com>"]
+                },
+                {
+                    "key": "subject",
+                    "value": ["Hello"]
+                },
+                {
+                    "key": "to",
+                    "value": ["andris <peter.doe@example.com>"]
+                },
+                {
+                    "key": "content-type",
+                    "value": ["multipart/alternative; boundary=\"0000000000007fe7bf05ee464496\""]
+                }
+            ],
+            "text": {
+                "id": "AAAADAAAB5STkaExkaEykA",
+                "plain": "This message is for a Dovecot server\n",
+                "html": "<div dir=\"ltr\">This message is for a Dovecot server</div>\n",
+                "encodedSize": {
+                    "plain": 38,
+                    "html": 59
+                }
+            },
+            "seemsLikeNew": true,
+            "threadId": "f20bc104-7644-4fb4-8a2d-5c4ba7c0625f",
+            "flagged": false,
+            "answered": false,
+            "draft": false,
+            "preview": "This message is for a Dovecot server"
+        }
+    },
+
+    {
+        "key": "email-03",
+        "name": "Email from Sent Emails folder",
+        "content": {
+            "account": "testaccount",
+            "created": "2022-11-25T07:16:42.606Z",
+            "path": "INBOX.Sent",
+            "specialUse": "\\Sent",
+            "id": "AAAABgAAAgo",
+            "uid": 522,
+            "date": "2022-11-25T07:16:24.000Z",
+            "flags": ["\\Seen"],
+            "size": 178829,
+            "subject": "Hello 🫣",
+            "from": {
+                "name": "Peter Doe",
+                "address": "peter.doe@example.com"
+            },
+            "replyTo": [
+                {
+                    "name": "Peter Doe",
+                    "address": "peter.doe@example.com"
+                }
+            ],
+            "sender": {
+                "name": "Peter Doe",
+                "address": "peter.doe@example.com"
+            },
+            "to": [
+                {
+                    "name": "John Doe",
+                    "address": "john.doe@example.com"
+                }
+            ],
+            "attachments": [
+                {
+                    "id": "AAAABgAAAgoy",
+                    "contentType": "image/png",
+                    "encodedSize": 177436,
+                    "filename": "Screenshot 2022-11-25 at 08.07.57.png",
+                    "embedded": false,
+                    "inline": false
+                }
+            ],
+            "messageId": "<40623f3dd1127ce02504516a5b018a0c@example.com>",
+            "headers": [
+                {
+                    "key": "mime-version",
+                    "value": ["1.0"]
+                },
+                {
+                    "key": "content-type",
+                    "value": ["multipart/mixed; boundary=\"=_49b1c9b1af86601bb59c2582662e85a0\""]
+                },
+                {
+                    "key": "date",
+                    "value": ["Fri, 25 Nov 2022 09:16:24 +0200"]
+                },
+                {
+                    "key": "from",
+                    "value": ["andris <peter.doe@example.com>"]
+                },
+                {
+                    "key": "to",
+                    "value": ["Andris <john.doe@example.com>"]
+                },
+                {
+                    "key": "subject",
+                    "value": ["Hello =?UTF-8?Q?=F0=9F=AB=A3?="]
+                },
+                {
+                    "key": "message-id",
+                    "value": ["<40623f3dd1127ce02504516a5b018a0c@example.com>"]
+                },
+                {
+                    "key": "x-sender",
+                    "value": ["peter.doe@example.com"]
+                },
+                {
+                    "key": "user-agent",
+                    "value": ["Roundcube Webmail/1.1-git"]
+                }
+            ],
+            "text": {
+                "id": "AAAABgAAAgqTkaMxLjGRozEuMpA",
+                "plain": " \n\nThis email is from the Sent Mail FOLDER 📧 \n ",
+                "html": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\">\n<html><body style='font-size: 10pt; font-family: Verdana,Geneva,sans-serif'>\n<p>This email is from the Sent Mail <strong>folder 📧</strong></p>\n<div>&nbsp;</div>\n</body></html>\n",
+                "encodedSize": {
+                    "plain": 53,
+                    "html": 264
+                }
+            },
+            "seemsLikeNew": false,
+            "threadId": "592b57a5-a8f1-4bee-9e20-596b29264ee1",
+            "unseen": false,
+            "flagged": false,
+            "answered": false,
+            "draft": false,
+            "preview": "This email is from the Sent Mail folder 📧"
+        }
+    }
+]

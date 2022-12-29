@@ -41,7 +41,8 @@
                     <li><code>"https://mail.google.com/"</code>
                 </ul>
                 <div>Read about setting up the OAuth2 project in Google Cloud from <a
-                        href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/">here</a>.
+                        href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
                 </div>
                 {{/if}}
 
@@ -51,7 +52,8 @@
                     <li><code>"https://mail.google.com/"</code>
                 </ul>
                 <div>Read about setting up Google service accounts from <a
-                        href="https://docs.emailengine.app/gmail-oauth-service-accounts/">here</a>.
+                        href="https://docs.emailengine.app/gmail-oauth-service-accounts/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
 
                 </div>
                 {{/if}}
@@ -65,7 +67,8 @@
                 </ul>
                 <div>
                     Read about setting up the OAuth2 project in Azure Active Directory from <a
-                        href="https://docs.emailengine.app/setting-up-oauth2-with-outlook/">here</a>.
+                        href="https://docs.emailengine.app/setting-up-oauth2-with-outlook/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
                 </div>
                 {{/if}}
 
@@ -77,8 +80,9 @@
                 </ul>
 
                 <div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
-                    for your <a href="https://oauth.mail.ru/app/" target="_blank">OAuth2 apps</a>
-                    by default.</div>
+                    for your <a href="https://oauth.mail.ru/app/" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">OAuth2
+                        apps</a> by default.</div>
                 {{/if}}
 
             </div>
@@ -263,7 +267,8 @@
                 {{#if activeGmail}}
                 <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                     enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                        href="https://console.cloud.google.com/apis/dashboard" target="_blank">Google Cloud Console</a>)
+                        href="https://console.cloud.google.com/apis/dashboard" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
                     before registering accounts with these permissions. Otherwise, token generations will fail.
                 </div>
                 {{/if}}
@@ -271,7 +276,8 @@
                 {{#if activeGmailService}}
                 <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                     enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                        href="https://console.cloud.google.com/apis/dashboard" target="_blank">Google Cloud Console</a>)
+                        href="https://console.cloud.google.com/apis/dashboard" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
                     before registering accounts with these permissions. Otherwise, token generations will fail.
                 </div>
                 {{/if}}
@@ -281,7 +287,7 @@
                             target="_blank">{{values.provider}}ExtraScopes</a>]
                     </div>
 
-                    <label for="extraScopes">List of OAUth2 scopes</label>
+                    <label for="extraScopes">List of OAuth2 scopes</label>
 
                     <textarea class="form-control {{#if errors.extraScopes}}is-invalid{{/if}}" id="extraScopes"
                         name="extraScopes" rows="5" spellcheck="false" data-enable-grammarly="false"

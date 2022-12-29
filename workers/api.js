@@ -8,6 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
+const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const {
     getByteSize,
@@ -19,11 +20,11 @@ const {
     isEmail,
     getLogs,
     getWorkerCount,
-    normalizePath,
-    assertPreconditions,
-    unpackUIDRangeForSearch,
+    runPrechecks,
     matcher,
-    readEnvValue
+    readEnvValue,
+    matchIp,
+    getSignedFormData
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -46,6 +47,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const Hapi = require('@hapi/hapi');
@@ -67,15 +69,15 @@ const { getOAuth2Client } = require('../lib/oauth');
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
-const msgpack = require('msgpack5')();
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
-const Hecks = require('@hapipal/hecks');
+const Hecks = require('@postalsys/hecks');
 const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
+const { lists } = require('../lib/lists');
 
-const { redis, REDIS_CONF, notifyQueue, documentsQeueue } = require('../lib/db');
+const { redis, REDIS_CONF, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -89,8 +91,21 @@ const { encrypt, decrypt } = require('../lib/encrypt');
 const { Certs } = require('@postalsys/certs');
 const net = require('net');
 
+const nodeFetch = require('node-fetch');
+const fetchCmd = global.fetch || nodeFetch;
+
 const consts = require('../lib/consts');
-const { TRACK_OPEN_NOTIFY, TRACK_CLICK_NOTIFY, REDIS_PREFIX, MAX_DAYS_STATS, RENEW_TLS_AFTER, BLOCK_TLS_RENEW, TLS_RENEW_CHECK_INTERVAL } = consts;
+const {
+    TRACK_OPEN_NOTIFY,
+    TRACK_CLICK_NOTIFY,
+    REDIS_PREFIX,
+    MAX_DAYS_STATS,
+    RENEW_TLS_AFTER,
+    BLOCK_TLS_RENEW,
+    TLS_RENEW_CHECK_INTERVAL,
+    DEFAULT_CORS_MAX_AGE,
+    LIST_UNSUBSCRIBE_NOTIFY
+} = consts;
 
 const {
     settingsSchema,
@@ -108,17 +123,26 @@ const {
     shortMailboxesSchema,
     licenseSchema,
     lastErrorSchema,
-    templateSchemas
+    templateSchemas,
+    documentStoreSchema,
+    searchSchema,
+    messageUpdateSchema,
+    accountSchemas
 } = require('../lib/schemas');
+
+const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
 const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
 const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
+
+const SMTP_TEST_HOST = 'https://api.nodemailer.com';
 
 config.api = config.api || {
     port: 3000,
@@ -136,6 +160,40 @@ const API_PORT =
 const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
+
+// Max POST body size for message uploads
+// NB! the default for other requests is 1MB
+const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE') || config.api.maxBodySize) || DEFAULT_MAX_BODY_SIZE;
+
+// CORS configuration for API requests
+// By default, CORS is not enabled
+const CORS_ORIGINS = readEnvValue('EENGINE_CORS_ORIGIN') || (config.cors && config.cors.origin);
+const CORS_CONFIG = !CORS_ORIGINS
+    ? false
+    : {
+          // crux to convert --cors.origin=".." and EENGINE_CORS_ORIGIN="..." into an array of origins
+          origin: [].concat(
+              Array.from(
+                  new Set(
+                      []
+                          .concat(CORS_ORIGINS || [])
+                          .flatMap(origin => origin)
+                          .flatMap(origin => origin && origin.toString().trim().split(/\s+/))
+                          .filter(origin => origin)
+                  )
+              ) || ['*']
+          ),
+          headers: ['Authorization'],
+          exposedHeaders: ['Accept'],
+          additionalExposedHeaders: [],
+          maxAge:
+              getDuration(readEnvValue('EENGINE_CORS_MAX_AGE') || (config.cors && config.cors.maxAge), {
+                  seconds: true
+              }) || DEFAULT_CORS_MAX_AGE,
+          credentials: true
+      };
+
+logger.debug({ msg: 'CORS config for API requests', cors: CORS_CONFIG });
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 
@@ -197,12 +255,14 @@ async function call(message, transferList) {
     return new Promise((resolve, reject) => {
         let mid = `${Date.now()}:${++mids}`;
 
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T2]');
             err.statusCode = 504;
             err.code = 'Timeout';
+            err.ttl = ttl;
             reject(err);
-        }, message.timeout || EENGINE_TIMEOUT);
+        }, ttl);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -242,7 +302,10 @@ async function sendWebhook(account, event, data) {
         event
     });
 
+    let serviceUrl = (await settings.get('serviceUrl')) || true;
+
     let payload = {
+        serviceUrl,
         account,
         date: new Date().toISOString()
     };
@@ -255,16 +318,7 @@ async function sendWebhook(account, event, data) {
         payload.data = data;
     }
 
-    let queueKeep = (await settings.get('queueKeep')) || true;
-    await notifyQueue.add(event, payload, {
-        removeOnComplete: queueKeep,
-        removeOnFail: queueKeep,
-        attempts: 10,
-        backoff: {
-            type: 'exponential',
-            delay: 5000
-        }
-    });
+    await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
 async function onCommand(command) {
@@ -295,6 +349,9 @@ parentPort.on('message', message => {
             }
             if (message.statusCode) {
                 err.statusCode = message.statusCode;
+            }
+            if (message.info) {
+                err.info = message.info;
             }
             return reject(err);
         } else {
@@ -534,7 +591,13 @@ When making API calls remember that requests against the same account are queued
                 in: 'query'
             }
         },
-        security: [{ bearerAuth: [] }]
+
+        security: [{ bearerAuth: [] }],
+
+        cors: !!CORS_CONFIG,
+        cache: {
+            expiresIn: 7 * 24 * 60 * 60 * 1000
+        }
     };
 
     await server.register(AuthBearer);
@@ -611,7 +674,7 @@ When making API calls remember that requests against the same account are queued
             }
 
             if (tokenData.restrictions) {
-                if (tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(request.app.ip)) {
+                if (tokenData.restrictions.addresses && !matchIp(request.app.ip, tokenData.restrictions.addresses)) {
                     logger.error({
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
@@ -668,20 +731,21 @@ When making API calls remember that requests against the same account are queued
         },
         appendNext: true,
         redirectTo: '/admin/login',
-        validateFunc: async (request, session) => {
+
+        async validate(request, session) {
             const authData = await settings.get('authData');
             if (!authData) {
-                return { valid: true, credentials: { enabled: false } };
+                return { isValid: true, credentials: { enabled: false } };
             }
 
             const account = authData.user === session.user;
 
             if (!account) {
-                return { valid: false };
+                return { isValid: false };
             }
 
             return {
-                valid: true,
+                isValid: true,
                 credentials: {
                     enabled: true,
                     user: authData.user
@@ -729,8 +793,14 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/',
-        handler: {
-            file: { path: pathlib.join(__dirname, '..', 'static', 'index.html'), confine: false }
+        async handler(request, h) {
+            return h.view(
+                'index',
+                {},
+                {
+                    layout: 'main'
+                }
+            );
         },
         options: {
             auth: false
@@ -891,8 +961,6 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/open.gif',
         async handler(request, h) {
-            // TODO: track an open
-
             let data = Buffer.from(request.query.data, 'base64url').toString();
             let serviceSecret = await settings.get('serviceSecret');
             if (serviceSecret) {
@@ -941,6 +1009,96 @@ When making API calls remember that requests against the same account are queued
                     data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
                     sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/unsubscribe',
+        async handler(request) {
+            // NB! Avoid throwing errors
+
+            let data = Buffer.from(request.query.data, 'base64url').toString();
+            let serviceSecret = await settings.get('serviceSecret');
+            if (serviceSecret) {
+                let hmac = crypto.createHmac('sha256', serviceSecret);
+                hmac.update(data);
+                if (hmac.digest('base64url') !== request.query.sig) {
+                    return 'data validation failed';
+                }
+            }
+
+            data = JSON.parse(data);
+
+            if (!data || typeof data !== 'object' || data.act !== 'unsub') {
+                return 'not ok';
+            }
+
+            let accountObject = new Account({ redis, account: data.acc, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+            } catch (err) {
+                return 'unknown account';
+            }
+
+            let isNew = await redis.eeListAdd(
+                `${REDIS_PREFIX}lists:unsub:lists`,
+                `${REDIS_PREFIX}lists:unsub:entries:${data.list}`,
+                data.list,
+                data.rcpt.toLowerCase().trim(),
+                JSON.stringify({
+                    recipient: data.rcpt,
+                    account: data.acc,
+                    source: 'one-click',
+                    reason: 'unsubscribe',
+                    messageId: data.msg,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent'],
+                    created: new Date().toISOString()
+                })
+            );
+
+            if (isNew) {
+                await sendWebhook(data.acc, LIST_UNSUBSCRIBE_NOTIFY, {
+                    recipient: data.rcpt,
+                    messageId: data.msg,
+                    listId: data.list,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            }
+
+            return 'ok';
+        },
+        options: {
+            description: 'One-click unsubscribe',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+
+                failAction,
+
+                query: Joi.object({
+                    data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
+                    sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
+                }).label('OneClickUnsubQuery'),
+
+                payload: Joi.object({
+                    'List-Unsubscribe': Joi.string().required().valid('One-Click')
+                }).label('OneClickUnsubPayload')
+            },
+
+            plugins: {
+                crumb: false
             },
 
             auth: false
@@ -1022,7 +1180,7 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
-                    accountData.email = accountData.email || (isEmail(profileRes.emailAddress) ? profileRes.emailAddress : '');
+                    accountData.email = isEmail(profileRes.emailAddress) ? profileRes.emailAddress : accountData.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1090,7 +1248,7 @@ When making API calls remember that requests against the same account are queued
                     }
 
                     accountData.name = accountData.name || userInfo.name || '';
-                    accountData.email = accountData.email || userInfo.email;
+                    accountData.email = userInfo.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1137,7 +1295,7 @@ When making API calls remember that requests against the same account are queued
                     }
 
                     accountData.name = accountData.name || profileRes.name || '';
-                    accountData.email = accountData.email || (isEmail(profileRes.email) ? profileRes.email : '');
+                    accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1245,6 +1403,7 @@ When making API calls remember that requests against the same account are queued
 
                 return { token };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1267,6 +1426,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1281,7 +1441,7 @@ When making API calls remember that requests against the same account are queued
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
-                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp')).default(['api']).required().label('Scopes'),
+                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp', 'imap-proxy')).single().default(['api']).required().label('Scopes'),
 
                     metadata: Joi.string()
                         .empty('')
@@ -1303,6 +1463,7 @@ When making API calls remember that requests against the same account are queued
                         referrers: Joi.array()
                             .items(Joi.string())
                             .empty('')
+                            .single()
                             .allow(false)
                             .default(false)
                             .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
@@ -1312,13 +1473,14 @@ When making API calls remember that requests against the same account are queued
                             .items(
                                 Joi.string().ip({
                                     version: ['ipv4', 'ipv6'],
-                                    cidr: 'forbidden'
+                                    cidr: 'optional'
                                 })
                             )
                             .empty('')
+                            .single()
                             .allow(false)
                             .default(false)
-                            .example(['1.2.3.4', '5.6.7.8'])
+                            .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
                             .label('AddressAllowlist')
                             .description('IP address allowlist')
                     })
@@ -1356,6 +1518,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { deleted: await tokens.delete(request.params.token, { remoteAddress: request.app.ip }) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1377,6 +1540,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1404,10 +1568,11 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/tokens',
 
-        async handler() {
+        async handler(request) {
             try {
                 return { tokens: await tokens.list() };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1430,6 +1595,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1488,6 +1654,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { tokens: await tokens.list(request.params.account) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1510,6 +1677,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1559,13 +1727,13 @@ When making API calls remember that requests against the same account are queued
                                         .items(
                                             Joi.string().ip({
                                                 version: ['ipv4', 'ipv6'],
-                                                cidr: 'forbidden'
+                                                cidr: 'optional'
                                             })
                                         )
                                         .empty('')
                                         .allow(false)
                                         .default(false)
-                                        .example(['1.2.3.4', '5.6.7.8'])
+                                        .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
                                         .label('AddressAllowlist')
                                         .description('IP address allowlist')
                                 })
@@ -1652,6 +1820,7 @@ When making API calls remember that requests against the same account are queued
                 let result = await accountObject.create(request.payload);
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1674,6 +1843,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1690,7 +1860,7 @@ When making API calls remember that requests against the same account are queued
                         .allow(null)
                         .required()
                         .example('example')
-                        .description('Account ID. If null then will be autogenerated'),
+                        .description('Account ID. If the provided value is `null` then an unique ID will be autogenerated'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
@@ -1706,19 +1876,23 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/imap/webhooks')
                         .description('Account-specific webhook URL'),
 
-                    copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
+                    copy: Joi.boolean()
+                        .allow(null)
+                        .example(null)
+                        .description('Copy submitted messages to Sent folder. Set to `null` to unset and use provider specific default.'),
 
-                    logs: Joi.boolean().example(true).description('Store recent logs').default(false),
+                    logs: Joi.boolean().example(false).description('Store recent logs').default(false),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date').default('now'),
+                    notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    syncFrom: accountSchemas.syncFrom.default(null),
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).xor('useAuthServer', 'auth', 'disabled').description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
 
-                    smtp: Joi.object(smtpSchema).allow(false).xor('useAuthServer', 'auth').description('SMTP configuration').label('SMTP'),
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
 
-                    oauth2: Joi.object(oauth2Schema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2'),
+                    oauth2: Joi.object(oauth2Schema).allow(false).description('OAuth2 configuration').label('OAuth2'),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
@@ -1736,6 +1910,145 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'POST',
+        path: '/v1/authentication/form',
+
+        async handler(request) {
+            try {
+                let { data, signature } = await getSignedFormData({
+                    account: request.payload.account,
+                    name: request.payload.name,
+                    email: request.payload.email,
+                    syncFrom: request.payload.syncFrom,
+                    notifyFrom: request.payload.notifyFrom,
+                    redirectUrl: request.payload.redirectUrl
+                });
+
+                let serviceUrl = await settings.get('serviceUrl');
+                if (!serviceUrl) {
+                    let err = new Error('Service URL not set up');
+                    err.code = 'MissingServiceURLSetup';
+                    throw err;
+                }
+
+                let url = new URL(`accounts/new`, serviceUrl);
+
+                url.searchParams.append('data', data);
+                if (signature) {
+                    url.searchParams.append('sig', signature);
+                }
+
+                let type = request.payload.type;
+
+                let enabledTypes = new Set();
+
+                for (let accountType of ['gmail', 'outlook', 'mailRu']) {
+                    let typeEnabled = await settings.get(`${accountType}Enabled`);
+                    if (typeEnabled && (!(await settings.get(`${accountType}ClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
+                        typeEnabled = false;
+                        if (type === accountType) {
+                            type = false;
+                        }
+                    }
+                    if (typeEnabled) {
+                        enabledTypes.add(accountType);
+                    }
+                }
+
+                if (!enabledTypes.size) {
+                    type = 'imap';
+                }
+
+                if (type) {
+                    url.searchParams.append('type', type);
+                }
+
+                return {
+                    url: url.href
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Generate authentication link',
+            notes: 'Generates a redirect link to the hosted authentication form',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object({
+                    account: Joi.string()
+                        .empty('')
+                        .max(256)
+                        .allow(null)
+                        .example('example')
+                        .default(null)
+                        .description(
+                            'Account ID. If the provided value is `null` then an unique ID will be autogenerated. Using an existing account ID will update settings for that existing account.'
+                        ),
+
+                    name: Joi.string().empty('').max(256).example('My Email Account').description('Display name for the account'),
+                    email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
+
+                    syncFrom: accountSchemas.syncFrom,
+                    notifyFrom: accountSchemas.notifyFrom,
+
+                    redirectUrl: Joi.string()
+                        .empty('')
+                        .uri({ scheme: ['http', 'https'], allowRelative: false })
+                        .required()
+                        .example('https://myapp/account/settings.php')
+                        .description('The user will be redirected to this URL after submitting the authentication form'),
+
+                    type: Joi.string()
+                        .valid('imap', 'gmail', 'outlook', 'mailRu')
+                        .empty('')
+                        .allow(false)
+                        .default(false)
+                        .example('imap')
+                        .description('Display the form for the specified account type instead of allowing the user to choose')
+                }).label('RequestAuthForm')
+            },
+
+            response: {
+                schema: Joi.object({
+                    url: Joi.string()
+                        .empty('')
+                        .uri({ scheme: ['http', 'https'], allowRelative: false })
+                        .required()
+                        .example('https://ee.example.com/accounts/new?data=eyJhY2NvdW50IjoiZXhh...L0W_BkFH5HW6Krwmr7c&type=imap')
+                        .description('Generated URL to the hosted authentication form')
+                }).label('RequestAuthFormResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'PUT',
         path: '/v1/account/{account}',
 
@@ -1745,6 +2058,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.update(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1766,6 +2080,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1794,20 +2109,21 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/imap/webhooks')
                         .description('Account-specific webhook URL'),
 
-                    copy: Joi.boolean().allow(null).example(true).description('Copy submitted messages to Sent folder. Set to `null` to unset.'),
-                    logs: Joi.boolean().example(true).description('Store recent logs'),
+                    copy: Joi.boolean()
+                        .allow(null)
+                        .example(null)
+                        .description('Copy submitted messages to Sent folder. Set to `null` to unset and use provider specific default.'),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
+                    logs: Joi.boolean().example(false).description('Store recent logs'),
+
+                    notifyFrom: accountSchemas.notifyFrom,
+                    syncFrom: accountSchemas.syncFrom,
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapUpdateSchema)
-                        .allow(false)
-                        .oxor('useAuthServer', 'auth', 'disabled')
-                        .description('IMAP configuration')
-                        .label('IMAPUpdate'),
-                    smtp: Joi.object(smtpUpdateSchema).allow(false).oxor('useAuthServer', 'auth').description('SMTP configuration').label('SMTPUpdate'),
-                    oauth2: Joi.object(oauth2UpdateSchema).xor('authorize', 'auth').allow(false).description('OAuth2 configuration').label('OAuth2Update'),
+                    imap: Joi.object(imapUpdateSchema).allow(false).description('IMAP configuration').label('IMAPUpdate'),
+                    smtp: Joi.object(smtpUpdateSchema).allow(false).description('SMTP configuration').label('SMTPUpdate'),
+                    oauth2: Joi.object(oauth2UpdateSchema).allow(false).description('OAuth2 configuration').label('OAuth2Update'),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
@@ -1817,7 +2133,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                }).label('UpdateAccountResponse'),
+                }),
                 failAction: 'log'
             }
         }
@@ -1833,6 +2149,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { reconnect: await accountObject.requestReconnect(request.payload) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1854,6 +2171,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1891,6 +2209,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return { sync: await accountObject.requestSync(request.payload) };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1912,6 +2231,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1947,7 +2267,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({
                 redis,
                 account: request.params.account,
-                documentsQeueue,
+                documentsQueue,
                 call,
                 secret: await getSecret()
             });
@@ -1955,6 +2275,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.delete();
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -1976,6 +2297,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -1987,7 +2309,7 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                }).label('DeleteRequest')
+                })
             },
 
             response: {
@@ -2010,6 +2332,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await accountObject.listAccounts(request.query.state, request.query.query, request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2032,6 +2355,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2131,6 +2455,7 @@ When making API calls remember that requests against the same account are queued
                     'email',
                     'copy',
                     'notifyFrom',
+                    'syncFrom',
                     'imap',
                     'smtp',
                     'oauth2',
@@ -2156,6 +2481,7 @@ When making API calls remember that requests against the same account are queued
 
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2175,6 +2501,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2197,9 +2524,10 @@ When making API calls remember that requests against the same account are queued
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder'),
-                    logs: Joi.boolean().example(true).description('Store recent logs'),
+                    logs: Joi.boolean().example(false).description('Store recent logs'),
 
-                    notifyFrom: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Notify messages from date'),
+                    notifyFrom: accountSchemas.notifyFrom,
+                    syncFrom: accountSchemas.syncFrom,
 
                     webhooks: Joi.string()
                         .uri({
@@ -2210,9 +2538,9 @@ When making API calls remember that requests against the same account are queued
                         .description('Account-specific webhook URL'),
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
-                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTP'),
+                    smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPResponse'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('AccountResponse'),
@@ -2229,8 +2557,27 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                return { mailboxes: await accountObject.getMailboxListing() };
+                let mailboxes = await accountObject.getMailboxListing(request.query);
+
+                if (mailboxes && Array.isArray(mailboxes)) {
+                    mailboxes = mailboxes.sort((a, b) => {
+                        if (a.specialUse && !b.specialUse) {
+                            return -1;
+                        }
+                        if (!a.specialUse && b.specialUse) {
+                            return 1;
+                        }
+                        if (a.specialUse && b.specialUse) {
+                            return FLAG_SORT_ORDER.indexOf(a.specialUse) - FLAG_SORT_ORDER.indexOf(b.specialUse);
+                        }
+
+                        return a.path.localeCompare(b.path);
+                    });
+                }
+
+                return { mailboxes };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2251,6 +2598,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2262,7 +2610,16 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                })
+                }),
+
+                query: Joi.object({
+                    counters: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then includes message counters in the response')
+                        .label('MailboxCounters')
+                }).label('MailboxListQuery')
             },
 
             response: {
@@ -2284,12 +2641,16 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.createMailbox(request.payload.path);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
                 let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
                 if (err.code) {
                     error.output.payload.code = err.code;
+                }
+                if (err.info) {
+                    error.output.payload.details = err.info;
                 }
                 throw error;
             }
@@ -2306,6 +2667,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2322,8 +2684,9 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     path: Joi.array()
                         .items(Joi.string().max(256))
+                        .single()
                         .example(['Parent folder', 'Subfolder'])
-                        .description('Mailbox path as an array. If account is namespaced then namespace prefix is added by default.')
+                        .description('Mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.')
                         .label('MailboxPath')
                 }).label('CreateMailbox')
             },
@@ -2340,6 +2703,78 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/mailbox',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.renameMailbox(request.payload.path, request.payload.newPath);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                if (err.info) {
+                    error.output.payload.details = err.info;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Rename mailbox',
+            notes: 'Rename an existing mailbox folder',
+            tags: ['api', 'Mailbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    newPath: Joi.array()
+                        .items(Joi.string().max(256))
+                        .single()
+                        .example(['Parent folder', 'Subfolder'])
+                        .description('New mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.')
+                        .label('TargetMailboxPath')
+                }).label('RenameMailbox')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    newPath: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('NewMailboxPath'),
+                    renamed: Joi.boolean().example(true).description('Was the mailbox renamed')
+                }).label('RenameMailboxResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'DELETE',
         path: '/v1/account/{account}/mailbox',
 
@@ -2349,6 +2784,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.deleteMailbox(request.query.path);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2371,6 +2807,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2409,6 +2846,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getRawMessage(request.params.message);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2428,6 +2866,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2461,6 +2900,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.getAttachment(request.params.attachment);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2480,6 +2920,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2507,78 +2948,18 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
 
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    const { index, client } = await h.getESClient(request.logger);
-
-                    const reqOpts = {
-                        index,
-                        id: `${request.params.account}:${request.params.message}`,
-                        _source_excludes: 'preview,seemsLikeNew'
-                    };
-
-                    switch (request.query.textType) {
-                        case '*':
-                            break;
-                        case 'html':
-                            reqOpts._source_excludes = 'text.plain';
-                            break;
-                        case 'plain':
-                            reqOpts._source_excludes = 'text.html';
-                            break;
-                        default:
-                            reqOpts._source_excludes = 'text.plain,text.html';
-                    }
-
-                    let getResult = await client.get(reqOpts);
-
-                    if (!getResult || !getResult._source) {
-                        let message = 'Requested message was not found';
-                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
-                        throw error;
-                    }
-
-                    let messageData = getResult._source;
-
-                    // restore headers and text object as per the API response
-                    let headersObj = {};
-                    for (let { key, value } of messageData.headers) {
-                        headersObj[key] = value;
-                    }
-                    messageData.headers = headersObj;
-
-                    if (messageData.text && (messageData.text.html || messageData.text.plain)) {
-                        messageData.text.hasMore = false;
-                    }
-
-                    for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                        if (messageData[key] === false) {
-                            messageData[key] = undefined;
-                        }
-                    }
-
-                    for (let key of ['account', 'created', 'specialUse']) {
-                        if (messageData[key]) {
-                            messageData[key] = undefined;
-                        }
-                    }
-
-                    return messageData;
-                } else {
-                    // regular IMAP request
-                    return await accountObject.getMessage(request.params.message, request.query);
-                }
+                return await accountObject.getMessage(request.params.message, request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2598,6 +2979,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2618,12 +3000,13 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
-                    documentStore: Joi.boolean()
+                    embedAttachedImages: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                        .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
+                        .label('EmbedImages'),
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -2649,6 +3032,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.uploadMessage(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2661,9 +3045,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             payload: {
-                // allow message uploads up to 50MB
-                // TODO: should it be configurable instead?
-                maxBytes: 50 * 1024 * 1024
+                maxBytes: MAX_BODY_SIZE
             },
 
             description: 'Upload message',
@@ -2676,6 +3058,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2725,7 +3108,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -2813,6 +3197,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.updateMessage(request.params.message, request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2834,6 +3219,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2848,27 +3234,80 @@ When making API calls remember that requests against the same account are queued
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
-                payload: Joi.object({
+                payload: messageUpdateSchema
+            },
+            response: {
+                schema: Joi.object({
                     flags: Joi.object({
-                        add: Joi.array().items(Joi.string().max(128)).description('Add new flags').example(['\\Seen']).label('AddFlags'),
-                        delete: Joi.array().items(Joi.string().max(128)).description('Delete specific flags').example(['\\Flagged']).label('DeleteFlags'),
-                        set: Joi.array().items(Joi.string().max(128)).description('Override all flags').example(['\\Seen', '\\Flagged']).label('SetFlags')
-                    })
-                        .description('Flag updates')
-                        .label('FlagUpdate'),
-
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse'),
                     labels: Joi.object({
-                        add: Joi.array().items(Joi.string().max(128)).description('Add new labels').example(['Some label']).label('AddLabels'),
-                        delete: Joi.array().items(Joi.string().max(128)).description('Delete specific labels').example(['Some label']).label('DeleteLabels'),
-                        set: Joi.array()
-                            .items(Joi.string().max(128))
-                            .description('Override all labels')
-                            .example(['First label', 'Second label'])
-                            .label('SetLabels')
-                    })
-                        .description('Label updates')
-                        .label('LabelUpdate')
-                }).label('MessageUpdate')
+                        add: Joi.boolean().example(true),
+                        delete: Joi.boolean().example(false),
+                        set: Joi.boolean().example(false)
+                    }).label('FlagResponse')
+                }).label('MessageUpdateResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.updateMessages(request.query.path, request.payload.search, request.payload.update);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Update messages',
+            notes: 'Update message information for matching emails',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path')
+                }).label('MessagesUpdateQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema,
+                    update: messageUpdateSchema
+                }).label('MessagesUpdateRequest')
             },
             response: {
                 schema: Joi.object({
@@ -2898,6 +3337,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.moveMessage(request.params.message, request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2919,6 +3359,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -2950,6 +3391,75 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/move',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.moveMessages(request.query.path, request.payload.search, { path: request.payload.path });
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Move messages',
+            notes: 'Move messages matching to a search query to another folder',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Source mailbox folder path')
+                }).label('MessagesMoveQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema,
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path')
+                }).label('MessagesMoveRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+                    idMap: Joi.array()
+                        .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                        .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
+                        .description('An optional map of source and target ID values, if the server provided this info')
+                }).label('MessagesMoveResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'DELETE',
         path: '/v1/account/{account}/message/{message}',
 
@@ -2959,6 +3469,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.deleteMessage(request.params.message, request.query.force);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -2980,6 +3491,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3005,7 +3517,7 @@ When making API calls remember that requests against the same account are queued
             },
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().example(true).description('Present if message was actually deleted'),
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
                         message: Joi.string().required().example('AAAAAwAAAWg').description('Message ID in Trash').label('TrashMessageId')
@@ -3017,51 +3529,99 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/messages/delete',
+
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                return await accountObject.deleteMessages(request.query.path, request.payload.search, request.query.force);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Delete messages',
+            notes: 'Move messages to Trash or delete these if already in Trash',
+            tags: ['api', 'Multi Message Actions'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                query: Joi.object({
+                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path'),
+                    force: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('Delete messages even if not in Trash')
+                        .label('ForceDelete')
+                }).label('MessagesDeleteQuery'),
+
+                payload: Joi.object({
+                    search: searchSchema
+                }).label('MessagesDeleteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().example(false).description('Was the delete action executed'),
+                    moved: Joi.object({
+                        destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
+                        idMap: Joi.array()
+                            .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                            .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
+                            .description('An optional map of source and target ID values, if the server provided this info')
+                    }).description('Present if messages were moved to Trash')
+                }).label('MessagesDeleteResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'GET',
         path: '/v1/account/{account}/text/{text}',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
 
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    let buf = Buffer.from(request.params.text, 'base64url');
-                    let message = buf.slice(0, 8).toString('base64url');
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let getResult = await client.get({
-                        index,
-                        id: `${request.params.account}:${message}`
-                    });
-
-                    if (!getResult || !getResult._source) {
-                        let message = 'Requested message was not found';
-                        let error = Boom.boomify(new Error(message), { statusCode: 404 });
-                        throw error;
-                    }
-
-                    let messageData = getResult._source;
-                    let response = {};
-                    for (let textType of Object.keys(messageData.text || {})) {
-                        if (['plain', 'html'].includes(textType) && (request.query.textType === '*' || request.query.textType === textType)) {
-                            response[textType] = messageData.text[textType];
-                        }
-                    }
-                    response.hasMore = false;
-
-                    return response;
-                } else {
-                    return await accountObject.getText(request.params.text, request.query);
-                }
+                return await accountObject.getText(request.params.text, request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3081,6 +3641,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3102,12 +3663,7 @@ When making API calls remember that requests against the same account are queued
                         .default('*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default all contents are returned.'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
@@ -3137,119 +3693,18 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/messages',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
             try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
-                    }
-
-                    let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
-                    let delimiter;
-                    if (inboxData) {
-                        try {
-                            inboxData = msgpack.decode(inboxData);
-                            delimiter = inboxData.delimiter;
-                        } catch (err) {
-                            delimiter = '/'; // hope for the best
-                            inboxData = false;
-                        }
-                    }
-
-                    inboxData = inboxData || {
-                        path: 'INBOX',
-                        delimiter
-                    };
-
-                    inboxData.specialUse = inboxData.specialUse || '\\Inbox';
-
-                    let path = normalizePath(request.query.path, delimiter);
-                    let mailboxData = path === 'INBOX' ? inboxData : false;
-                    if (!mailboxData) {
-                        mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
-                        if (mailboxData) {
-                            try {
-                                mailboxData = msgpack.decode(mailboxData);
-                            } catch (err) {
-                                mailboxData = false;
-                            }
-                        }
-                    }
-
-                    let query = {
-                        bool: {
-                            must: [
-                                {
-                                    term: {
-                                        account: request.params.account
-                                    }
-                                }
-                            ]
-                        }
-                    };
-
-                    query.bool.must.push({
-                        bool: {
-                            should: [
-                                {
-                                    term: {
-                                        path
-                                    }
-                                },
-                                {
-                                    term: {
-                                        labels: mailboxData.specialUse || path
-                                    }
-                                }
-                            ],
-                            minimum_should_match: 1
-                        }
-                    });
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let searchResult = await client.search({
-                        index,
-                        size: request.query.pageSize,
-                        from: request.query.pageSize * request.query.page,
-                        query,
-                        sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
-                    });
-
-                    let response = {
-                        total: searchResult.hits.total.value,
-                        page: request.query.page,
-                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1),
-                        messages: searchResult.hits.hits.map(entry => {
-                            let messageData = entry._source;
-
-                            // normalize as per the API response
-
-                            for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                                if (messageData[key] === false) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            for (let key of ['account', 'created', 'specialUse']) {
-                                if (messageData[key]) {
-                                    messageData[key] = undefined;
-                                }
-                            }
-
-                            return messageData;
-                        })
-                    };
-
-                    return response;
-                } else {
-                    return await accountObject.listMessages(request.query);
-                }
+                return await accountObject.listMessages(request.query);
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3269,6 +3724,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3292,12 +3748,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore')
+                    documentStore: documentStoreSchema.default(false)
                 }).label('MessageQuery')
             },
 
@@ -3313,317 +3764,40 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/search',
 
         async handler(request, h) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
-            try {
-                if (request.query.documentStore) {
-                    let documentStoreEnabled = await settings.get('documentStoreEnabled');
-                    if (!documentStoreEnabled) {
-                        let error = Boom.boomify(new Error('Document store is not enabled'), { statusCode: 503 });
-                        error.output.payload.code = 'DisabledDocumentStore';
-                        throw error;
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            let extraValidationErrors = [];
+
+            if (request.query.documentStore) {
+                for (let key of ['seq', 'modseq']) {
+                    if (request.payload.search && key in request.payload.search) {
+                        extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
                     }
-
-                    let query = {
-                        bool: {
-                            must: [
-                                {
-                                    term: {
-                                        account: request.params.account
-                                    }
-                                }
-                            ]
-                        }
-                    };
-
-                    if (request.query.path) {
-                        let inboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), 'INBOX');
-                        let delimiter;
-
-                        if (inboxData) {
-                            try {
-                                inboxData = msgpack.decode(inboxData);
-                                delimiter = inboxData.delimiter;
-                            } catch (err) {
-                                delimiter = '/'; // hope for the best
-                                inboxData = false;
-                            }
-                        }
-
-                        inboxData = inboxData || {
-                            path: 'INBOX',
-                            delimiter
-                        };
-
-                        inboxData.specialUse = inboxData.specialUse || '\\Inbox';
-
-                        let path = normalizePath(request.query.path, delimiter);
-                        let mailboxData = path === 'INBOX' ? inboxData : false;
-                        if (!mailboxData) {
-                            mailboxData = await redis.hgetBuffer(accountObject.getMailboxListKey(), path);
-                            if (mailboxData) {
-                                try {
-                                    mailboxData = msgpack.decode(mailboxData);
-                                } catch (err) {
-                                    mailboxData = false;
-                                }
-                            }
-                        }
-
-                        query.bool.must.push({
-                            bool: {
-                                should: [
-                                    {
-                                        term: {
-                                            path
-                                        }
-                                    },
-                                    {
-                                        term: {
-                                            labels: mailboxData.specialUse || path
-                                        }
-                                    }
-                                ],
-                                minimum_should_match: 1
-                            }
-                        });
-                    }
-
-                    for (let key of ['answered', 'deleted', 'draft', 'unseen', 'flagged']) {
-                        if (typeof request.payload.search[key] === 'boolean') {
-                            query.bool.must.push({
-                                term: {
-                                    [key]: request.payload.search[key]
-                                }
-                            });
-                        }
-                    }
-
-                    if (typeof request.payload.search.seen === 'boolean') {
-                        query.bool.must.push({
-                            term: {
-                                unseen: !request.payload.search.seen
-                            }
-                        });
-                    }
-
-                    for (let key of ['from', 'to', 'cc', 'bcc']) {
-                        if (request.payload.search[key]) {
-                            query.bool.must.push({
-                                bool: {
-                                    should: [
-                                        {
-                                            match: {
-                                                [`${key}.name`]: {
-                                                    query: request.payload.search[key],
-                                                    operator: 'and'
-                                                }
-                                            }
-                                        },
-                                        {
-                                            term: {
-                                                [`${key}.address`]: request.payload.search[key]
-                                            }
-                                        }
-                                    ],
-                                    minimum_should_match: 1
-                                }
-                            });
-                        }
-                    }
-
-                    if (request.payload.search.uid) {
-                        let uidEntries = unpackUIDRangeForSearch(request.payload.search.uid);
-                        if (uidEntries && uidEntries.length) {
-                            let mustList = [];
-                            for (let entry of uidEntries) {
-                                if (typeof entry === 'number') {
-                                    mustList.push({
-                                        match: {
-                                            uid: {
-                                                query: entry,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    });
-                                } else if (typeof entry === 'object') {
-                                    mustList.push({
-                                        range: {
-                                            uid: entry
-                                        }
-                                    });
-                                }
-                            }
-
-                            if (mustList.length) {
-                                query.bool.must.push({
-                                    bool: {
-                                        should: mustList,
-                                        minimum_should_match: 1
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    for (let key of ['emailId', 'threadId']) {
-                        if (request.payload.search[key]) {
-                            query.bool.must.push({
-                                term: {
-                                    key: request.payload.search[key]
-                                }
-                            });
-                        }
-                    }
-
-                    if (request.payload.search.subject) {
-                        query.bool.must.push({
-                            match: {
-                                subject: {
-                                    query: request.payload.search.subject,
-                                    operator: 'and'
-                                }
-                            }
-                        });
-                    }
-
-                    if (request.payload.search.body) {
-                        query.bool.must.push({
-                            bool: {
-                                should: [
-                                    {
-                                        match: {
-                                            'text.plain': {
-                                                query: request.payload.search.body,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    },
-                                    {
-                                        match: {
-                                            'text.html': {
-                                                query: request.payload.search.body,
-                                                operator: 'and'
-                                            }
-                                        }
-                                    }
-                                ],
-                                minimum_should_match: 1
-                            }
-                        });
-                    }
-
-                    let dateMatch = {};
-
-                    for (let key of ['before', 'sentBefore']) {
-                        if (request.payload.search[key]) {
-                            dateMatch.lte = request.payload.search[key];
-                        }
-                    }
-
-                    for (let key of ['since', 'sentSince']) {
-                        if (request.payload.search[key]) {
-                            dateMatch.gte = request.payload.search[key];
-                        }
-                    }
-
-                    if (Object.keys(dateMatch).length) {
-                        query.bool.must.push({
-                            range: { date: dateMatch }
-                        });
-                    }
-
-                    let sizeMatch = {};
-
-                    if (request.payload.search.larger) {
-                        dateMatch.gte = request.payload.search.larger;
-                    }
-
-                    if (request.payload.search.smaller) {
-                        dateMatch.lte = request.payload.search.smaller;
-                    }
-
-                    if (Object.keys(sizeMatch).length) {
-                        query.bool.must.push({
-                            range: { size: sizeMatch }
-                        });
-                    }
-
-                    // headers, nested query
-                    if (Object.keys(request.payload.search.header || {}).length) {
-                        Object.keys(request.payload.search.header).forEach(header => {
-                            query.bool.must.push({
-                                nested: {
-                                    path: 'headers',
-                                    query: {
-                                        bool: {
-                                            must: [
-                                                {
-                                                    term: {
-                                                        'headers.key': header.toLowerCase()
-                                                    }
-                                                },
-                                                {
-                                                    match: {
-                                                        'headers.value': {
-                                                            query: (request.payload.search.header[header] || '').toString(),
-                                                            operator: 'and'
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            });
-                        });
-                    }
-
-                    const { index, client } = await h.getESClient(request.logger);
-                    let searchResult = await client.search({
-                        index,
-                        size: request.query.pageSize,
-                        from: request.query.pageSize * request.query.page,
-                        query,
-                        sort: { uid: 'desc' },
-                        _source_excludes: 'headers,text.plain,text.html,seemsLikeNew'
-                    });
-
-                    let response = {
-                        total: searchResult.hits.total.value,
-                        page: request.query.page,
-                        pages: Math.max(Math.ceil(searchResult.hits.total.value / request.query.pageSize), 1)
-                    };
-
-                    if (request.query.exposeQuery) {
-                        response.documentStoreQuery = query;
-                    }
-
-                    response.messages = searchResult.hits.hits.map(entry => {
-                        let messageData = entry._source;
-
-                        // normalize as per the API response
-
-                        for (let key of ['unseen', 'flagged', 'answered', 'draft']) {
-                            if (messageData[key] === false) {
-                                messageData[key] = undefined;
-                            }
-                        }
-
-                        for (let key of ['account', 'created', 'specialUse']) {
-                            if (messageData[key]) {
-                                messageData[key] = undefined;
-                            }
-                        }
-
-                        return messageData;
-                    });
-
-                    return response;
-                } else {
-                    return await accountObject.listMessages(Object.assign(request.query, request.payload));
                 }
+            } else {
+                for (let key of ['documentQuery']) {
+                    if (key in request.payload) {
+                        extraValidationErrors.push({ message: 'Not allowed without documentStore', context: { key } });
+                    }
+                }
+            }
+
+            if (extraValidationErrors.length) {
+                let error = new Error('Input validation failed');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            try {
+                return await accountObject.searchMessages(Object.assign(request.query, request.payload));
             } catch (err) {
-                request.logger.error({ msg: 'Request processing failed', err });
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3645,6 +3819,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3674,16 +3849,10 @@ When making API calls remember that requests against the same account are queued
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
                     pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
-                    documentStore: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .default(false)
-                        .description('If enabled then fetch the data from the Document Store instead of IMAP')
-                        .label('UseDocumentStore'),
+                    documentStore: documentStoreSchema.default(false),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
-                        .default(false)
                         .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
                         .label('exposeQuery')
                         .when('documentStore', {
@@ -3694,79 +3863,8 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 payload: Joi.object({
-                    search: Joi.object({
-                        seq: Joi.string()
-                            .max(256)
-                            .description('Sequence number range. Ignored when `documentStore` is `true` as Document Store does not assign sequence numbers.'),
-
-                        answered: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is answered or not')
-                            .label('AnsweredFlag'),
-                        deleted: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked for being deleted or not')
-                            .label('DeletedFlag'),
-                        draft: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).description('Check if message is a draft').label('DraftFlag'),
-                        unseen: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked as unseen or not')
-                            .label('UnseenFlag'),
-                        flagged: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is flagged or not')
-                            .label('Flagged'),
-                        seen: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .description('Check if message is marked as seen or not')
-                            .label('SeenFlag'),
-
-                        from: Joi.string().max(256).description('Match From: header').label('From'),
-                        to: Joi.string().max(256).description('Match To: header').label('To'),
-                        cc: Joi.string().max(256).description('Match Cc: header').label('Cc'),
-                        bcc: Joi.string().max(256).description('Match Bcc: header').label('Bcc'),
-
-                        body: Joi.string().max(256).description('Match text body').label('MessageBody'),
-                        subject: Joi.string().max(256).description('Match message subject').label('Subject'),
-
-                        larger: Joi.number()
-                            .min(0)
-                            .max(1024 * 1024 * 1024)
-                            .description('Matches messages larger than value')
-                            .label('MessageLarger'),
-
-                        smaller: Joi.number()
-                            .min(0)
-                            .max(1024 * 1024 * 1024)
-                            .description('Matches messages smaller than value')
-                            .label('MessageSmaller'),
-
-                        uid: Joi.string().max(256).description('UID range').label('UIDRange'),
-
-                        modseq: Joi.number()
-                            .min(0)
-                            .description('Matches messages with modseq higher than value. Ignored when `documentStore` is `true`.')
-                            .label('ModseqLarger'),
-
-                        before: Joi.date().description('Matches messages received before date').label('EnvelopeBefore'),
-                        since: Joi.date().description('Matches messages received after date').label('EnvelopeSince'),
-
-                        sentBefore: Joi.date().description('Matches messages sent before date').label('HeaderBefore'),
-                        sentSince: Joi.date().description('Matches messages sent after date').label('HeaderSince'),
-
-                        emailId: Joi.string().max(256).description('Match specific Gmail unique email UD'),
-                        threadId: Joi.string().max(256).description('Match specific Gmail unique thread UD'),
-
-                        header: Joi.object().description('Headers to match against').label('Headers').unknown()
-                    })
-                        .required()
-                        .description('Search query to filter messages')
-                        .label('SearchQuery')
+                    search: searchSchema,
+                    documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
                 }).label('SearchQuery')
             },
 
@@ -3787,6 +3885,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await accountObject.queueMessage(request.payload, { source: 'api' });
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -3794,14 +3893,15 @@ When making API calls remember that requests against the same account are queued
                 if (err.code) {
                     error.output.payload.code = err.code;
                 }
+                if (err.info) {
+                    error.output.payload.info = err.info;
+                }
                 throw error;
             }
         },
         options: {
             payload: {
-                // allow message uploads up to 50MB
-                // TODO: should it be configurable instead?
-                maxBytes: 50 * 1024 * 1024
+                maxBytes: MAX_BODY_SIZE
             },
 
             description: 'Submit message for delivery',
@@ -3814,6 +3914,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -3858,7 +3959,8 @@ When making API calls remember that requests against the same account are queued
                             .falsy('N', 'false', 0)
                             .default(false)
                             .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing')
+                            .label('IgnoreMissing'),
+                        documentStore: documentStoreSchema.default(false)
                     })
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
@@ -3869,7 +3971,10 @@ When making API calls remember that requests against the same account are queued
                     })
                         .description('Optional SMTP envelope. If not set then derived from message headers.')
                         .label('SMTPEnvelope')
-                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.forbidden('y')
+                        }),
 
                     from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
 
@@ -3886,21 +3991,30 @@ When making API calls remember that requests against the same account are queued
                         .example([{ address: 'recipient@example.com' }])
                         .description('List of recipient addresses')
                         .label('ToAddressList')
-                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.forbidden('y')
+                        }),
 
                     cc: Joi.array()
                         .items(addressSchema.label('CcAddress'))
                         .single()
                         .description('List of CC addresses')
                         .label('CcAddressList')
-                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.forbidden('y')
+                        }),
 
                     bcc: Joi.array()
                         .items(addressSchema.label('BccAddress'))
                         .single()
                         .description('List of BCC addresses')
                         .label('BccAddressList')
-                        .when('mailMerge', { is: Joi.exist(), then: Joi.forbidden('y') }),
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.forbidden('y')
+                        }),
 
                     raw: Joi.string()
                         .base64()
@@ -3911,7 +4025,7 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('RFC822Raw')
                         .when('mailMerge', {
-                            is: Joi.exist(),
+                            is: Joi.exist().not(false, null),
                             then: Joi.forbidden('y')
                         }),
 
@@ -3932,7 +4046,7 @@ When making API calls remember that requests against the same account are queued
                         .allow(false)
                         .description('Template rendering options')
                         .when('mailMerge', {
-                            is: Joi.exist(),
+                            is: Joi.exist().not(false, null),
                             then: Joi.forbidden('y')
                         }),
 
@@ -3941,7 +4055,11 @@ When making API calls remember that requests against the same account are queued
                             Joi.object({
                                 to: addressSchema.label('ToAddress').required(),
                                 messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                                params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
+                                params: Joi.object().label('RenderValues').description('An object of variables for the template renderer'),
+                                sendAt: Joi.date()
+                                    .iso()
+                                    .example('2021-07-08T07:06:34.336Z')
+                                    .description('Send message at specified time. Overrides message level `sendAt` value.')
                             }).label('MailMergeListEntry')
                         )
                         .min(1)
@@ -3975,7 +4093,8 @@ When making API calls remember that requests against the same account are queued
                     trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
 
                     copy: Joi.boolean()
-                        .example(true)
+                        .allow(null)
+                        .example(null)
                         .description(
                             "If set then either copies the message to the Sent Mail folder or not. If not set then uses the account's default setting."
                         ),
@@ -3995,7 +4114,29 @@ When making API calls remember that requests against the same account are queued
                         .description('How many delivery attempts to make until message is considered as failed')
                         .default(10),
 
-                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing')
+                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
+
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description(
+                            'List ID for Mail Merge. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.'
+                        )
+                        .label('ListID')
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.optional(),
+                            otherwise: Joi.forbidden()
+                        }),
+
+                    dryRun: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'If true, then EmailEngine does not send the email and returns an RFC822 formatted email file. Tracking information is not added to the email.'
+                        )
+                        .label('Preview')
                 })
                     .oxor('raw', 'html')
                     .oxor('raw', 'text')
@@ -4020,15 +4161,64 @@ When making API calls remember that requests against the same account are queued
                             .required()
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
+                        documentStore: Joi.boolean()
+                            .example(true)
+                            .description('Was the message dat aloaded from the document store')
+                            .label('ResponseDocumentStore'),
                         success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
                         .description('Reference info if referencing was requested')
                         .label('ResponseReference'),
 
-                    bulk: Joi.array()
+                    preview: Joi.string()
+                        .base64()
+                        .example('Q29udGVudC1UeXBlOiBtdWx0aX...')
+                        .description('Base64 encoded RFC822 email if a preview was requested')
+                        .label('ResponsePreview'),
+
+                    mailMerge: Joi.array()
                         .items(
-                            Joi.object()
+                            Joi.object({
+                                success: Joi.boolean()
+                                    .example(true)
+                                    .description('Was the referenced message processed successfully')
+                                    .label('ResponseReferenceSuccess'),
+                                to: addressSchema.label('ToAddressSingle'),
+                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
+                                queueId: Joi.string()
+                                    .example('d41f0423195f271f')
+                                    .description('Queue identifier for scheduled email. Not present for bulk messages.'),
+                                reference: Joi.object({
+                                    message: Joi.string()
+                                        .base64({ paddingRequired: false, urlSafe: true })
+                                        .max(256)
+                                        .required()
+                                        .example('AAAAAQAACnA')
+                                        .description('Referenced message ID'),
+                                    documentStore: Joi.boolean()
+                                        .example(true)
+                                        .description('Was the message dat aloaded from the document store')
+                                        .label('ResponseDocumentStore'),
+                                    success: Joi.boolean()
+                                        .example(true)
+                                        .description('Was the referenced message processed successfully')
+                                        .label('ResponseReferenceSuccess'),
+                                    error: Joi.string()
+                                        .example('Referenced message was not found')
+                                        .description('An error message if referenced message processing failed')
+                                })
+                                    .description('Reference info if referencing was requested')
+                                    .label('ResponseReference'),
+                                sendAt: Joi.date()
+                                    .iso()
+                                    .example('2021-07-08T07:06:34.336Z')
+                                    .description('Send message at specified time. Overrides message level `sendAt` value.'),
+                                skipped: Joi.object({
+                                    reason: Joi.string().example('unsubscribe').description('Why this message was skipped'),
+                                    listId: Joi.string().example('test-list')
+                                }).description('Info about skipped message. If this value is set, then the message was not sent')
+                            })
                                 .label('BulkResponseEntry')
                                 .example({
                                     success: true,
@@ -4041,7 +4231,8 @@ When making API calls remember that requests against the same account are queued
                                     reference: {
                                         message: 'AAAAAQAACnA',
                                         success: true
-                                    }
+                                    },
+                                    sendAt: '2021-07-08T07:06:34.336Z'
                                 })
                                 .unknown()
                         )
@@ -4095,6 +4286,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4147,6 +4339,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4184,6 +4377,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4216,6 +4410,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4270,6 +4465,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await verifyAccountInfo(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4291,6 +4487,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4302,7 +4499,7 @@ When making API calls remember that requests against the same account are queued
 
                 payload: Joi.object({
                     mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
-                    imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
                     proxy: settingsSchema.proxyUrl
                 }).label('VerifyAccount')
@@ -4342,7 +4539,7 @@ When making API calls remember that requests against the same account are queued
         method: 'GET',
         path: '/v1/license',
 
-        async handler() {
+        async handler(request) {
             try {
                 const licenseInfo = await call({ cmd: 'license' });
                 if (!licenseInfo) {
@@ -4352,6 +4549,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4371,6 +4569,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             response: {
                 schema: licenseSchema.label('LicenseResponse'),
@@ -4383,7 +4582,7 @@ When making API calls remember that requests against the same account are queued
         method: 'DELETE',
         path: '/v1/license',
 
-        async handler() {
+        async handler(request) {
             try {
                 const licenseInfo = await call({ cmd: 'removeLicense' });
                 if (!licenseInfo) {
@@ -4393,6 +4592,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4414,6 +4614,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             response: {
                 schema: Joi.object({
@@ -4440,6 +4641,7 @@ When making API calls remember that requests against the same account are queued
                 }
                 return licenseInfo;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4461,6 +4663,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4495,6 +4698,7 @@ When making API calls remember that requests against the same account are queued
                 let serverSettings = await autodetectImapSettings(request.query.email);
                 return serverSettings;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4513,6 +4717,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4577,6 +4782,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await outbox.list(Object.assign({ logger }, request.query));
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4599,6 +4805,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4682,6 +4889,7 @@ When making API calls remember that requests against the same account are queued
                     deleted: await outbox.del({ queueId: request.params.queueId, logger })
                 };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4703,6 +4911,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4748,6 +4957,7 @@ When making API calls remember that requests against the same account are queued
                     request.payload.content
                 );
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4770,6 +4980,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4830,6 +5041,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.update(request.params.template, meta, request.payload.content);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4852,6 +5064,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4912,6 +5125,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.list(request.query.account, request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -4934,6 +5148,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -4998,6 +5213,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await templates.get(request.params.template);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5020,6 +5236,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5074,6 +5291,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await templates.del(request.params.template);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5095,6 +5313,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5133,6 +5352,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await templates.flush(request.params.account);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5154,6 +5374,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5165,7 +5386,7 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: Joi.string().max(256).required().example('example').description('Account ID')
-                }).label('GetTemplateRequest'),
+                }),
 
                 query: Joi.object({
                     force: Joi.boolean()
@@ -5198,6 +5419,7 @@ When making API calls remember that requests against the same account are queued
 
                 return await gatewayObject.listGateways(request.query.page, request.query.pageSize);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5220,6 +5442,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5288,6 +5511,7 @@ When making API calls remember that requests against the same account are queued
 
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5307,6 +5531,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5364,6 +5589,7 @@ When making API calls remember that requests against the same account are queued
                 let result = await gatewayObject.create(request.payload);
                 return result;
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5386,6 +5612,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5441,6 +5668,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await gatewayObject.update(request.payload);
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5462,6 +5690,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5521,6 +5750,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 return await gatewayObject.delete();
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5542,6 +5772,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5624,6 +5855,7 @@ When making API calls remember that requests against the same account are queued
                     cached
                 };
             } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
                 }
@@ -5646,6 +5878,7 @@ When making API calls remember that requests against the same account are queued
                 strategy: 'api-token',
                 mode: 'required'
             },
+            cors: CORS_CONFIG,
 
             validate: {
                 options: {
@@ -5668,6 +5901,665 @@ When making API calls remember that requests against the same account are queued
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
             }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/delivery-test/account/{account}',
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                let accountData = await accountObject.loadAccountData();
+
+                request.logger.info({ msg: 'Requested SMTP delivery test', account: request.params.account });
+
+                let headers = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`
+                };
+
+                let res = await fetchCmd(`${SMTP_TEST_HOST}/test-address`, {
+                    method: 'post',
+                    body: JSON.stringify({
+                        version: packageData.version,
+                        requestor: '@postalsys/emailengine-app'
+                    }),
+                    headers
+                });
+
+                if (!res.ok) {
+                    let err = new Error(`Invalid response: ${res.status} ${res.statusText}`);
+                    err.statusCode = res.status;
+
+                    try {
+                        err.details = await res.json();
+                    } catch (err) {
+                        // ignore
+                    }
+
+                    throw err;
+                }
+
+                let testAccount = await res.json();
+                if (!testAccount || !testAccount.user) {
+                    let err = new Error(`Invalid test account`);
+                    err.statusCode = 500;
+
+                    try {
+                        err.details = testAccount;
+                    } catch (err) {
+                        // ignore
+                    }
+
+                    throw err;
+                }
+
+                if (request.payload.gateway) {
+                    // try to load the gateway, throws if not set
+                    let gatewayObject = new Gateway({ redis, gateway: request.params.gateway, call, secret: await getSecret() });
+                    await gatewayObject.loadGatewayData();
+                }
+
+                try {
+                    let now = new Date().toISOString();
+                    let queueResponse = await accountObject.queueMessage(
+                        {
+                            account: accountData.account,
+                            subject: `Test email ${now}`,
+                            text: `Hello ${now}`,
+                            html: `<p>Hello ${now}</p>`,
+                            from: {
+                                name: accountData.name,
+                                address: accountData.email
+                            },
+                            to: [{ name: '', address: testAccount.address }],
+                            copy: false,
+                            gateway: request.payload.gateway,
+                            feedbackKey: `${REDIS_PREFIX}test-send:${testAccount.user}`,
+                            deliveryAttempts: 3
+                        },
+                        { source: 'test' }
+                    );
+
+                    return {
+                        success: !!queueResponse.queueId,
+                        deliveryTest: testAccount.user
+                    };
+                } catch (err) {
+                    return {
+                        error: err.message
+                    };
+                }
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                if (err.details) {
+                    error.output.payload.details = err.details;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Create delivery test',
+            notes: 'Initiate a delivery test',
+            tags: ['api', 'Delivery Test'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    gateway: Joi.string().allow(false, null).empty('').max(256).example(false).description('Optional gateway ID')
+                }).label('DeliveryStartRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    success: Joi.boolean().example(true).description('Was the test started').label('ResponseDeliveryStartSuccess'),
+                    deliveryTest: Joi.string()
+                        .guid({
+                            version: ['uuidv4', 'uuidv5']
+                        })
+                        .example('6420a6ad-7f82-4e4f-8112-82a9dad1f34d')
+                        .description('Test ID')
+                }).label('DeliveryStartResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/delivery-test/check/{deliveryTest}',
+        async handler(request) {
+            try {
+                request.logger.info({ msg: 'Requested SMTP delivery test check', deliveryTest: request.params.deliveryTest });
+
+                let deliveryStatus = (await redis.hgetall(`${REDIS_PREFIX}test-send:${request.params.deliveryTest}`)) || {};
+                if (deliveryStatus.success === 'false') {
+                    let err = new Error(`Failed to deliver email`);
+                    err.statusCode = 500;
+                    err.details = deliveryStatus;
+                    throw err;
+                }
+
+                let headers = {
+                    'Content-Type': 'application/json',
+                    'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`
+                };
+
+                let res = await fetchCmd(`${SMTP_TEST_HOST}/test-address/${request.params.deliveryTest}`, {
+                    method: 'get',
+                    headers
+                });
+
+                if (!res.ok) {
+                    let err = new Error(`Invalid response: ${res.status} ${res.statusText}`);
+                    err.statusCode = res.status;
+
+                    try {
+                        err.details = await res.json();
+                    } catch (err) {
+                        // ignore
+                    }
+
+                    throw err;
+                }
+
+                let testResponse = await res.json();
+
+                let success = testResponse && testResponse.status === 'success'; //Default
+
+                if (testResponse && success) {
+                    let mainSig =
+                        testResponse.dkim &&
+                        testResponse.dkim.results &&
+                        testResponse.dkim.results.find(entry => entry && entry.status && entry.status.result === 'pass' && entry.status.aligned);
+
+                    if (!mainSig) {
+                        mainSig =
+                            testResponse.dkim &&
+                            testResponse.dkim.results &&
+                            testResponse.dkim.results.find(entry => entry && entry.status && entry.status.result === 'pass');
+                    }
+
+                    if (!mainSig) {
+                        mainSig = testResponse.dkim && testResponse.dkim.results && testResponse.dkim.results[0];
+                    }
+
+                    testResponse.mainSig = mainSig || {
+                        status: {
+                            result: 'none'
+                        }
+                    };
+
+                    if (testResponse.spf && testResponse.spf.status && testResponse.spf.status.comment) {
+                        testResponse.spf.status.comment = testResponse.spf.status.comment.replace(/^[^:\s]+:s*/, '');
+                    }
+                }
+
+                if (testResponse) {
+                    if (testResponse.status === 'success') {
+                        delete testResponse.status;
+                    }
+                    delete testResponse.user;
+                }
+
+                return Object.assign({ success }, testResponse || {});
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                if (err.details) {
+                    error.output.payload.details = err.details;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Check test status',
+            notes: 'Check delivery test status',
+            tags: ['api', 'Delivery Test'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    deliveryTest: Joi.string()
+                        .guid({
+                            version: ['uuidv4', 'uuidv5']
+                        })
+                        .example('6420a6ad-7f82-4e4f-8112-82a9dad1f34d')
+                        .required()
+                        .description('Test ID')
+                }).label('DeliveryCheckParams')
+            },
+
+            response: {
+                schema: Joi.object({
+                    success: Joi.boolean().example(true).description('Was the test completed').label('ResponseDeliveryCheckSuccess'),
+                    dkim: Joi.object().unknown().description('DKIM results'),
+                    spf: Joi.object().unknown().description('SPF results'),
+                    dmarc: Joi.object().unknown().description('DMARC results'),
+                    bimi: Joi.object().unknown().description('BIMI results'),
+                    arc: Joi.object().unknown().description('ARC results'),
+                    mainSig: Joi.object()
+                        .unknown()
+                        .description('Primary DKIM signature. `status.aligned` should be set, otherwise DKIM check should not be considered as passed.')
+                }).label('DeliveryCheckResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/blocklists',
+
+        async handler(request) {
+            try {
+                return await lists.list(request.query.page, request.query.pageSize);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List blocklists',
+            notes: 'List blocklists with blocked addresses',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('PageListsRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    blocklists: Joi.array()
+                        .items(
+                            Joi.object({
+                                listId: Joi.string().max(256).required().example('example').description('List ID'),
+                                count: Joi.number().example(12).description('Count of blocked addresses in this list')
+                            }).label('BlocklistsResponseItem')
+                        )
+                        .label('BlocklistsEntries')
+                }).label('BlocklistsResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/blocklist/{listId}',
+
+        async handler(request) {
+            try {
+                return await lists.listContent(request.params.listId, request.query.page, request.query.pageSize);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List blocklist entries',
+            notes: 'List blocked addresses for a list',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest'),
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('PageListsRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    listId: Joi.string().max(256).required().example('example').description('List ID'),
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    addresses: Joi.array()
+                        .items(
+                            Joi.object({
+                                recipient: Joi.string().email().example('user@example.com').description('Listed email address').required(),
+                                account: Joi.string().max(256).required().example('example').description('Account ID').required(),
+                                messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
+                                source: Joi.string().example('api').description('Which mechanism was used to add the entry'),
+                                reason: Joi.string().example('api').description('Why this entry was added'),
+                                remoteAddress: Joi.string()
+                                    .ip({
+                                        version: ['ipv4', 'ipv6'],
+                                        cidr: 'optional'
+                                    })
+                                    .description('Which IP address triggered the entry'),
+                                userAgent: Joi.string().example('Mozilla/5.0 (Macintosh)').description('Which user agent triggered the entry'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was added or updated').required()
+                            }).label('BlocklistListResponseItem')
+                        )
+                        .label('BlocklistListEntries')
+                }).label('BlocklistListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/blocklist/{listId}',
+        async handler(request) {
+            let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+
+            try {
+                // throws if account does not exist
+                await accountObject.loadAccountData();
+
+                let added = await redis.eeListAdd(
+                    `${REDIS_PREFIX}lists:unsub:lists`,
+                    `${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`,
+                    request.params.listId,
+                    request.payload.recipient.toLowerCase().trim(),
+                    JSON.stringify({
+                        recipient: request.payload.recipient,
+                        account: request.payload.account,
+                        source: 'api',
+                        reason: request.payload.reason,
+                        remoteAddress: request.info.remoteAddress,
+                        userAgent: request.headers['user-agent'],
+                        created: new Date().toISOString()
+                    })
+                );
+
+                return {
+                    success: true,
+                    added: !!added
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                if (err.details) {
+                    error.output.payload.details = err.details;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Add to blocklist',
+            notes: 'Add an email address to a blocklist',
+            tags: ['api', 'Blocklists'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest'),
+
+                payload: Joi.object({
+                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to add to the list').required(),
+                    reason: Joi.string().empty('').default('block').description('Identifier for the blocking reason')
+                }).label('BlocklistListAddPayload')
+            },
+
+            response: {
+                schema: Joi.object({
+                    success: Joi.boolean().example(true).description('Was the request successfuk').label('BlocklistListAddSuccess'),
+                    added: Joi.boolean().example(true).description('Was the address added to the list')
+                }).label('BlocklistListAddResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/blocklist/{listId}',
+
+        async handler(request) {
+            try {
+                let exists = await redis.hexists(`${REDIS_PREFIX}lists:unsub:lists`, request.params.listId);
+                if (!exists) {
+                    let message = 'Requested blocklist was not found';
+                    let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                    throw error;
+                }
+
+                let deleted = await redis.eeListRemove(
+                    `${REDIS_PREFIX}lists:unsub:lists`,
+                    `${REDIS_PREFIX}lists:unsub:entries:${request.params.listId}`,
+                    request.params.listId,
+                    request.query.recipient.toLowerCase().trim()
+                );
+
+                return {
+                    deleted: !!deleted
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove from blocklist',
+            notes: 'Delete a blocked email address from a list',
+            tags: ['api', 'Blocklists'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    listId: Joi.string()
+                        .hostname()
+                        .example('test-list')
+                        .description('List ID. Must use a subdomain name format. Lists are registered ad-hoc, so a new identifier defines a new list.')
+                        .label('ListID')
+                        .required()
+                }).label('BlocklistListRequest'),
+
+                query: Joi.object({
+                    recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to remove from the list').required()
+                }).label('RecipientQuery')
+            },
+
+            response: {
+                schema: Joi.object({
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the address removed from the list')
+                }).label('DeleteBlocklistResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/changes',
+
+        async handler(request, h) {
+            request.app.stream = new ResponseStream();
+            finished(request.app.stream, err => request.app.stream.finalize(err));
+            setImmediate(() => {
+                try {
+                    request.app.stream.write(`: EmailEngine v${packageData.version}\n\n`);
+                } catch (err) {
+                    // ignore
+                }
+            });
+            return h
+                .response(request.app.stream)
+                .header('X-Accel-Buffering', 'no')
+                .header('Connection', 'keep-alive')
+                .header('Cache-Control', 'no-cache')
+                .type('text/event-stream');
+        },
+
+        options: {
+            description: 'Stream state changes',
+            notes: 'Stream account state changes as an EventSource',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG
         }
     });
 
@@ -5786,6 +6678,8 @@ When making API calls remember that requests against the same account are queued
 
             let licenseDetails = Object.assign({}, (request.app.licenseInfo && request.app.licenseInfo.details) || {});
 
+            let referrerPolicy = licenseDetails.trial ? 'origin' : 'no-referrer';
+
             if (licenseDetails.expires) {
                 let delayMs = new Date(licenseDetails.expires) - Date.now();
                 licenseDetails.expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
@@ -5820,12 +6714,13 @@ When making API calls remember that requests against the same account are queued
                 licenseDetails,
                 authEnabled: !!(authData && authData.password),
                 trialPossible: !(await settings.get('tract')),
+                referrerPolicy,
                 authData,
                 packageData,
                 systemAlerts,
                 embeddedTemplateHeader: await settings.get('templateHeader'),
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: (await settings.get('labsDocumentStore')) || (await settings.get('documentStoreEnabled')),
+                showDocumentStore: await settings.get('documentStoreEnabled'),
                 showMailRu: (await settings.get('labsMailRu')) || (await settings.get('mailRuEnabled'))
             };
         }
@@ -5956,6 +6851,21 @@ When making API calls remember that requests against the same account are queued
 
     await server.start();
 
+    // trigger a request to cache swagger.json
+    setImmediate(() => {
+        server
+            .inject({
+                method: 'get',
+                url: '/swagger.json'
+            })
+            .then(res => {
+                logger.debug({ msg: 'Triggered swagger caching request', statusCode: res.statusCode });
+            })
+            .catch(err => {
+                logger.debug({ msg: 'Failed to trigger swagger caching request', err });
+            });
+    });
+
     // renew TLS certificates if needed
     setInterval(() => {
         async function handler() {
@@ -5963,7 +6873,7 @@ When making API calls remember that requests against the same account are queued
             let currentCert = await certHandler.getCertificate(serviceDomain, true);
 
             try {
-                await assertPreconditions(redis);
+                await runPrechecks(redis);
                 assertPreconditionResult = false;
             } catch (err) {
                 assertPreconditionResult = Boom.boomify(err);
@@ -5983,13 +6893,13 @@ When making API calls remember that requests against the same account are queued
                     try {
                         await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
                     } catch (err) {
-                        logger.error(err);
+                        logger.error({ msg: 'Failed to set certificate data', serviceDomain, err });
                     }
                 }
             }
         }
 
-        handler().catch(err => logger.error(err));
+        handler().catch(err => logger.error({ msg: 'Failed to run certificate handler', err }));
     }, TLS_RENEW_CHECK_INTERVAL).unref();
 };
 
@@ -6001,10 +6911,11 @@ init()
             port: API_PORT,
             host: API_HOST,
             maxSize: MAX_ATTACHMENT_SIZE,
+            maxBodySize: MAX_BODY_SIZE,
             version: packageData.version
         });
     })
     .catch(err => {
-        logger.error(err);
+        logger.error({ msg: 'Failed to initialize API', err });
         setImmediate(() => process.exit(3));
     });

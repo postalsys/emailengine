@@ -1,8 +1,8 @@
 <div class="container mt-4">
-    <img src="/static/logo.png"
-        style="display: block; float: left; margin: 10px 10px 0 0; max-width: 32px; max-height: 32px" />
 
-    <h1>EmailEngine</h1>
+    <img src="/static/logo/EmailEngine_logo_horiz.png" height="64" style="display: block; max-height: 64px">
+
+
 
     {{#unless hasAccounts}}
 
@@ -17,7 +17,8 @@
                         and receive emails using the <a href="/admin/swagger">EmailEngine's API</a>.
                     </p>
                     <p>You can add email accounts by using the API endpoint for <a
-                            href="https://api.emailengine.app/#operation/postV1Account" target="_blank">registering
+                            href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">registering
                             accounts</a> or the hosted authentication form.
                     </p>
                     <div>
@@ -48,10 +49,12 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Accounts total</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800"><a
-                                    href="/admin/accounts">{{stats.accounts}}</a></div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="The number of accounts registered with EmailEngine" data-toggle="tooltip"
+                                data-placement="top" style="cursor: default;">
+                                <a href="/admin/accounts">Accounts total</a>
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.accounts}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -61,12 +64,15 @@
             </div>
         </div>
         <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow">
+            <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Accounts active</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                                title="The number of accounts currently in the &quot;connected&quot; state"
+                                data-toggle="tooltip" data-placement="top" style="cursor: default;">
+                                <a href="/admin/accounts?state=connected">Accounts active</a>
+                            </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.connectedAccounts}}</div>
                         </div>
                         <div class="col-auto">
@@ -84,7 +90,9 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            <div class="text-xs font-weight-bold text-gray-800 text-uppercase mb-1" {{#if
+                                comment}}title="{{comment}}" data-toggle="tooltip" data-placement="top" {{/if}}
+                                style="cursor: default;">
                                 {{title}}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
                                 {{value}}
@@ -98,10 +106,15 @@
             </div>
         </div>
         {{/each}}
-    </div>
 
-    <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
+            {{#if
+            stats.queues.notify.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
             <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -109,8 +122,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue processes webhook notifications" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/notify">Webhooks queue</a>{{#if
-                                stats.queues.notify.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/notify">Webhooks queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
@@ -128,6 +140,13 @@
         </div>
 
         <div class="col-xl-3 col-md-6 mb-4">
+            {{#if
+            stats.queues.submit.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
             <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -135,8 +154,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue processes emails to be sent to SMTP" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/submit">Submission queue</a>{{#if
-                                stats.queues.submit.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/submit">Submission queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
@@ -156,6 +174,13 @@
 
         {{#if showDocumentStore}}
         <div class="col-xl-3 col-md-6 mb-4">
+            {{#if
+            stats.queues.documents.isPaused}}
+            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
+                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                <span class="badge badge-warning">paused</span>
+            </div>
+            {{/if}}
             <div class="card border-left-primary shadow">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -163,8 +188,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
                                 title="This queue indexes mailbox changes to ElasticSearch" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
-                                <a href="/admin/arena/queue/documents">Documents queue</a>{{#if
-                                stats.queues.documents.isPaused}} <span class="badge badge-warning">paused</span>{{/if}}
+                                <a href="/admin/arena/queue/documents">Documents queue</a>
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip" data-placement="top"></span>
@@ -188,19 +212,34 @@
     </div>
 
 
-    <div class="mb-4">
-        <h6>Software Versions</h6>
-        <ul class="list-group">
-            <li class="list-group-item">EmailEngine v{{packageData.version}}</li>
-            <li class="list-group-item">Node.js v{{stats.node}}</li>
-            <li class="list-group-item">Redis v{{stats.redis}}</li>
-            <li class="list-group-item">ImapFlow v{{stats.imapflow}}</li>
-            {{#if stats.build.commit}}
-            <li class="list-group-item">Code version: <a
-                    href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}">{{stats.build.commit}}</a>
-            </li>
-            {{/if}}
-        </ul>
+    <div class="card mt-4 mb-4">
+        <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
+            aria-expanded="true" aria-controls="showHelp">
+            <h6 class="m-0 font-weight-bold text-primary">Software versions</h6>
+        </a>
+        <div class="collapse" id="showHelp">
+            <div class="card-body">
+
+                <ul class="list-group">
+                    <li class="list-group-item"><a href="https://emailengine.app/" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">EmailEngine</a> v{{packageData.version}}</li>
+                    <li class="list-group-item"><a href="https://nodejs.org/en/" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">Node.js</a> v{{stats.node}}</li>
+                    <li class="list-group-item"><a href="https://redis.io/" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">Redis</a> v{{stats.redis}}</li>
+                    <li class="list-group-item"><a href="https://imapflow.com/" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">ImapFlow</a> v{{stats.imapflow}}</li>
+                    <li class="list-group-item"><a href="https://docs.bullmq.io/" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">BullMQ</a> v{{stats.bullmq}}</li>
+                    {{#if stats.build.commit}}
+                    <li class="list-group-item">Code version: <a
+                            href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
+                            referrerpolicy="{{referrerPolicy}}">{{stats.build.commit}}</a>
+                    </li>
+                    {{/if}}
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -232,6 +271,7 @@
             } catch (err) {
                 console.error(err);
             }
+
         }
 
         sendBrowserInfo().catch(err => console.error(err))

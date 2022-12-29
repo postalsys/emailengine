@@ -1,0 +1,249 @@
+{{> webhooks_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/webhooks">Webhook Routing</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{webhook.name}}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/webhooks/webhook/{{webhook.id}}/edit"
+                    title="Edit Webhook Route contents" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-file-signature fa-fw"></i> Edit
+                </a>
+
+                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-target="#deleteModal"
+                    title="Delete this Webhook Route" id="delete-btn" data-placement="top">
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                </button>
+            </div>
+        </div>
+
+
+        {{#if webhook.webhookErrorFlag.message}}
+        <div class="mt-3 mb-3 alert alert-danger">
+            <p><strong>NB!</strong> The last attempted webhook failed with the response below.</p>
+            <hr>
+            <p class="mb-0">
+                <code>
+            {{webhook.webhookErrorFlag.message}}
+        </code>
+            </p>
+        </div>
+        {{/if}}
+
+
+        <dl class="row">
+
+            {{#if webhook.name}}
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">{{webhook.name}}</dd>
+            {{/if}}
+
+            {{#if webhook.description}}
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">{{webhook.description}}</dd>
+            {{/if}}
+
+            {{#if webhook.targetUrlShort}}
+            <dt class="col-sm-3">Webhook Target</dt>
+            <dd class="col-sm-9">
+                <em data-toggle="tooltip" data-placement="top" style="cursor:default"
+                    title="{{webhook.targetUrl}}">{{webhook.targetUrlShort}}</em>
+            </dd>
+            {{/if}}
+
+            <dt class="col-sm-3">Trigger count</dt>
+            <dd class="col-sm-9">
+                <span class="badge badge-pill badge-light" data-toggle="tooltip" data-placement="top"
+                    title="How many times this route has been triggered"
+                    style="cursor:default">{{webhook.tcount}}</span>
+            </dd>
+
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                <strong>
+                    {{#if webhook.enabled}}
+                    <span class="badge badge-success">Enabled</span>
+                    {{else}}
+                    <span class="badge badge-warning">Disabled</span>
+                    {{/if}}
+                </strong>
+            </dd>
+
+        </dl>
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
+                    aria-selected="true">Filter function</a>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="map-tab" data-toggle="tab" href="#map" role="tab" aria-controls="map"
+                    aria-selected="false">Map function</a>
+            </li>
+
+            {{#if errorLog}}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab" aria-controls="errors"
+                    aria-selected="false">Error log</a>
+            </li>
+            {{/if}}
+
+        </ul>
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
+
+                <div id="fn-preview" class="code-editor">{{webhook.content.fn}}</div>
+
+            </div>
+            <div class="tab-pane" id="map" role="tabpanel" aria-labelledby="map-tab">
+
+                <div id="map-preview" class="code-editor">{{webhook.content.map}}</div>
+
+            </div>
+
+
+            <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+
+
+                <p>The following errors were thrown when executing the functions for this route. Only the most recent
+                    errors are shown.</p>
+
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Function</th>
+                            <th width="40%">Error</th>
+                            <th width="40%">Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each errorLog}}
+
+                        <tr>
+
+                            <td>
+                                <span class="relative-time" data-time="{{created}}"></span>
+                            </td>
+
+                            <td>
+                                <strong>{{type}}</strong>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{error}}</textarea>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                            </td>
+
+                        </tr>
+
+                        {{/each}}
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Webhook Route</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action is not
+                    recoverable.</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/webhooks/delete">
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <input type="hidden" name="webhook" value="{{webhook.id}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="crumb" value="{{crumb}}" />
+<input type="hidden" id="webhook" value="{{webhook.id}}" />
+
+<script src="/static/js/ace/ace.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const editorFn = ace.edit("fn-preview", {
+            showGutter: true
+        });
+
+        const editorMap = ace.edit("map-preview", {
+            showGutter: true
+        });
+
+
+        editorFn.setReadOnly(true);
+        editorFn.setShowPrintMargin(false);
+        editorFn.setHighlightActiveLine(false);
+
+        editorMap.setReadOnly(true);
+        editorMap.setShowPrintMargin(false);
+        editorMap.setHighlightActiveLine(false);
+
+        editorFn.setTheme("ace/theme/kuroir");
+        editorFn.session.setMode("ace/mode/javascript");
+
+        editorMap.setTheme("ace/theme/kuroir");
+        editorMap.session.setMode("ace/mode/javascript");
+
+        editorFn.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [{
+                        esversion: 11
+                    }]);
+                }
+            }
+        });
+
+        editorMap.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [{
+                        esversion: 11
+                    }]);
+                }
+            }
+        });
+
+        let errorFields = document.querySelectorAll('.error-log-field');
+        for (let i = 0; i < errorFields.length; i++) {
+            let errorField = errorFields[i];
+            errorField.addEventListener('focus', e => {
+                errorField.select();
+            });
+        }
+
+    })
+</script>

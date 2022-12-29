@@ -5,6 +5,7 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
+const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { readEnvValue } = require('../lib/tools');
 
@@ -28,13 +29,14 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
 const nodeFetch = require('node-fetch');
@@ -90,49 +92,64 @@ const notifyWorker = new Worker(
             return;
         }
 
+        let customRoute;
+        let customMapping;
+        if (job.data._route && job.data._route.id) {
+            customRoute = await Webhooks.getMeta(job.data._route.id);
+            customMapping = job.data._route.mapping;
+            delete job.data._route;
+
+            if (!customRoute || !customRoute.enabled || !customRoute.targetUrl) {
+                return;
+            }
+        }
+
         let accountWebhooks = await redis.hget(accountKey, 'webhooks');
 
-        let webhooks = accountWebhooks || (await settings.get('webhooks'));
+        let webhooks = (customRoute && customRoute.targetUrl) || accountWebhooks || (await settings.get('webhooks'));
         if (!webhooks) {
             // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
             return;
         }
 
-        let webhookEvents = await settings.get('webhookEvents');
-        if (webhookEvents && !webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
-            logger.trace({
-                msg: 'Webhook event not in whitelist',
-                action: 'webhook',
-                queue: job.queue.name,
-                code: 'event_not_whitelisted',
-                job: job.id,
-                event: job.name,
-                account: job.data.account,
-                webhookEvents,
-                data: job.data
-            });
-            return;
-        }
+        if (!customRoute) {
+            // custom routes have their own mappings
+            let webhookEvents = (await settings.get('webhookEvents')) || [];
+            if (!webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
+                logger.trace({
+                    msg: 'Webhook event not in whitelist',
+                    action: 'webhook',
+                    queue: job.queue.name,
+                    code: 'event_not_whitelisted',
+                    job: job.id,
+                    event: job.name,
+                    account: job.data.account,
+                    webhookEvents,
+                    data: job.data
+                });
+                return;
+            }
 
-        switch (job.data.event) {
-            case 'messageNew': {
-                // check if we need to send this event or not
-                let isInbox = false;
-                if (
-                    (job.data.account && job.data.path === 'INBOX') ||
-                    job.data.specialUse === '\\Inbox' ||
-                    (job.data.data && job.data.data.labels && job.data.data.labels.includes('\\Inbox'))
-                ) {
-                    isInbox = true;
+            switch (job.data.event) {
+                case MESSAGE_NEW_NOTIFY: {
+                    // check if we need to send this event or not
+                    let isInbox = false;
+                    if (
+                        (job.data.account && job.data.path === 'INBOX') ||
+                        job.data.specialUse === '\\Inbox' ||
+                        (job.data.data && job.data.data.labels && job.data.data.labels.includes('\\Inbox'))
+                    ) {
+                        isInbox = true;
+                    }
+
+                    const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
+                    if (inboxNewOnly && !isInbox) {
+                        // ignore this message
+                        return;
+                    }
+
+                    break;
                 }
-
-                const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
-                if (inboxNewOnly && !isInbox) {
-                    // ignore this message
-                    return;
-                }
-
-                break;
             }
         }
 
@@ -146,7 +163,8 @@ const notifyWorker = new Worker(
             accountWebhooks: !!accountWebhooks,
             event: job.name,
             data: job.data,
-            account: job.data.account
+            account: job.data.account,
+            route: customRoute && customRoute.id
         });
 
         let headers = {
@@ -171,39 +189,6 @@ const notifyWorker = new Worker(
             headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
         }
 
-        if (job.data && job.data.data && job.data.data.text) {
-            // normalize text content
-            let notifyText = await settings.get('notifyText');
-            if (!notifyText) {
-                delete job.data.data.text;
-            } else {
-                let notifyTextSize = await settings.get('notifyTextSize');
-                if (notifyTextSize) {
-                    for (let textType of ['html', 'plain']) {
-                        if (job.data.data.text && typeof job.data.data.text[textType] === 'string' && job.data.data.text[textType].length > notifyTextSize) {
-                            job.data.data.text[textType] = job.data.data.text[textType].substr(0, notifyTextSize);
-                            job.data.data.text.hasMore = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (job.data && job.data.data && job.data.data.headers) {
-            // normalize headers
-            let notifyHeaders = await settings.get('notifyHeaders');
-            if (!notifyHeaders) {
-                delete job.data.data.headers;
-            } else if (!notifyHeaders.includes('*')) {
-                // filter unneeded headers
-                for (let header of Object.keys(job.data.data.headers || {})) {
-                    if (!notifyHeaders.includes(header.toLowerCase())) {
-                        delete job.data.data.headers[header];
-                    }
-                }
-            }
-        }
-
         let start = Date.now();
         let duration;
         try {
@@ -212,7 +197,7 @@ const notifyWorker = new Worker(
             try {
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
-                    body: JSON.stringify(job.data),
+                    body: JSON.stringify(customMapping || job.data),
                     headers
                 });
                 duration = Date.now() - start;
@@ -237,11 +222,14 @@ const notifyWorker = new Worker(
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 status: res.status,
-                account: job.data.account
+                account: job.data.account,
+                route: customRoute && customRoute.id
             });
 
             try {
-                if (accountWebhooks) {
+                if (customRoute) {
+                    await redis.hset(Webhooks.getWebhooksContentKey(), `${customRoute.id}:webhookErrorFlag`, JSON.stringify({}));
+                } else if (accountWebhooks) {
                     await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));
                 } else {
                     await settings.clear('webhookErrorFlag', {});
@@ -255,6 +243,8 @@ const notifyWorker = new Worker(
                 status: 'success'
             });
         } catch (err) {
+            /*
+            // do not disable by default
             if (err.status === 410) {
                 // disable webhook
                 logger.error({
@@ -268,12 +258,13 @@ const notifyWorker = new Worker(
                     event: job.name,
                     status: err.status,
                     account: job.data.account,
+route: customRoute && customRoute.id,
                     err
                 });
                 await settings.set('webhooksEnabled', false);
                 return;
             }
-
+            */
             logger.error({
                 msg: 'Failed posting webhook',
                 action: 'webhook',
@@ -284,11 +275,23 @@ const notifyWorker = new Worker(
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 account: job.data.account,
+                route: customRoute && customRoute.id,
                 err
             });
 
             try {
-                if (accountWebhooks) {
+                if (customRoute) {
+                    await redis.hset(
+                        Webhooks.getWebhooksContentKey(),
+                        `${customRoute.id}:webhookErrorFlag`,
+                        JSON.stringify({
+                            event: job.name,
+                            message: err.message,
+                            time: Date.now(),
+                            url: customRoute.targetUrl
+                        })
+                    );
+                } else if (accountWebhooks) {
                     await redis.hset(
                         accountKey,
                         'webhookErrorFlag',
@@ -325,12 +328,7 @@ const notifyWorker = new Worker(
     },
     Object.assign(
         {
-            concurrency: NOTIFY_QC,
-            limiter: {
-                max: 10,
-                duration: 1000,
-                groupKey: 'account'
-            }
+            concurrency: NOTIFY_QC
         },
         queueConf
     )
@@ -348,7 +346,8 @@ notifyWorker.on('completed', async job => {
         queue: job.queue.name,
         code: 'completed',
         job: job.id,
-        account: job.data.account
+        account: job.data.account,
+        route: job.data._route && job.data._route.id
     });
 });
 
@@ -365,6 +364,7 @@ notifyWorker.on('failed', async job => {
         code: 'failed',
         job: job.id,
         account: job.data.account,
+        route: job.data._route && job.data._route.id,
 
         failedReason: job.failedReason,
         stacktrace: job.stacktrace,

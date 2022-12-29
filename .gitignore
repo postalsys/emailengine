@@ -9,3 +9,4 @@ static/licenses.html
 version-info.json
 ee-dist/
 config/development.toml
+.vscode

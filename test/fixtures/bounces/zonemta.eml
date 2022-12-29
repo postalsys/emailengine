@@ -1,0 +1,100 @@
+Delivered-To: andris@zone.ee
+Return-Path: <>
+Authentication-Results: zonemx.eu;
+	spf=none smtp.helo=MTA-244-113.TLL07.ZONEAS.EU;
+	spf=none (zonemx.eu: mta-244-113.tll07.zoneas.eu does not designate permitted sender hosts) smtp.mailfrom=postmaster@MTA-244-113.TLL07.ZONEAS.EU smtp.helo=MTA-244-113.TLL07.ZONEAS.EU;
+	dkim=none (message not signed);
+	dmarc=none header.from=zoneas.eu;
+	bimi=skipped (DMARC not enabled)
+Received-SPF: none (zonemx.eu: mta-244-113.tll07.zoneas.eu does not designate permitted sender hosts) client-ip=85.234.244.113;
+Received-SPF: None (zonemx.eu: domain of MTA-244-113.TLL07.ZONEAS.EU does not designate 85.234.244.113 as permitted sender) receiver=zonemx.eu; identity=helo; client-ip=85.234.244.113 helo=MTA-244-113.TLL07.ZONEAS.EU; envelope-from=<>
+Received: from MTA-244-113.TLL07.ZONEAS.EU (mta-244-113.tll07.zoneas.eu [85.234.244.113])
+	by zonemx.eu (Haraka/2.8.28) with ESMTPS id 2BD4DFFE-AED2-49EF-8113-BCABF6DCC2E4.1
+	envelope-from <>
+	tls TLS_AES_256_GCM_SHA384;
+	Mon, 10 Oct 2022 05:24:53 +0000
+Received: from localhost
+ by MTA-244-113.TLL07.ZONEAS.EU (ZoneMTA Forwarder) with HTTP id 183c05a63c80006433.001
+ for <andris@zone.ee>;
+ Mon, 10 Oct 2022 05:24:52 +0000
+Content-Type: multipart/report; report-type=delivery-status;
+ boundary="--_NmP-d247861ba436899a-Part_1"
+From: Mail Delivery Subsystem <mailer-daemon@mta-244-116.tll07.zoneas.eu>
+To: andris@zone.ee
+X-Failed-Recipients: sdffasdfgfasfadas@hot.ee
+Auto-Submitted: auto-replied
+Subject: Delivery Status Notification (Failure)
+In-Reply-To: <48a84e64-d471-cfa6-3ea5-f10cd8571135@zone.ee>
+References: <48a84e64-d471-cfa6-3ea5-f10cd8571135@zone.ee>
+Date: Mon, 10 Oct 2022 05:24:52 +0000
+Message-ID:
+ <23746cc4-9d7b-04fc-10d9-4eda436ecf51@mta-244-116.tll07.zoneas.eu>
+MIME-Version: 1.0
+X-Rspamd-Bar: --
+X-Rspamd-Report: AI_THINKS_FINE(-0.5) BAYES_HAM(-3) BOUNCE(-0.1) MIME_GOOD(-0.1) AUTH_NA(1) MX_GOOD(-0.01)
+X-Rspamd-Score: -2.71
+
+----_NmP-d247861ba436899a-Part_1
+Content-Type: text/plain
+Content-Description: Notification
+Content-Transfer-Encoding: quoted-printable
+
+Delivery to the following recipient failed permanently:
+    sdffasdfgfasfadas@hot.ee
+
+Technical details of permanent failure:
+
+550 5.1.1 <sdffasdfgfasfadas@hot.ee>: Recipient address rejected: User =
+unknown in relay recipient table
+
+
+----_NmP-d247861ba436899a-Part_1
+Content-Type: message/delivery-status
+Content-Description: Delivery report
+
+Reporting-MTA: dns; MTA-244-116.TLL07.ZONEAS.EU
+X-ZoneMTA-Queue-ID: 183c05a3c6f0002819
+X-ZoneMTA-Sender: rfc822; andris@zone.ee
+Arrival-Date: Mon, 10 Oct 2022 05:24:42 +0000
+
+Final-Recipient: rfc822; sdffasdfgfasfadas@hot.ee
+Action: failed
+Status: 5.0.0
+Remote-MTA: dns; mx1.hot.ee
+Diagnostic-Code: smtp; 550 5.1.1 <sdffasdfgfasfadas@hot.ee>: Recipient address rejected: User unknown in relay recipient table
+
+
+----_NmP-d247861ba436899a-Part_1
+Content-Type: text/rfc822-headers
+Content-Description: Undelivered Message Headers
+Content-Transfer-Encoding: quoted-printable
+
+DKIM-Signature: v=3D1; a=3Drsa-sha256; c=3Drelaxed/relaxed; d=3Dzone.ee; =
+q=3Ddns/txt;
+ s=3Dzone; bh=3DVA9a5dH3ChQ4o1/sHrEPbvqxUVCr7FZx9vq6l8rWFp0=3D;
+ h=3Dfrom:subject:date:message-id:to:mime-version:content-type;
+ b=3DB27LMu0kiNk6skaFTSYAe1a2byZoC+F4YRodDNmBwsuKTY0ihVmgunoiDg3AvhVqOeuzzO=
+iwk
+ +/kMeI0iltc7de6wOUdwwRq0N8mpgL7/WikuhmdE/YXjbrb4fFDSd0zHyTmATdEFoAkOcJ9KNf=
+M
+ p6A83s2DAudPTjyqmh16C9qUDSU4jhpydUdUqLTkyK/ieLQ3WDN45kfCfA51jnti4NJTPjokxB=
+n
+ KPws1I0dkoaG0/KVeHn2E2aj5gxzVyV3vQ+BDe/uH5oCxXx3Blj/qCkuq2LyjnFVy1mlJSMVgp=
+q
+ M1TUBN98hrJJRWUoKSZf2LD6g2jdbJ9bAH5P2Gb+9mVw=3D=3D
+Received: from localhost (Authenticated sender: andris@zone.ee)
+ by MTA-244-116.TLL07.ZONEAS.EU (ZoneMTA Forwarder) with API id =
+183c05a3c6f0002819.001
+ for <sdffasdfgfasfadas@hot.ee>;
+ Mon, 10 Oct 2022 05:24:42 +0000
+Content-Type: multipart/alternative;
+ boundary=3D"--_NmP-3d8f319c9d7060cb-Part_1"
+From: Andris Reinman <andris@zone.ee>
+To: sdffasdfgfasfadas@hot.ee
+Subject: proovikas
+Date: Mon, 10 Oct 2022 05:24:49 +0000
+Message-ID: <48a84e64-d471-cfa6-3ea5-f10cd8571135@zone.ee>
+MIME-Version: 1.0
+
+
+----_NmP-d247861ba436899a-Part_1--

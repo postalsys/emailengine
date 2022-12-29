@@ -42,9 +42,8 @@
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
                 <div class="sidebar-brand-icon">
-                    <img src="/static/logo_transparent_small.png" width="32" height="32">
+                    <img src="/static/logo/EmailEngine_logo_horiz.png" height="32">
                 </div>
-                <div class="sidebar-brand-text mx-3">EmailEngine</div>
             </a>
 
             <!-- Divider -->
@@ -88,20 +87,63 @@
                     <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search"
                         method="get" action="{{searchTarget}}">
                         <div class="input-group">
+
+                            <div class="dropdown input-group-prepend">
+                                <a class="btn btn-light dropdown-toggle" href="#" role="button" data-toggle="dropdown"
+                                    aria-expanded="false">
+
+
+                                    {{#if selectedState}}
+                                    {{selectedState.label}}
+                                    {{else}}
+                                    All
+                                    {{/if}}
+
+                                </a>
+
+                                <div class="dropdown-menu">
+                                    {{#each stateOptions}}
+                                    {{#if divider}}
+                                    <div class="dropdown-divider"></div>
+                                    {{else}}
+                                    <a class="dropdown-item {{#if selected}}active{{/if}}" href="{{url}}">{{label}}</a>
+                                    {{/if}}
+                                    {{/each}}
+                                </div>
+                            </div>
+
                             <input type="text" class="form-control bg-light border-0 small"
                                 placeholder="{{searchPlaceholder}}" aria-label="Search" aria-describedby="basic-addon2"
                                 name="query" value="{{query}}">
+
+                            <input type="hidden" name="state" value="{{state}}">
+
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit">
                                     <i class="fas fa-search fa-sm"></i>
                                 </button>
                             </div>
+
                         </div>
+
+
                     </form>
                     {{/if}}
 
                     <!-- Topbar Navbar -->
                     <ul class="navbar-nav ml-auto">
+
+                        {{#if licenseInfo.suspended}}
+                        <li class="nav-item mx-1">
+                            <div class="text-danger nav-link" style="cursor: default;"
+                                title="EmailEngine is currently not running and does not process any email accounts"
+                                data-toggle="tooltip" data-placement="left">
+                                <div>
+                                    <i class="fas fa-heartbeat"></i> Engine is <strong>stopped</strong>
+                                </div>
+                            </div>
+                        </li>
+                        {{/if}}
 
                         {{#if systemAlerts}}
 
@@ -295,7 +337,7 @@
 
     <!-- Bootstrap core JavaScript-->
     <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-    <script src="/static/bootstrap-4.6.0-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="/static/bootstrap-4.6.2-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 
     <!-- Core plugin JavaScript-->
     <script src="/static/vendor/jquery-easing/jquery.easing.min.js"></script>

@@ -18,18 +18,15 @@
 </nav>
 {{/if}}
 
+<p>Email templating allows you to prepare and re-use email content.</p>
 
 <div class="card border-left-info shadow mt-4 mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
-
-
-                <p>Email templating allows you to prepare and re-use email content.</p>
-
                 <p>When sending emails using the EmailEngine's <a
-                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit"
-                        target="_blank">submission API
+                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">submission API
                         endpoint</a>, you would not have to provide the full
                     subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
                     EmailEngine
@@ -39,7 +36,8 @@
                     used to fill up the blanks.</p>
 
                 <div>
-                    <a href="https://emailengine.app/email-templates" class="btn btn-info btn-sm" target="_blank">
+                    <a href="https://emailengine.app/email-templates" class="btn btn-info btn-sm" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">
                         <i class="fa fa-arrow-circle-right fa-fw"></i>
                         Documentation</a>
                 </div>
@@ -52,7 +50,6 @@
         </div>
     </div>
 </div>
-
 
 {{#if templates}}
 <div class="card mt-4 mb-4">
@@ -71,13 +68,13 @@
             <thead class="">
                 <tr>
                     <th class="p-0">
-                        <div class="p-2">ID</div>
-                    </th>
-                    <th class="p-0">
                         <div class="p-2">Name</div>
                     </th>
                     <th class="p-0">
                         <div class="p-2">Description</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">ID</div>
                     </th>
                 </tr>
             </thead>
@@ -85,12 +82,7 @@
             <tbody>
                 {{#each templates}}
                 <tr>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/templates/template/{{id}}" class="stretched-link"></a>
-                            {{id}}
-                        </div>
-                    </td>
+
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/templates/template/{{id}}"
@@ -100,6 +92,13 @@
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/templates/template/{{id}}" class="stretched-link"></a>{{description}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/templates/template/{{id}}" class="stretched-link"></a>
+                            {{id}}
                         </div>
                     </td>
 

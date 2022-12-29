@@ -38,17 +38,17 @@
     const editorHtml = ace.edit("editor-html");
     editorHtml.setTheme("ace/theme/xcode");
     editorHtml.session.setMode("ace/mode/handlebars");
-    editorHtml.session.setValue(document.getElementById('html-content-element').value);
+    editorHtml.session.setValue(JSON.parse(document.getElementById('contentHtmlJson').value || '""'));
 
     const editorText = ace.edit("editor-text");
     editorText.setTheme("ace/theme/xcode");
     editorText.session.setMode("ace/mode/handlebars");
-    editorText.session.setValue(document.getElementById('text-content-element').value);
+    editorText.session.setValue(JSON.parse(document.getElementById('contentTextJson').value || '""'));
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-form').addEventListener('submit', () => {
-            document.getElementById('html-content-element').value = editorHtml.getValue();
-            document.getElementById('text-content-element').value = editorText.getValue();
+            document.getElementById('contentHtml').value = editorHtml.getValue();
+            document.getElementById('contentText').value = editorText.getValue();
         });
     });
 

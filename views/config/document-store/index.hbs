@@ -1,0 +1,202 @@
+{{> document_store_header}}
+
+<div class="card border-left-warning shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <ul>
+                    <li>Only ElasticSearch v8+ is supported as a Document Store backend. Older versions of
+                        ElasticSearch and alternatives like OpenSearch are not supported.</li>
+                    <li>Syncing emails to the Document Store is not transactional but <em>best effort</em>.
+                        EmailEngine might miss some data.</li>
+                    <li>Email attachments are not stored in the Document Store.</li>
+                    <li>Enable Document Store before adding any accounts that need to be indexed. Emails that are
+                        processed while Document Store is not enabled <em>will not be synced</em> to the Document Store.
+                    </li>
+                    <li>You <em>can</em> modify entries stored in the Document Store. Adding new fields is allowed.
+                        Changing existing field values is allowed if you do not change the type. Do not modify system
+                        fields <code>_id</code>, <code>id</code>, <code>account</code>, <code>uid</code> and
+                        <code>path</code>.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-auto">
+                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="/admin/config/document-store">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <div class="card mt-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Document Store actions:</div>
+                    <a class="dropdown-item test-connection" href="#" id="test-payload-btn">
+                        <i class="fas fa-link fa-sm"></i> <span>Test connection</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreEnabled</a>]
+                </div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
+                    id="documentStoreEnabled" name="documentStoreEnabled" {{#if
+                    values.documentStoreEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="documentStoreEnabled">Enable syncing to the Document Store</label>
+                {{#if errors.documentStoreEnabled}}
+                <span class="invalid-feedback">{{errors.documentStoreEnabled}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreUrl</a>]
+                </div>
+
+                <label for="documentStoreUrl">URL to ElasticSearch</label>
+
+                <input type="url"
+                    class="form-control trigger-example-render {{#if errors.documentStoreUrl}}is-invalid{{/if}}"
+                    id="documentStoreUrl" name="documentStoreUrl" value="{{values.documentStoreUrl}}">
+
+                {{#if errors.documentStoreUrl}}
+                <span class="invalid-feedback">{{errors.documentStoreUrl}}</span>
+                {{/if}}
+                <small class="form-text text-muted">URL to ElasticSearch API, for example
+                    "http://localhost:9200".</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreIndex</a>]
+                </div>
+
+                <label for="documentStoreIndex">Index name</label>
+
+                <input type="text" class="form-control {{#if errors.documentStoreIndex}}is-invalid{{/if}}"
+                    id="documentStoreIndex" name="documentStoreIndex" value="{{values.documentStoreIndex}}" />
+                {{#if errors.documentStoreIndex}}
+                <span class="invalid-feedback">{{errors.documentStoreIndex}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Index to use for data. EmailEngine will create a separate index with
+                    the same prefix for threading.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreAuthEnabled</a>]
+                </div>
+
+                <input type="checkbox"
+                    class="form-check-input trigger-example-render {{#if errors.documentStoreAuthEnabled}}is-invalid{{/if}}"
+                    id="documentStoreAuthEnabled" name="documentStoreAuthEnabled" {{#if
+                    values.documentStoreAuthEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="documentStoreAuthEnabled">Enable authentication</label>
+                {{#if errors.documentStoreAuthEnabled}}
+                <span class="invalid-feedback">{{errors.documentStoreAuthEnabled}}</span>
+                {{/if}}
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreUsername</a>]
+                </div>
+
+                <label for="documentStoreUsername">Username</label>
+
+                <input type="text" class="form-control {{#if errors.documentStoreUsername}}is-invalid{{/if}}"
+                    id="documentStoreUsername" name="documentStoreUsername" value="{{values.documentStoreUsername}}" />
+                {{#if errors.documentStoreUsername}}
+                <span class="invalid-feedback">{{errors.documentStoreUsername}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Authentication username.</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStorePassword</a>]
+                </div>
+
+                <label for="documentStorePassword">Password</label>
+
+                <input type="password" class="form-control {{#if errors.documentStorePassword}}is-invalid{{/if}}"
+                    id="documentStorePassword" name="documentStorePassword" value="{{values.documentStorePassword}}"
+                    {{#if hasDocumentStorePassword}} placeholder="Password is set but not shown&mldr;" {{/if}} />
+                {{#if errors.documentStorePassword}}
+                <span class="invalid-feedback">{{errors.documentStorePassword}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Authentication password.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-4 mt-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const sendTestPayload = async () => {
+            const documentStoreUrl = document.getElementById('documentStoreUrl').value.trim();
+            const documentStoreAuthEnabled = !!document.getElementById('documentStoreAuthEnabled').checked;
+            const documentStoreUsername = document.getElementById('documentStoreUsername').value;
+            const documentStorePassword = document.getElementById('documentStorePassword').value;
+
+            const res = await fetch('/admin/config/document-store/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    documentStoreUrl,
+                    documentStoreAuthEnabled,
+                    documentStoreUsername,
+                    documentStorePassword
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        document.getElementById('test-payload-btn').addEventListener('click', e => {
+            e.preventDefault()
+            sendTestPayload().then(data => {
+                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+    })
+</script>

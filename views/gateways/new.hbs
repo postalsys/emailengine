@@ -33,9 +33,9 @@
 
             <div class="form-group">
                 <label for="gateway">ID</label>
-                <input type="text" class="form-control {{#if errors.gateway}}is-invalid{{/if}}" id="user" name="gateway"
-                    value="{{values.gateway}}" placeholder="For example &quot;sendgun&quot;" data-lpignore="true"
-                    autocomplete="off" />
+                <input type="text" class="form-control {{#if errors.gateway}}is-invalid{{/if}}" id="gateway"
+                    name="gateway" value="{{values.gateway}}" placeholder="For example &quot;sendgun&quot;"
+                    data-lpignore="true" autocomplete="off" />
                 {{#if errors.gateway}}
                 <span class="invalid-feedback">{{errors.gateway}}</span>
                 {{/if}}

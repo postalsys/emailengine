@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, matchIp } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -28,6 +28,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const { SMTPServer } = require('smtp-server');
@@ -69,12 +70,14 @@ async function call(message, transferList) {
     return new Promise((resolve, reject) => {
         let mid = `${Date.now()}:${++mids}`;
 
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T4]');
             err.statusCode = 504;
             err.code = 'Timeout';
+            err.ttl = ttl;
             reject(err);
-        }, message.timeout || EENGINE_TIMEOUT);
+        }, ttl);
 
         callQueue.set(mid, { resolve, reject, timer });
 
@@ -156,7 +159,7 @@ async function onAuth(auth, session) {
                     throw new Error('Access denied, invalid scope');
                 }
 
-                if (tokenData.restrictions && tokenData.restrictions.addresses && !tokenData.restrictions.addresses.includes(session.remoteAddress)) {
+                if (tokenData.restrictions && tokenData.restrictions.addresses && !matchIp(session.remoteAddress, tokenData.restrictions.addresses)) {
                     logger.error({
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
@@ -404,11 +407,19 @@ async function init() {
         if (hostname) {
             let certificateData = await certs.getCertificate(hostname, true);
             if (certificateData && certificateData.status === 'valid') {
-                serverOptions.ca = certificateData.ca;
-                serverOptions.cert = certificateData.cert;
+                serverOptions.cert =
+                    certificateData.cert +
+                    '\n' +
+                    []
+                        .concat(certificateData.ca || [])
+                        .flatMap(entry => entry)
+                        .join('\n');
                 serverOptions.key = certificateData.privateKey;
             }
         }
+    } else {
+        serverOptions.disabledCommands = ['STARTTLS'];
+        serverOptions.hideSTARTTLS = true;
     }
 
     server = new SMTPServer(serverOptions);
@@ -494,6 +505,6 @@ init()
         });
     })
     .catch(err => {
-        logger.error(err);
+        logger.error({ msg: 'Failed to initialize SMTP', err });
         setImmediate(() => process.exit(3));
     });

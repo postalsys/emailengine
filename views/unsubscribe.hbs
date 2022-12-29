@@ -1,0 +1,87 @@
+<h1 class="h4 text-gray-900 mb-4">{{_ "Unsubscribe" }}</h1>
+
+{{#if unsubscribed}}
+
+<p>{{_ "Your email address was unsubscribed." }}</p>
+
+<p>{{_ "Was this a mistake? Click <a%s>here</a> to re-subscribe." " id='resubscribe-link' href='#'"}}</p>
+
+
+<div class="modal fade" id="resubscribeModal" tabindex="-1" aria-labelledby="resubscribeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="resubscribeModalLabel">{{_ "Re-subscribe" }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" values.email }}
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/unsubscribe/address">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" name="action" value="subscribe">
+                    <input type="hidden" name="account" value="{{values.account}}">
+                    <input type="hidden" name="listId" value="{{values.listId}}">
+                    <input type="hidden" name="messageId" value="{{values.messageId}}">
+                    <input type="hidden" name="email" value="{{values.email}}">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{_ "Close" }}</button>
+                    <button type="submit" class="btn btn-primary">{{_ "Subscribe" }}</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        document.getElementById('resubscribe-link').addEventListener('click', e => {
+            e.preventDefault();
+            $('#resubscribeModal').modal('show');
+        });
+    });
+</script>
+
+{{else}}
+
+{{#if reSubscribed}}
+
+<p>{{_ "Your email address <em>%s</em> was re-subscribed." values.email}}</p>
+
+{{else}}
+
+<div class="row">
+    <div class="col-6">
+        <form method="post" action="/unsubscribe/address">
+            <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+            <input type="hidden" name="action" value="unsubscribe">
+            <input type="hidden" name="account" value="{{values.account}}">
+            <input type="hidden" name="listId" value="{{values.listId}}">
+            <input type="hidden" name="messageId" value="{{values.messageId}}">
+            <input type="hidden" name="reason" value="form">
+
+            <div class="form-group">
+                <label for="email">{{_ "Email address" }}</label>
+                <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email" name="email"
+                    value="{{values.email}}" required />
+                {{#if errors.email}}
+                <span class="invalid-feedback">{{errors.email}}</span>
+                {{/if}}
+                <small class="form-text text-muted">{{_ "Enter your email address" }}</small>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">{{_ "Unsubscribe" }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{/if}}
+
+{{/if}}

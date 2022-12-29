@@ -1,0 +1,164 @@
+{
+    "childNodes": [{
+        "childNodes": [{
+            "header": [
+                "Content-Type: text/plain",
+                "Content-Transfer-Encoding: 7bit"
+            ],
+            "parsedHeader": {
+                "content-transfer-encoding": "7bit",
+                "content-type": {
+                    "value": "text/plain",
+                    "type": "text",
+                    "subtype": "plain",
+                    "params": {}
+                }
+            },
+            "body": "hello",
+            "multipart": false,
+            "boundary": false,
+            "lineCount": 1,
+            "size": 5
+        }, {
+            "header": [
+                "Content-Type: text/html",
+                "Content-Transfer-Encoding: 7bit"
+            ],
+            "parsedHeader": {
+                "content-transfer-encoding": "7bit",
+                "content-type": {
+                    "value": "text/html",
+                    "type": "text",
+                    "subtype": "html",
+                    "params": {}
+                }
+            },
+            "body": "<p>hello</p>",
+            "multipart": false,
+            "boundary": false,
+            "lineCount": 1,
+            "size": 12
+        }],
+        "header": [
+            "Content-Type: multipart/alternative;\r\n boundary=\"----sinikael-?=_2-14508625179060.6947296333964914\""
+        ],
+        "parsedHeader": {
+            "content-type": {
+                "value": "multipart/alternative",
+                "type": "multipart",
+                "subtype": "alternative",
+                "params": {
+                    "boundary": "----sinikael-?=_2-14508625179060.6947296333964914"
+                },
+                "hasParams": true
+            }
+        },
+        "body": "",
+        "multipart": "alternative",
+        "boundary": "----sinikael-?=_2-14508625179060.6947296333964914",
+        "lineCount": 1,
+        "size": 0
+    }, {
+        "header": [
+            "Content-Type: text/plain; charset=utf-8; name=\"notes\r\n =?UTF-8?Q?=F0=9F=95=B6=2Etxt?=\"",
+            "Content-Disposition: attachment;\r\n filename*0*=utf-8''notes%20%F0%9F%95%B6.txt",
+            "Content-Transfer-Encoding: quoted-printable"
+        ],
+        "parsedHeader": {
+            "content-transfer-encoding": "quoted-printable",
+            "content-disposition": {
+                "value": "attachment",
+                "type": "attachment",
+                "subtype": "",
+                "params": {
+                    "filename": "=?UTF-8?Q?notes=20=F0=9F=95=B6.txt?="
+                },
+                "hasParams": true
+            },
+            "content-type": {
+                "value": "text/plain",
+                "type": "text",
+                "subtype": "plain",
+                "params": {
+                    "charset": "utf-8",
+                    "name": "notes =?UTF-8?Q?=F0=9F=95=B6=2Etxt?="
+                },
+                "hasParams": true
+            }
+        },
+        "body": "Some notes about this e-mail =F0=9F=90=B1",
+        "multipart": false,
+        "boundary": false,
+        "lineCount": 1,
+        "size": 41
+    }, {
+        "header": [
+            "Content-Type: image/png; name=image.png",
+            "Content-Disposition: attachment; filename=image.png",
+            "Content-Transfer-Encoding: base64"
+        ],
+        "parsedHeader": {
+            "content-transfer-encoding": "base64",
+            "content-disposition": {
+                "value": "attachment",
+                "type": "attachment",
+                "subtype": "",
+                "params": {
+                    "filename": "image.png"
+                },
+                "hasParams": true
+            },
+            "content-type": {
+                "value": "image/png",
+                "type": "image",
+                "subtype": "png",
+                "params": {
+                    "name": "image.png"
+                },
+                "hasParams": true
+            }
+        },
+        "body": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAABlBMVEUAAAD///+l2Z/dAAAAM0lE\r\nQVR4nGP4/5/h/1+G/58ZDrAz3D/McH8yw83NDDeNGe4Ug9C9zwz3gVLMDA/A6P9/AFGGFyjOXZtQ\r\nAAAAAElFTkSuQmCC",
+        "multipart": false,
+        "boundary": false,
+        "lineCount": 3,
+        "size": 172
+    }],
+    "header": [
+        "Content-Type: multipart/mixed;\r\n boundary=\"----sinikael-?=_1-14508625179060.6947296333964914\"",
+        "From: =?UTF-8?Q?Sender_Name_=F0=9F=91=BB?= <sender@example.com>",
+        "To: =?UTF-8?Q?Receiver_Name_=F0=9F=91=A5?= <receiver@example.com>",
+        "Subject: Nodemailer is unicode friendly =?UTF-8?Q?=E2=9C=94?=",
+        "Date: Wed, 23 Dec 2015 09:21:57 +0000",
+        "Message-Id: <1450862517911-ebf3ac1e-e421bda1-4d17b820@example.com>",
+        "MIME-Version: 1.0"
+    ],
+    "parsedHeader": {
+        "mime-version": "1.0",
+        "message-id": "<1450862517911-ebf3ac1e-e421bda1-4d17b820@example.com>",
+        "date": "Wed, 23 Dec 2015 09:21:57 +0000",
+        "subject": "Nodemailer is unicode friendly =?UTF-8?Q?=E2=9C=94?=",
+        "to": [{
+            "address": "receiver@example.com",
+            "name": "=?UTF-8?Q?Receiver_Name_=F0=9F=91=A5?="
+        }],
+        "from": [{
+            "address": "sender@example.com",
+            "name": "=?UTF-8?Q?Sender_Name_=F0=9F=91=BB?="
+        }],
+        "content-type": {
+            "value": "multipart/mixed",
+            "type": "multipart",
+            "subtype": "mixed",
+            "params": {
+                "boundary": "----sinikael-?=_1-14508625179060.6947296333964914"
+            },
+            "hasParams": true
+        }
+    },
+    "body": "",
+    "multipart": "mixed",
+    "boundary": "----sinikael-?=_1-14508625179060.6947296333964914",
+    "lineCount": 1,
+    "size": 0
+}

@@ -1,5 +1,5 @@
 .navbar-inverse {
-    background-color: #4e73df;
+    background-color: #407ec9;
     color: rgba(255, 255, 255, 0.8);
 }
 
@@ -11,5 +11,5 @@
 .nav-sidebar > .active > a:hover,
 .nav-sidebar > .active > a:focus {
     color: rgba(255, 255, 255, 0.8);
-    background-color: #4e73df;
+    background-color: #407ec9;
 }

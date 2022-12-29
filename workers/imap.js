@@ -29,16 +29,20 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
             }
         }
     });
+    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
 const { Connection } = require('../lib/connection');
 const { Account } = require('../lib/account');
-const { redis, notifyQueue, submitQueue, documentsQueue } = require('../lib/db');
+const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
+const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
 
 const getSecret = require('../lib/get-secret');
+
+const flowProducer = getFlowProducer();
 
 config.service = config.service || {};
 
@@ -62,7 +66,8 @@ const DEFAULT_STATES = {
 
 const NO_ACTIVE_HANDLER_RESP = {
     error: 'No active handler for requested account. Try again later.',
-    statusCode: 503
+    statusCode: 503,
+    code: 'WorkerNotAvailable'
 };
 
 class ConnectionHandler {
@@ -95,13 +100,22 @@ class ConnectionHandler {
                     return;
                 }
 
-                let logRow = msgpack.encode(entry);
-                redis
-                    .multi()
-                    .rpush(logKey, logRow)
-                    .ltrim(logKey, -this.maxLogLines, -1)
-                    .exec()
-                    .catch(err => this.logger.error(err));
+                if (entry.err && entry.err.cert) {
+                    delete entry.err.cert;
+                }
+
+                let logRow;
+                try {
+                    logRow = msgpack.encode(entry);
+                    redis
+                        .multi()
+                        .rpush(logKey, logRow)
+                        .ltrim(logKey, -this.maxLogLines, -1)
+                        .exec()
+                        .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
+                } catch (err) {
+                    this.logger.error({ msg: 'Failed to encode log entry', account, entry, err });
+                }
             },
             async reload() {
                 logging = await settings.getLoggingInfo(account);
@@ -114,8 +128,14 @@ class ConnectionHandler {
     async assignConnection(account) {
         logger.info({ msg: 'Assigned account to worker', account });
 
+        let accountLogger = await this.getAccountLogger(account);
         let secret = await getSecret();
-        let accountObject = new Account({ redis, account, secret });
+        let accountObject = new Account({
+            redis,
+            account,
+            secret,
+            esClient: await getESClient(logger)
+        });
 
         this.accounts.set(account, accountObject);
         accountObject.connection = new Connection({
@@ -126,7 +146,8 @@ class ConnectionHandler {
             notifyQueue,
             submitQueue,
             documentsQueue,
-            accountLogger: await this.getAccountLogger(account),
+            flowProducer,
+            accountLogger,
             logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;
@@ -247,6 +268,18 @@ class ConnectionHandler {
         return await accountData.connection.updateMessage(message.message, message.updates);
     }
 
+    async updateMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+        return await accountData.connection.updateMessages(message.path, message.search, message.updates);
+    }
+
     async listMailboxes(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -257,7 +290,7 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.listMailboxes();
+        return await accountData.connection.listMailboxes(message.options);
     }
 
     async moveMessage(message) {
@@ -273,6 +306,19 @@ class ConnectionHandler {
         return await accountData.connection.moveMessage(message.message, message.target);
     }
 
+    async moveMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.moveMessages(message.source, message.search, message.target);
+    }
+
     async deleteMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -284,6 +330,19 @@ class ConnectionHandler {
         }
 
         return await accountData.connection.deleteMessage(message.message, message.force);
+    }
+
+    async deleteMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.deleteMessages(message.path, message.search, message.force);
     }
 
     async submitMessage(message) {
@@ -336,6 +395,19 @@ class ConnectionHandler {
         }
 
         return await accountData.connection.createMailbox(message.path);
+    }
+
+    async renameMailbox(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.renameMailbox(message.path, message.newPath);
     }
 
     async deleteMailbox(message) {
@@ -459,58 +531,30 @@ class ConnectionHandler {
     async onCommand(message) {
         switch (message.cmd) {
             case 'assign':
-                return await this.assignConnection(message.account);
-
             case 'delete':
-                return await this.deleteConnection(message.account);
-
             case 'update':
-                return await this.updateConnection(message.account);
-
             case 'sync':
-                return await this.syncConnection(message.account);
+                return await this[`${message.cmd}Connection`](message.account);
 
             case 'listMessages':
-                return await this.listMessages(message);
-
             case 'getText':
-                return await this.getText(message);
-
             case 'getMessage':
-                return await this.getMessage(message);
-
             case 'updateMessage':
-                return await this.updateMessage(message);
-
+            case 'updateMessages':
             case 'listMailboxes':
-                return await this.listMailboxes(message);
-
             case 'moveMessage':
-                return await this.moveMessage(message);
-
+            case 'moveMessages':
             case 'deleteMessage':
-                return await this.deleteMessage(message);
-
+            case 'deleteMessages':
             case 'getRawMessage':
-                return await this.getRawMessage(message);
-
             case 'createMailbox':
-                return await this.createMailbox(message);
-
+            case 'renameMailbox':
             case 'deleteMailbox':
-                return await this.deleteMailbox(message);
-
             case 'getAttachment':
-                return await this.getAttachment(message);
-
             case 'submitMessage':
-                return await this.submitMessage(message);
-
             case 'queueMessage':
-                return await this.queueMessage(message);
-
             case 'uploadMessage':
-                return await this.uploadMessage(message);
+                return await this[message.cmd](message);
 
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
@@ -546,12 +590,14 @@ class ConnectionHandler {
         return new Promise((resolve, reject) => {
             let mid = `${Date.now()}:${++this.mids}`;
 
+            let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
             let timer = setTimeout(() => {
                 let err = new Error('Timeout waiting for command response [T3]');
                 err.statusCode = 504;
                 err.code = 'Timeout';
+                err.ttl = ttl;
                 reject(err);
-            }, message.timeout || EENGINE_TIMEOUT);
+            }, ttl);
 
             this.callQueue.set(mid, { resolve, reject, timer });
             parentPort.postMessage({
@@ -618,12 +664,13 @@ parentPort.on('message', message => {
                     mid: message.mid,
                     error: err.message,
                     code: err.code,
-                    statusCode: err.statusCode
+                    statusCode: err.statusCode,
+                    info: err.info
                 });
             });
     }
 
-    connectionHandler.onMessage(message).catch(err => logger.error(err));
+    connectionHandler.onMessage(message).catch(err => logger.error({ msg: 'Failed to process IPC message', err }));
 });
 
 process.on('SIGTERM', () => {

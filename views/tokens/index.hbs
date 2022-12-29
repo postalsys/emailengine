@@ -13,44 +13,69 @@
     To access EmailEngine API, you need to authenticate your API requests with an access token.
 </p>
 
-<div class="list-group mt-4">
-    {{#unless tokenList}}
-    <div class="list-group-item">
-        No access tokens have been provisioned. Generate a new token <a href="/admin/tokens/new">here</a>.
+{{#if tokenList}}
+<div class="card mt-4 mb-4">
+    <div class="table-responsive">
+        <table class="table">
+            <thead class="">
+                <tr>
+                    <th class="p-0">
+                        <div class="p-2">Description</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Scopes</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">Last used</div>
+                    </th>
+                    <th class="p-0">
+                        <div class="p-2">&nbsp;</div>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each tokenList}}
+                <tr>
+                    <td class="p-2">
+                        <strong>{{description}}</strong>
+                    </td>
+
+                    <td class="p-2">
+                        {{#if scopes}}
+                        {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}
+                        {{/if}}
+                    </td>
+
+                    <td class="p-2">
+                        {{#if access.timeStr}}
+                        <span class="relative-time" data-time="{{access.timeStr}}"></span>
+                        {{else}}
+                        <span>Never used</span>
+                        {{/if}}
+                    </td>
+
+                    <td class="p-2 text-right">
+                        <button type="button" class="btn btn-danger btn-circle btn-sm delete-token-btn"
+                            data-token="{{id}}" data-toggle="tooltip" data-placement="top" title="Delete this token"><i
+                                class="fas fa-trash-alt"></i></button>
+                    </td>
+
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
     </div>
-    {{/unless}}
-    {{#each tokenList}}
-    <div class="list-group-item">
-        <div class="d-flex w-100">
-            <div class="flex-fill align-self-center">
-                <div>{{description}}
-
-                    {{#if scopes}}
-                    <small>
-                        ( {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}} )
-                    </small>
-                    {{/if}}
-
-                </div>
-
-                <small class="align-self-center">
-                    {{#if access.timeStr}}
-                    Last used: <span class="relative-time" data-time="{{access.timeStr}}"></span>
-                    {{else}}
-                    <span>Never used</span>
-                    {{/if}}
-                </small>
-            </div>
-
-            <div class="ml-2 align-self-center">
-                <button type="button" class="btn btn-danger btn-circle btn-sm delete-token-btn" data-token="{{id}}"
-                    data-toggle="tooltip" data-placement="top" title="Delete this token"><i
-                        class="fas fa-trash-alt"></i></button>
-            </div>
-        </div>
-    </div>
-    {{/each}}
 </div>
+{{else}}
+<div class="list-group mt-4 mb-4">
+    <div class="list-group-item">
+        <p>
+            No access tokens have been provisioned. Generate a new token <a href="/admin/tokens/new">here</a>.
+        </p>
+    </div>
+</div>
+{{/if}}
 
 
 <div class="card mt-4 mb-4">
@@ -82,7 +107,8 @@ $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v
             </div>
             <div class="text-muted">Read more about setting
                 up Prometheus and Grafana with EmailEngine from the <a
-                    hreF="https://emailengine.app/monitoring#prometheus" target="_blank">documentation</a>.
+                    href="https://emailengine.app/monitoring#prometheus" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}">documentation</a>.
             </div>
 
         </div>

@@ -1,0 +1,183 @@
+{{> document_store_header}}
+
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <div class="mb-2">
+                    Document pre-processing allows modifying emails before these are stored in the document store. You
+                    can also filter out messages you do not want to be stored at all. You can add new fields to the
+                    document and edit the contents of existing fields. The following fields can not be edited:
+                    <em>id</em>, <em>account</em>, <em>path</em>, <em>uid</em>, <em>specialUse</em>, <em>messageId</em>.
+                </div>
+                <div>
+                    <strong>NB!</strong> When adding new fields to email documents, EmailEngine does not create type
+                    mappings for these new fields. Instead, ElasticSearch creates the mappings automatically. Sometimes
+                    it might not be what you want, so you’d have to create these mappings <a
+                        href="/admin/config/document-store/mappings/new">manually</a>. You must define mappings
+                    <em>before</em> any document with that field is stored in ElasticSearch.
+                </div>
+
+            </div>
+
+            <div class="col-auto">
+                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card mb-4">
+    <div class="card-body">
+
+
+        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+
+                <a type="button" class="btn btn-light" href="/admin/config/document-store/pre-processing/edit"
+                    title="Edit pre-processing settings" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-file-signature fa-fw"></i> Edit
+                </a>
+
+            </div>
+        </div>
+
+
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
+                    aria-selected="true">Filter function</a>
+            </li>
+
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="map-tab" data-toggle="tab" href="#map" role="tab" aria-controls="map"
+                    aria-selected="false">Map function</a>
+            </li>
+
+            {{#if errorLog}}
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab" aria-controls="errors"
+                    aria-selected="false">Error log</a>
+            </li>
+            {{/if}}
+
+        </ul>
+
+        <div class="tab-content mt-3" id="myTabContent">
+            <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
+
+                <div id="fn-preview" class="code-editor">{{values.contentFn}}</div>
+
+            </div>
+            <div class="tab-pane" id="map" role="tabpanel" aria-labelledby="map-tab">
+
+                <div id="map-preview" class="code-editor">{{values.contentMap}}</div>
+
+            </div>
+
+
+            <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+
+
+                <p>The following errors were thrown when executing the functions for this route. Only the most recent
+                    errors are shown.</p>
+
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th width="40%">Error</th>
+                            <th width="40%">Payload</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each errorLog}}
+
+                        <tr>
+
+                            <td>
+                                <span class="relative-time" data-time="{{created}}"></span>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{error}}</textarea>
+                            </td>
+
+                            <td>
+                                <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                            </td>
+
+                        </tr>
+
+                        {{/each}}
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/ace/ace.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const editorFn = ace.edit("fn-preview", {
+            showGutter: true
+        });
+
+        const editorMap = ace.edit("map-preview", {
+            showGutter: true
+        });
+
+
+        editorFn.setReadOnly(true);
+        editorFn.setShowPrintMargin(false);
+        editorFn.setHighlightActiveLine(false);
+
+        editorMap.setReadOnly(true);
+        editorMap.setShowPrintMargin(false);
+        editorMap.setHighlightActiveLine(false);
+
+        editorFn.setTheme("ace/theme/kuroir");
+        editorFn.session.setMode("ace/mode/javascript");
+
+        editorMap.setTheme("ace/theme/kuroir");
+        editorMap.session.setMode("ace/mode/javascript");
+
+        editorFn.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [{
+                        esversion: 11
+                    }]);
+                }
+            }
+        });
+
+        editorMap.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [{
+                        esversion: 11
+                    }]);
+                }
+            }
+        });
+
+        let errorFields = document.querySelectorAll('.error-log-field');
+        for (let i = 0; i < errorFields.length; i++) {
+            let errorField = errorFields[i];
+            errorField.addEventListener('focus', e => {
+                errorField.select();
+            });
+        }
+
+    })
+</script>
