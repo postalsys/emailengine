@@ -121,6 +121,12 @@
             <dd class="col-sm-9">{{app.name}}</dd>
             {{/if}}
 
+            <dt class="col-sm-3">Type</dt>
+            <dd class="col-sm-9">{{providerData.comment}} {{#if providerData.icon}}
+                <i class="{{providerData.icon}} fa-fw"></i>
+                {{/if}}
+            </dd>
+
             {{#if app.description}}
             <dt class="col-sm-3">Description</dt>
             <dd class="col-sm-9">{{app.description}}</dd>

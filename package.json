@@ -50,8 +50,8 @@
         "@postalsys/templates": "1.0.3",
         "ace-builds": "1.14.0",
         "base32.js": "0.1.0",
-        "bull-arena": "3.30.2",
-        "bullmq": "3.5.1",
+        "bull-arena": "3.30.3",
+        "bullmq": "3.5.3",
         "compare-versions": "5.0.3",
         "dotenv": "16.0.3",
         "encoding-japanese": "2.0.0",
@@ -76,7 +76,7 @@
         "libmime": "5.2.0",
         "libqp": "2.0.1",
         "license-checker": "25.0.1",
-        "mailparser": "3.6.2",
+        "mailparser": "3.6.3",
         "mailsplit": "5.4.0",
         "minimist": "1.2.7",
         "msgpack5": "6.0.2",
@@ -87,7 +87,7 @@
         "node-vault": "0.9.22",
         "nodemailer": "6.8.0",
         "pino": "8.8.0",
-        "prom-client": "14.1.0",
+        "prom-client": "14.1.1",
         "psl": "1.9.0",
         "pubface": "1.0.4",
         "punycode": "2.1.1",
@@ -101,16 +101,16 @@
     },
     "devDependencies": {
         "eerawlog": "1.5.0",
-        "eslint": "8.30.0",
+        "eslint": "8.31.0",
         "eslint-config-nodemailer": "1.2.0",
-        "eslint-config-prettier": "8.5.0",
+        "eslint-config-prettier": "8.6.0",
         "grunt": "1.5.3",
         "grunt-cli": "1.4.3",
         "grunt-eslint": "24.0.1",
         "jsxgettext": "0.11.0",
         "pino-pretty": "9.1.1",
         "pkg": "5.8.0",
-        "xgettext-template": "4.1.1"
+        "xgettext-template": "4.1.2"
     },
     "engines": {
         "node": ">=16.x"
