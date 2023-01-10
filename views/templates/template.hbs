@@ -39,6 +39,13 @@
 
         </div>
 
+        {{#if template.description}}
+        <h5 class="card-title">{{template.name}}</h5>
+        <h6 class="card-subtitle mb-4 text-muted">{{template.description}}</h6>
+        {{else}}
+        <h5 class="card-title mb-4">{{template.name}}</h5>
+        {{/if}}
+
         <dl class="row">
 
             <dt class="col-sm-3">Template ID</dt>
@@ -64,16 +71,6 @@
             <dt class="col-sm-3">Account</dt>
             <dd class="col-sm-9"><a href="/admin/accounts/{{account.account}}">{{account.name}}</a></dd>
 
-            {{/if}}
-
-            {{#if template.name}}
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{template.name}}</dd>
-            {{/if}}
-
-            {{#if template.description}}
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9">{{template.description}}</dd>
             {{/if}}
 
             {{#if template.content.subject}}

@@ -97,11 +97,11 @@
                     target="_blank">{{values.provider}}Enabled</a>]
             </div>
 
-            <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
-                id="oauth2Enabled" name="oauth2Enabled" {{#if values.oauth2Enabled}}checked{{/if}} />
-            <label class="form-check-label" for="oauth2Enabled">Enable this app</label>
-            {{#if errors.oauth2Enabled}}
-            <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
+            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                name="enabled" {{#if values.enabled}}checked{{/if}} />
+            <label class="form-check-label" for="enabled">Enable this app</label>
+            {{#if errors.enabled}}
+            <span class="invalid-feedback">{{errors.enabled}}</span>
             {{/if}}
             <small class="form-text text-muted">If enabled, then <em>"{{providerData.comment}}"</em> is shown as an
                 account type option when adding an account using the hosted authentication form.</small>

@@ -10,7 +10,6 @@
 <div class="card mb-4">
     <div class="card-body">
 
-
         <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
@@ -26,6 +25,12 @@
             </div>
         </div>
 
+        {{#if webhook.description}}
+        <h5 class="card-title">{{webhook.name}}</h5>
+        <h6 class="card-subtitle mb-4 text-muted">{{webhook.description}}</h6>
+        {{else}}
+        <h5 class="card-title mb-4">{{webhook.name}}</h5>
+        {{/if}}
 
         {{#if webhook.webhookErrorFlag.message}}
         <div class="mt-3 mb-3 alert alert-danger">
@@ -41,16 +46,6 @@
 
 
         <dl class="row">
-
-            {{#if webhook.name}}
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{webhook.name}}</dd>
-            {{/if}}
-
-            {{#if webhook.description}}
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9">{{webhook.description}}</dd>
-            {{/if}}
 
             {{#if webhook.targetUrlShort}}
             <dt class="col-sm-3">Webhook Target</dt>

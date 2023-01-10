@@ -90,6 +90,13 @@
 
         </div>
 
+        {{#if app.description}}
+        <h5 class="card-title">{{app.name}}</h5>
+        <h6 class="card-subtitle mb-4 text-muted">{{app.description}}</h6>
+        {{else}}
+        <h5 class="card-title mb-4">{{app.name}}</h5>
+        {{/if}}
+
         {{#if app.meta.authFlag}}
         <dl class="row">
             <dt class="col-sm-3">Error</dt>
@@ -116,21 +123,11 @@
                     <em>"provider"</em> property in the account's OAuth2 options.</small>
             </dd>
 
-            {{#if app.name}}
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{app.name}}</dd>
-            {{/if}}
-
             <dt class="col-sm-3">Type</dt>
             <dd class="col-sm-9">{{providerData.comment}} {{#if providerData.icon}}
                 <i class="{{providerData.icon}} fa-fw"></i>
                 {{/if}}
             </dd>
-
-            {{#if app.description}}
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9">{{app.description}}</dd>
-            {{/if}}
 
             {{#if app.clientId}}
             <dt class="col-sm-3">Client ID</dt>
