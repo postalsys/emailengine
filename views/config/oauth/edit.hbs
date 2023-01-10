@@ -3,7 +3,7 @@
 <nav aria-label="breadcrumb" class="mt-4 mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/admin/config/oauth">OAuth2</a></li>
-        <li class="breadcrumb-item"><a href="/admin/config/oauth/add/{{appData.id}}">{{appData.name}}</a></li>
+        <li class="breadcrumb-item"><a href="/admin/config/oauth/app/{{appData.id}}">{{appData.name}}</a></li>
         <li class="breadcrumb-item active" aria-current="page">Edit app</li>
     </ol>
 </nav>
@@ -31,7 +31,7 @@
 <form method="post" action="/admin/config/oauth/edit">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{appData.provider}}">
-    <input type="hidden" name="id" value="{{appData.id}}">
+    <input type="hidden" name="app" value="{{appData.id}}">
 
     {{> oauth_form }}
 

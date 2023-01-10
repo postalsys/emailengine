@@ -4,15 +4,24 @@
 
         <div class="form-group">
 
+            {{#unless appData.legacy}}
             <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                     target="_blank">zzzz</a>]
             </div>
+            {{/unless}}
 
             <label for="name">
                 Application name
             </label>
+
+            {{#if appData.legacy}}
+            <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name"
+                value="{{appData.name}}" placeholder="Enter application name, eg. &quot;My App&quot;&mldr;" disabled />
+            {{else}}
             <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
                 value="{{values.name}}" placeholder="Enter application name, eg. &quot;My App&quot;&mldr;" required />
+            {{/if}}
+
             {{#if errors.name}}
             <span class="invalid-feedback">{{errors.name}}</span>
             {{/if}}
@@ -21,15 +30,24 @@
 
         <div class="form-group">
 
+            {{#unless appData.legacy}}
             <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                     target="_blank">zzzz</a>]
             </div>
+            {{/unless}}
 
             <label for="description">
                 Description
             </label>
+
+            {{#if appData.legacy}}
+            <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" id="description"
+                value="{{appData.description}}" placeholder="description" disabled />
+            {{else}}
             <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" id="description"
                 name="description" value="{{values.description}}" placeholder="" />
+            {{/if}}
+
             {{#if errors.description}}
             <span class="invalid-feedback">{{errors.description}}</span>
             {{/if}}
