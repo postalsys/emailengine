@@ -6596,6 +6596,9 @@ When making API calls remember that requests against the same account are queued
         engines: {
             hbs: handlebars
         },
+        compileOptions: {
+            preventIndent: true
+        },
 
         relativeTo: pathlib.join(__dirname, '..'),
         path: './views',
