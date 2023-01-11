@@ -6795,6 +6795,7 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/admin/changes',
+
         async handler(request, h) {
             request.app.stream = new ResponseStream();
             finished(request.app.stream, err => request.app.stream.finalize(err));

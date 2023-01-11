@@ -16,6 +16,7 @@ const config = require('wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
 const getSecret = require('./lib/get-secret');
+const msgpack = require('msgpack5')();
 
 const { REDIS_PREFIX } = require('./lib/consts');
 
@@ -184,11 +185,11 @@ async function main() {
         try {
             let value = await processSecret(pass, encryptSecret);
             if (value !== pass) {
-                let result = await redis.hset(`${REDIS_PREFIX}gateway:${gateway}`, 'pass', value);
+                let result = await redis.hmset(`${REDIS_PREFIX}gateway:${gateway}`, { pass: value });
                 if (result === 'OK') {
-                    console.log(`${gateway}: updated`);
+                    console.log(`Gateway ${gateway}: updated`);
                 } else {
-                    console.log(`${gateway}: Unexpected response from DB: ${result}`);
+                    console.log(`Gateway ${gateway}: Unexpected response from DB: ${result}`);
                 }
                 updatedGateways++;
             }
@@ -198,6 +199,50 @@ async function main() {
     }
 
     console.log(`Updated ${updatedGateways}/${gateways.length} SMTP gateways`);
+
+    let updatedApps = 0;
+    let apps = await redis.smembers(`${REDIS_PREFIX}oapp:i`);
+    for (let app of apps) {
+        let appBuf = await redis.hgetBuffer(`${REDIS_PREFIX}oapp:c`, `${app}:data`);
+        if (!appBuf) {
+            continue;
+        }
+
+        let entry;
+        try {
+            entry = msgpack.decode(appBuf);
+        } catch (err) {
+            console.log(`OAuth2 App ${app}: failed to parse`);
+            continue;
+        }
+
+        try {
+            let appUpdated = false;
+            for (let key of ['clientSecret', 'serviceKey']) {
+                if (entry[key]) {
+                    let value = await processSecret(entry[key], encryptSecret);
+                    if (value !== entry[key]) {
+                        entry[key] = value;
+                        appUpdated = true;
+                    }
+                }
+            }
+
+            if (appUpdated) {
+                let result = await redis.hmset(`${REDIS_PREFIX}oapp:c`, { [`${app}:data`]: msgpack.encode(entry) });
+                if (result === 'OK') {
+                    console.log(`OAuth2 App ${app}: updated`);
+                } else {
+                    console.log(`OAuth2 App ${app}: Unexpected response from DB: ${result}`);
+                }
+                updatedApps++;
+            }
+        } catch (err) {
+            console.error(`Could not process "pass" for OAuth2 App ${app}. Check decryption secrets.`);
+        }
+    }
+
+    console.log(`Updated ${updatedApps}/${apps.length} OAuth2 apps`);
 }
 
 main()
