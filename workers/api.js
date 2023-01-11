@@ -5562,6 +5562,7 @@ When making API calls remember that requests against the same account are queued
 
                     user: Joi.string().empty('').trim().max(1024).label('UserName'),
                     pass: Joi.string().empty('').max(1024).label('Password'),
+
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
                         .min(1)
@@ -5569,6 +5570,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5644,6 +5646,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Service port number')
                         .label('Port')
                         .required(),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5724,6 +5727,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
