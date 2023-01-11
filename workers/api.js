@@ -1146,7 +1146,7 @@ When making API calls remember that requests against the same account are queued
             const provider = accountData.oauth2.provider;
 
             const oauth2App = await oauth2Apps.get(provider);
-            if (!oauth2App || !oauth2App.active) {
+            if (!oauth2App) {
                 let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
                 throw error;
             }

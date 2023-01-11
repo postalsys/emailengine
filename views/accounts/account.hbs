@@ -79,7 +79,7 @@
                 </a>
             </div>
 
-            {{#if oauth2ProviderEnabled}}
+            {{#if account.oauth2.provider}}
             <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#renewGrantModal"
                     title="Re-authenticate OAuth2 account" id="renew-grant-btn" data-placement="top">
@@ -358,7 +358,16 @@
 
             {{#if account.oauth2.provider}}
             <dt class="col-sm-3">Provider</dt>
+
+            {{#if account.oauth2.app}}
+            <dd class="col-sm-9">
+                <a href="/admin/config/oauth/app/{{account.oauth2.app.id}}">{{account.type.comment}}</a>
+                (<em>{{account.oauth2.app.id}}</em>)
+            </dd>
+            {{else}}
             <dd class="col-sm-9">{{account.type.comment}}</dd>
+            {{/if}}
+
             {{/if}}
 
             {{#if account.oauth2.auth.user}}
