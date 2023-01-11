@@ -226,12 +226,19 @@
 
         </dl>
 
-        <h5>Server info</h5>
+    </div>
+    <div class="card-footer">
+
+        <div class="float-right">
+
+            <i class="fas fa-info-circle text-gray-300"></i>
+
+        </div>
 
         <dl class="row">
 
             {{#if account.imapServerInfo.name}}
-            <dt class="col-sm-3">Name</dt>
+            <dt class="col-sm-3">Server Software</dt>
             <dd class="col-sm-9">{{account.imapServerInfo.name}}</dd>
             {{/if}}
 
