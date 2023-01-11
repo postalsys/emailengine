@@ -3676,7 +3676,7 @@ When making API calls remember that requests against the same account are queued
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     text: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
-                        .max(256)
+                        .max(10 * 1024)
                         .required()
                         .example('AAAAAQAACnAcdfaaN')
                         .description('Message text ID')
