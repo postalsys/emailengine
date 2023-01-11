@@ -1947,24 +1947,22 @@ When making API calls remember that requests against the same account are queued
 
                 let type = request.payload.type;
 
-                let enabledTypes = new Set();
-
-                for (let accountType of ['gmail', 'outlook', 'mailRu']) {
-                    let typeEnabled = await settings.get(`${accountType}Enabled`);
-                    if (typeEnabled && (!(await settings.get(`${accountType}ClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
-                        typeEnabled = false;
-                        if (type === accountType) {
-                            type = false;
-                        }
-                    }
-                    if (typeEnabled) {
-                        enabledTypes.add(accountType);
+                if (type && type !== 'imap') {
+                    let oauth2app = await oauth2Apps.get(type);
+                    console.log('OAUTH 2 app', oauth2app);
+                    if (!oauth2app || !oauth2app.enabled) {
+                        type = false;
                     }
                 }
 
-                if (!enabledTypes.size) {
-                    type = 'imap';
+                if (!type) {
+                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.enabled);
+                    if (!oauth2apps.length) {
+                        type = 'imap';
+                    }
                 }
+
+                console.log('APP TYPE', type);
 
                 if (type) {
                     url.searchParams.append('type', type);
@@ -2032,12 +2030,13 @@ When making API calls remember that requests against the same account are queued
                         .description('The user will be redirected to this URL after submitting the authentication form'),
 
                     type: Joi.string()
-                        .valid('imap', 'gmail', 'outlook', 'mailRu')
                         .empty('')
                         .allow(false)
                         .default(false)
                         .example('imap')
-                        .description('Display the form for the specified account type instead of allowing the user to choose')
+                        .description(
+                            'Display the form for the specified account type (either "imap" or an OAuth2 app ID) instead of allowing the user to choose'
+                        )
                 }).label('RequestAuthForm')
             },
 
