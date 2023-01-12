@@ -1955,7 +1955,7 @@ When making API calls remember that requests against the same account are queued
                 }
 
                 if (!type) {
-                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.enabled);
+                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.includeListing);
                     if (!oauth2apps.length) {
                         type = 'imap';
                     }
@@ -6639,7 +6639,7 @@ When making API calls remember that requests against the same account are queued
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
-                    url: outlookAuthFlag.url || '/admin/config/oauth/outlook',
+                    url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: outlookAuthFlag.message
@@ -6649,7 +6649,7 @@ When making API calls remember that requests against the same account are queued
             let gmailAuthFlag = await settings.get('gmailAuthFlag');
             if (gmailAuthFlag && gmailAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailAuthFlag.url || '/admin/config/oauth/gmail',
+                    url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailAuthFlag.message
@@ -6659,7 +6659,7 @@ When making API calls remember that requests against the same account are queued
             let gmailServiceAuthFlag = await settings.get('gmailServiceAuthFlag');
             if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/gmailService',
+                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailServiceAuthFlag.message

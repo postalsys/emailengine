@@ -91,22 +91,43 @@
         </div>
 
         {{#if app.description}}
-        <h5 class="card-title">{{app.name}}</h5>
+        <h5 class="card-title">{{app.name}}
+            {{#if app.enabled}}
+
+            {{#if app.meta.authFlag}}
+            <span class="badge badge-danger">Failing</span>
+            {{else}}
+            <span class="badge badge-success">Enabled</span>
+            {{/if}}
+            {{else}}
+            <span class="badge badge-warning">Disabled</span>
+            {{/if}}
+        </h5>
+
         <h6 class="card-subtitle mb-4 text-muted">{{app.description}}</h6>
         {{else}}
-        <h5 class="card-title mb-4">{{app.name}}</h5>
+        <h5 class="card-title mb-4">{{app.name}}
+
+            {{#if app.enabled}}
+
+            {{#if app.meta.authFlag}}
+            <span class="badge badge-danger">Failing</span>
+            {{else}}
+            <span class="badge badge-success">Enabled</span>
+            {{/if}}
+            {{else}}
+            <span class="badge badge-warning">Disabled</span>
+            {{/if}}
+        </h5>
         {{/if}}
 
         {{#if app.meta.authFlag}}
-        <dl class="row">
-            <dt class="col-sm-3">Error</dt>
-            <dd class="col-sm-9">{{app.meta.authFlag}}</dd>
-        </dl>
+        <div class="alert alert-danger">{{app.meta.authFlag.message}}</div>
         <hr>
         {{/if}}
 
         <dl class="row">
-            <dt class="col-sm-3">Application ID</dt>
+            <dt class="col-sm-3">Provider ID</dt>
             <dd class="col-sm-9">
                 <div class="input-group">
                     <input type="text" id="appIdValue" class="form-control bg-light border-0 small" aria-label="ID"
@@ -128,6 +149,11 @@
                 <i class="{{providerData.icon}} fa-fw"></i>
                 {{/if}}
             </dd>
+
+            {{#unless app.legacy}}
+            <dt class="col-sm-3">Accounts</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.accounts}}</small></dd>
+            {{/unless}}
 
             {{#if app.clientId}}
             <dt class="col-sm-3">Client ID</dt>

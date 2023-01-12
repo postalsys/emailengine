@@ -4,12 +4,6 @@
 
         <div class="form-group">
 
-            {{#unless appData.legacy}}
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">zzzz</a>]
-            </div>
-            {{/unless}}
-
             <label for="name">
                 Application name
             </label>
@@ -29,12 +23,6 @@
         </div>
 
         <div class="form-group">
-
-            {{#unless appData.legacy}}
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">zzzz</a>]
-            </div>
-            {{/unless}}
 
             <label for="description">
                 Description
@@ -69,15 +57,6 @@
         </div>
 
         <div class="form-group">
-            <div class="text-muted float-right code-link">
-
-                {{#if legacy}}
-                [<a href="/admin/iframe/docs#/settings/postV1Settings" target="_blank">serviceClient</a>]
-                {{else}}
-                [<a href="/admin/iframe/docs#/settings/postV1Settings" target="_blank">serviceClient</a>]
-                {{/if}}
-
-            </div>
 
             <label for="serviceClient">
                 Service client
@@ -91,9 +70,6 @@
         </div>
 
         <div class="form-group">
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">serviceKey</a>]
-            </div>
 
             <label for="serviceKey">Secret service key</label>
 
@@ -111,10 +87,6 @@
 
         <div class="form-group form-check">
 
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">{{values.provider}}Enabled</a>]
-            </div>
-
             <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
                 name="enabled" {{#if values.enabled}}checked{{/if}} />
             <label class="form-check-label" for="enabled">Enable this app</label>
@@ -126,10 +98,6 @@
         </div>
 
         <div class="form-group">
-
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">{{values.provider}}ClientId</a>]
-            </div>
 
             <label for="clientId">
                 {{#if activeGmail}}
@@ -154,10 +122,6 @@
 
         <div class="form-group">
 
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">{{values.provider}}ClientSecret</a>]
-            </div>
-
             <label for="clientSecret">Client Secret</label>
 
             <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
@@ -172,10 +136,6 @@
 
         {{#if activeOutlook}}
         <div class="form-group">
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">{{values.provider}}Authority</a>]
-            </div>
-
             <label for="authority">Supported account types</label>
 
             <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="authority"
@@ -194,10 +154,6 @@
         {{/if}}
 
         <div class="form-group">
-            <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                    target="_blank">{{values.provider}}RedirectUrl</a>]
-            </div>
-
             <label for="redirectUrl">Redirect URL</label>
             <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
                 name="redirectUrl" value="{{values.redirectUrl}}" />
@@ -250,10 +206,6 @@
             {{/if}}
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">{{values.provider}}ExtraScopes</a>]
-                </div>
-
                 <label for="extraScopes">List of OAuth2 scopes</label>
 
                 <textarea class="form-control text-monospace {{#if errors.extraScopes}}is-invalid{{/if}}"
