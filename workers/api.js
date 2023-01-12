@@ -1949,7 +1949,6 @@ When making API calls remember that requests against the same account are queued
 
                 if (type && type !== 'imap') {
                     let oauth2app = await oauth2Apps.get(type);
-                    console.log('OAUTH 2 app', oauth2app);
                     if (!oauth2app || !oauth2app.enabled) {
                         type = false;
                     }
@@ -1961,8 +1960,6 @@ When making API calls remember that requests against the same account are queued
                         type = 'imap';
                     }
                 }
-
-                console.log('APP TYPE', type);
 
                 if (type) {
                     url.searchParams.append('type', type);

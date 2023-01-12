@@ -166,6 +166,54 @@
 </div>
 
 
+
+{{#if account.oauth2.provider}}
+
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">OAuth2</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+
+            {{#if account.oauth2.provider}}
+            <dt class="col-sm-3">Provider</dt>
+
+            {{#if account.oauth2.app}}
+            <dd class="col-sm-9">
+                <a href="/admin/config/oauth/app/{{account.oauth2.app.id}}">{{account.type.comment}}</a>
+                (<em>{{account.oauth2.app.id}}</em>)
+            </dd>
+            {{else}}
+            <dd class="col-sm-9">{{account.type.comment}}</dd>
+            {{/if}}
+
+            {{/if}}
+
+            {{#if account.oauth2.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            {{/if}}
+
+            {{#if account.oauth2.scopes}}
+            <dt class="col-sm-3">Scopes</dt>
+            <dd class="col-sm-9">
+                <div>
+                    {{#each account.oauth2.scopes}}
+                    <div><code>{{this}}</code></div>
+                    {{/each}}
+                </div>
+            </dd>
+            {{/if}}
+
+        </dl>
+
+    </div>
+</div>
+
+{{/if}}
+
 <div class="card mb-4">
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
@@ -184,16 +232,18 @@
 
 
             {{#unless account.imap.disabled}}
-            {{#unless account.oauth2}}
+            {{#unless account.oauth2.provider}}
 
             {{#if account.imap.auth.user}}
             <dt class="col-sm-3">Username</dt>
             <dd class="col-sm-9">{{account.imap.auth.user}}</dd>
             {{/if}}
 
+            <dt class="col-sm-3">Authentication</dt>
             {{#if account.imap.auth.pass}}
-            <dt class="col-sm-3">Password</dt>
-            <dd class="col-sm-9">*******</dd>
+            <dd class="col-sm-9">Password</dd>
+            {{else}}
+            <dd class="col-sm-9">None</dd>
             {{/if}}
 
             {{#if account.imap.host}}
@@ -208,6 +258,31 @@
 
             <dt class="col-sm-3">TLS</dt>
             <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            </dd>
+
+            {{else}}
+
+            {{#if account.oauth2.auth.user}}
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">Authentication</dt>
+            <dd class="col-sm-9">Bearer token</dd>
+
+            {{#if account.oauth2.providerData.imap.host}}
+            <dt class="col-sm-3">Hostname</dt>
+            <dd class="col-sm-9">{{account.oauth2.providerData.imap.host}}</dd>
+            {{/if}}
+
+            {{#if account.oauth2.providerData.imap.port}}
+            <dt class="col-sm-3">Port</dt>
+            <dd class="col-sm-9">{{account.oauth2.providerData.imap.port}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">TLS</dt>
+            <dd class="col-sm-9">{{#if account.oauth2.providerData.imap.secure}}Yes{{else}}Uses STARTTLS if
+                possible{{/if}}
             </dd>
 
             {{/unless}}
@@ -263,9 +338,9 @@
                 {{#each capabilities}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}">{{capability}}</a>
+                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
                 {{else}}
-                <span style="cursor: default;">{{capability}}</span>
+                <small style="cursor: default;">{{capability}}</small>
                 {{/if}}
                 {{/each}}
             </dd>
@@ -275,7 +350,7 @@
     </div>
 </div>
 
-{{#if account.smtp}}
+{{#if showSmtp}}
 <div class="card mb-4">
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">SMTP {{#if smtpError}}<span
@@ -297,17 +372,19 @@
         <hr>
         {{/if}}
 
-
         <dl class="row">
 
+            {{#unless account.oauth2.provider}}
             {{#if account.smtp.auth.user}}
             <dt class="col-sm-3">Username</dt>
             <dd class="col-sm-9">{{account.smtp.auth.user}}</dd>
             {{/if}}
 
+            <dt class="col-sm-3">Authentication</dt>
             {{#if account.smtp.auth.pass}}
-            <dt class="col-sm-3">Password</dt>
-            <dd class="col-sm-9">*******</dd>
+            <dd class="col-sm-9">Password</dd>
+            {{else}}
+            <dd class="col-sm-9">None</dd>
             {{/if}}
 
             {{#if account.smtp.host}}
@@ -323,83 +400,73 @@
             <dt class="col-sm-3">TLS</dt>
             <dd class="col-sm-9">{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
             </dd>
-        </dl>
 
-    </div>
-</div>
-
-{{else}}
-
-{{#if smtpError}}
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">SMTP <span class="badge badge-danger">errored</span></h6>
-    </div>
-    <div class="card-body">
-
-        <dl class="row">
-            <dt class="col-sm-3">Error</dt>
-            <dd class="col-sm-9">{{account.smtpStatus.description}}</dd>
-
-            {{#if account.smtpStatus.response}}
-            <dt class="col-sm-3">SMTP response</dt>
-            <dd class="col-sm-9"><code>{{account.smtpStatus.response}}</code></dd>
-            {{/if}}
-        </dl>
-
-    </div>
-</div>
-{{/if}}
-
-{{/if}}
-
-{{#if account.oauth2}}
-
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">OAuth2</h6>
-    </div>
-    <div class="card-body">
-
-        <dl class="row">
-
-            {{#if account.oauth2.provider}}
-            <dt class="col-sm-3">Provider</dt>
-
-            {{#if account.oauth2.app}}
-            <dd class="col-sm-9">
-                <a href="/admin/config/oauth/app/{{account.oauth2.app.id}}">{{account.type.comment}}</a>
-                (<em>{{account.oauth2.app.id}}</em>)
-            </dd>
             {{else}}
-            <dd class="col-sm-9">{{account.type.comment}}</dd>
-            {{/if}}
-
-            {{/if}}
 
             {{#if account.oauth2.auth.user}}
             <dt class="col-sm-3">Username</dt>
             <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
             {{/if}}
 
-            {{#if account.oauth2.scopes}}
-            <dt class="col-sm-3">Scopes</dt>
-            <dd class="col-sm-9">
-                <div>
-                    {{#each account.oauth2.scopes}}
-                    <div><code>{{this}}</code></div>
-                    {{/each}}
-                </div>
-            </dd>
+            <dt class="col-sm-3">Authentication</dt>
+            <dd class="col-sm-9">Bearer token</dd>
+
+            {{#if account.oauth2.providerData.smtp.host}}
+            <dt class="col-sm-3">Hostname</dt>
+            <dd class="col-sm-9">{{account.oauth2.providerData.smtp.host}}</dd>
             {{/if}}
+
+            {{#if account.oauth2.providerData.smtp.port}}
+            <dt class="col-sm-3">Port</dt>
+            <dd class="col-sm-9">{{account.oauth2.providerData.smtp.port}}</dd>
+            {{/if}}
+
+            <dt class="col-sm-3">TLS</dt>
+            <dd class="col-sm-9">{{#if account.oauth2.providerData.smtp.secure}}Yes{{else}}Uses STARTTLS if
+                possible{{/if}}
+            </dd>
+
+            {{/unless}}
 
         </dl>
 
     </div>
+
+    {{#if account.smtpServerEhlo}}
+    <div class="card-footer">
+
+        <div class="float-right">
+
+            <i class="fas fa-info-circle text-gray-300"></i>
+
+        </div>
+
+        <dl class="row">
+            <dt class="col-sm-3">Extensions</dt>
+            <dd class="col-sm-9">
+                {{#each account.smtpServerEhlo}}
+                <small style="cursor: default;">{{this}}</small>
+                {{/each}}
+            </dd>
+
+            <dt class="col-sm-3">Authentication</dt>
+            <dd class="col-sm-9">
+                {{#each account.smtpAuthMechanisms}}
+                {{#if url}}
+                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}"><small>{{auth}}</small></a>
+                {{else}}
+                <small style="cursor: default;">{{this}}</small>
+                {{/if}}
+                {{/each}}
+            </dd>
+        </dl>
+
+    </div>
+    {{/if}}
 </div>
 
 {{/if}}
-
 
 {{#if showAdvanced}}
 <div class="card mb-4">
