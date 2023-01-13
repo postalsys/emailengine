@@ -189,11 +189,21 @@ const notifyWorker = new Worker(
             headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
         }
 
+        if (customRoute) {
+            for (let header of customRoute.customHeaders || []) {
+                headers[header.key] = header.value;
+            }
+        } else {
+            let webhookCustomHeaders = await settings.get('webhooksCustomHeaders');
+            for (let header of webhookCustomHeaders || []) {
+                headers[header.key] = header.value;
+            }
+        }
+
         let start = Date.now();
         let duration;
         try {
             let res;
-
             try {
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
