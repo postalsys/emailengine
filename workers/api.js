@@ -64,7 +64,7 @@ const pathlib = require('path');
 
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
-const { getOAuth2Client } = require('../lib/oauth');
+const { oauth2Apps } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -136,9 +136,9 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
-const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
-const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
-const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
+const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
+const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
+const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -1145,9 +1145,16 @@ When making API calls remember that requests against the same account are queued
 
             const provider = accountData.oauth2.provider;
 
-            const oAuth2Client = await getOAuth2Client(provider);
+            const oauth2App = await oauth2Apps.get(provider);
+            if (!oauth2App) {
+                let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
+                throw error;
+            }
 
-            switch (provider) {
+            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
+
+            // `app.provider` is for example "gmail", `provider` is oauth2 app id
+            switch (oauth2App.provider) {
                 case 'gmail': {
                     const r = await oAuth2Client.getToken(request.query.code);
                     if (!r || !r.access_token) {
@@ -1771,7 +1778,7 @@ When making API calls remember that requests against the same account are queued
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
                     // redirect to OAuth2 consent screen
 
-                    const oAuth2Client = await getOAuth2Client(request.payload.oauth2.provider);
+                    const oAuth2Client = await oauth2Apps.getClient(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
                     delete request.payload.oauth2.authorize; // do not store this property
@@ -1940,23 +1947,18 @@ When making API calls remember that requests against the same account are queued
 
                 let type = request.payload.type;
 
-                let enabledTypes = new Set();
-
-                for (let accountType of ['gmail', 'outlook', 'mailRu']) {
-                    let typeEnabled = await settings.get(`${accountType}Enabled`);
-                    if (typeEnabled && (!(await settings.get(`${accountType}ClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
-                        typeEnabled = false;
-                        if (type === accountType) {
-                            type = false;
-                        }
-                    }
-                    if (typeEnabled) {
-                        enabledTypes.add(accountType);
+                if (type && type !== 'imap') {
+                    let oauth2app = await oauth2Apps.get(type);
+                    if (!oauth2app || !oauth2app.enabled) {
+                        type = false;
                     }
                 }
 
-                if (!enabledTypes.size) {
-                    type = 'imap';
+                if (!type) {
+                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.includeListing);
+                    if (!oauth2apps.length) {
+                        type = 'imap';
+                    }
                 }
 
                 if (type) {
@@ -2025,12 +2027,13 @@ When making API calls remember that requests against the same account are queued
                         .description('The user will be redirected to this URL after submitting the authentication form'),
 
                     type: Joi.string()
-                        .valid('imap', 'gmail', 'outlook', 'mailRu')
                         .empty('')
                         .allow(false)
                         .default(false)
                         .example('imap')
-                        .description('Display the form for the specified account type instead of allowing the user to choose')
+                        .description(
+                            'Display the form for the specified account type (either "imap" or an OAuth2 app ID) instead of allowing the user to choose'
+                        )
                 }).label('RequestAuthForm')
             },
 
@@ -3670,7 +3673,7 @@ When making API calls remember that requests against the same account are queued
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     text: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
-                        .max(256)
+                        .max(10 * 1024)
                         .required()
                         .example('AAAAAQAACnAcdfaaN')
                         .description('Message text ID')
@@ -5556,6 +5559,7 @@ When making API calls remember that requests against the same account are queued
 
                     user: Joi.string().empty('').trim().max(1024).label('UserName'),
                     pass: Joi.string().empty('').max(1024).label('Password'),
+
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
                         .min(1)
@@ -5563,6 +5567,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5638,6 +5643,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Service port number')
                         .label('Port')
                         .required(),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5718,6 +5724,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5897,7 +5904,7 @@ When making API calls remember that requests against the same account are queued
                     account: Joi.string().max(256).required().example('example').description('Account ID'),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
                     accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
-                    provider: Joi.string().max(256).required().example('google').description('OAuth2 provider')
+                    provider: Joi.string().max(256).example('gmail').description('OAuth2 provider')
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
             }
@@ -6589,6 +6596,9 @@ When making API calls remember that requests against the same account are queued
         engines: {
             hbs: handlebars
         },
+        compileOptions: {
+            preventIndent: true
+        },
 
         relativeTo: pathlib.join(__dirname, '..'),
         path: './views',
@@ -6629,7 +6639,7 @@ When making API calls remember that requests against the same account are queued
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
-                    url: outlookAuthFlag.url || '/admin/config/oauth/outlook',
+                    url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: outlookAuthFlag.message
@@ -6639,7 +6649,7 @@ When making API calls remember that requests against the same account are queued
             let gmailAuthFlag = await settings.get('gmailAuthFlag');
             if (gmailAuthFlag && gmailAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailAuthFlag.url || '/admin/config/oauth/gmail',
+                    url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailAuthFlag.message
@@ -6649,7 +6659,7 @@ When making API calls remember that requests against the same account are queued
             let gmailServiceAuthFlag = await settings.get('gmailServiceAuthFlag');
             if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/gmailService',
+                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailServiceAuthFlag.message
@@ -6782,6 +6792,7 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/admin/changes',
+
         async handler(request, h) {
             request.app.stream = new ResponseStream();
             finished(request.app.stream, err => request.app.stream.finalize(err));

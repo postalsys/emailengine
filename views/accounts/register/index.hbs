@@ -17,45 +17,30 @@
         </form>
     </div>
 
-    {{#if gmailEnabled}}
+    {{#if oauth2apps}}
+
+    {{#each oauth2apps}}
     <div class="mb-3">
         <form method="post" action="/accounts/new">
-            <input type="hidden" name="crumb" value="{{crumb}}">
-            <input type="hidden" name="type" value="gmail">
-            <input type="hidden" name="data" value="{{values.data}}">
-            <input type="hidden" name="sig" value="{{values.sig}}">
+            <input type="hidden" name="crumb" value="{{../crumb}}">
+            <input type="hidden" name="type" value="{{id}}">
+            <input type="hidden" name="data" value="{{../values.data}}">
+            <input type="hidden" name="sig" value="{{../values.sig}}">
 
-            <input type="image" src="/static/providers/google_dark_edited.png" style="width: 100%; display: block;" />
-        </form>
-    </div>
-    {{/if}}
+            {{#if providerData.linkImage}}
+            <input type="image" src="{{providerData.linkImage}}" style="width: 100%; display: block;" />
+            {{else}}
 
-
-    {{#if outlookEnabled}}
-    <div class="mb-3">
-        <form method="post" action="/accounts/new">
-            <input type="hidden" name="crumb" value="{{crumb}}">
-            <input type="hidden" name="type" value="outlook">
-            <input type="hidden" name="data" value="{{values.data}}">
-            <input type="hidden" name="sig" value="{{values.sig}}">
-            <input type="image" src="/static/providers/ms_light.svg" style="width: 100%; display: block;" />
-        </form>
-    </div>
-    {{/if}}
-
-
-    {{#if mailRuEnabled}}
-    <div class="mb-3">
-        <form method="post" action="/accounts/new">
-            <input type="hidden" name="crumb" value="{{crumb}}">
-            <input type="hidden" name="type" value="mailRu">
-            <input type="hidden" name="data" value="{{values.data}}">
-            <input type="hidden" name="sig" value="{{values.sig}}">
             <button type="submit" class="btn btn-primary btn-block" style="font-size: 1.5rem;">
-                <i class="fa fa-envelope fa-fw"></i> Mail.ru
+                <i class="fa {{providerData.icon}} fa-fw"></i> {{providerData.comment}}
             </button>
+            {{/if}}
+
+
         </form>
     </div>
+    {{/each}}
+
     {{/if}}
 
 </div>
