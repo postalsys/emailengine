@@ -62,6 +62,18 @@
                     style="cursor:default">{{webhook.tcount}}</span>
             </dd>
 
+            {{#if webhook.customHeaders}}
+            <dt class="col-sm-3">Custom request headers</dt>
+            <dd class="col-sm-9">
+
+                {{#each webhook.customHeaders}}
+                <div class="badge badge-light" data-toggle="tooltip" data-placement="top" title="{{key}}: {{value}}"
+                    style="cursor:default; font-weight: 100;"><span class="text-monospace">{{key}}</span></div>
+                {{/each}}
+
+            </dd>
+            {{/if}}
+
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
                 <strong>
