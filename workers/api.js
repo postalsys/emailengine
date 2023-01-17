@@ -64,7 +64,7 @@ const pathlib = require('path');
 
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
-const { oauth2Apps } = require('../lib/oauth2-apps');
+const { oauth2Apps, OAUTH_PROVIDERS } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -1955,7 +1955,7 @@ When making API calls remember that requests against the same account are queued
                 }
 
                 if (!type) {
-                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.includeListing);
+                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.includeInListing);
                     if (!oauth2apps.length) {
                         type = 'imap';
                     }
@@ -5407,6 +5407,154 @@ When making API calls remember that requests against the same account are queued
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account flushed'),
                     account: Joi.string().max(256).required().example('example').description('Account ID')
                 }).label('DeleteTemplateRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/oauth2',
+
+        async handler(request) {
+            try {
+                let response = await oauth2Apps.list(request.query.page, request.query.pageSize);
+
+                for (let app of response.apps) {
+                    for (let secretKey of ['clientSecret', 'serviceKey']) {
+                        if (app[secretKey]) {
+                            app[secretKey] = '******';
+                        }
+                    }
+
+                    if (app.extraScopes && !app.extraScopes.length) {
+                        delete app.extraScopes;
+                    }
+
+                    if (app.app) {
+                        delete app.app;
+                    }
+
+                    if (app.meta) {
+                        let authFlag = app.meta.authFlag;
+                        delete app.meta;
+                        if (authFlag) {
+                            app.error = authFlag;
+                        }
+                    }
+                }
+
+                return response;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List OAuth2 applications',
+            notes: 'Lists registered OAuth2 applications',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('GatewaysFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    apps: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                                name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
+                                description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
+                                provider: Joi.string()
+                                    .valid(...Object.keys(OAUTH_PROVIDERS))
+                                    .required()
+                                    .example('gmail')
+                                    .description('OAuth2 provider'),
+                                enabled: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('Is the application enabled')
+                                    .label('AppEnabled'),
+                                legacy: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('`true` for older OAuth2 apps set via the settings endpoint'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was added').required(),
+                                updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was updated'),
+                                includeInListing: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('Is the application listed in the hosted authentication form'),
+
+                                clientId: Joi.string()
+                                    .example('4f05f488-d858-4f2c-bd12-1039062612fe')
+                                    .description('Client or Application ID for 3-legged OAuth2 applications'),
+                                clientSecret: Joi.string()
+                                    .valid('******')
+                                    .description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
+                                authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
+                                redirectUrl: Joi.string()
+                                    .uri({
+                                        scheme: ['http', 'https'],
+                                        allowRelative: false
+                                    })
+                                    .example('https://myservice.com/oauth')
+                                    .description('Redirect URL for 3-legged OAuth2 applications'),
+
+                                serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+                                serviceKey: Joi.string()
+                                    .valid('******')
+                                    .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
+                                error: Joi.object({
+                                    message: Joi.string()
+                                        .example('OAuth Client ID for Google is invalid')
+                                        .description('Error text if authentication fails with this OAuth2 app')
+                                })
+                            }).label('OAuth2ResponseItem')
+                        )
+                        .label('OAuth2Entries')
+                }).label('OAuth2FilterResponse'),
                 failAction: 'log'
             }
         }
