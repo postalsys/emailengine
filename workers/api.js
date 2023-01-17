@@ -5738,6 +5738,111 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/oauth2/{app}',
+
+        async handler(request) {
+            try {
+                return await oauth2Apps.update(request.params.app, request.payload);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Update OAuth2 application',
+            notes: 'Updates OAuth2 application information',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
+                }),
+
+                payload: Joi.object({
+                    name: Joi.string().trim().empty('').max(256).example('My Gmail App').required().description('Application name'),
+                    description: Joi.string().trim().empty('').max(1024).example('My cool app').description('Application description'),
+
+                    enabled: Joi.boolean().truthy('Y', 'true', '1', 'on').falsy('N', 'false', 0, '').example(true).description('Enable this app'),
+
+                    clientId: Joi.string()
+                        .trim()
+                        .allow('', null, false)
+                        .max(256)
+                        .example('52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com')
+                        .description('Client or Application ID for 3-legged OAuth2 applications'),
+
+                    clientSecret: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(256)
+                        .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
+                        .description('Client secret for 3-legged OAuth2 applications'),
+
+                    extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
+
+                    serviceClient: Joi.string()
+                        .trim()
+                        .allow('', null, false)
+                        .max(256)
+                        .example('7103296518315821565203')
+                        .description('Service client ID for 2-legged OAuth2 applications'),
+
+                    serviceKey: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgk...')
+                        .description('PEM formatted service secret for 2-legged OAuth2 applications'),
+
+                    authority: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(1024)
+                        .example('common')
+                        .description('Authorization tenant value for Outlook OAuth2 applications')
+                        .label('SupportedAccountTypes'),
+
+                    redirectUrl: Joi.string()
+                        .allow('', null, false)
+                        .uri({ scheme: ['http', 'https'], allowRelative: false })
+                        .example('https://myservice.com/oauth')
+                        .description('Redirect URL for 3-legged OAuth2 applications')
+                }).label('UpdateGateway')
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                }).label('UpdateGatewayResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'DELETE',
         path: '/v1/oauth2/{app}',
 
@@ -5779,7 +5884,7 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
-                }).label('DeleteRequest')
+                }).label('DeleteAppRequest')
             },
 
             response: {
