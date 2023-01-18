@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.29.0",
+    "version": "2.29.1",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
@@ -51,7 +51,7 @@
         "ace-builds": "1.14.0",
         "base32.js": "0.1.0",
         "bull-arena": "3.30.3",
-        "bullmq": "3.5.6",
+        "bullmq": "3.5.7",
         "compare-versions": "5.0.3",
         "dotenv": "16.0.3",
         "encoding-japanese": "2.0.0",
