@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - oauth2-apps
+            - hotmail-message-id
 
 name: Deploy test instance
 
