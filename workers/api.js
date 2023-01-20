@@ -6461,14 +6461,20 @@ When making API calls remember that requests against the same account are queued
                     let queueResponse = await accountObject.queueMessage(
                         {
                             account: accountData.account,
-                            subject: `Test email ${now}`,
-                            text: `Hello ${now}`,
-                            html: `<p>Hello ${now}</p>`,
+                            subject: `Delivery test ${now}`,
+                            text: `Hello
+
+This is an automated email to test deliverability settings. If you see this email, you can safely delete it.
+
+${now}`,
+                            html: `<p>Hello</p>
+<p>This is an automated email to test deliverability settings. If you see this email, you can safely delete it.</p>
+<p>${now}</p>`,
                             from: {
                                 name: accountData.name,
                                 address: accountData.email
                             },
-                            to: [{ name: '', address: testAccount.address }],
+                            to: [{ name: 'Delivery Test Server', address: testAccount.address }],
                             copy: false,
                             gateway: request.payload.gateway,
                             feedbackKey: `${REDIS_PREFIX}test-send:${testAccount.user}`,
