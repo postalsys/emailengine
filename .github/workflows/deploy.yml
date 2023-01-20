@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - hotmail-message-id
+            - delivery-test
 
 name: Deploy test instance
 
