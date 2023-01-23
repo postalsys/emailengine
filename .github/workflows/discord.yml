@@ -17,8 +17,7 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - name: Webhook
-      uses: distributhor/workflow-webhook@v2
+      uses: postalsys/workflow-webhook@deaee92c
       env:
         webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-        webhook_secret: "none"
         data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
