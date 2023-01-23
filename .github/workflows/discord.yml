@@ -17,7 +17,11 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - name: Webhook
-      uses: postalsys/workflow-webhook@c31c8cb105c6f55018002d4d39494a20b63a77ba
       env:
         webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
         data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
+      run: |
+        curl $options \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: GitHub-Action" \
+        --data "$data" $webhook_url
