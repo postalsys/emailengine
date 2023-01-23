@@ -20,5 +20,5 @@ jobs:
       uses: distributhor/workflow-webhook@v2
       env:
         webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-        webhook_secret: ""
+        webhook_secret: "none"
         data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
