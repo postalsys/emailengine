@@ -9,7 +9,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  test_commentary:
+  send_webhook:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -20,4 +20,5 @@ jobs:
       uses: distributhor/workflow-webhook@v2
       env:
         webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+        webhook_secret: ""
         data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
