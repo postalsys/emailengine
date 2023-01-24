@@ -19,9 +19,10 @@ jobs:
     - name: Webhook
       env:
         webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+        curl_options: "--fail -s"
         data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
       run: |
-        curl $options \
+        curl $curl_options \
         -H "Content-Type: application/json" \
         -H "User-Agent: GitHub-Action" \
         --data "$data" $webhook_url

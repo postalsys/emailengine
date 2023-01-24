@@ -4133,6 +4133,16 @@ When making API calls remember that requests against the same account are queued
                             otherwise: Joi.forbidden()
                         }),
 
+                    baseUrl: Joi.string()
+                        .trim()
+                        .empty('')
+                        .uri({
+                            scheme: ['http', 'https'],
+                            allowRelative: false
+                        })
+                        .example('https://customer123.myservice.com')
+                        .description('Optional base URL for trackers. This URL must point to your EmailEngine instance.'),
+
                     dryRun: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
