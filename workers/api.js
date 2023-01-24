@@ -4333,6 +4333,13 @@ When making API calls remember that requests against the same account are queued
                         request.payload.serviceUrl = url.origin;
                         break;
                     }
+
+                    case 'webhooksEnabled':
+                        if (!request.payload.webhooksEnabled) {
+                            // clear error message (if exists)
+                            await settings.clear('webhookErrorFlag');
+                        }
+                        break;
                 }
 
                 await settings.set(key, request.payload[key]);
