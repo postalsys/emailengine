@@ -242,7 +242,7 @@ const notifyWorker = new Worker(
                 } else if (accountWebhooks) {
                     await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));
                 } else {
-                    await settings.clear('webhookErrorFlag', {});
+                    await settings.clear('webhookErrorFlag');
                 }
             } catch (err) {
                 // ignore
