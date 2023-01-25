@@ -3,12 +3,18 @@
 <nav aria-label="breadcrumb" class="mt-4 mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/admin/tokens">Access tokens</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Create new</li>
+
+        {{#if account}}
+        <li class="breadcrumb-item"><a href="{{accountTokensLink}}">{{account.name}}</a></li>
+        {{/if}}
+
+        <li class="breadcrumb-item active" aria-current="page">New</li>
     </ol>
 </nav>
 
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" id="account" name="account" value="{{values.account}}" />
 
     <div class="card mb-4">
 
@@ -26,7 +32,6 @@
 
                 <small class="form-text text-muted">This description is shown when listing active tokens.</small>
             </div>
-
 
             <h6>Allowed scopes</h6>
 
@@ -130,7 +135,7 @@
                     </div>
 
                 </div>
-                <div id="showTokenError" class="d-none alert alert-danger"></div>
+                <div id="showTokenError" class="d-none alert alert-danger" style="white-space: pre-line;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -177,7 +182,8 @@
                 showTokenValueElm.value = '';
 
                 if (wasShown) {
-                    location.assign("/admin/tokens");
+                    let account = document.getElementById('account').value || '';
+                    location.assign("/admin/tokens" + (account ? '?account=' + encodeURIComponent(account) : ''));
                 }
             });
 
@@ -192,7 +198,8 @@
                 body: JSON.stringify({
                     crumb: document.getElementById('crumb').value,
                     description,
-                    scopes
+                    scopes,
+                    account: document.getElementById('account').value || ''
                 })
             }).then(res => {
                 if (!res.ok) {
@@ -200,6 +207,11 @@
                 }
                 return res.json()
             }).then(data => {
+
+                if (!data.success) {
+                    throw new Error(`${data.error}\n${data.message}`);
+                }
+
                 document.getElementById('showTokenLoader').classList.add('d-none');
                 document.getElementById('showTokenContent').classList.remove('d-none');
                 document.getElementById('showTokenError').classList.add('d-none');

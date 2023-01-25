@@ -41,6 +41,12 @@
                     <i class="fas fa-file-code fa-fw"></i> Email templates
                 </a>
 
+                <a type="button" class="btn btn-light" href="/admin/tokens/?account={{account.account}}"
+                    title="Access tokens for &quot;{{account.account}}&quot;" data-toggle="tooltip"
+                    data-placement="top">
+                    <i class="fas fa-key fa-fw"></i> Access tokens
+                </a>
+
                 {{#if canSend}}
                 {{#unless gateways}}
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
