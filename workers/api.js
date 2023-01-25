@@ -1445,7 +1445,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 payload: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
@@ -1578,7 +1578,8 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return { tokens: await tokens.list() };
+                // TODO: allow paging
+                return { tokens: (await tokens.list(null, 0, 1000)).tokens };
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -1619,7 +1620,7 @@ When making API calls remember that requests against the same account are queued
                     tokens: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
                                 metadata: Joi.string()
                                     .empty('')
@@ -1660,7 +1661,8 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return { tokens: await tokens.list(request.params.account) };
+                // TODO: allow paging
+                return { tokens: (await tokens.list(request.params.account, 0, 1000)).tokens };
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -1695,7 +1697,7 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
@@ -1704,7 +1706,7 @@ When making API calls remember that requests against the same account are queued
                     tokens: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
                                 metadata: Joi.string()
                                     .empty('')
@@ -1864,6 +1866,7 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     account: Joi.string()
                         .empty('')
+                        .trim()
                         .max(256)
                         .allow(null)
                         .required()
@@ -1909,7 +1912,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     state: Joi.string().required().valid('existing', 'new').example('new').description('Is the account new or updated existing')
                 }).label('CreateAccountResponse'),
                 failAction: 'log'
@@ -2006,6 +2009,7 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     account: Joi.string()
                         .empty('')
+                        .trim()
                         .max(256)
                         .allow(null)
                         .example('example')
@@ -2095,7 +2099,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2136,7 +2140,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
                 failAction: 'log'
             }
@@ -2186,7 +2190,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2246,7 +2250,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2312,13 +2316,13 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
                 }).label('DeleteRequestResponse'),
                 failAction: 'log'
@@ -2396,7 +2400,7 @@ When making API calls remember that requests against the same account are queued
                     accounts: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                                 email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
                                 state: Joi.string()
@@ -2516,13 +2520,13 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
@@ -2613,7 +2617,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -2682,7 +2686,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).example('example').required().description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2753,7 +2757,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).example('example').required().description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2822,7 +2826,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -2881,7 +2885,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).example('AAAAAQAACnA').required().description('Message ID')
                 }).label('RawMessageRequest')
             } /*,
@@ -2935,7 +2939,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     attachment: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
@@ -3014,7 +3018,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).required().example('AAAAAQAACnA').description('Message ID')
                 })
             },
@@ -3073,7 +3077,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -3234,7 +3238,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
@@ -3301,7 +3305,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3374,7 +3378,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
@@ -3437,7 +3441,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3515,7 +3519,7 @@ When making API calls remember that requests against the same account are queued
                 }).label('MessageDeleteQuery'),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }).label('MessageDelete')
             },
@@ -3575,7 +3579,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3671,7 +3675,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     text: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(10 * 1024)
@@ -3739,7 +3743,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID').label('AccountId')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID').label('AccountId')
                 }),
 
                 query: Joi.object({
@@ -3834,7 +3838,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3929,7 +3933,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -4409,7 +4413,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             }
         }
@@ -4858,7 +4862,7 @@ When making API calls remember that requests against the same account are queued
                         .items(
                             Joi.object({
                                 queueId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
 
                                 messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
@@ -5012,7 +5016,14 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 payload: Joi.object({
-                    account: Joi.string().allow(null).max(256).example('example').required().description('Account ID. Use `null` for public templates.'),
+                    account: Joi.string()
+                        .empty('')
+                        .trim()
+                        .allow(null)
+                        .max(256)
+                        .example('example')
+                        .required()
+                        .description('Account ID. Use `null` for public templates.'),
 
                     name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
                     description: Joi.string()
@@ -5039,7 +5050,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     created: Joi.boolean().description('Was the template created or not'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('CreateTemplateResponse'),
                 failAction: 'log'
@@ -5124,7 +5135,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     updated: Joi.boolean().description('Was the template updated or not'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('UpdateTemplateResponse'),
                 failAction: 'log'
@@ -5195,7 +5206,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
                     page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
                     pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
@@ -5273,7 +5284,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID'),
                     name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
                     description: Joi.string()
@@ -5352,7 +5363,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the template deleted'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID')
                 }).label('DeleteTemplateRequestResponse'),
                 failAction: 'log'
@@ -5406,7 +5417,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -5423,7 +5434,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account flushed'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }).label('DeleteTemplateRequestResponse'),
                 failAction: 'log'
             }
@@ -6398,13 +6409,13 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
                     accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
                     provider: Joi.string().max(256).example('gmail').description('OAuth2 provider')
@@ -6544,7 +6555,7 @@ ${now}`,
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -6852,7 +6863,7 @@ ${now}`,
                         .items(
                             Joi.object({
                                 recipient: Joi.string().email().example('user@example.com').description('Listed email address').required(),
-                                account: Joi.string().max(256).required().example('example').description('Account ID').required(),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID').required(),
                                 messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
                                 source: Joi.string().example('api').description('Which mechanism was used to add the entry'),
                                 reason: Joi.string().example('api').description('Why this entry was added'),
@@ -6947,7 +6958,7 @@ ${now}`,
                 }).label('BlocklistListRequest'),
 
                 payload: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to add to the list').required(),
                     reason: Joi.string().empty('').default('block').description('Identifier for the blocking reason')
                 }).label('BlocklistListAddPayload')
