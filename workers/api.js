@@ -3134,7 +3134,11 @@ When making API calls remember that requests against the same account are queued
 
                     bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
 
-                    subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+                    subject: Joi.string()
+                        .allow('')
+                        .max(10 * 1024)
+                        .example('What a wonderful message')
+                        .description('Message subject'),
 
                     text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
 
@@ -4870,7 +4874,12 @@ When making API calls remember that requests against the same account are queued
                                     from: Joi.string().email().allow('').example('sender@example.com'),
                                     to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
                                 }).description('SMTP envelope'),
-                                subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+
+                                subject: Joi.string()
+                                    .allow('')
+                                    .max(10 * 1024)
+                                    .example('What a wonderful message')
+                                    .description('Message subject'),
 
                                 created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this message was queued'),
                                 scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
