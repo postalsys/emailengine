@@ -3153,11 +3153,26 @@ When making API calls remember that requests against the same account are queued
                                     .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
-                                    .description('Base64 formatted attachment file'),
+                                    .description('Base64 formatted attachment file')
+                                    .when('reference', {
+                                        is: Joi.exist().not(false, null),
+                                        then: Joi.forbidden(),
+                                        otherwise: Joi.required()
+                                    }),
+
                                 contentType: Joi.string().lowercase().max(256).example('image/gif'),
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
-                                encoding: Joi.string().valid('base64').default('base64')
+                                encoding: Joi.string().valid('base64').default('base64'),
+
+                                reference: Joi.string()
+                                    .base64({ paddingRequired: false, urlSafe: true })
+                                    .max(256)
+                                    .allow(false, null)
+                                    .example('AAAAAQAACnAcde')
+                                    .description(
+                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                    )
                             }).label('UploadAttachment')
                         )
                         .description('List of attachments')
@@ -4089,11 +4104,26 @@ When making API calls remember that requests against the same account are queued
                                     .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
-                                    .description('Base64 formatted attachment file'),
+                                    .description('Base64 formatted attachment file')
+                                    .when('reference', {
+                                        is: Joi.exist().not(false, null),
+                                        then: Joi.forbidden(),
+                                        otherwise: Joi.required()
+                                    }),
+
                                 contentType: Joi.string().lowercase().max(256).example('image/gif'),
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
-                                encoding: Joi.string().valid('base64').default('base64')
+                                encoding: Joi.string().valid('base64').default('base64'),
+
+                                reference: Joi.string()
+                                    .base64({ paddingRequired: false, urlSafe: true })
+                                    .max(256)
+                                    .allow(false, null)
+                                    .example('AAAAAQAACnAcde')
+                                    .description(
+                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                    )
                             }).label('UploadAttachment')
                         )
                         .description('List of attachments')
