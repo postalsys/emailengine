@@ -1784,24 +1784,33 @@ When making API calls remember that requests against the same account are queued
                     const oAuth2Client = await oauth2Apps.getClient(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
-                    delete request.payload.oauth2.authorize; // do not store this property
+                    const accountData = request.payload;
+
+                    if (accountData.oauth2.redirectUrl) {
+                        accountData._meta = {
+                            redirectUrl: accountData.oauth2.redirectUrl
+                        };
+                        delete accountData.oauth2.redirectUrl;
+                    }
+
+                    delete accountData.oauth2.authorize; // do not store this property
                     // store account data
                     await redis
                         .multi()
-                        .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(request.payload))
+                        .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(accountData))
                         .expire(`${REDIS_PREFIX}account:add:${nonce}`, 1 * 24 * 3600)
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
                     let authorizeUrl;
-                    switch (request.payload.oauth2.provider) {
+                    switch (oAuth2Client.provider) {
                         case 'gmail': {
                             let requestData = {
                                 state: `account:add:${nonce}`
                             };
 
-                            if (request.payload.email) {
-                                requestData.email = request.payload.email;
+                            if (accountData.email) {
+                                requestData.email = accountData.email;
                             }
 
                             authorizeUrl = oAuth2Client.generateAuthUrl(requestData);
