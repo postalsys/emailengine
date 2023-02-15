@@ -148,6 +148,7 @@ class ConnectionHandler {
             documentsQueue,
             flowProducer,
             accountLogger,
+            call: msg => this.call(msg),
             logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;
