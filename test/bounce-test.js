@@ -135,4 +135,17 @@ test('Bounce parsing tests', async t => {
         assert.strictEqual(bounce.response.message, '550 5.1.1 <sdffasdfgfasfadas@hot.ee>: Recipient address rejected: User unknown in relay recipient table');
         assert.strictEqual(bounce.messageId, '<48a84e64-d471-cfa6-3ea5-f10cd8571135@zone.ee>');
     });
+
+    await t.test('zoho', async () => {
+        const content = await fs.promises.readFile(path('zoho.eml'));
+        const bounce = await bounceDetect(content);
+
+        assert.strictEqual(bounce.recipient, 'recipient@example.com');
+        assert.strictEqual(bounce.action, 'failed');
+        assert.strictEqual(
+            bounce.response.message,
+            '5.2.1 The email account that you tried to reach is disabled. Learn more at 5.2.1  https://support.google.com/mail/?p=DisabledUser j8-20020a170903024800b001946612570csi19333477plh.316 - gsmtp'
+        );
+        assert.strictEqual(bounce.messageId, '<63d982c2660381675199170@smtppro.zoho.com>');
+    });
 });
