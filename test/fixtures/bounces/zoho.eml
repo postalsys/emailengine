@@ -74,7 +74,7 @@ Content-Description: Undelivered Message
 	with SMTPS id 16751991711571017.8204286637366; Tue, 31 Jan 2023 13:06:11 -0800 (PST)
  Message-ID:<63d982c2660381675199170@smtppro.zoho.com>
  Date:Tue, 31 Jan 2023 21:06:10 +0000
- From:Andy Cabasso <sender@example.com>
+ From:Sender Name <sender@example.com>
  To:recipient@example.com
  Subject:Example
  Content-Type:multipart/alternative;
