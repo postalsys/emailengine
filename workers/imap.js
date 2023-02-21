@@ -487,9 +487,9 @@ class ConnectionHandler {
         logger.error({ msg: 'Terminating process' });
         this.killed = true;
 
-        this.accounts.forEach(account => {
-            if (account.connection) {
-                account.connection.close();
+        this.accounts.forEach(accountObject => {
+            if (accountObject && accountObject.connection) {
+                accountObject.connection.close();
             }
         });
 
