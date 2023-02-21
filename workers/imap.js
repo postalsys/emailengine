@@ -372,6 +372,22 @@ class ConnectionHandler {
         return await accountData.connection.queueMessage(message.data, message.meta);
     }
 
+    async subconnections(message) {
+        if (!this.accounts.has(message.account)) {
+            return [];
+        }
+
+        const accountObject = this.accounts.get(message.account);
+        if (!accountObject.connection) {
+            return [];
+        }
+
+        return accountObject.connection.subconnections.map(subconnection => ({
+            path: subconnection.path,
+            state: subconnection.state
+        }));
+    }
+
     async uploadMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -555,6 +571,7 @@ class ConnectionHandler {
             case 'submitMessage':
             case 'queueMessage':
             case 'uploadMessage':
+            case 'subconnections':
                 return await this[message.cmd](message);
 
             case 'countConnections': {
