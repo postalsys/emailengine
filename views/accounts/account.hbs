@@ -307,6 +307,32 @@
 
         </dl>
 
+        {{#if subConnectionInfo}}
+        <hr>
+        <h6 class="font-weight-bold text-primary">Subconnections</h6>
+
+        <p>Subconnections are additional IMAP connections to detect changes in secondary folders. EmailEngine, by
+            default, receives updates only for the primary folder and needs to poll secondary folders, but in some
+            cases, information is needed faster and without delay.</p>
+
+        <dl class="row mt-3">
+            {{#each subConnectionInfo}}
+            <dt class="col-sm-3">{{path}}</dt>
+            <dd class="col-sm-9">
+                <span class="badge badge-pill badge-{{stateLabel.type}} state-info" style="cursor:default;"
+                    data-toggle="popover" data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
+                    data-content="{{stateLabel.error}}" {{/if}}>
+
+                    {{#if stateLabel.spinner}}
+                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    {{/if}}
+
+                    {{stateLabel.name}}</span>
+            </dd>
+            {{/each}}
+        </dl>
+        {{/if}}
+
     </div>
     <div class="card-footer">
 

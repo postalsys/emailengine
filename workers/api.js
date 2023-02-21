@@ -1887,6 +1887,15 @@ When making API calls remember that requests against the same account are queued
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
+                    subconnections: Joi.array()
+                        .items(Joi.string().max(256))
+                        .single()
+                        .example(['[Gmail]/Spam', '\\Sent'])
+                        .description(
+                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
+                        )
+                        .label('SubconnectionPaths'),
+
                     webhooks: Joi.string()
                         .uri({
                             scheme: ['http', 'https'],
@@ -2116,6 +2125,15 @@ When making API calls remember that requests against the same account are queued
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
+                    subconnections: Joi.array()
+                        .items(Joi.string().max(256))
+                        .single()
+                        .example(['[Gmail]/Spam', '\\Sent'])
+                        .description(
+                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
+                        )
+                        .label('SubconnectionPaths'),
 
                     webhooks: Joi.string()
                         .uri({
@@ -2478,6 +2496,8 @@ When making API calls remember that requests against the same account are queued
                     'oauth2',
                     'state',
                     'smtpStatus',
+                    'path',
+                    'subconnections',
                     'webhooks',
                     'proxy',
                     'locale',
@@ -2545,6 +2565,17 @@ When making API calls remember that requests against the same account are queued
 
                     notifyFrom: accountSchemas.notifyFrom,
                     syncFrom: accountSchemas.syncFrom,
+
+                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
+                    subconnections: Joi.array()
+                        .items(Joi.string().max(256))
+                        .single()
+                        .example(['[Gmail]/Spam', '\\Sent'])
+                        .description(
+                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
+                        )
+                        .label('SubconnectionPaths'),
 
                     webhooks: Joi.string()
                         .uri({
