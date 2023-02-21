@@ -3166,13 +3166,14 @@ When making API calls remember that requests against the same account are queued
 
                     to: Joi.array()
                         .items(addressSchema)
+                        .single()
                         .description('List of addresses')
                         .example([{ address: 'recipient@example.com' }])
                         .label('AddressList'),
 
-                    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    cc: Joi.array().items(addressSchema).single().description('List of addresses').label('AddressList'),
 
-                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    bcc: Joi.array().items(addressSchema).single().description('List of addresses').label('AddressList'),
 
                     subject: Joi.string()
                         .allow('')
