@@ -153,6 +153,37 @@ const notifyWorker = new Worker(
             }
         }
 
+        // only log some of the properties for webhooks, not full contents
+        let filteredData = {};
+        for (let key of Object.keys(job.data)) {
+            switch (key) {
+                case 'data':
+                    {
+                        let filteredData = {};
+                        let isPartial = false;
+                        for (let dataKey of Object.keys(job.data.data)) {
+                            switch (dataKey) {
+                                case 'id':
+                                case 'uid':
+                                case 'path':
+                                case 'messageId':
+                                    filteredData[dataKey] = job.data.data[dataKey];
+                                    break;
+                                default:
+                                    isPartial = true;
+                            }
+                        }
+                        if (isPartial) {
+                            filteredData.partial = true;
+                        }
+                        filteredData[key] = filteredData;
+                    }
+                    break;
+                default:
+                    filteredData[key] = job.data[key];
+            }
+        }
+
         logger.trace({
             msg: 'Processing webhook',
             action: 'webhook',
@@ -162,7 +193,7 @@ const notifyWorker = new Worker(
             webhooks,
             accountWebhooks: !!accountWebhooks,
             event: job.name,
-            data: job.data,
+            data: filteredData,
             account: job.data.account,
             route: customRoute && customRoute.id
         });
