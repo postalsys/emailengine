@@ -23,7 +23,6 @@ jobs:
 
             - name: Deploy to server
               env:
-                  TARGET_HOST_01: emailengine.srv.dev
                   TARGET_HOST_02: dev.emailengine.app
                   NODE_ENV: production
                   SERVICE_NAME: emailengine
@@ -33,7 +32,5 @@ jobs:
                   ./update-info.sh
                   npm install --omit=dev
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
-                  scp /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_01}:
-                  ssh deploy@$TARGET_HOST_01 "/opt/deploy.sh ${SERVICE_NAME}"
                   scp /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
                   ssh deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"
