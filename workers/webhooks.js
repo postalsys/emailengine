@@ -159,7 +159,7 @@ const notifyWorker = new Worker(
             switch (key) {
                 case 'data':
                     {
-                        let filteredData = {};
+                        let filteredSubData = {};
                         let isPartial = false;
                         for (let dataKey of Object.keys(job.data.data)) {
                             switch (dataKey) {
@@ -167,16 +167,20 @@ const notifyWorker = new Worker(
                                 case 'uid':
                                 case 'path':
                                 case 'messageId':
-                                    filteredData[dataKey] = job.data.data[dataKey];
+                                    filteredSubData[dataKey] = job.data.data[dataKey];
                                     break;
                                 default:
                                     isPartial = true;
                             }
                         }
                         if (isPartial) {
-                            filteredData.partial = true;
+                            if (Object.keys(filteredSubData).length) {
+                                filteredSubData.partial = true;
+                            } else {
+                                filteredSubData = true;
+                            }
                         }
-                        filteredData[key] = filteredData;
+                        filteredData[key] = filteredSubData;
                     }
                     break;
                 default:
