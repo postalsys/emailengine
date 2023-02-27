@@ -217,6 +217,44 @@ class ConnectionHandler {
         }
     }
 
+    async pauseConnection(account) {
+        logger.info({ msg: 'Account pause requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account pause requested'
+                });
+
+                await accountObject.connection.pause();
+
+                return true;
+            }
+        }
+    }
+
+    async resumeConnection(account) {
+        logger.info({ msg: 'Account resume requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account resume requested'
+                });
+
+                await accountObject.connection.resume();
+
+                return true;
+            }
+        }
+    }
+
     async listMessages(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -551,6 +589,8 @@ class ConnectionHandler {
             case 'delete':
             case 'update':
             case 'sync':
+            case 'pause':
+            case 'resume':
                 return await this[`${message.cmd}Connection`](message.account);
 
             case 'listMessages':

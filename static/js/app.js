@@ -231,6 +231,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: 'Disconnected'
                 };
                 break;
+            case 'paused':
+                stateLabel = {
+                    type: 'secondary',
+                    name: 'Paused'
+                };
+                break;
             default:
                 stateLabel = {
                     type: 'secondary',

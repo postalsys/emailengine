@@ -2358,6 +2358,72 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/flush',
+
+        async handler(request, h) {
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            try {
+                return { flush: await accountObject.flush(request.payload) };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Request account flush',
+            notes: 'Deletes all emails and re-creates the index',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true')
+                }).label('RequestFlush')
+            },
+
+            response: {
+                schema: Joi.object({
+                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Flush status')
+                }).label('RequestFlushResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'GET',
         path: '/v1/accounts',
 

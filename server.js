@@ -1299,6 +1299,8 @@ async function onCommand(worker, message) {
 
         case 'update':
         case 'sync':
+        case 'pause':
+        case 'resume':
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
