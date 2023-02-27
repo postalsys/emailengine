@@ -32,5 +32,5 @@ jobs:
                   ./update-info.sh
                   npm install --omit=dev
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
-                  scp /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
-                  ssh deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"
+                  scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
+                  ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"
