@@ -2386,7 +2386,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Request account flush',
-            notes: 'Deletes all emails and re-creates the index',
+            notes: 'Deletes all email indexes from Redis and ElasticSearch and re-creates the index',
             tags: ['api', 'Account'],
 
             plugins: {},
