@@ -2386,7 +2386,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Request account flush',
-            notes: 'Deletes all email indexes from Redis and ElasticSearch and re-creates the index',
+            notes: 'Deletes all email indexes from Redis and ElasticSearch and re-creates the index for that account. You can only run a single flush operation at a time, so you must wait until the previous flush has finished before initiating a new one.',
             tags: ['api', 'Account'],
 
             plugins: {},
@@ -2410,7 +2410,9 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 payload: Joi.object({
-                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true')
+                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true'),
+                    notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    syncFrom: accountSchemas.syncFrom
                 }).label('RequestFlush')
             },
 
