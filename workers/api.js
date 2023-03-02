@@ -1887,14 +1887,7 @@ When making API calls remember that requests against the same account are queued
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
-                    subconnections: Joi.array()
-                        .items(Joi.string().max(256))
-                        .single()
-                        .example(['[Gmail]/Spam', '\\Sent'])
-                        .description(
-                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
-                        )
-                        .label('SubconnectionPaths'),
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -1950,6 +1943,7 @@ When making API calls remember that requests against the same account are queued
                     email: request.payload.email,
                     syncFrom: request.payload.syncFrom,
                     notifyFrom: request.payload.notifyFrom,
+                    subconnections: request.payload.subconnections,
                     redirectUrl: request.payload.redirectUrl
                 });
 
@@ -2042,6 +2036,8 @@ When making API calls remember that requests against the same account are queued
                     syncFrom: accountSchemas.syncFrom,
                     notifyFrom: accountSchemas.notifyFrom,
 
+                    subconnections: accountSchemas.subconnections,
+
                     redirectUrl: Joi.string()
                         .empty('')
                         .uri({ scheme: ['http', 'https'], allowRelative: false })
@@ -2126,14 +2122,7 @@ When making API calls remember that requests against the same account are queued
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
-                    subconnections: Joi.array()
-                        .items(Joi.string().max(256))
-                        .single()
-                        .example(['[Gmail]/Spam', '\\Sent'])
-                        .description(
-                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
-                        )
-                        .label('SubconnectionPaths'),
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -2636,14 +2625,7 @@ When making API calls remember that requests against the same account are queued
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
 
-                    subconnections: Joi.array()
-                        .items(Joi.string().max(256))
-                        .single()
-                        .example(['[Gmail]/Spam', '\\Sent'])
-                        .description(
-                            'An array of mailbox paths. If set, then EmailEngine opens additional IMAP connections against these paths to detect changes faster. NB! connection counts are usually highly limited.'
-                        )
-                        .label('SubconnectionPaths'),
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -3122,6 +3104,12 @@ When making API calls remember that requests against the same account are queued
                         .default(false)
                         .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
                         .label('EmbedImages'),
+                    preProcessHtml: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then pre-processes HTML for compatibility ')
+                        .label('PreProcess'),
                     documentStore: documentStoreSchema.default(false)
                 }),
 
