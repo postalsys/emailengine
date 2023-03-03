@@ -77,7 +77,7 @@ const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
 const { lists } = require('../lib/lists');
 
-const { redis, REDIS_CONF, documentsQueue } = require('../lib/db');
+const { redis, REDIS_CONF, documentsQueue, notifyQueue, submitQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -4512,6 +4512,180 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({ updated: Joi.array().items(Joi.string().example('notifyHeaders')).description('List of updated setting keys') }).label(
                     'SettingsResponse'
                 ),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/settings/queue/{queue}',
+
+        async handler(request) {
+            try {
+                let queue = request.params.queue;
+                let values = {
+                    queue
+                };
+
+                const [resActive, resDelayed, resPaused, resWaiting, resMeta] = await redis
+                    .multi()
+                    .llen(`${REDIS_PREFIX}bull:${queue}:active`)
+                    .zcard(`${REDIS_PREFIX}bull:${queue}:delayed`)
+                    .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
+                    .llen(`${REDIS_PREFIX}bull:${queue}:wait`)
+                    .hget(`${REDIS_PREFIX}bull:${queue}:meta`, 'paused')
+                    .exec();
+
+                if (resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0]) {
+                    // counting failed
+                    let err = new Error('Failed to count queue lengtho');
+                    err.statusCode = 500;
+                    throw err;
+                }
+
+                values.jobs = {
+                    active: Number(resActive[1]) || 0,
+                    delayed: Number(resDelayed[1]) || 0,
+                    paused: Number(resPaused[1]) || 0,
+                    waiting: Number(resWaiting[1]) || 0
+                };
+
+                values.paused = !!Number(resMeta[1]) || false;
+
+                return values;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Show queue information',
+            notes: 'Show queue status and current state',
+            tags: ['api', 'Settings'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    jobs: Joi.object({
+                        active: Joi.number().example(123).description('Jobs that are currently being processed'),
+                        delayed: Joi.number().example(123).description('Jobs that are processed in the future'),
+                        paused: Joi.number().example(123).description('Jobs that would be processed once queue processing is resumed'),
+                        waiting: Joi.number().example(123).description('Jobs that should be processed, but are waiting until there are any free handlers')
+                    }).label('QueueJobs'),
+                    paused: Joi.boolean().example(false).description('Is the queue paused or not')
+                }).label('SettingsQueueResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/settings/queue/{queue}',
+
+        async handler(request) {
+            try {
+                let queue = request.params.queue;
+
+                let queueObj = {
+                    documents: documentsQueue,
+                    notify: notifyQueue,
+                    submit: submitQueue
+                }[queue];
+
+                let values = {
+                    queue
+                };
+
+                for (let key of Object.keys(request.payload)) {
+                    switch (key) {
+                        case 'paused':
+                            if (request.payload[key]) {
+                                await queueObj.pause();
+                            } else {
+                                await queueObj.resume();
+                            }
+                            break;
+                    }
+                }
+
+                values.paused = await queueObj.isPaused();
+
+                return values;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Set queue settings',
+            notes: 'Set queue settings',
+            tags: ['api', 'Settings'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                }),
+
+                payload: Joi.object({
+                    paused: Joi.boolean().empty('').example(false).description('Set queue state to paused')
+                }).label('SettingsPutQueuePayload')
+            },
+
+            response: {
+                schema: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    paused: Joi.boolean().example(false).description('Is the queue paused or not')
+                }).label('SettingsPutQueueResponse'),
                 failAction: 'log'
             }
         }
