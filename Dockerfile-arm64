@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64v8 node:lts-alpine
+FROM --platform=linux/arm64 node:lts-alpine
 
 RUN apk add --no-cache dumb-init
 
