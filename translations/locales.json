@@ -15,5 +15,11 @@
         "name": "French",
         "locale": "fr",
         "file": "fr.mo"
+    },
+
+    {
+        "name": "German",
+        "locale": "de",
+        "file": "de.mo"
     }
 ]
