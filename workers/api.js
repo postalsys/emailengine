@@ -7560,8 +7560,7 @@ ${now}`,
                 systemAlerts,
                 embeddedTemplateHeader: await settings.get('templateHeader'),
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: await settings.get('documentStoreEnabled'),
-                showMailRu: (await settings.get('labsMailRu')) || (await settings.get('mailRuEnabled'))
+                showDocumentStore: await settings.get('documentStoreEnabled')
             };
         }
     });

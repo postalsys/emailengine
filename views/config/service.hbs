@@ -306,18 +306,34 @@
             </div>
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
-                <input type="checkbox" class="form-check-input {{#if errors.labsMailRu}}is-invalid{{/if}}"
-                    id="labsMailRu" name="labsMailRu" {{#if values.labsMailRu}}checked{{/if}} />
-                <label class="form-check-label" for="labsMailRu">Allow to use OAuth2 with Mail.ru</label>
-                {{#if errors.labsMailRu}}
-                <span class="invalid-feedback">{{errors.labsMailRu}}</span>
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">extractReplyText</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.extractReplyText}}is-invalid{{/if}}"
+                    id="extractReplyText" name="extractReplyText" {{#if values.extractReplyText}}checked{{/if}} />
+                <label class="form-check-label" for="extractReplyText">Extract reply text with OpenAI</label>
+                {{#if errors.extractReplyText}}
+                <span class="invalid-feedback">{{errors.extractReplyText}}</span>
                 {{/if}}
-                <small class="form-text text-muted"><a href="https://oauth.mail.ru/docs" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">OAuth2 for Mail.ru</a> is disabled by default due to
-                    insufficient
-                    testing. It might or might not work as intended. Make sure that your OAuth2 app has the required
-                    email scopes.</small>
+                <small class="form-text text-muted">If enabled, EmailEngine will use OpenAI ChatGPT to extract the reply
+                    text part of a reply email. Requires a valid OpenAI API key.</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiAPIKey</a>]
+                </div>
+
+                <label for="openAiAPIKey">OpenAI API key</label>
+                <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
+                    id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
+                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
+                    {{/if}} />
+                {{#if errors.openAiAPIKey}}
+                <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OpenAI API key to use ChatGPT</small>
             </div>
 
         </div>
