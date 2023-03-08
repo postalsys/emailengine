@@ -2487,6 +2487,12 @@ When making API calls remember that requests against the same account are queued
                                 account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                                 email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
+                                type: Joi.string()
+                                    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+                                    .example('outlook')
+                                    .description('Account type')
+                                    .required(),
+                                app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                                 state: Joi.string()
                                     .required()
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
@@ -2565,6 +2571,23 @@ When making API calls remember that requests against the same account are queued
                     }
                 }
 
+                if (accountData.oauth2 && accountData.oauth2.provider) {
+                    let app = await oauth2Apps.get(accountData.oauth2.provider);
+
+                    if (app) {
+                        result.type = app.provider;
+                        if (app.id !== app.provider) {
+                            result.app = app.id;
+                        }
+                    } else {
+                        result.type = 'oauth2';
+                    }
+                } else if (accountData.imap && !accountData.imap.disabled) {
+                    result.type = 'imap';
+                } else {
+                    result.type = 'sending';
+                }
+
                 if (accountData.sync) {
                     result.syncTime = accountData.sync;
                 }
@@ -2639,6 +2662,13 @@ When making API calls remember that requests against the same account are queued
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
                     smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPResponse'),
+
+                    type: Joi.string()
+                        .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+                        .example('outlook')
+                        .description('Account type')
+                        .required(),
+                    app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('AccountResponse'),
