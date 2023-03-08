@@ -30,7 +30,7 @@
 
             {{#if appData.legacy}}
             <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" id="description"
-                value="{{appData.description}}" placeholder="description" disabled />
+                value="{{appData.description}}" placeholder="" disabled />
             {{else}}
             <input type="text" class="form-control {{#if errors.description}}is-invalid{{/if}}" id="description"
                 name="description" value="{{values.description}}" placeholder="" />
@@ -40,6 +40,27 @@
             <span class="invalid-feedback">{{errors.description}}</span>
             {{/if}}
             <small class="form-text text-muted">Optional application description or a comment.</small>
+        </div>
+
+        <div class="form-group">
+
+            <label for="title">
+                Display title
+            </label>
+
+            {{#if appData.legacy}}
+            <input type="text" class="form-control {{#if errors.title}}is-invalid{{/if}}" id="title"
+                value="{{appData.title}}" placeholder="" disabled />
+            {{else}}
+            <input type="text" class="form-control {{#if errors.title}}is-invalid{{/if}}" id="title" name="title"
+                value="{{values.title}}" placeholder="" />
+            {{/if}}
+
+            {{#if errors.title}}
+            <span class="invalid-feedback">{{errors.title}}</span>
+            {{/if}}
+            <small class="form-text text-muted">Optional display title next to the application button on the account
+                type selection page.</small>
         </div>
 
         {{#if activeGmailService}}

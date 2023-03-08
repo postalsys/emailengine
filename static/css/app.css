@@ -32,25 +32,32 @@
     border-radius: 3px;
 }
 
-input.form-control::placeholder, textarea.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: #AAA;
+input.form-control::placeholder,
+textarea.form-control::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: #aaa;
     font-style: oblique;
     opacity: 0.8; /* Firefox */
 }
 
-input.form-control:-ms-input-placeholder, textarea.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
-    color: #AAA;
+input.form-control:-ms-input-placeholder,
+textarea.form-control:-ms-input-placeholder {
+    /* Internet Explorer 10-11 */
+    color: #aaa;
     font-style: oblique;
     opacity: 0.8; /* Firefox */
 }
 
-input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-placeholder { /* Microsoft Edge */
-    color: #AAA;
+input.form-control::-ms-input-placeholder,
+textarea.form-control::-ms-input-placeholder {
+    /* Microsoft Edge */
+    color: #aaa;
     font-style: oblique;
     opacity: 0.8; /* Firefox */
 }
 
-.certinfo dt, .certinfo dd {
+.certinfo dt,
+.certinfo dd {
     font-size: 0.8rem;
 }
 
@@ -90,7 +97,7 @@ input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-plac
 .error-log-field {
     font-family: monospace;
     font-size: 0.8em;
-    border: 1px solid  #f8f8f8;
+    border: 1px solid #f8f8f8;
     margin: 0;
     padding: 1px;
     display: block;
@@ -99,13 +106,17 @@ input.form-control::-ms-input-placeholder, textarea.form-control::-ms-input-plac
     color: #888888;
 }
 
-.bg-gradient-primary{
+.bg-gradient-primary {
     background-color: #407ec9;
-/*#407ec9;*/
+    /*#407ec9;*/
     background-image: none;
-    background-size:cover
+    background-size: cover;
 }
 
-.card-title{
+.card-title {
     font-weight: bold;
+}
+
+.hover-bg-light:hover {
+    background-color: #f8f9fa !important;
 }

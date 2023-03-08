@@ -2,9 +2,9 @@
     <h1 class="h4 text-gray-900 mb-4">{{_ "Choose your email account provider" }}</h1>
 </div>
 
-<div style="width: 250px; margin: 0 auto;">
+<div style="width: 270px; margin: 0 auto;">
 
-    <div class="mb-3">
+    <div class="mb-1 p-1">
         <form method="post" action="/accounts/new">
             <input type="hidden" name="crumb" value="{{crumb}}">
             <input type="hidden" name="type" value="imap">
@@ -20,7 +20,13 @@
     {{#if oauth2apps}}
 
     {{#each oauth2apps}}
-    <div class="mb-3">
+
+    <div class="mb-1 p-1 rounded {{#if title}}hover-bg-light{{/if}}">
+
+        {{#if title}}
+        <h5 style="cursor: default;">{{title}}</h5>
+        {{/if}}
+
         <form method="post" action="/accounts/new">
             <input type="hidden" name="crumb" value="{{../crumb}}">
             <input type="hidden" name="type" value="{{id}}">
