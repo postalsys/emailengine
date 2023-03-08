@@ -5872,6 +5872,7 @@ When making API calls remember that requests against the same account are queued
                                 id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                                 name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
                                 description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
+                                title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
                                 provider: Joi.string()
                                     .valid(...Object.keys(OAUTH_PROVIDERS))
                                     .required()
@@ -5999,6 +6000,7 @@ When making API calls remember that requests against the same account are queued
                     id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                     name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
                     description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
+                    title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
                     provider: Joi.string()
                         .valid(...Object.keys(OAUTH_PROVIDERS))
                         .required()
@@ -6152,6 +6154,7 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     name: Joi.string().trim().empty('').max(256).example('My Gmail App').required().description('Application name'),
                     description: Joi.string().trim().empty('').max(1024).example('My cool app').description('Application description'),
+                    title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
 
                     enabled: Joi.boolean().truthy('Y', 'true', '1', 'on').falsy('N', 'false', 0, '').example(true).description('Enable this app'),
 
