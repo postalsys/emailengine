@@ -10,20 +10,20 @@
 
 <ul class="nav nav-pills mb-4">
     <li class="nav-item">
-        <a class="nav-link {{#if activeGmail}}active{{/if}}" href="/admin/config/oauth">Gmail</a>
+        <a class="nav-link {{#if activeGmail}}active{{/if}}" href="/admin/config/oauth-legacy">Gmail</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{#if activeOutlook}}active{{/if}}" href="/admin/config/oauth/outlook">Outlook</a>
+        <a class="nav-link {{#if activeOutlook}}active{{/if}}" href="/admin/config/oauth-legacy/outlook">Outlook</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{#if activeGmailService}}active{{/if}}" href="/admin/config/oauth/gmailService">Gmail
+        <a class="nav-link {{#if activeGmailService}}active{{/if}}" href="/admin/config/oauth-legacy/gmailService">Gmail
             Service Accounts</a>
     </li>
 
     <!-- Do not expose Mail.RU by default (untested) -->
     {{#if showMailRu}}
     <li class="nav-item">
-        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth/mailRu">Mail.ru <span
+        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth-legacy/mailRu">Mail.ru <span
                 class="badge badge-dark">beta</span></a>
     </li>
     {{/if}}
@@ -52,7 +52,7 @@
                     <li><code>"https://mail.google.com/"</code>
                 </ul>
                 <div>Read about setting up Google service accounts from <a
-                        href="https://docs.emailengine.app/gmail-oauth-service-accounts/" target="_blank"
+                        href="https://docs.emailengine.app/oauth-legacy/gmail-service-accounts/" target="_blank"
                         referrerpolicy="{{referrerPolicy}}">here</a>.
 
                 </div>
@@ -93,7 +93,7 @@
     </div>
 </div>
 
-<form method="post" action="/admin/config/oauth">
+<form method="post" action="/admin/config/oauth-legacy">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{values.provider}}">
 

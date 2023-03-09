@@ -153,6 +153,41 @@ const notifyWorker = new Worker(
             }
         }
 
+        // only log some of the properties for webhooks, not full contents
+        let filteredData = {};
+        for (let key of Object.keys(job.data)) {
+            switch (key) {
+                case 'data':
+                    {
+                        let filteredSubData = {};
+                        let isPartial = false;
+                        for (let dataKey of Object.keys(job.data.data)) {
+                            switch (dataKey) {
+                                case 'id':
+                                case 'uid':
+                                case 'path':
+                                case 'messageId':
+                                    filteredSubData[dataKey] = job.data.data[dataKey];
+                                    break;
+                                default:
+                                    isPartial = true;
+                            }
+                        }
+                        if (isPartial) {
+                            if (Object.keys(filteredSubData).length) {
+                                filteredSubData.partial = true;
+                            } else {
+                                filteredSubData = true;
+                            }
+                        }
+                        filteredData[key] = filteredSubData;
+                    }
+                    break;
+                default:
+                    filteredData[key] = job.data[key];
+            }
+        }
+
         logger.trace({
             msg: 'Processing webhook',
             action: 'webhook',
@@ -162,7 +197,7 @@ const notifyWorker = new Worker(
             webhooks,
             accountWebhooks: !!accountWebhooks,
             event: job.name,
-            data: job.data,
+            data: filteredData,
             account: job.data.account,
             route: customRoute && customRoute.id
         });
@@ -189,11 +224,21 @@ const notifyWorker = new Worker(
             headers.Authorization = `Basic ${Buffer.from(he.encode(username || '') + ':' + he.encode(password || '')).toString('base64')}`;
         }
 
+        if (customRoute) {
+            for (let header of customRoute.customHeaders || []) {
+                headers[header.key] = header.value;
+            }
+        } else {
+            let webhookCustomHeaders = await settings.get('webhooksCustomHeaders');
+            for (let header of webhookCustomHeaders || []) {
+                headers[header.key] = header.value;
+            }
+        }
+
         let start = Date.now();
         let duration;
         try {
             let res;
-
             try {
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
@@ -232,7 +277,7 @@ const notifyWorker = new Worker(
                 } else if (accountWebhooks) {
                     await redis.hset(accountKey, 'webhookErrorFlag', JSON.stringify({}));
                 } else {
-                    await settings.clear('webhookErrorFlag', {});
+                    await settings.clear('webhookErrorFlag');
                 }
             } catch (err) {
                 // ignore

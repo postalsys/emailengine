@@ -1,0 +1,36 @@
+on:
+    push:
+        branches:
+            - master
+            - delivery-test
+
+name: Deploy test instance
+
+jobs:
+    deploy:
+        name: Deploy
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Install SSH key
+              uses: shimataro/ssh-key-action@v2
+              with:
+                  key: ${{ secrets.SSH_KEY }}
+                  known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+            - name: Deploy to server
+              env:
+                  TARGET_HOST_02: dev.emailengine.app
+                  NODE_ENV: production
+                  SERVICE_NAME: emailengine
+              id: deploy
+              run: |
+                  echo $GITHUB_SHA > commit.txt
+                  ./update-info.sh
+                  npm install --omit=dev
+                  tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
+                  scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
+                  ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"

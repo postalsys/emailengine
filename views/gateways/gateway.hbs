@@ -27,6 +27,8 @@
 
         </div>
 
+        <h5 class="card-title mb-4">{{gateway.name}}</h5>
+
         {{#if gateway.lastError}}
         <dl class="row">
             <dt class="col-sm-3">Error</dt>
@@ -52,11 +54,6 @@
                     label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
                     {{label.name}}</span>
             </dd>
-            {{/if}}
-
-            {{#if gateway.name}}
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{gateway.name}}</dd>
             {{/if}}
 
             {{#if gateway.deliveries}}

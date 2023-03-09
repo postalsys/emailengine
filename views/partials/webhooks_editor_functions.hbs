@@ -263,6 +263,7 @@ the *Set test payload* button to change the filter payload.`);
     const sendTestPayload = async () => {
         const webhooks = document.getElementById('inputTargetUrl').value.trim();
         const payload = editorMapPreview.getValue().trim();
+        const customHeaders = document.getElementById('customHeaders').value.trim();
 
         const res = await fetch('/admin/config/webhooks/test', {
             method: 'post',
@@ -270,6 +271,7 @@ the *Set test payload* button to change the filter payload.`);
             body: JSON.stringify({
                 crumb: document.getElementById('crumb').value,
                 webhooks,
+                customHeaders,
                 payload
             })
         })

@@ -1,0 +1,28 @@
+# This is a basic workflow that is manually triggered
+name: Discord
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI or API.
+on:
+  push:
+    branches:
+      - 'master'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  send_webhook:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Runs a single command using the runners shell
+    - name: Webhook
+      env:
+        webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+        curl_options: "--fail -s"
+        data: '{"username": "Github","content": "**${{ github.actor }}** pushed [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) to **${{ github.ref_name }}**"}'
+      run: |
+        curl $curl_options \
+        -H "Content-Type: application/json" \
+        -H "User-Agent: GitHub-Action" \
+        --data "$data" $webhook_url

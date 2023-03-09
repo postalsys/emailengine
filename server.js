@@ -1299,6 +1299,8 @@ async function onCommand(worker, message) {
 
         case 'update':
         case 'sync':
+        case 'pause':
+        case 'resume':
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
@@ -1361,6 +1363,15 @@ async function onCommand(worker, message) {
             }
 
             return await call(assignedWorker, message, transferList);
+        }
+
+        case 'subconnections': {
+            if (!assigned.has(message.account)) {
+                return [];
+            }
+
+            let assignedWorker = assigned.get(message.account);
+            return await call(assignedWorker, message, []);
         }
     }
     return 999;

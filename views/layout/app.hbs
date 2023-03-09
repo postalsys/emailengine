@@ -42,7 +42,10 @@
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/">
                 <div class="sidebar-brand-icon">
-                    <img src="/static/logo/EmailEngine_logo_horiz.png" height="32">
+                    <div class="d-flex">
+                        <img src="/static/logo/EmailEngine_logo_horiz.png"
+                            style="display: block; max-height: 32px; max-width: 100%;">
+                    </div>
                 </div>
             </a>
 
@@ -199,10 +202,10 @@
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item {{#if menuPassword}}active{{/if}}"
+                                <a class="dropdown-item {{#if menuAccountSecurity}}active{{/if}}"
                                     href="/admin/account/password">
                                     <i class="fas fa-user-shield fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Account password
+                                    Account security
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="/admin/logout">

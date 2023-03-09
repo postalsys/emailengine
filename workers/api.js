@@ -64,7 +64,7 @@ const pathlib = require('path');
 
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
-const { getOAuth2Client } = require('../lib/oauth');
+const { oauth2Apps, OAUTH_PROVIDERS } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -77,7 +77,7 @@ const outbox = require('../lib/outbox');
 const { templates } = require('../lib/templates');
 const { lists } = require('../lib/lists');
 
-const { redis, REDIS_CONF, documentsQueue } = require('../lib/db');
+const { redis, REDIS_CONF, documentsQueue, notifyQueue, submitQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -127,7 +127,8 @@ const {
     documentStoreSchema,
     searchSchema,
     messageUpdateSchema,
-    accountSchemas
+    accountSchemas,
+    oauthCreateSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -136,9 +137,9 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
-const { OUTLOOK_SCOPES } = require('../lib/outlook-oauth');
-const { GMAIL_SCOPES } = require('../lib/gmail-oauth');
-const { MAIL_RU_SCOPES } = require('../lib/mail-ru-oauth');
+const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
+const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
+const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
 
@@ -1145,9 +1146,16 @@ When making API calls remember that requests against the same account are queued
 
             const provider = accountData.oauth2.provider;
 
-            const oAuth2Client = await getOAuth2Client(provider);
+            const oauth2App = await oauth2Apps.get(provider);
+            if (!oauth2App) {
+                let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
+                throw error;
+            }
 
-            switch (provider) {
+            const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
+
+            // `app.provider` is for example "gmail", `provider` is oauth2 app id
+            switch (oauth2App.provider) {
                 case 'gmail': {
                     const r = await oAuth2Client.getToken(request.query.code);
                     if (!r || !r.access_token) {
@@ -1437,7 +1445,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 payload: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
@@ -1570,7 +1578,8 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return { tokens: await tokens.list() };
+                // TODO: allow paging
+                return { tokens: (await tokens.list(null, 0, 1000)).tokens };
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -1611,7 +1620,7 @@ When making API calls remember that requests against the same account are queued
                     tokens: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
                                 metadata: Joi.string()
                                     .empty('')
@@ -1652,7 +1661,8 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return { tokens: await tokens.list(request.params.account) };
+                // TODO: allow paging
+                return { tokens: (await tokens.list(request.params.account, 0, 1000)).tokens };
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -1687,7 +1697,7 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
@@ -1696,7 +1706,7 @@ When making API calls remember that requests against the same account are queued
                     tokens: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
                                 metadata: Joi.string()
                                     .empty('')
@@ -1771,27 +1781,36 @@ When making API calls remember that requests against the same account are queued
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
                     // redirect to OAuth2 consent screen
 
-                    const oAuth2Client = await getOAuth2Client(request.payload.oauth2.provider);
+                    const oAuth2Client = await oauth2Apps.getClient(request.payload.oauth2.provider);
                     let nonce = crypto.randomBytes(12).toString('hex');
 
-                    delete request.payload.oauth2.authorize; // do not store this property
+                    const accountData = request.payload;
+
+                    if (accountData.oauth2.redirectUrl) {
+                        accountData._meta = {
+                            redirectUrl: accountData.oauth2.redirectUrl
+                        };
+                        delete accountData.oauth2.redirectUrl;
+                    }
+
+                    delete accountData.oauth2.authorize; // do not store this property
                     // store account data
                     await redis
                         .multi()
-                        .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(request.payload))
+                        .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(accountData))
                         .expire(`${REDIS_PREFIX}account:add:${nonce}`, 1 * 24 * 3600)
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
                     let authorizeUrl;
-                    switch (request.payload.oauth2.provider) {
+                    switch (oAuth2Client.provider) {
                         case 'gmail': {
                             let requestData = {
                                 state: `account:add:${nonce}`
                             };
 
-                            if (request.payload.email) {
-                                requestData.email = request.payload.email;
+                            if (accountData.email) {
+                                requestData.email = accountData.email;
                             }
 
                             authorizeUrl = oAuth2Client.generateAuthUrl(requestData);
@@ -1856,6 +1875,7 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     account: Joi.string()
                         .empty('')
+                        .trim()
                         .max(256)
                         .allow(null)
                         .required()
@@ -1866,6 +1886,8 @@ When making API calls remember that requests against the same account are queued
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -1901,7 +1923,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     state: Joi.string().required().valid('existing', 'new').example('new').description('Is the account new or updated existing')
                 }).label('CreateAccountResponse'),
                 failAction: 'log'
@@ -1921,6 +1943,7 @@ When making API calls remember that requests against the same account are queued
                     email: request.payload.email,
                     syncFrom: request.payload.syncFrom,
                     notifyFrom: request.payload.notifyFrom,
+                    subconnections: request.payload.subconnections,
                     redirectUrl: request.payload.redirectUrl
                 });
 
@@ -1940,23 +1963,18 @@ When making API calls remember that requests against the same account are queued
 
                 let type = request.payload.type;
 
-                let enabledTypes = new Set();
-
-                for (let accountType of ['gmail', 'outlook', 'mailRu']) {
-                    let typeEnabled = await settings.get(`${accountType}Enabled`);
-                    if (typeEnabled && (!(await settings.get(`${accountType}ClientId`)) || !(await settings.get(`${accountType}ClientSecret`)))) {
-                        typeEnabled = false;
-                        if (type === accountType) {
-                            type = false;
-                        }
-                    }
-                    if (typeEnabled) {
-                        enabledTypes.add(accountType);
+                if (type && type !== 'imap') {
+                    let oauth2app = await oauth2Apps.get(type);
+                    if (!oauth2app || !oauth2app.enabled) {
+                        type = false;
                     }
                 }
 
-                if (!enabledTypes.size) {
-                    type = 'imap';
+                if (!type) {
+                    let oauth2apps = (await oauth2Apps.list(0, 100)).apps.filter(app => app.includeInListing);
+                    if (!oauth2apps.length) {
+                        type = 'imap';
+                    }
                 }
 
                 if (type) {
@@ -2003,6 +2021,7 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     account: Joi.string()
                         .empty('')
+                        .trim()
                         .max(256)
                         .allow(null)
                         .example('example')
@@ -2017,6 +2036,8 @@ When making API calls remember that requests against the same account are queued
                     syncFrom: accountSchemas.syncFrom,
                     notifyFrom: accountSchemas.notifyFrom,
 
+                    subconnections: accountSchemas.subconnections,
+
                     redirectUrl: Joi.string()
                         .empty('')
                         .uri({ scheme: ['http', 'https'], allowRelative: false })
@@ -2025,12 +2046,13 @@ When making API calls remember that requests against the same account are queued
                         .description('The user will be redirected to this URL after submitting the authentication form'),
 
                     type: Joi.string()
-                        .valid('imap', 'gmail', 'outlook', 'mailRu')
                         .empty('')
                         .allow(false)
                         .default(false)
                         .example('imap')
-                        .description('Display the form for the specified account type instead of allowing the user to choose')
+                        .description(
+                            'Display the form for the specified account type (either "imap" or an OAuth2 app ID) instead of allowing the user to choose'
+                        )
                 }).label('RequestAuthForm')
             },
 
@@ -2091,7 +2113,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2099,6 +2121,8 @@ When making API calls remember that requests against the same account are queued
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -2132,7 +2156,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
                 failAction: 'log'
             }
@@ -2182,7 +2206,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2242,7 +2266,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2308,15 +2332,83 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
                 }).label('DeleteRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/account/{account}/flush',
+
+        async handler(request, h) {
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            try {
+                return { flush: await accountObject.flush(request.payload) };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Request account flush',
+            notes: 'Deletes all email indexes from Redis and ElasticSearch and re-creates the index for that account. You can only run a single flush operation at a time, so you must wait until the previous flush has finished before initiating a new one.',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
+                }),
+
+                payload: Joi.object({
+                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true'),
+                    notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    syncFrom: accountSchemas.syncFrom
+                }).label('RequestFlush')
+            },
+
+            response: {
+                schema: Joi.object({
+                    flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Flush status')
+                }).label('RequestFlushResponse'),
                 failAction: 'log'
             }
         }
@@ -2392,9 +2484,15 @@ When making API calls remember that requests against the same account are queued
                     accounts: Joi.array()
                         .items(
                             Joi.object({
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                                 email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
+                                type: Joi.string()
+                                    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+                                    .example('outlook')
+                                    .description('Account type')
+                                    .required(),
+                                app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                                 state: Joi.string()
                                     .required()
                                     .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
@@ -2461,6 +2559,8 @@ When making API calls remember that requests against the same account are queued
                     'oauth2',
                     'state',
                     'smtpStatus',
+                    'path',
+                    'subconnections',
                     'webhooks',
                     'proxy',
                     'locale',
@@ -2469,6 +2569,23 @@ When making API calls remember that requests against the same account are queued
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
+                }
+
+                if (accountData.oauth2 && accountData.oauth2.provider) {
+                    let app = await oauth2Apps.get(accountData.oauth2.provider);
+
+                    if (app) {
+                        result.type = app.provider;
+                        if (app.id !== app.provider) {
+                            result.app = app.id;
+                        }
+                    } else {
+                        result.type = 'oauth2';
+                    }
+                } else if (accountData.imap && !accountData.imap.disabled) {
+                    result.type = 'imap';
+                } else {
+                    result.type = 'sending';
                 }
 
                 if (accountData.sync) {
@@ -2512,13 +2629,13 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
 
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
@@ -2528,6 +2645,10 @@ When making API calls remember that requests against the same account are queued
 
                     notifyFrom: accountSchemas.notifyFrom,
                     syncFrom: accountSchemas.syncFrom,
+
+                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+
+                    subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
                         .uri({
@@ -2541,6 +2662,13 @@ When making API calls remember that requests against the same account are queued
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
                     smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPResponse'),
+
+                    type: Joi.string()
+                        .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+                        .example('outlook')
+                        .description('Account type')
+                        .required(),
+                    app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('AccountResponse'),
@@ -2609,7 +2737,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -2678,7 +2806,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).example('example').required().description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2749,7 +2877,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).example('example').required().description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).example('example').required().description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -2818,7 +2946,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -2877,7 +3005,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).example('AAAAAQAACnA').required().description('Message ID')
                 }).label('RawMessageRequest')
             } /*,
@@ -2931,7 +3059,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     attachment: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(256)
@@ -3006,11 +3134,17 @@ When making API calls remember that requests against the same account are queued
                         .default(false)
                         .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
                         .label('EmbedImages'),
+                    preProcessHtml: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then pre-processes HTML for compatibility ')
+                        .label('PreProcess'),
                     documentStore: documentStoreSchema.default(false)
                 }),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().base64({ paddingRequired: false, urlSafe: true }).max(256).required().example('AAAAAQAACnA').description('Message ID')
                 })
             },
@@ -3069,7 +3203,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -3118,15 +3252,20 @@ When making API calls remember that requests against the same account are queued
 
                     to: Joi.array()
                         .items(addressSchema)
+                        .single()
                         .description('List of addresses')
                         .example([{ address: 'recipient@example.com' }])
                         .label('AddressList'),
 
-                    cc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    cc: Joi.array().items(addressSchema).single().description('List of addresses').label('AddressList'),
 
-                    bcc: Joi.array().items(addressSchema).description('List of addresses').label('AddressList'),
+                    bcc: Joi.array().items(addressSchema).single().description('List of addresses').label('AddressList'),
 
-                    subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+                    subject: Joi.string()
+                        .allow('')
+                        .max(10 * 1024)
+                        .example('What a wonderful message')
+                        .description('Message subject'),
 
                     text: Joi.string().max(MAX_ATTACHMENT_SIZE).example('Hello from myself!').description('Message Text'),
 
@@ -3141,11 +3280,26 @@ When making API calls remember that requests against the same account are queued
                                     .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
-                                    .description('Base64 formatted attachment file'),
+                                    .description('Base64 formatted attachment file')
+                                    .when('reference', {
+                                        is: Joi.exist().not(false, null),
+                                        then: Joi.forbidden(),
+                                        otherwise: Joi.required()
+                                    }),
+
                                 contentType: Joi.string().lowercase().max(256).example('image/gif'),
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
-                                encoding: Joi.string().valid('base64').default('base64')
+                                encoding: Joi.string().valid('base64').default('base64'),
+
+                                reference: Joi.string()
+                                    .base64({ paddingRequired: false, urlSafe: true })
+                                    .max(256)
+                                    .allow(false, null)
+                                    .example('AAAAAQAACnAcde')
+                                    .description(
+                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                    )
                             }).label('UploadAttachment')
                         )
                         .description('List of attachments')
@@ -3230,7 +3384,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
@@ -3297,7 +3451,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3370,7 +3524,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }),
 
@@ -3433,7 +3587,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3511,7 +3665,7 @@ When making API calls remember that requests against the same account are queued
                 }).label('MessageDeleteQuery'),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     message: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID')
                 }).label('MessageDelete')
             },
@@ -3571,7 +3725,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3667,10 +3821,10 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     text: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
-                        .max(256)
+                        .max(10 * 1024)
                         .required()
                         .example('AAAAAQAACnAcdfaaN')
                         .description('Message text ID')
@@ -3735,7 +3889,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID').label('AccountId')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID').label('AccountId')
                 }),
 
                 query: Joi.object({
@@ -3830,7 +3984,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -3925,7 +4079,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -4077,11 +4231,26 @@ When making API calls remember that requests against the same account are queued
                                     .max(MAX_ATTACHMENT_SIZE)
                                     .required()
                                     .example('R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=')
-                                    .description('Base64 formatted attachment file'),
+                                    .description('Base64 formatted attachment file')
+                                    .when('reference', {
+                                        is: Joi.exist().not(false, null),
+                                        then: Joi.forbidden(),
+                                        otherwise: Joi.required()
+                                    }),
+
                                 contentType: Joi.string().lowercase().max(256).example('image/gif'),
                                 contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
-                                encoding: Joi.string().valid('base64').default('base64')
+                                encoding: Joi.string().valid('base64').default('base64'),
+
+                                reference: Joi.string()
+                                    .base64({ paddingRequired: false, urlSafe: true })
+                                    .max(256)
+                                    .allow(false, null)
+                                    .example('AAAAAQAACnAcde')
+                                    .description(
+                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                    )
                             }).label('UploadAttachment')
                         )
                         .description('List of attachments')
@@ -4128,6 +4297,16 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.optional(),
                             otherwise: Joi.forbidden()
                         }),
+
+                    baseUrl: Joi.string()
+                        .trim()
+                        .empty('')
+                        .uri({
+                            scheme: ['http', 'https'],
+                            allowRelative: false
+                        })
+                        .example('https://customer123.myservice.com')
+                        .description('Optional base URL for trackers. This URL must point to your EmailEngine instance.'),
 
                     dryRun: Joi.boolean()
                         .truthy('Y', 'true', '1')
@@ -4319,6 +4498,13 @@ When making API calls remember that requests against the same account are queued
                         request.payload.serviceUrl = url.origin;
                         break;
                     }
+
+                    case 'webhooksEnabled':
+                        if (!request.payload.webhooksEnabled) {
+                            // clear error message (if exists)
+                            await settings.clear('webhookErrorFlag');
+                        }
+                        break;
                 }
 
                 await settings.set(key, request.payload[key]);
@@ -4363,6 +4549,180 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/v1/settings/queue/{queue}',
+
+        async handler(request) {
+            try {
+                let queue = request.params.queue;
+                let values = {
+                    queue
+                };
+
+                const [resActive, resDelayed, resPaused, resWaiting, resMeta] = await redis
+                    .multi()
+                    .llen(`${REDIS_PREFIX}bull:${queue}:active`)
+                    .zcard(`${REDIS_PREFIX}bull:${queue}:delayed`)
+                    .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
+                    .llen(`${REDIS_PREFIX}bull:${queue}:wait`)
+                    .hget(`${REDIS_PREFIX}bull:${queue}:meta`, 'paused')
+                    .exec();
+
+                if (resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0]) {
+                    // counting failed
+                    let err = new Error('Failed to count queue lengtho');
+                    err.statusCode = 500;
+                    throw err;
+                }
+
+                values.jobs = {
+                    active: Number(resActive[1]) || 0,
+                    delayed: Number(resDelayed[1]) || 0,
+                    paused: Number(resPaused[1]) || 0,
+                    waiting: Number(resWaiting[1]) || 0
+                };
+
+                values.paused = !!Number(resMeta[1]) || false;
+
+                return values;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Show queue information',
+            notes: 'Show queue status and current state',
+            tags: ['api', 'Settings'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    jobs: Joi.object({
+                        active: Joi.number().example(123).description('Jobs that are currently being processed'),
+                        delayed: Joi.number().example(123).description('Jobs that are processed in the future'),
+                        paused: Joi.number().example(123).description('Jobs that would be processed once queue processing is resumed'),
+                        waiting: Joi.number().example(123).description('Jobs that should be processed, but are waiting until there are any free handlers')
+                    }).label('QueueJobs'),
+                    paused: Joi.boolean().example(false).description('Is the queue paused or not')
+                }).label('SettingsQueueResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/settings/queue/{queue}',
+
+        async handler(request) {
+            try {
+                let queue = request.params.queue;
+
+                let queueObj = {
+                    documents: documentsQueue,
+                    notify: notifyQueue,
+                    submit: submitQueue
+                }[queue];
+
+                let values = {
+                    queue
+                };
+
+                for (let key of Object.keys(request.payload)) {
+                    switch (key) {
+                        case 'paused':
+                            if (request.payload[key]) {
+                                await queueObj.pause();
+                            } else {
+                                await queueObj.resume();
+                            }
+                            break;
+                    }
+                }
+
+                values.paused = await queueObj.isPaused();
+
+                return values;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Set queue settings',
+            notes: 'Set queue settings',
+            tags: ['api', 'Settings'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                }),
+
+                payload: Joi.object({
+                    paused: Joi.boolean().empty('').example(false).description('Set queue state to paused')
+                }).label('SettingsPutQueuePayload')
+            },
+
+            response: {
+                schema: Joi.object({
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    paused: Joi.boolean().example(false).description('Is the queue paused or not')
+                }).label('SettingsPutQueueResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/v1/logs/{account}',
 
         async handler(request) {
@@ -4388,7 +4748,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             }
         }
@@ -4837,7 +5197,7 @@ When making API calls remember that requests against the same account are queued
                         .items(
                             Joi.object({
                                 queueId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
-                                account: Joi.string().max(256).required().example('example').description('Account ID'),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                                 source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
 
                                 messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
@@ -4845,7 +5205,12 @@ When making API calls remember that requests against the same account are queued
                                     from: Joi.string().email().allow('').example('sender@example.com'),
                                     to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
                                 }).description('SMTP envelope'),
-                                subject: Joi.string().max(1024).example('What a wonderful message').description('Message subject'),
+
+                                subject: Joi.string()
+                                    .allow('')
+                                    .max(10 * 1024)
+                                    .example('What a wonderful message')
+                                    .description('Message subject'),
 
                                 created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this message was queued'),
                                 scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
@@ -4991,7 +5356,14 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 payload: Joi.object({
-                    account: Joi.string().allow(null).max(256).example('example').required().description('Account ID. Use `null` for public templates.'),
+                    account: Joi.string()
+                        .empty('')
+                        .trim()
+                        .allow(null)
+                        .max(256)
+                        .example('example')
+                        .required()
+                        .description('Account ID. Use `null` for public templates.'),
 
                     name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
                     description: Joi.string()
@@ -5018,7 +5390,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     created: Joi.boolean().description('Was the template created or not'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('CreateTemplateResponse'),
                 failAction: 'log'
@@ -5103,7 +5475,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     updated: Joi.boolean().description('Was the template updated or not'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('example').description('Template ID')
                 }).label('UpdateTemplateResponse'),
                 failAction: 'log'
@@ -5174,7 +5546,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
                     page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
                     pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
@@ -5252,7 +5624,7 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID'),
                     name: Joi.string().max(256).example('Transaction receipt').description('Name of the template').label('TemplateName').required(),
                     description: Joi.string()
@@ -5331,7 +5703,7 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the template deleted'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Template ID')
                 }).label('DeleteTemplateRequestResponse'),
                 failAction: 'log'
@@ -5385,7 +5757,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 query: Joi.object({
@@ -5402,8 +5774,496 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account flushed'),
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }).label('DeleteTemplateRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/oauth2',
+
+        async handler(request) {
+            try {
+                let response = await oauth2Apps.list(request.query.page, request.query.pageSize);
+
+                for (let app of response.apps) {
+                    for (let secretKey of ['clientSecret', 'serviceKey']) {
+                        if (app[secretKey]) {
+                            app[secretKey] = '******';
+                        }
+                    }
+
+                    if (app.extraScopes && !app.extraScopes.length) {
+                        delete app.extraScopes;
+                    }
+
+                    if (app.app) {
+                        delete app.app;
+                    }
+
+                    if (app.meta) {
+                        let authFlag = app.meta.authFlag;
+                        delete app.meta;
+                        if (authFlag && authFlag.message) {
+                            app.lastError = { response: authFlag.message };
+                        }
+                    }
+                }
+
+                return response;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List OAuth2 applications',
+            notes: 'Lists registered OAuth2 applications',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('GatewaysFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    apps: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                                name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
+                                description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
+                                title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
+                                provider: Joi.string()
+                                    .valid(...Object.keys(OAUTH_PROVIDERS))
+                                    .required()
+                                    .example('gmail')
+                                    .description('OAuth2 provider'),
+                                enabled: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('Is the application enabled')
+                                    .label('AppEnabled'),
+                                legacy: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('`true` for older OAuth2 apps set via the settings endpoint'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was added').required(),
+                                updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was updated'),
+                                includeInListing: Joi.boolean()
+                                    .truthy('Y', 'true', '1', 'on')
+                                    .falsy('N', 'false', 0, '')
+                                    .example(true)
+                                    .description('Is the application listed in the hosted authentication form'),
+
+                                clientId: Joi.string()
+                                    .example('4f05f488-d858-4f2c-bd12-1039062612fe')
+                                    .description('Client or Application ID for 3-legged OAuth2 applications'),
+                                clientSecret: Joi.string()
+                                    .valid('******')
+                                    .description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
+                                authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
+                                redirectUrl: Joi.string()
+                                    .uri({
+                                        scheme: ['http', 'https'],
+                                        allowRelative: false
+                                    })
+                                    .example('https://myservice.com/oauth')
+                                    .description('Redirect URL for 3-legged OAuth2 applications'),
+
+                                serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+                                serviceKey: Joi.string()
+                                    .valid('******')
+                                    .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
+
+                                lastError: lastErrorSchema.allow(null)
+                            }).label('OAuth2ResponseItem')
+                        )
+                        .label('OAuth2Entries')
+                }).label('OAuth2FilterResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/oauth2/{app}',
+
+        async handler(request) {
+            try {
+                let app = await oauth2Apps.get(request.params.app);
+
+                // remove secrets
+                for (let secretKey of ['clientSecret', 'serviceKey']) {
+                    if (app[secretKey]) {
+                        app[secretKey] = '******';
+                    }
+                }
+
+                if (app.extraScopes && !app.extraScopes.length) {
+                    delete app.extraScopes;
+                }
+
+                if (app.app) {
+                    delete app.app;
+                }
+
+                if (app.meta) {
+                    let authFlag = app.meta.authFlag;
+                    delete app.meta;
+                    if (authFlag && authFlag.message) {
+                        app.lastError = { response: authFlag.message };
+                    }
+                }
+
+                return app;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Get application info',
+            notes: 'Returns stored information about an OAuth2 application. Secrets are not included.',
+            tags: ['api', 'OAuth2 Applications'],
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                    name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
+                    description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
+                    title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
+                    provider: Joi.string()
+                        .valid(...Object.keys(OAUTH_PROVIDERS))
+                        .required()
+                        .example('gmail')
+                        .description('OAuth2 provider'),
+                    enabled: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .example(true)
+                        .description('Is the application enabled')
+                        .label('AppEnabled'),
+                    legacy: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .example(true)
+                        .description('`true` for older OAuth2 apps set via the settings endpoint'),
+                    created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was added').required(),
+                    updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this entry was updated'),
+                    includeInListing: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .example(true)
+                        .description('Is the application listed in the hosted authentication form'),
+
+                    clientId: Joi.string()
+                        .example('4f05f488-d858-4f2c-bd12-1039062612fe')
+                        .description('Client or Application ID for 3-legged OAuth2 applications'),
+                    clientSecret: Joi.string().valid('******').description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
+                    authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
+                    redirectUrl: Joi.string()
+                        .uri({
+                            scheme: ['http', 'https'],
+                            allowRelative: false
+                        })
+                        .example('https://myservice.com/oauth')
+                        .description('Redirect URL for 3-legged OAuth2 applications'),
+
+                    serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+                    serviceKey: Joi.string()
+                        .valid('******')
+                        .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
+
+                    accounts: Joi.number().example(12).description('The number of accounts registered with this application. Not available for legacy apps.'),
+
+                    lastError: lastErrorSchema.allow(null)
+                }).label('ApplicationResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/oauth2',
+
+        async handler(request) {
+            try {
+                let result = await oauth2Apps.create(request.payload);
+                return result;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Register OAuth2 application',
+            notes: 'Registers a new OAuth2 application for a specific provider',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                payload: Joi.object(oauthCreateSchema).tailor('api').label('CreateOAuth2App')
+            },
+
+            response: {
+                schema: Joi.object({
+                    id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                    created: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the app created')
+                }).label('CreateAppResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'PUT',
+        path: '/v1/oauth2/{app}',
+
+        async handler(request) {
+            try {
+                return await oauth2Apps.update(request.params.app, request.payload);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Update OAuth2 application',
+            notes: 'Updates OAuth2 application information',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
+                }),
+
+                payload: Joi.object({
+                    name: Joi.string().trim().empty('').max(256).example('My Gmail App').required().description('Application name'),
+                    description: Joi.string().trim().empty('').max(1024).example('My cool app').description('Application description'),
+                    title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
+
+                    enabled: Joi.boolean().truthy('Y', 'true', '1', 'on').falsy('N', 'false', 0, '').example(true).description('Enable this app'),
+
+                    clientId: Joi.string()
+                        .trim()
+                        .allow('', null, false)
+                        .max(256)
+                        .example('52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com')
+                        .description('Client or Application ID for 3-legged OAuth2 applications'),
+
+                    clientSecret: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(256)
+                        .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
+                        .description('Client secret for 3-legged OAuth2 applications'),
+
+                    extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
+
+                    serviceClient: Joi.string()
+                        .trim()
+                        .allow('', null, false)
+                        .max(256)
+                        .example('7103296518315821565203')
+                        .description('Service client ID for 2-legged OAuth2 applications'),
+
+                    serviceKey: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(100 * 1024)
+                        .example('-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgk...')
+                        .description('PEM formatted service secret for 2-legged OAuth2 applications'),
+
+                    authority: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(1024)
+                        .example('common')
+                        .description('Authorization tenant value for Outlook OAuth2 applications')
+                        .label('SupportedAccountTypes'),
+
+                    redirectUrl: Joi.string()
+                        .allow('', null, false)
+                        .uri({ scheme: ['http', 'https'], allowRelative: false })
+                        .example('https://myservice.com/oauth')
+                        .description('Redirect URL for 3-legged OAuth2 applications')
+                }).label('UpdateGateway')
+            },
+
+            response: {
+                schema: Joi.object({
+                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
+                }).label('UpdateGatewayResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'DELETE',
+        path: '/v1/oauth2/{app}',
+
+        async handler(request) {
+            try {
+                return await oauth2Apps.del(request.params.app);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Remove OAuth2 application',
+            notes: 'Delete OAuth2 application data',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
+                }).label('DeleteAppRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the gateway deleted'),
+                    accounts: Joi.number().example(12).description('The number of accounts registered with this application. Not available for legacy apps.')
+                }).label('DeleteAppRequestResponse'),
                 failAction: 'log'
             }
         }
@@ -5556,6 +6416,7 @@ When making API calls remember that requests against the same account are queued
 
                     user: Joi.string().empty('').trim().max(1024).label('UserName'),
                     pass: Joi.string().empty('').max(1024).label('Password'),
+
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
                         .min(1)
@@ -5563,6 +6424,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5638,6 +6500,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Service port number')
                         .label('Port')
                         .required(),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5718,6 +6581,7 @@ When making API calls remember that requests against the same account are queued
                         .example(465)
                         .description('Service port number')
                         .label('Port'),
+
                     secure: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -5888,16 +6752,16 @@ When making API calls remember that requests against the same account are queued
                 },
                 failAction,
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
                     accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
-                    provider: Joi.string().max(256).required().example('google').description('OAuth2 provider')
+                    provider: Joi.string().max(256).example('gmail').description('OAuth2 provider')
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
             }
@@ -5968,14 +6832,20 @@ When making API calls remember that requests against the same account are queued
                     let queueResponse = await accountObject.queueMessage(
                         {
                             account: accountData.account,
-                            subject: `Test email ${now}`,
-                            text: `Hello ${now}`,
-                            html: `<p>Hello ${now}</p>`,
+                            subject: `Delivery test ${now}`,
+                            text: `Hello
+
+This is an automated email to test deliverability settings. If you see this email, you can safely delete it.
+
+${now}`,
+                            html: `<p>Hello</p>
+<p>This is an automated email to test deliverability settings. If you see this email, you can safely delete it.</p>
+<p>${now}</p>`,
                             from: {
                                 name: accountData.name,
                                 address: accountData.email
                             },
-                            to: [{ name: '', address: testAccount.address }],
+                            to: [{ name: 'Delivery Test Server', address: testAccount.address }],
                             copy: false,
                             gateway: request.payload.gateway,
                             feedbackKey: `${REDIS_PREFIX}test-send:${testAccount.user}`,
@@ -6028,7 +6898,7 @@ When making API calls remember that requests against the same account are queued
                 failAction,
 
                 params: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID')
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID')
                 }),
 
                 payload: Joi.object({
@@ -6336,7 +7206,7 @@ When making API calls remember that requests against the same account are queued
                         .items(
                             Joi.object({
                                 recipient: Joi.string().email().example('user@example.com').description('Listed email address').required(),
-                                account: Joi.string().max(256).required().example('example').description('Account ID').required(),
+                                account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID').required(),
                                 messageId: Joi.string().example('<test123@example.com>').description('Message ID'),
                                 source: Joi.string().example('api').description('Which mechanism was used to add the entry'),
                                 reason: Joi.string().example('api').description('Why this entry was added'),
@@ -6431,7 +7301,7 @@ When making API calls remember that requests against the same account are queued
                 }).label('BlocklistListRequest'),
 
                 payload: Joi.object({
-                    account: Joi.string().max(256).required().example('example').description('Account ID'),
+                    account: Joi.string().empty('').trim().max(256).required().example('example').description('Account ID'),
                     recipient: Joi.string().empty('').email().example('user@example.com').description('Email address to add to the list').required(),
                     reason: Joi.string().empty('').default('block').description('Identifier for the blocking reason')
                 }).label('BlocklistListAddPayload')
@@ -6589,6 +7459,9 @@ When making API calls remember that requests against the same account are queued
         engines: {
             hbs: handlebars
         },
+        compileOptions: {
+            preventIndent: true
+        },
 
         relativeTo: pathlib.join(__dirname, '..'),
         path: './views',
@@ -6629,7 +7502,7 @@ When making API calls remember that requests against the same account are queued
             let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
-                    url: outlookAuthFlag.url || '/admin/config/oauth/outlook',
+                    url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: outlookAuthFlag.message
@@ -6639,7 +7512,7 @@ When making API calls remember that requests against the same account are queued
             let gmailAuthFlag = await settings.get('gmailAuthFlag');
             if (gmailAuthFlag && gmailAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailAuthFlag.url || '/admin/config/oauth/gmail',
+                    url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailAuthFlag.message
@@ -6649,7 +7522,7 @@ When making API calls remember that requests against the same account are queued
             let gmailServiceAuthFlag = await settings.get('gmailServiceAuthFlag');
             if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
                 systemAlerts.push({
-                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/gmailService',
+                    url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
                     level: 'danger',
                     icon: 'unlock-alt',
                     message: gmailServiceAuthFlag.message
@@ -6782,6 +7655,7 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/admin/changes',
+
         async handler(request, h) {
             request.app.stream = new ResponseStream();
             finished(request.app.stream, err => request.app.stream.finalize(err));

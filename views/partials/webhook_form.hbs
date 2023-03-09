@@ -47,6 +47,34 @@
                 default.</small>
         </div>
 
+        <div class="card mb-4">
+            <a href="#customHeadersBlock"
+                class="d-block card-header py-3 {{#unless values.customHeaders}} collapsed{{/unless}}"
+                data-toggle="collapse" role="button" aria-expanded="true" aria-controls="customHeadersBlock">
+                <h6 class="m-0 font-weight-bold text-primary">Custom request headers</h6>
+            </a>
+            <div class="collapse {{#if values.customHeaders}} show{{/if}}" id="customHeadersBlock">
+                <div class="card-body">
+
+                    <p>Here you can list additional request headers to be passed with each webhook request.</p>
+
+                    <div class="form-group">
+                        <label for="customHeaders">List of custom headers</label>
+
+                        <textarea class="form-control text-monospace {{#if errors.customHeaders}}is-invalid{{/if}}"
+                            id="customHeaders" name="customHeaders" rows="5" spellcheck="false"
+                            data-enable-grammarly="false"
+                            placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
+                        {{#if errors.customHeaders}}
+                        <span class="invalid-feedback">{{errors.customHeaders}}</span>
+                        {{/if}}
+                        <small class="form-text text-muted">Keep one header per line</small>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <div class="form-group">
             <label for="editor-fn">Filter function</label>
             <div style="line-height: 1; margin-bottom: 10px;">

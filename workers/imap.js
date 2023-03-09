@@ -148,6 +148,7 @@ class ConnectionHandler {
             documentsQueue,
             flowProducer,
             accountLogger,
+            call: msg => this.call(msg),
             logRaw: EENGINE_LOG_RAW
         });
         accountObject.logger = accountObject.connection.logger;
@@ -210,6 +211,44 @@ class ConnectionHandler {
                 });
 
                 await accountObject.connection.syncMailboxes();
+
+                return true;
+            }
+        }
+    }
+
+    async pauseConnection(account) {
+        logger.info({ msg: 'Account pause requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account pause requested'
+                });
+
+                await accountObject.connection.pause();
+
+                return true;
+            }
+        }
+    }
+
+    async resumeConnection(account) {
+        logger.info({ msg: 'Account resume requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account resume requested'
+                });
+
+                await accountObject.connection.resume();
 
                 return true;
             }
@@ -371,6 +410,22 @@ class ConnectionHandler {
         return await accountData.connection.queueMessage(message.data, message.meta);
     }
 
+    async subconnections(message) {
+        if (!this.accounts.has(message.account)) {
+            return [];
+        }
+
+        const accountObject = this.accounts.get(message.account);
+        if (!accountObject.connection) {
+            return [];
+        }
+
+        return accountObject.connection.subconnections.map(subconnection => ({
+            path: subconnection.path,
+            state: subconnection.state
+        }));
+    }
+
     async uploadMessage(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -486,9 +541,9 @@ class ConnectionHandler {
         logger.error({ msg: 'Terminating process' });
         this.killed = true;
 
-        this.accounts.forEach(account => {
-            if (account.connection) {
-                account.connection.close();
+        this.accounts.forEach(accountObject => {
+            if (accountObject && accountObject.connection) {
+                accountObject.connection.close();
             }
         });
 
@@ -534,6 +589,8 @@ class ConnectionHandler {
             case 'delete':
             case 'update':
             case 'sync':
+            case 'pause':
+            case 'resume':
                 return await this[`${message.cmd}Connection`](message.account);
 
             case 'listMessages':
@@ -554,6 +611,7 @@ class ConnectionHandler {
             case 'submitMessage':
             case 'queueMessage':
             case 'uploadMessage':
+            case 'subconnections':
                 return await this[message.cmd](message);
 
             case 'countConnections': {

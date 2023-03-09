@@ -1,0 +1,83 @@
+Delivered-To: sender@example.com
+ARC-Seal: i=1; a=rsa-sha256; t=1675199174; cv=none; 
+	d=zohomail.com; s=zohoarc; 
+	b=EqK7TFnKoqO05/iIaAxJZusPe/4Fi8s/8APfkY/aTeVZ2Hj2GYiyQ5qZHSiuuO+G9iGt6GDW6Jn0Vw6roHjNrA86DEBAoQnVlAwlVlH18GD+L28IxcWJPJOfzBzApefYgAHvIjOU5cxtOSCjZRm7XpTb6MwwTce9aG8yWfUYoXA=
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=zohomail.com; s=zohoarc; 
+	t=1675199174; h=Content-Type:Date:From:In-Reply-To:MIME-Version:Message-ID:References:Subject:To; 
+	bh=tQHFXD90H97lDAcZN9kN++gVh6bXghMWmqBMnGuFG8A=; 
+	b=YKCCKsg86opaQYAX8EFr/ofMeMNJie0uzitzyh+3zV866sHdcidWOoAmkk0S2sR2/DB2TMgpKzJVmaZ+z5W3ngW53H0g4kLCeVah7eHTWbGKgkvTqkNvdXby+LkxJa2gFzdH5AqE1RMFa9Yk5k42C0rYvRSwVHip3ds3jMAK12E=
+ARC-Authentication-Results: i=1; mx.zohomail.com;
+	dkim=pass  header.i=mail.zoho.com;
+	spf=pass;
+	dmarc=pass header.from=<mailer-daemon@mail.zoho.com>
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed; t=1675199174;
+	s=zoho; d=mail.zoho.com; i=mailer-daemon@mail.zoho.com;
+	h=Date:Date:From:From:To:To:Message-Id:Message-Id:In-Reply-To:References:Subject:Subject:MIME-Version:Content-Type:Reply-To:Cc;
+	bh=tQHFXD90H97lDAcZN9kN++gVh6bXghMWmqBMnGuFG8A=;
+	b=nQ01z2mbnmbHvl1qJMGAuwgUQGN/DR21okc+40CcURS+fkmKsfADBAXNzk5hfdxW
+	b38IwvMHgVEbMq0A0EvCv9GUB45tqmDqnIXBuJCEeJKWIJtCXKBnbuONsXJgevVMoGc
+	2D4uVA6ypeqlU5MuhIjx/PPkssnU7XgsIy3FgQWQ=
+Received: from mail.zoho.com by mx.zohomail.com
+	with SMTP id 1675199174746457.6819951970117; Tue, 31 Jan 2023 13:06:14 -0800 (PST)
+Date: Tue, 31 Jan 2023 13:06:14 -0800
+From: mailer-daemon@mail.zoho.com
+To: sender@example.com
+Message-Id: <18609a6d859.ecd7eab52042649882.84342979897715207@zohomail.com>
+In-Reply-To: <63d982c2660381675199170@smtppro.zoho.com>
+References: <63d982c2660381675199170@smtppro.zoho.com>
+Subject: Undelivered Mail Returned to Sender
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status; 
+	boundary="----=_Part_20940_776074881.1675199174745"
+User-Agent: Zoho Mail
+X-Mailer: Zoho Mail
+X-ZohoMail-Owner: <18609a6d859.ecd7eab52042649882.84342979897715207@zohomail.com>+zmo_0_
+
+------=_Part_20940_776074881.1675199174745
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Description: Notification
+
+This message was created automatically by mail delivery software.
+ A message that you sent could not be delivered to one or more of its recipients. This is a permanent error. 
+
+recipient@example.com, ERROR CODE :550 - 5.2.1 The email account that you tried to reach is disabled. Learn more at
+			5.2.1  https://support.google.com/mail/?p=DisabledUser j8-20020a170903024800b001946612570csi19333477plh.316 - gsmtp
+
+
+
+
+------=_Part_20940_776074881.1675199174745
+Content-Type: message/delivery-status
+Content-Transfer-Encoding: 7bit
+Content-Description: Delivery report
+
+Reporting-MTA: dns; mx.zohomail.com
+Arrival-Date: Tue, 31 Jan 2023 21:06:10 +0000
+
+Original-Recipient: rfc822; recipient@example.com
+Final-Recipient: rfc822; recipient@example.com
+Status: 550
+Action: failed
+Last-Attempt-Date: 31 Jan 2023 21:06:14 GMT
+Diagnostic-Code: 5.2.1 The email account that you tried to reach is disabled. Learn more at
+			5.2.1  https://support.google.com/mail/?p=DisabledUser j8-20020a170903024800b001946612570csi19333477plh.316 - gsmtp
+
+
+------=_Part_20940_776074881.1675199174745
+Content-Type: text/rfc822; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Description: Undelivered Message
+
+
+ Received:from app.postaga.com (106.109.197.104.bc.googleusercontent.com [104.197.109.106]) by mx.zohomail.com
+	with SMTPS id 16751991711571017.8204286637366; Tue, 31 Jan 2023 13:06:11 -0800 (PST)
+ Message-ID:<63d982c2660381675199170@smtppro.zoho.com>
+ Date:Tue, 31 Jan 2023 21:06:10 +0000
+ From:Sender Name <sender@example.com>
+ To:recipient@example.com
+ Subject:Example
+ Content-Type:multipart/alternative;
+ boundary="b1_TKDejv2QiNAmhD4qg9TRParBDoHPsxfsxKoTFpOAZ8Q"
+------=_Part_20940_776074881.1675199174745--
+

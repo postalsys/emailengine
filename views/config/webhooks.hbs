@@ -152,14 +152,46 @@
     </div>
 
     <div class="card mt-4">
+        <a href="#customHeadersBlock"
+            class="d-block card-header py-3 {{#unless values.customHeaders}} collapsed{{/unless}}"
+            data-toggle="collapse" role="button" aria-expanded="true" aria-controls="customHeadersBlock">
+            <h6 class="m-0 font-weight-bold text-primary">Custom request headers</h6>
+        </a>
+        <div class="collapse {{#if values.customHeaders}} show{{/if}}" id="customHeadersBlock">
+            <div class="card-body">
+
+                <p>Here you can list additional request headers to be passed with each webhook request.</p>
+
+                <div class="form-group">
+                    <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">webhooksCustomHeaders</a>]
+                    </div>
+
+                    <label for="customHeaders">List of custom headers</label>
+
+                    <textarea class="form-control text-monospace {{#if errors.customHeaders}}is-invalid{{/if}}"
+                        id="customHeaders" name="customHeaders" rows="5" spellcheck="false"
+                        data-enable-grammarly="false"
+                        placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
+                    {{#if errors.customHeaders}}
+                    <span class="invalid-feedback">{{errors.customHeaders}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Keep one header per line</small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Headers to include</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Email headers to include in the payload</h6>
         </div>
         <div class="card-body">
 
             <p>By default, EmailEngine includes envelope-specific data like sender and recipient addresses or Message-ID
                 values in the webhook payload. If needed, you can configure EmailEngine to include the contents of other
-                header keys as well.</p>
+                header keys of a new email as well.</p>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
@@ -253,13 +285,15 @@
 
         const sendTestPayload = async () => {
             const webhooks = document.getElementById('settingsWebhooks').value.trim();
+            const customHeaders = document.getElementById('customHeaders').value.trim();
 
             const res = await fetch('/admin/config/webhooks/test', {
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({
                     crumb: document.getElementById('crumb').value,
-                    webhooks
+                    webhooks,
+                    customHeaders
                 })
             })
             if (!res.ok) {

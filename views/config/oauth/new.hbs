@@ -1,0 +1,87 @@
+{{> oauth_config_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/config/oauth">OAuth2</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Register a new {{providerData.comment}} app</li>
+    </ol>
+</nav>
+
+{{#if providerData.tutorialUrl}}
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+
+                <div>Read about setting up {{providerData.comment}} OAuth2 project from <a
+                        href="{{providerData.tutorialUrl}}" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                </div>
+
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+<form method="post" action="/admin/config/oauth/new">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" name="provider" value="{{values.provider}}">
+
+    {{> oauth_form }}
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-save"></i>
+            </span>
+            <span class="text">Register app</span>
+        </button>
+    </div>
+</form>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let serviceFileElm = document.getElementById('serviceFile');
+        if (serviceFileElm) {
+            serviceFileElm.addEventListener('change', e => {
+                e.preventDefault();
+
+                if (!serviceFileElm.files || !serviceFileElm.files.length) {
+                    return;
+                }
+
+                let fr = new FileReader();
+                fr.onload = (evt) => {
+                    let data;
+                    try {
+                        data = JSON.parse(evt.target.result);
+                    } catch (err) {
+                        return showToast('Selected file is not JSON formatted', 'alert-triangle');
+                    }
+
+                    if (data.type !== 'service_account') {
+                        return showToast('Selected file is not in a service key format', 'alert-triangle');
+                    }
+
+                    if (!data.client_id || !data.private_key) {
+                        return showToast('Selected file does not contain required values', 'alert-triangle');
+                    }
+
+                    document.getElementById('serviceClient').value = data.client_id;
+                    document.getElementById('serviceKey').value = data.private_key;
+
+                    return showToast('Loaded service values from file', 'check-circle');
+                };
+                fr.readAsText(serviceFileElm.files[0]);
+            });
+        }
+
+    });
+
+</script>
