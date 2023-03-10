@@ -378,7 +378,7 @@ const documentsWorker = new Worker(
                                     .expire(tombstoneTdy, 24 * 3600)
                                     .exec();
 
-                                logger.error({
+                                logger.info({
                                     msg: 'Added tombstone for missing email',
                                     action: 'document',
                                     queue: job.queue.name,

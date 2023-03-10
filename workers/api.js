@@ -4298,6 +4298,23 @@ When making API calls remember that requests against the same account are queued
                             otherwise: Joi.forbidden()
                         }),
 
+                    dsn: Joi.object({
+                        id: Joi.string().trim().empty('').max(256).description('The envelope identifier that would be included in the response (ENVID)'),
+                        return: Joi.string()
+                            .trim()
+                            .empty('')
+                            .valid('headers', 'full')
+                            .required()
+                            .description('Specifies if only headers or the entire body of the message should be included in the response (RET)'),
+                        notify: Joi.array()
+                            .single()
+                            .items(Joi.string().valid('never', 'success', 'failure', 'delay').label('NotifyEntry'))
+                            .description('Defines the conditions under which a DSN response should be sent'),
+                        recipient: Joi.string().trim().empty('').email().description('The email address the DSN should be sent (ORCPT)')
+                    })
+                        .description('Request DNS notifications')
+                        .label('DSN'),
+
                     baseUrl: Joi.string()
                         .trim()
                         .empty('')

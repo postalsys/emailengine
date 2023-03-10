@@ -71,7 +71,7 @@
         "ioredis": "5.3.1",
         "ipaddr.js": "2.0.1",
         "joi": "17.8.3",
-        "jquery": "3.6.3",
+        "jquery": "3.6.4",
         "js-beautify": "1.14.7",
         "libbase64": "1.2.1",
         "libmime": "5.2.1",
