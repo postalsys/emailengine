@@ -63,6 +63,11 @@ async function metrics(logger, key, method, ...args) {
 const documentsWorker = new Worker(
     'documents',
     async job => {
+        const dateKeyTdy = new Date().toISOString().substring(0, 10).replace(/-/g, '');
+        const dateKeyYdy = new Date(Date.now() - 24 * 3600 * 1000).toISOString().substring(0, 10).replace(/-/g, '');
+        const tombstoneTdy = `${REDIS_PREFIX}tomb:${dateKeyTdy}`;
+        const tombstoneYdy = `${REDIS_PREFIX}tomb:${dateKeyYdy}`;
+
         switch (job.data.event) {
             case ACCOUNT_DELETED:
                 {
@@ -193,13 +198,42 @@ const documentsWorker = new Worker(
                         return;
                     }
 
+                    let messageData = job.data.data;
+                    let messageId = messageData.id;
+
+                    // check tombstone for race conditions (might be already deleted)
+                    let [[err1, isDeleted1], [err2, isDeleted2]] = await redis
+                        .multi()
+                        .sismember(tombstoneTdy, `${job.data.account}:${messageId}`)
+                        .sismember(tombstoneYdy, `${job.data.account}:${messageId}`)
+                        .exec();
+
+                    if (err1) {
+                        logger.trace({ msg: 'Failed checking tombstone', key: tombstoneTdy, err: err1 });
+                    }
+
+                    if (err2) {
+                        logger.trace({ msg: 'Failed checking tombstone', key: tombstoneYdy, err: err2 });
+                    }
+
+                    if (isDeleted1 || isDeleted2) {
+                        logger.info({
+                            msg: 'Skipped deleted email',
+                            action: 'document',
+                            queue: job.queue.name,
+                            code: 'document_tombstone_found',
+                            job: job.id,
+                            event: job.name,
+                            account: job.data.account,
+                            entryId: messageId
+                        });
+                        break;
+                    }
+
                     const { index, client } = await getESClient(logger);
                     if (!client) {
                         return;
                     }
-
-                    let messageData = job.data.data;
-                    let messageId = messageData.id;
 
                     let baseObject = {
                         account: job.data.account,
@@ -268,7 +302,8 @@ const documentsWorker = new Worker(
                             code: 'document_index',
                             job: job.id,
                             event: job.name,
-                            account: job.data.account
+                            account: job.data.account,
+                            entryId: messageId
                         });
                         break;
                     }
@@ -289,6 +324,7 @@ const documentsWorker = new Worker(
                             job: job.id,
                             event: job.name,
                             account: job.data.account,
+                            entryId: messageId,
                             request: { index, id: `${job.data.account}:${messageId}`, document: messageData },
                             err
                         });
@@ -303,6 +339,7 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        entryId: messageId,
                         indexResult
                     });
                 }
@@ -333,6 +370,25 @@ const documentsWorker = new Worker(
                             case 'not_found':
                                 // ignore error
                                 deleteResult = Object.assign({ failed: true }, err.meta.body);
+
+                                // set tombstone to prevent indexing this message in case of race conditions
+                                await redis
+                                    .multi()
+                                    .sadd(tombstoneTdy, `${job.data.account}:${messageId}`)
+                                    .expire(tombstoneTdy, 24 * 3600)
+                                    .exec();
+
+                                logger.error({
+                                    msg: 'Added tombstone for missing email',
+                                    action: 'document',
+                                    queue: job.queue.name,
+                                    code: 'document_tombstone_added',
+                                    job: job.id,
+                                    event: job.name,
+                                    account: job.data.account,
+                                    entryId: messageId
+                                });
+
                                 break;
                             default:
                                 logger.error({
@@ -343,6 +399,7 @@ const documentsWorker = new Worker(
                                     job: job.id,
                                     event: job.name,
                                     account: job.data.account,
+                                    entryId: messageId,
                                     index,
                                     request: {
                                         id: `${job.data.account}:${messageId}`
@@ -361,6 +418,7 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        entryId: messageId,
                         index,
                         request: {
                             id: `${job.data.account}:${messageId}`
@@ -425,6 +483,7 @@ const documentsWorker = new Worker(
                                         job: job.id,
                                         event: job.name,
                                         account: job.data.account,
+                                        entryId: messageId,
                                         request: {
                                             index,
                                             id: `${job.data.account}:${messageId}`,
@@ -447,6 +506,7 @@ const documentsWorker = new Worker(
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        entryId: messageId,
                         request: {
                             index,
                             id: `${job.data.account}:${messageId}`,
@@ -526,6 +586,7 @@ if( ctx._source.bounces != null) {
                                     job: job.id,
                                     event: job.name,
                                     account: job.data.account,
+                                    entryId: messageId,
                                     request: {
                                         index,
                                         id: `${job.data.account}:${messageId}`,
@@ -545,6 +606,7 @@ if( ctx._source.bounces != null) {
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
+                        entryId: messageId,
                         request: {
                             index,
                             id: `${job.data.account}:${messageId}`,
