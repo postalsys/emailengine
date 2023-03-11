@@ -2,7 +2,7 @@ on:
     push:
         branches:
             - master
-            - delivery-test
+            - dsn-test
 
 name: Deploy test instance
 
