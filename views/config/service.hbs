@@ -323,8 +323,10 @@
                 {{#if errors.generateEmailSummary}}
                 <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                 {{/if}}
-                <small class="form-text text-muted">EmailEngine will use OpenAI ChatGPT to generate a summary and
-                    sentiment assessment for incoming emails if this option is enabled. Requires a valid OpenAI API
+                <small class="form-text text-muted">EmailEngine will use OpenAI ChatGPT to <a
+                        href="https://docs.emailengine.app/generating-summaries-of-new-emails-using-chatgpt/"
+                        target="_blank" referrerpolicy="{{referrerPolicy}}">generate a summary and sentiment
+                        assessment</a> for incoming emails if this option is enabled. Requires a valid OpenAI API
                     key.</small>
             </div>
 
