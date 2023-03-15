@@ -308,6 +308,9 @@ const documentsWorker = new Worker(
                         break;
                     }
 
+                    // do not allow earlier updates than this timestamp
+                    emailDocument.updateTime = new Date(job.data.date).getTime();
+
                     let indexResult;
                     try {
                         indexResult = await client.index({
@@ -445,28 +448,43 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let updates = {};
-                    if (messageData.changes && messageData.changes.flags && messageData.changes.flags.value) {
-                        updates.flags = messageData.changes.flags.value;
+                    let params = {
+                        updateTime: new Date(job.data.date).getTime()
+                    };
 
-                        updates.unseen = updates.flags && !updates.flags.includes('\\Seen') ? true : false;
-                        updates.flagged = updates.flags && updates.flags.includes('\\Flagged') ? true : false;
-                        updates.answered = updates.flags && updates.flags.includes('\\Answered') ? true : false;
-                        updates.draft = updates.flags && updates.flags.includes('\\Draft') ? true : false;
+                    if (messageData.changes && messageData.changes.flags && messageData.changes.flags.value) {
+                        params.flags = messageData.changes.flags.value;
+                        params.unseen = params.flags && !params.flags.includes('\\Seen') ? true : false;
+                        params.flagged = params.flags && params.flags.includes('\\Flagged') ? true : false;
+                        params.answered = params.flags && params.flags.includes('\\Answered') ? true : false;
+                        params.draft = params.flags && params.flags.includes('\\Draft') ? true : false;
                     }
 
                     if (messageData.changes && messageData.changes.labels && messageData.changes.labels.value) {
-                        updates.labels = messageData.changes.labels.value;
+                        params.labels = messageData.changes.labels.value;
                     }
+
+                    let script = {
+                        lang: 'painless',
+                        source: `
+                            if ( ctx._source.updateTime != null && ctx._source.updateTime >= params.updateTime ){
+                                ctx.op = 'none';
+                            } else {
+${Object.keys(params)
+    .map(k => `${' '.repeat(32)}ctx._source.${k} = params.${k};`)
+    .join('\n')}
+                            }`,
+                        params
+                    };
 
                     let updateResult;
 
-                    if (Object.keys(updates).length) {
+                    if (Object.keys(params).length > 1) {
                         try {
                             updateResult = await client.update({
                                 index,
                                 id: `${job.data.account}:${messageId}`,
-                                doc: updates
+                                script
                             });
                         } catch (err) {
                             switch (err.meta && err.meta.body && err.meta.body.error && err.meta.body.error.type) {
@@ -487,7 +505,7 @@ const documentsWorker = new Worker(
                                         request: {
                                             index,
                                             id: `${job.data.account}:${messageId}`,
-                                            doc: updates
+                                            doc: params
                                         },
                                         err
                                     });
@@ -510,7 +528,7 @@ const documentsWorker = new Worker(
                         request: {
                             index,
                             id: `${job.data.account}:${messageId}`,
-                            doc: updates
+                            doc: params
                         },
                         updateResult
                     });
