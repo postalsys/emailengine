@@ -266,6 +266,20 @@
                     bytes of plaintext and 1000 bytes of HTML.</small>
             </div>
 
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">notifyCalendarEvents</a>]
+                </div>
+                <input type="checkbox" class="form-check-input {{#if errors.notifyCalendarEvents}}is-invalid{{/if}}"
+                    data-target="text-list" id="settingsnotifyCalendarEvents" name="notifyCalendarEvents" {{#if
+                    values.notifyCalendarEvents}}checked{{/if}} />
+                <label class="form-check-label" for="settingsnotifyCalendarEvents">Include calendar events in new email
+                    webhooks</label>
+                {{#if errors.notifyCalendarEvents}}
+                <span class="invalid-feedback">{{errors.notifyCalendarEvents}}</span>
+                {{/if}}
+            </div>
+
         </div>
     </div>
 
