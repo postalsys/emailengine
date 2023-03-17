@@ -1914,9 +1914,9 @@ When making API calls remember that requests against the same account are queued
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
 
-                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
 
                     oauth2: Joi.object(oauth2Schema).allow(false).description('OAuth2 configuration').label('OAuth2'),
 
@@ -4880,8 +4880,8 @@ When making API calls remember that requests against the same account are queued
 
                 payload: Joi.object({
                     mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
-                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
-                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
                     proxy: settingsSchema.proxyUrl
                 }).label('VerifyAccount')
             },
