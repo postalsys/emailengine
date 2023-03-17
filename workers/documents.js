@@ -284,13 +284,28 @@ const documentsWorker = new Worker(
                     if (messageData.attachments) {
                         for (let attachment of messageData.attachments) {
                             if ('filename' in attachment && !attachment.filename) {
-                                // remove falys filenames, otherwise these will be casted into strings
+                                // remove falsy filenames, otherwise these will be casted into strings
                                 delete attachment.filename;
                             }
                         }
                     }
 
                     messageData.preview = generateTextPreview(textContent, 220);
+
+                    // Remove event file content if the attachment exists
+                    if (messageData.calendarEvents) {
+                        for (let calendarEvent of messageData.calendarEvents) {
+                            if (calendarEvent.attachment) {
+                                let attachment =
+                                    messageData.attachments && messageData.attachments.find(attachment => attachment.id === calendarEvent.attachment);
+                                if (attachment && attachment.content) {
+                                    // no need for duplicate data
+                                    delete calendarEvent.content;
+                                    delete calendarEvent.encoding;
+                                }
+                            }
+                        }
+                    }
 
                     let emailDocument = await preProcess.run(messageData);
                     if (!emailDocument) {
