@@ -1139,6 +1139,10 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
+            if (!accountData.account) {
+                accountData.account = null;
+            }
+
             const accountMeta = accountData._meta || {};
             delete accountData._meta;
 
