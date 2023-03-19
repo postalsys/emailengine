@@ -278,6 +278,10 @@
                 {{#if errors.notifyCalendarEvents}}
                 <span class="invalid-feedback">{{errors.notifyCalendarEvents}}</span>
                 {{/if}}
+                <small class="form-text text-muted">If enabled, then EmailEngine will scan incoming emails for calendar
+                    attachments, and if such an attachment is found, then parses it and includes the basic details and
+                    the calendar file itself in base64 encoding as part of the <code>calendarEvents</code> array in the
+                    <code>messageNew</code> webhook payload.</small>
             </div>
 
         </div>
