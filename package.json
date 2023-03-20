@@ -72,7 +72,7 @@
         "ioredfour": "1.2.0-ioredis-07",
         "ioredis": "5.3.1",
         "ipaddr.js": "2.0.1",
-        "joi": "17.8.4",
+        "joi": "17.9.0",
         "jquery": "3.6.4",
         "js-beautify": "1.14.7",
         "libbase64": "1.2.1",

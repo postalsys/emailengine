@@ -65,8 +65,8 @@ const documentsWorker = new Worker(
     async job => {
         const dateKeyTdy = new Date().toISOString().substring(0, 10).replace(/-/g, '');
         const dateKeyYdy = new Date(Date.now() - 24 * 3600 * 1000).toISOString().substring(0, 10).replace(/-/g, '');
-        const tombstoneTdy = `${REDIS_PREFIX}tomb:${dateKeyTdy}`;
-        const tombstoneYdy = `${REDIS_PREFIX}tomb:${dateKeyYdy}`;
+        const tombstoneTdy = `${REDIS_PREFIX}tomb:${job.data.account}:${dateKeyTdy}`;
+        const tombstoneYdy = `${REDIS_PREFIX}tomb:${job.data.account}:${dateKeyYdy}`;
 
         switch (job.data.event) {
             case ACCOUNT_DELETED:
@@ -204,8 +204,8 @@ const documentsWorker = new Worker(
                     // check tombstone for race conditions (might be already deleted)
                     let [[err1, isDeleted1], [err2, isDeleted2]] = await redis
                         .multi()
-                        .sismember(tombstoneTdy, `${job.data.account}:${messageId}`)
-                        .sismember(tombstoneYdy, `${job.data.account}:${messageId}`)
+                        .sismember(tombstoneTdy, `${messageId}`)
+                        .sismember(tombstoneYdy, `${messageId}`)
                         .exec();
 
                     if (err1) {
@@ -392,7 +392,7 @@ const documentsWorker = new Worker(
                                 // set tombstone to prevent indexing this message in case of race conditions
                                 await redis
                                     .multi()
-                                    .sadd(tombstoneTdy, `${job.data.account}:${messageId}`)
+                                    .sadd(tombstoneTdy, `${messageId}`)
                                     .expire(tombstoneTdy, 24 * 3600)
                                     .exec();
 
