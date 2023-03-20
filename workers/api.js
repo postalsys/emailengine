@@ -3132,6 +3132,16 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
+
+                    webSafeHtml: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'Shorthand option to fetch and preprocess HTML and inlined images. Overrides `textType`, `preProcessHtml`, and `preProcessHtml` options.'
+                        )
+                        .label('WebSafeHtml'),
+
                     embedAttachedImages: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -3142,8 +3152,9 @@ When making API calls remember that requests against the same account are queued
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
-                        .description('If true, then pre-processes HTML for compatibility ')
+                        .description('If true, then pre-processes HTML for compatibility')
                         .label('PreProcess'),
+
                     documentStore: documentStoreSchema.default(false)
                 }),
 
