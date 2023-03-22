@@ -4879,7 +4879,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await verifyAccountInfo(request.payload);
+                return await verifyAccountInfo(request.payload, request.logger.child({ action: 'verify-account' }));
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
