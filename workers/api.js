@@ -2556,23 +2556,34 @@ When making API calls remember that requests against the same account are queued
                     'name',
                     'email',
                     'copy',
+                    'logs',
                     'notifyFrom',
                     'syncFrom',
+                    'path',
+                    'subconnections',
+                    'webhooks',
+                    'proxy',
                     'imap',
                     'smtp',
                     'oauth2',
                     'state',
                     'smtpStatus',
-                    'path',
-                    'subconnections',
-                    'webhooks',
-                    'proxy',
                     'locale',
                     'tz'
                 ]) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
+                }
+
+                // default false
+                for (let key of ['logs']) {
+                    result[key] = !!result[key];
+                }
+
+                // default null
+                for (let key of ['notifyFrom', 'syncFrom', 'lastError', 'smtpStatus']) {
+                    result[key] = result[key] || null;
                 }
 
                 if (accountData.oauth2 && accountData.oauth2.provider) {
@@ -2666,6 +2677,19 @@ When making API calls remember that requests against the same account are queued
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
                     smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPResponse'),
+
+                    oauth2: Joi.object(oauth2Schema).description('OAuth2 configuration').label('Oauth2Response'),
+
+                    state: Joi.string()
+                        .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                        .example('connected')
+                        .description('Informational account state')
+                        .label('AccountInfoState'),
+
+                    smtpStatus: Joi.object().unknown().description('Information about the last SMTP connection attempt').label('SMTPInfoStatus'),
+
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     type: Joi.string()
                         .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
