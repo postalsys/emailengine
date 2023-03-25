@@ -63,6 +63,8 @@ function run() {
                     authData.password = passwordHash;
 
                     await settings.set('authData', authData);
+                    await settings.set('totpEnabled', false);
+                    await settings.set('totpSeed', false);
 
                     return { password, passwordHash };
                 };
