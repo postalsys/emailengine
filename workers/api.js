@@ -745,6 +745,11 @@ When making API calls remember that requests against the same account are queued
                 return { isValid: false };
             }
 
+            // unless it is a login or TOPT (or public) page, require TOTP code
+            if (session.requireTotp && !['/{any*}', '/admin/totp', '/admin/login'].includes(request.route && request.route.path)) {
+                request.requireTotp = true;
+            }
+
             return {
                 isValid: true,
                 credentials: {
@@ -7706,6 +7711,21 @@ ${now}`,
     };
 
     server.ext('onPreResponse', preResponse);
+
+    server.ext('onPostAuth', async (request, h) => {
+        if (request.requireTotp) {
+            // Redirect authenticated pages to login page if TOTP is required
+            let url = new URL(`admin/login`, 'http://localhost');
+
+            let nextUrl = (request.query && request.query.next) || (request.payload && request.payload.next) || false;
+            if (nextUrl) {
+                url.searchParams.append('next', nextUrl);
+            }
+
+            return h.redirect(url.pathname + url.search).takeover();
+        }
+        return h.continue;
+    });
 
     server.route({
         method: 'GET',
