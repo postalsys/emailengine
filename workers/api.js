@@ -278,6 +278,10 @@ async function call(message, transferList) {
     });
 }
 
+async function checkRateLimit(key, count, allowed, windowSize) {
+    return await call({ cmd: 'rate-limit', key, count, allowed, windowSize });
+}
+
 async function metrics(logger, key, method, ...args) {
     try {
         parentPort.postMessage({
@@ -460,6 +464,8 @@ const init = async () => {
 
     server.decorate('toolkit', 'serviceDomain', getServiceDomain);
     server.decorate('toolkit', 'certs', certHandler);
+
+    server.decorate('toolkit', 'checkRateLimit', checkRateLimit);
 
     server.decorate('toolkit', 'getCertificate', async provision => {
         let hostname = await getServiceDomain();
