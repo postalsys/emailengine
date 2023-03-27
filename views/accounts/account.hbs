@@ -311,9 +311,10 @@
         <hr>
         <h6 class="font-weight-bold text-primary">Subconnections</h6>
 
-        <p>Subconnections are additional IMAP connections to detect changes in secondary folders. EmailEngine, by
-            default, receives updates only for the primary folder and needs to poll secondary folders, but in some
-            cases, information is needed faster and without delay.</p>
+        <p>Subconnections are supplementary IMAP connections that help detect changes in secondary folders more quickly.
+            By default, EmailEngine only receives real-time updates for the primary folder and relies on periodic
+            polling for secondary folders. However, in situations where faster, up-to-date information is required from
+            secondary folders without delay, subconnections can be employed to ensure prompt notifications.</p>
 
         <dl class="row mt-3">
             {{#each subConnectionInfo}}
@@ -370,6 +371,19 @@
                 {{#each capabilities}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
+                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
+                {{else}}
+                <small style="cursor: default;">{{capability}}</small>
+                {{/if}}
+                {{/each}}
+            </dd>
+
+            <dt class="col-sm-3">Authentication</dt>
+            <dd class="col-sm-9">
+                {{#each authCapabilities}}
+                {{#if url}}
+                <a href="{{url}}" class="{{#if lastUsed}}badge badge-secondary{{/if}}" data-toggle="tooltip"
+                    data-placement="top" title="{{#if lastUsed}}Active method | {{/if}}{{rfc}}" target="_blank"
                     referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{capability}}</small>
