@@ -745,6 +745,11 @@ When making API calls remember that requests against the same account are queued
                 return { isValid: true, credentials: { enabled: false } };
             }
 
+            if (authData.passwordVersion && authData.passwordVersion !== session.passwordVersion) {
+                // force logout
+                return { isValid: false };
+            }
+
             const account = authData.user === session.user;
 
             if (!account) {
