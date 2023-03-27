@@ -63,6 +63,8 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const tokens = require('./lib/tokens');
 
+const { checkRateLimit } = require('./lib/rate-limit');
+
 const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
@@ -1254,6 +1256,10 @@ async function onCommand(worker, message) {
                 logger.fatal({ msg: 'Failed to remove existing license', err });
                 return false;
             }
+        }
+
+        case 'rate-limit': {
+            return await checkRateLimit(message.key, message.count, message.allowed, message.windowSize);
         }
 
         case 'unsubscribe':
