@@ -61,6 +61,7 @@ function run() {
                     authData = authData || {};
                     authData.user = authData.user || 'admin';
                     authData.password = passwordHash;
+                    authData.passwordVersion = Date.now();
 
                     await settings.set('authData', authData);
                     await settings.set('totpEnabled', false);

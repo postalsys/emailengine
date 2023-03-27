@@ -1641,6 +1641,7 @@ const startApplication = async () => {
             authData = authData || {};
             authData.user = authData.user || 'admin';
             authData.password = preparedPassword;
+            authData.passwordVersion = Date.now();
 
             await settings.set('authData', authData);
             logger.debug({ msg: 'Imported hashed password', hash: preparedPassword });
