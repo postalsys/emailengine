@@ -14,6 +14,15 @@
                     <div class="col-4">
                         {{username}}
                     </div>
+                    <div class="col-4 text-right">
+                        {{#if authEnabled}}
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                            data-target="#logoutAllModal" title="Log out all sessions" id="logout-all-btn"
+                            data-placement="top">
+                            Log out all sessions
+                        </button>
+                        {{/if}}
+                    </div>
                 </div>
             </li>
 
@@ -123,6 +132,33 @@
                     <input type="hidden" name="type" value="totp" />
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-primary">Enable 2FA</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="logoutAllModal" tabindex="-1" aria-labelledby="logoutAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="/admin/account/logout-all">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logoutAllModalLabel">Log out</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <p>Do you want to log out of all sessions on all browsers for your user account?</a>
+
+                </div>
+                <div class="modal-footer">
+
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary"><i
+                            class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Log out</button>
                 </div>
             </div>
         </form>
