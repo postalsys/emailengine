@@ -880,6 +880,7 @@ async function call(worker, message, transferList) {
                 transferList
             );
         } catch (err) {
+            clearTimeout(timer);
             callQueue.delete(mid);
             return reject(err);
         }
@@ -1380,6 +1381,7 @@ async function onCommand(worker, message) {
             return await call(assignedWorker, message, []);
         }
     }
+
     return 999;
 }
 
@@ -1457,6 +1459,7 @@ const closeQueues = cb => {
 };
 
 process.on('SIGTERM', () => {
+    logger.info({ msg: 'Close signal received', signal: 'SIGTERM', isClosing });
     if (isClosing) {
         return;
     }
@@ -1467,6 +1470,7 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
+    logger.info({ msg: 'Close signal received', signal: 'SIGINT', isClosing });
     if (isClosing) {
         return;
     }

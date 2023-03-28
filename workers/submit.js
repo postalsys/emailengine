@@ -78,14 +78,20 @@ async function call(message, transferList) {
 
         callQueue.set(mid, { resolve, reject, timer });
 
-        parentPort.postMessage(
-            {
-                cmd: 'call',
-                mid,
-                message
-            },
-            transferList
-        );
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
     });
 }
 
