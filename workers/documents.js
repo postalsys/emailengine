@@ -274,7 +274,7 @@ const documentsWorker = new Worker(
                     messageData.draft = messageData.flags && messageData.flags.includes('\\Draft') ? true : false;
 
                     let textContent = {};
-                    for (let subType of ['id', 'plain', 'html', 'encodedSize']) {
+                    for (let subType of ['id', 'plain', 'html', 'encodedSize', '_generatedHtml']) {
                         if (messageData.text && messageData.text[subType]) {
                             textContent[subType] = messageData.text[subType];
                         }
