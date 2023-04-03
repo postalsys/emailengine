@@ -132,6 +132,8 @@ config['imap-proxy'] = config['imap-proxy'] || {
     proxy: false
 };
 
+const NOW = Date.now(); // time of start
+
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
@@ -443,6 +445,7 @@ let workerAssigned = new WeakMap();
 let onlineWorkers = new WeakSet();
 
 let workers = new Map();
+let workersMeta = new WeakMap();
 let availableIMAPWorkers = new Set();
 
 let suspendedWorkerTypes = new Set();
@@ -455,7 +458,13 @@ const postMessage = (worker, payload, ignoreOffline, transferList) => {
         throw new Error('Requested worker thread not available');
     }
 
-    return worker.postMessage(payload, transferList);
+    let result = worker.postMessage(payload, transferList);
+
+    let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+    workerMeta.called = workerMeta.called ? ++workerMeta.called : 1;
+    workersMeta.set(worker, workerMeta);
+
+    return result;
 };
 
 const countUnassignment = async account => {
@@ -597,6 +606,10 @@ let spawnWorker = async type => {
             updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Failed to update ${type} server state`, err }));
         }
         onlineWorkers.add(worker);
+
+        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+        workerMeta.online = Date.now();
+        workersMeta.set(worker, workerMeta);
     });
 
     let exitHandler = async exitCode => {
@@ -659,6 +672,10 @@ let spawnWorker = async type => {
     });
 
     worker.on('message', message => {
+        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+        workerMeta.messages = workerMeta.messages ? ++workerMeta.messages : 1;
+        workersMeta.set(worker, workerMeta);
+
         if (!message) {
             return;
         }
@@ -1257,6 +1274,31 @@ async function onCommand(worker, message) {
                 logger.fatal({ msg: 'Failed to remove existing license', err });
                 return false;
             }
+        }
+
+        case 'threads': {
+            let threadInfo = [{ type: 'main', threadId: 0, online: NOW }];
+
+            for (let [type, workerSet] of workers) {
+                if (workerSet && workerSet.size) {
+                    for (let worker of workerSet) {
+                        let threadData = { type, threadId: worker.threadId, resourceLimits: worker.resourceLimits };
+
+                        if (workerAssigned.has(worker)) {
+                            threadData.accounts = workerAssigned.get(worker).size;
+                        }
+
+                        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+                        for (let key of Object.keys(workerMeta)) {
+                            threadData[key] = workerMeta[key];
+                        }
+
+                        threadInfo.push(threadData);
+                    }
+                }
+            }
+
+            return threadInfo;
         }
 
         case 'rate-limit': {

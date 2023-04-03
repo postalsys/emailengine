@@ -1,0 +1,42 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+        <small><i class="fas fa-cog fa-fw"></i></small>
+        EmailEngine Internals
+    </h1>
+</div>
+
+<div class="card mb-4 mt-4">
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+
+            <thead>
+                <tr>
+                    <th>Thread type</th>
+                    <th class="text-right">Thread ID</th>
+                    <th>Started</th>
+                    <th class="text-right">Accounts</th>
+                    <th class="text-right">Messages sent</th>
+                    <th class="text-right">Messages received</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each threads}}
+                <tr>
+                    <td>{{type}}</td>
+                    <td class="text-right">{{threadId}}</td>
+                    <td>
+                        <span class="relative-time" data-time="{{timeStr}}"></span>
+                    </td>
+                    <td class="text-right">{{accounts}}</td>
+                    <td class="text-right">{{called}}</td>
+                    <td class="text-right">{{messages}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
