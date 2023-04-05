@@ -128,7 +128,8 @@ const {
     searchSchema,
     messageUpdateSchema,
     accountSchemas,
-    oauthCreateSchema
+    oauthCreateSchema,
+    tokenRestrictionsSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -553,7 +554,7 @@ const init = async () => {
 
         // check if access tokens for api requests are required
         let disableTokens = await settings.get('disableTokens');
-        if (disableTokens && !request.url.searchParams.get('access_token')) {
+        if (disableTokens && !request.url.searchParams.get('access_token') && !request.headers.authorization) {
             // make sure that we have a access_token value set in query args
             let url = new URL(request.url.href);
             url.searchParams.set('access_token', 'preauth');
@@ -621,8 +622,8 @@ When making API calls remember that requests against the same account are queued
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
             let disableTokens = await settings.get('disableTokens');
-            if (disableTokens) {
-                // tokens check are disabled, allow all
+            if (disableTokens && (!token || token === 'preauth')) {
+                // tokens checks are disabled, allow all if token is not set
                 return {
                     isValid: true,
                     credentials: {},
@@ -663,11 +664,9 @@ When making API calls remember that requests against the same account are queued
                     tokenScopes: tokenData.scopes
                 });
 
-                return {
-                    isValid: false,
-                    credentials: { token },
-                    artifacts: { err: 'Unauthorized scope' }
-                };
+                let error = Boom.forbidden('Unauthorized scope');
+                error.output.payload.requestedScope = scope;
+                throw error;
             }
 
             if (tokenData.account) {
@@ -679,11 +678,9 @@ When making API calls remember that requests against the same account are queued
                         tokenId: tokenData.id,
                         account: (request.params && request.params.account) || null
                     });
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized account' }
-                    };
+
+                    let error = Boom.forbidden('Unauthorized account');
+                    throw error;
                 }
             }
 
@@ -698,11 +695,9 @@ When making API calls remember that requests against the same account are queued
                         addressAllowlist: tokenData.restrictions.addresses
                     });
 
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized address' }
-                    };
+                    let error = Boom.forbidden('Unauthorized address');
+                    error.output.payload.remoteAddress = request.app.ip;
+                    throw error;
                 }
 
                 if (
@@ -719,11 +714,34 @@ When making API calls remember that requests against the same account are queued
                         referrerAllowlist: tokenData.restrictions.referrers
                     });
 
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized referrer' }
-                    };
+                    let error = Boom.forbidden('Unauthorized referrer');
+                    throw error;
+                }
+
+                if (tokenData.restrictions.rateLimit) {
+                    let rateLimit = await checkRateLimit(
+                        `api:${tokenData.id}`,
+                        1,
+                        tokenData.restrictions.rateLimit.maxRequests,
+                        tokenData.restrictions.rateLimit.timeWindow
+                    );
+
+                    if (!rateLimit.success) {
+                        logger.error({ msg: 'Rate limited', token: tokenData.id, rateLimit });
+                        let error = Boom.tooManyRequests('Rate limit exceeded');
+                        error.output.payload.ttl = Math.ceil(rateLimit.ttl);
+                        error.output.headers = {
+                            'X-RateLimit-Limit': rateLimit.allowed,
+                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl)
+                        };
+                        throw error;
+                    } else {
+                        request.app.rateLimitHeaders = {
+                            'X-RateLimit-Limit': rateLimit.allowed,
+                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl),
+                            'X-RateLimit-Remaining': rateLimit.allowed - rateLimit.count
+                        };
+                    }
                 }
             }
 
@@ -1494,35 +1512,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Related metadata in JSON format')
                         .label('JsonMetaData'),
 
-                    restrictions: Joi.object({
-                        referrers: Joi.array()
-                            .items(Joi.string())
-                            .empty('')
-                            .single()
-                            .allow(false)
-                            .default(false)
-                            .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                            .label('ReferrerAllowlist')
-                            .description('HTTP referrer allowlist for API requests'),
-                        addresses: Joi.array()
-                            .items(
-                                Joi.string().ip({
-                                    version: ['ipv4', 'ipv6'],
-                                    cidr: 'optional'
-                                })
-                            )
-                            .empty('')
-                            .single()
-                            .allow(false)
-                            .default(false)
-                            .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
-                            .label('AddressAllowlist')
-                            .description('IP address allowlist')
-                    })
-                        .empty('')
-                        .allow(false)
-                        .label('TokenRestrictions')
-                        .description('Access restrictions'),
+                    restrictions: tokenRestrictionsSchema,
 
                     ip: Joi.string()
                         .empty('')
@@ -1751,33 +1741,7 @@ When making API calls remember that requests against the same account are queued
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
 
-                                restrictions: Joi.object({
-                                    referrers: Joi.array()
-                                        .items(Joi.string())
-                                        .empty('')
-                                        .allow(false)
-                                        .default(false)
-                                        .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                                        .label('ReferrerAllowlist')
-                                        .description('HTTP referrer allowlist'),
-                                    addresses: Joi.array()
-                                        .items(
-                                            Joi.string().ip({
-                                                version: ['ipv4', 'ipv6'],
-                                                cidr: 'optional'
-                                            })
-                                        )
-                                        .empty('')
-                                        .allow(false)
-                                        .default(false)
-                                        .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
-                                        .label('AddressAllowlist')
-                                        .description('IP address allowlist')
-                                })
-                                    .empty('')
-                                    .allow(false)
-                                    .label('TokenRestrictions')
-                                    .description('Access restrictions'),
+                                restrictions: tokenRestrictionsSchema,
 
                                 ip: Joi.string()
                                     .empty('')
@@ -7685,6 +7649,13 @@ ${now}`,
         }
 
         if (!response.isBoom) {
+            if (request.app.rateLimitHeaders) {
+                const headers = request.response.output ? request.response.output.headers : request.response.headers;
+                for (let key of Object.keys(request.app.rateLimitHeaders)) {
+                    headers[key] = request.app.rateLimitHeaders[key].toString();
+                }
+            }
+
             return h.continue;
         }
 
@@ -7711,7 +7682,15 @@ ${now}`,
 
         if (request.errorInfo && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
             // JSON response for API requests
-            return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
+
+            let res = h.response(request.errorInfo);
+            if (error.output.headers) {
+                for (let key of Object.keys(error.output.headers)) {
+                    res = res.header(key, error.output.headers[key].toString());
+                }
+            }
+
+            return res.code(request.errorInfo.statusCode || 500);
         }
 
         if (/^\/v1\//.test(request.path) || /^\/health$/.test(request.path)) {
