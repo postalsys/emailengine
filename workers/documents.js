@@ -34,7 +34,6 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { getESClient } = require('../lib/document-store');
-const { getThread } = require('../lib/threads');
 const { generateTextPreview } = require('../lib/generate-text-preview');
 
 const {
@@ -272,24 +271,6 @@ const documentsWorker = new Worker(
                     created: job.data.date,
                     path: job.data.path
                 };
-
-                // set thread id
-                try {
-                    let thread = await getThread(client, index, job.data.account, messageData, logger);
-                    if (thread) {
-                        messageData.threadId = thread;
-                    }
-                } catch (err) {
-                    if (logger.notifyError) {
-                        logger.notifyError(err, event => {
-                            event.setUser(job.data.account);
-                            event.addMetadata('ee', {
-                                index
-                            });
-                        });
-                    }
-                    logger.error({ msg: 'Failed to resolve thread', err });
-                }
 
                 if (job.data.specialUse) {
                     baseObject.specialUse = job.data.specialUse;
