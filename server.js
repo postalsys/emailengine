@@ -24,7 +24,35 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
-const { readEnvValue, hasEnvValue, download } = require('./lib/tools');
+
+const {
+    readEnvValue,
+    hasEnvValue,
+    download,
+    getDuration,
+    getByteSize,
+    getBoolean,
+    getWorkerCount,
+    selectRendezvousNode,
+    checkLicense,
+    checkForUpgrade,
+    setLicense,
+    getRedisStats,
+    threadStats
+} = require('./lib/tools');
+
+const {
+    MAX_DAYS_STATS,
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    CONNECT_ERROR_NOTIFY,
+    REDIS_PREFIX,
+    ACCOUNT_ADDED_NOTIFY,
+    ACCOUNT_DELETED_NOTIFY,
+    LIST_UNSUBSCRIBE_NOTIFY,
+    LIST_SUBSCRIBE_NOTIFY
+} = require('./lib/consts');
+
 const { webhooks: Webhooks } = require('./lib/webhooks');
 const nodeFetch = require('node-fetch');
 const v8 = require('node:v8');
@@ -69,29 +97,6 @@ const { checkRateLimit } = require('./lib/rate-limit');
 const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
-
-const {
-    getDuration,
-    getByteSize,
-    getBoolean,
-    getWorkerCount,
-    selectRendezvousNode,
-    checkLicense,
-    checkForUpgrade,
-    setLicense,
-    getRedisStats
-} = require('./lib/tools');
-const {
-    MAX_DAYS_STATS,
-    MESSAGE_NEW_NOTIFY,
-    MESSAGE_DELETED_NOTIFY,
-    CONNECT_ERROR_NOTIFY,
-    REDIS_PREFIX,
-    ACCOUNT_ADDED_NOTIFY,
-    ACCOUNT_DELETED_NOTIFY,
-    LIST_UNSUBSCRIBE_NOTIFY,
-    LIST_SUBSCRIBE_NOTIFY
-} = require('./lib/consts');
 
 const msgpack = require('msgpack5')();
 
@@ -1351,12 +1356,24 @@ async function onCommand(worker, message) {
         }
 
         case 'threads': {
-            let threadsInfo = [{ type: 'main', isMain: true, threadId: 0, online: NOW }];
+            let threadsInfo = [Object.assign({ type: 'main', isMain: true, threadId: 0, online: NOW }, threadStats.usage())];
 
             for (let [type, workerSet] of workers) {
                 if (workerSet && workerSet.size) {
                     for (let worker of workerSet) {
-                        let threadData = { type, threadId: worker.threadId, resourceLimits: worker.resourceLimits };
+                        let resourceUsage;
+                        try {
+                            resourceUsage = await call(worker, { cmd: 'resource-usage' });
+                        } catch (err) {
+                            resourceUsage = {
+                                resourceUsageError: {
+                                    error: err.message,
+                                    code: err.code
+                                }
+                            };
+                        }
+
+                        let threadData = Object.assign({ type, threadId: worker.threadId, resourceLimits: worker.resourceLimits }, resourceUsage);
 
                         if (workerAssigned.has(worker)) {
                             threadData.accounts = workerAssigned.get(worker).size;
