@@ -15,6 +15,7 @@
                     <th>Thread type</th>
                     <th class="text-right">Thread ID</th>
                     <th>Started</th>
+                    <th class="text-right">Heap size</th>
                     <th class="text-right">Accounts</th>
                     <th class="text-right">IPC to</th>
                     <th class="text-right">IPC from</th>
@@ -37,6 +38,13 @@
                     <td class="text-right">{{threadId}}</td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
+                    </td>
+                    <td class="text-right">
+                        {{heapUsed}}
+
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            data-title="Heap usage" data-content="{{heapRelative}} of maximum allowed {{heapMax}}"><i
+                                class="fas fa-info-circle"></i></a>
                     </td>
                     <td class="text-right">{{accounts}}</td>
                     <td class="text-right">{{called}}</td>

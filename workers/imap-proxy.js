@@ -1,9 +1,11 @@
 'use strict';
 
+const { parentPort } = require('worker_threads');
+
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
 
-const { readEnvValue } = require('../lib/tools');
+const { readEnvValue, threadStats } = require('../lib/tools');
 
 const { run } = require('../lib/imapproxy/imap-server');
 
@@ -29,6 +31,38 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
     });
     logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
+
+async function onCommand(command) {
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
+}
+
+parentPort.on('message', message => {
+    if (message && message.cmd === 'call' && message.mid) {
+        return onCommand(message.message)
+            .then(response => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    response
+                });
+            })
+            .catch(err => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    error: err.message,
+                    code: err.code,
+                    statusCode: err.statusCode
+                });
+            });
+    }
+});
 
 run()
     .then(imapServer => {

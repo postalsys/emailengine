@@ -24,7 +24,8 @@ const {
     matcher,
     readEnvValue,
     matchIp,
-    getSignedFormData
+    getSignedFormData,
+    threadStats
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -335,7 +336,13 @@ async function sendWebhook(account, event, data) {
 }
 
 async function onCommand(command) {
-    logger.debug({ msg: 'Unhandled command', command });
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
 }
 
 function publishChangeEvent(data) {
@@ -1251,6 +1258,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.emailAddress, provider: oauth2App.provider });
                     break;
                 }
 
@@ -1319,6 +1328,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userInfo.email, provider: oauth2App.provider });
                     break;
                 }
 
@@ -1366,6 +1377,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.email, provider: oauth2App.provider });
                     break;
                 }
 

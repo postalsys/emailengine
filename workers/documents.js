@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const logger = require('../lib/logger');
 const { preProcess } = require('../lib/pre-process');
 
-const { readEnvValue } = require('../lib/tools');
+const { readEnvValue, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -59,6 +59,38 @@ async function metrics(logger, key, method, ...args) {
         logger.error({ msg: 'Failed to post metrics to parent', err });
     }
 }
+
+async function onCommand(command) {
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
+}
+
+parentPort.on('message', message => {
+    if (message && message.cmd === 'call' && message.mid) {
+        return onCommand(message.message)
+            .then(response => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    response
+                });
+            })
+            .catch(err => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    error: err.message,
+                    code: err.code,
+                    statusCode: err.statusCode
+                });
+            });
+    }
+});
 
 const documentsWorker = new Worker(
     'documents',
@@ -190,178 +222,187 @@ const documentsWorker = new Worker(
                 }
                 break;
 
-            case MESSAGE_NEW_NOTIFY:
-                {
-                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
-                    if (!accountExists) {
-                        // deleted account?
-                        return;
-                    }
+            // returns indexing response for the parent job
+            case MESSAGE_NEW_NOTIFY: {
+                let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                if (!accountExists) {
+                    // deleted account?
+                    return false;
+                }
 
-                    let messageData = job.data.data;
-                    let messageId = messageData.id;
+                let messageData = job.data.data;
+                let messageId = messageData.id;
 
-                    // check tombstone for race conditions (might be already deleted)
-                    let [[err1, isDeleted1], [err2, isDeleted2]] = await redis
-                        .multi()
-                        .sismember(tombstoneTdy, `${messageId}`)
-                        .sismember(tombstoneYdy, `${messageId}`)
-                        .exec();
+                // check tombstone for race conditions (might be already deleted)
+                let [[err1, isDeleted1], [err2, isDeleted2]] = await redis
+                    .multi()
+                    .sismember(tombstoneTdy, `${messageId}`)
+                    .sismember(tombstoneYdy, `${messageId}`)
+                    .exec();
 
-                    if (err1) {
-                        logger.trace({ msg: 'Failed checking tombstone', key: tombstoneTdy, err: err1 });
-                    }
+                if (err1) {
+                    logger.trace({ msg: 'Failed checking tombstone', key: tombstoneTdy, err: err1 });
+                }
 
-                    if (err2) {
-                        logger.trace({ msg: 'Failed checking tombstone', key: tombstoneYdy, err: err2 });
-                    }
+                if (err2) {
+                    logger.trace({ msg: 'Failed checking tombstone', key: tombstoneYdy, err: err2 });
+                }
 
-                    if (isDeleted1 || isDeleted2) {
-                        logger.info({
-                            msg: 'Skipped deleted email',
-                            action: 'document',
-                            queue: job.queue.name,
-                            code: 'document_tombstone_found',
-                            job: job.id,
-                            event: job.name,
-                            account: job.data.account,
-                            entryId: messageId
-                        });
-                        break;
-                    }
-
-                    const { index, client } = await getESClient(logger);
-                    if (!client) {
-                        return;
-                    }
-
-                    let baseObject = {
+                if (isDeleted1 || isDeleted2) {
+                    logger.info({
+                        msg: 'Skipped deleted email',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_tombstone_found',
+                        job: job.id,
+                        event: job.name,
                         account: job.data.account,
-                        created: job.data.date,
-                        path: job.data.path
-                    };
+                        entryId: messageId
+                    });
+                    break;
+                }
 
-                    // set thread id
-                    try {
-                        let thread = await getThread(client, index, job.data.account, messageData, logger);
-                        if (thread) {
-                            messageData.threadId = thread;
-                        }
-                    } catch (err) {
-                        if (logger.notifyError) {
-                            logger.notifyError(err, event => {
-                                event.setUser(job.data.account);
-                                event.addMetadata('ee', {
-                                    index
-                                });
+                const { index, client } = await getESClient(logger);
+                if (!client) {
+                    return false;
+                }
+
+                let baseObject = {
+                    account: job.data.account,
+                    created: job.data.date,
+                    path: job.data.path
+                };
+
+                // set thread id
+                try {
+                    let thread = await getThread(client, index, job.data.account, messageData, logger);
+                    if (thread) {
+                        messageData.threadId = thread;
+                    }
+                } catch (err) {
+                    if (logger.notifyError) {
+                        logger.notifyError(err, event => {
+                            event.setUser(job.data.account);
+                            event.addMetadata('ee', {
+                                index
                             });
+                        });
+                    }
+                    logger.error({ msg: 'Failed to resolve thread', err });
+                }
+
+                if (job.data.specialUse) {
+                    baseObject.specialUse = job.data.specialUse;
+                }
+
+                messageData = Object.assign(baseObject, messageData);
+                if (messageData.headers) {
+                    messageData.headers = Object.keys(messageData.headers).map(key => ({ key, value: [].concat(messageData.headers[key] || []) }));
+                }
+
+                messageData.unseen = messageData.flags && !messageData.flags.includes('\\Seen') ? true : false;
+                messageData.flagged = messageData.flags && messageData.flags.includes('\\Flagged') ? true : false;
+                messageData.answered = messageData.flags && messageData.flags.includes('\\Answered') ? true : false;
+                messageData.draft = messageData.flags && messageData.flags.includes('\\Draft') ? true : false;
+
+                let textContent = {};
+                for (let subType of ['id', 'plain', 'html', 'encodedSize', '_generatedHtml']) {
+                    if (messageData.text && messageData.text[subType]) {
+                        textContent[subType] = messageData.text[subType];
+                    }
+                }
+                messageData.text = textContent;
+
+                if (messageData.attachments) {
+                    for (let attachment of messageData.attachments) {
+                        if ('filename' in attachment && !attachment.filename) {
+                            // remove falsy filenames, otherwise these will be casted into strings
+                            delete attachment.filename;
                         }
-                        logger.error({ msg: 'Failed to resolve thread', err });
                     }
+                }
 
-                    if (job.data.specialUse) {
-                        baseObject.specialUse = job.data.specialUse;
-                    }
+                messageData.preview = generateTextPreview(textContent, 220);
 
-                    messageData = Object.assign(baseObject, messageData);
-                    if (messageData.headers) {
-                        messageData.headers = Object.keys(messageData.headers).map(key => ({ key, value: [].concat(messageData.headers[key] || []) }));
-                    }
-
-                    messageData.unseen = messageData.flags && !messageData.flags.includes('\\Seen') ? true : false;
-                    messageData.flagged = messageData.flags && messageData.flags.includes('\\Flagged') ? true : false;
-                    messageData.answered = messageData.flags && messageData.flags.includes('\\Answered') ? true : false;
-                    messageData.draft = messageData.flags && messageData.flags.includes('\\Draft') ? true : false;
-
-                    let textContent = {};
-                    for (let subType of ['id', 'plain', 'html', 'encodedSize', '_generatedHtml']) {
-                        if (messageData.text && messageData.text[subType]) {
-                            textContent[subType] = messageData.text[subType];
-                        }
-                    }
-                    messageData.text = textContent;
-
-                    if (messageData.attachments) {
-                        for (let attachment of messageData.attachments) {
-                            if ('filename' in attachment && !attachment.filename) {
-                                // remove falsy filenames, otherwise these will be casted into strings
-                                delete attachment.filename;
+                // Remove event file content if the attachment exists
+                if (messageData.calendarEvents) {
+                    for (let calendarEvent of messageData.calendarEvents) {
+                        if (calendarEvent.attachment) {
+                            let attachment = messageData.attachments && messageData.attachments.find(attachment => attachment.id === calendarEvent.attachment);
+                            if (attachment && attachment.content) {
+                                // no need for duplicate data
+                                delete calendarEvent.content;
+                                delete calendarEvent.encoding;
                             }
                         }
                     }
+                }
 
-                    messageData.preview = generateTextPreview(textContent, 220);
-
-                    // Remove event file content if the attachment exists
-                    if (messageData.calendarEvents) {
-                        for (let calendarEvent of messageData.calendarEvents) {
-                            if (calendarEvent.attachment) {
-                                let attachment =
-                                    messageData.attachments && messageData.attachments.find(attachment => attachment.id === calendarEvent.attachment);
-                                if (attachment && attachment.content) {
-                                    // no need for duplicate data
-                                    delete calendarEvent.content;
-                                    delete calendarEvent.encoding;
-                                }
-                            }
-                        }
-                    }
-
-                    let emailDocument = await preProcess.run(messageData);
-                    if (!emailDocument) {
-                        // skip
-                        logger.trace({
-                            msg: 'Skipped new email',
-                            action: 'document',
-                            queue: job.queue.name,
-                            code: 'document_index',
-                            job: job.id,
-                            event: job.name,
-                            account: job.data.account,
-                            entryId: messageId
-                        });
-                        break;
-                    }
-
-                    // do not allow earlier updates than this timestamp
-                    emailDocument.updateTime = new Date(job.data.date).getTime();
-
-                    let indexResult;
-                    try {
-                        indexResult = await client.index({
-                            index,
-                            id: `${job.data.account}:${messageId}`,
-                            document: emailDocument
-                        });
-                    } catch (err) {
-                        logger.error({
-                            msg: 'Failed to index new email',
-                            action: 'document',
-                            queue: job.queue.name,
-                            code: 'document_index_error',
-                            job: job.id,
-                            event: job.name,
-                            account: job.data.account,
-                            entryId: messageId,
-                            request: { index, id: `${job.data.account}:${messageId}`, document: messageData },
-                            err
-                        });
-                        throw err;
-                    }
-
+                let emailDocument = await preProcess.run(messageData);
+                if (!emailDocument) {
+                    // skip
                     logger.trace({
-                        msg: 'Stored new email',
+                        msg: 'Skipped new email',
                         action: 'document',
                         queue: job.queue.name,
                         code: 'document_index',
                         job: job.id,
                         event: job.name,
                         account: job.data.account,
-                        entryId: messageId,
-                        indexResult
+                        entryId: messageId
                     });
+                    return false;
                 }
-                break;
+
+                // do not allow earlier updates than this timestamp
+                emailDocument.updateTime = new Date(job.data.date).getTime();
+
+                let indexResult;
+                try {
+                    indexResult = await client.index({
+                        index,
+                        id: `${job.data.account}:${messageId}`,
+                        document: emailDocument
+                    });
+                    if (!indexResult) {
+                        throw new Error('Empty index response');
+                    }
+                } catch (err) {
+                    logger.error({
+                        msg: 'Failed to index new email',
+                        action: 'document',
+                        queue: job.queue.name,
+                        code: 'document_index_error',
+                        job: job.id,
+                        event: job.name,
+                        account: job.data.account,
+                        entryId: messageId,
+                        request: { index, id: `${job.data.account}:${messageId}`, document: messageData },
+                        err
+                    });
+                    throw err;
+                }
+
+                logger.trace({
+                    msg: 'Stored new email',
+                    action: 'document',
+                    queue: job.queue.name,
+                    code: 'document_index',
+                    job: job.id,
+                    event: job.name,
+                    account: job.data.account,
+                    entryId: messageId,
+                    indexResult
+                });
+
+                return {
+                    index: indexResult._index,
+                    id: indexResult._id,
+                    documentVersion: indexResult._version,
+                    threadId: messageData.threadId,
+                    result: indexResult.result
+                };
+            }
 
             case MESSAGE_DELETED_NOTIFY:
                 {

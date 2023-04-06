@@ -7,7 +7,7 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
-const { readEnvValue } = require('../lib/tools');
+const { readEnvValue, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -64,6 +64,38 @@ async function metrics(logger, key, method, ...args) {
         logger.error({ msg: 'Failed to post metrics to parent', err });
     }
 }
+
+async function onCommand(command) {
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
+}
+
+parentPort.on('message', message => {
+    if (message && message.cmd === 'call' && message.mid) {
+        return onCommand(message.message)
+            .then(response => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    response
+                });
+            })
+            .catch(err => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    error: err.message,
+                    code: err.code,
+                    statusCode: err.statusCode
+                });
+            });
+    }
+});
 
 const notifyWorker = new Worker(
     'notify',

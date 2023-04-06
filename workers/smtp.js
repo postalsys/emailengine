@@ -6,7 +6,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue, matchIp } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, matchIp, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -458,7 +458,13 @@ async function init() {
 }
 
 async function onCommand(command) {
-    logger.debug({ msg: 'Unhandled command', command });
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
 }
 
 parentPort.on('message', message => {
