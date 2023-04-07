@@ -269,12 +269,15 @@ const notifyWorker = new Worker(
 
         let start = Date.now();
         let duration;
+
+        let body = Buffer.from(JSON.stringify(customMapping || job.data));
+
         try {
             let res;
             try {
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
-                    body: JSON.stringify(customMapping || job.data),
+                    body,
                     headers
                 });
                 duration = Date.now() - start;
@@ -296,6 +299,7 @@ const notifyWorker = new Worker(
                 code: 'result_success',
                 job: job.id,
                 webhooks,
+                requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 status: res.status,
@@ -349,6 +353,7 @@ route: customRoute && customRoute.id,
                 code: 'result_fail',
                 job: job.id,
                 webhooks,
+                requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 account: job.data.account,
