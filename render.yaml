@@ -1,13 +1,14 @@
 # EmailEngine blueprint for Render.com
 # Use the following repository address when setting up a new blueprint application:
-#   https://github.com/postalsys/emailengine
+#   https://github.com/SlavkoPar/emailengine
 
 services:
     # Web service
     - type: web
       name: emailengine
+      plan: standard
       env: node
-      repo: https://github.com/postalsys/emailengine.git
+      repo: https://github.com/SlavkoPar/emailengine.git
       #healthCheckPath: /health
       buildCommand: ./update-info.sh && npm install --omit=dev
       startCommand: npm start
@@ -30,9 +31,4 @@ services:
           - key: EENGINE_MAX_SIZE
             value: 25M
       autoDeploy: false # optional
-
-    # The Redis instance
-    - type: redis
-      name: ee-redis
-      ipAllowList: []
-      maxmemoryPolicy: noeviction # optional (defaults to allkeys-lru)
+      
