@@ -52,7 +52,7 @@
         "ace-builds": "1.16.0",
         "base32.js": "0.1.0",
         "bull-arena": "3.30.4",
-        "bullmq": "3.10.3",
+        "bullmq": "3.10.4",
         "compare-versions": "5.0.3",
         "dotenv": "16.0.3",
         "encoding-japanese": "2.0.0",
@@ -68,7 +68,7 @@
         "humanize": "0.0.9",
         "ical.js": "1.5.0",
         "iconv-lite": "0.6.3",
-        "imapflow": "1.0.125",
+        "imapflow": "1.0.126",
         "ioredfour": "1.2.0-ioredis-07",
         "ioredis": "5.3.1",
         "ipaddr.js": "2.0.1",
@@ -105,7 +105,7 @@
         "xml2js": "0.4.23"
     },
     "devDependencies": {
-        "eerawlog": "1.5.0",
+        "eerawlog": "1.5.1",
         "eslint": "8.37.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.8.0",
