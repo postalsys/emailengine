@@ -38,6 +38,7 @@
     "dependencies": {
         "@bugsnag/js": "7.20.0",
         "@elastic/elasticsearch": "8.6.0",
+        "@hapi/bell": "13.0.1",
         "@hapi/boom": "10.0.1",
         "@hapi/cookie": "12.0.1",
         "@hapi/crumb": "9.0.1",

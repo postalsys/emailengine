@@ -37,6 +37,16 @@
             Login
         </button>
     </div>
+
+    {{#if providers.okta}}
+    <hr>
+    <div>
+        <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
+            Okta SSO login
+        </a>
+    </div>
+    {{/if}}
+
 </form>
 <hr>
 <div class="text-center">
