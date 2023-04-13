@@ -72,6 +72,26 @@
                     </div>
                 </div>
             </li>
+
+            <li class="list-group-item">
+                <div class="row" style="justify-content: center; align-items: center;">
+                    <div class="col-4">Single sign-on (SSO)</div>
+                    <div class="col-4">
+                        {{#if providers.okta}}
+                        <span class="badge badge-success">Okta</span>
+                        {{else}}
+                        <span class="badge badge-light">Not set</span>
+                        {{/if}}
+                    </div>
+                    <div class="col-4 text-right">
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                            data-target="#ssoInstructionsModal" title="Setting up SSO" id="sso-instructions"
+                            data-placement="top">
+                            Instructions
+                        </button>
+                    </div>
+                </div>
+            </li>
             {{/if}}
         </ul>
     </div>
@@ -164,5 +184,86 @@
                 </div>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="modal fade" id="ssoInstructionsModal" tabindex="-1" aria-labelledby="ssoInstructionsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ssoInstructionsModalLabel">Set up SSO</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <p>To enable Single Sign-On (SSO) for EmailEngine with Okta web applications using the redirect model,
+                    follow these steps: First, create a new web app in Okta using the provided Redirect URI. Next,
+                    configure the necessary environment variables for EmailEngine. Finally, restart EmailEngine for the
+                    changes to take effect.
+                </p>
+
+                <p>Redirect URI for the Okta web application:<br>
+                    <code style="color:#333;">{{serviceUrl}}/admin/login/okta</code>
+                </p>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Environment variable</th>
+                            <th>Current value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th>
+                                <code style="color:#333;">OKTA_OAUTH2_ISSUER</code>
+                            </th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_ISSUER}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_ISSUER}}</code>
+                                {{else}}
+                                Not set (the URL for the authentication server)
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_ID</code></th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
+                                {{else}}
+                                Not set
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_SECRET</code></th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
+                                {{else}}
+                                Not set
+                                {{/if}}
+
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
     </div>
 </div>
