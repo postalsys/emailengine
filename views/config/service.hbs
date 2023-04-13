@@ -312,14 +312,7 @@
                 <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
                     id="generateEmailSummary" name="generateEmailSummary" {{#if
                     values.generateEmailSummary}}checked{{/if}} />
-                <label class="form-check-label" for="generateEmailSummary">Generate summaries with OpenAI
-
-                    <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                        style="dispaly: inline-block;" data-title="PII alert"
-                        data-content="EmailEngine uploads the text content of incoming emails to the servers of ChatGPT. ChatGPT does not use this content for training, but you need to verify if this behavior is in accordance with your data processing agreements with your users."><i
-                            class="fas fa-exclamation-triangle"></i></a>
-
-                </label>
+                <label class="form-check-label" for="generateEmailSummary">Generate summaries with OpenAI</label>
                 {{#if errors.generateEmailSummary}}
                 <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                 {{/if}}
@@ -330,13 +323,33 @@
                     key.</small>
             </div>
 
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">generateRiskAssessment</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.generateRiskAssessment}}is-invalid{{/if}}"
+                    id="generateRiskAssessment" name="generateRiskAssessment" {{#if
+                    values.generateRiskAssessment}}checked{{/if}} />
+                <label class="form-check-label" for="generateRiskAssessment">Generate risk assessment with
+                    OpenAI</label>
+                {{#if errors.generateRiskAssessment}}
+                <span class="invalid-feedback">{{errors.generateRiskAssessment}}</span>
+                {{/if}}
+                <small class="form-text text-muted">EmailEngine will use OpenAI ChatGPT to generate a risk assessment
+                    for incoming emails to detect potential phishing and scam emails if this option is enabled. Requires
+                    a valid OpenAI API key.</small>
+            </div>
+
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">openAiAPIKey</a>]
                 </div>
 
-                <label for="openAiAPIKey">OpenAI API key</label>
+                <label for="openAiAPIKey">OpenAI API key <a href="#" tabindex="-1" role="button" data-toggle="popover"
+                        data-trigger="hover" style="dispaly: inline-block;" data-title="PII alert"
+                        data-content="EmailEngine uploads the text content of incoming emails to the servers of ChatGPT. ChatGPT does not use this content for training, but you need to verify if this behavior is in accordance with your data processing agreements with your users."><i
+                            class="fas fa-exclamation-triangle"></i></a></label>
                 <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
                     id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
                     autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
