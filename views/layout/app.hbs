@@ -202,16 +202,23 @@
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
+                                {{#if authData.isAdmin}}
                                 <a class="dropdown-item {{#if menuAccountSecurity}}active{{/if}}"
                                     href="/admin/account/security">
                                     <i class="fas fa-user-shield fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Account security
                                 </a>
+                                {{#if authData.enabled}}
                                 <div class="dropdown-divider"></div>
+                                {{/if}}
+
+                                {{/if}}
+                                {{#if authData.enabled}}
                                 <a class="dropdown-item" href="/admin/logout">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Log out
                                 </a>
+                                {{/if}}
                             </div>
                         </li>
 
@@ -279,7 +286,7 @@
                     {{/unless}}
                     {{/unless}}
 
-                    {{#unless authEnabled}}
+                    {{#unless authData.enabled}}
                     {{#unless disableAuthWarning}}
                     <div class="card border-left-danger shadow mb-4">
                         <div class="card-body">
@@ -287,7 +294,8 @@
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                         Authentication not enabled</div>
-                                    <p>Please enable authentication for EmailEngine by setting an account password.</p>
+                                    <p>To enable authentication for EmailEngine, please set a password for the admin
+                                        user account.</p>
                                     <div>
                                         <a href="/admin/account/password" class="btn btn-primary btn-icon-split">
                                             <span class="icon text-white-50">

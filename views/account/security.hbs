@@ -15,7 +15,7 @@
                         {{username}}
                     </div>
                     <div class="col-4 text-right">
-                        {{#if authEnabled}}
+                        {{#if authData.enabled}}
                         <button type="button" class="btn btn-outline-primary" data-toggle="modal"
                             data-target="#logoutAllModal" title="Log out all sessions" id="logout-all-btn"
                             data-placement="top">
@@ -30,11 +30,11 @@
                 <div class="row" style="justify-content: center; align-items: center;">
                     <div class="col-4">Account password</div>
                     <div class="col-4">
-                        {{#if authEnabled}} ******** {{else}}not set{{/if}}
+                        {{#if authData.enabled}} ******** {{else}}not set{{/if}}
                     </div>
                     <div class="col-4 text-right">
                         <a href="/admin/account/password" class="btn btn-outline-primary bn-xs">
-                            {{#if authEnabled}}
+                            {{#if authData.enabled}}
                             Update password
                             {{else}}
                             Set password
@@ -44,6 +44,7 @@
                 </div>
             </li>
 
+            {{#if authData.enabled}}
             <li class="list-group-item">
                 <div class="row" style="justify-content: center; align-items: center;">
                     <div class="col-4">Two-factor authentication</div>
@@ -71,6 +72,7 @@
                     </div>
                 </div>
             </li>
+            {{/if}}
         </ul>
     </div>
 </div>

@@ -841,6 +841,13 @@ When making API calls remember that requests against the same account are queued
     });
 
     if (USE_OKTA_AUTH) {
+        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+
+        server.decorate('toolkit', 'validateOktaConfig', async () => {
+            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+            return activeRedirectUrl.origin === redirectUrl.origin && USE_OKTA_AUTH;
+        });
+
         server.auth.strategy('okta', 'bell', {
             provider: 'okta',
             config: {
@@ -848,7 +855,7 @@ When making API calls remember that requests against the same account are queued
             },
             password: await settings.get('cookiePassword'),
             isSecure: secureCookie,
-            location: await settings.get('serviceUrl'),
+            location: redirectUrl.origin,
 
             clientId: OKTA_OAUTH2_CLIENT_ID,
             clientSecret: OKTA_OAUTH2_CLIENT_SECRET
@@ -876,7 +883,7 @@ When making API calls remember that requests against the same account are queued
     }
 
     const authData = await settings.get('authData');
-    if (authData || USE_OKTA_AUTH) {
+    if (authData) {
         server.auth.default('session');
     }
 
@@ -7612,7 +7619,8 @@ ${now}`,
                                 .concat(profile.firstName || [])
                                 .concat(profile.lastName || [])
                                 .join(' ') || profile.username,
-                        enabled: !!profile.username
+                        enabled: !!profile.username,
+                        isAdmin: false
                     };
                     break;
                 }
@@ -7622,6 +7630,14 @@ ${now}`,
                     if (authData) {
                         authData.name = authData.user;
                         authData.enabled = true;
+                        authData.isAdmin = true;
+                    } else {
+                        authData = {
+                            name: 'admin',
+                            user: 'admin',
+                            enabled: false,
+                            isAdmin: true
+                        };
                     }
                     break;
             }
@@ -7736,7 +7752,6 @@ ${now}`,
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
-                authEnabled: !!(authData && authData.password) || request.auth.isAuthenticated,
                 trialPossible: !(await settings.get('tract')),
                 referrerPolicy,
                 authData,
