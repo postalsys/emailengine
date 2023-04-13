@@ -9,6 +9,7 @@ const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
+const Bell = require('@hapi/bell');
 
 const {
     getByteSize,
@@ -154,6 +155,13 @@ config.api = config.api || {
 };
 
 config.service = config.service || {};
+
+const OKTA_OAUTH2_ISSUER = readEnvValue('OKTA_OAUTH2_ISSUER');
+const OKTA_OAUTH2_CLIENT_ID = readEnvValue('OKTA_OAUTH2_CLIENT_ID');
+const OKTA_OAUTH2_CLIENT_SECRET = readEnvValue('OKTA_OAUTH2_CLIENT_SECRET');
+
+const OKTA_BASE_URL = OKTA_OAUTH2_ISSUER ? new URL(OKTA_OAUTH2_ISSUER).origin : null;
+const USE_OKTA_AUTH = !!(OKTA_OAUTH2_ISSUER && OKTA_OAUTH2_CLIENT_ID && OKTA_OAUTH2_CLIENT_SECRET);
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -758,20 +766,47 @@ When making API calls remember that requests against the same account are queued
 
     // needed for auth session and flash messages
     await server.register(Cookie);
+    await server.register(Bell);
+
+    let secureCookie = false;
+    try {
+        let serviceUrl = await settings.get('serviceUrl');
+        if (serviceUrl) {
+            let parsedUrl = new URL(serviceUrl);
+            secureCookie = parsedUrl.protocol === 'https:';
+        }
+    } catch (err) {
+        // skip
+    }
 
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
         cookie: {
             name: 'ee',
             password: await settings.get('cookiePassword'),
-            isSecure: false,
+            isSecure: secureCookie,
             path: '/',
-            clearInvalid: true
+            isSameSite: 'Lax'
         },
         appendNext: true,
         redirectTo: '/admin/login',
 
         async validate(request, session) {
+            switch (session.provider) {
+                case 'okta': {
+                    if (session.profile && session.profile.id) {
+                        let profile = session.profile;
+                        return {
+                            isValid: true,
+                            credentials: {
+                                enabled: true,
+                                user: profile.username
+                            }
+                        };
+                    }
+                }
+            }
+
             const authData = await settings.get('authData');
             if (!authData) {
                 return { isValid: true, credentials: { enabled: false } };
@@ -793,6 +828,7 @@ When making API calls remember that requests against the same account are queued
                 request.requireTotp = true;
             }
 
+            authData.name = authData.name || authData.user;
             return {
                 isValid: true,
                 credentials: {
@@ -803,6 +839,48 @@ When making API calls remember that requests against the same account are queued
             };
         }
     });
+
+    if (USE_OKTA_AUTH) {
+        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+
+        server.decorate('toolkit', 'validateOktaConfig', async () => {
+            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+            return activeRedirectUrl.origin === redirectUrl.origin && USE_OKTA_AUTH;
+        });
+
+        server.auth.strategy('okta', 'bell', {
+            provider: 'okta',
+            config: {
+                uri: OKTA_BASE_URL
+            },
+            password: await settings.get('cookiePassword'),
+            isSecure: secureCookie,
+            location: redirectUrl.origin,
+
+            clientId: OKTA_OAUTH2_CLIENT_ID,
+            clientSecret: OKTA_OAUTH2_CLIENT_SECRET
+        });
+
+        server.route({
+            method: ['GET', 'POST'],
+            path: '/admin/login/okta',
+            handler(request, h) {
+                if (!request.auth.isAuthenticated) {
+                    let error = Boom.unauthorized('Failed to authorize user');
+                    error.output.payload.details = [request.auth.error.message];
+                    throw error;
+                }
+                request.cookieAuth.set(request.auth.credentials);
+                return h.redirect('/admin');
+            },
+            options: {
+                auth: {
+                    mode: 'try',
+                    strategy: 'okta'
+                }
+            }
+        });
+    }
 
     const authData = await settings.get('authData');
     if (authData) {
@@ -7496,7 +7574,7 @@ ${now}`,
 
         options: {
             cookieOptions: {
-                isSecure: false
+                isSecure: secureCookie
             },
 
             skip: (request /*, h*/) => {
@@ -7529,7 +7607,40 @@ ${now}`,
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
-            const authData = await settings.get('authData');
+            let authData;
+
+            switch (request.auth.artifacts && request.auth.artifacts.provider) {
+                case 'okta': {
+                    let profile = request.auth.artifacts.profile || {};
+                    authData = {
+                        user: profile.username,
+                        name:
+                            []
+                                .concat(profile.firstName || [])
+                                .concat(profile.lastName || [])
+                                .join(' ') || profile.username,
+                        enabled: !!profile.username,
+                        isAdmin: false
+                    };
+                    break;
+                }
+
+                default:
+                    authData = await settings.get('authData');
+                    if (authData) {
+                        authData.name = authData.user;
+                        authData.enabled = true;
+                        authData.isAdmin = true;
+                    } else {
+                        authData = {
+                            name: 'admin',
+                            user: 'admin',
+                            enabled: false,
+                            isAdmin: true
+                        };
+                    }
+                    break;
+            }
 
             let systemAlerts = [];
             let upgradeInfo = await settings.get('upgrade');
@@ -7641,7 +7752,6 @@ ${now}`,
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
-                authEnabled: !!(authData && authData.password),
                 trialPossible: !(await settings.get('tract')),
                 referrerPolicy,
                 authData,
@@ -7678,7 +7788,8 @@ ${now}`,
             message:
                 error.output.statusCode === 404
                     ? 'page not found'
-                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong'
+                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong',
+            details: error.output && error.output.payload && error.output.payload.details
         };
 
         if (error.output && error.output.payload) {

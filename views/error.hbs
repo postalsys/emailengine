@@ -1,2 +1,7 @@
 <h1>Error {{statusCode}}</h1>
 <p>{{message}}</p>
+{{#if details}}
+{{#each details}}
+<div class="alert alert-danger">{{this}}</div>
+{{/each}}
+{{/if}}
