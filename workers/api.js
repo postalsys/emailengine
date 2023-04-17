@@ -3438,7 +3438,10 @@ When making API calls remember that requests against the same account are queued
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().example(12345).description('UID of uploaded message'),
+                    uidValidity: Joi.string().example('12345').description('UIDVALIDTITY of the target folder. Numeric value cast as string.'),
                     seq: Joi.number().example(12345).description('Sequence number of uploaded message'),
+
+                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
 
                     reference: Joi.object({
                         message: Joi.string()
@@ -3448,6 +3451,7 @@ When making API calls remember that requests against the same account are queued
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
                         success: Joi.boolean().example(true).description('Was the referenced message processed').label('ResponseReferenceSuccess'),
+                        documentStore: documentStoreSchema.default(false),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
                         .description('Reference info if referencing was requested')
