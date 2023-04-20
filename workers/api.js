@@ -4152,6 +4152,113 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'POST',
+        path: '/v1/unified/search',
+
+        async handler(request, h) {
+            let accountObject = new Account({
+                redis,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            let extraValidationErrors = [];
+
+            for (let key of ['seq', 'modseq']) {
+                if (request.payload.search && key in request.payload.search) {
+                    extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
+                }
+            }
+
+            if (extraValidationErrors.length) {
+                let error = new Error('Input validation failed');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            let documentStoreEnabled = await settings.get('documentStoreEnabled');
+            if (!documentStoreEnabled) {
+                let error = new Error('Document store not enabled');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            try {
+                return await accountObject.searchMessages(Object.assign({ documentStore: true }, request.query, request.payload), { unified: true });
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Unified search for messages',
+            notes: 'Filter messages from the Document Store for multiple accounts or paths. Document Store must be enabled for the unified search to work.',
+            tags: ['api', 'Message'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    exposeQuery: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
+                        .label('exposeQuery')
+                        .optional()
+                }),
+
+                payload: Joi.object({
+                    accounts: Joi.array()
+                        .items(Joi.string().empty('').trim().max(256).example('example'))
+                        .single()
+                        .description('Optional list of account ID values')
+                        .label('UnifiedSearchAccounts'),
+                    paths: Joi.array()
+                        .items(Joi.string().optional().example('INBOX'))
+                        .single()
+                        .description('Optional list of mailbox folder paths or specialUse flags')
+                        .label('UnifiedSearchPaths'),
+                    search: searchSchema,
+                    documentQuery: Joi.object().min(1).description('Document Store query').label('DocumentQuery').unknown()
+                }).label('UnifiedSearchQuery')
+            },
+
+            response: {
+                schema: messageListSchema,
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
         path: '/v1/account/{account}/submit',
 
         async handler(request) {
