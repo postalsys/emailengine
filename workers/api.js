@@ -3250,12 +3250,20 @@ When making API calls remember that requests against the same account are queued
                         .default(false)
                         .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
                         .label('EmbedImages'),
+
                     preProcessHtml: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
                         .description('If true, then pre-processes HTML for compatibility')
                         .label('PreProcess'),
+
+                    markAsSeen: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then marks unseen email as seen while returning the message')
+                        .label('MarkAsSeen'),
 
                     documentStore: documentStoreSchema.default(false)
                 }),
