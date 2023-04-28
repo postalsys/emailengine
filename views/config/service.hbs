@@ -305,6 +305,35 @@
                     in the <em>category</em> property of the <em>messageNew</em> webhook payload.</small>
             </div>
 
+        </div>
+    </div>
+
+    <div class="card mb-4" id="labs">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">OpenAI <span class="badge badge-dark">beta</span></h6>
+        </div>
+        <div class="card-body">
+
+            <p>The following options are not well tested and might change in the futurue. Use these with care.</p>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiModel</a>]</div>
+
+                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
+                    errors.openAiModel}}is-invalid{{/if}}>
+                    {{#each openAiModels}}
+                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.openAiModel}}
+                <span class="invalid-feedback">{{errors.openAiModel}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
+                    the selected model, or analysis requests will fail.</small>
+            </div>
+
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">generateEmailSummary</a>]</div>
