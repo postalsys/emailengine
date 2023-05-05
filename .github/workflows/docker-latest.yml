@@ -10,16 +10,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-            images: |
-                ${{ github.repository }}
-                ghcr.io/${{ github.repository }}
-            tags: |
-                type=raw,value=latest,enable={{is_default_branch}}
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
         with:
@@ -41,8 +31,18 @@ jobs:
         uses: docker/login-action@v2
         with:
             registry: ghcr.io
-            username: ${{ github.repository_owner }}
+            username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+            images: |
+                ${{ github.repository }}
+                ghcr.io/${{ github.repository }}
+            tags: |
+                type=raw,value=latest,enable=true
 
       - name: Build and push
         uses: docker/build-push-action@v4
