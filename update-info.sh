@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 COMMIT_HASH=$(git rev-parse HEAD)
 TIMESTAMP=$(node -e 'console.log(Date.now())')
