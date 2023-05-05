@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -e
-
 COMMIT_HASH=$(git rev-parse HEAD)
 TIMESTAMP=$(node -e 'console.log(Date.now())')
 cat >version-info.json <<EOL
