@@ -6,6 +6,7 @@ WORKDIR /emailengine
 COPY . .
 
 RUN npm install --omit=dev
+RUN npm run prepare-docker
 
 ENV EENGINE_APPDIR=/emailengine
 ENV EENGINE_HOST=0.0.0.0

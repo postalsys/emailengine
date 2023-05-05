@@ -171,11 +171,15 @@
                                 <a class="dropdown-item d-flex align-items-center" href="{{url}}">
                                     <div class="mr-3">
                                         <div class="icon-circle bg-{{level}}">
-                                            <i class="fas fa-{{icon}} text-white"></i>
+                                            <i class="{{#if brand}}fab{{else}}fas{{/if}} fa-{{icon}} text-white"></i>
                                         </div>
                                     </div>
                                     <div>
+                                        {{#if verbatim}}
+                                        {{{message}}}
+                                        {{else}}
                                         {{message}}
+                                        {{/if}}
                                     </div>
                                 </a>
 

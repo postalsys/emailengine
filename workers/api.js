@@ -7865,6 +7865,17 @@ ${now}`,
                 });
             }
 
+            if (consts.EE_DOCKER_LEGACY) {
+                systemAlerts.push({
+                    url: 'https://emailengine.app/docker',
+                    level: 'info',
+                    icon: 'docker',
+                    brand: true,
+                    message: `You are using the deprecated legacy Docker registry, switch to <code>postalsys/emailengine</code>`,
+                    verbatim: true
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},

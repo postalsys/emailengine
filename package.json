@@ -17,7 +17,8 @@
         "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses",
-        "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -j -o translations/messages.pot"
+        "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -j -o translations/messages.pot",
+        "prepare-docker": "echo \"EE_DOCKER_LEGACY=$EE_DOCKER_LEGACY\" >> system.env"
     },
     "keywords": [
         "IMAP"
