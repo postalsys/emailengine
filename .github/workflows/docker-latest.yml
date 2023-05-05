@@ -50,5 +50,5 @@ jobs:
           context: .
           platforms: ${{ steps.buildx.outputs.platforms }}
           push: true
-          tags: ${{ github.repository }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
