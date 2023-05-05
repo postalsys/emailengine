@@ -7871,7 +7871,7 @@ ${now}`,
                     level: 'info',
                     icon: 'docker',
                     brand: true,
-                    message: `You are using the deprecated legacy Docker registry, switch to <code>postalsys/emailengine</code>`,
+                    message: `The Docker image you are currently using is deprecated. To ensure ongoing support, please transition to <code>postalsys/emailengine</code>.`,
                     verbatim: true
                 });
             }
