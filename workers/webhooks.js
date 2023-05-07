@@ -7,7 +7,7 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
-const { readEnvValue } = require('../lib/tools');
+const { readEnvValue, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -64,6 +64,38 @@ async function metrics(logger, key, method, ...args) {
         logger.error({ msg: 'Failed to post metrics to parent', err });
     }
 }
+
+async function onCommand(command) {
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
+}
+
+parentPort.on('message', message => {
+    if (message && message.cmd === 'call' && message.mid) {
+        return onCommand(message.message)
+            .then(response => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    response
+                });
+            })
+            .catch(err => {
+                parentPort.postMessage({
+                    cmd: 'resp',
+                    mid: message.mid,
+                    error: err.message,
+                    code: err.code,
+                    statusCode: err.statusCode
+                });
+            });
+    }
+});
 
 const notifyWorker = new Worker(
     'notify',
@@ -237,12 +269,15 @@ const notifyWorker = new Worker(
 
         let start = Date.now();
         let duration;
+
+        let body = Buffer.from(JSON.stringify(customMapping || job.data));
+
         try {
             let res;
             try {
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
-                    body: JSON.stringify(customMapping || job.data),
+                    body,
                     headers
                 });
                 duration = Date.now() - start;
@@ -264,6 +299,7 @@ const notifyWorker = new Worker(
                 code: 'result_success',
                 job: job.id,
                 webhooks,
+                requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 status: res.status,
@@ -317,6 +353,7 @@ route: customRoute && customRoute.id,
                 code: 'result_fail',
                 job: job.id,
                 webhooks,
+                requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
                 account: job.data.account,

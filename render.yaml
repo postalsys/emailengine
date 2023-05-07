@@ -8,6 +8,8 @@ services:
       name: emailengine
       env: node
       repo: https://github.com/postalsys/emailengine.git
+      plan: standard
+      numInstances: 1
       #healthCheckPath: /health
       buildCommand: ./update-info.sh && npm install --omit=dev
       startCommand: npm start

@@ -24,9 +24,38 @@ const { Worker, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
-const { readEnvValue, hasEnvValue } = require('./lib/tools');
+
+const {
+    readEnvValue,
+    hasEnvValue,
+    download,
+    getDuration,
+    getByteSize,
+    getBoolean,
+    getWorkerCount,
+    selectRendezvousNode,
+    checkLicense,
+    checkForUpgrade,
+    setLicense,
+    getRedisStats,
+    threadStats
+} = require('./lib/tools');
+
+const {
+    MAX_DAYS_STATS,
+    MESSAGE_NEW_NOTIFY,
+    MESSAGE_DELETED_NOTIFY,
+    CONNECT_ERROR_NOTIFY,
+    REDIS_PREFIX,
+    ACCOUNT_ADDED_NOTIFY,
+    ACCOUNT_DELETED_NOTIFY,
+    LIST_UNSUBSCRIBE_NOTIFY,
+    LIST_SUBSCRIBE_NOTIFY
+} = require('./lib/consts');
+
 const { webhooks: Webhooks } = require('./lib/webhooks');
 const nodeFetch = require('node-fetch');
+const v8 = require('node:v8');
 const fetchCmd = global.fetch || nodeFetch;
 
 const Bugsnag = require('@bugsnag/js');
@@ -63,32 +92,11 @@ const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const tokens = require('./lib/tokens');
 
+const { checkRateLimit } = require('./lib/rate-limit');
+
 const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
-
-const {
-    getDuration,
-    getByteSize,
-    getBoolean,
-    getWorkerCount,
-    selectRendezvousNode,
-    checkLicense,
-    checkForUpgrade,
-    setLicense,
-    getRedisStats
-} = require('./lib/tools');
-const {
-    MAX_DAYS_STATS,
-    MESSAGE_NEW_NOTIFY,
-    MESSAGE_DELETED_NOTIFY,
-    CONNECT_ERROR_NOTIFY,
-    REDIS_PREFIX,
-    ACCOUNT_ADDED_NOTIFY,
-    ACCOUNT_DELETED_NOTIFY,
-    LIST_UNSUBSCRIBE_NOTIFY,
-    LIST_SUBSCRIBE_NOTIFY
-} = require('./lib/consts');
 
 const msgpack = require('msgpack5')();
 
@@ -129,6 +137,8 @@ config['imap-proxy'] = config['imap-proxy'] || {
     secret: '',
     proxy: false
 };
+
+const NOW = Date.now(); // time of start
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
@@ -196,6 +206,23 @@ const licenseInfo = {
     active: false,
     details: false,
     type: packageData.license
+};
+
+const THREAD_NAMES = {
+    main: 'Main thread',
+    imap: 'IMAP worker',
+    webhooks: 'Webhook worker',
+    api: 'HTTP and API server',
+    submit: 'Email sending worker',
+    documents: 'Document store indexing worker',
+    imapProxy: 'IMAP proxy server',
+    smtp: 'SMTP proxy server'
+};
+
+const THREAD_CONFIG_VALUES = {
+    imap: { key: 'EENGINE_WORKERS', value: config.workers.imap },
+    submit: { key: 'EENGINE_WORKERS_SUBMIT', value: config.workers.submit },
+    webhooks: { key: 'EENGINE_WORKERS_WEBHOOKS', value: config.workers.webhooks }
 };
 
 const queueEvents = {};
@@ -441,6 +468,7 @@ let workerAssigned = new WeakMap();
 let onlineWorkers = new WeakSet();
 
 let workers = new Map();
+let workersMeta = new WeakMap();
 let availableIMAPWorkers = new Set();
 
 let suspendedWorkerTypes = new Set();
@@ -453,7 +481,13 @@ const postMessage = (worker, payload, ignoreOffline, transferList) => {
         throw new Error('Requested worker thread not available');
     }
 
-    return worker.postMessage(payload, transferList);
+    let result = worker.postMessage(payload, transferList);
+
+    let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+    workerMeta.called = workerMeta.called ? ++workerMeta.called : 1;
+    workersMeta.set(worker, workerMeta);
+
+    return result;
 };
 
 const countUnassignment = async account => {
@@ -595,6 +629,10 @@ let spawnWorker = async type => {
             updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Failed to update ${type} server state`, err }));
         }
         onlineWorkers.add(worker);
+
+        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+        workerMeta.online = Date.now();
+        workersMeta.set(worker, workerMeta);
     });
 
     let exitHandler = async exitCode => {
@@ -657,6 +695,10 @@ let spawnWorker = async type => {
     });
 
     worker.on('message', message => {
+        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+        workerMeta.messages = workerMeta.messages ? ++workerMeta.messages : 1;
+        workersMeta.set(worker, workerMeta);
+
         if (!message) {
             return;
         }
@@ -685,6 +727,14 @@ let spawnWorker = async type => {
         if (message.cmd === 'call' && message.mid) {
             return onCommand(worker, message.message)
                 .then(response => {
+                    let transferList;
+                    if (response && typeof response === 'object' && response._transfer === true) {
+                        if (typeof response._response === 'object' && response._response && response._response.buffer) {
+                            transferList = [response._response.buffer];
+                        }
+                        response = response._response;
+                    }
+
                     let callPayload = {
                         cmd: 'resp',
                         mid: message.mid,
@@ -692,8 +742,12 @@ let spawnWorker = async type => {
                     };
 
                     try {
-                        postMessage(worker, callPayload);
+                        postMessage(worker, callPayload, null, transferList);
                     } catch (err) {
+                        if (Buffer.isBuffer(callPayload.response)) {
+                            callPayload.response = `Buffer <${callPayload.response.length}B>`;
+                        }
+
                         logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
                     }
                 })
@@ -878,6 +932,7 @@ async function call(worker, message, transferList) {
                 transferList
             );
         } catch (err) {
+            clearTimeout(timer);
             callQueue.delete(mid);
             return reject(err);
         }
@@ -1256,6 +1311,98 @@ async function onCommand(worker, message) {
             }
         }
 
+        case 'kill-thread': {
+            for (let [, workerSet] of workers) {
+                if (workerSet && workerSet.size) {
+                    for (let worker of workerSet) {
+                        if (worker.threadId === message.thread) {
+                            logger.info({ msg: 'Requested thread kill', thread: message.thread });
+                            return await worker.terminate();
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        case 'snapshot-thread': {
+            if (message.thread === 0) {
+                logger.info({ msg: 'Requested snapshot for a thread', thread: message.thread });
+                const stream = v8.getHeapSnapshot();
+                if (stream) {
+                    return { _transfer: true, _response: await download(stream) };
+                }
+                return false;
+            }
+
+            for (let [, workerSet] of workers) {
+                if (workerSet && workerSet.size) {
+                    for (let worker of workerSet) {
+                        if (worker.threadId === message.thread) {
+                            logger.info({ msg: 'Requested snapshot for a thread', thread: message.thread });
+
+                            const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
+                            if (stream) {
+                                return { _transfer: true, _response: await download(stream) };
+                            }
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        case 'threads': {
+            let threadsInfo = [Object.assign({ type: 'main', isMain: true, threadId: 0, online: NOW }, threadStats.usage())];
+
+            for (let [type, workerSet] of workers) {
+                if (workerSet && workerSet.size) {
+                    for (let worker of workerSet) {
+                        let resourceUsage;
+                        try {
+                            resourceUsage = await call(worker, { cmd: 'resource-usage' });
+                        } catch (err) {
+                            resourceUsage = {
+                                resourceUsageError: {
+                                    error: err.message,
+                                    code: err.code
+                                }
+                            };
+                        }
+
+                        let threadData = Object.assign({ type, threadId: worker.threadId, resourceLimits: worker.resourceLimits }, resourceUsage);
+
+                        if (workerAssigned.has(worker)) {
+                            threadData.accounts = workerAssigned.get(worker).size;
+                        }
+
+                        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+                        for (let key of Object.keys(workerMeta)) {
+                            threadData[key] = workerMeta[key];
+                        }
+
+                        threadsInfo.push(threadData);
+                    }
+                }
+            }
+
+            threadsInfo.forEach(threadInfo => {
+                threadInfo.description = THREAD_NAMES[threadInfo.type];
+                if (THREAD_CONFIG_VALUES[threadInfo.type]) {
+                    threadInfo.config = THREAD_CONFIG_VALUES[threadInfo.type];
+                }
+            });
+
+            return threadsInfo;
+        }
+
+        case 'rate-limit': {
+            return await checkRateLimit(message.key, message.count, message.allowed, message.windowSize);
+        }
+
         case 'unsubscribe':
             sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
                 logger.error({ msg: 'Failed to send an unsubscribe webhook', err })
@@ -1374,6 +1521,7 @@ async function onCommand(worker, message) {
             return await call(assignedWorker, message, []);
         }
     }
+
     return 999;
 }
 
@@ -1451,6 +1599,7 @@ const closeQueues = cb => {
 };
 
 process.on('SIGTERM', () => {
+    logger.info({ msg: 'Close signal received', signal: 'SIGTERM', isClosing });
     if (isClosing) {
         return;
     }
@@ -1461,6 +1610,7 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
+    logger.info({ msg: 'Close signal received', signal: 'SIGINT', isClosing });
     if (isClosing) {
         return;
     }
@@ -1645,6 +1795,7 @@ const startApplication = async () => {
             authData = authData || {};
             authData.user = authData.user || 'admin';
             authData.password = preparedPassword;
+            authData.passwordVersion = Date.now();
 
             await settings.set('authData', authData);
             logger.debug({ msg: 'Imported hashed password', hash: preparedPassword });

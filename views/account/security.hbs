@@ -1,0 +1,269 @@
+{{> security_header}}
+
+<div class="card mb-4">
+
+
+
+    <div class="card-body">
+
+        <ul class="list-group list-group-flush">
+
+            <li class="list-group-item">
+                <div class="row" style="align-items: center;">
+                    <div class="col-4">Username</div>
+                    <div class="col-4">
+                        {{username}}
+                    </div>
+                    <div class="col-4 text-right">
+                        {{#if authData.enabled}}
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                            data-target="#logoutAllModal" title="Log out all sessions" id="logout-all-btn"
+                            data-placement="top">
+                            Log out all sessions
+                        </button>
+                        {{/if}}
+                    </div>
+                </div>
+            </li>
+
+            <li class="list-group-item">
+                <div class="row" style="justify-content: center; align-items: center;">
+                    <div class="col-4">Account password</div>
+                    <div class="col-4">
+                        {{#if authData.enabled}} ******** {{else}}not set{{/if}}
+                    </div>
+                    <div class="col-4 text-right">
+                        <a href="/admin/account/password" class="btn btn-outline-primary bn-xs">
+                            {{#if authData.enabled}}
+                            Update password
+                            {{else}}
+                            Set password
+                            {{/if}}
+                        </a>
+                    </div>
+                </div>
+            </li>
+
+            {{#if authData.enabled}}
+            <li class="list-group-item">
+                <div class="row" style="justify-content: center; align-items: center;">
+                    <div class="col-4">Two-factor authentication</div>
+                    <div class="col-4">
+                        {{#if totp.enabled}}
+                        <span class="badge badge-success">Authenticator app</span>
+                        {{else}}
+                        <span class="badge badge-light">Not set</span>
+                        {{/if}}
+                    </div>
+                    <div class="col-4 text-right">
+                        {{#if totp.enabled}}
+                        <button type="button" class="btn btn-outline-danger" data-toggle="modal"
+                            data-target="#disableTfaModal" title="Disable Two-factor authentication"
+                            id="disable-tfa-btn" data-placement="top">
+                            Disable 2FA
+                        </button>
+                        {{else}}
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                            data-target="#enableTfaModal" title="Enable Two-factor authentication" id="disable-tfa-btn"
+                            data-placement="top">
+                            Enable 2FA
+                        </button>
+                        {{/if}}
+                    </div>
+                </div>
+            </li>
+
+            <li class="list-group-item">
+                <div class="row" style="justify-content: center; align-items: center;">
+                    <div class="col-4">Single sign-on (SSO)</div>
+                    <div class="col-4">
+                        {{#if providers.okta}}
+                        <span class="badge badge-success">Okta</span>
+                        {{else}}
+                        <span class="badge badge-light">Not set</span>
+                        {{/if}}
+                    </div>
+                    <div class="col-4 text-right">
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
+                            data-target="#ssoInstructionsModal" title="Setting up SSO" id="sso-instructions"
+                            data-placement="top">
+                            Instructions
+                        </button>
+                    </div>
+                </div>
+            </li>
+            {{/if}}
+        </ul>
+    </div>
+</div>
+
+<div class="modal fade" id="disableTfaModal" tabindex="-1" aria-labelledby="disableTfaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="disableTfaModalLabel">Disable 2FA</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to disable two-factor authentication?</p>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/account/tfa/disable">
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <input type="hidden" name="type" value="totp" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Disable 2FA</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="enableTfaModal" tabindex="-1" aria-labelledby="enableTfaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="/admin/account/tfa/enable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="enableTfaModalLabel">Enable 2FA</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <div>
+                        <img src="{{totp.dataUrl}}" style="max-width: 200px; display: block; margin: 0 auto;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="code">Scan the code above with your authenticator app and enter the 6-digit TOTP
+                            code to enable 2FA.</label>
+                        <input type="text" pattern="[0-9]{6}" class="form-control {{#if errors.code}}is-invalid{{/if}}"
+                            id="code" name="code" required />
+                        {{#if errors.code}}
+                        <span class="invalid-feedback">{{errors.code}}</span>
+                        {{/if}}
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <input type="hidden" name="type" value="totp" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Enable 2FA</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="logoutAllModal" tabindex="-1" aria-labelledby="logoutAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="/admin/account/logout-all">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logoutAllModalLabel">Log out</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <p>Do you want to log out of all sessions on all browsers for your user account?</a>
+
+                </div>
+                <div class="modal-footer">
+
+                    <input type="hidden" name="crumb" value="{{crumb}}" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary"><i
+                            class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Log out</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="ssoInstructionsModal" tabindex="-1" aria-labelledby="ssoInstructionsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ssoInstructionsModalLabel">Set up SSO</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <p>To enable Single Sign-On (SSO) for EmailEngine with Okta web applications using the redirect model,
+                    follow these steps: First, create a new web app in Okta using the provided Redirect URI. Next,
+                    configure the necessary environment variables for EmailEngine. Finally, restart EmailEngine for the
+                    changes to take effect.
+                </p>
+
+                <p>Redirect URI for the Okta web application:<br>
+                    <code style="color:#333;">{{serviceUrl}}/admin/login/okta</code>
+                </p>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Environment variable</th>
+                            <th>Current value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th>
+                                <code style="color:#333;">OKTA_OAUTH2_ISSUER</code>
+                            </th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_ISSUER}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_ISSUER}}</code>
+                                {{else}}
+                                Not set (the URL for the authentication server)
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_ID</code></th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
+                                {{else}}
+                                Not set
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_SECRET</code></th>
+                            <td>
+                                {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
+                                {{else}}
+                                Not set
+                                {{/if}}
+
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>

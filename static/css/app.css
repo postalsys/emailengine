@@ -120,3 +120,7 @@ textarea.form-control::-ms-input-placeholder {
 .hover-bg-light:hover {
     background-color: #f8f9fa !important;
 }
+
+.alert-margin .alert {
+    margin: 10px 10px 0 0;
+}

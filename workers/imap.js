@@ -7,7 +7,7 @@ const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
 
-const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue } = require('../lib/tools');
+const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -585,6 +585,9 @@ class ConnectionHandler {
     // message that expects a response
     async onCommand(message) {
         switch (message.cmd) {
+            case 'resource-usage':
+                return threadStats.usage();
+
             case 'assign':
             case 'delete':
             case 'update':

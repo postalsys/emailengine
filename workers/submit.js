@@ -7,7 +7,7 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
-const { getDuration, readEnvValue } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 
@@ -78,14 +78,20 @@ async function call(message, transferList) {
 
         callQueue.set(mid, { resolve, reject, timer });
 
-        parentPort.postMessage(
-            {
-                cmd: 'call',
-                mid,
-                message
-            },
-            transferList
-        );
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
     });
 }
 
@@ -395,7 +401,13 @@ submitWorker.on('failed', async job => {
 });
 
 async function onCommand(command) {
-    logger.debug({ msg: 'Unhandled command', command });
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
 }
 
 parentPort.on('message', message => {

@@ -1,0 +1,153 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+        <small><i class="fas fa-cog fa-fw"></i></small>
+        EmailEngine Internals
+    </h1>
+</div>
+
+<div class="card mb-4 mt-4">
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+
+            <thead>
+                <tr>
+                    <th>Thread type</th>
+                    <th class="text-right">Thread ID</th>
+                    <th>Started</th>
+                    <th class="text-right">Heap size</th>
+                    <th class="text-right">Accounts</th>
+                    <th class="text-right">IPC to</th>
+                    <th class="text-right">IPC from</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each threads}}
+                <tr>
+                    <td>{{description}}
+
+                        {{#if config}}
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            data-title="Configuration" data-content="{{config.key}}={{config.value}}"><i
+                                class="fas fa-info-circle"></i></a>
+                        {{/if}}
+
+                    </td>
+                    <td class="text-right">{{threadId}}</td>
+                    <td>
+                        <span class="relative-time" data-time="{{timeStr}}"></span>
+                    </td>
+                    <td class="text-right">
+                        {{heapUsed}}
+
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            data-title="Heap usage" data-content="{{heapRelative}} of maximum allowed {{heapMax}}"><i
+                                class="fas fa-info-circle"></i></a>
+                    </td>
+                    <td class="text-right">{{accounts}}</td>
+                    <td class="text-right">{{called}}</td>
+                    <td class="text-right">{{messages}}</td>
+                    <td class="text-right">
+
+                        <button type="button" class="btn btn-info btn-circle btn-sm snapshot-thread-btn"
+                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
+                            title="Generate memory snapshot"><i class="fas fa-cloud-download-alt"></i></button>
+
+                        {{#if isMain}}
+                        <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
+                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
+                            title="Kill this thread" style="visibility: hidden;"><i
+                                class="fas fa-trash-alt"></i></button>
+                        {{else}}
+                        <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
+                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
+                            title="Kill this thread"><i class="fas fa-trash-alt"></i></button>
+                        {{/if}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+<div class="modal fade" id="killThread" tabindex="-1" aria-labelledby="killThreadLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="killThreadLabel">Kill thread</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to kill this thread? This action might interrupt pending processes.
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="/admin/internals/kill">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" id="kill-thread" name="thread" value="">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Kill thread</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="snapshotThread" tabindex="-1" aria-labelledby="snapshotThreadLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="snapshotThreadLabel">Memory snapshot</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to generate a memory snapshot of this thread? This action might interfere with
+                pending processing.
+            </div>
+            <div class="modal-footer">
+                <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank">
+                    <input type="hidden" name="crumb" value="{{crumb}}">
+                    <input type="hidden" id="snapshot-thread" name="thread" value="">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info">Generate snapshot</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        for (let elm of document.querySelectorAll('.kill-thread-btn')) {
+            elm.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('kill-thread').value = elm.dataset.thread;
+                $('#killThread').modal('show');
+            });
+        }
+
+        for (let elm of document.querySelectorAll('.snapshot-thread-btn')) {
+            elm.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('snapshot-thread').value = elm.dataset.thread;
+                $('#snapshotThread').modal('show');
+            });
+        }
+
+        document.getElementById('snapshot-form').addEventListener('submit', () => {
+            $('#snapshotThread').modal('hide');
+        });
+    });
+</script>

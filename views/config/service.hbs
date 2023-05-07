@@ -305,19 +305,88 @@
                     in the <em>category</em> property of the <em>messageNew</em> webhook payload.</small>
             </div>
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
-                <input type="checkbox" class="form-check-input {{#if errors.labsMailRu}}is-invalid{{/if}}"
-                    id="labsMailRu" name="labsMailRu" {{#if values.labsMailRu}}checked{{/if}} />
-                <label class="form-check-label" for="labsMailRu">Allow to use OAuth2 with Mail.ru</label>
-                {{#if errors.labsMailRu}}
-                <span class="invalid-feedback">{{errors.labsMailRu}}</span>
+        </div>
+    </div>
+
+    <div class="card mb-4" id="labs">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">OpenAI <span class="badge badge-dark">beta</span></h6>
+        </div>
+        <div class="card-body">
+
+            <p>The following options are not well tested and might change in the futurue. Use these with care.</p>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiModel</a>]</div>
+
+                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
+                    errors.openAiModel}}is-invalid{{/if}}>
+                    {{#each openAiModels}}
+                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.openAiModel}}
+                <span class="invalid-feedback">{{errors.openAiModel}}</span>
                 {{/if}}
-                <small class="form-text text-muted"><a href="https://oauth.mail.ru/docs" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">OAuth2 for Mail.ru</a> is disabled by default due to
-                    insufficient
-                    testing. It might or might not work as intended. Make sure that your OAuth2 app has the required
-                    email scopes.</small>
+                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
+                    the selected model, or analysis requests will fail.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">generateEmailSummary</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
+                    id="generateEmailSummary" name="generateEmailSummary" {{#if
+                    values.generateEmailSummary}}checked{{/if}} />
+                <label class="form-check-label" for="generateEmailSummary">Generate summaries with OpenAI</label>
+                {{#if errors.generateEmailSummary}}
+                <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
+                {{/if}}
+                <small class="form-text text-muted">EmailEngine will use OpenAI ChatGPT to <a
+                        href="https://docs.emailengine.app/generating-summaries-of-new-emails-using-chatgpt/"
+                        target="_blank" referrerpolicy="{{referrerPolicy}}">generate a summary and sentiment
+                        assessment</a> for incoming emails if this option is enabled. Requires a valid OpenAI API
+                    key.</small>
+            </div>
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">generateRiskAssessment</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.generateRiskAssessment}}is-invalid{{/if}}"
+                    id="generateRiskAssessment" name="generateRiskAssessment" {{#if
+                    values.generateRiskAssessment}}checked{{/if}} />
+                <label class="form-check-label" for="generateRiskAssessment">Generate risk assessment with
+                    OpenAI</label>
+                {{#if errors.generateRiskAssessment}}
+                <span class="invalid-feedback">{{errors.generateRiskAssessment}}</span>
+                {{/if}}
+                <small class="form-text text-muted">EmailEngine will use OpenAI ChatGPT to generate a risk assessment
+                    for incoming emails to detect potential phishing and scam emails if this option is enabled. Requires
+                    a valid OpenAI API key.</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiAPIKey</a>]
+                </div>
+
+                <label for="openAiAPIKey">OpenAI API key <a href="#" tabindex="-1" role="button" data-toggle="popover"
+                        data-trigger="hover" style="dispaly: inline-block;" data-title="PII alert"
+                        data-content="EmailEngine uploads the text content of incoming emails to the servers of ChatGPT. ChatGPT does not use this content for training, but you need to verify if this behavior is in accordance with your data processing agreements with your users."><i
+                            class="fas fa-exclamation-triangle"></i></a></label>
+                <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
+                    id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
+                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
+                    {{/if}} />
+                {{#if errors.openAiAPIKey}}
+                <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OpenAI API key to use ChatGPT</small>
             </div>
 
         </div>

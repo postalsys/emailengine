@@ -9,6 +9,7 @@ const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
+const Bell = require('@hapi/bell');
 
 const {
     getByteSize,
@@ -24,7 +25,8 @@ const {
     matcher,
     readEnvValue,
     matchIp,
-    getSignedFormData
+    getSignedFormData,
+    threadStats
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -128,7 +130,8 @@ const {
     searchSchema,
     messageUpdateSchema,
     accountSchemas,
-    oauthCreateSchema
+    oauthCreateSchema,
+    tokenRestrictionsSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -152,6 +155,13 @@ config.api = config.api || {
 };
 
 config.service = config.service || {};
+
+const OKTA_OAUTH2_ISSUER = readEnvValue('OKTA_OAUTH2_ISSUER');
+const OKTA_OAUTH2_CLIENT_ID = readEnvValue('OKTA_OAUTH2_CLIENT_ID');
+const OKTA_OAUTH2_CLIENT_SECRET = readEnvValue('OKTA_OAUTH2_CLIENT_SECRET');
+
+const OKTA_BASE_URL = OKTA_OAUTH2_ISSUER ? new URL(OKTA_OAUTH2_ISSUER).origin : null;
+const USE_OKTA_AUTH = !!(OKTA_OAUTH2_ISSUER && OKTA_OAUTH2_CLIENT_ID && OKTA_OAUTH2_CLIENT_SECRET);
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -187,6 +197,7 @@ const CORS_CONFIG = !CORS_ORIGINS
           headers: ['Authorization'],
           exposedHeaders: ['Accept'],
           additionalExposedHeaders: [],
+          preflightStatusCode: 204,
           maxAge:
               getDuration(readEnvValue('EENGINE_CORS_MAX_AGE') || (config.cors && config.cors.maxAge), {
                   seconds: true
@@ -267,15 +278,25 @@ async function call(message, transferList) {
 
         callQueue.set(mid, { resolve, reject, timer });
 
-        parentPort.postMessage(
-            {
-                cmd: 'call',
-                mid,
-                message
-            },
-            transferList
-        );
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
     });
+}
+
+async function checkRateLimit(key, count, allowed, windowSize) {
+    return await call({ cmd: 'rate-limit', key, count, allowed, windowSize });
 }
 
 async function metrics(logger, key, method, ...args) {
@@ -323,7 +344,13 @@ async function sendWebhook(account, event, data) {
 }
 
 async function onCommand(command) {
-    logger.debug({ msg: 'Unhandled command', command });
+    switch (command.cmd) {
+        case 'resource-usage':
+            return threadStats.usage();
+        default:
+            logger.debug({ msg: 'Unhandled command', command });
+            return 999;
+    }
 }
 
 function publishChangeEvent(data) {
@@ -461,6 +488,8 @@ const init = async () => {
     server.decorate('toolkit', 'serviceDomain', getServiceDomain);
     server.decorate('toolkit', 'certs', certHandler);
 
+    server.decorate('toolkit', 'checkRateLimit', checkRateLimit);
+
     server.decorate('toolkit', 'getCertificate', async provision => {
         let hostname = await getServiceDomain();
         let certificateData;
@@ -540,7 +569,7 @@ const init = async () => {
 
         // check if access tokens for api requests are required
         let disableTokens = await settings.get('disableTokens');
-        if (disableTokens && !request.url.searchParams.get('access_token')) {
+        if (disableTokens && !request.url.searchParams.get('access_token') && !request.headers.authorization) {
             // make sure that we have a access_token value set in query args
             let url = new URL(request.url.href);
             url.searchParams.set('access_token', 'preauth');
@@ -608,8 +637,8 @@ When making API calls remember that requests against the same account are queued
         allowQueryToken: true, // optional, false by default
         validate: async (request, token /*, h*/) => {
             let disableTokens = await settings.get('disableTokens');
-            if (disableTokens) {
-                // tokens check are disabled, allow all
+            if (disableTokens && (!token || token === 'preauth')) {
+                // tokens checks are disabled, allow all if token is not set
                 return {
                     isValid: true,
                     credentials: {},
@@ -650,11 +679,9 @@ When making API calls remember that requests against the same account are queued
                     tokenScopes: tokenData.scopes
                 });
 
-                return {
-                    isValid: false,
-                    credentials: { token },
-                    artifacts: { err: 'Unauthorized scope' }
-                };
+                let error = Boom.forbidden('Unauthorized scope');
+                error.output.payload.requestedScope = scope;
+                throw error;
             }
 
             if (tokenData.account) {
@@ -666,11 +693,9 @@ When making API calls remember that requests against the same account are queued
                         tokenId: tokenData.id,
                         account: (request.params && request.params.account) || null
                     });
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized account' }
-                    };
+
+                    let error = Boom.forbidden('Unauthorized account');
+                    throw error;
                 }
             }
 
@@ -685,11 +710,9 @@ When making API calls remember that requests against the same account are queued
                         addressAllowlist: tokenData.restrictions.addresses
                     });
 
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized address' }
-                    };
+                    let error = Boom.forbidden('Unauthorized address');
+                    error.output.payload.remoteAddress = request.app.ip;
+                    throw error;
                 }
 
                 if (
@@ -706,11 +729,34 @@ When making API calls remember that requests against the same account are queued
                         referrerAllowlist: tokenData.restrictions.referrers
                     });
 
-                    return {
-                        isValid: false,
-                        credentials: { token },
-                        artifacts: { err: 'Unauthorized referrer' }
-                    };
+                    let error = Boom.forbidden('Unauthorized referrer');
+                    throw error;
+                }
+
+                if (tokenData.restrictions.rateLimit) {
+                    let rateLimit = await checkRateLimit(
+                        `api:${tokenData.id}`,
+                        1,
+                        tokenData.restrictions.rateLimit.maxRequests,
+                        tokenData.restrictions.rateLimit.timeWindow
+                    );
+
+                    if (!rateLimit.success) {
+                        logger.error({ msg: 'Rate limited', token: tokenData.id, rateLimit });
+                        let error = Boom.tooManyRequests('Rate limit exceeded');
+                        error.output.payload.ttl = Math.ceil(rateLimit.ttl);
+                        error.output.headers = {
+                            'X-RateLimit-Limit': rateLimit.allowed,
+                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl)
+                        };
+                        throw error;
+                    } else {
+                        request.app.rateLimitHeaders = {
+                            'X-RateLimit-Limit': rateLimit.allowed,
+                            'X-RateLimit-Reset': Math.ceil(rateLimit.ttl),
+                            'X-RateLimit-Remaining': rateLimit.allowed - rateLimit.count
+                        };
+                    }
                 }
             }
 
@@ -720,23 +766,55 @@ When making API calls remember that requests against the same account are queued
 
     // needed for auth session and flash messages
     await server.register(Cookie);
+    await server.register(Bell);
+
+    let secureCookie = false;
+    try {
+        let serviceUrl = await settings.get('serviceUrl');
+        if (serviceUrl) {
+            let parsedUrl = new URL(serviceUrl);
+            secureCookie = parsedUrl.protocol === 'https:';
+        }
+    } catch (err) {
+        // skip
+    }
 
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
         cookie: {
             name: 'ee',
             password: await settings.get('cookiePassword'),
-            isSecure: false,
+            isSecure: secureCookie,
             path: '/',
-            clearInvalid: true
+            isSameSite: 'Lax'
         },
         appendNext: true,
         redirectTo: '/admin/login',
 
         async validate(request, session) {
+            switch (session.provider) {
+                case 'okta': {
+                    if (session.profile && session.profile.id) {
+                        let profile = session.profile;
+                        return {
+                            isValid: true,
+                            credentials: {
+                                enabled: true,
+                                user: profile.username
+                            }
+                        };
+                    }
+                }
+            }
+
             const authData = await settings.get('authData');
             if (!authData) {
                 return { isValid: true, credentials: { enabled: false } };
+            }
+
+            if (authData.passwordVersion && authData.passwordVersion !== session.passwordVersion) {
+                // force logout
+                return { isValid: false };
             }
 
             const account = authData.user === session.user;
@@ -745,6 +823,12 @@ When making API calls remember that requests against the same account are queued
                 return { isValid: false };
             }
 
+            // unless it is a login or TOPT (or public) page, require TOTP code
+            if (session.requireTotp && !['/{any*}', '/admin/totp', '/admin/login'].includes(request.route && request.route.path)) {
+                request.requireTotp = true;
+            }
+
+            authData.name = authData.name || authData.user;
             return {
                 isValid: true,
                 credentials: {
@@ -755,6 +839,48 @@ When making API calls remember that requests against the same account are queued
             };
         }
     });
+
+    if (USE_OKTA_AUTH) {
+        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+
+        server.decorate('toolkit', 'validateOktaConfig', async () => {
+            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+            return activeRedirectUrl.origin === redirectUrl.origin && USE_OKTA_AUTH;
+        });
+
+        server.auth.strategy('okta', 'bell', {
+            provider: 'okta',
+            config: {
+                uri: OKTA_BASE_URL
+            },
+            password: await settings.get('cookiePassword'),
+            isSecure: secureCookie,
+            location: redirectUrl.origin,
+
+            clientId: OKTA_OAUTH2_CLIENT_ID,
+            clientSecret: OKTA_OAUTH2_CLIENT_SECRET
+        });
+
+        server.route({
+            method: ['GET', 'POST'],
+            path: '/admin/login/okta',
+            handler(request, h) {
+                if (!request.auth.isAuthenticated) {
+                    let error = Boom.unauthorized('Failed to authorize user');
+                    error.output.payload.details = [request.auth.error.message];
+                    throw error;
+                }
+                request.cookieAuth.set(request.auth.credentials);
+                return h.redirect('/admin');
+            },
+            options: {
+                auth: {
+                    mode: 'try',
+                    strategy: 'okta'
+                }
+            }
+        });
+    }
 
     const authData = await settings.get('authData');
     if (authData) {
@@ -1139,6 +1265,10 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
+            if (!accountData.account) {
+                accountData.account = null;
+            }
+
             const accountMeta = accountData._meta || {};
             delete accountData._meta;
 
@@ -1206,6 +1336,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.emailAddress, provider: oauth2App.provider });
                     break;
                 }
 
@@ -1274,6 +1406,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: userInfo.email, provider: oauth2App.provider });
                     break;
                 }
 
@@ -1321,6 +1455,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.email, provider: oauth2App.provider });
                     break;
                 }
 
@@ -1467,35 +1603,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Related metadata in JSON format')
                         .label('JsonMetaData'),
 
-                    restrictions: Joi.object({
-                        referrers: Joi.array()
-                            .items(Joi.string())
-                            .empty('')
-                            .single()
-                            .allow(false)
-                            .default(false)
-                            .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                            .label('ReferrerAllowlist')
-                            .description('HTTP referrer allowlist for API requests'),
-                        addresses: Joi.array()
-                            .items(
-                                Joi.string().ip({
-                                    version: ['ipv4', 'ipv6'],
-                                    cidr: 'optional'
-                                })
-                            )
-                            .empty('')
-                            .single()
-                            .allow(false)
-                            .default(false)
-                            .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
-                            .label('AddressAllowlist')
-                            .description('IP address allowlist')
-                    })
-                        .empty('')
-                        .allow(false)
-                        .label('TokenRestrictions')
-                        .description('Access restrictions'),
+                    restrictions: tokenRestrictionsSchema,
 
                     ip: Joi.string()
                         .empty('')
@@ -1724,33 +1832,7 @@ When making API calls remember that requests against the same account are queued
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
 
-                                restrictions: Joi.object({
-                                    referrers: Joi.array()
-                                        .items(Joi.string())
-                                        .empty('')
-                                        .allow(false)
-                                        .default(false)
-                                        .example(['*web.domain.org/*', '*.domain.org/*', 'https://domain.org/*'])
-                                        .label('ReferrerAllowlist')
-                                        .description('HTTP referrer allowlist'),
-                                    addresses: Joi.array()
-                                        .items(
-                                            Joi.string().ip({
-                                                version: ['ipv4', 'ipv6'],
-                                                cidr: 'optional'
-                                            })
-                                        )
-                                        .empty('')
-                                        .allow(false)
-                                        .default(false)
-                                        .example(['1.2.3.4', '5.6.7.8', '127.0.0.0/8'])
-                                        .label('AddressAllowlist')
-                                        .description('IP address allowlist')
-                                })
-                                    .empty('')
-                                    .allow(false)
-                                    .label('TokenRestrictions')
-                                    .description('Access restrictions'),
+                                restrictions: tokenRestrictionsSchema,
 
                                 ip: Joi.string()
                                     .empty('')
@@ -1910,9 +1992,9 @@ When making API calls remember that requests against the same account are queued
 
                     proxy: settingsSchema.proxyUrl,
 
-                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
 
-                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
 
                     oauth2: Joi.object(oauth2Schema).allow(false).description('OAuth2 configuration').label('OAuth2'),
 
@@ -2552,23 +2634,34 @@ When making API calls remember that requests against the same account are queued
                     'name',
                     'email',
                     'copy',
+                    'logs',
                     'notifyFrom',
                     'syncFrom',
+                    'path',
+                    'subconnections',
+                    'webhooks',
+                    'proxy',
                     'imap',
                     'smtp',
                     'oauth2',
                     'state',
                     'smtpStatus',
-                    'path',
-                    'subconnections',
-                    'webhooks',
-                    'proxy',
                     'locale',
                     'tz'
                 ]) {
                     if (key in accountData) {
                         result[key] = accountData[key];
                     }
+                }
+
+                // default false
+                for (let key of ['logs']) {
+                    result[key] = !!result[key];
+                }
+
+                // default null
+                for (let key of ['notifyFrom', 'syncFrom', 'lastError', 'smtpStatus']) {
+                    result[key] = result[key] || null;
                 }
 
                 if (accountData.oauth2 && accountData.oauth2.provider) {
@@ -2662,6 +2755,19 @@ When making API calls remember that requests against the same account are queued
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
                     smtp: Joi.object(smtpSchema).description('SMTP configuration').label('SMTPResponse'),
+
+                    oauth2: Joi.object(oauth2Schema).description('OAuth2 configuration').label('Oauth2Response'),
+
+                    state: Joi.string()
+                        .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
+                        .example('connected')
+                        .description('Informational account state')
+                        .label('AccountInfoState'),
+
+                    smtpStatus: Joi.object().unknown().description('Information about the last SMTP connection attempt').label('SMTPInfoStatus'),
+
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     type: Joi.string()
                         .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
@@ -3128,18 +3234,37 @@ When making API calls remember that requests against the same account are queued
                         .valid('html', 'plain', '*')
                         .example('*')
                         .description('Which text content to return, use * for all. By default text content is not returned.'),
+
+                    webSafeHtml: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'Shorthand option to fetch and preprocess HTML and inlined images. Overrides `textType`, `preProcessHtml`, and `preProcessHtml` options.'
+                        )
+                        .label('WebSafeHtml'),
+
                     embedAttachedImages: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
                         .description('If true, then fetches attached images and embeds these in the HTML as data URIs')
                         .label('EmbedImages'),
+
                     preProcessHtml: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
-                        .description('If true, then pre-processes HTML for compatibility ')
+                        .description('If true, then pre-processes HTML for compatibility')
                         .label('PreProcess'),
+
+                    markAsSeen: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then marks unseen email as seen while returning the message')
+                        .label('MarkAsSeen'),
+
                     documentStore: documentStoreSchema.default(false)
                 }),
 
@@ -3321,7 +3446,10 @@ When making API calls remember that requests against the same account are queued
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().example(12345).description('UID of uploaded message'),
+                    uidValidity: Joi.string().example('12345').description('UIDVALIDTITY of the target folder. Numeric value cast as string.'),
                     seq: Joi.number().example(12345).description('Sequence number of uploaded message'),
+
+                    messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
 
                     reference: Joi.object({
                         message: Joi.string()
@@ -3331,6 +3459,7 @@ When making API calls remember that requests against the same account are queued
                             .example('AAAAAQAACnA')
                             .description('Referenced message ID'),
                         success: Joi.boolean().example(true).description('Was the referenced message processed').label('ResponseReferenceSuccess'),
+                        documentStore: documentStoreSchema.default(false),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
                         .description('Reference info if referencing was requested')
@@ -4031,6 +4160,113 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'POST',
+        path: '/v1/unified/search',
+
+        async handler(request, h) {
+            let accountObject = new Account({
+                redis,
+                call,
+                secret: await getSecret(),
+                esClient: await h.getESClient(request.logger)
+            });
+
+            let extraValidationErrors = [];
+
+            for (let key of ['seq', 'modseq']) {
+                if (request.payload.search && key in request.payload.search) {
+                    extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
+                }
+            }
+
+            if (extraValidationErrors.length) {
+                let error = new Error('Input validation failed');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            let documentStoreEnabled = await settings.get('documentStoreEnabled');
+            if (!documentStoreEnabled) {
+                let error = new Error('Document store not enabled');
+                error.details = extraValidationErrors;
+                return failAction(request, h, error);
+            }
+
+            try {
+                return await accountObject.searchMessages(Object.assign({ documentStore: true }, request.query, request.payload), { unified: true });
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Unified search for messages',
+            notes: 'Filter messages from the Document Store for multiple accounts or paths. Document Store must be enabled for the unified search to work.',
+            tags: ['api', 'Message'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    exposeQuery: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
+                        .label('exposeQuery')
+                        .optional()
+                }),
+
+                payload: Joi.object({
+                    accounts: Joi.array()
+                        .items(Joi.string().empty('').trim().max(256).example('example'))
+                        .single()
+                        .description('Optional list of account ID values')
+                        .label('UnifiedSearchAccounts'),
+                    paths: Joi.array()
+                        .items(Joi.string().optional().example('INBOX'))
+                        .single()
+                        .description('Optional list of mailbox folder paths or specialUse flags')
+                        .label('UnifiedSearchPaths'),
+                    search: searchSchema,
+                    documentQuery: Joi.object().min(1).description('Document Store query').label('DocumentQuery').unknown()
+                }).label('UnifiedSearchQuery')
+            },
+
+            response: {
+                schema: messageListSchema,
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
         path: '/v1/account/{account}/submit',
 
         async handler(request) {
@@ -4297,6 +4533,23 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.optional(),
                             otherwise: Joi.forbidden()
                         }),
+
+                    dsn: Joi.object({
+                        id: Joi.string().trim().empty('').max(256).description('The envelope identifier that would be included in the response (ENVID)'),
+                        return: Joi.string()
+                            .trim()
+                            .empty('')
+                            .valid('headers', 'full')
+                            .required()
+                            .description('Specifies if only headers or the entire body of the message should be included in the response (RET)'),
+                        notify: Joi.array()
+                            .single()
+                            .items(Joi.string().valid('never', 'success', 'failure', 'delay').label('NotifyEntry'))
+                            .description('Defines the conditions under which a DSN response should be sent'),
+                        recipient: Joi.string().trim().empty('').email().description('The email address the DSN should be sent (ORCPT)')
+                    })
+                        .description('Request DNS notifications')
+                        .label('DSN'),
 
                     baseUrl: Joi.string()
                         .trim()
@@ -4823,7 +5076,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await verifyAccountInfo(request.payload);
+                return await verifyAccountInfo(request.payload, request.logger.child({ action: 'verify-account' }));
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -4859,8 +5112,8 @@ When making API calls remember that requests against the same account are queued
 
                 payload: Joi.object({
                     mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
-                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('IMAP'),
-                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SMTP'),
+                    imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
+                    smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
                     proxy: settingsSchema.proxyUrl
                 }).label('VerifyAccount')
             },
@@ -7440,7 +7693,7 @@ ${now}`,
 
         options: {
             cookieOptions: {
-                isSecure: false
+                isSecure: secureCookie
             },
 
             skip: (request /*, h*/) => {
@@ -7473,7 +7726,40 @@ ${now}`,
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
-            const authData = await settings.get('authData');
+            let authData;
+
+            switch (request.auth.artifacts && request.auth.artifacts.provider) {
+                case 'okta': {
+                    let profile = request.auth.artifacts.profile || {};
+                    authData = {
+                        user: profile.username,
+                        name:
+                            []
+                                .concat(profile.firstName || [])
+                                .concat(profile.lastName || [])
+                                .join(' ') || profile.username,
+                        enabled: !!profile.username,
+                        isAdmin: false
+                    };
+                    break;
+                }
+
+                default:
+                    authData = await settings.get('authData');
+                    if (authData) {
+                        authData.name = authData.user;
+                        authData.enabled = true;
+                        authData.isAdmin = true;
+                    } else {
+                        authData = {
+                            name: 'admin',
+                            user: 'admin',
+                            enabled: false,
+                            isAdmin: true
+                        };
+                    }
+                    break;
+            }
 
             let systemAlerts = [];
             let upgradeInfo = await settings.get('upgrade');
@@ -7579,13 +7865,23 @@ ${now}`,
                 });
             }
 
+            if (consts.EE_DOCKER_LEGACY) {
+                systemAlerts.push({
+                    url: 'https://emailengine.app/docker',
+                    level: 'info',
+                    icon: 'docker',
+                    brand: true,
+                    message: `The Docker image you are currently using is deprecated. To ensure ongoing support, please transition to <code>postalsys/emailengine</code>.`,
+                    verbatim: true
+                });
+            }
+
             return {
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
-                authEnabled: !!(authData && authData.password),
                 trialPossible: !(await settings.get('tract')),
                 referrerPolicy,
                 authData,
@@ -7593,8 +7889,7 @@ ${now}`,
                 systemAlerts,
                 embeddedTemplateHeader: await settings.get('templateHeader'),
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: await settings.get('documentStoreEnabled'),
-                showMailRu: (await settings.get('labsMailRu')) || (await settings.get('mailRuEnabled'))
+                showDocumentStore: await settings.get('documentStoreEnabled')
             };
         }
     });
@@ -7607,6 +7902,13 @@ ${now}`,
         }
 
         if (!response.isBoom) {
+            if (request.app.rateLimitHeaders) {
+                const headers = request.response.output ? request.response.output.headers : request.response.headers;
+                for (let key of Object.keys(request.app.rateLimitHeaders)) {
+                    headers[key] = request.app.rateLimitHeaders[key].toString();
+                }
+            }
+
             return h.continue;
         }
 
@@ -7616,7 +7918,8 @@ ${now}`,
             message:
                 error.output.statusCode === 404
                     ? 'page not found'
-                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong'
+                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong',
+            details: error.output && error.output.payload && error.output.payload.details
         };
 
         if (error.output && error.output.payload) {
@@ -7633,7 +7936,15 @@ ${now}`,
 
         if (request.errorInfo && request.route && request.route.settings && request.route.settings.tags && request.route.settings.tags.includes('api')) {
             // JSON response for API requests
-            return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
+
+            let res = h.response(request.errorInfo);
+            if (error.output.headers) {
+                for (let key of Object.keys(error.output.headers)) {
+                    res = res.header(key, error.output.headers[key].toString());
+                }
+            }
+
+            return res.code(request.errorInfo.statusCode || 500);
         }
 
         if (/^\/v1\//.test(request.path) || /^\/health$/.test(request.path)) {
@@ -7651,6 +7962,21 @@ ${now}`,
     };
 
     server.ext('onPreResponse', preResponse);
+
+    server.ext('onPostAuth', async (request, h) => {
+        if (request.requireTotp) {
+            // Redirect authenticated pages to login page if TOTP is required
+            let url = new URL(`admin/login`, 'http://localhost');
+
+            let nextUrl = (request.query && request.query.next) || (request.payload && request.payload.next) || false;
+            if (nextUrl) {
+                url.searchParams.append('next', nextUrl);
+            }
+
+            return h.redirect(url.pathname + url.search).takeover();
+        }
+        return h.continue;
+    });
 
     server.route({
         method: 'GET',

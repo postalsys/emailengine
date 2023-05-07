@@ -86,7 +86,15 @@
                         "html": 66
                     }
                 },
-                "seemsLikeNew": true
+                "seemsLikeNew": true,
+                "category": "primary",
+                "messageSpecialUse": "\\Inbox",
+                "summary": {
+                    "id": "chatcmpl-6tYa5SSfSirfqbbhUCQCyHcMpzbMm",
+                    "tokens": 421,
+                    "summary": "Congratulations on the release of the new EmailEngine version and praise for the impressive new features and dedication to enhancing its capabilities.",
+                    "sentiment": "positive"
+                }
             }
         }
     },

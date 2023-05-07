@@ -1,5 +1,7 @@
 FROM node:lts-alpine
 
+ENV EE_DOCKER_LEGACY=true
+
 RUN apk add --no-cache dumb-init
 
 WORKDIR /emailengine
