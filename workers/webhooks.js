@@ -36,11 +36,11 @@ const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY, FETCH_TIMEOUT } = require('../lib/consts');
 const he = require('he');
 
-const nodeFetch = require('node-fetch');
-const fetchCmd = global.fetch || nodeFetch;
+const { fetch: fetchCmd, Agent } = require('undici');
+const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
 config.queues = config.queues || {
     notify: 1
@@ -278,7 +278,8 @@ const notifyWorker = new Worker(
                 res = await fetchCmd(parsed.toString(), {
                     method: 'post',
                     body,
-                    headers
+                    headers,
+                    dispatcher: fetchAgent
                 });
                 duration = Date.now() - start;
             } catch (err) {

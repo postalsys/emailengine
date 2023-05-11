@@ -93,9 +93,6 @@ const { encrypt, decrypt } = require('../lib/encrypt');
 const { Certs } = require('@postalsys/certs');
 const net = require('net');
 
-const nodeFetch = require('node-fetch');
-const fetchCmd = global.fetch || nodeFetch;
-
 const consts = require('../lib/consts');
 const {
     TRACK_OPEN_NOTIFY,
@@ -106,8 +103,12 @@ const {
     BLOCK_TLS_RENEW,
     TLS_RENEW_CHECK_INTERVAL,
     DEFAULT_CORS_MAX_AGE,
-    LIST_UNSUBSCRIBE_NOTIFY
+    LIST_UNSUBSCRIBE_NOTIFY,
+    FETCH_TIMEOUT
 } = consts;
+
+const { fetch: fetchCmd, Agent } = require('undici');
+const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
 const {
     settingsSchema,
@@ -7044,7 +7045,8 @@ When making API calls remember that requests against the same account are queued
                         version: packageData.version,
                         requestor: '@postalsys/emailengine-app'
                     }),
-                    headers
+                    headers,
+                    dispatcher: fetchAgent
                 });
 
                 if (!res.ok) {
@@ -7196,7 +7198,8 @@ ${now}`,
 
                 let res = await fetchCmd(`${SMTP_TEST_HOST}/test-address/${request.params.deliveryTest}`, {
                     method: 'get',
-                    headers
+                    headers,
+                    dispatcher: fetchAgent
                 });
 
                 if (!res.ok) {
