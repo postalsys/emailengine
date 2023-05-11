@@ -50,13 +50,16 @@ const {
     ACCOUNT_ADDED_NOTIFY,
     ACCOUNT_DELETED_NOTIFY,
     LIST_UNSUBSCRIBE_NOTIFY,
-    LIST_SUBSCRIBE_NOTIFY
+    LIST_SUBSCRIBE_NOTIFY,
+    FETCH_TIMEOUT
 } = require('./lib/consts');
 
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const nodeFetch = require('node-fetch');
+const { riskAnalysis, generateSummary } = require('@postalsys/email-ai-tools');
+const { fetch: fetchCmd, Agent } = require('undici');
+const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
+
 const v8 = require('node:v8');
-const fetchCmd = global.fetch || nodeFetch;
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -1033,7 +1036,8 @@ let licenseCheckHandler = async opts => {
                         key: licenseInfo.details.key,
                         version: packageData.version,
                         app: '@postalsys/emailengine-app'
-                    })
+                    }),
+                    dispatcher: fetchAgent
                 });
 
                 let data = await res.json();
@@ -1353,6 +1357,15 @@ async function onCommand(worker, message) {
             }
 
             return false;
+        }
+
+        // run these in main process to avoid polluting RAM with the memory hungry tokenization library
+        case 'generateSummary': {
+            return await generateSummary(...message.args);
+        }
+
+        case 'riskAnalysis': {
+            return await riskAnalysis(...message.args);
         }
 
         case 'threads': {
