@@ -1388,6 +1388,21 @@ When making API calls remember that requests against the same account are queued
                         throw error;
                     }
 
+                    const authData = {
+                        user: userInfo.email
+                    };
+
+                    accountData.name = accountData.name || userInfo.name || '';
+
+                    if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
+                        // Shared mailbox
+                        authData.delegatedUser = accountData.email;
+                    } else {
+                        accountData.email = userInfo.email;
+                    }
+
+                    delete accountData.delegated;
+
                     accountData.name = accountData.name || userInfo.name || '';
                     accountData.email = userInfo.email;
 
@@ -1402,9 +1417,7 @@ When making API calls remember that requests against the same account are queued
                             tokenType: r.token_type
                         },
                         {
-                            auth: {
-                                user: userInfo.email
-                            }
+                            auth: authData
                         }
                     );
 
@@ -2027,7 +2040,8 @@ When making API calls remember that requests against the same account are queued
                     syncFrom: request.payload.syncFrom,
                     notifyFrom: request.payload.notifyFrom,
                     subconnections: request.payload.subconnections,
-                    redirectUrl: request.payload.redirectUrl
+                    redirectUrl: request.payload.redirectUrl,
+                    delegated: request.payload.delegated
                 });
 
                 let serviceUrl = await settings.get('serviceUrl');
@@ -2115,6 +2129,13 @@ When making API calls remember that requests against the same account are queued
 
                     name: Joi.string().empty('').max(256).example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
+
+                    delegated: Joi.boolean()
+                        .empty('')
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true then acts as a shared mailbox. Available for MS365 OAuth2 accounts.'),
 
                     syncFrom: accountSchemas.syncFrom,
                     notifyFrom: accountSchemas.notifyFrom,
