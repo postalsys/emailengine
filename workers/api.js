@@ -1402,10 +1402,7 @@ When making API calls remember that requests against the same account are queued
                         accountData.email = userInfo.email;
                     }
 
-                    delete accountData.delegated;
-
                     accountData.name = accountData.name || userInfo.name || '';
-                    accountData.email = userInfo.email;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1478,6 +1475,11 @@ When making API calls remember that requests against the same account are queued
                 default: {
                     throw new Error('Unknown OAuth2 provider');
                 }
+            }
+
+            if ('delegated' in accountData) {
+                // remove artefacts
+                delete accountData.delegated;
             }
 
             let accountObject = new Account({ redis, call, secret: await getSecret() });
