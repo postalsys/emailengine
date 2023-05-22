@@ -90,11 +90,30 @@
                 "category": "primary",
                 "messageSpecialUse": "\\Inbox",
                 "summary": {
-                    "id": "chatcmpl-6tYa5SSfSirfqbbhUCQCyHcMpzbMm",
-                    "tokens": 421,
-                    "summary": "Congratulations on the release of the new EmailEngine version and praise for the impressive new features and dedication to enhancing its capabilities.",
-                    "sentiment": "positive"
-                }
+                    "id": "chatcmpl-7IzVIEp5UL3hdQ3aZJ8AHyrJrt3R0",
+                    "tokens": 2060,
+                    "model": "gpt-4",
+                    "sentiment": "positive",
+                    "summary": "Request to contribute 2 to 5 euros for flowers for choir teachers and concertmaster, with excess funds used for a bouquet for the class teacher at end of the year.",
+                    "shouldReply": true,
+                    "events": [
+                        {
+                            "description": "Flower bouquets for choir teachers and concertmaster",
+                            "startTime": "2023-05-22"
+                        }
+                    ],
+                    "actions": [
+                        {
+                            "description": "Contribute 2 to 5 euros for flower bouquets",
+                            "dueDate": "2023-05-22"
+                        }
+                    ]
+                },
+                "riskAssessment": {
+                    "risk": 1,
+                    "assessment": "Sender information matches and authentication checks have passed."
+                },
+                "threadId": "617dd693-d78b-48df-bc20-6330a5b1fa85"
             }
         }
     },
