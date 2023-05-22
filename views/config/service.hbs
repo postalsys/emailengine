@@ -181,7 +181,7 @@
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div id="queue_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Queue settings</h6>
             <div class="dropdown no-arrow">
@@ -220,7 +220,31 @@
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div id="submission_settings" class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Email submission settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">deliveryAttempts</a>]</div>
+
+                <label for="settingsDeliveryAttempts">How many times to retry a failed email sending</label>
+                <input type="number" min="0" class="form-control {{#if errors.deliveryAttempts}}is-invalid{{/if}}"
+                    id="settingsDeliveryAttempts" name="deliveryAttempts" value="{{values.deliveryAttempts}}"
+                    data-lpignore="true" autocomplete="off" />
+                {{#if errors.deliveryAttempts}}
+                <span class="invalid-feedback">{{errors.deliveryAttempts}}</span>
+                {{/if}}
+                <small class="form-text text-muted">If EmailEngine cannot deliver an email to an SMTP server, it will
+                    attempt to retry the action for the specified number of attempts.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Templates</h6>
             <div class="dropdown no-arrow">
@@ -308,7 +332,7 @@
         </div>
     </div>
 
-    <div class="card mb-4" id="labs">
+    <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">OpenAI <span class="badge badge-dark">beta</span></h6>
         </div>
