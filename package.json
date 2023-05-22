@@ -54,7 +54,7 @@
         "@postalsys/email-text-tools": "2.0.1",
         "@postalsys/hecks": "3.0.0-fork.3",
         "@postalsys/templates": "1.0.4",
-        "ace-builds": "1.21.1",
+        "ace-builds": "1.22.0",
         "base32.js": "0.1.0",
         "bull-arena": "3.30.4",
         "bullmq": "3.13.4",
@@ -112,7 +112,7 @@
     "devDependencies": {
         "chai": "4.3.7",
         "eerawlog": "1.5.1",
-        "eslint": "8.40.0",
+        "eslint": "8.41.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.8.0",
         "grunt": "1.6.1",
