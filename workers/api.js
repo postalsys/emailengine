@@ -4539,11 +4539,7 @@ When making API calls remember that requests against the same account are queued
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
-                    deliveryAttempts: Joi.number()
-                        .example(10)
-                        .description('How many delivery attempts to make until message is considered as failed')
-                        .default(10),
-
+                    deliveryAttempts: Joi.number().example(10).description('How many delivery attempts to make until message is considered as failed'),
                     gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
 
                     listId: Joi.string()
@@ -7128,7 +7124,7 @@ ${now}`,
                             copy: false,
                             gateway: request.payload.gateway,
                             feedbackKey: `${REDIS_PREFIX}test-send:${testAccount.user}`,
-                            deliveryAttempts: 3
+                            deliveryAttempts: 1
                         },
                         { source: 'test' }
                     );
