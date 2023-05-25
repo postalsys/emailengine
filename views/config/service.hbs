@@ -268,7 +268,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
                         target="_blank">templateHeader</a>]</div>
 
-                <label for="templateHeaderElement">Template header for public pages (HTML code)</label>
+                <label>Template header for public pages (HTML code)</label>
 
                 <input type="hidden" id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
                 <div id="editor-html" class="code-editor" style="height: 10rem;"></div>
@@ -339,7 +339,11 @@
         <div class="card-body">
 
             {{#if openAiError}}
-            <div class="mt-3 mb-3 alert alert-danger">
+            <div class="mt-3 mb-3 alert alert-danger clear-alert-btn" data-clear-alert="open-ai">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+
                 <p><strong>NB!</strong> The last attempted OpenAI request failed with the response below.</p>
                 <hr>
                 <p class="mb-0">
@@ -506,6 +510,8 @@
     document.getElementById('settings-form').addEventListener('submit', () => {
         document.getElementById('templateHeaderElement').value = editorHtml.getValue();
     });
+
+
 
 
 </script>

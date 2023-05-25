@@ -383,4 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
     evtSource.onerror = function (e) {
         console.log('EventSource failed.', e);
     };
+
+    let crumbElm = document.getElementById('crumb');
+    if (crumbElm) {
+        $('.clear-alert-btn').on('closed.bs.alert', function () {
+            fetch('/admin/config/clear-error', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    alert: $(this).data('clearAlert') // eslint-disable-line no-invalid-this
+                })
+            }).catch(err => console.error(err));
+        });
+    }
 });
