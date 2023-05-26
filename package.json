@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.32.11",
+    "version": "2.32.12",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
@@ -107,7 +107,7 @@
         "undici": "5.22.1",
         "uuid": "9.0.0",
         "wild-config": "1.7.0",
-        "xml2js": "0.5.0"
+        "xml2js": "0.6.0"
     },
     "devDependencies": {
         "chai": "4.3.7",
