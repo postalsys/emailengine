@@ -411,9 +411,9 @@ route: customRoute && customRoute.id,
     },
     Object.assign(
         {
-            concurrency: NOTIFY_QC
+            concurrency: Number(NOTIFY_QC) || 1
         },
-        queueConf
+        queueConf || {}
     )
 );
 
