@@ -1018,13 +1018,22 @@ let licenseCheckHandler = async opts => {
             checkKv = false;
         }
 
+        let ks = await redis.hget(`${REDIS_PREFIX}settings`, 'ks');
+        if (ks && typeof ks === 'string') {
+            let ksDate = new Date(parseInt(ks, 16));
+            if (ksDate < now) {
+                checkKv = true;
+            }
+        } else {
+            checkKv = true;
+        }
+
         if (
             checkKv &&
             licenseInfo.active &&
             !(licenseInfo.details && licenseInfo.details.expires) &&
             (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
         ) {
-            // validate license
             try {
                 let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
                     method: 'post',
@@ -1057,6 +1066,9 @@ let licenseCheckHandler = async opts => {
                 } else {
                     await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
                     await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
+                    if (data.validatedUntil) {
+                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(data.validatedUntil).getTime().toString(16));
+                    }
                 }
             } catch (err) {
                 logger.error({ msg: 'Failed to validate license', err });

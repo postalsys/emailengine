@@ -83,6 +83,8 @@ Read about running EmailEngine as a SystemD service [here](https://emailengine.a
 
 ### Docker
 
+![Docker Image Size (tag)](https://img.shields.io/docker/image-size/postalsys/emailengine/v2?label=Docker%20image%20size)
+
 See the documentation for using EmailEngine with Docker [here](https://emailengine.app/docker).
 
 ## Resolving issues with Redis
