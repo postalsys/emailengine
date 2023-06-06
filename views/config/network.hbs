@@ -47,8 +47,25 @@
                 {{#if errors.proxyUrl}}
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
                 {{/if}}
-                <small id="passwordHelpBlock" class="form-text text-muted">Proxy URL must start with http://, https://,
+                <small id="proxyUrlBlock" class="form-text text-muted">Proxy URL must start with http://, https://,
                     socks://, socks4:// or socks5://</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">smtpEhloName</a>]</div>
+
+                <label for="smtpEhloName">SMTP Greeting Hostname</label>
+                <input type="text" class="form-control {{#if errors.proxyUrl}}is-invalid{{/if}}" id="smtpEhloName"
+                    placeholder="Proxy hostname like &quot;my.proxy.tld&quot;&mldr;" value="{{values.smtpEhloName}}"
+                    name="smtpEhloName">
+                {{#if errors.smtpEhloName}}
+                <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
+                {{/if}}
+                <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname to use for the SMTP EHLO/HELO
+                    greeting. Leave empty to use the default <code>{{defaultSmtpEhloName}}</code> or if you are using a
+                    dedicated IP address, then the name of the IP is preferred over this value.</small>
             </div>
         </div>
     </div>
