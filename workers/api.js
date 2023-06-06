@@ -2008,6 +2008,7 @@ When making API calls remember that requests against the same account are queued
                     syncFrom: accountSchemas.syncFrom.default(null),
 
                     proxy: settingsSchema.proxyUrl,
+                    smtpEhloName: settingsSchema.smtpEhloName,
 
                     imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
 
@@ -2251,6 +2252,7 @@ When making API calls remember that requests against the same account are queued
                     syncFrom: accountSchemas.syncFrom,
 
                     proxy: settingsSchema.proxyUrl,
+                    smtpEhloName: settingsSchema.smtpEhloName,
 
                     imap: Joi.object(imapUpdateSchema).allow(false).description('IMAP configuration').label('IMAPUpdate'),
                     smtp: Joi.object(smtpUpdateSchema).allow(false).description('SMTP configuration').label('SMTPUpdate'),
@@ -2613,6 +2615,7 @@ When making API calls remember that requests against the same account are queued
                                     .example('https://myservice.com/imap/webhooks')
                                     .description('Account-specific webhook URL'),
                                 proxy: settingsSchema.proxyUrl,
+                                smtpEhloName: settingsSchema.smtpEhloName,
                                 syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
@@ -2666,6 +2669,7 @@ When making API calls remember that requests against the same account are queued
                     'subconnections',
                     'webhooks',
                     'proxy',
+                    'smtpEhloName',
                     'imap',
                     'smtp',
                     'oauth2',
@@ -2776,6 +2780,7 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/imap/webhooks')
                         .description('Account-specific webhook URL'),
                     proxy: settingsSchema.proxyUrl,
+                    smtpEhloName: settingsSchema.smtpEhloName,
 
                     imap: Joi.object(imapSchema).description('IMAP configuration').label('IMAPResponse'),
 
@@ -5097,7 +5102,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await verifyAccountInfo(request.payload, request.logger.child({ action: 'verify-account' }));
+                return await verifyAccountInfo(redis, request.payload, request.logger.child({ action: 'verify-account' }));
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -5135,7 +5140,8 @@ When making API calls remember that requests against the same account are queued
                     mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
                     imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
-                    proxy: settingsSchema.proxyUrl
+                    proxy: settingsSchema.proxyUrl,
+                    smtpEhloName: settingsSchema.smtpEhloName
                 }).label('VerifyAccount')
             },
             response: {
