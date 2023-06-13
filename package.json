@@ -7,7 +7,7 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "EENGINE_LOG_RAW=true node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/dev.txt  | pino-pretty",
+        "dev": "EENGINE_LOG_RAW=false node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/dev.txt  | pino-pretty",
         "single": "EENGINE_LOG_RAW=false EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/10' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/log.txt | pino-pretty",
         "raw": "NODE_OPTIONS=--no-experimental-fetch EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt && node --test test/",
@@ -40,7 +40,7 @@
     "homepage": "https://emailengine.app/",
     "dependencies": {
         "@bugsnag/js": "7.20.2",
-        "@elastic/elasticsearch": "8.8.0",
+        "@elastic/elasticsearch": "8.8.1",
         "@hapi/bell": "13.0.1",
         "@hapi/boom": "10.0.1",
         "@hapi/cookie": "12.0.1",
