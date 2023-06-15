@@ -130,7 +130,6 @@ const notifyWorker = new Worker(
             customRoute = await Webhooks.getMeta(job.data._route.id);
             customMapping = job.data._route.mapping;
             delete job.data._route;
-
             if (!customRoute || !customRoute.enabled || !customRoute.targetUrl) {
                 return;
             }
@@ -274,7 +273,12 @@ const notifyWorker = new Worker(
         let start = Date.now();
         let duration;
 
-        let body = Buffer.from(JSON.stringify(customMapping || job.data));
+        let webhookPayload = customMapping || job.data;
+        if (webhookPayload.eventId) {
+            headers['X-EE-Wh-Event-Id'] = webhookPayload.eventId;
+            webhookPayload.eventId = undefined; // not included in JSON
+        }
+        let body = Buffer.from(JSON.stringify(webhookPayload));
 
         try {
             let res;
