@@ -236,7 +236,10 @@ const notifyWorker = new Worker(
 
         let headers = {
             'Content-Type': 'application/json',
-            'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`
+            'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
+            'X-EE-Wh-Id': (job.id || '').toString(),
+            'X-EE-Wh-Attempts-Made': (job.attemptsMade || 0).toString(),
+            'X-EE-Wh-Queued-Time': Math.round(Math.max(0, (Date.now() - job.timestamp) / 1000)) + 's'
         };
 
         let parsed = new URL(webhooks);
@@ -257,6 +260,7 @@ const notifyWorker = new Worker(
         }
 
         if (customRoute) {
+            headers['X-EE-Wh-Custom-Route'] = customRoute.id;
             for (let header of customRoute.customHeaders || []) {
                 headers[header.key] = header.value;
             }
