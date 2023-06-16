@@ -13,8 +13,8 @@
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --omit=dev && rm -rf package-lock.json && ./update-info.sh",
-        "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install",
-        "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install",
+        "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install && node winconf.js",
+        "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install && node winconf.js",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
         "postinstall": "npm run licenses",
         "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js -j -o translations/messages.pot",
@@ -121,6 +121,7 @@
         "jsxgettext": "0.11.0",
         "pino-pretty": "10.0.0",
         "pkg": "5.8.1",
+        "resedit": "2.0.0",
         "xgettext-template": "4.1.2"
     },
     "engines": {
