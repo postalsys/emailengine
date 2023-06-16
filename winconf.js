@@ -6,15 +6,15 @@ const PackageData = require('./package.json');
 const { readFileSync, writeFileSync } = require('fs');
 
 const options = {
-    in: './ee-dist/emailengine-win-x64.exe',
-    out: './ee-dist/emailengine-win-x64.exe',
+    in: './ee-dist/emailengine-app-win-x64.exe',
+    out: './ee-dist/emailengine-app-win-x64.exe',
     version: PackageData.version,
     properties: {
         LegalCopyright: 'Postal Systems OÜ',
         FileDescription: 'EmailEngine allows access to email accounts using REST',
         ProductName: 'EmailEngine'
     },
-    icon: 'static/app.ico'
+    icon: 'static/emailengine.ico'
 };
 
 const language = {
