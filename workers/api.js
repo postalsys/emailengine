@@ -5494,7 +5494,7 @@ When making API calls remember that requests against the same account are queued
 
                                 created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this message was queued'),
                                 scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
-                                nextAttempt: Joi.date().iso().example('2021-02-17T13:43:18.860Z').allow(false).description('Next delivery attempt'),
+                                nextAttempt: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Next delivery attempt'),
 
                                 attemptsMade: Joi.number().example(3).description('How many times EmailEngine has tried to deliver this email'),
                                 attempts: Joi.number().example(3).description('How many delivery attempts to make until message is considered as failed'),
