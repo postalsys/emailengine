@@ -6181,7 +6181,7 @@ When making API calls remember that requests against the same account are queued
                                     .example('4f05f488-d858-4f2c-bd12-1039062612fe')
                                     .description('Client or Application ID for 3-legged OAuth2 applications'),
                                 clientSecret: Joi.string()
-                                    .valid('******')
+                                    .example('******')
                                     .description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
                                 authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
                                 redirectUrl: Joi.string()
@@ -6194,7 +6194,7 @@ When making API calls remember that requests against the same account are queued
 
                                 serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
                                 serviceKey: Joi.string()
-                                    .valid('******')
+                                    .example('******')
                                     .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
 
                                 lastError: lastErrorSchema.allow(null)
@@ -6308,7 +6308,7 @@ When making API calls remember that requests against the same account are queued
                     clientId: Joi.string()
                         .example('4f05f488-d858-4f2c-bd12-1039062612fe')
                         .description('Client or Application ID for 3-legged OAuth2 applications'),
-                    clientSecret: Joi.string().valid('******').description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
+                    clientSecret: Joi.string().example('******').description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
                     authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
                     redirectUrl: Joi.string()
                         .uri({
@@ -6320,7 +6320,7 @@ When making API calls remember that requests against the same account are queued
 
                     serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
                     serviceKey: Joi.string()
-                        .valid('******')
+                        .example('******')
                         .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
 
                     accounts: Joi.number().example(12).description('The number of accounts registered with this application. Not available for legacy apps.'),
