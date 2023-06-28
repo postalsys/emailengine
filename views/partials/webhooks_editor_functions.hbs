@@ -34,296 +34,308 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
 
-    const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
-
-    const editorFn = ace.edit("editor-fn", {
-        enableBasicAutocompletion: true,
-        enableSnippets: true,
-        enableLiveAutocompletion: true
-    });
-
-    const editorMap = ace.edit("editor-map", {
-        enableBasicAutocompletion: true,
-        enableSnippets: true,
-        enableLiveAutocompletion: true
-    });
-
-    const editorMapPreview = ace.edit("editor-map-preview", {
-        enableBasicAutocompletion: false,
-        enableSnippets: false,
-        enableLiveAutocompletion: false,
-        showGutter: true
-    });
-
-    editorMapPreview.setReadOnly(true);
-    editorMapPreview.setShowPrintMargin(false);
-    editorMapPreview.setHighlightActiveLine(false);
-
-    // data stub:
-    const notificationTypes = JSON.parse(document.getElementById('notificationTypesJson').value.trim())
-    const notificationTypesCompleter = {
-        getCompletions: function (editor, session, pos, prefix, callback) {
-            callback(null, notificationTypes.map((notificationType) => {
-                return {
-                    caption: notificationType.description,
-                    value: `"${notificationType.name}"`,
-                    meta: "Event"
-                };
-            }));
+        const JSHINT_OPTS = {
+            esversion: 13,
+            module: true,
+            globals: ['payload', 'URL', 'logger', 'fetch']
         }
-    };
 
-    const langTools = ace.require('ace/ext/language_tools');
-    langTools.addCompleter(notificationTypesCompleter);
+        const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
 
-    editorFn.setTheme("ace/theme/xcode");
-    editorFn.session.setMode("ace/mode/javascript");
-    editorFn.setValue(JSON.parse(document.getElementById('fn-content-element').value));
+        const editorFn = ace.edit("editor-fn", {
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            useWorker: false
+        });
 
-    editorFn.session.on('changeMode', function (e, session) {
-        if ("ace/mode/javascript" === session.getMode().$id) {
-            if (!!session.$worker) {
-                session.$worker.send("setOptions", [{
-                    esversion: 11
-                }]);
+        const editorMap = ace.edit("editor-map", {
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            useWorker: false
+        });
+
+        const editorMapPreview = ace.edit("editor-map-preview", {
+            enableBasicAutocompletion: false,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            showGutter: true
+        });
+
+        editorMapPreview.setReadOnly(true);
+        editorMapPreview.setShowPrintMargin(false);
+        editorMapPreview.setHighlightActiveLine(false);
+
+        // data stub:
+        const notificationTypes = JSON.parse(document.getElementById('notificationTypesJson').value.trim())
+        const notificationTypesCompleter = {
+            getCompletions: function (editor, session, pos, prefix, callback) {
+                callback(null, notificationTypes.map((notificationType) => {
+                    return {
+                        caption: notificationType.description,
+                        value: `"${notificationType.name}"`,
+                        meta: "Event"
+                    };
+                }));
+            }
+        };
+
+        const langTools = ace.require('ace/ext/language_tools');
+        langTools.addCompleter(notificationTypesCompleter);
+
+        editorFn.setTheme("ace/theme/xcode");
+        editorFn.session.setMode("ace/mode/javascript");
+        editorFn.setValue(JSON.parse(document.getElementById('fn-content-element').value));
+
+        editorFn.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [JSHINT_OPTS]);
+                }
+            }
+        });
+
+        editorMap.setTheme("ace/theme/xcode");
+        editorMap.session.setMode("ace/mode/javascript");
+        editorMap.setValue(JSON.parse(document.getElementById('map-content-element').value));
+
+        editorMap.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [JSHINT_OPTS]);
+                }
+            }
+        });
+
+        editorMapPreview.setTheme("ace/theme/kuroir");
+        editorMapPreview.session.setMode("ace/mode/json");
+
+        const testPayload = { content: { data: {} }, error: null };
+        const updateFilterResult = (err, result, opts) => {
+            let resultElm = document.getElementById('filter-res');
+            if (err) {
+                resultElm.classList.remove('text-warning', 'text-success');
+                resultElm.classList.add('text-danger');
+                resultElm.textContent = `validation failed (${err.message})`
+                return;
+            }
+
+            if (result) {
+                resultElm.classList.remove('text-warning', 'text-danger');
+                resultElm.classList.add('text-success');
+                resultElm.textContent = `filter matches`
+            } else {
+                resultElm.classList.remove('text-success', 'text-danger');
+                resultElm.classList.add('text-warning');
+
+                let truthyWarning = opts && opts.truthyWarning;
+                resultElm.textContent = `no match${truthyWarning ? ` (function must return \`true\`, but returned a ${typeof truthyWarning} value)` : ''} `
             }
         }
-    });
 
-    editorMap.setTheme("ace/theme/xcode");
-    editorMap.session.setMode("ace/mode/javascript");
-    editorMap.setValue(JSON.parse(document.getElementById('map-content-element').value));
+        const updateMapResult = (err, result) => {
+            if (err) {
+                editorMapPreview.session.setMode("ace/mode/markdown");
+                editorMapPreview.setValue(`** Mapping failed **
 
-    editorMap.session.on('changeMode', function (e, session) {
-        if ("ace/mode/javascript" === session.getMode().$id) {
-            if (!!session.$worker) {
-                session.$worker.send("setOptions", [{
-                    esversion: 11
-                }]);
-            }
-        }
-    });
-
-    editorMapPreview.setTheme("ace/theme/kuroir");
-    editorMapPreview.session.setMode("ace/mode/json");
-
-    const testPayload = { content: { data: {} }, error: null };
-    const updateFilterResult = (err, result) => {
-        let resultElm = document.getElementById('filter-res');
-        if (err) {
-            resultElm.classList.remove('text-warning', 'text-success');
-            resultElm.classList.add('text-danger');
-            resultElm.textContent = `validation failed (${err.message})`
-            return;
-        }
-
-        if (result) {
-            resultElm.classList.remove('text-warning', 'text-danger');
-            resultElm.classList.add('text-success');
-            resultElm.textContent = `filter matches`
-        } else {
-            resultElm.classList.remove('text-success', 'text-danger');
-            resultElm.classList.add('text-warning');
-            resultElm.textContent = `no match`
-        }
-    }
-
-    const updateMapResult = (err, result) => {
-        if (err) {
-            editorMapPreview.session.setMode("ace/mode/markdown");
-            editorMapPreview.setValue(`**Mapping failed**
-
-Error message:
-\`\`\`
+                Error message:
+        \`\`\`
 ${err.message}
 \`\`\``);
-        } else if (err === false) {
-            editorMapPreview.session.setMode("ace/mode/markdown");
-            editorMapPreview.setValue(`Filter function must return \`true\` to activate output mapping.
+            } else if (err === false) {
+                editorMapPreview.session.setMode("ace/mode/markdown");
+                editorMapPreview.setValue(`Filter function must return \`true\` to activate output mapping.
 
 Either modify the filter function or click on
 the *Set test payload* button to change the filter payload.`);
-        } else {
-            editorMapPreview.session.setMode("ace/mode/json");
-            editorMapPreview.setValue(JSON.stringify(result, false, 2));
+            } else {
+                editorMapPreview.session.setMode("ace/mode/json");
+                editorMapPreview.setValue(JSON.stringify(result, false, 2));
+            }
+
+            editorMapPreview.clearSelection(1);
         }
 
-        editorMapPreview.clearSelection(1);
-    }
+        evaluationWorker.onmessage = e => {
+            const { type, result, error } = e && e.data || {};
+            const mapVal = editorMap.getValue();
 
-    evaluationWorker.onmessage = e => {
-        const { type, result, error } = e && e.data || {};
-        const mapVal = editorMap.getValue();
+            switch (type) {
+                case 'filter':
+                    if (!error) {
+                        updateFilterResult(null, result === true, { truthyWarning: result && result !== true ? result : false });
 
-        switch (type) {
-            case 'filter':
-                if (!error) {
-                    updateFilterResult(null, result === true);
-
-                    if (result === true) {
-                        try {
-                            evaluationWorker.postMessage({ type: 'map', code: mapVal, payload: testPayload.content });
-                        } catch (err) {
-                            updateMapResult(err);
+                        if (result === true) {
+                            try {
+                                evaluationWorker.postMessage({ type: 'map', code: mapVal, payload: testPayload.content });
+                            } catch (err) {
+                                updateMapResult(err);
+                            }
+                        } else {
+                            updateMapResult(false);
                         }
+
                     } else {
-                        updateMapResult(false);
+                        updateFilterResult(new Error(error));
                     }
+                    break;
 
-                } else {
-                    updateFilterResult(new Error(error));
+                case 'map':
+                    if (!error) {
+                        updateMapResult(null, result);
+                    } else {
+                        updateMapResult(new Error(error));
+                    }
+                    break;
+
+                case 'log': {
+                    console.log(`[Worker Log] ${result.level.toUpperCase()}`, result.msg);
+                    break;
                 }
-                break;
-
-            case 'map':
-                if (!error) {
-                    updateMapResult(null, result);
-                } else {
-                    updateMapResult(new Error(error));
-                }
-                break;;
-        }
-    }
-
-    const updateExampleResult = () => {
-        const filterVal = editorFn.getValue();
-
-        let filtered;
-        let mapping;
-
-        try {
-            if (testPayload.error) {
-                throw testPayload.error;
             }
-            evaluationWorker.postMessage({
-                type: 'filter', code: filterVal, payload: testPayload.content
-            });
-        } catch (err) {
-            updateFilterResult(err);
         }
-    }
 
-    let validateTimer = false;
-    editorFn.session.on('change', function () {
-        clearTimeout(validateTimer);
-        validateTimer = setTimeout(updateExampleResult, 100);
-    });
+        const updateExampleResult = () => {
+            const filterVal = editorFn.getValue();
 
-    editorMap.session.on('change', function () {
-        clearTimeout(validateTimer);
-        validateTimer = setTimeout(updateExampleResult, 100)
-    });
+            let filtered;
+            let mapping;
 
-    editorFn.clearSelection(1);
-    editorMap.clearSelection(1);
-    editorMapPreview.clearSelection(1);
+            try {
+                if (testPayload.error) {
+                    throw testPayload.error;
+                }
+                evaluationWorker.postMessage({
+                    type: 'filter', code: filterVal, payload: testPayload.content
+                });
+            } catch (err) {
+                updateFilterResult(err);
+            }
+        }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('edit-form').addEventListener('submit', () => {
-            document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
-            document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());
+        let validateTimer = false;
+        editorFn.session.on('change', function () {
+            clearTimeout(validateTimer);
+            validateTimer = setTimeout(updateExampleResult, 100);
         });
-    });
 
-    const editorJson = ace.edit("editor-json");
-    editorJson.setTheme("ace/theme/xcode");
-    editorJson.session.setMode("ace/mode/json");
-    editorJson.session.setValue(JSON.stringify(testPayload.content, false, 4));
-
-    editorJson.session.on('change', function (delta) {
-        // delta.start, delta.end, delta.lines, delta.action
-        let curval = editorJson.getValue().trim();
-        try {
-            if (curval) {
-                let parsed = JSON.parse(curval);
-                if (parsed && typeof parsed !== 'object') {
-                    throw new Error('Not an object')
-                }
-                testPayload.content = parsed;
-            }
-            testPayload.error = null;
+        editorMap.session.on('change', function () {
             clearTimeout(validateTimer);
-            validateTimer = setTimeout(updateExampleResult, 10);
-        } catch (err) {
-            console.error(err);
-            testPayload.error = err;
-            clearTimeout(validateTimer);
-            validateTimer = setTimeout(updateExampleResult, 10);
-        }
-    });
+            validateTimer = setTimeout(updateExampleResult, 100)
+        });
 
-    const testPayloadBtn = document.getElementById('test-payload-btn');
-    testPayloadBtn.addEventListener('click', e => {
-        e.preventDefault();
-        $('#setPayloadModal').modal('show');
-    });
+        editorFn.clearSelection(1);
+        editorMap.clearSelection(1);
+        editorMapPreview.clearSelection(1);
 
-
-    const sendTestPayload = async () => {
-        const webhooks = document.getElementById('inputTargetUrl').value.trim();
-        const payload = editorMapPreview.getValue().trim();
-        const customHeaders = document.getElementById('customHeaders').value.trim();
-
-        const res = await fetch('/admin/config/webhooks/test', {
-            method: 'post',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-                crumb: document.getElementById('crumb').value,
-                webhooks,
-                customHeaders,
-                payload
-            })
-        })
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-
-        return data;
-    }
-
-    const testSendBtn = document.getElementById('test-send-btn');
-    testSendBtn.addEventListener('click', e => {
-        e.preventDefault();
-        sendTestPayload().then(data => {
-            showToast(data.error ? data.error : (data.success ? 'Test payload sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
-        }).catch(err => {
-            showToast('Request failed\n' + err.message, 'alert-triangle');
-        })
-    });
-
-    let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value);
-    const payloadSelectElm = document.getElementById('select-predefined-payload');
-
-    try {
-        if (examplePayloads && Array.isArray(examplePayloads)) {
-
-            examplePayloads.forEach(example => {
-                let optionElm = document.createElement('option');
-                optionElm.textContent = example.name;
-                optionElm.dataset.exampleKey = example.key
-                payloadSelectElm.appendChild(optionElm)
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('edit-form').addEventListener('submit', () => {
+                document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
+                document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());
             });
-        }
-    } catch (err) {
-        console.error(err)
-    }
+        });
 
-    payloadSelectElm.addEventListener('change', e => {
-        if (!payloadSelectElm.selectedIndex) {
-            return
-        }
-        let key = payloadSelectElm.options[payloadSelectElm.selectedIndex].dataset.exampleKey;
-        if (key) {
-            let example = examplePayloads.find(data => data.key === key);
-            if (example) {
-                editorJson.session.setValue(JSON.stringify(example.content, false, 4))
+        const editorJson = ace.edit("editor-json");
+        editorJson.setTheme("ace/theme/xcode");
+        editorJson.session.setMode("ace/mode/json");
+        editorJson.session.setValue(JSON.stringify(testPayload.content, false, 4));
+
+        editorJson.session.on('change', function (delta) {
+            // delta.start, delta.end, delta.lines, delta.action
+            let curval = editorJson.getValue().trim();
+            try {
+                if (curval) {
+                    let parsed = JSON.parse(curval);
+                    if (parsed && typeof parsed !== 'object') {
+                        throw new Error('Not an object')
+                    }
+                    testPayload.content = parsed;
+                }
+                testPayload.error = null;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
+            } catch (err) {
+                console.error(err);
+                testPayload.error = err;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
             }
+        });
+
+        const testPayloadBtn = document.getElementById('test-payload-btn');
+        testPayloadBtn.addEventListener('click', e => {
+            e.preventDefault();
+            $('#setPayloadModal').modal('show');
+        });
+
+
+        const sendTestPayload = async () => {
+            const webhooks = document.getElementById('inputTargetUrl').value.trim();
+            const payload = editorMapPreview.getValue().trim();
+            const customHeaders = document.getElementById('customHeaders').value.trim();
+
+            const res = await fetch('/admin/config/webhooks/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    webhooks,
+                    customHeaders,
+                    payload
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
         }
-        payloadSelectElm.selectedIndex = 0;
+
+        const testSendBtn = document.getElementById('test-send-btn');
+        testSendBtn.addEventListener('click', e => {
+            e.preventDefault();
+            sendTestPayload().then(data => {
+                showToast(data.error ? data.error : (data.success ? 'Test payload sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+
+        let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value);
+        const payloadSelectElm = document.getElementById('select-predefined-payload');
+
+        try {
+            if (examplePayloads && Array.isArray(examplePayloads)) {
+
+                examplePayloads.forEach(example => {
+                    let optionElm = document.createElement('option');
+                    optionElm.textContent = example.name;
+                    optionElm.dataset.exampleKey = example.key
+                    payloadSelectElm.appendChild(optionElm)
+                });
+            }
+        } catch (err) {
+            console.error(err)
+        }
+
+        payloadSelectElm.addEventListener('change', e => {
+            if (!payloadSelectElm.selectedIndex) {
+                return
+            }
+            let key = payloadSelectElm.options[payloadSelectElm.selectedIndex].dataset.exampleKey;
+            if (key) {
+                let example = examplePayloads.find(data => data.key === key);
+                if (example) {
+                    editorJson.session.setValue(JSON.stringify(example.content, false, 4))
+                }
+            }
+            payloadSelectElm.selectedIndex = 0;
+        });
+
+        updateExampleResult();
     });
-
-    updateExampleResult();
-
 </script>

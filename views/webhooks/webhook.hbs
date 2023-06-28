@@ -201,6 +201,13 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+
+        const JSHINT_OPTS = {
+            esversion: 11,
+            module: true,
+            globals: ['payload', 'URL', 'logger', 'fetch']
+        }
+
         const editorFn = ace.edit("fn-preview", {
             showGutter: true
         });
@@ -208,7 +215,6 @@
         const editorMap = ace.edit("map-preview", {
             showGutter: true
         });
-
 
         editorFn.setReadOnly(true);
         editorFn.setShowPrintMargin(false);
@@ -227,9 +233,7 @@
         editorFn.session.on('changeMode', function (e, session) {
             if ("ace/mode/javascript" === session.getMode().$id) {
                 if (!!session.$worker) {
-                    session.$worker.send("setOptions", [{
-                        esversion: 11
-                    }]);
+                    session.$worker.send("setOptions", [JSHINT_OPTS]);
                 }
             }
         });
@@ -237,9 +241,7 @@
         editorMap.session.on('changeMode', function (e, session) {
             if ("ace/mode/javascript" === session.getMode().$id) {
                 if (!!session.$worker) {
-                    session.$worker.send("setOptions", [{
-                        esversion: 11
-                    }]);
+                    session.$worker.send("setOptions", [JSHINT_OPTS]);
                 }
             }
         });
