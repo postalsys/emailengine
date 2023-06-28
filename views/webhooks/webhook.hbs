@@ -209,11 +209,13 @@
         }
 
         const editorFn = ace.edit("fn-preview", {
-            showGutter: true
+            showGutter: true,
+            useWorker: false
         });
 
         const editorMap = ace.edit("map-preview", {
-            showGutter: true
+            showGutter: true,
+            useWorker: false
         });
 
         editorFn.setReadOnly(true);
