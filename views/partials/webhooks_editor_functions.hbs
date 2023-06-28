@@ -231,11 +231,9 @@ the *Set test payload* button to change the filter payload.`);
         editorMap.clearSelection(1);
         editorMapPreview.clearSelection(1);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('edit-form').addEventListener('submit', () => {
-                document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
-                document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());
-            });
+        document.getElementById('edit-form').addEventListener('submit', () => {
+            document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
+            document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());
         });
 
         const editorJson = ace.edit("editor-json");
