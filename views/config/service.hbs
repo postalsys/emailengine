@@ -271,7 +271,16 @@
                 <label>Template header for public pages (HTML code)</label>
 
                 <input type="hidden" id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
-                <div id="editor-html" class="code-editor" style="height: 10rem;"></div>
+
+                <div id="editor-html" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        HTML content
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" class="toggle-fullscreen" data-target="editor-html">Toggle fullscreen</a>
+                    </div>
+                </div>
 
                 {{#if errors.templateHeader}}
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
@@ -500,18 +509,52 @@
             document.getElementById('preview-header-elm').value = editorHtml.getValue();
             previewForm.submit();
         });
+
+
+        const editors = new Map();
+
+        const editorHtml = ace.edit("editor-html", {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-html", editorHtml);
+
+        editorHtml.setTheme("ace/theme/xcode");
+        editorHtml.session.setMode("ace/mode/handlebars");
+        editorHtml.session.setValue(document.getElementById('templateHeaderElement').value);
+
+        document.getElementById('settings-form').addEventListener('submit', () => {
+            document.getElementById('templateHeaderElement').value = editorHtml.getValue();
+        });
+
+        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
+            let target = toggleElm.dataset.target;
+            if (!editors.has(target)) {
+                continue
+            }
+            let targetElm = document.getElementById(target);
+            let editor = editors.get(target)
+
+            toggleElm.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                targetElm.classList.toggle('full-screen-div');
+                editor.resize();
+                editor.focus();
+            });
+
+            targetElm.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
+                    targetElm.classList.remove('full-screen-div')
+                    editor.resize();
+                    editor.focus();
+                }
+            });
+        }
+
     });
-
-    const editorHtml = ace.edit("editor-html");
-    editorHtml.setTheme("ace/theme/xcode");
-    editorHtml.session.setMode("ace/mode/handlebars");
-    editorHtml.session.setValue(document.getElementById('templateHeaderElement').value);
-
-    document.getElementById('settings-form').addEventListener('submit', () => {
-        document.getElementById('templateHeaderElement').value = editorHtml.getValue();
-    });
-
-
 
 
 </script>

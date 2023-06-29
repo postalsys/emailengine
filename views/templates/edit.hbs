@@ -34,22 +34,54 @@
 <script src="/static/js/ace/ace.js"></script>
 
 <script>
-
-    const editorHtml = ace.edit("editor-html");
-    editorHtml.setTheme("ace/theme/xcode");
-    editorHtml.session.setMode("ace/mode/handlebars");
-    editorHtml.session.setValue(JSON.parse(document.getElementById('contentHtmlJson').value || '""'));
-
-    const editorText = ace.edit("editor-text");
-    editorText.setTheme("ace/theme/xcode");
-    editorText.session.setMode("ace/mode/handlebars");
-    editorText.session.setValue(JSON.parse(document.getElementById('contentTextJson').value || '""'));
-
     document.addEventListener('DOMContentLoaded', () => {
+
+        const editors = new Map();
+
+        const editorHtml = ace.edit("editor-html");
+        editorHtml.setTheme("ace/theme/xcode");
+        editorHtml.session.setMode("ace/mode/handlebars");
+        editorHtml.session.setValue(JSON.parse(document.getElementById('contentHtmlJson').value || '""'));
+
+        editors.set("editor-html", editorHtml);
+
+        const editorText = ace.edit("editor-text");
+        editorText.setTheme("ace/theme/xcode");
+        editorText.session.setMode("ace/mode/handlebars");
+        editorText.session.setValue(JSON.parse(document.getElementById('contentTextJson').value || '""'));
+
+        editors.set("editor-text", editorText);
+
+
         document.getElementById('edit-form').addEventListener('submit', () => {
             document.getElementById('contentHtml').value = editorHtml.getValue();
             document.getElementById('contentText').value = editorText.getValue();
         });
-    });
 
+
+        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
+            let target = toggleElm.dataset.target;
+            if (!editors.has(target)) {
+                continue
+            }
+            let targetElm = document.getElementById(target);
+            let editor = editors.get(target)
+
+            toggleElm.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                targetElm.classList.toggle('full-screen-div');
+                editor.resize();
+                editor.focus();
+            });
+
+            targetElm.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
+                    targetElm.classList.remove('full-screen-div')
+                    editor.resize();
+                    editor.focus();
+                }
+            });
+        }
+    });
 </script>
