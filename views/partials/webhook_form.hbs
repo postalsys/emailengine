@@ -86,11 +86,20 @@
             <div id="editor-fn" class="code-editor"></div>
             <div class="editor-embed-block">
                 <div class="editor-embed-content editor-embed-content-left">
+                    Filter function
+                </div>
+                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                    <a href="#" class="toggle-fullscreen" data-target="editor-fn">Toggle fullscreen</a>
+                </div>
+                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
                     <a href="#" id="test-payload-btn">Set test payload</a>
                 </div>
-                <div class="editor-embed-content editor-embed-content-right">
+                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
                     Evaluation result:
                     <span id="filter-res" class="evalres text-info">no match</span>
+                </div>
+                <div class="editor-embed-content editor-embed-content-right">
+                    {{> editor_scope_info}}
                 </div>
             </div>
 
@@ -108,8 +117,14 @@
                 <div class="col-sm-7">
                     <div id="editor-map" class="code-editor"></div>
                     <div class="editor-embed-block">
-                        <div class="editor-embed-content">
+                        <div class="editor-embed-content editor-embed-content-left">
                             Mapping function
+                        </div>
+                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                            <a href="#" class="toggle-fullscreen" data-target="editor-map">Toggle fullscreen</a>
+                        </div>
+                        <div class="editor-embed-content editor-embed-content-right">
+                            {{> editor_scope_info}}
                         </div>
                     </div>
                 </div>
@@ -118,6 +133,9 @@
                     <div class="editor-embed-block">
                         <div class="editor-embed-content editor-embed-content-left">
                             Mapping preview
+                        </div>
+                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                            <a href="#" class="toggle-fullscreen" data-target="editor-map-preview">Toggle fullscreen</a>
                         </div>
                         <div class="editor-embed-content editor-embed-content-right">
                             <a href="#" id="test-send-btn">Send webhook preview</a>

@@ -44,12 +44,15 @@
 
         const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
 
+        const editors = new Map();
+
         const editorFn = ace.edit("editor-fn", {
             enableBasicAutocompletion: true,
             enableSnippets: true,
             enableLiveAutocompletion: true,
             useWorker: false
         });
+        editors.set("editor-fn", editorFn);
 
         const editorMap = ace.edit("editor-map", {
             enableBasicAutocompletion: true,
@@ -57,6 +60,7 @@
             enableLiveAutocompletion: true,
             useWorker: false
         });
+        editors.set("editor-map", editorMap);
 
         const editorMapPreview = ace.edit("editor-map-preview", {
             enableBasicAutocompletion: false,
@@ -64,10 +68,36 @@
             enableLiveAutocompletion: false,
             showGutter: true
         });
+        editors.set("editor-map-preview", editorMapPreview);
 
         editorMapPreview.setReadOnly(true);
         editorMapPreview.setShowPrintMargin(false);
         editorMapPreview.setHighlightActiveLine(false);
+
+        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
+            let target = toggleElm.dataset.target;
+            if (!editors.has(target)) {
+                continue
+            }
+            let targetElm = document.getElementById(target);
+            let editor = editors.get(target)
+
+            toggleElm.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                targetElm.classList.toggle('full-screen-div');
+                editor.resize();
+                editor.focus();
+            });
+
+            targetElm.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
+                    targetElm.classList.remove('full-screen-div')
+                    editor.resize();
+                    editor.focus();
+                }
+            });
+        }
 
         // data stub:
         const notificationTypes = JSON.parse(document.getElementById('notificationTypesJson').value.trim())
