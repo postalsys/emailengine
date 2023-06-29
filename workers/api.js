@@ -6063,6 +6063,160 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/v1/webhookRoutes',
+
+        async handler(request) {
+            try {
+                return await Webhooks.list(request.query.page, request.query.pageSize);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List webhook routes',
+            notes: 'List custom webhook routes',
+            tags: ['api', 'Webhooks'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    page: Joi.number()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('WebhookRoutesListRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+
+                    webhooks: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Webhook ID'),
+                                name: Joi.string().max(256).example('Send to Slack').description('Name of the route').label('WebhookRouteName').required(),
+                                description: Joi.string()
+                                    .allow('')
+                                    .max(1024)
+                                    .example('Something about the route')
+                                    .description('Optional description of the webhook route')
+                                    .label('WebhookRouteDescription'),
+                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was created'),
+                                updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was last updated'),
+                                enabled: Joi.boolean().example(true).description('Is the route enabled').label('WebhookRouteEnabled'),
+                                targetUrl: settingsSchema.webhooks,
+                                tcount: Joi.number().example(123).description('How many times this route has been applied')
+                            }).label('WebhookRoutesListEntry')
+                        )
+                        .label('WebhookRoutesList')
+                }).label('WebhookRoutesListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/webhookRoutes/webhookRoute/{webhookRoute}',
+
+        async handler(request) {
+            try {
+                return await Webhooks.get(request.params.webhookRoute);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Get webhook route information',
+            notes: 'Retrieve webhook route content and information',
+            tags: ['api', 'Webhooks'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    webhookRoute: Joi.string().max(256).required().example('example').description('Webhook ID')
+                }).label('GetWebhookRouteRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    id: Joi.string().max(256).required().example('AAABgS-UcAYAAAABAA').description('Webhook ID'),
+                    name: Joi.string().max(256).example('Send to Slack').description('Name of the route').label('WebhookRouteName').required(),
+                    description: Joi.string()
+                        .allow('')
+                        .max(1024)
+                        .example('Something about the route')
+                        .description('Optional description of the webhook route')
+                        .label('WebhookRouteDescription'),
+                    created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was created'),
+                    updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was last updated'),
+                    enabled: Joi.boolean().example(true).description('Is the route enabled').label('WebhookRouteEnabled'),
+                    targetUrl: settingsSchema.webhooks,
+                    tcount: Joi.number().example(123).description('How many times this route has been applied'),
+                    content: Joi.object({
+                        fn: Joi.string().example('return true;').description('Filter function'),
+                        map: Joi.string().example('payload.ts = Date.now(); return payload;').description('Mapping function')
+                    }).label('WebhookRouteContent')
+                }).label('WebhookRouteResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/v1/oauth2',
 
         async handler(request) {

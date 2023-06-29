@@ -18,9 +18,14 @@ onmessage = e => {
             };
         }
 
-        let fn = new Function('payload', 'logger', source);
+        let fn = new Function('payload', 'logger', 'fetch', source);
 
-        fn(e.data.payload, logger)
+        let proxiedFetch = (...args) => {
+            console.log('FETCH', ...args);
+            return fetch(...args);
+        };
+
+        fn(e.data.payload, logger, proxiedFetch)
             .then(result => {
                 postMessage({ type: e.data.type, result });
             })
