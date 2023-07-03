@@ -1877,6 +1877,6 @@ startApplication()
         queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
     })
     .catch(err => {
-        logger.error({ msg: 'Failed to start application', err });
+        logger.fatal({ msg: 'Failed to start application', err });
         process.exit(1);
     });
