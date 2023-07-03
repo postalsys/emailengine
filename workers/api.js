@@ -3403,7 +3403,16 @@ When making API calls remember that requests against the same account are queued
                         .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
                         .label('MessageReference'),
 
-                    from: addressSchema.required().example({ name: 'From Me', address: 'sender@example.com' }),
+                    raw: Joi.string()
+                        .base64()
+                        .max(MAX_ATTACHMENT_SIZE)
+                        .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
+                        .description(
+                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                        )
+                        .label('RFC822Raw'),
+
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
 
                     to: Joi.array()
                         .items(addressSchema)
@@ -4396,6 +4405,19 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.forbidden('y')
                         }),
 
+                    raw: Joi.string()
+                        .base64()
+                        .max(MAX_ATTACHMENT_SIZE)
+                        .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
+                        .description(
+                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                        )
+                        .label('RFC822Raw')
+                        .when('mailMerge', {
+                            is: Joi.exist().not(false, null),
+                            then: Joi.forbidden('y')
+                        }),
+
                     from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
 
                     replyTo: Joi.array()
@@ -4431,19 +4453,6 @@ When making API calls remember that requests against the same account are queued
                         .single()
                         .description('List of BCC addresses')
                         .label('BccAddressList')
-                        .when('mailMerge', {
-                            is: Joi.exist().not(false, null),
-                            then: Joi.forbidden('y')
-                        }),
-
-                    raw: Joi.string()
-                        .base64()
-                        .max(MAX_ATTACHMENT_SIZE)
-                        .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
-                        .description(
-                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
-                        )
-                        .label('RFC822Raw')
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
                             then: Joi.forbidden('y')
