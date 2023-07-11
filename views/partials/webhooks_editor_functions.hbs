@@ -3,6 +3,7 @@
 
 <input type="hidden" id="notificationTypesJson" value="{{notificationTypesJson}}">
 <input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
+<input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 
 <div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -41,6 +42,8 @@
             module: true,
             globals: ['payload', 'URL', 'logger', 'fetch']
         }
+
+        let scriptEnv = JSON.parse(document.getElementById('scriptEnvJson').value);
 
         const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
 
@@ -200,7 +203,7 @@ the *Set test payload* button to change the filter payload.`);
 
                         if (result === true) {
                             try {
-                                evaluationWorker.postMessage({ type: 'map', code: mapVal, payload: testPayload.content });
+                                evaluationWorker.postMessage({ type: 'map', code: mapVal, payload: testPayload.content, env: scriptEnv });
                             } catch (err) {
                                 updateMapResult(err);
                             }
@@ -239,7 +242,7 @@ the *Set test payload* button to change the filter payload.`);
                     throw testPayload.error;
                 }
                 evaluationWorker.postMessage({
-                    type: 'filter', code: filterVal, payload: testPayload.content
+                    type: 'filter', code: filterVal, payload: testPayload.content, env: scriptEnv
                 });
             } catch (err) {
                 updateFilterResult(err);

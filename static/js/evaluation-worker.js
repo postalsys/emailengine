@@ -18,14 +18,23 @@ onmessage = e => {
             };
         }
 
-        let fn = new Function('payload', 'logger', 'fetch', source);
+        let fn = new Function('payload', 'logger', 'fetch', 'env', source);
 
         let proxiedFetch = (...args) => {
             console.log('FETCH', ...args);
             return fetch(...args);
         };
 
-        fn(e.data.payload, logger, proxiedFetch)
+        let env = {};
+        if (e.data.env) {
+            try {
+                env = JSON.parse(e.data.env);
+            } catch (err) {
+                console.error('Failed to parse scriptEnv', env, err);
+            }
+        }
+
+        fn(e.data.payload, logger, proxiedFetch, env)
             .then(result => {
                 postMessage({ type: e.data.type, result });
             })
