@@ -270,7 +270,8 @@
 
                 <label>Template header for public pages (HTML code)</label>
 
-                <input type="hidden" id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
+                <input type="hidden" class="{{#if errors.templateHeaderElement}}is-invalid{{/if}}"
+                    id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
 
                 <div id="editor-html" class="code-editor"></div>
                 <div class="editor-embed-block">
@@ -290,6 +291,47 @@
                         data-toggle="popover" data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
                         style="cursor: default;">on top of public pages</u> like the hosted authentication form.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="templates_settings" class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Pre-processing scripts</h6>
+        </div>
+        <div class="card-body">
+
+
+            <p>The following options apply for pre-processing scripts like the filter and map function of the webhook
+                routes and document store settings.</p>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">scriptEnv</a>]</div>
+
+                <label>Environment variable (JSON object)</label>
+
+                <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
+                    name="scriptEnv" value="{{values.scriptEnv}}">
+
+                <div id="editor-env" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        HTML content
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" class="toggle-fullscreen" data-target="editor-env">Toggle fullscreen</a>
+                    </div>
+                </div>
+
+                {{#if errors.scriptEnv}}
+                <span class="invalid-feedback">{{errors.scriptEnv}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">You can set here a JSON object that is used as the value of
+                    <code>env</code> variable in all pre-processing scripts.</small>
             </div>
 
         </div>
@@ -525,8 +567,21 @@
         editorHtml.session.setMode("ace/mode/handlebars");
         editorHtml.session.setValue(document.getElementById('templateHeaderElement').value);
 
+        const editorEnv = ace.edit("editor-env", {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-env", editorEnv);
+
+        editorEnv.setTheme("ace/theme/xcode");
+        editorEnv.session.setMode("ace/mode/json");
+        editorEnv.session.setValue(document.getElementById('scriptEnvElement').value);
+
         document.getElementById('settings-form').addEventListener('submit', () => {
             document.getElementById('templateHeaderElement').value = editorHtml.getValue();
+            document.getElementById('scriptEnvElement').value = editorEnv.getValue();
         });
 
         for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
