@@ -249,7 +249,7 @@
         }
 
         const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
-        const updateFilterResult = (err, result) => {
+        const updateFilterResult = (err, result, opts) => {
             let resultElm = document.getElementById('filter-res');
             if (err) {
                 resultElm.classList.remove('text-warning', 'text-success');

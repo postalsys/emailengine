@@ -18,3 +18,4 @@ cp node_modules/ace-builds/src-min/worker-json.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-javascript.js static/js/ace/
 cp node_modules/ace-builds/src-min/snippets/javascript.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/snippets/markdown.js static/js/ace/snippets
+cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.js
