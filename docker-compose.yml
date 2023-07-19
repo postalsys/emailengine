@@ -8,6 +8,8 @@ services:
             - '3000:3000'
             # SMTP for message submission
             - '2525:2525'
+            # IMAP proxy
+            - '9993:9993'
         depends_on:
             - redis
         environment:
