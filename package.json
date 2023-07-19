@@ -12,7 +12,7 @@
         "raw": "NODE_OPTIONS=--no-experimental-fetch EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
-        "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && rm -rf node_modules package-lock.json && npm install --omit=dev && rm -rf package-lock.json && ./update-info.sh",
+        "build-source": "rm -rf node_modules package-lock.json && npm install && npm run licenses && ./copy-static-files.sh && rm -rf node_modules package-lock.json && npm install --omit=dev && rm -rf package-lock.json && ./update-info.sh",
         "build-dist": "npx pkg --compress Brotli package.json && rm -rf package-lock.json && npm install && node winconf.js",
         "build-dist-fast": "npx pkg --debug package.json && rm -rf package-lock.json && npm install && node winconf.js",
         "licenses": "license-checker --json | node license-table.js > static/licenses.html",
@@ -57,7 +57,7 @@
         "ace-builds": "1.23.4",
         "base32.js": "0.1.0",
         "bull-arena": "3.30.4",
-        "bullmq": "4.2.1",
+        "bullmq": "4.5.0",
         "compare-versions": "6.0.0",
         "dotenv": "16.3.1",
         "encoding-japanese": "2.0.0",
@@ -92,7 +92,7 @@
         "nanoid": "3.3.4",
         "node-gettext": "3.0.0",
         "node-vault": "0.9.22",
-        "nodemailer": "6.9.3",
+        "nodemailer": "6.9.4",
         "pino": "8.14.1",
         "prom-client": "14.2.0",
         "psl": "1.9.0",
@@ -112,17 +112,17 @@
     "devDependencies": {
         "chai": "4.3.7",
         "eerawlog": "1.5.1",
-        "eslint": "8.44.0",
+        "eslint": "8.45.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "8.8.0",
         "grunt": "1.6.1",
         "grunt-cli": "1.4.3",
-        "grunt-eslint": "24.2.0",
+        "grunt-eslint": "24.3.0",
         "jsxgettext": "0.11.0",
         "pino-pretty": "10.0.1",
         "pkg": "5.8.1",
         "resedit": "2.0.0",
-        "xgettext-template": "4.1.2"
+        "xgettext-template": "5.0.0"
     },
     "engines": {
         "node": ">=16.x"

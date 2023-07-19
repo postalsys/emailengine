@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2023-06-16 11:35+0000\n"
+"POT-Creation-Date: 2023-07-19 19:22+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -55,6 +51,10 @@ msgstr ""
 #: views/unsubscribe.hbs:75
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -193,41 +193,41 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4152
-#: lib/routes-ui.js:6102
-#: lib/routes-ui.js:6113
+#: lib/routes-ui.js:4167
+#: lib/routes-ui.js:6117
+#: lib/routes-ui.js:6128
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4155
-#: lib/routes-ui.js:6105
-#: lib/routes-ui.js:6116
+#: lib/routes-ui.js:4170
+#: lib/routes-ui.js:6120
+#: lib/routes-ui.js:6131
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4159
-#: lib/routes-ui.js:6120
+#: lib/routes-ui.js:4174
+#: lib/routes-ui.js:6135
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5866
-#: lib/routes-ui.js:5977
-#: lib/routes-ui.js:6205
+#: lib/routes-ui.js:5881
+#: lib/routes-ui.js:5992
+#: lib/routes-ui.js:6220
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:5903
-#: lib/routes-ui.js:5943
-#: lib/routes-ui.js:8577
+#: lib/routes-ui.js:5918
+#: lib/routes-ui.js:5958
+#: lib/routes-ui.js:8595
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6040
-#: lib/routes-ui.js:6291
+#: lib/routes-ui.js:6055
+#: lib/routes-ui.js:6306
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:8677
-#: lib/routes-ui.js:8710
+#: lib/routes-ui.js:8695
+#: lib/routes-ui.js:8728
 msgid "Failed to process request"
 msgstr ""
