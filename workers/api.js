@@ -26,7 +26,8 @@ const {
     readEnvValue,
     matchIp,
     getSignedFormData,
-    threadStats
+    threadStats,
+    detectAutomatedRequest
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -1055,12 +1056,24 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            await sendWebhook(data.acc, TRACK_CLICK_NOTIFY, {
-                messageId: data.msg,
-                url: data.url,
-                remoteAddress: request.info.remoteAddress,
-                userAgent: request.headers['user-agent']
-            });
+            if (!(await detectAutomatedRequest(request.info.remoteAddress))) {
+                await sendWebhook(data.acc, TRACK_CLICK_NOTIFY, {
+                    messageId: data.msg,
+                    url: data.url,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            } else {
+                request.logger.info({
+                    msg: 'Detected automated request',
+                    account: data.acc,
+                    event: TRACK_CLICK_NOTIFY,
+                    messageId: data.msg,
+                    url: data.url,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            }
 
             return h.redirect(data.url);
         },
@@ -1107,11 +1120,22 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            await sendWebhook(data.acc, TRACK_OPEN_NOTIFY, {
-                messageId: data.msg,
-                remoteAddress: request.info.remoteAddress,
-                userAgent: request.headers['user-agent']
-            });
+            if (!(await detectAutomatedRequest(request.info.remoteAddress))) {
+                await sendWebhook(data.acc, TRACK_OPEN_NOTIFY, {
+                    messageId: data.msg,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            } else {
+                request.logger.info({
+                    msg: 'Detected automated request',
+                    account: data.acc,
+                    event: TRACK_OPEN_NOTIFY,
+                    messageId: data.msg,
+                    remoteAddress: request.info.remoteAddress,
+                    userAgent: request.headers['user-agent']
+                });
+            }
 
             // respond with a static image file
             return h
