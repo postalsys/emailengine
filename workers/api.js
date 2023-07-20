@@ -1056,11 +1056,11 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            if (!(await detectAutomatedRequest(request.info.remoteAddress))) {
+            if (!(await detectAutomatedRequest(request.app.ip))) {
                 await sendWebhook(data.acc, TRACK_CLICK_NOTIFY, {
                     messageId: data.msg,
                     url: data.url,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent']
                 });
             } else {
@@ -1070,7 +1070,7 @@ When making API calls remember that requests against the same account are queued
                     event: TRACK_CLICK_NOTIFY,
                     messageId: data.msg,
                     url: data.url,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent']
                 });
             }
@@ -1120,10 +1120,10 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            if (!(await detectAutomatedRequest(request.info.remoteAddress))) {
+            if (!(await detectAutomatedRequest(request.app.ip))) {
                 await sendWebhook(data.acc, TRACK_OPEN_NOTIFY, {
                     messageId: data.msg,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent']
                 });
             } else {
@@ -1132,7 +1132,7 @@ When making API calls remember that requests against the same account are queued
                     account: data.acc,
                     event: TRACK_OPEN_NOTIFY,
                     messageId: data.msg,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent']
                 });
             }
@@ -1210,7 +1210,7 @@ When making API calls remember that requests against the same account are queued
                     source: 'one-click',
                     reason: 'unsubscribe',
                     messageId: data.msg,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent'],
                     created: new Date().toISOString()
                 })
@@ -1221,7 +1221,7 @@ When making API calls remember that requests against the same account are queued
                     recipient: data.rcpt,
                     messageId: data.msg,
                     listId: data.list,
-                    remoteAddress: request.info.remoteAddress,
+                    remoteAddress: request.app.ip,
                     userAgent: request.headers['user-agent']
                 });
             }
@@ -7716,7 +7716,7 @@ ${now}`,
                         account: request.payload.account,
                         source: 'api',
                         reason: request.payload.reason,
-                        remoteAddress: request.info.remoteAddress,
+                        remoteAddress: request.app.ip,
                         userAgent: request.headers['user-agent'],
                         created: new Date().toISOString()
                     })
