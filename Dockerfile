@@ -12,6 +12,7 @@ RUN ./update-info.sh
 
 ENV EENGINE_APPDIR=/emailengine
 ENV EENGINE_HOST=0.0.0.0
+ENV EENGINE_API_PROXY=true
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD node ${EENGINE_APPDIR}/server.js
