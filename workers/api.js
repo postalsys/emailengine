@@ -1346,6 +1346,8 @@ When making API calls remember that requests against the same account are queued
 
                     accountData.email = isEmail(profileRes.emailAddress) ? profileRes.emailAddress : accountData.email;
 
+                    const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
+
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
@@ -1353,7 +1355,7 @@ When making API calls remember that requests against the same account are queued
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : GMAIL_SCOPES,
+                            scope: r.scope ? r.scope.split(/\s+/) : defaultScopes,
                             tokenType: r.token_type
                         },
                         {
@@ -6638,6 +6640,8 @@ When making API calls remember that requests against the same account are queued
                         .max(256)
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
+
+                    baseScopes: Joi.string().empty('').trim().valid('imap', 'api').example('imap').description('OAuth2 Base Scopes'),
 
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
