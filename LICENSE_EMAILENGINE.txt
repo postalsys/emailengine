@@ -35,7 +35,7 @@ This Agreement is entered into by and between Postal Systems OÜ and you, or the
 
 * 5.1. You may only run the Software for the benefit of the organization you represent.
 * 5.2. Sharing or providing generated License Keys to third-party entities not related to your organization is strictly prohibited.
-* 5.3. The Software includes and bundles open source software components. Postal Systems OÜ is not responsible for these bundled open source components, and any concerns regarding these should be addressed to the respective developers. The list of this software and the respective open source licenses for each bundled software component are provided in the 'licenses.txt' file included within the application.
+* 5.3. The Software includes and bundles open source software components. Postal Systems OÜ is not responsible for these bundled open source components, and any concerns regarding these should be addressed to the respective developers. The list of this software and the respective open source licenses for each bundled software component are provided in the 'licenses.html' file included within the application.
 
 **6. EXPIRATION OF LICENSE KEYS**
 

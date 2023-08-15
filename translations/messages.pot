@@ -1,13 +1,17 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2023-07-19 19:22+0000\n"
+"POT-Creation-Date: 2023-08-15 13:09+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -51,10 +55,6 @@ msgstr ""
 #: views/unsubscribe.hbs:75
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -189,45 +189,45 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
-#: lib/routes-ui.js:549
+#: lib/routes-ui.js:557
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4167
-#: lib/routes-ui.js:6117
-#: lib/routes-ui.js:6128
+#: lib/routes-ui.js:4193
+#: lib/routes-ui.js:6143
+#: lib/routes-ui.js:6154
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4170
-#: lib/routes-ui.js:6120
-#: lib/routes-ui.js:6131
+#: lib/routes-ui.js:4196
+#: lib/routes-ui.js:6146
+#: lib/routes-ui.js:6157
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4174
-#: lib/routes-ui.js:6135
+#: lib/routes-ui.js:4200
+#: lib/routes-ui.js:6161
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5881
-#: lib/routes-ui.js:5992
-#: lib/routes-ui.js:6220
+#: lib/routes-ui.js:5907
+#: lib/routes-ui.js:6018
+#: lib/routes-ui.js:6246
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/routes-ui.js:5918
-#: lib/routes-ui.js:5958
-#: lib/routes-ui.js:8595
+#: lib/routes-ui.js:5944
+#: lib/routes-ui.js:5984
+#: lib/routes-ui.js:8621
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6055
-#: lib/routes-ui.js:6306
+#: lib/routes-ui.js:6081
+#: lib/routes-ui.js:6332
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:8695
-#: lib/routes-ui.js:8728
+#: lib/routes-ui.js:8721
+#: lib/routes-ui.js:8754
 msgid "Failed to process request"
 msgstr ""

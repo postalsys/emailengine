@@ -30,6 +30,10 @@ process.stdin.on('end', () => {
     for (let key of Object.keys(list)) {
         let splitter = key.lastIndexOf('@');
         let packageName = key.substr(0, splitter);
+        if (packageName === 'emailengine-app') {
+            continue;
+        }
+
         let packageVersion = key.substr(splitter + 1);
         let data = list[key];
         console.log('<tr>');

@@ -15,7 +15,7 @@ const marked = require('marked');
 
 const fs = require('fs');
 const eulaText = marked.parse(
-    fs.readFileSync(Path.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), 'utf-8').replace(/\blicenses\.txt\b/g, '[licenses.txt](/licenses.html)')
+    fs.readFileSync(Path.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), 'utf-8').replace(/\blicenses\.html\b/g, '[licenses.html](/licenses.html)')
 );
 
 const {
@@ -967,17 +967,6 @@ When making API calls remember that requests against the same account are queued
         path: '/licenses.html',
         handler: {
             file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
-        },
-        options: {
-            auth: false
-        }
-    });
-
-    server.route({
-        method: 'GET',
-        path: '/licenses.txt',
-        handler: {
-            file: { path: pathlib.join(__dirname, '..', 'licenses.txt'), confine: false }
         },
         options: {
             auth: false
