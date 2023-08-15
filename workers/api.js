@@ -9,6 +9,7 @@ const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
+const featureFlags = require('../lib/feature-flags');
 const Bell = require('@hapi/bell');
 
 const {
@@ -432,7 +433,14 @@ const init = async () => {
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
 
-    handlebars.registerHelper('equals', (compareVal, baseVal, options) => {
+    handlebars.registerHelper('featureFlag', function (flag, options) {
+        if (featureFlags.enabled(flag)) {
+            return options.fn(this); // eslint-disable-line no-invalid-this
+        }
+        return options.inverse(this); // eslint-disable-line no-invalid-this
+    });
+
+    handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
         if (baseVal === compareVal) {
             return options.fn(this); // eslint-disable-line no-invalid-this
         }
@@ -1346,6 +1354,8 @@ When making API calls remember that requests against the same account are queued
 
                     accountData.email = isEmail(profileRes.emailAddress) ? profileRes.emailAddress : accountData.email;
 
+                    const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
+
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
@@ -1353,7 +1363,7 @@ When making API calls remember that requests against the same account are queued
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : GMAIL_SCOPES,
+                            scope: r.scope ? r.scope.split(/\s+/) : defaultScopes,
                             tokenType: r.token_type
                         },
                         {
@@ -6639,6 +6649,13 @@ When making API calls remember that requests against the same account are queued
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
 
+                    baseScopes: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid(...['imap'].concat(featureFlags.enabled('gmail api') ? 'api' : []))
+                        .example('imap')
+                        .description('OAuth2 Base Scopes'),
+
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
                     serviceClient: Joi.string()
@@ -7143,48 +7160,7 @@ When making API calls remember that requests against the same account are queued
             let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
 
             try {
-                // throws if account does not exist
-                let accountData = await accountObject.loadAccountData();
-                if (!accountData.oauth2 || !accountData.oauth2.auth || !accountData.oauth2.auth.user || !accountData.oauth2.provider) {
-                    let error = Boom.boomify(new Error('Not an OAuth2 account'), { statusCode: 403 });
-                    error.output.payload.code = 'AccountNotOAuth2';
-                    throw error;
-                }
-
-                let now = Date.now();
-                let accessToken;
-                let cached = false;
-                if (!accountData.oauth2.accessToken || !accountData.oauth2.expires || accountData.oauth2.expires < new Date(now - 30 * 1000)) {
-                    // renew access token
-                    try {
-                        accountData = await accountObject.renewAccessToken();
-                        accessToken = accountData.oauth2.accessToken;
-                    } catch (err) {
-                        let error = Boom.boomify(err, { statusCode: 403 });
-                        error.output.payload.code = 'OauthRenewError';
-                        error.output.payload.authenticationFailed = true;
-                        if (err.tokenRequest) {
-                            error.output.payload.tokenRequest = err.tokenRequest;
-                        }
-                        throw error;
-                    }
-                } else {
-                    accessToken = accountData.oauth2.accessToken;
-                    cached = true;
-                }
-
-                return {
-                    account: accountData.account,
-                    user: accountData.oauth2.auth.user,
-                    accessToken,
-                    provider: accountData.oauth2.auth.provider,
-                    registeredScopes: accountData.oauth2.scope,
-                    expires:
-                        accountData.oauth2.expires && typeof accountData.oauth2.expires.toISOString === 'function'
-                            ? accountData.oauth2.expires.toISOString()
-                            : accountData.oauth2.expires,
-                    cached
-                };
+                return await accountObject.getActiveAccessTokenData();
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {

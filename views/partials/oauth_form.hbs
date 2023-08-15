@@ -189,6 +189,45 @@
     </div>
 </div>
 
+{{#featureFlag "gmail api"}}
+{{! show this section only if the Gmail API feature flag is enabled}}
+
+{{#if activeGmail}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
+    </div>
+    <div class="card-body">
+
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap" {{#unless
+                baseScopesApi}}checked{{/unless}}>
+            <label class="form-check-label" for="baseScopesImap">
+                IMAP and SMTP
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api" {{#if
+                baseScopesApi}}checked{{/if}}>
+            <label class="form-check-label" for="baseScopesAPI">
+                Gmail API
+            </label>
+        </div>
+
+
+    </div>
+
+    <div class="card-footer text-muted">
+        <small><strong>Note:</strong>
+            <a href="/admin/config/imap-proxy">IMAP Proxy Interface</a> is only available for email accounts registered
+            using the IMAP and SMTP base scope.</small>
+    </div>
+</div>
+{{/if}}
+{{/featureFlag}}
+
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
         data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupScopes">
