@@ -189,6 +189,9 @@
     </div>
 </div>
 
+{{#featureFlag "gmail api"}}
+{{! show this section only if the Gmail API feature flag is enabled}}
+
 {{#if activeGmail}}
 
 <div class="card mb-4">
@@ -223,6 +226,7 @@
     </div>
 </div>
 {{/if}}
+{{/featureFlag}}
 
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"

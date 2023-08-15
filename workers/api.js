@@ -9,6 +9,7 @@ const Path = require('path');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
+const featureFlags = require('../lib/feature-flags');
 const Bell = require('@hapi/bell');
 
 const {
@@ -432,7 +433,14 @@ const init = async () => {
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
 
-    handlebars.registerHelper('equals', (compareVal, baseVal, options) => {
+    handlebars.registerHelper('featureFlag', function (flag, options) {
+        if (featureFlags.enabled(flag)) {
+            return options.fn(this); // eslint-disable-line no-invalid-this
+        }
+        return options.inverse(this); // eslint-disable-line no-invalid-this
+    });
+
+    handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
         if (baseVal === compareVal) {
             return options.fn(this); // eslint-disable-line no-invalid-this
         }
@@ -6641,7 +6649,12 @@ When making API calls remember that requests against the same account are queued
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
 
-                    baseScopes: Joi.string().empty('').trim().valid('imap', 'api').example('imap').description('OAuth2 Base Scopes'),
+                    baseScopes: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid(...['imap'].concat(featureFlags.enabled('gmail api') ? 'api' : []))
+                        .example('imap')
+                        .description('OAuth2 Base Scopes'),
 
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
