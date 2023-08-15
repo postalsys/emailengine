@@ -19,6 +19,7 @@ This Agreement is entered into by and between Postal Systems OÜ and you, or the
 * 2.1. Postal Systems OÜ grants You a revocable, non-exclusive, non-transferable, limited license to download, install, and use the Software for a 14-day free trial period.
 * 2.2. Upon purchase of a subscription from https://postalsys.com, You are entitled to generate and use License Keys for the Software. The paid subscription covers all versions of EmailEngine and all updates and modifications.
 * 2.3. Once the trial period concludes, the core functionality of the Software ceases to operate until a valid License Key is provided.
+* 2.4. This license grants you the right to use the Software for both personal and commercial purposes.
 
 **3. TRIAL PERIOD**
 
