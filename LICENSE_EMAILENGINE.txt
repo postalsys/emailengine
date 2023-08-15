@@ -1,142 +1,102 @@
-EMAILENGINE LICENSE AGREEMENT
-Version 1, 5 November 2021
+# EMAILENGINE LICENSE AGREEMENT
 
-PLEASE CAREFULLY READ THIS EMAILENGINE LICENSE AGREEMENT ("AGREEMENT"). THIS
-AGREEMENT CONSTITUTES A LEGALLY BINDING AGREEMENT BETWEEN YOU AND POSTAL SYSTEMS OÜ
-("POSTALSYS") AND GOVERNS YOUR USE OF THE COMMERCIAL FEATURES (DEFINED
-BELOW). BY USING THE COMMERCIAL FEATURES, YOU AGREE TO THIS AGREEMENT.
-IF YOU DO NOT AGREE WITH THIS AGREEMENT, YOU MAY NOT USE THE COMMERCIAL
-FEATURES. IF YOU ARE USING THE COMMERCIAL FEATURES ON BEHALF OF A LEGAL
-ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE AUTHORITY TO AGREE TO THIS
-AGREEMENT ON BEHALF OF SUCH ENTITY. IF YOU DO NOT HAVE SUCH AUTHORITY, DO NOT
-USE THE COMMERCIAL FEATURES IN ANY MANNER.
+> Version 2, 15 August 2023
 
-This Agreement is entered into by and between Postalsys and you, or the legal
-entity on behalf of whom you are acting (as applicable, "You" or "Your").
+**PLEASE CAREFULLY READ THIS EMAILENGINE LICENSE AGREEMENT ("AGREEMENT"). THIS AGREEMENT CONSTITUTES A LEGALLY BINDING AGREEMENT BETWEEN YOU AND POSTAL SYSTEMS OÜ AND GOVERNS YOUR USE OF THE SOFTWARE (DEFINED BELOW). IF YOU DO NOT AGREE WITH THIS AGREEMENT, YOU MAY NOT USE THE SOFTWARE. IF YOU ARE USING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE AUTHORITY TO AGREE TO THIS AGREEMENT ON BEHALF OF SUCH ENTITY. IF YOU DO NOT HAVE SUCH AUTHORITY, DO NOT USE THE SOFTWARE IN ANY MANNER.**
 
-1. DEFINITIONS
+This Agreement is entered into by and between Postal Systems OÜ and you, or the legal entity on behalf of whom you are acting (as applicable, "You" or "Your").
 
-"EmailEngine Software" means the EmailEngine server software, and libraries.
+**1. DEFINITIONS**
 
-"Commercial Features" means the features designed to work with and enhance the
-EmailEngine Software to which this Agreement is linked, referenced, or appended.
+* 1.1. "Postal Systems OÜ" refers to the entity providing the EmailEngine software.
+* 1.2. "Software" refers to the EmailEngine application, including all its versions, updates, modifications, accompanying documentation, and related materials.
+* 1.3. "You" or "User" refers to the individual or entity installing, accessing, or using the Software.
+* 1.4. "License Key" refers to the unique code provided by Postal Systems OÜ upon purchasing a subscription which activates the full features of the Software beyond the trial period.
+* 1.5. "Instance" refers to a copy of EmailEngine run on a local machine or on a server. A single instance runs on a single machine but can utilize multiple CPU cores without limitations.
 
-2. LICENSES, RESTRICTIONS AND THIRD PARTY CODE
+**2. GRANT OF LICENSE**
 
-2.1   Reservation of Rights. As between Postalsys and You, Postalsys owns all
-right, title and interest in and to the EmailEngine Software, and no other license
-to the EmailEngine Software is granted to You under this Agreement, by
-implication, estoppel, or otherwise.
+* 2.1. Postal Systems OÜ grants You a revocable, non-exclusive, non-transferable, limited license to download, install, and use the Software for a 14-day free trial period.
+* 2.2. Upon purchase of a subscription from https://postalsys.com, You are entitled to generate and use License Keys for the Software. The paid subscription covers all versions of EmailEngine and all updates and modifications.
+* 2.3. Once the trial period concludes, the core functionality of the Software ceases to operate until a valid License Key is provided.
 
-2.2   Restrictions. You agree not to: (i) sell, rent, lease, distribute,
-sublicense, loan or otherwise transfer the Commercial Features to any third party;
-(ii) alter or remove any trademarks, service mark, and logo included with the 
-Commercial Features, or (iii) use the Commercial Features to create a competing
-product or service. Postalsys is not obligated to provide maintenance and support
-services for the EmailEngine Software licensed under this Agreement.
+**3. TRIAL PERIOD**
 
-2.3   Third Party Software. The Commercial Features may contain or be provided
-with third party open source libraries, components, utilities and other open
-source software (collectively, "Open Source Software"). Notwithstanding anything
-to the contrary herein, use of the Open Source Software will be subject to the
-license terms and conditions applicable to such Open Source Software. To the
-extent any condition of this Agreement conflicts with any license to the Open
-Source Software, the Open Source Software license will govern with respect to
-such Open Source Software only.
+* 3.1. The Software can be used freely with all its features for a period of 14 days from the first installation.
+* 3.2. After the trial period expires, the Software will require a License Key to operate.
+* 3.3. Postal Systems OÜ reserves the right to offer extensions or variations of the trial period on a case-by-case basis.
 
-2.5 This Agreement does not grant any rights in the trademarks, service marks, or
-logos of any Contributor (except as may be necessary to comply with the notice
-requirements in Section 2.3).
+**4. LICENSE KEYS**
 
-3. TERMINATION
+* 4.1. License Keys can be generated by users or organizations that have an active subscription from Postal Systems OÜ. These License Keys can be reused within the purchasing organization without limitations.
+* 4.2. Distribution or sharing of License Keys to third parties, not associated with the purchasing user's organization, is strictly prohibited.
 
-3.1   Termination. This Agreement will automatically terminate upon notice from
-Postalsys, which notice may be by email or posting in the location where the
-Commercial Features are made available.
+**5. USE OF SOFTWARE AND OPEN SOURCE COMPONENTS**
 
-3.2   Effect of Termination. Upon any termination of this Agreement, for any
-reason, You will promptly cease use of the Commercial Features and destroy any
-copies thereof. For the avoidance of doubt, termination of this Agreement will
-not affect Your right to EmailEngine Software, other than the Commercial Features,
-made available pursuant to an Open Source Software license.
+* 5.1. You may only run the Software for the benefit of the organization you represent.
+* 5.2. Sharing or providing generated License Keys to third-party entities not related to your organization is strictly prohibited.
+* 5.3. The Software includes and bundles open source software components. Postal Systems OÜ is not responsible for these bundled open source components, and any concerns regarding these should be addressed to the respective developers. The list of this software and the respective open source licenses for each bundled software component are provided in the 'licenses.txt' file included within the application.
 
-3.3   Survival. Sections 1, 2.1 -2.3, 3.2, 3.3, 4, and 5 will survive any
-termination of this Agreement.
+**6. EXPIRATION OF LICENSE KEYS**
 
-4. DISCLAIMER AND LIMITATION OF LIABILITY
+* 6.1. License Keys are bound to the subscription period. Should your subscription expire, all License Keys generated by you or your organization will become invalid after 30 days from the subscription expiration date.
+* 6.2. Any instance of the Software using such an expired key will cease to function after the aforementioned 30-day period.
 
-4.1   Disclaimer of Warranties. TO THE MAXIMUM EXTENT PERMITTED UNDER APPLICABLE
-LAW, THE EMAILENGINE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED REGARDING OR RELATING TO THE EMAILENGINE SOFTWARE, INCLUDING
-ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-TITLE, AND NON-INFRINGEMENT. FURTHER, POSTALSYS DOES NOT WARRANT RESULTS OF USE
-OR THAT THE EMAILENGINE SOFTWARE WILL BE ERROR FREE OR THAT THE USE OF THE
-EMAILENGINE SOFTWARE WILL BE UNINTERRUPTED.
+**7. TERMINATION**
 
-4.2   Limitation of Liability. IN NO EVENT WILL POSTALSYS OR ITS LICENSORS BE
-LIABLE TO YOU OR ANY THIRD PARTY UNDER THIS AGREEMENT FOR (I) ANY AMOUNTS IN
-EXCESS OF US $50 OR (II) FOR ANY SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES OF
-ANY KIND, INCLUDING FOR ANY LOSS OF PROFITS, LOSS OF USE, BUSINESS INTERRUPTION,
-LOSS OF DATA, COST OF SUBSTITUTE GOODS OR SERVICES, WHETHER ALLEGED AS A BREACH
-OF CONTRACT OR TORTIOUS CONDUCT, INCLUDING NEGLIGENCE, EVEN IF POSTALSYS HAS
-BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+* 7.1. Postal Systems OÜ reserves the right to terminate your license to use the Software if you violate any terms of this EULA.
+* 7.2. In the event of a termination, you will be provided with a written notice, sent to the email address used during your subscription to the EmailEngine, outlining the reasons for the termination.
+* 7.3. Upon termination, all rights granted to you under this EULA will cease, and you must promptly cease all use of the Software.
 
-5. MISCELLANEOUS
+**8. LIMITATION OF LIABILITY**
 
-5.1   Assignment. You may not assign or otherwise transfer this Agreement or any
-rights or obligations hereunder, in whole or in part, whether by operation of
-law or otherwise, to any third party without Postalsys' prior written consent.
-Any purported transfer, assignment or delegation without such prior written
-consent will be null and void and of no force or effect. Postalsys may assign
-this Agreement to any successor to its business or assets to which this
-Agreement relates, whether by merger, sale of assets, sale of stock,
-reorganization or otherwise. Subject to this Section 5.1, this Agreement will be
-binding upon and inure to the benefit of the parties hereto, and their
-respective successors and permitted assigns.
+* 8.1. Postal Systems OÜ shall not be responsible for any indirect damages, losses, or expenses that may arise from your use or misuse of the Software.
+* 8.2. Postal Systems OÜ’s liability for direct damages arising from or related to your use of the Software shall be limited to a maximum aggregate amount of 50€ over the life of the software usage.
 
-5.2   Entire Agreement; Modification; Waiver. This Agreement represents the
-entire agreement between the parties, and supersedes all prior agreements and
-understandings, written or oral, with respect to the matters covered by this
-Agreement, and is not intended to confer upon any third party any rights or
-remedies hereunder. You acknowledge that You have not entered in this Agreement
-based on any representations other than those contained herein. No modification
-of or amendment to this Agreement, nor any waiver of any rights under this
-Agreement, will be effective unless in writing and signed by both parties. The
-waiver of one breach or default or any delay in exercising any rights will not
-constitute a waiver of any subsequent breach or default.
+**9. GOVERNING LAW & JURISDICTION**
 
-5.3   Governing Law. This Agreement will in all respects be governed by the laws
-of Estonia without reference to its principles of conflicts of
-laws. The parties hereby agree that all disputes arising out of this Agreement
-will be subject to the exclusive jurisdiction of and venue in the county courts
-within Tallinn, Harjumaa. You hereby consent to the personal and exclusive
-jurisdiction and venue of these courts. The parties hereby disclaim and exclude
-the application hereto of the United Nations Convention on Contracts for
-the International Sale of Goods.
+* 9.1. This EULA shall be governed by and construed under the laws of Estonia.
+* 9.2. Any disputes arising from or related to this EULA shall be resolved in the jurisdiction of Tallinn, Estonia.
 
-5.4   Severability. If any provision of this Agreement is held invalid or
-unenforceable under applicable law by a court of competent jurisdiction, it will
-be replaced with the valid provision that most closely reflects the intent of
-the parties and the remaining provisions of the Agreement will remain in full
-force and effect.
+**10. DATA PROTECTION & PRIVACY**
 
-5.5   Relationship of the Parties. Nothing in this Agreement is to be construed
-as creating an agency, partnership, or joint venture relationship between the
-parties hereto. Neither party will have any right or authority to assume or
-create any obligations or to make any representations or warranties on behalf of
-any other party, whether express or implied, or to bind the other party in any
-respect whatsoever.
+* 10.1. By using the Software, you consent to the collection, processing, and use of any personal data as required for the functionality of the Software. The specifics of data handling and storage will be outlined in the company's Privacy Policy, which can be accessed on the company's website.
 
-5.6   Notices. All notices permitted or required under this Agreement will be in
-writing and will be deemed to have been given when delivered in person
-(including by overnight courier), or three (3) business days after being mailed
-by first class, registered or certified mail, postage prepaid, to the address of
-the party specified in this Agreement or such other address as either party may
-specify in writing.
+**11. ACCEPTANCE**
 
-5.7  Construction. The titles and section headings used in this Agreement are
-for ease of reference only and will not be used in the interpretation or
-construction of this Agreement. No rule of construction resolving any ambiguity
-in favor of the non-drafting party will be applied hereto. The word "including",
-when used herein, is illustrative rather than exclusive and means "including,
-without limitation."
+* 11.1. By downloading, installing, or using the EmailEngine software, even without explicitly clicking on an "I Agree" button or a similar mechanism, you acknowledge that you have read, understood, and agreed to be bound by the terms and conditions of this EULA.
+
+**12. ASSIGNMENT**
+
+* 12.1. This EULA and the rights granted hereunder may not be transferred or assigned by you but may be assigned by Postal Systems OÜ without restriction.
+
+**13. SEVERABILITY**
+
+* 13.1. If any provision of this EULA is held to be unenforceable or invalid for any reason, that provision shall be reformed to the extent necessary to make it enforceable and consistent with the intent of the parties, and the remaining provisions shall remain in full force and effect.
+
+**14. SUPPORT AND MAINTENANCE**
+
+* 14.1. Postal Systems OÜ does not guarantee any form of support for the Software.
+* 14.2. Users are solely responsible for the maintenance, operation, and management of their own EmailEngine instances.
+* 14.3. While Postal Systems OÜ may endeavor to provide support, if possible, such support will be facilitated through a public chat channel or via email communication.
+* 14.4. There are no guaranteed response times associated with any support inquiries or issues raised by users.
+
+**15. ENTIRE AGREEMENT**
+
+* 15.1. This EULA constitutes the entire agreement between you and Postal Systems OÜ regarding the Software and supersedes any prior or contemporaneous understandings, agreements, or representations, whether written or oral.
+
+**16. DISCLAIMERS AND WARRANTIES**
+
+* 16.1. The Software is provided "AS IS" and "AS AVAILABLE", without warranty of any kind, either express or implied, including, without limitation, warranties of merchantability, fitness for a particular purpose, and non-infringement. Postal Systems OÜ does not warrant that the Software will be error-free, that access thereto will be uninterrupted, or that defects will be corrected.
+
+**17. INDEMNIFICATION**
+
+* 17.1. You agree to indemnify, defend, and hold harmless Postal Systems OÜ, its officers, directors, employees, agents, licensors, suppliers, and any third-party information providers from and against all claims, losses, expenses, damages, and costs, including reasonable attorneys' fees, resulting from any violation of this EULA or any activity related to your use or misuse of the Software (including negligent or wrongful conduct).
+
+**18. FORCE MAJEURE**
+
+* 18.1. Neither party shall be in default or otherwise liable for any delay in or failure of its performance under this EULA if such delay or failure arises by any reason of any event beyond the reasonable control of a party, including acts of God, the elements, earthquakes, floods, fires, epidemics, riots, failures or delays in transportation or communications, or any act or failure to act by the other party or such other party’s officers, employees, agents, or contractors. The parties will promptly inform and consult with each other as to any of the above causes which, in their judgment, may or could be the cause of a delay in the performance of this EULA.
+
+Postal Systems OÜ  
+Tallinn, Estonia  
+All Rights Reserved.

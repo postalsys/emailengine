@@ -86,6 +86,7 @@
         "license-checker": "25.0.1",
         "mailparser": "3.6.5",
         "mailsplit": "5.4.0",
+        "marked": "^7.0.3",
         "minimist": "1.2.8",
         "msgpack5": "6.0.2",
         "murmurhash": "2.0.1",
@@ -139,6 +140,7 @@
             "node_modules/swagger-ui-dist/**/*",
             "translations/**/*",
             "LICENSE_EMAILENGINE.txt",
+            "licenses.txt",
             "help.txt",
             "version-info.json"
         ],
