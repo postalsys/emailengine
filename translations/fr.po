@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2022-11-11 10:19+0000\n"
+"POT-Creation-Date: 2023-08-15 13:09+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -84,14 +84,6 @@ msgstr "Saisissez le mot de passe de votre compte"
 #: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
 msgstr "Continuer"
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Choisissez votre fournisseur de compte de messagerie"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "IMAP Standard"
 
 #: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
@@ -201,34 +193,45 @@ msgstr "Le serveur SMTP a répondu avec le message suivant :"
 msgid "HTTP error!"
 msgstr "Erreur HTTP!"
 
-#: lib/routes-ui.js:3460 lib/routes-ui.js:4729 lib/routes-ui.js:4740
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Choisissez votre fournisseur de compte de messagerie"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "IMAP Standard"
+
+#: lib/routes-ui.js:557
+msgid "Invalid API key for OpenAI"
+msgstr "Clé API invalide pour OpenAI"
+
+#: lib/routes-ui.js:4193 lib/routes-ui.js:6143 lib/routes-ui.js:6154
 msgid "Server hostname was not found"
 msgstr "Le nom d'hôte du serveur est introuvable"
 
-#: lib/routes-ui.js:3463 lib/routes-ui.js:4732 lib/routes-ui.js:4743
+#: lib/routes-ui.js:4196 lib/routes-ui.js:6146 lib/routes-ui.js:6157
 msgid "Invalid username or password"
 msgstr "Nom d'utilisateur ou mot de passe invalide"
 
-#: lib/routes-ui.js:3467 lib/routes-ui.js:4747
+#: lib/routes-ui.js:4200 lib/routes-ui.js:6161
 msgid "TLS protocol error"
 msgstr "Erreur de protocole TLS"
 
-#: lib/routes-ui.js:4459
-msgid "Unknown OAuth provider"
-msgstr "Fournisseur OAuth inconnu"
-
-#: lib/routes-ui.js:4499 lib/routes-ui.js:4608 lib/routes-ui.js:4832
+#: lib/routes-ui.js:5907 lib/routes-ui.js:6018 lib/routes-ui.js:6246
 msgid "Signature validation failed"
 msgstr "La validation de la signature a échoué"
 
-#: lib/routes-ui.js:4548 lib/routes-ui.js:4581 lib/routes-ui.js:6664
+#: lib/routes-ui.js:5944 lib/routes-ui.js:5984 lib/routes-ui.js:8621
 msgid "Failed to validate request arguments"
 msgstr "Impossible de valider les arguments de la demande"
 
-#: lib/routes-ui.js:4671 lib/routes-ui.js:4914
+#: lib/routes-ui.js:6081 lib/routes-ui.js:6332
 msgid "Failed to process account"
 msgstr "Échec du traitement du compte"
 
-#: lib/routes-ui.js:6764
+#: lib/routes-ui.js:8721 lib/routes-ui.js:8754
 msgid "Failed to process request"
 msgstr "Le traitement de la demande a échoué."
+
+#~ msgid "Unknown OAuth provider"
+#~ msgstr "Fournisseur OAuth inconnu"

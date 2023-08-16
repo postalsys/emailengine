@@ -141,7 +141,8 @@ const {
     accountSchemas,
     oauthCreateSchema,
     tokenRestrictionsSchema,
-    accountIdSchema
+    accountIdSchema,
+    ipSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -1681,15 +1682,7 @@ When making API calls remember that requests against the same account are queued
 
                     restrictions: tokenRestrictionsSchema,
 
-                    ip: Joi.string()
-                        .empty('')
-                        .trim()
-                        .ip({
-                            version: ['ipv4', 'ipv6'],
-                            cidr: 'forbidden'
-                        })
-                        .example('127.0.0.1')
-                        .description('IP address of the requestor')
+                    ip: ipSchema.description('IP address of the requestor').label('TokenIP')
                 }).label('CreateToken')
             },
 
@@ -1821,19 +1814,11 @@ When making API calls remember that requests against the same account are queued
                                     .example('{"example": "value"}')
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
-                                ip: Joi.string()
-                                    .empty('')
-                                    .trim()
-                                    .ip({
-                                        version: ['ipv4', 'ipv6'],
-                                        cidr: 'forbidden'
-                                    })
-                                    .example('127.0.0.1')
-                                    .description('IP address of the requestor')
-                            }).label('AccountResponseItem')
+                                ip: ipSchema.description('IP address of the requestor').label('TokenIP')
+                            }).label('RootTokensItem')
                         )
-                        .label('AccountEntries')
-                }).label('AccountsFilterResponse'),
+                        .label('RootTokensEntries')
+                }).label('RootTokensResponse'),
                 failAction: 'log'
             }
         }
@@ -1910,19 +1895,11 @@ When making API calls remember that requests against the same account are queued
 
                                 restrictions: tokenRestrictionsSchema,
 
-                                ip: Joi.string()
-                                    .empty('')
-                                    .trim()
-                                    .ip({
-                                        version: ['ipv4', 'ipv6'],
-                                        cidr: 'forbidden'
-                                    })
-                                    .example('127.0.0.1')
-                                    .description('IP address of the requestor')
-                            }).label('AccountResponseItem')
+                                ip: ipSchema.description('IP address of the requestor').label('TokenIP')
+                            }).label('AccountTokensItem')
                         )
-                        .label('AccountEntries')
-                }).label('AccountsFilterResponse'),
+                        .label('AccountTokensEntries')
+                }).label('AccountsTokensResponse'),
                 failAction: 'log'
             }
         }
@@ -3471,7 +3448,7 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('RFC822Raw'),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('FromAddress'),
 
                     to: Joi.array()
                         .items(addressSchema)
@@ -4477,7 +4454,7 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.forbidden('y')
                         }),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('From'),
+                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('FromAddress'),
 
                     replyTo: Joi.array()
                         .items(addressSchema.label('ReplyToAddress'))

@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.33.5",
+    "version": "2.34.0",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
@@ -39,7 +39,7 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bugsnag/js": "7.20.2",
+        "@bugsnag/js": "7.21.0",
         "@elastic/elasticsearch": "8.9.0",
         "@hapi/bell": "13.0.1",
         "@hapi/boom": "10.0.1",
