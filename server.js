@@ -55,7 +55,7 @@ const {
 } = require('./lib/consts');
 
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const { riskAnalysis, generateSummary } = require('@postalsys/email-ai-tools');
+const { generateSummary, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd, Agent } = require('undici');
 const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
@@ -1373,11 +1373,39 @@ async function onCommand(worker, message) {
 
         // run these in main process to avoid polluting RAM with the memory hungry tokenization library
         case 'generateSummary': {
-            return await generateSummary(...message.args);
+            let requestOpts = {};
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiModel = message.data.openAiModel || (await settings.get('openAiModel'));
+            if (openAiModel) {
+                requestOpts.gptModel = openAiModel;
+            }
+
+            switch (openAiModel) {
+                case 'gpt-4':
+                    requestOpts.maxTokens = 6500;
+                    break;
+                case 'gpt-3.5-turbo':
+                default:
+                    requestOpts.maxTokens = 3500;
+                    break;
+            }
+
+            let userPrompt = message.data.openAiPrompt || ((await settings.get('openAiPrompt')) || '').toString();
+            if (userPrompt.trim()) {
+                requestOpts.userPrompt = userPrompt;
+            }
+
+            return await generateSummary(message.data.message, openAiAPIKey, requestOpts);
         }
 
-        case 'riskAnalysis': {
-            return await riskAnalysis(...message.args);
+        case 'openAiDefaultPrompt': {
+            return openAiDefaultPrompt;
         }
 
         case 'threads': {

@@ -1,0 +1,370 @@
+<div class="d-sm-flex align-items-center justify-content-between mb-1">
+    <h1 class="h3 mb-0 text-gray-800">
+
+        <small><i class="fas fa-brain fa-fw"></i></small>
+        AI
+        <span class="badge badge-dark">beta</span>
+    </h1>
+</div>
+
+<p class="mb-4">OpenAI integration for EmailEngine.</p>
+
+<form method="post" id="settings-form" action="/admin/config/ai">
+    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+
+
+    <div class="card mb-4" id="openai_settings">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">OpenAI Settings</h6>
+        </div>
+        <div class="card-body">
+
+            {{#if openAiError}}
+            <div class="mt-3 mb-3 alert alert-danger clear-alert-btn" data-clear-alert="open-ai">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+
+                <p><strong>NB!</strong> The last attempted OpenAI request failed with the response below.</p>
+                <hr>
+                <p class="mb-0">
+                    <code>{{openAiError.message}}{{#if openAiError.code}} ({{openAiError.code}}){{/if}}</code>
+                </p>
+            </div>
+            {{/if}}
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">generateEmailSummary</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
+                    id="generateEmailSummary" name="generateEmailSummary" {{#if
+                    values.generateEmailSummary}}checked{{/if}} />
+                <label class="form-check-label" for="generateEmailSummary">Enable email processing with AI <a href="#"
+                        tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                        style="dispaly: inline-block;" data-title="PII alert"
+                        data-content="EmailEngine uploads the text content of incoming emails to the API servers of OpenAI. Uploaded content is not used for training, but you need to verify if OpenAPI terms are in accordance with your data processing agreements with your users."><i
+                            class="fas fa-exclamation-triangle"></i></a></label>
+                {{#if errors.generateEmailSummary}}
+                <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
+                {{/if}}
+                <small class="form-text text-muted">EmailEngine will send emails to OpenAI API for processing. Requires
+                    a valid OpenAI API key.</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiModel</a>]</div>
+
+                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
+                    errors.openAiModel}}is-invalid{{/if}}>
+                    {{#each openAiModels}}
+                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.openAiModel}}
+                <span class="invalid-feedback">{{errors.openAiModel}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
+                    the selected model, or analysis requests will fail.</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiAPIKey</a>]
+                </div>
+
+                <label for="openAiAPIKey">OpenAI API key</label>
+                <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
+                    id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
+                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
+                    {{/if}} />
+                {{#if errors.openAiAPIKey}}
+                <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OpenAI API key</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="prompt_settings" class="card mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Prompt</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                    aria-labelledby="dropdownMenuLink">
+                    <div class="dropdown-header">Prompt actions:</div>
+                    <a class="dropdown-item" href="#" id="prompt-try-btn">
+                        <i class="fas fa-flask fa-sm clean-icon"></i> <span>LLM Prompt Tester</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiPrompt</a>]</div>
+
+                <label>Prompt for LLM requests</label>
+
+                <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
+                    id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
+
+                <div id="editor-prompt" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        LLM prompt
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" class="toggle-fullscreen" data-target="editor-prompt">Toggle fullscreen</a>
+                    </div>
+                </div>
+
+                {{#if errors.openAiPrompt}}
+                <span class="invalid-feedback">{{errors.openAiPrompt}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">Edit the prompt that is sent to LLM for each email. EmailEngine asks
+                    for the response to be in JSON, so your prompt must describe the JSON schema to return.
+                </small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+<div class="modal fade" id="testPromptModal" tabindex="-1" aria-labelledby="testPromptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testPromptModalLabel">LLM Prompt Tester</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    Here, you can test out your prompt and other OpenAI settings. Select an EML-formatted email file
+                    from disk and send it to OpenAI API for inspection.
+                </p>
+
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="emlEmail">
+                    <label class="custom-file-label" for="emlEmail">Choose EML email</label>
+                    <small id="inputToHelp" class="form-text text-muted">Select the email to be analyzed</small>
+                </div>
+                <div id="testPromptError" class="d-none">
+                    <div class="alert alert-danger"></div>
+                </div>
+                <div id="testPromptResponse" class="d-none">
+                    <pre class="content"
+                        style="max-height: 350px; border: 1px solid #d1d3e2; border-radius: .35rem; padding: 5px; color: #6e707e;"></pre>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" id="prompt-test-btn" class="btn btn-primary btn-icon-split">
+
+                    <span class="icon text-white-50">
+                        <i class="fas fa-flask"></i>
+                    </span>
+                    <span class="text">Analyze email</span>
+
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/ace/ace.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const editors = new Map();
+
+        const editorPrompt = ace.edit("editor-prompt", {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-prompt", editorPrompt);
+
+        editorPrompt.setTheme("ace/theme/xcode");
+        editorPrompt.session.setMode("ace/mode/markdown");
+        editorPrompt.session.setValue(document.getElementById('openAiPromptElement').value);
+
+        document.getElementById('settings-form').addEventListener('submit', () => {
+            document.getElementById('openAiPromptElement').value = editorPrompt.getValue();
+        });
+
+        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
+            let target = toggleElm.dataset.target;
+            if (!editors.has(target)) {
+                continue
+            }
+            let targetElm = document.getElementById(target);
+            let editor = editors.get(target)
+
+            toggleElm.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                targetElm.classList.toggle('full-screen-div');
+                editor.resize();
+                editor.focus();
+            });
+
+            targetElm.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
+                    targetElm.classList.remove('full-screen-div')
+                    editor.resize();
+                    editor.focus();
+                }
+            });
+        }
+
+        document.getElementById('prompt-try-btn').addEventListener('click', e => {
+            e.preventDefault()
+            $('#testPromptModal').modal('show');
+        })
+
+        let testPromptBtn = document.getElementById('prompt-test-btn');
+
+        const readFile = (elm) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.addEventListener('load', (event) => {
+                    let str = event.target.result.substring(event.target.result.indexOf(',') + 1)
+
+                    resolve(str)
+                });
+
+                reader.addEventListener('error', () => {
+                    reject(new Error('Failed loading file'))
+                });
+
+                reader.addEventListener('abort', () => {
+                    reject(new Error('Failed loading file'))
+                });
+
+                if (!elm.files || !elm.files[0]) {
+                    return reject(new Error('No file selected'));
+                }
+
+                reader.readAsDataURL(elm.files[0]);
+            })
+        }
+
+        let showError = message => {
+            document.getElementById('testPromptError').classList.remove('d-none');
+            document.getElementById('testPromptResponse').classList.add('d-none');
+
+            document.querySelector('#testPromptError .alert').textContent = message;
+        }
+
+        let showResponse = value => {
+            document.getElementById('testPromptError').classList.add('d-none');
+            document.getElementById('testPromptResponse').classList.remove('d-none');
+
+            document.querySelector('#testPromptResponse .content').textContent = value;
+        }
+
+        let clearResponses = () => {
+            document.getElementById('testPromptError').classList.add('d-none');
+            document.getElementById('testPromptResponse').classList.add('d-none');
+        }
+
+        async function testPromptFn() {
+            let emailFile;
+
+            clearResponses();
+
+            try {
+                emailFile = await readFile(document.getElementById('emlEmail'))
+            } catch (err) {
+                return showError(err.message)
+            }
+
+            let payload = {
+                emailFile,
+                openAiPrompt: editorPrompt.getValue(),
+                openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
+                openAiAPIKey: document.getElementById('openAiAPIKey').value
+            };
+
+            let res;
+            try {
+                res = await fetch('/admin/config/ai/test-prompt', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        ...payload
+                    })
+                });
+            } catch (err) {
+                return showError(err.message)
+            }
+
+            if (!res.ok) {
+                return showError(`HTTP error! status: ${res.status}`)
+            }
+
+            const data = await res.json();
+            if (!data.success) {
+                return showError(data.error || 'Request failed')
+            }
+
+            showResponse(JSON.stringify(data.response, false, 2));
+        }
+
+        let iconElm = document.querySelector('#prompt-test-btn i');
+        let toggleSpinner = (enabled) => {
+            if (enabled) {
+                iconElm.classList.remove('fa-spinner', 'fa-spin');
+                iconElm.classList.add('fa-flask');
+                testPromptBtn.disabled = false;
+            } else {
+                iconElm.classList.remove('fa-flask');
+                iconElm.classList.add('fa-spinner', 'fa-spin');
+                testPromptBtn.disabled = true;
+            }
+        }
+
+        testPromptBtn.addEventListener('click', e => {
+            e.preventDefault()
+
+            toggleSpinner(false)
+            testPromptFn().then(() => { }).catch(err = {}).finally(() => {
+                toggleSpinner(true)
+            });
+        });
+
+    });
+
+
+</script>
