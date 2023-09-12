@@ -83,13 +83,14 @@
         data-parent="#accordionSidebar">
         <div class="bg-white py-2 collapse-inner rounded">
             <a class="collapse-item {{#if menuConfigService}}active{{/if}}" href="/admin/config/service">Service</a>
+            <a class="collapse-item {{#if menuConfigWebhooks}}active{{/if}}" href="/admin/config/webhooks">Webhooks</a>
+            <a class="collapse-item {{#if menuConfigAi}}active{{/if}}" href="/admin/config/ai">AI</a>
+            <a class="collapse-item {{#if menuConfigOauth}}active{{/if}}" href="/admin/config/oauth">OAuth2</a>
             <a class="collapse-item {{#if menuConfigLogging}}active{{/if}}" href="/admin/config/logging">Logging</a>
             <a class="collapse-item {{#if menuConfigNetwork}}active{{/if}}" href="/admin/config/network">Network</a>
-            <a class="collapse-item {{#if menuConfigOauth}}active{{/if}}" href="/admin/config/oauth">OAuth2</a>
             <a class="collapse-item {{#if menuConfigSmtp}}active{{/if}}" href="/admin/config/smtp">SMTP Interface</a>
             <a class="collapse-item {{#if menuConfigImapProxy}}active{{/if}}" href="/admin/config/imap-proxy">IMAP Proxy
                 Interface</a>
-            <a class="collapse-item {{#if menuConfigWebhooks}}active{{/if}}" href="/admin/config/webhooks">Webhooks</a>
             <a class="collapse-item {{#if menuConfigDocumentStore}}active{{/if}}"
                 href="/admin/config/document-store">Document Store</label></a>
             <a class="collapse-item {{#if menuConfigLicense}}active{{/if}}" href="/admin/config/license">
