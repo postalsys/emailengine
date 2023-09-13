@@ -311,7 +311,38 @@
     </div>
 </div>
 
+<div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="setPayloadModalLabel">Set test payload</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <div>JSON payload</div>
+                <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
+                <small id="inputToHelp" class="form-text text-muted">Enter the JSON strcture that will be
+                    used as the <code>payload</code> value for test evaluation.</small>
+
+            </div>
+            <div class="modal-footer" style="justify-content: space-between">
+                <div>
+                    <select class="custom-select custom-select-sm" id="select-predefined-payload">
+                        <option> -- Select predefined payload -- </option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="/static/js/ace/ace.js"></script>
+
+<input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
 <input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 <input type="hidden" id="defaultPromptJson" value="{{defaultPromptJson}}">
 
@@ -578,6 +609,71 @@
         editorFn.clearSelection(1);
 
         updateExampleResult();
+
+
+        const testPayloadBtn = document.getElementById('test-payload-btn');
+        testPayloadBtn.addEventListener('click', e => {
+            e.preventDefault();
+            $('#setPayloadModal').modal('show');
+        });
+
+        const editorJson = ace.edit("editor-json");
+        editorJson.setTheme("ace/theme/xcode");
+        editorJson.session.setMode("ace/mode/json");
+        editorJson.session.setValue(JSON.stringify(testPayload.content, false, 4));
+
+        editorJson.session.on('change', function (delta) {
+            // delta.start, delta.end, delta.lines, delta.action
+            let curval = editorJson.getValue().trim();
+            try {
+                if (curval) {
+                    let parsed = JSON.parse(curval);
+                    if (parsed && typeof parsed !== 'object') {
+                        throw new Error('Not an object')
+                    }
+                    testPayload.content = parsed;
+                }
+                testPayload.error = null;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
+            } catch (err) {
+                console.error(err);
+                testPayload.error = err;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
+            }
+        });
+
+        let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value || '[]');
+        const payloadSelectElm = document.getElementById('select-predefined-payload');
+
+        try {
+            if (examplePayloads && Array.isArray(examplePayloads)) {
+
+                examplePayloads.forEach(example => {
+                    let optionElm = document.createElement('option');
+                    optionElm.textContent = example.name;
+                    optionElm.dataset.exampleKey = example.key
+                    payloadSelectElm.appendChild(optionElm)
+                });
+            }
+        } catch (err) {
+            console.error(err)
+        }
+
+        payloadSelectElm.addEventListener('change', e => {
+            if (!payloadSelectElm.selectedIndex) {
+                return
+            }
+            let key = payloadSelectElm.options[payloadSelectElm.selectedIndex].dataset.exampleKey;
+            if (key) {
+                let example = examplePayloads.find(data => data.key === key);
+                if (example) {
+                    editorJson.session.setValue(JSON.stringify(example.content, false, 4))
+                }
+            }
+            payloadSelectElm.selectedIndex = 0;
+        });
     });
 
 
