@@ -112,7 +112,10 @@ const {
     TLS_RENEW_CHECK_INTERVAL,
     DEFAULT_CORS_MAX_AGE,
     LIST_UNSUBSCRIBE_NOTIFY,
-    FETCH_TIMEOUT
+    FETCH_TIMEOUT,
+    DEFAULT_MAX_BODY_SIZE,
+    DEFAULT_EENGINE_TIMEOUT,
+    DEFAULT_MAX_ATTACHMENT_SIZE
 } = consts;
 
 const { fetch: fetchCmd, Agent } = require('undici');
@@ -148,10 +151,6 @@ const {
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
-
-const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
-const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
-const DEFAULT_MAX_BODY_SIZE = 50 * 1024 * 1024;
 
 const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
 const { GMAIL_SCOPES } = require('../lib/oauth/gmail');

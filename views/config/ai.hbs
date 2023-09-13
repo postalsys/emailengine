@@ -11,7 +11,7 @@
 
 <form method="post" id="settings-form" action="/admin/config/ai">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
-
+    <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
@@ -90,9 +90,120 @@
         </div>
     </div>
 
+    <div class="card mb-4" id="openai_settings">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Pre-processing Settings</h6>
+        </div>
+        <div class="card-body">
+
+            {{#if errorLog}}
+            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
+                        aria-selected="true">Filter function</a>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
+                        aria-controls="errors" aria-selected="false">Error log</a>
+                </li>
+            </ul>
+            {{/if}}
+
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
+
+                    <div class="form-group">
+                        <div class="text-muted float-right code-link">[<a
+                                href="https://emailengine.app/pre-processing-functions" target="_blank"
+                                referrerpolicy="{{referrerPolicy}}">documentation</a>]</div>
+                        <label for="editor-fn">Filter function</label>
+                        <div style="line-height: 1; margin-bottom: 10px;">
+                            <small>JavaScript code to determine if the email should be processed by LLM. If the code
+                                evaluates
+                                to <code>true</code> then the email is sent to LLM for processing, otherwise it is
+                                skipped. The
+                                script includes <code>payload</code> as a global variable that contains the email
+                                data.</small>
+                        </div>
+                        <div id="editor-fn" class="code-editor"></div>
+                        <div class="editor-embed-block">
+                            <div class="editor-embed-content editor-embed-content-left">
+                                Filter function
+                            </div>
+                            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                                <a href="#" class="toggle-fullscreen" data-target="editor-fn">Toggle fullscreen</a>
+                            </div>
+                            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                                <a href="#" id="test-payload-btn">Set test payload</a>
+                            </div>
+
+                            <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
+                                Evaluation result:
+                                <span id="filter-res" class="evalres text-info">no match</span>
+                            </div>
+
+                            <div class="editor-embed-content editor-embed-content-right">
+                                {{> editor_scope_info}}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+
+
+                    <p>The following errors were thrown when executing the functions for this route. Only the most
+                        recent
+                        errors are shown.</p>
+
+                    <table class="table">
+
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th width="40%">Error</th>
+                                <th width="40%">Payload</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#each errorLog}}
+
+                            <tr>
+
+                                <td>
+                                    <span class="relative-time" data-time="{{created}}"></span>
+                                </td>
+
+                                <td>
+                                    <textarea class="error-log-field" readonly>{{error}}</textarea>
+                                </td>
+
+                                <td>
+                                    <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                                </td>
+
+                            </tr>
+
+                            {{/each}}
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
     <div id="prompt_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Prompt</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Prompt Settings</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -101,8 +212,8 @@
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
                     <div class="dropdown-header">Prompt actions:</div>
-                    <a class="dropdown-item" href="#" id="prompt-try-btn">
-                        <i class="fas fa-flask fa-sm clean-icon"></i> <span>LLM Prompt Tester</span>
+                    <a class="dropdown-item" href="#" id="prompt-reset-btn">
+                        <i class="fas fa-arrow-circle-down fa-sm"></i> <span>Restore default prompt</span>
                     </a>
                 </div>
             </div>
@@ -120,12 +231,16 @@
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
 
                 <div id="editor-prompt" class="code-editor"></div>
+
                 <div class="editor-embed-block">
                     <div class="editor-embed-content editor-embed-content-left">
                         LLM prompt
                     </div>
-                    <div class="editor-embed-content editor-embed-content-right">
+                    <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
                         <a href="#" class="toggle-fullscreen" data-target="editor-prompt">Toggle fullscreen</a>
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" id="prompt-try-btn">Test this prompt</a>
                     </div>
                 </div>
 
@@ -163,8 +278,7 @@
             </div>
             <div class="modal-body">
                 <p>
-                    Here, you can test out your prompt and other OpenAI settings. Select an EML-formatted email file
-                    from disk and send it to OpenAI API for inspection.
+                    Select an EML-formatted email file from the disk to send to the OpenAI API for inspection.
                 </p>
 
                 <div class="custom-file">
@@ -199,11 +313,35 @@
 </div>
 
 <script src="/static/js/ace/ace.js"></script>
+<input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
+        let scriptEnv = JSON.parse(document.getElementById('scriptEnvJson').value);
+        const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
+
         const editors = new Map();
+
+        const editorFn = ace.edit("editor-fn", {
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            useWorker: false
+        });
+        editors.set("editor-fn", editorFn);
+
+        editorFn.setTheme("ace/theme/xcode");
+        editorFn.session.setMode("ace/mode/javascript");
+        editorFn.setValue(JSON.parse(document.getElementById('fn-content-element').value));
+
+        editorFn.session.on('changeMode', function (e, session) {
+            if ("ace/mode/javascript" === session.getMode().$id) {
+                if (!!session.$worker) {
+                    session.$worker.send("setOptions", [JSHINT_OPTS]);
+                }
+            }
+        });
 
         const editorPrompt = ace.edit("editor-prompt", {
             enableBasicAutocompletion: true,
@@ -218,6 +356,7 @@
         editorPrompt.session.setValue(document.getElementById('openAiPromptElement').value);
 
         document.getElementById('settings-form').addEventListener('submit', () => {
+            document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
             document.getElementById('openAiPromptElement').value = editorPrompt.getValue();
         });
 
@@ -250,6 +389,48 @@
             e.preventDefault()
             $('#testPromptModal').modal('show');
         })
+
+        const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
+
+        const updateFilterResult = (err, result, opts) => {
+            let resultElm = document.getElementById('filter-res');
+            if (err) {
+                resultElm.classList.remove('text-warning', 'text-success');
+                resultElm.classList.add('text-danger');
+                resultElm.textContent = `validation failed (${err.message})`
+                return;
+            }
+
+            if (result) {
+                resultElm.classList.remove('text-warning', 'text-danger');
+                resultElm.classList.add('text-success');
+                resultElm.textContent = `filter matches`
+            } else {
+                resultElm.classList.remove('text-success', 'text-danger');
+                resultElm.classList.add('text-warning');
+
+                let truthyWarning = opts && opts.truthyWarning;
+                resultElm.textContent = `no match${truthyWarning ? ` (function must return \`true\`, but returned a ${typeof truthyWarning} value)` : ''} `
+            }
+        }
+
+        const updateExampleResult = () => {
+            const filterVal = editorFn.getValue();
+
+            let filtered;
+            let mapping;
+
+            try {
+                if (testPayload.error) {
+                    throw testPayload.error;
+                }
+                evaluationWorker.postMessage({
+                    type: 'filter', code: filterVal, payload: testPayload.content, env: scriptEnv
+                });
+            } catch (err) {
+                updateFilterResult(err);
+            }
+        }
 
         let testPromptBtn = document.getElementById('prompt-test-btn');
 
@@ -364,6 +545,33 @@
             });
         });
 
+        evaluationWorker.onmessage = e => {
+            const { type, result, error } = e && e.data || {};
+
+            switch (type) {
+                case 'filter':
+                    if (!error) {
+                        updateFilterResult(null, result === true, { truthyWarning: result && result !== true ? result : false });
+                    } else {
+                        updateFilterResult(new Error(error));
+                    }
+                    break;
+
+                case 'log': {
+                    console.log(`[Worker Log] ${result.level.toUpperCase()}`, result.msg);
+                    break;
+                }
+            }
+        }
+
+        let validateTimer = false;
+        editorFn.session.on('change', function () {
+            clearTimeout(validateTimer);
+            validateTimer = setTimeout(updateExampleResult, 100);
+        });
+        editorFn.clearSelection(1);
+
+        updateExampleResult();
     });
 
 
