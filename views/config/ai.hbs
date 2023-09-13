@@ -157,9 +157,8 @@
                 <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
 
 
-                    <p>The following errors were thrown when executing the functions for this route. Only the most
-                        recent
-                        errors are shown.</p>
+                    <p>The following errors were thrown when executing the pre-processing function. Only the most
+                        recent errors are shown.</p>
 
                     <table class="table">
 
@@ -249,7 +248,7 @@
                 {{/if}}
 
                 <small class="form-text text-muted">Edit the prompt that is sent to LLM for each email. EmailEngine asks
-                    for the response to be in JSON, so your prompt must describe the JSON schema to return.
+                    for the response to be in JSON, so your prompt must describe the JSON properties to return.
                 </small>
             </div>
 
@@ -314,6 +313,7 @@
 
 <script src="/static/js/ace/ace.js"></script>
 <input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
+<input type="hidden" id="defaultPromptJson" value="{{defaultPromptJson}}">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -535,6 +535,12 @@
                 testPromptBtn.disabled = true;
             }
         }
+
+        document.getElementById('prompt-reset-btn').addEventListener('click', e => {
+            e.preventDefault()
+
+            editorPrompt.setValue(JSON.parse(document.getElementById('defaultPromptJson').value).prompt);
+        });
 
         testPromptBtn.addEventListener('click', e => {
             e.preventDefault()
