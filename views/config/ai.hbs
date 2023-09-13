@@ -2,12 +2,13 @@
     <h1 class="h3 mb-0 text-gray-800">
 
         <small><i class="fas fa-brain fa-fw"></i></small>
-        AI
+        LLM Integration
         <span class="badge badge-dark">beta</span>
     </h1>
 </div>
 
-<p class="mb-4">OpenAI integration for EmailEngine.</p>
+<p>LLM integration for EmailEngine enriches email data for webhooks by sending email contents with a custom prompt to
+    the OpenAI API.</p>
 
 <form method="post" id="settings-form" action="/admin/config/ai">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
@@ -15,7 +16,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">OpenAI Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
         </div>
         <div class="card-body">
 
@@ -84,7 +85,7 @@
                 {{#if errors.openAiAPIKey}}
                 <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
                 {{/if}}
-                <small class="form-text text-muted">OpenAI API key</small>
+                <small class="form-text text-muted">OpenAI API key.</small>
             </div>
 
         </div>
@@ -92,7 +93,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Pre-processing Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Pre-processing settings</h6>
         </div>
         <div class="card-body">
 
@@ -202,7 +203,7 @@
 
     <div id="prompt_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Prompt Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Prompt settings</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -285,6 +286,7 @@
                     <label class="custom-file-label" for="emlEmail">Choose EML email</label>
                     <small id="inputToHelp" class="form-text text-muted">Select the email to be analyzed</small>
                 </div>
+
                 <div id="testPromptError" class="d-none">
                     <div class="alert alert-danger"></div>
                 </div>
