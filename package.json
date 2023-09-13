@@ -8,7 +8,7 @@
     "scripts": {
         "start": "node server.js",
         "dev": "EENGINE_LOG_RAW=true node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/dev.txt  | pino-pretty",
-        "single": "EENGINE_LOG_RAW=false EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/10' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/log.txt | pino-pretty",
+        "single": "EENGINE_LOG_RAW=false EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/10' --api.port=7009 --api.host=0.0.0.0 | tee $HOME/log.txt | pino-pretty",
         "raw": "NODE_OPTIONS=--no-experimental-fetch EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
@@ -73,7 +73,7 @@
         "humanize": "0.0.9",
         "ical.js": "1.5.0",
         "iconv-lite": "0.6.3",
-        "imapflow": "1.0.143",
+        "imapflow": "1.0.144",
         "ioredfour": "1.2.0-ioredis-07",
         "ioredis": "5.3.2",
         "ipaddr.js": "2.1.0",
