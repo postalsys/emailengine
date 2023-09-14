@@ -1386,6 +1386,16 @@ async function onCommand(worker, message) {
                 requestOpts.gptModel = openAiModel;
             }
 
+            let openAiTemperature = message.data.openAiTemperature || (await settings.get('openAiTemperature'));
+            if (openAiTemperature) {
+                requestOpts.temperature = openAiTemperature;
+            }
+
+            let openAiTopP = message.data.openAiTopP || (await settings.get('openAiTopP'));
+            if (openAiTopP) {
+                requestOpts.topP = openAiTopP;
+            }
+
             switch (openAiModel) {
                 case 'gpt-4':
                     requestOpts.maxTokens = 6500;

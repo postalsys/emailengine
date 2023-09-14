@@ -1,14 +1,29 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
 
-        <small><i class="fas fa-brain fa-fw"></i></small>
+        <small><i class="fas fa-robot fa-fw"></i></small>
         LLM Integration
+
+        {{#if values.generateEmailSummary}}
+
+        <span class="badge badge-success">enabled</span>
+
+        {{else}}
+
+        <span class="badge badge-warning">disabled</span>
+
+        {{/if}}
+
         <span class="badge badge-dark">beta</span>
     </h1>
 </div>
 
-<p>LLM integration for EmailEngine enriches email data for webhooks by sending email contents with a custom prompt to
-    the OpenAI API.</p>
+<p>You can use EmailEngine's LLM integration to enhance your emails by sending them to the OpenAI API with a custom
+    prompt. Once analyzed, the returned data in JSON format is attached to the email object. <a href="#" tabindex="-1"
+        role="button" data-toggle="popover" data-trigger="hover" style="dispaly: inline-block;" data-title="PII alert"
+        data-content="EmailEngine uploads the text content of incoming emails to the API servers of OpenAI. Uploaded content is not used for training, but you need to verify if OpenAPI terms are in accordance with your data processing agreements with your users."><i
+            class="fas fa-exclamation-triangle"></i></a>
+</p>
 
 <form method="post" id="settings-form" action="/admin/config/ai">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
@@ -41,11 +56,7 @@
                 <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
                     id="generateEmailSummary" name="generateEmailSummary" {{#if
                     values.generateEmailSummary}}checked{{/if}} />
-                <label class="form-check-label" for="generateEmailSummary">Enable email processing with AI <a href="#"
-                        tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                        style="dispaly: inline-block;" data-title="PII alert"
-                        data-content="EmailEngine uploads the text content of incoming emails to the API servers of OpenAI. Uploaded content is not used for training, but you need to verify if OpenAPI terms are in accordance with your data processing agreements with your users."><i
-                            class="fas fa-exclamation-triangle"></i></a></label>
+                <label class="form-check-label" for="generateEmailSummary">Enable email processing with AI</label>
                 {{#if errors.generateEmailSummary}}
                 <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                 {{/if}}
@@ -117,7 +128,11 @@
                     <div class="form-group">
                         <div class="text-muted float-right code-link">[<a
                                 href="https://emailengine.app/pre-processing-functions" target="_blank"
-                                referrerpolicy="{{referrerPolicy}}">documentation</a>]</div>
+                                referrerpolicy="{{referrerPolicy}}">documentation</a>]
+
+                            [<a href="/admin/iframe/docs#/settings/postV1Settings" target="_blank"
+                                referrerpolicy="{{referrerPolicy}}">openAiPreProcessingFn</a>]
+                        </div>
                         <label for="editor-fn">Filter function</label>
                         <div style="line-height: 1; margin-bottom: 10px;">
                             <small>JavaScript code to determine if the email should be processed by LLM. If the code
@@ -251,6 +266,41 @@
                 <small class="form-text text-muted">Edit the prompt that is sent to LLM for each email. EmailEngine asks
                     for the response to be in JSON, so your prompt must describe the JSON properties to return.
                 </small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiTemperature</a>]
+                </div>
+                <label for="settingsOpenAiTemperature">Temperature</label>
+                <input type="number" class="form-control text-list {{#if errors.openAiTemperature}}is-invalid{{/if}}"
+                    id="settingsOpenAiTemperature" step="0.001" min="0" max="2" name="openAiTemperature"
+                    value="{{values.openAiTemperature}}" />
+                {{#if errors.openAiTemperature}}
+                <span class="invalid-feedback">{{errors.openAiTemperature}}</span>
+                {{/if}}
+                <small class="form-text text-muted"><a
+                        href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">Temperature</a> value in the range of 0 to 2. Leave empty
+                    for
+                    default.</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiTopP</a>]
+                </div>
+                <label for="settingsOpenAiTopP">Top-p sampling</label>
+                <input type="number" class="form-control text-list {{#if errors.openAiTopP}}is-invalid{{/if}}"
+                    id="settingsOpenAiTopP" step="0.001" min="0" max="1" name="openAiTopP"
+                    value="{{values.openAiTopP}}" />
+                {{#if errors.openAiTopP}}
+                <span class="invalid-feedback">{{errors.openAiTopP}}</span>
+                {{/if}}
+                <small class="form-text text-muted"><a
+                        href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
+                        referrerpolicy="{{referrerPolicy}}">Top_p</a> value in the range of 0 to 1. Leave empty for
+                    default.</small>
             </div>
 
         </div>
@@ -512,13 +562,15 @@
             document.getElementById('testPromptResponse').classList.add('d-none');
         }
 
+        let fileSelectElm = document.getElementById('emlEmail')
+
         async function testPromptFn() {
             let emailFile;
 
             clearResponses();
 
             try {
-                emailFile = await readFile(document.getElementById('emlEmail'))
+                emailFile = await readFile(fileSelectElm)
             } catch (err) {
                 return showError(err.message)
             }
@@ -527,7 +579,9 @@
                 emailFile,
                 openAiPrompt: editorPrompt.getValue(),
                 openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
-                openAiAPIKey: document.getElementById('openAiAPIKey').value
+                openAiAPIKey: document.getElementById('openAiAPIKey').value,
+                openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
+                openAiTopP: document.getElementById('settingsOpenAiTopP').value
             };
 
             let res;
@@ -575,13 +629,23 @@
             editorPrompt.setValue(JSON.parse(document.getElementById('defaultPromptJson').value).prompt);
         });
 
-        testPromptBtn.addEventListener('click', e => {
-            e.preventDefault()
-
+        let runFileTest = () => {
             toggleSpinner(false)
             testPromptFn().then(() => { }).catch(err = {}).finally(() => {
                 toggleSpinner(true)
             });
+        }
+
+        testPromptBtn.addEventListener('click', e => {
+            e.preventDefault();
+            runFileTest();
+        });
+
+        fileSelectElm.addEventListener('change', () => {
+            if (testPromptBtn.disabled || !fileSelectElm.files || !fileSelectElm.files[0]) {
+                return
+            }
+            runFileTest();
         });
 
         evaluationWorker.onmessage = e => {
