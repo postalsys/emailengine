@@ -55,7 +55,7 @@ const {
 } = require('./lib/consts');
 
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const { generateSummary, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
+const { generateSummary, generateEmbeddings, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd, Agent } = require('undici');
 const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
@@ -1412,6 +1412,19 @@ async function onCommand(worker, message) {
             }
 
             return await generateSummary(message.data.message, openAiAPIKey, requestOpts);
+        }
+
+        // run these in main process to avoid polluting RAM with the memory hungry tokenization library
+        case 'generateEmbeddings': {
+            let requestOpts = {};
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            return { chunks: await generateEmbeddings(message.data.message, openAiAPIKey, requestOpts) };
         }
 
         case 'openAiDefaultPrompt': {
