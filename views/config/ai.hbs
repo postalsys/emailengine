@@ -99,6 +99,22 @@
                 <small class="form-text text-muted">OpenAI API key.</small>
             </div>
 
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiGenerateEmbeddings</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.openAiGenerateEmbeddings}}is-invalid{{/if}}"
+                    id="openAiGenerateEmbeddings" name="openAiGenerateEmbeddings" {{#if
+                    values.openAiGenerateEmbeddings}}checked{{/if}} />
+                <label class="form-check-label" for="openAiGenerateEmbeddings">Generate vector embeddings for the
+                    email</label>
+                {{#if errors.openAiGenerateEmbeddings}}
+                <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
+                {{/if}}
+                <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for the
+                    email. To decrease vector size, EmailEngine splits emails into chunks of up to 600 tokens and
+                    generates embeddings for each chunk separately.</small>
+            </div>
         </div>
     </div>
 
@@ -581,7 +597,8 @@
                 openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
                 openAiAPIKey: document.getElementById('openAiAPIKey').value,
                 openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
-                openAiTopP: document.getElementById('settingsOpenAiTopP').value
+                openAiTopP: document.getElementById('settingsOpenAiTopP').value,
+                openAiGenerateEmbeddings: document.getElementById('openAiGenerateEmbeddings').value,
             };
 
             let res;
