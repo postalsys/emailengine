@@ -1,0 +1,38 @@
+name: Run tests
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    test:
+        strategy:
+            matrix:
+                node: [16.x, 18.x, 20.x]
+                os: [ubuntu-20.04]
+        runs-on: ${{ matrix.os }}
+        # Service containers to run with `container-job`
+        services:
+            # Label used to access the service container
+            redis:
+                # Docker Hub image
+                image: redis
+                # Set health checks to wait until redis has started
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node }}
+              uses: actions/setup-node@v1
+              with:
+                  node-version: ${{ matrix.node }}
+            - run: npm install
+            - name: Run tests
+              run: npm test
+              env:
+                  EENGINE_REDIS: redis://127.0.0.1:6379/1
