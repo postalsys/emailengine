@@ -10,7 +10,7 @@
                 <div class="form-group">
                     <label for="name">{{_ "Your name" }}</label>
                     <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
-                        value="{{values.name}}" autofocus />
+                        value="{{values.name}}" {{#unless values.name}}autofocus{{/unless}} />
                     {{#if errors.name}}
                     <span class="invalid-feedback">{{errors.name}}</span>
                     {{/if}}
@@ -20,7 +20,7 @@
                 <div class="form-group">
                     <label for="email">{{_ "Email address" }}</label>
                     <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email"
-                        name="email" value="{{values.email}}" required />
+                        name="email" value="{{values.email}}" {{#if values.name}}autofocus{{/if}} required />
                     {{#if errors.email}}
                     <span class="invalid-feedback">{{errors.email}}</span>
                     {{/if}}

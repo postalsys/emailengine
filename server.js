@@ -1424,7 +1424,20 @@ async function onCommand(worker, message) {
                 throw new Error(`OpenAI API key is not set`);
             }
 
-            return { chunks: await generateEmbeddings(message.data.message, openAiAPIKey, requestOpts) };
+            const embeddings = await generateEmbeddings(message.data.message, openAiAPIKey, requestOpts);
+            if (!Array.isArray(embeddings?.embeddings)) {
+                return false;
+            }
+
+            for (let value of embeddings.embeddings) {
+                for (const key of Object.keys(value)) {
+                    if (/^_/.test(key)) {
+                        delete value[key];
+                    }
+                }
+            }
+
+            return embeddings;
         }
 
         case 'openAiDefaultPrompt': {

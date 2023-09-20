@@ -319,6 +319,9 @@ const documentsWorker = new Worker(
                     }
                 }
 
+                // Skip embeddings if set for document store (nested dense cosine vectors can not be indexed, must be separate documents)
+                delete messageData.embeddings;
+
                 let emailDocument = await preProcess.run(messageData);
                 if (!emailDocument) {
                     // skip
