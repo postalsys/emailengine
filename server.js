@@ -1401,6 +1401,7 @@ async function onCommand(worker, message) {
                     requestOpts.maxTokens = 6500;
                     break;
                 case 'gpt-3.5-turbo':
+                case 'gpt-3.5-turbo-instruct':
                 default:
                     requestOpts.maxTokens = 3500;
                     break;
