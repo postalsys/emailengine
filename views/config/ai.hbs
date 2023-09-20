@@ -4,16 +4,6 @@
         <small><i class="fas fa-robot fa-fw"></i></small>
         LLM Integration
 
-        {{#if values.generateEmailSummary}}
-
-        <span class="badge badge-success">enabled</span>
-
-        {{else}}
-
-        <span class="badge badge-warning">disabled</span>
-
-        {{/if}}
-
         <span class="badge badge-dark">beta</span>
     </h1>
 </div>
@@ -49,20 +39,69 @@
             </div>
             {{/if}}
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">generateEmailSummary</a>]</div>
+            <ul class="list-group mb-3">
+                <li class="list-group-item d-flex justify-content-between">
 
-                <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
-                    id="generateEmailSummary" name="generateEmailSummary" {{#if
-                    values.generateEmailSummary}}checked{{/if}} />
-                <label class="form-check-label" for="generateEmailSummary">Enable email processing with AI</label>
-                {{#if errors.generateEmailSummary}}
-                <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
-                {{/if}}
-                <small class="form-text text-muted">EmailEngine will send emails to OpenAI API for processing. Requires
-                    a valid OpenAI API key.</small>
-            </div>
+                    <div class="form-group form-check mb-0">
+
+
+                        <input type="checkbox"
+                            class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
+                            id="generateEmailSummary" name="generateEmailSummary" {{#if
+                            values.generateEmailSummary}}checked{{/if}} />
+                        <label class="form-check-label" for="generateEmailSummary">Enable email processing with
+                            AI</label>
+                        {{#if errors.generateEmailSummary}}
+                        <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
+                        {{/if}}
+                        <small class="form-text text-muted">EmailEngine will send emails to OpenAI API for processing
+                            and uses the response data to enrich the email information for <code>messageNew</code>
+                            webhooks.</small>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                                target="_blank">generateEmailSummary</a>]</div>
+                        {{#if
+                        values.generateEmailSummary}}
+                        <span class="badge badge-success badge-pill">enabled</span>
+                        {{else}}
+                        <span class="badge badge-warning badge-pill">disabled</span>
+                        {{/if}}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-top">
+
+                    <div class="form-group form-check mb-0">
+                        <input type="checkbox"
+                            class="form-check-input {{#if errors.openAiGenerateEmbeddings}}is-invalid{{/if}}"
+                            id="openAiGenerateEmbeddings" name="openAiGenerateEmbeddings" {{#if
+                            values.openAiGenerateEmbeddings}}checked{{/if}} />
+                        <label class="form-check-label" for="openAiGenerateEmbeddings">Generate vector embeddings for
+                            the
+                            email using OpenAI API.</label>
+                        {{#if errors.openAiGenerateEmbeddings}}
+                        <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
+                        {{/if}}
+                        <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for
+                            the email. To decrease vector size, EmailEngine splits email text into chunks of up to 600
+                            tokens and generates embeddings for each chunk separately. Embeddings are only available in
+                            <code>messageNew</code> webhooks, and these are not stored in the Document Store.</small>
+                    </div>
+
+                    <div class="text-right">
+                        <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                                target="_blank">openAiGenerateEmbeddings</a>]</div>
+
+                        {{#if
+                        values.openAiGenerateEmbeddings}}
+                        <span class="badge badge-success badge-pill">enabled</span>
+                        {{else}}
+                        <span class="badge badge-warning badge-pill">disabled</span>
+                        {{/if}}
+                    </div>
+                </li>
+            </ul>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
@@ -99,22 +138,7 @@
                 <small class="form-text text-muted">OpenAI API key.</small>
             </div>
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">openAiGenerateEmbeddings</a>]</div>
 
-                <input type="checkbox" class="form-check-input {{#if errors.openAiGenerateEmbeddings}}is-invalid{{/if}}"
-                    id="openAiGenerateEmbeddings" name="openAiGenerateEmbeddings" {{#if
-                    values.openAiGenerateEmbeddings}}checked{{/if}} />
-                <label class="form-check-label" for="openAiGenerateEmbeddings">Generate vector embeddings for the
-                    email</label>
-                {{#if errors.openAiGenerateEmbeddings}}
-                <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
-                {{/if}}
-                <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for the
-                    email. To decrease vector size, EmailEngine splits emails into chunks of up to 600 tokens and
-                    generates embeddings for each chunk separately.</small>
-            </div>
         </div>
     </div>
 
