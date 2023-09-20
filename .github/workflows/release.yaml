@@ -21,7 +21,7 @@ jobs:
                   package-name: ${{env.PACKAGE_NAME}}
                   pull-request-title-pattern: 'chore${scope}: release ${version} [skip-ci]'
             # The logic below handles the npm publication:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               # these if statements ensure that a publication only occurs when
               # a new release is created:
               if: ${{ steps.release.outputs.release_created }}
