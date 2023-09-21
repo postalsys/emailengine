@@ -92,7 +92,6 @@
         "murmurhash": "2.0.1",
         "nanoid": "3.3.4",
         "node-gettext": "3.0.0",
-        "node-vault": "0.10.2",
         "nodemailer": "6.9.5",
         "pino": "8.15.1",
         "prom-client": "14.2.0",
@@ -144,10 +143,10 @@
             "version-info.json"
         ],
         "targets": [
-            "node20-linux-x64",
-            "node20-macos-x64",
-            "node20-macos-arm64",
-            "node20-win-x64"
+            "latest-linux-x64",
+            "latest-macos-x64",
+            "latest-macos-arm64",
+            "latest-win-x64"
         ],
         "outputPath": "ee-dist"
     }
