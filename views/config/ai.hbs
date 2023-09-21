@@ -54,9 +54,9 @@
                         {{#if errors.generateEmailSummary}}
                         <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                         {{/if}}
-                        <small class="form-text text-muted">EmailEngine will send emails to OpenAI API for processing
-                            and uses the response data to enrich the email information for <code>messageNew</code>
-                            webhooks.</small>
+                        <small class="form-text text-muted">EmailEngine will send new emails to OpenAI API for
+                            processing and uses the response data to enrich the email information for
+                            <code>messageNew</code> webhooks.</small>
                     </div>
 
                     <div class="text-right">
@@ -84,7 +84,7 @@
                         <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
                         {{/if}}
                         <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for
-                            the email. To decrease vector size, EmailEngine splits email text into chunks of up to 600
+                            new emails. To decrease vector size, EmailEngine splits email text into chunks of up to 600
                             tokens and generates embeddings for each chunk separately. Embeddings are only available in
                             <code>messageNew</code> webhooks, and these are not stored in the Document Store.</small>
                     </div>
