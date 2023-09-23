@@ -86,9 +86,19 @@
                     <input type="checkbox"
                         class="form-check-input {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
                         id="documentStoreGenerateEmbeddings" name="documentStoreGenerateEmbeddings" {{#if
-                        values.documentStoreGenerateEmbeddings}}checked{{/if}} />
-                    <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with email"
-                        feature.</label>
+                        values.documentStoreGenerateEmbeddings}}checked{{/if}} {{#unless
+                        hasOpenAiAPIKey}}disabled{{/unless}} />
+                    <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
+                        feature.
+
+                        {{#unless hasOpenAiAPIKey}}
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-title="OpenAI Integration Alert"
+                            data-content="Your OpenAI API key hasn't been set up. Please head to the &quot;LLM Integration&quot; page to configure it and enable this feature."><i
+                                class="fas fa-exclamation-triangle text-danger"></i></a>
+                        {{/unless}}
+
+                    </label>
                     {{#if errors.documentStoreGenerateEmbeddings}}
                     <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
                     {{/if}}

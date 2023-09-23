@@ -12,7 +12,7 @@
     prompt. Once analyzed, the returned data in JSON format is attached to the email object. <a href="#" tabindex="-1"
         role="button" data-toggle="popover" data-trigger="hover" style="dispaly: inline-block;" data-title="PII alert"
         data-content="EmailEngine uploads the text content of incoming emails to the API servers of OpenAI. Uploaded content is not used for training, but you need to verify if OpenAPI terms are in accordance with your data processing agreements with your users."><i
-            class="fas fa-exclamation-triangle"></i></a>
+            class="fas fa-info-circle"></i></a>
 </p>
 
 <form method="post" id="settings-form" action="/admin/config/ai">
@@ -41,7 +41,7 @@
         {{/if}}
 
         <ul class="list-group list-group-flush mb-3">
-            <li class="list-group-item d-flex justify-content-between">
+            <li class="list-group-item d-flex justify-content-between align-items-top">
 
                 <div class="form-group form-check mb-0">
 
@@ -64,37 +64,6 @@
                             target="_blank">generateEmailSummary</a>]</div>
                     {{#if
                     values.generateEmailSummary}}
-                    <span class="badge badge-success badge-pill">enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning badge-pill">disabled</span>
-                    {{/if}}
-                </div>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-top">
-
-                <div class="form-group form-check mb-0">
-                    <input type="checkbox"
-                        class="form-check-input {{#if errors.openAiGenerateEmbeddings}}is-invalid{{/if}}"
-                        id="openAiGenerateEmbeddings" name="openAiGenerateEmbeddings" {{#if
-                        values.openAiGenerateEmbeddings}}checked{{/if}} />
-                    <label class="form-check-label" for="openAiGenerateEmbeddings">Generate vector embeddings for
-                        the email using OpenAI API.</label>
-                    {{#if errors.openAiGenerateEmbeddings}}
-                    <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
-                    {{/if}}
-                    <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for
-                        new emails. To decrease vector size, EmailEngine splits email text into chunks of up to 600
-                        tokens and generates embeddings for each chunk separately. Embeddings are only available in
-                        <code>messageNew</code> webhooks, and these are not stored in the Document Store by
-                        default.</small>
-                </div>
-
-                <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                            target="_blank">openAiGenerateEmbeddings</a>]</div>
-
-                    {{#if
-                    values.openAiGenerateEmbeddings}}
                     <span class="badge badge-success badge-pill">enabled</span>
                     {{else}}
                     <span class="badge badge-warning badge-pill">disabled</span>
@@ -621,8 +590,7 @@
                 openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
                 openAiAPIKey: document.getElementById('openAiAPIKey').value,
                 openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
-                openAiTopP: document.getElementById('settingsOpenAiTopP').value,
-                openAiGenerateEmbeddings: document.getElementById('openAiGenerateEmbeddings').checked,
+                openAiTopP: document.getElementById('settingsOpenAiTopP').value
             };
 
             let res;
