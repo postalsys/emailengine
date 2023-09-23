@@ -5,8 +5,10 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
 const { preProcess } = require('../lib/pre-process');
+const settings = require('../lib/settings');
+const crypto = require('crypto');
 
-const { readEnvValue, threadStats } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -45,6 +47,48 @@ const {
     MAILBOX_DELETED_NOTIFY,
     REDIS_PREFIX
 } = require('../lib/consts');
+
+const config = require('wild-config');
+config.service = config.service || {};
+
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
+
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
+let callQueue = new Map();
+let mids = 0;
+
+async function call(message, transferList) {
+    return new Promise((resolve, reject) => {
+        let mid = `${Date.now()}:${++mids}`;
+
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+        let timer = setTimeout(() => {
+            let err = new Error('Timeout waiting for command response [T4]');
+            err.statusCode = 504;
+            err.code = 'Timeout';
+            err.ttl = ttl;
+            reject(err);
+        }, ttl);
+
+        callQueue.set(mid, { resolve, reject, timer });
+
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
+    });
+}
 
 async function metrics(logger, key, method, ...args) {
     try {
@@ -320,6 +364,8 @@ const documentsWorker = new Worker(
                 }
 
                 // Skip embeddings if set for document store (nested dense cosine vectors can not be indexed, must be separate documents)
+
+                let embeddings = messageData.embeddings;
                 delete messageData.embeddings;
 
                 let emailDocument = await preProcess.run(messageData);
@@ -379,12 +425,140 @@ const documentsWorker = new Worker(
                     indexResult
                 });
 
+                let storedEmbeddings;
+
+                if ((await settings.get('documentStoreGenerateEmbeddings')) && messageData.messageId) {
+                    let embeddingsQuery = {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        account: job.data.account
+                                    }
+                                },
+                                {
+                                    term: {
+                                        messageId: messageData.messageId
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    let embeddingsIndex = `${index}.embeddings`;
+
+                    let existingResult;
+
+                    try {
+                        existingResult = await client.search({
+                            index: embeddingsIndex,
+                            size: 1,
+                            query: embeddingsQuery,
+                            _source: false
+                        });
+                        if (!existingResult || !existingResult.hits) {
+                            logger.error({
+                                msg: 'Failed to check for existing embeddings',
+                                account: job.data.account,
+                                messageId: messageData.messageId,
+                                existingResult
+                            });
+                            storedEmbeddings = false;
+                        }
+                    } catch (err) {
+                        logger.error({
+                            msg: 'Failed to check for existing embeddings',
+                            account: job.data.account,
+                            messageId: messageData.messageId,
+                            err
+                        });
+                        storedEmbeddings = false;
+                    }
+
+                    if (existingResult?.hits?.total?.value === 0) {
+                        if (!embeddings) {
+                            try {
+                                embeddings = await call({
+                                    cmd: 'generateEmbeddings',
+                                    data: {
+                                        message: {
+                                            headers: Object.keys(messageData.headers || {}).map(key => ({
+                                                key,
+                                                value: [].concat(messageData.headers[key] || [])
+                                            })),
+                                            attachments: messageData.attachments,
+                                            from: messageData.from,
+                                            subject: messageData.subject,
+                                            text: messageData.text.plain,
+                                            html: messageData.text.html
+                                        }
+                                    },
+                                    timeout: 2 * 60 * 1000
+                                });
+                            } catch (err) {
+                                logger.error({ msg: 'Failed to fetch embeddings', account: job.data.account, messageId: messageData.messageId, err });
+                                storedEmbeddings = false;
+                            }
+                        }
+
+                        if (embeddings?.embeddings?.length) {
+                            let messageIdHash = crypto.createHash('sha256').update(messageData.messageId).digest('hex');
+                            let dataset = embeddings.embeddings.map((entry, i) => ({
+                                account: job.data.account,
+                                messageId: messageData.messageId,
+                                embeddings: entry.embedding,
+                                chunk: entry.chunk,
+                                chunkNr: i,
+                                chunks: embeddings.embeddings.length,
+                                created: new Date()
+                            }));
+
+                            const operations = dataset.flatMap(doc => [
+                                { index: { _index: embeddingsIndex, _id: `${job.data.account}:${messageIdHash}:${doc.chunkNr}` } },
+                                doc
+                            ]);
+
+                            try {
+                                const bulkResponse = await client.bulk({ refresh: true, operations });
+                                if (bulkResponse?.errors !== false) {
+                                    logger.error({
+                                        msg: 'Failed to store embeddings',
+                                        account: job.data.account,
+                                        messageId: messageData.messageId,
+                                        bulkResponse
+                                    });
+                                    storedEmbeddings = false;
+                                } else {
+                                    logger.info({
+                                        msg: 'Stored embeddings for a message',
+                                        messageId: messageData.messageId,
+                                        items: bulkResponse.items?.length
+                                    });
+                                    storedEmbeddings = true;
+                                }
+                            } catch (err) {
+                                logger.error({
+                                    msg: 'Failed to store embeddings',
+                                    account: job.data.account,
+                                    messageId: messageData.messageId,
+                                    err
+                                });
+                                storedEmbeddings = false;
+                            }
+                        }
+                    } else {
+                        logger.info({ msg: 'Skipped embeddings, already exist', account: job.data.account, messageId: messageData.messageId });
+                        storedEmbeddings = false;
+                    }
+                }
+
                 return {
                     index: indexResult._index,
                     id: indexResult._id,
                     documentVersion: indexResult._version,
                     threadId: messageData.threadId,
-                    result: indexResult.result
+                    result: indexResult.result,
+                    storedEmbeddings
                 };
             }
 
