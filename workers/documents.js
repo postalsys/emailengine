@@ -160,7 +160,7 @@ const documentsWorker = new Worker(
                         }
                     };
 
-                    for (let indexName of [index, `${index}.threads`]) {
+                    for (let indexName of [index, `${index}.threads`, `${index}.embeddings`]) {
                         try {
                             deleteResult[indexName] = await client.deleteByQuery({
                                 index: indexName,
@@ -552,6 +552,9 @@ const documentsWorker = new Worker(
                     }
                 }
 
+                // remove from embeddings delete queue
+                await redis.zrem(`${REDIS_PREFIX}expungequeue`, `${job.data.account}:${messageId}`);
+
                 return {
                     index: indexResult._index,
                     id: indexResult._id,
@@ -582,6 +585,9 @@ const documentsWorker = new Worker(
                             index,
                             id: `${job.data.account}:${messageId}`
                         });
+
+                        // add to embeddings delete queue
+                        await redis.zadd(`${REDIS_PREFIX}expungequeue`, Date.now(), `${job.data.account}:${messageId}`);
                     } catch (err) {
                         switch (err.meta && err.meta.body && err.meta.body.result) {
                             case 'not_found':

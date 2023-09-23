@@ -78,15 +78,15 @@
                         id="openAiGenerateEmbeddings" name="openAiGenerateEmbeddings" {{#if
                         values.openAiGenerateEmbeddings}}checked{{/if}} />
                     <label class="form-check-label" for="openAiGenerateEmbeddings">Generate vector embeddings for
-                        the
-                        email using OpenAI API.</label>
+                        the email using OpenAI API.</label>
                     {{#if errors.openAiGenerateEmbeddings}}
                     <span class="invalid-feedback">{{errors.openAiGenerateEmbeddings}}</span>
                     {{/if}}
                     <small class="form-text text-muted">EmailEngine uses OpenAI API to generate text embeddings for
                         new emails. To decrease vector size, EmailEngine splits email text into chunks of up to 600
                         tokens and generates embeddings for each chunk separately. Embeddings are only available in
-                        <code>messageNew</code> webhooks, and these are not stored in the Document Store.</small>
+                        <code>messageNew</code> webhooks, and these are not stored in the Document Store by
+                        default.</small>
                 </div>
 
                 <div class="text-right">
