@@ -54,9 +54,10 @@
             <li class="list-group-item d-flex justify-content-between align-items-top">
 
                 <div class="form-group form-check mb-0">
-                    <input type="checkbox" class="form-check-input {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
-                        id="documentStoreEnabled" name="documentStoreEnabled" {{#if
-                        values.documentStoreEnabled}}checked{{/if}} />
+                    <input type="checkbox"
+                        class="form-check-input or-else-all {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
+                        id="documentStoreEnabled" name="documentStoreEnabled" data-target="docstore-list"
+                        data-reverse="true" {{#if values.documentStoreEnabled}}checked{{/if}} />
                     <label class="form-check-label" for="documentStoreEnabled">Enable syncing to the Document
                         Store.</label>
                     {{#if errors.documentStoreEnabled}}
@@ -84,22 +85,27 @@
 
                 <div class="form-group form-check mb-0">
                     <input type="checkbox"
-                        class="form-check-input {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
+                        class="form-check-input docstore-list {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
                         id="documentStoreGenerateEmbeddings" name="documentStoreGenerateEmbeddings" {{#if
                         values.documentStoreGenerateEmbeddings}}checked{{/if}} {{#unless
                         hasOpenAiAPIKey}}disabled{{/unless}} />
                     <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
-                        feature.
+                        feature
 
-                        <span class="badge badge-warning">Requires ElasticSearch 8.8.0+</span>
 
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-content="Requires ElasticSearch 8.8.0+"><i
+                                class="fas fa-info-circle text-info"></i></a>
+
+
+                        {{#if values.documentStoreGenerateEmbeddings}}
                         {{#unless hasOpenAiAPIKey}}
                         <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
                             style="dispaly: inline-block;" data-title="OpenAI Integration Alert"
                             data-content="Your OpenAI API key hasn't been set up. Please head to the &quot;LLM Integration&quot; page to configure it and enable this feature."><i
                                 class="fas fa-exclamation-triangle text-danger"></i></a>
                         {{/unless}}
-
+                        {{/if}}
                     </label>
                     {{#if errors.documentStoreGenerateEmbeddings}}
                     <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
