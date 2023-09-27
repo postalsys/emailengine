@@ -5,8 +5,14 @@ const { parentPort } = require('worker_threads');
 const packageData = require('../package.json');
 const logger = require('../lib/logger');
 const { preProcess } = require('../lib/pre-process');
+const settings = require('../lib/settings');
+const crypto = require('crypto');
 
-const { readEnvValue, threadStats } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
+
+const GB_COLLECT_DELAY = 100; // 6 * 3600 * 1000; // 6h
+const GB_FAILURE_DELAY = 3 * 1000;
+const GB_EMPTY_DELAY = 10 * 1000;
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -46,6 +52,48 @@ const {
     REDIS_PREFIX
 } = require('../lib/consts');
 
+const config = require('wild-config');
+config.service = config.service || {};
+
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
+
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
+let callQueue = new Map();
+let mids = 0;
+
+async function call(message, transferList) {
+    return new Promise((resolve, reject) => {
+        let mid = `${Date.now()}:${++mids}`;
+
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+        let timer = setTimeout(() => {
+            let err = new Error('Timeout waiting for command response [T4]');
+            err.statusCode = 504;
+            err.code = 'Timeout';
+            err.ttl = ttl;
+            reject(err);
+        }, ttl);
+
+        callQueue.set(mid, { resolve, reject, timer });
+
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
+    });
+}
+
 async function metrics(logger, key, method, ...args) {
     try {
         parentPort.postMessage({
@@ -70,6 +118,24 @@ async function onCommand(command) {
 }
 
 parentPort.on('message', message => {
+    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
+        let { resolve, reject, timer } = callQueue.get(message.mid);
+        clearTimeout(timer);
+        callQueue.delete(message.mid);
+        if (message.error) {
+            let err = new Error(message.error);
+            if (message.code) {
+                err.code = message.code;
+            }
+            if (message.statusCode) {
+                err.statusCode = message.statusCode;
+            }
+            return reject(err);
+        } else {
+            return resolve(message.response);
+        }
+    }
+
     if (message && message.cmd === 'call' && message.mid) {
         return onCommand(message.message)
             .then(response => {
@@ -116,7 +182,7 @@ const documentsWorker = new Worker(
                         }
                     };
 
-                    for (let indexName of [index, `${index}.threads`]) {
+                    for (let indexName of [index, `${index}.threads`, `${index}.embeddings`]) {
                         try {
                             deleteResult[indexName] = await client.deleteByQuery({
                                 index: indexName,
@@ -320,6 +386,8 @@ const documentsWorker = new Worker(
                 }
 
                 // Skip embeddings if set for document store (nested dense cosine vectors can not be indexed, must be separate documents)
+
+                let embeddings = messageData.embeddings;
                 delete messageData.embeddings;
 
                 let emailDocument = await preProcess.run(messageData);
@@ -379,12 +447,141 @@ const documentsWorker = new Worker(
                     indexResult
                 });
 
+                let storedEmbeddings;
+
+                if ((await settings.get('documentStoreGenerateEmbeddings')) && messageData.messageId) {
+                    let embeddingsQuery = {
+                        bool: {
+                            must: [
+                                {
+                                    term: {
+                                        account: job.data.account
+                                    }
+                                },
+                                {
+                                    term: {
+                                        messageId: messageData.messageId
+                                    }
+                                }
+                            ]
+                        }
+                    };
+
+                    let embeddingsIndex = `${index}.embeddings`;
+
+                    let existingResult;
+
+                    try {
+                        existingResult = await client.search({
+                            index: embeddingsIndex,
+                            size: 1,
+                            query: embeddingsQuery,
+                            _source: false
+                        });
+                        if (!existingResult || !existingResult.hits) {
+                            logger.error({
+                                msg: 'Failed to check for existing embeddings',
+                                account: job.data.account,
+                                messageId: messageData.messageId,
+                                existingResult
+                            });
+                            storedEmbeddings = false;
+                        }
+                    } catch (err) {
+                        logger.error({
+                            msg: 'Failed to check for existing embeddings',
+                            account: job.data.account,
+                            messageId: messageData.messageId,
+                            err
+                        });
+                        storedEmbeddings = false;
+                    }
+
+                    if (existingResult?.hits?.total?.value === 0) {
+                        if (!embeddings) {
+                            try {
+                                embeddings = await call({
+                                    cmd: 'generateEmbeddings',
+                                    data: {
+                                        message: {
+                                            headers: messageData.headers, // already an array value, so no need to convert
+                                            attachments: messageData.attachments,
+                                            from: messageData.from,
+                                            subject: messageData.subject,
+                                            text: messageData.text.plain,
+                                            html: messageData.text.html
+                                        }
+                                    },
+                                    timeout: 5 * 60 * 1000
+                                });
+                            } catch (err) {
+                                logger.error({ msg: 'Failed to fetch embeddings', account: job.data.account, messageId: messageData.messageId, err });
+                                storedEmbeddings = false;
+                            }
+                        }
+
+                        if (embeddings?.embeddings?.length) {
+                            let messageIdHash = crypto.createHash('sha256').update(messageData.messageId).digest('hex');
+                            let dataset = embeddings.embeddings.map((entry, i) => ({
+                                account: job.data.account,
+                                messageId: messageData.messageId,
+                                embeddings: entry.embedding,
+                                chunk: entry.chunk,
+                                model: embeddings.model,
+                                chunkNr: i,
+                                chunks: embeddings.embeddings.length,
+                                created: new Date()
+                            }));
+
+                            const operations = dataset.flatMap(doc => [
+                                { index: { _index: embeddingsIndex, _id: `${job.data.account}:${messageIdHash}:${doc.chunkNr}` } },
+                                doc
+                            ]);
+
+                            try {
+                                const bulkResponse = await client.bulk({ refresh: true, operations });
+                                if (bulkResponse?.errors !== false) {
+                                    logger.error({
+                                        msg: 'Failed to store embeddings',
+                                        account: job.data.account,
+                                        messageId: messageData.messageId,
+                                        bulkResponse
+                                    });
+                                    storedEmbeddings = false;
+                                } else {
+                                    logger.info({
+                                        msg: 'Stored embeddings for a message',
+                                        messageId: messageData.messageId,
+                                        items: bulkResponse.items?.length
+                                    });
+                                    storedEmbeddings = true;
+                                }
+                            } catch (err) {
+                                logger.error({
+                                    msg: 'Failed to store embeddings',
+                                    account: job.data.account,
+                                    messageId: messageData.messageId,
+                                    err
+                                });
+                                storedEmbeddings = false;
+                            }
+                        }
+                    } else {
+                        logger.info({ msg: 'Skipped embeddings, already exist', account: job.data.account, messageId: messageData.messageId });
+                        storedEmbeddings = false;
+                    }
+                }
+
+                // remove from embeddings delete queue
+                await redis.zrem(`${REDIS_PREFIX}expungequeue`, `${job.data.account}:${messageId}`);
+
                 return {
                     index: indexResult._index,
                     id: indexResult._id,
                     documentVersion: indexResult._version,
                     threadId: messageData.threadId,
-                    result: indexResult.result
+                    result: indexResult.result,
+                    storedEmbeddings
                 };
             }
 
@@ -404,10 +601,28 @@ const documentsWorker = new Worker(
                     let deleteResult = null;
 
                     try {
+                        let messageIdHeader;
+                        try {
+                            // resolve Message-ID value for deleted email
+                            let getResult = await client.get({
+                                index,
+                                id: `${job.data.account}:${messageId}`,
+                                _source_includes: ['messageId']
+                            });
+                            messageIdHeader = (getResult?._source?.messageId || '').toString().trim();
+                        } catch (err) {
+                            logger.error({ msg: 'Failed to retrieve Message-ID for deleted email', account: job.data.account, message: messageId, err });
+                        }
+
                         deleteResult = await client.delete({
                             index,
                             id: `${job.data.account}:${messageId}`
                         });
+
+                        // add to embeddings delete queue
+                        if (messageIdHeader) {
+                            await redis.zadd(`${REDIS_PREFIX}expungequeue`, Date.now(), `${job.data.account}:${messageIdHeader}`);
+                        }
                     } catch (err) {
                         switch (err.meta && err.meta.body && err.meta.body.result) {
                             case 'not_found':
@@ -678,7 +893,9 @@ if( ctx._source.bounces != null) {
     },
     Object.assign(
         {
-            concurrency: 1
+            concurrency: 1,
+            maxStalledCount: 5,
+            stalledInterval: 60 * 1000
         },
         queueConf
     )
@@ -720,4 +937,154 @@ documentsWorker.on('failed', async job => {
     });
 });
 
+const clearExpungedEmbeddings = async () => {
+    const { index, client } = await getESClient(logger);
+    let rangeEnd = Date.now() - GB_COLLECT_DELAY;
+    try {
+        let expungedEntry = await redis.zrange(`${REDIS_PREFIX}expungequeue`, 0, rangeEnd, 'BYSCORE', 'LIMIT', '0', '1');
+
+        if (!expungedEntry?.length) {
+            await new Promise(resolve => {
+                let timer = setTimeout(resolve, GB_EMPTY_DELAY);
+                timer.unref();
+            });
+            return;
+        }
+
+        if (expungedEntry && expungedEntry.length) {
+            expungedEntry = expungedEntry[0];
+            let [account, ...messageId] = expungedEntry.split(':');
+            if (messageId) {
+                messageId = messageId.join(':');
+            }
+
+            if (account && messageId) {
+                let matchQuery = {
+                    bool: {
+                        must: [
+                            {
+                                term: {
+                                    account
+                                }
+                            },
+                            {
+                                term: {
+                                    messageId
+                                }
+                            }
+                        ]
+                    }
+                };
+
+                let existingResult;
+
+                try {
+                    existingResult = await client.search({
+                        index,
+                        size: 1,
+                        query: matchQuery,
+                        _source: false
+                    });
+
+                    if (!existingResult || !existingResult.hits) {
+                        logger.error({
+                            msg: 'Failed to run query to find emails by Message-ID. Empty result.',
+                            account,
+                            messageId,
+                            existingResult
+                        });
+                        throw new Error('Empty result');
+                    }
+                } catch (err) {
+                    logger.error({
+                        msg: 'Failed to run query to find emails by Message-ID',
+                        account,
+                        messageId,
+                        err
+                    });
+                    throw err;
+                }
+
+                if (existingResult?.hits?.total?.value === 0) {
+                    // can purge embeddings
+                    logger.trace({
+                        msg: 'Deleting embeddings for a missing email',
+                        account,
+                        messageId
+                    });
+                    try {
+                        let deleteResult = await client.deleteByQuery({
+                            index: `${index}.embeddings`,
+                            query: {
+                                bool: {
+                                    must: [
+                                        {
+                                            term: {
+                                                account
+                                            }
+                                        },
+
+                                        {
+                                            term: {
+                                                messageId
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        });
+                        if (deleteResult?.deleted) {
+                            logger.info({
+                                msg: 'Deleted embeddings for a missing email',
+                                account,
+                                messageId,
+                                deleted: deleteResult?.deleted
+                            });
+                        }
+                        // clear existing entry
+                        await redis.zrem(`${REDIS_PREFIX}expungequeue`, `${account}:${messageId}`);
+                        logger.trace({
+                            msg: 'Removed entry from expunge queue',
+                            account,
+                            messageId
+                        });
+                    } catch (err) {
+                        logger.info({
+                            msg: 'Dailed to delete embeddings for a missing email',
+                            account,
+                            messageId,
+                            err
+                        });
+                    }
+                } else {
+                    // clear existing entry
+                    await redis.zrem(`${REDIS_PREFIX}expungequeue`, `${account}:${messageId}`);
+                    logger.trace({
+                        msg: 'Removed still existing entry from expunge queue',
+                        account,
+                        messageId
+                    });
+                }
+            }
+        }
+    } catch (err) {
+        logger.error({ msg: 'Failed to retrieve expunged entries', rangeStart: 0, rangeEnd, err });
+        await new Promise(resolve => {
+            let timer = setTimeout(resolve, GB_FAILURE_DELAY);
+            timer.unref();
+        });
+        return;
+    }
+};
+
+function runGarbageCollector() {
+    clearExpungedEmbeddings()
+        .catch(err => {
+            logger.error({ msg: 'Failed to run garbage collector for embeddings', err });
+        })
+        .finally(() => runGarbageCollector());
+}
+
 logger.info({ msg: 'Started Documents worker thread', version: packageData.version });
+
+runGarbageCollector();

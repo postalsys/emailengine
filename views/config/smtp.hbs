@@ -26,19 +26,34 @@
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
         </div>
-        <div class="card-body">
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">smtpServerEnabled</a>]
+
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item d-flex justify-content-between align-items-top">
+
+                <div class="form-group form-check mb-0">
+
+
+                    <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
+                        id="smtpServerEnabled" name="smtpServerEnabled" {{#if
+                        values.smtpServerEnabled}}checked{{/if}} />
+                    <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Interface</label>
+                    {{#if errors.smtpServerEnabled}}
+                    <span class="invalid-feedback">{{errors.smtpServerEnabled}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">Once enabled, EmailEngine will start an SMTP server, ready to
+                        receive email submissions via the SMTP port.</small>
                 </div>
 
-                <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
-                    id="smtpServerEnabled" name="smtpServerEnabled" {{#if values.smtpServerEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Interface</label>
-                {{#if errors.smtpServerEnabled}}
-                <span class="invalid-feedback">{{errors.smtpServerEnabled}}</span>
-                {{/if}}
-            </div>
+                <div class="text-right">
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">smtpServerEnabled</a>]</div>
+
+                </div>
+            </li>
+        </ul>
+
+        <div class="card-body">
+
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"

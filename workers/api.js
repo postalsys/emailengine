@@ -122,6 +122,7 @@ const { fetch: fetchCmd, Agent } = require('undici');
 const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
 const templateRoutes = require('../lib/api-routes/template-routes');
+const chatRoutes = require('../lib/api-routes/chat-routes');
 
 const {
     settingsSchema,
@@ -5628,6 +5629,9 @@ When making API calls remember that requests against the same account are queued
 
     // setup template routes
     await templateRoutes({ server, call, CORS_CONFIG });
+
+    // setup "chat with email" routes
+    await chatRoutes({ server, call, CORS_CONFIG });
 
     server.route({
         method: 'GET',

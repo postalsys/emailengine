@@ -49,21 +49,87 @@
                 </div>
             </div>
         </div>
-        <div class="card-body">
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">documentStoreEnabled</a>]
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item d-flex justify-content-between align-items-top">
+
+                <div class="form-group form-check mb-0">
+                    <input type="checkbox"
+                        class="form-check-input or-else-all {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
+                        id="documentStoreEnabled" name="documentStoreEnabled" data-target="docstore-list"
+                        data-reverse="true" {{#if values.documentStoreEnabled}}checked{{/if}} />
+                    <label class="form-check-label" for="documentStoreEnabled">Enable syncing to the Document
+                        Store.</label>
+                    {{#if errors.documentStoreEnabled}}
+                    <span class="invalid-feedback">{{errors.documentStoreEnabled}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">If enabled, then EmailEngine stores structured email content to
+                        ElasticSearch. Stored data does include attachment metadata but not attachment contents.
+                        <i>Enabling this option does not apply to already processed emails.</i></small>
                 </div>
 
-                <input type="checkbox" class="form-check-input {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
-                    id="documentStoreEnabled" name="documentStoreEnabled" {{#if
-                    values.documentStoreEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="documentStoreEnabled">Enable syncing to the Document Store</label>
-                {{#if errors.documentStoreEnabled}}
-                <span class="invalid-feedback">{{errors.documentStoreEnabled}}</span>
-                {{/if}}
-            </div>
+                <div class="text-right">
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">documentStoreEnabled</a>]</div>
+
+                    {{#if
+                    values.documentStoreEnabled}}
+                    <span class="badge badge-success badge-pill">enabled</span>
+                    {{else}}
+                    <span class="badge badge-warning badge-pill">disabled</span>
+                    {{/if}}
+                </div>
+            </li>
+
+            <li class="list-group-item d-flex justify-content-between align-items-top">
+
+                <div class="form-group form-check mb-0">
+                    <input type="checkbox"
+                        class="form-check-input docstore-list {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
+                        id="documentStoreGenerateEmbeddings" name="documentStoreGenerateEmbeddings" {{#if
+                        values.documentStoreGenerateEmbeddings}}checked{{/if}} {{#unless
+                        hasOpenAiAPIKey}}disabled{{/unless}} />
+                    <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
+                        feature
+
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-content="Requires ElasticSearch 8.8.0+"><i
+                                class="fas fa-info-circle text-info"></i></a>
+
+
+                        {{#if values.documentStoreGenerateEmbeddings}}
+                        {{#unless hasOpenAiAPIKey}}
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-title="OpenAI Integration Alert"
+                            data-content="Your OpenAI API key hasn't been set up. Please head to the &quot;LLM Integration&quot; page to configure it and enable this feature."><i
+                                class="fas fa-exclamation-triangle text-danger"></i></a>
+                        {{/unless}}
+                        {{/if}}
+                    </label>
+                    {{#if errors.documentStoreGenerateEmbeddings}}
+                    <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">If enabled, then EmailEngine uses OpenAI API to generate text
+                        embeddings for emails stored in the document store. This option requires document store syncing
+                        to be enabled and the OpenAI API key to be set <a href="/admin/config/ai">here</a>. <i>Enabling
+                            this option does not apply to already processed emails.</i></small>
+                </div>
+
+                <div class="text-right">
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">documentStoreGenerateEmbeddings</a>]</div>
+
+                    {{#if
+                    values.documentStoreGenerateEmbeddings}}
+                    <span class="badge badge-success badge-pill">enabled</span>
+                    {{else}}
+                    <span class="badge badge-warning badge-pill">disabled</span>
+                    {{/if}}
+                </div>
+            </li>
+        </ul>
+
+        <div class="card-body">
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
