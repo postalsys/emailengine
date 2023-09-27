@@ -114,6 +114,24 @@ async function onCommand(command) {
 }
 
 parentPort.on('message', message => {
+    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
+        let { resolve, reject, timer } = callQueue.get(message.mid);
+        clearTimeout(timer);
+        callQueue.delete(message.mid);
+        if (message.error) {
+            let err = new Error(message.error);
+            if (message.code) {
+                err.code = message.code;
+            }
+            if (message.statusCode) {
+                err.statusCode = message.statusCode;
+            }
+            return reject(err);
+        } else {
+            return resolve(message.response);
+        }
+    }
+
     if (message && message.cmd === 'call' && message.mid) {
         return onCommand(message.message)
             .then(response => {
@@ -482,10 +500,7 @@ const documentsWorker = new Worker(
                                     cmd: 'generateEmbeddings',
                                     data: {
                                         message: {
-                                            headers: Object.keys(messageData.headers || {}).map(key => ({
-                                                key,
-                                                value: [].concat(messageData.headers[key] || [])
-                                            })),
+                                            headers: messageData.headers, // already an array value, so no need to convert
                                             attachments: messageData.attachments,
                                             from: messageData.from,
                                             subject: messageData.subject,
@@ -493,7 +508,7 @@ const documentsWorker = new Worker(
                                             html: messageData.text.html
                                         }
                                     },
-                                    timeout: 2 * 60 * 1000
+                                    timeout: 5 * 60 * 1000
                                 });
                             } catch (err) {
                                 logger.error({ msg: 'Failed to fetch embeddings', account: job.data.account, messageId: messageData.messageId, err });
@@ -508,6 +523,7 @@ const documentsWorker = new Worker(
                                 messageId: messageData.messageId,
                                 embeddings: entry.embedding,
                                 chunk: entry.chunk,
+                                model: embeddings.model,
                                 chunkNr: i,
                                 chunks: embeddings.embeddings.length,
                                 created: new Date()
@@ -858,7 +874,9 @@ if( ctx._source.bounces != null) {
     },
     Object.assign(
         {
-            concurrency: 1
+            concurrency: 1,
+            maxStalledCount: 5,
+            stalledInterval: 60 * 1000
         },
         queueConf
     )

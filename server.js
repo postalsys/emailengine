@@ -55,7 +55,13 @@ const {
 } = require('./lib/consts');
 
 const { webhooks: Webhooks } = require('./lib/webhooks');
-const { generateSummary, generateEmbeddings, DEFAULT_USER_PROMPT: openAiDefaultPrompt } = require('@postalsys/email-ai-tools');
+const {
+    generateSummary,
+    generateEmbeddings,
+    getChunkEmbeddings,
+    embeddingsQuery,
+    DEFAULT_USER_PROMPT: openAiDefaultPrompt
+} = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd, Agent } = require('undici');
 const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
@@ -1439,6 +1445,78 @@ async function onCommand(worker, message) {
             }
 
             return embeddings;
+        }
+
+        case 'embeddingsQuery': {
+            let requestOpts = {
+                verbose: true
+            };
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiModel = message.data.openAiModel || (await settings.get('openAiModel'));
+            if (openAiModel) {
+                requestOpts.gptModel = openAiModel;
+            }
+
+            switch (openAiModel) {
+                case 'gpt-4':
+                    requestOpts.maxTokens = 6500;
+                    break;
+                case 'gpt-3.5-turbo':
+                case 'gpt-3.5-turbo-instruct':
+                default:
+                    requestOpts.maxTokens = 3500;
+                    break;
+            }
+
+            requestOpts.question = message.data.question;
+            requestOpts.contextChunks = message.data.contextChunks;
+
+            let response = await embeddingsQuery(openAiAPIKey, requestOpts);
+
+            if (response?.['Message-ID']) {
+                response.messageId = response?.['Message-ID'];
+                delete response?.['Message-ID'];
+            }
+            if (response?.messageId) {
+                response.messageId = (response?.messageId || '').toString().trim().replace(/^<?/, '<').replace(/>?$/, '>');
+            }
+
+            if (response?.answer) {
+                if (typeof response.answer === 'object') {
+                    response.answer = JSON.stringify(response.answer);
+                } else {
+                    response.answer = response.answer.toString();
+                }
+            }
+
+            for (const key of Object.keys(response)) {
+                if (/^_/.test(key)) {
+                    delete response[key];
+                }
+            }
+
+            return response;
+        }
+
+        // run these in main process to avoid polluting RAM with the memory hungry tokenization library
+        case 'generateChunkEmbeddings': {
+            let requestOpts = {};
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            const data = await getChunkEmbeddings(message.data.message, openAiAPIKey, requestOpts);
+
+            return data;
         }
 
         case 'openAiDefaultPrompt': {
