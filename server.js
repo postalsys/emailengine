@@ -1379,7 +1379,9 @@ async function onCommand(worker, message) {
 
         // run these in main process to avoid polluting RAM with the memory hungry tokenization library
         case 'generateSummary': {
-            let requestOpts = {};
+            let requestOpts = {
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
+            };
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -1423,7 +1425,9 @@ async function onCommand(worker, message) {
 
         // run these in main process to avoid polluting RAM with the memory hungry tokenization library
         case 'generateEmbeddings': {
-            let requestOpts = {};
+            let requestOpts = {
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
+            };
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
@@ -1449,7 +1453,7 @@ async function onCommand(worker, message) {
 
         case 'embeddingsQuery': {
             let requestOpts = {
-                verbose: true
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
             };
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
@@ -1506,7 +1510,9 @@ async function onCommand(worker, message) {
 
         // run these in main process to avoid polluting RAM with the memory hungry tokenization library
         case 'generateChunkEmbeddings': {
-            let requestOpts = {};
+            let requestOpts = {
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
+            };
 
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
