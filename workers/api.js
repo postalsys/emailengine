@@ -7283,7 +7283,7 @@ ${now}`,
 
             response: {
                 schema: Joi.object({
-                    success: Joi.boolean().example(true).description('Was the request successfuk').label('BlocklistListAddSuccess'),
+                    success: Joi.boolean().example(true).description('Was the request successful').label('BlocklistListAddSuccess'),
                     added: Joi.boolean().example(true).description('Was the address added to the list')
                 }).label('BlocklistListAddResponse'),
                 failAction: 'log'

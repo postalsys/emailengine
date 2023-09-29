@@ -6,13 +6,14 @@
             <div class="col mr-2">
 
                 <ul>
-                    <li>Only ElasticSearch v8+ is supported as a Document Store backend. Older versions of
-                        ElasticSearch and alternatives like OpenSearch are not supported.</li>
-                    <li>Syncing emails to the Document Store is not transactional but <em>best effort</em>.
-                        EmailEngine might miss some data.</li>
-                    <li>Email attachments are not stored in the Document Store.</li>
-                    <li>Enable Document Store before adding any accounts that need to be indexed. Emails that are
-                        processed while Document Store is not enabled <em>will not be synced</em> to the Document Store.
+                    <li>The Document Store backend only supports ElasticSearch v8+. Older ElasticSearch versions and
+                        other alternatives like OpenSearch aren't compatible.</li>
+                    <li>EmailEngine syncs emails to the Document Store based on a "best effort" approach, meaning there
+                        might be occasional missed data.</li>
+                    <li>Email attachments won't be saved in the Document Store.</li>
+                    <li>To index accounts, turn on the Document Store feature first. If it's off, any processed emails
+                        won't sync to the Document Store. You can force EmailEngine to resync all emails for an account
+                        by using the Account Flush API method.
                     </li>
                     <li>You <em>can</em> modify entries stored in the Document Store. Adding new fields is allowed.
                         Changing existing field values is allowed if you do not change the type. Do not modify system
@@ -54,10 +55,9 @@
             <li class="list-group-item d-flex justify-content-between align-items-top">
 
                 <div class="form-group form-check mb-0">
-                    <input type="checkbox"
-                        class="form-check-input or-else-all {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
-                        id="documentStoreEnabled" name="documentStoreEnabled" data-target="docstore-list"
-                        data-reverse="true" {{#if values.documentStoreEnabled}}checked{{/if}} />
+                    <input type="checkbox" class="form-check-input {{#if errors.documentStoreEnabled}}is-invalid{{/if}}"
+                        id="documentStoreEnabled" name="documentStoreEnabled" {{#if
+                        values.documentStoreEnabled}}checked{{/if}} />
                     <label class="form-check-label" for="documentStoreEnabled">Enable syncing to the Document
                         Store.</label>
                     {{#if errors.documentStoreEnabled}}
@@ -74,53 +74,6 @@
 
                     {{#if
                     values.documentStoreEnabled}}
-                    <span class="badge badge-success badge-pill">enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning badge-pill">disabled</span>
-                    {{/if}}
-                </div>
-            </li>
-
-            <li class="list-group-item d-flex justify-content-between align-items-top">
-
-                <div class="form-group form-check mb-0">
-                    <input type="checkbox"
-                        class="form-check-input docstore-list {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
-                        id="documentStoreGenerateEmbeddings" name="documentStoreGenerateEmbeddings" {{#if
-                        values.documentStoreGenerateEmbeddings}}checked{{/if}} {{#unless
-                        hasOpenAiAPIKey}}disabled{{/unless}} />
-                    <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
-                        feature
-
-                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            style="dispaly: inline-block;" data-content="Requires ElasticSearch 8.8.0+"><i
-                                class="fas fa-info-circle text-info"></i></a>
-
-
-                        {{#if values.documentStoreGenerateEmbeddings}}
-                        {{#unless hasOpenAiAPIKey}}
-                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            style="dispaly: inline-block;" data-title="OpenAI Integration Alert"
-                            data-content="Your OpenAI API key hasn't been set up. Please head to the &quot;LLM Integration&quot; page to configure it and enable this feature."><i
-                                class="fas fa-exclamation-triangle text-danger"></i></a>
-                        {{/unless}}
-                        {{/if}}
-                    </label>
-                    {{#if errors.documentStoreGenerateEmbeddings}}
-                    <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
-                    {{/if}}
-                    <small class="form-text text-muted">If enabled, then EmailEngine uses OpenAI API to generate text
-                        embeddings for emails stored in the document store. This option requires document store syncing
-                        to be enabled and the OpenAI API key to be set <a href="/admin/config/ai">here</a>. <i>Enabling
-                            this option does not apply to already processed emails.</i></small>
-                </div>
-
-                <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                            target="_blank">documentStoreGenerateEmbeddings</a>]</div>
-
-                    {{#if
-                    values.documentStoreGenerateEmbeddings}}
                     <span class="badge badge-success badge-pill">enabled</span>
                     {{else}}
                     <span class="badge badge-warning badge-pill">disabled</span>

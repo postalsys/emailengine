@@ -6,18 +6,16 @@
             <div class="col mr-2">
 
                 <div class="mb-2">
-                    Here you can define additional field type mappings for email documents stored in ElasticSearch.
-                    EmailEngine automatically maps types for all the fields it uses. For other fields, for example, the
-                    custom fields added with the Document Store pre-processing functions, EmailEngine does not set any
-                    type mappings. Sometimes it is fine to let ElasticSearch handle types automatically, as the dynamic
-                    mapper is good enough. Not always, though.
+                    You can create custom field type mappings for emails saved in ElasticSearch. While EmailEngine
+                    automatically maps types for its default fields, it doesn't do this for custom fields you've added
+                    using the Document Store's pre-processing functions. Oftentimes, relying on ElasticSearch's
+                    automatic type detection works well, but not always.
                 </div>
                 <div>
-                    <strong>NB!</strong> Beware, once a field mapping has been set, you can't modify it unless you
-                    migrate the entire index. The same applies to dynamically mapped fields &mdash; if ElasticSearch
-                    finds a
-                    field value without a type mapping, it will set it dynamically, and you can't modify that type
-                    later. So define any mappings you want to use before storing data in ElasticSearch.
+                    <strong>Important:</strong> Once you've set a field mapping, you can't change it without migrating
+                    the entire index. This also holds true for fields that ElasticSearch has auto-mapped. If
+                    ElasticSearch sets a type for a field automatically, you won't be able to change that type later.
+                    Make sure to set your desired mappings before saving data to ElasticSearch.
                 </div>
 
             </div>

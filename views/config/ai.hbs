@@ -72,23 +72,7 @@
             </li>
         </ul>
         <div class="card-body">
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
-                        target="_blank">openAiModel</a>]</div>
 
-                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
-                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
-                    errors.openAiModel}}is-invalid{{/if}}>
-                    {{#each openAiModels}}
-                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-                    {{/each}}
-                </select>
-                {{#if errors.openAiModel}}
-                <span class="invalid-feedback">{{errors.openAiModel}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
-                    the selected model, or analysis requests will fail.</small>
-            </div>
 
             <div class="form-group">
 
@@ -107,6 +91,23 @@
                 <small class="form-text text-muted">OpenAI API key.</small>
             </div>
 
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiModel</a>]</div>
+
+                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
+                    errors.openAiModel}}is-invalid{{/if}}>
+                    {{#each openAiModels}}
+                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.openAiModel}}
+                <span class="invalid-feedback">{{errors.openAiModel}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
+                    the selected model, or analysis requests will fail.</small>
+            </div>
 
         </div>
     </div>

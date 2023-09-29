@@ -1,0 +1,145 @@
+{{> document_store_header}}
+
+<form method="post" action="/admin/config/document-store/chat">
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
+    <div class="card mt-4">
+
+        <ul class="list-group list-group-flush mb-3">
+
+            <li class="list-group-item d-flex justify-content-between align-items-top">
+
+                <div class="form-group form-check mb-0">
+                    <input type="checkbox"
+                        class="form-check-input {{#if errors.documentStoreGenerateEmbeddings}}is-invalid{{/if}}"
+                        id="documentStoreGenerateEmbeddings" name="documentStoreGenerateEmbeddings" {{#if
+                        values.documentStoreGenerateEmbeddings}}checked{{/if}} />
+                    <label class="form-check-label" for="documentStoreGenerateEmbeddings">Enable the "Chat with emails"
+                        feature
+
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-content="Requires ElasticSearch 8.8.0+"><i
+                                class="fas fa-info-circle text-info"></i></a>
+
+
+                        {{#unless documentStoreEnabled}}
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="dispaly: inline-block;" data-title="Document store is not enabled"
+                            data-content="Document Store syncing must be enabled to use the &quot;Chat with emails&quot; feature"><i
+                                class="fas fa-exclamation-triangle text-danger"></i></a>
+                        {{/unless}}
+
+                    </label>
+                    {{#if errors.documentStoreGenerateEmbeddings}}
+                    <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
+                    {{/if}}
+                    <small class="form-text text-muted">If enabled, then EmailEngine uses OpenAI API to generate text
+                        embeddings for emails stored in the document store. This option requires document store syncing
+                        to be enabled and the OpenAI API key to be set <a href="/admin/config/ai">here</a>. <i>Enabling
+                            this option does not apply to already processed emails.</i></small>
+                </div>
+
+                <div class="text-right">
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                            target="_blank">documentStoreGenerateEmbeddings</a>]</div>
+
+                    {{#if
+                    values.documentStoreGenerateEmbeddings}}
+                    <span class="badge badge-success badge-pill">enabled</span>
+                    {{else}}
+                    <span class="badge badge-warning badge-pill">disabled</span>
+                    {{/if}}
+                </div>
+            </li>
+        </ul>
+
+        <div class="card-body">
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">openAiAPIKey</a>]
+                </div>
+
+                <label for="openAiAPIKey">OpenAI API key</label>
+                <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
+                    id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
+                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
+                    {{/if}} />
+                {{#if errors.openAiAPIKey}}
+                <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OpenAI API key. This is the same key that is set on the <a
+                        href="/admin/config/ai">LLM Integration</a> page.</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                        target="_blank">documentStoreChatModel</a>]</div>
+
+                <label for="settingsServicedocumentStoreChatModel">OpenAI Model</label>
+                <select id="settingsServicedocumentStoreChatModel" class="custom-select custom-select-sm"
+                    name="documentStoreChatModel" {{#if errors.documentStoreChatModel}}is-invalid{{/if}}>
+                    {{#each openAiModels}}
+                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                {{#if errors.documentStoreChatModel}}
+                <span class="invalid-feedback">{{errors.documentStoreChatModel}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Select the model to use to ask questions. Ensure your account can
+                    use the selected model, or chat requests will fail.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-4 mt-4">
+        <button type="submit" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-cog"></i>
+            </span>
+            <span class="text">Update settings</span>
+        </button>
+    </div>
+
+</form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const sendTestPayload = async () => {
+            const documentStoreUrl = document.getElementById('documentStoreUrl').value.trim();
+            const documentStoreAuthEnabled = !!document.getElementById('documentStoreAuthEnabled').checked;
+            const documentStoreUsername = document.getElementById('documentStoreUsername').value;
+            const documentStorePassword = document.getElementById('documentStorePassword').value;
+
+            const res = await fetch('/admin/config/document-store/test', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    documentStoreUrl,
+                    documentStoreAuthEnabled,
+                    documentStoreUsername,
+                    documentStorePassword
+                })
+            })
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        document.getElementById('test-payload-btn').addEventListener('click', e => {
+            e.preventDefault()
+            sendTestPayload().then(data => {
+                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
+            }).catch(err => {
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            })
+        });
+    })
+</script>

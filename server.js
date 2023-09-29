@@ -1462,7 +1462,7 @@ async function onCommand(worker, message) {
                 throw new Error(`OpenAI API key is not set`);
             }
 
-            let openAiModel = message.data.openAiModel || (await settings.get('openAiModel'));
+            let openAiModel = message.data.openAiModel || (await settings.get('documentStoreChatModel')) || (await settings.get('openAiModel'));
             if (openAiModel) {
                 requestOpts.gptModel = openAiModel;
             }
