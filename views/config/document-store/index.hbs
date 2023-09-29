@@ -65,12 +65,21 @@
                     {{/if}}
                     <small class="form-text text-muted">If enabled, then EmailEngine stores structured email content to
                         ElasticSearch. Stored data does include attachment metadata but not attachment contents.
-                        <i>Enabling this option does not apply to already processed emails.</i></small>
+                    </small>
+
+                    <div class="mt-2"><small><strong>Important:</strong> EmailEngine only saves emails to the Document
+                            Store if processed while the feature is active. To add existing emails, use the <a
+                                href="/admin/iframe/docs#/Account/putV1AccountAccountFlush" target="_blank">Flush API
+                                method</a>. This makes EmailEngine re-process all emails for a specific account.</small>
+                    </div>
                 </div>
 
                 <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                             target="_blank">documentStoreEnabled</a>]</div>
+
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
+                            target="_blank">Request&nbsp;account&nbsp;flush</a>]</div>
 
                     {{#if
                     values.documentStoreEnabled}}
@@ -85,7 +94,7 @@
         <div class="card-body">
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStoreUrl</a>]
                 </div>
 
@@ -104,7 +113,7 @@
 
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStoreIndex</a>]
                 </div>
 
@@ -120,7 +129,7 @@
             </div>
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStoreAuthEnabled</a>]
                 </div>
 
@@ -136,7 +145,7 @@
 
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStoreUsername</a>]
                 </div>
 
@@ -152,7 +161,7 @@
 
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStorePassword</a>]
                 </div>
 

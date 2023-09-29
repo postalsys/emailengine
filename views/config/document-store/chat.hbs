@@ -33,15 +33,28 @@
                     {{#if errors.documentStoreGenerateEmbeddings}}
                     <span class="invalid-feedback">{{errors.documentStoreGenerateEmbeddings}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">If enabled, then EmailEngine uses OpenAI API to generate text
-                        embeddings for emails stored in the document store. This option requires document store syncing
-                        to be enabled and the OpenAI API key to be set <a href="/admin/config/ai">here</a>. <i>Enabling
-                            this option does not apply to already processed emails.</i></small>
+                    <small class="form-text text-muted">If enabled, then EmailEngine uses the OpenAI API to produce text
+                        embeddings for emails in the document store. For this feature to work, ensure document store
+                        syncing is active and that the OpenAI API key is configured. You can run chat requests with the
+                        <a href="/admin/iframe/docs#/Chat/postV1ChatAccount" target="_blank">Chat
+                            API method</a>.</small>
+                    <div class="mt-2"><small><strong>Important:</strong> EmailEngine will only create embeddings for
+                            emails processed when the feature is active. To generate embeddings for previously stored
+                            emails, utilize the <a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
+                                target="_blank">Flush API method</a>. This will force EmailEngine to re-process all
+                            emails
+                            in the Document Store.</small></div>
                 </div>
 
                 <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                             target="_blank">documentStoreGenerateEmbeddings</a>]</div>
+
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Chat/postV1ChatAccount"
+                            target="_blank">Chat&nbsp;with&nbsp;emails</a>]</div>
+
+                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
+                            target="_blank">Request&nbsp;account&nbsp;flush</a>]</div>
 
                     {{#if
                     values.documentStoreGenerateEmbeddings}}
@@ -57,7 +70,7 @@
 
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">openAiAPIKey</a>]
                 </div>
 
@@ -74,7 +87,7 @@
             </div>
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">documentStoreChatModel</a>]</div>
 
                 <label for="settingsServicedocumentStoreChatModel">OpenAI Model</label>
@@ -94,6 +107,7 @@
         </div>
     </div>
 
+
     <div class="mb-4 mt-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
@@ -107,6 +121,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        $('.has-tooltip').tooltip();
 
         const sendTestPayload = async () => {
             const documentStoreUrl = document.getElementById('documentStoreUrl').value.trim();
