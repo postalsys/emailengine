@@ -67,6 +67,13 @@
 
         <div class="card-body">
 
+            {{#if indexInfo.error}}
+            <div class="alert alert-danger">
+                <strong>Index handling failed:</strong> <br>
+                <pre>{{indexInfo.error}}</pre>
+            </div>
+            {{/if}}
+
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
