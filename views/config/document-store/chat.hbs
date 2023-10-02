@@ -41,26 +41,46 @@
                             emails processed when the feature is active. To generate embeddings for previously stored
                             emails, utilize the <a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
                                 target="_blank">Flush API method</a>. This will force EmailEngine to re-process all
-                            emails
-                            in the Document Store.</small></div>
+                            emails in the Document Store.</small>
+                    </div>
+
+
+
                 </div>
 
-                <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">documentStoreGenerateEmbeddings</a>]</div>
+                <div class="text-right" style="display: flex; flex-direction: column; justify-content: space-between;">
 
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Chat/postV1ChatAccount"
-                            target="_blank">Chat&nbsp;with&nbsp;emails</a>]</div>
+                    <div>
+                        <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                                target="_blank">documentStoreGenerateEmbeddings</a>]</div>
 
-                    <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
-                            target="_blank">Request&nbsp;account&nbsp;flush</a>]</div>
+                        <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Chat/postV1ChatAccount"
+                                target="_blank">Chat&nbsp;with&nbsp;emails</a>]</div>
 
-                    {{#if
-                    values.documentStoreGenerateEmbeddings}}
-                    <span class="badge badge-success badge-pill">enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning badge-pill">disabled</span>
-                    {{/if}}
+                        <div class="text-muted code-link">[<a
+                                href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
+                                target="_blank">Request&nbsp;account&nbsp;flush</a>]</div>
+
+                        <div>
+                            {{#if
+                            values.documentStoreGenerateEmbeddings}}
+                            <span class="badge badge-success badge-pill">enabled</span>
+                            {{else}}
+                            <span class="badge badge-warning badge-pill">disabled</span>
+                            {{/if}}
+                        </div>
+                    </div>
+
+                    <div style="align-self: flex-end;">
+
+                        <button type="button" class="btn btn-light" data-toggle="modal" data-target="#tryChatModal"
+                            id="try-chat-btn">
+                            <i class="fas fa-comment-alt fa-fw"></i> Try it
+                        </button>
+
+                    </div>
+
+
                 </div>
             </li>
         </ul>
@@ -125,42 +145,218 @@
 
 </form>
 
+<div class="modal fade" id="tryChatModal" tabindex="-1" aria-labelledby="tryChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tryChatModalLabel">Send a chat message</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="chatPayloadForm" method="post" action=".">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <div class="text-muted float-right code-link">[API Reference: <a
+                                href="/admin/iframe/docs#/Chat/postV1ChatAccount"
+                                target="_blank">/v1/chat/{account}</a>]
+                        </div>
+                        <label for="inputAccount">Account ID</label>
+                        <input type="text" class="form-control" name="account" id="inputAccount"
+                            aria-describedby="inputAccountHelp" value="" required>
+                        <small id="inputNameHelp" class="form-text text-muted">The account ID to send the chat message
+                            as.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="question">Question</label>
+                        <input type="text" class="form-control" name="question" id="question"
+                            aria-describedby="questionHelp" value="" required>
+                        <small id="questionHelp" class="form-text text-muted">Question to ask about the emails on the
+                            account.</small>
+                    </div>
+
+                    <div id="chat-error" class="d-none">
+                        <div class="alert alert-danger">
+                            <strong>Request failed</strong>: <span id="chat-error-text"></span>
+                        </div>
+                    </div>
+
+                    <div id="chat-response" class="d-none">
+                        <div class="card">
+                            <div class="card-body">
+                                <div>
+                                    <div id="chat-response-answer"></div>
+                                </div>
+                            </div>
+                            <ul class="d-none mt-2 list-group list-group-flush" id="chat-response-messages">
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" id="send-question-btn" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-comment-alt"></i>
+                        </span>
+                        <span class="text">Ask</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         $('.has-tooltip').tooltip();
 
-        const sendTestPayload = async () => {
-            const documentStoreUrl = document.getElementById('documentStoreUrl').value.trim();
-            const documentStoreAuthEnabled = !!document.getElementById('documentStoreAuthEnabled').checked;
-            const documentStoreUsername = document.getElementById('documentStoreUsername').value;
-            const documentStorePassword = document.getElementById('documentStorePassword').value;
+        const sendQuestionPayload = async () => {
+            const payload = {
+                crumb: document.getElementById('crumb').value,
+                account: document.getElementById('inputAccount').value,
+                question: document.getElementById('question').value
+            }
 
-            const res = await fetch('/admin/config/document-store/test', {
+            const res = await fetch('/admin/config/document-store/chat/test', {
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    documentStoreUrl,
-                    documentStoreAuthEnabled,
-                    documentStoreUsername,
-                    documentStorePassword
-                })
-            })
+                body: JSON.stringify(payload)
+            });
+
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                let data;
+                try {
+                    data = await res.json()
+                } catch (err) {
+                    // ignore
+                }
+
+                console.log(data)
+                console.log(res)
+
+                throw new Error(`HTTP request failed with the ${res.status} status code.`);
             }
+
             const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
 
             return data;
         }
 
-        document.getElementById('test-payload-btn').addEventListener('click', e => {
-            e.preventDefault()
-            sendTestPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? data.message || 'Connection successful' : 'Failed to establish connection'), data.success ? 'check-circle' : 'alert-triangle');
+        let sendQuestionBtn = document.getElementById('send-question-btn')
+
+        let iconElm = document.querySelector('#send-question-btn i');
+        let toggleSpinner = (enabled) => {
+
+            if (enabled) {
+                iconElm.classList.remove('fa-spinner', 'fa-spin');
+                iconElm.classList.add('fa-comment-alt');
+                sendQuestionBtn.disabled = false;
+            } else {
+                iconElm.classList.remove('fa-comment-alt');
+                iconElm.classList.add('fa-spinner', 'fa-spin');
+                sendQuestionBtn.disabled = true;
+            }
+        }
+
+
+        let chatErrorElm = document.getElementById('chat-error')
+        let chatErrorTextElm = document.getElementById('chat-error-text')
+
+
+        let chatResponseElm = document.getElementById('chat-response');
+        let chatResponseAnswerElm = document.getElementById('chat-response-answer');
+        let chatResponseMessagesElm = document.getElementById('chat-response-messages');
+
+
+        function showError(message) {
+            chatErrorElm.classList.remove('d-none');
+            chatResponseElm.classList.add('d-none');
+
+            chatErrorTextElm.textContent = message
+        }
+
+        function showChatResponse(message) {
+            chatErrorElm.classList.add('d-none');
+            chatResponseElm.classList.remove('d-none');
+
+            chatResponseAnswerElm.innerHTML = ''
+            if (message.answer) {
+                chatResponseAnswerElm.textContent = message.answer;
+            } else {
+                let mutedElm = document.createElement('small');
+                mutedElm.classList.add('text-muted')
+                mutedElm.textContent = 'EmailEngine was not able to find an answer to this question.'
+                chatResponseAnswerElm.appendChild(mutedElm)
+            }
+            chatResponseMessagesElm.innerHTML = ''
+
+            if (message.messages && message.messages.length) {
+                chatResponseMessagesElm.classList.remove('d-none');
+            } else {
+                chatResponseMessagesElm.classList.add('d-none');
+            }
+
+            for (let messageData of message.messages || []) {
+                let liElm = document.createElement('li');
+                liElm.classList.add('list-group-item')
+                let smallElm = document.createElement('small');
+                smallElm.textContent = `• ${messageData.subject}`;
+                chatResponseMessagesElm.appendChild(liElm);
+                liElm.appendChild(smallElm)
+            }
+
+        }
+
+        function clearMessages() {
+            chatErrorElm.classList.add('d-none');
+            chatResponseElm.classList.add('d-none');
+        }
+
+        let sending = false;
+        function sendTestQuestion() {
+            if (sending) {
+                return;
+            }
+
+            clearMessages();
+
+            sending = true;
+            toggleSpinner(false);
+            sendQuestionPayload().then(info => {
+                toggleSpinner(true);
+                sending = false;
+                if (info.error) {
+                    return showError(info.error);
+                }
+
+                showChatResponse(info);
+
             }).catch(err => {
-                showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+                toggleSpinner(true);
+                sending = false;
+                showError(err.message);
+            });
+        }
+
+        $('#tryChatModal').on('show.bs.modal', function (event) {
+            if (sending) {
+                return;
+            }
+            clearMessages();
+            document.getElementById('inputAccount').value = '';
+            document.getElementById('question').value = '';
+        });
+
+        document.getElementById('chatPayloadForm').addEventListener('submit', e => {
+            e.preventDefault();
+            sendTestQuestion();
         });
     })
 </script>
