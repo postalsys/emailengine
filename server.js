@@ -60,6 +60,7 @@ const {
     generateEmbeddings,
     getChunkEmbeddings,
     embeddingsQuery,
+    questionQuery,
     DEFAULT_USER_PROMPT: openAiDefaultPrompt
 } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd, Agent } = require('undici');
@@ -1415,6 +1416,8 @@ async function onCommand(worker, message) {
                     break;
             }
 
+            requestOpts.user = message.data.account;
+
             let userPrompt = message.data.openAiPrompt || ((await settings.get('openAiPrompt')) || '').toString();
             if (userPrompt.trim()) {
                 requestOpts.userPrompt = userPrompt;
@@ -1434,6 +1437,8 @@ async function onCommand(worker, message) {
             if (!openAiAPIKey) {
                 throw new Error(`OpenAI API key is not set`);
             }
+
+            requestOpts.user = message.data.account;
 
             const embeddings = await generateEmbeddings(message.data.message, openAiAPIKey, requestOpts);
             if (!Array.isArray(embeddings?.embeddings)) {
@@ -1478,8 +1483,12 @@ async function onCommand(worker, message) {
                     break;
             }
 
+            requestOpts.user = message.data.account;
+            requestOpts.temperature = 0.4;
+
             requestOpts.question = message.data.question;
             requestOpts.contextChunks = message.data.contextChunks;
+            requestOpts.userData = message.data.userData;
 
             let response = await embeddingsQuery(openAiAPIKey, requestOpts);
 
@@ -1488,7 +1497,7 @@ async function onCommand(worker, message) {
                 delete response?.['Message-ID'];
             }
             if (response?.messageId) {
-                response.messageId = (response?.messageId || '').toString().trim().replace(/^<?/, '<').replace(/>?$/, '>');
+                response.messageId = [].concat(response?.messageId || []).map(value => (value || '').toString().trim().replace(/^<?/, '<').replace(/>?$/, '>'));
             }
 
             if (response?.answer) {
@@ -1498,6 +1507,35 @@ async function onCommand(worker, message) {
                     response.answer = response.answer.toString();
                 }
             }
+
+            for (const key of Object.keys(response)) {
+                if (/^_/.test(key)) {
+                    delete response[key];
+                }
+            }
+
+            return response;
+        }
+
+        case 'questionQuery': {
+            let requestOpts = {
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
+            };
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiModel = message.data.openAiModel || 'gpt-3.5-turbo-instruct';
+            if (openAiModel) {
+                requestOpts.gptModel = openAiModel;
+            }
+
+            requestOpts.user = message.data.account;
+
+            let response = await questionQuery(message.data.question, openAiAPIKey, requestOpts);
 
             for (const key of Object.keys(response)) {
                 if (/^_/.test(key)) {
@@ -1519,6 +1557,8 @@ async function onCommand(worker, message) {
             if (!openAiAPIKey) {
                 throw new Error(`OpenAI API key is not set`);
             }
+
+            requestOpts.user = message.data.account;
 
             const data = await getChunkEmbeddings(message.data.message, openAiAPIKey, requestOpts);
 

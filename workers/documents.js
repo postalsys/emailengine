@@ -510,7 +510,8 @@ const documentsWorker = new Worker(
                                             subject: messageData.subject,
                                             text: messageData.text.plain,
                                             html: messageData.text.html
-                                        }
+                                        },
+                                        account: job.data.account
                                     },
                                     timeout: 5 * 60 * 1000
                                 });
@@ -530,6 +531,7 @@ const documentsWorker = new Worker(
                                 model: embeddings.model,
                                 chunkNr: i,
                                 chunks: embeddings.embeddings.length,
+                                date: messageData.date,
                                 created: new Date()
                             }));
 
