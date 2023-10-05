@@ -79,6 +79,6 @@ jobs:
                   platforms: ${{ steps.buildx.outputs.platforms }}
                   push: true
                   tags: |
-                      ${{ github.repository }}:${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
-                      ${{ github.repository }}:${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
-                      ${{ github.repository }}:${{needs.release_please.outputs.major}}
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}
