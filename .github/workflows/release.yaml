@@ -10,16 +10,22 @@ permissions:
 
 name: release
 jobs:
-    release-please:
+    release_please:
         runs-on: ubuntu-latest
+        outputs:
+            major: ${{ steps.release.outputs.major }}
+            minor: ${{ steps.release.outputs.minor }}
+            patch: ${{ steps.release.outputs.patch }}
+            release_created: ${{ steps.release.outputs.release_created }}
         steps:
             - uses: google-github-actions/release-please-action@v3
               id: release
               with:
                   release-type: node
-                  prerelease: true
                   package-name: ${{env.PACKAGE_NAME}}
                   pull-request-title-pattern: 'chore${scope}: release ${version} [skip-ci]'
+                  prerelease: true
+
             # The logic below handles the npm publication:
             - uses: actions/checkout@v4
               # these if statements ensure that a publication only occurs when
@@ -32,3 +38,47 @@ jobs:
               if: ${{ steps.release.outputs.release_created }}
             - run: npm install
               if: ${{ steps.release.outputs.release_created }}
+
+    publish_docker:
+        runs-on: ubuntu-latest
+        needs: release_please
+        if: ${{needs.release_please.outputs.release_created}}
+        steps:
+            - run: echo version v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
+
+            - uses: actions/checkout@v4
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              with:
+                  platforms: 'arm64,arm'
+
+            - name: Set up Docker Buildx
+              id: buildx
+              uses: docker/setup-buildx-action@v3
+              with:
+                  platforms: linux/arm64,linux/amd64,linux/arm/v7
+
+            - name: Login to DockerHub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.repository_owner }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  platforms: ${{ steps.buildx.outputs.platforms }}
+                  push: true
+                  tags: |
+                      ${{ github.repository }}:${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
+                      ${{ github.repository }}:${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
+                      ${{ github.repository }}:${{needs.release_please.outputs.major}}
