@@ -527,32 +527,6 @@
 
         let testPromptBtn = document.getElementById('prompt-test-btn');
 
-        const readFile = (elm) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-
-                reader.addEventListener('load', (event) => {
-                    let str = event.target.result.substring(event.target.result.indexOf(',') + 1)
-
-                    resolve(str)
-                });
-
-                reader.addEventListener('error', () => {
-                    reject(new Error('Failed loading file'))
-                });
-
-                reader.addEventListener('abort', () => {
-                    reject(new Error('Failed loading file'))
-                });
-
-                if (!elm.files || !elm.files[0]) {
-                    return reject(new Error('No file selected'));
-                }
-
-                reader.readAsDataURL(elm.files[0]);
-            })
-        }
-
         let showError = message => {
             document.getElementById('testPromptError').classList.remove('d-none');
             document.getElementById('testPromptResponse').classList.add('d-none');
@@ -572,7 +546,7 @@
             document.getElementById('testPromptResponse').classList.add('d-none');
         }
 
-        let fileSelectElm = document.getElementById('emlEmail')
+        let fileSelectElm = document.getElementById('emlEmail');
 
         async function testPromptFn() {
             let emailFile;
@@ -580,7 +554,7 @@
             clearResponses();
 
             try {
-                emailFile = await readFile(fileSelectElm)
+                emailFile = await readContentFromFile(fileSelectElm, 'base64');
             } catch (err) {
                 return showError(err.message)
             }

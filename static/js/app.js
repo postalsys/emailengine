@@ -24,6 +24,49 @@ window.showToast = (message, icon) => {
     $(toast).toast('show');
 };
 
+window.readContentFromFile = (elm, type) =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.addEventListener('load', event => {
+            let str = event.target.result;
+            switch (type) {
+                case 'base64': {
+                    // extract base64 content from a Data URI
+                    str = str.substring(event.target.result.indexOf(',') + 1);
+                    break;
+                }
+                case 'text':
+                default:
+                // do nothing
+            }
+            resolve(str);
+        });
+
+        reader.addEventListener('error', () => {
+            reject(new Error('Failed loading file'));
+        });
+
+        reader.addEventListener('abort', () => {
+            reject(new Error('Failed loading file'));
+        });
+
+        if (!elm.files || !elm.files[0]) {
+            let error = new Error('No file selected');
+            error.code = 'NoFileSelected';
+            return reject(error);
+        }
+
+        switch (type) {
+            case 'base64':
+                reader.readAsDataURL(elm.files[0]);
+                break;
+            case 'text':
+            default:
+                reader.readAsText(elm.files[0], 'UTF-8');
+        }
+    });
+
 document.addEventListener('DOMContentLoaded', () => {
     let toggleAllElements = (allElementsElm, otherElements, direction) => {
         if (!allElementsElm || !otherElements) {

@@ -154,7 +154,7 @@
                     referrerpolicy="{{referrerPolicy}}">license
                     central</a> (requires a paid subscription).</p>{{/if}}
 
-            <form method="post" action="/admin/config/license">
+            <form method="post" id="licenseForm" action="/admin/config/license">
                 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
                 <div class="form-group">
@@ -173,6 +173,11 @@
                     <span class="invalid-feedback">{{errors.license}}</span>
                     {{/if}}
                     <small class="form-text text-muted">Paste or drag a license key file to this text box</small>
+                </div>
+
+                <div class="custom-file mb-3">
+                    <input type="file" class="custom-file-input" id="licenseFile">
+                    <label class="custom-file-label" for="licenseFile">Or choose the license key from a file…</label>
                 </div>
 
                 <div class="mb-4">
@@ -238,9 +243,35 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('unregister-license-link').addEventListener('click', e => {
-            e.preventDefault();
-            $('#deleteLicense').modal('show');
-        });
+        let deleteLicenseElm = document.getElementById('unregister-license-link');
+        if (deleteLicenseElm) {
+            deleteLicenseElm.addEventListener('click', e => {
+                e.preventDefault();
+                $('#deleteLicense').modal('show');
+            });
+        }
+
+        let fileSelectElm = document.getElementById('licenseFile');
+        let licenseTextElm = document.getElementById('licenseTextElement')
+        let loadFromFile = async () => {
+            try {
+                let licenseFileTxt = await readContentFromFile(fileSelectElm, 'text');
+                if (licenseFileTxt) {
+                    licenseTextElm.value = (licenseFileTxt || '').toString().trim();
+                    licenseTextElm.focus();
+                    licenseTextElm.select();
+                    //document.getElementById('licenseForm').submit();
+                }
+            } catch (err) {
+                if (err.code === 'NoFileSelected') {
+                    return
+                }
+                showToast('Failed to read license key file\n' + err.message, 'check-circle');
+                return
+            }
+        }
+
+        fileSelectElm.addEventListener('change', loadFromFile);
+
     });
 </script>
