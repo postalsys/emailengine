@@ -190,6 +190,7 @@ const IMAP_PROXY_PROXY = hasEnvValue('EENGINE_IMAP_PROXY_PROXY')
     ? getBoolean(readEnvValue('EENGINE_IMAP_PROXY_PROXY'))
     : getBoolean(config['imap-proxy'].proxy);
 
+const HAS_API_PROXY_SET = hasEnvValue('EENGINE_API_PROXY') || typeof config.api.proxy !== 'undefined';
 const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
 logger.info({
@@ -1965,7 +1966,7 @@ const startApplication = async () => {
 
     let existingEnableApiProxy = await settings.get('enableApiProxy');
     if (existingEnableApiProxy === null) {
-        await settings.set('enableApiProxy', API_PROXY);
+        await settings.set('enableApiProxy', HAS_API_PROXY_SET ? API_PROXY : true);
     }
 
     let existingServiceSecret = await settings.get('serviceSecret');
@@ -1977,6 +1978,21 @@ const startApplication = async () => {
     if (existingQueueKeep === null) {
         let QUEUE_KEEP = Math.max((readEnvValue('EENGINE_QUEUE_REMOVE_AFTER') && Number(readEnvValue('EENGINE_QUEUE_REMOVE_AFTER'))) || 0, 0);
         await settings.set('queueKeep', QUEUE_KEEP);
+    }
+
+    let existingNotifyText = await settings.get('notifyText');
+    if (existingNotifyText === null) {
+        await settings.set('notifyText', true);
+    }
+
+    let existingNotifyTextSize = await settings.get('notifyTextSize');
+    if (existingNotifyTextSize === null) {
+        await settings.set('notifyTextSize', 2 * 1024 * 1024); // set default max text size in webhooks to 2MB
+    }
+
+    let existingScriptEnv = await settings.get('scriptEnv');
+    if (existingScriptEnv === null) {
+        await settings.set('scriptEnv', {}); // empty object
     }
 
     if (preparedToken) {
