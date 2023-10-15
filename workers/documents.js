@@ -613,7 +613,11 @@ const documentsWorker = new Worker(
                             });
                             messageIdHeader = (getResult?._source?.messageId || '').toString().trim();
                         } catch (err) {
-                            logger.error({ msg: 'Failed to retrieve Message-ID for deleted email', account: job.data.account, message: messageId, err });
+                            if (err.name === 'ResponseError') {
+                                logger.trace({ msg: 'Failed to retrieve Message-ID for deleted email', account: job.data.account, message: messageId });
+                            } else {
+                                logger.error({ msg: 'Failed to retrieve Message-ID for deleted email', account: job.data.account, message: messageId, err });
+                            }
                         }
 
                         deleteResult = await client.delete({
