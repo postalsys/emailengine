@@ -1000,6 +1000,17 @@ When making API calls remember that requests against the same account are queued
 
     server.route({
         method: 'GET',
+        path: '/sbom.json',
+        handler: {
+            file: { path: pathlib.join(__dirname, '..', 'sbom.json'), confine: false }
+        },
+        options: {
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'GET',
         path: '/license.html',
         async handler(request, h) {
             return h.view(

@@ -1,0 +1,2056 @@
+{
+  "sbom": {
+    "SPDXID": "SPDXRef-DOCUMENT",
+    "spdxVersion": "SPDX-2.3",
+    "creationInfo": {
+      "created": "2023-10-16T12:40:48Z",
+      "creators": [
+        "Tool: GitHub.com-Dependency-Graph"
+      ]
+    },
+    "name": "com.github.postalsys/emailengine",
+    "dataLicense": "CC0-1.0",
+    "documentDescribes": [
+      "SPDXRef-com.github.postalsys-emailengine"
+    ],
+    "documentNamespace": "https://github.com/postalsys/emailengine/dependency_graph/sbom-1e17d30e7ce73287",
+    "packages": [
+      {
+        "SPDXID": "SPDXRef-com.github.postalsys-emailengine",
+        "name": "com.github.postalsys/emailengine",
+        "versionInfo": "",
+        "downloadLocation": "git+https://github.com/postalsys/emailengine",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceType": "purl",
+            "referenceLocator": "pkg:github/postalsys/emailengine"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-bugsnag-js-7.21.0",
+        "name": "npm:@bugsnag/js",
+        "versionInfo": "7.21.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40bugsnag/js@7.21.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-elastic-elasticsearch-8.10.0",
+        "name": "npm:@elastic/elasticsearch",
+        "versionInfo": "8.10.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "Apache-2.0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40elastic/elasticsearch@8.10.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-bell-13.0.1",
+        "name": "npm:@hapi/bell",
+        "versionInfo": "13.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/bell@13.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-boom-10.0.1",
+        "name": "npm:@hapi/boom",
+        "versionInfo": "10.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/boom@10.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-cookie-12.0.1",
+        "name": "npm:@hapi/cookie",
+        "versionInfo": "12.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/cookie@12.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-crumb-9.0.1",
+        "name": "npm:@hapi/crumb",
+        "versionInfo": "9.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/crumb@9.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-hapi-21.3.2",
+        "name": "npm:@hapi/hapi",
+        "versionInfo": "21.3.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/hapi@21.3.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-inert-7.1.0",
+        "name": "npm:@hapi/inert",
+        "versionInfo": "7.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/inert@7.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-vision-7.0.3",
+        "name": "npm:@hapi/vision",
+        "versionInfo": "7.0.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40hapi/vision@7.0.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-phc-pbkdf2-1.1.14",
+        "name": "npm:@phc/pbkdf2",
+        "versionInfo": "1.1.14",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40phc/pbkdf2@1.1.14",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-postalsys-certs-1.0.5",
+        "name": "npm:@postalsys/certs",
+        "versionInfo": "1.0.5",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "ISC",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40postalsys/certs@1.0.5",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-postalsys-email-ai-tools-1.6.2",
+        "name": "npm:@postalsys/email-ai-tools",
+        "versionInfo": "1.6.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40postalsys/email-ai-tools@1.6.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-postalsys-email-text-tools-2.1.1",
+        "name": "npm:@postalsys/email-text-tools",
+        "versionInfo": "2.1.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40postalsys/email-text-tools@2.1.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-postalsys-hecks-3.0.0-fork.3",
+        "name": "npm:@postalsys/hecks",
+        "versionInfo": "3.0.0-fork.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40postalsys/hecks@3.0.0-fork.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-postalsys-templates-1.0.5",
+        "name": "npm:@postalsys/templates",
+        "versionInfo": "1.0.5",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "ISC",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/%40postalsys/templates@1.0.5",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-ace-builds-1.30.0",
+        "name": "npm:ace-builds",
+        "versionInfo": "1.30.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/ace-builds@1.30.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-base32.js-0.1.0",
+        "name": "npm:base32.js",
+        "versionInfo": "0.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/base32.js@0.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-bull-arena-4.0.1",
+        "name": "npm:bull-arena",
+        "versionInfo": "4.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/bull-arena@4.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-bullmq-4.12.4",
+        "name": "npm:bullmq",
+        "versionInfo": "4.12.4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/bullmq@4.12.4",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-chai-4.3.10",
+        "name": "npm:chai",
+        "versionInfo": "4.3.10",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/chai@4.3.10",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-compare-versions-6.1.0",
+        "name": "npm:compare-versions",
+        "versionInfo": "6.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/compare-versions@6.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-dotenv-16.3.1",
+        "name": "npm:dotenv",
+        "versionInfo": "16.3.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-2-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/dotenv@16.3.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-eerawlog-1.5.1",
+        "name": "npm:eerawlog",
+        "versionInfo": "1.5.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "ISC",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/eerawlog@1.5.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-encoding-japanese-2.0.0",
+        "name": "npm:encoding-japanese",
+        "versionInfo": "2.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/encoding-japanese@2.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-eslint-8.51.0",
+        "name": "npm:eslint",
+        "versionInfo": "8.51.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/eslint@8.51.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-eslint-config-nodemailer-1.2.0",
+        "name": "npm:eslint-config-nodemailer",
+        "versionInfo": "1.2.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/eslint-config-nodemailer@1.2.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-eslint-config-prettier-9.0.0",
+        "name": "npm:eslint-config-prettier",
+        "versionInfo": "9.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/eslint-config-prettier@9.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-exponential-backoff-3.1.1",
+        "name": "npm:exponential-backoff",
+        "versionInfo": "3.1.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "Apache-2.0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/exponential-backoff@3.1.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-express-4.18.2",
+        "name": "npm:express",
+        "versionInfo": "4.18.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/express@4.18.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-gettext-parser-7.0.1",
+        "name": "npm:gettext-parser",
+        "versionInfo": "7.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/gettext-parser@7.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-grunt-1.6.1",
+        "name": "npm:grunt",
+        "versionInfo": "1.6.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/grunt@1.6.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-grunt-cli-1.4.3",
+        "name": "npm:grunt-cli",
+        "versionInfo": "1.4.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/grunt-cli@1.4.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-grunt-eslint-24.3.0",
+        "name": "npm:grunt-eslint",
+        "versionInfo": "24.3.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/grunt-eslint@24.3.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-handlebars-4.7.8",
+        "name": "npm:handlebars",
+        "versionInfo": "4.7.8",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/handlebars@4.7.8",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-auth-bearer-token-8.0.0",
+        "name": "npm:hapi-auth-bearer-token",
+        "versionInfo": "8.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/hapi-auth-bearer-token@8.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-pino-12.1.0",
+        "name": "npm:hapi-pino",
+        "versionInfo": "12.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/hapi-pino@12.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-hapi-swagger-17.1.0",
+        "name": "npm:hapi-swagger",
+        "versionInfo": "17.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/hapi-swagger@17.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-he-1.2.0",
+        "name": "npm:he",
+        "versionInfo": "1.2.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/he@1.2.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-html-to-text-9.0.5",
+        "name": "npm:html-to-text",
+        "versionInfo": "9.0.5",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/html-to-text@9.0.5",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-humanize-0.0.9",
+        "name": "npm:humanize",
+        "versionInfo": "0.0.9",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/humanize@0.0.9",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-ical.js-1.5.0",
+        "name": "npm:ical.js",
+        "versionInfo": "1.5.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MPL-2.0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/ical.js@1.5.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-iconv-lite-0.6.3",
+        "name": "npm:iconv-lite",
+        "versionInfo": "0.6.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/iconv-lite@0.6.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-imapflow-1.0.144",
+        "name": "npm:imapflow",
+        "versionInfo": "1.0.144",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/imapflow@1.0.144",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-ioredfour-1.2.0-ioredis-07",
+        "name": "npm:ioredfour",
+        "versionInfo": "1.2.0-ioredis-07",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/ioredfour@1.2.0-ioredis-07",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-ioredis-5.3.2",
+        "name": "npm:ioredis",
+        "versionInfo": "5.3.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/ioredis@5.3.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-ipaddr.js-2.1.0",
+        "name": "npm:ipaddr.js",
+        "versionInfo": "2.1.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/ipaddr.js@2.1.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-joi-17.11.0",
+        "name": "npm:joi",
+        "versionInfo": "17.11.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/joi@17.11.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-jquery-3.7.1",
+        "name": "npm:jquery",
+        "versionInfo": "3.7.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/jquery@3.7.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-js-beautify-1.14.9",
+        "name": "npm:js-beautify",
+        "versionInfo": "1.14.9",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/js-beautify@1.14.9",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-jsxgettext-0.11.0",
+        "name": "npm:jsxgettext",
+        "versionInfo": "0.11.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MPL-2.0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/jsxgettext@0.11.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-libbase64-1.2.1",
+        "name": "npm:libbase64",
+        "versionInfo": "1.2.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/libbase64@1.2.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-libmime-5.2.1",
+        "name": "npm:libmime",
+        "versionInfo": "5.2.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/libmime@5.2.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-libqp-2.0.1",
+        "name": "npm:libqp",
+        "versionInfo": "2.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/libqp@2.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-license-checker-25.0.1",
+        "name": "npm:license-checker",
+        "versionInfo": "25.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/license-checker@25.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-mailparser-3.6.5",
+        "name": "npm:mailparser",
+        "versionInfo": "3.6.5",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/mailparser@3.6.5",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-mailsplit-5.4.0",
+        "name": "npm:mailsplit",
+        "versionInfo": "5.4.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "EUPL-1.1+ OR MIT OR (EUPL-1.1+ AND MIT)",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/mailsplit@5.4.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-marked-9.1.2",
+        "name": "npm:marked",
+        "versionInfo": "9.1.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/marked@9.1.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-minimist-1.2.8",
+        "name": "npm:minimist",
+        "versionInfo": "1.2.8",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/minimist@1.2.8",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-msgpack5-6.0.2",
+        "name": "npm:msgpack5",
+        "versionInfo": "6.0.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/msgpack5@6.0.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-murmurhash-2.0.1",
+        "name": "npm:murmurhash",
+        "versionInfo": "2.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/murmurhash@2.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-nanoid-3.3.4",
+        "name": "npm:nanoid",
+        "versionInfo": "3.3.4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/nanoid@3.3.4",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-node-gettext-3.0.0",
+        "name": "npm:node-gettext",
+        "versionInfo": "3.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/node-gettext@3.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-nodemailer-6.9.6",
+        "name": "npm:nodemailer",
+        "versionInfo": "6.9.6",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT-0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/nodemailer@6.9.6",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-pino-8.16.0",
+        "name": "npm:pino",
+        "versionInfo": "8.16.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/pino@8.16.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-pino-pretty-10.2.3",
+        "name": "npm:pino-pretty",
+        "versionInfo": "10.2.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/pino-pretty@10.2.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-pkg-5.8.1",
+        "name": "npm:pkg",
+        "versionInfo": "5.8.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/pkg@5.8.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-prom-client-15.0.0",
+        "name": "npm:prom-client",
+        "versionInfo": "15.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "Apache-2.0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/prom-client@15.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-psl-1.9.0",
+        "name": "npm:psl",
+        "versionInfo": "1.9.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/psl@1.9.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-pubface-1.0.6",
+        "name": "npm:pubface",
+        "versionInfo": "1.0.6",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT-0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/pubface@1.0.6",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-punycode-2.3.0",
+        "name": "npm:punycode",
+        "versionInfo": "2.3.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/punycode@2.3.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-qrcode-1.5.3",
+        "name": "npm:qrcode",
+        "versionInfo": "1.5.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/qrcode@1.5.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-resedit-2.0.0",
+        "name": "npm:resedit",
+        "versionInfo": "2.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/resedit@2.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-smtp-server-3.13.0",
+        "name": "npm:smtp-server",
+        "versionInfo": "3.13.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT-0",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/smtp-server@3.13.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-socks-2.7.1",
+        "name": "npm:socks",
+        "versionInfo": "2.7.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/socks@2.7.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-speakeasy-2.0.0",
+        "name": "npm:speakeasy",
+        "versionInfo": "2.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/speakeasy@2.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-startbootstrap-sb-admin-2-3.3.7",
+        "name": "npm:startbootstrap-sb-admin-2",
+        "versionInfo": "3.3.7",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/startbootstrap-sb-admin-2@3.3.7",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-timezones-list-3.0.2",
+        "name": "npm:timezones-list",
+        "versionInfo": "3.0.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/timezones-list@3.0.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-undici-5.26.3",
+        "name": "npm:undici",
+        "versionInfo": "5.26.3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/undici@5.26.3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-uuid-9.0.1",
+        "name": "npm:uuid",
+        "versionInfo": "9.0.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/uuid@9.0.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-wild-config-1.7.1",
+        "name": "npm:wild-config",
+        "versionInfo": "1.7.1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/wild-config@1.7.1",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-xgettext-template-5.0.0",
+        "name": "npm:xgettext-template",
+        "versionInfo": "5.0.0",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/xgettext-template@5.0.0",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-npm-xml2js-0.6.2",
+        "name": "npm:xml2js",
+        "versionInfo": "0.6.2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:npm/xml2js@0.6.2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-actions-checkout-3",
+        "name": "actions:actions/checkout",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/actions/checkout@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-shimataro-ssh-key-action-2",
+        "name": "actions:shimataro/ssh-key-action",
+        "versionInfo": "2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/shimataro/ssh-key-action@2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-build-push-action-4",
+        "name": "actions:docker/build-push-action",
+        "versionInfo": "4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/build-push-action@4",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-login-action-2",
+        "name": "actions:docker/login-action",
+        "versionInfo": "2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/login-action@2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-metadata-action-4",
+        "name": "actions:docker/metadata-action",
+        "versionInfo": "4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/metadata-action@4",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-setup-buildx-action-2",
+        "name": "actions:docker/setup-buildx-action",
+        "versionInfo": "2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/setup-buildx-action@2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-setup-qemu-action-2",
+        "name": "actions:docker/setup-qemu-action",
+        "versionInfo": "2",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/setup-qemu-action@2",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-actions-checkout-4",
+        "name": "actions:actions/checkout",
+        "versionInfo": "4",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/actions/checkout@4",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-actions-setup-node-3",
+        "name": "actions:actions/setup-node",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/actions/setup-node@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-build-push-action-5",
+        "name": "actions:docker/build-push-action",
+        "versionInfo": "5",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/build-push-action@5",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-login-action-3",
+        "name": "actions:docker/login-action",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/login-action@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-setup-buildx-action-3",
+        "name": "actions:docker/setup-buildx-action",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/setup-buildx-action@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-docker-setup-qemu-action-3",
+        "name": "actions:docker/setup-qemu-action",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/docker/setup-qemu-action@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-google-github-actions-release-please-action-3",
+        "name": "actions:google-github-actions/release-please-action",
+        "versionInfo": "3",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/google-github-actions/release-please-action@3",
+            "referenceType": "purl"
+          }
+        ]
+      },
+      {
+        "SPDXID": "SPDXRef-actions-actions-setup-node-1",
+        "name": "actions:actions/setup-node",
+        "versionInfo": "1",
+        "downloadLocation": "NOASSERTION",
+        "filesAnalyzed": false,
+        "supplier": "NOASSERTION",
+        "externalRefs": [
+          {
+            "referenceCategory": "PACKAGE-MANAGER",
+            "referenceLocator": "pkg:githubactions/actions/setup-node@1",
+            "referenceType": "purl"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-bugsnag-js-7.21.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-elastic-elasticsearch-8.10.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-bell-13.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-boom-10.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-cookie-12.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-crumb-9.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-hapi-21.3.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-inert-7.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-vision-7.0.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-phc-pbkdf2-1.1.14"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-postalsys-certs-1.0.5"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-postalsys-email-ai-tools-1.6.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-postalsys-email-text-tools-2.1.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-postalsys-hecks-3.0.0-fork.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-postalsys-templates-1.0.5"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-ace-builds-1.30.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-base32.js-0.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-bull-arena-4.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-bullmq-4.12.4"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-chai-4.3.10"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-compare-versions-6.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-dotenv-16.3.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-eerawlog-1.5.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-encoding-japanese-2.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-eslint-8.51.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-eslint-config-nodemailer-1.2.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-eslint-config-prettier-9.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-exponential-backoff-3.1.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-express-4.18.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-gettext-parser-7.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-grunt-1.6.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-grunt-cli-1.4.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-grunt-eslint-24.3.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-handlebars-4.7.8"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-auth-bearer-token-8.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-pino-12.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-hapi-swagger-17.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-he-1.2.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-html-to-text-9.0.5"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-humanize-0.0.9"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-ical.js-1.5.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-iconv-lite-0.6.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-imapflow-1.0.144"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-ioredfour-1.2.0-ioredis-07"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-ioredis-5.3.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-ipaddr.js-2.1.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-joi-17.11.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-jquery-3.7.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-js-beautify-1.14.9"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-jsxgettext-0.11.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-libbase64-1.2.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-libmime-5.2.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-libqp-2.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-license-checker-25.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-mailparser-3.6.5"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-mailsplit-5.4.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-marked-9.1.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-minimist-1.2.8"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-msgpack5-6.0.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-murmurhash-2.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-nanoid-3.3.4"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-node-gettext-3.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-nodemailer-6.9.6"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-pino-8.16.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-pino-pretty-10.2.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-pkg-5.8.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-prom-client-15.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-psl-1.9.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-pubface-1.0.6"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-punycode-2.3.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-qrcode-1.5.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-resedit-2.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-smtp-server-3.13.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-socks-2.7.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-speakeasy-2.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-startbootstrap-sb-admin-2-3.3.7"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-timezones-list-3.0.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-undici-5.26.3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-uuid-9.0.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-wild-config-1.7.1"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-xgettext-template-5.0.0"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-npm-xml2js-0.6.2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-actions-checkout-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-shimataro-ssh-key-action-2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-build-push-action-4"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-login-action-2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-metadata-action-4"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-setup-buildx-action-2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-setup-qemu-action-2"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-actions-checkout-4"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-actions-setup-node-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-build-push-action-5"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-login-action-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-setup-buildx-action-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-docker-setup-qemu-action-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-google-github-actions-release-please-action-3"
+      },
+      {
+        "relationshipType": "DEPENDS_ON",
+        "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
+        "relatedSpdxElement": "SPDXRef-actions-actions-setup-node-1"
+      }
+    ]
+  }
+}

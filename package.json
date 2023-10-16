@@ -140,7 +140,8 @@
             "translations/**/*",
             "LICENSE_EMAILENGINE.txt",
             "help.txt",
-            "version-info.json"
+            "version-info.json",
+            "sbom.json"
         ],
         "targets": [
             "latest-linux-x64",
