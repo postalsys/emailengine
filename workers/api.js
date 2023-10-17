@@ -148,7 +148,8 @@ const {
     oauthCreateSchema,
     tokenRestrictionsSchema,
     accountIdSchema,
-    ipSchema
+    ipSchema,
+    accountCountersSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -2665,6 +2666,9 @@ When making API calls remember that requests against the same account are queued
                                     .description('Account-specific webhook URL'),
                                 proxy: settingsSchema.proxyUrl,
                                 smtpEhloName: settingsSchema.smtpEhloName,
+
+                                counters: accountCountersSchema,
+
                                 syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('AccountResponseItem')
@@ -2767,6 +2771,10 @@ When making API calls remember that requests against the same account are queued
                     result.lastError = accountData.state === 'connected' ? null : accountData.lastErrorState;
                 }
 
+                if (accountData.counters) {
+                    result.counters = accountData.counters;
+                }
+
                 return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -2854,6 +2862,10 @@ When making API calls remember that requests against the same account are queued
                         .description('Account type')
                         .required(),
                     app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+
+                    counters: accountCountersSchema,
+
+                    syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('AccountResponse'),

@@ -783,6 +783,9 @@ let spawnWorker = async type => {
         switch (message.cmd) {
             case 'metrics': {
                 let statUpdateKey = false;
+                let accountUpdateKey = false;
+
+                let { account } = message.meta || {};
 
                 switch (message.key) {
                     // gather for dashboard counter
@@ -798,6 +801,10 @@ let spawnWorker = async type => {
 
                     case 'events': {
                         let { event } = message.args[0] || {};
+                        if (account) {
+                            accountUpdateKey = `${message.key}:${event}`;
+                        }
+
                         switch (event) {
                             case MESSAGE_NEW_NOTIFY:
                             case MESSAGE_DELETED_NOTIFY:
@@ -844,14 +851,23 @@ let spawnWorker = async type => {
 
                     let hkey = `${REDIS_PREFIX}stats:${statUpdateKey}:${dateStr}`;
 
-                    redis
+                    let update = redis
                         .multi()
                         .hincrby(hkey, timeStr, 1)
                         .sadd(`${REDIS_PREFIX}stats:keys`, statUpdateKey)
                         // keep alive at most 2 days
-                        .expire(hkey, MAX_DAYS_STATS + 1 * 24 * 3600)
-                        .exec()
-                        .catch(() => false);
+                        .expire(hkey, MAX_DAYS_STATS + 1 * 24 * 3600);
+
+                    if (account && accountUpdateKey) {
+                        // increment account specific counter
+                        let accountKey = `${REDIS_PREFIX}iad:${account}`;
+                        update = update.hincrby(accountKey, `stats:count:${account}`, 1);
+                    }
+
+                    update.exec().catch(() => false);
+                } else if (account && accountUpdateKey) {
+                    let accountKey = `${REDIS_PREFIX}iad:${account}`;
+                    redis.hincrby(accountKey, `stats:count:${accountUpdateKey}`, 1).catch(() => false);
                 }
 
                 if (message.key && metrics[message.key] && typeof metrics[message.key][message.method] === 'function') {
