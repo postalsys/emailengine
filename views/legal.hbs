@@ -21,11 +21,28 @@
             <a href="mailto:info@postalsys.com">info@postalsys.com</a><br>
             <a href="https://postalsys.com/">https://postalsys.com</a>
         </address>
+
+
+
     </div>
+
+
 
     <ul class="list-group list-group-flush">
 
-
+        <li class="list-group-item">
+            <strong>
+                {{#if licenseInfo.details.key}}
+                {{#if licenseInfo.details.trial}}
+                This copy of EmailEngine is running on a trial license.
+                {{else}}
+                This copy of EmailEngine is licensed to <em>{{licenseInfo.details.licensedTo}}</em>.
+                {{/if}}
+                {{else}}
+                License key not set for this copy of EmailEngine.
+                {{/if}}
+            </strong>
+        </li>
 
         <li class="list-group-item">
             <a href="/license.html" target="_blank">
