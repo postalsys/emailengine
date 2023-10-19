@@ -3,7 +3,7 @@
     "SPDXID": "SPDXRef-DOCUMENT",
     "spdxVersion": "SPDX-2.3",
     "creationInfo": {
-      "created": "2023-10-19T11:46:45Z",
+      "created": "2023-10-19T11:47:40Z",
       "creators": [
         "Tool: GitHub.com-Dependency-Graph"
       ]
@@ -13,7 +13,7 @@
     "documentDescribes": [
       "SPDXRef-com.github.postalsys-emailengine"
     ],
-    "documentNamespace": "https://github.com/postalsys/emailengine/dependency_graph/sbom-42bdee1d9e71e3a6",
+    "documentNamespace": "https://github.com/postalsys/emailengine/dependency_graph/sbom-a5860eb43ce30a2d",
     "packages": [
       {
         "SPDXID": "SPDXRef-com.github.postalsys-emailengine",
@@ -319,17 +319,16 @@
         ]
       },
       {
-        "SPDXID": "SPDXRef-npm-bullmq-4.12.4",
+        "SPDXID": "SPDXRef-npm-bullmq-4.12.5",
         "name": "npm:bullmq",
-        "versionInfo": "4.12.4",
+        "versionInfo": "4.12.5",
         "downloadLocation": "NOASSERTION",
         "filesAnalyzed": false,
-        "licenseConcluded": "MIT",
         "supplier": "NOASSERTION",
         "externalRefs": [
           {
             "referenceCategory": "PACKAGE-MANAGER",
-            "referenceLocator": "pkg:npm/bullmq@4.12.4",
+            "referenceLocator": "pkg:npm/bullmq@4.12.5",
             "referenceType": "purl"
           }
         ]
@@ -1263,17 +1262,16 @@
         ]
       },
       {
-        "SPDXID": "SPDXRef-npm-undici-5.26.3",
+        "SPDXID": "SPDXRef-npm-undici-5.26.4",
         "name": "npm:undici",
-        "versionInfo": "5.26.3",
+        "versionInfo": "5.26.4",
         "downloadLocation": "NOASSERTION",
         "filesAnalyzed": false,
-        "licenseConcluded": "MIT",
         "supplier": "NOASSERTION",
         "externalRefs": [
           {
             "referenceCategory": "PACKAGE-MANAGER",
-            "referenceLocator": "pkg:npm/undici@5.26.3",
+            "referenceLocator": "pkg:npm/undici@5.26.4",
             "referenceType": "purl"
           }
         ]
@@ -1662,7 +1660,7 @@
       {
         "relationshipType": "DEPENDS_ON",
         "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
-        "relatedSpdxElement": "SPDXRef-npm-bullmq-4.12.4"
+        "relatedSpdxElement": "SPDXRef-npm-bullmq-4.12.5"
       },
       {
         "relationshipType": "DEPENDS_ON",
@@ -1957,7 +1955,7 @@
       {
         "relationshipType": "DEPENDS_ON",
         "spdxElementId": "SPDXRef-com.github.postalsys-emailengine",
-        "relatedSpdxElement": "SPDXRef-npm-undici-5.26.3"
+        "relatedSpdxElement": "SPDXRef-npm-undici-5.26.4"
       },
       {
         "relationshipType": "DEPENDS_ON",
