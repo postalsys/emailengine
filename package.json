@@ -57,7 +57,7 @@
         "ace-builds": "1.30.0",
         "base32.js": "0.1.0",
         "bull-arena": "4.0.1",
-        "bullmq": "4.12.4",
+        "bullmq": "4.12.5",
         "compare-versions": "6.1.0",
         "dotenv": "16.3.1",
         "encoding-japanese": "2.0.0",
@@ -104,7 +104,7 @@
         "speakeasy": "2.0.0",
         "startbootstrap-sb-admin-2": "3.3.7",
         "timezones-list": "3.0.2",
-        "undici": "5.26.3",
+        "undici": "5.26.4",
         "uuid": "9.0.1",
         "wild-config": "1.7.1",
         "xml2js": "0.6.2"

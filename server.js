@@ -861,7 +861,7 @@ let spawnWorker = async type => {
                     if (account && accountUpdateKey) {
                         // increment account specific counter
                         let accountKey = `${REDIS_PREFIX}iad:${account}`;
-                        update = update.hincrby(accountKey, `stats:count:${account}`, 1);
+                        update = update.hincrby(accountKey, `stats:count:${accountUpdateKey}`, 1);
                     }
 
                     update.exec().catch(() => false);

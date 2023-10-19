@@ -3,7 +3,7 @@
     "SPDXID": "SPDXRef-DOCUMENT",
     "spdxVersion": "SPDX-2.3",
     "creationInfo": {
-      "created": "2023-10-16T12:40:48Z",
+      "created": "2023-10-19T11:46:45Z",
       "creators": [
         "Tool: GitHub.com-Dependency-Graph"
       ]
@@ -13,7 +13,7 @@
     "documentDescribes": [
       "SPDXRef-com.github.postalsys-emailengine"
     ],
-    "documentNamespace": "https://github.com/postalsys/emailengine/dependency_graph/sbom-1e17d30e7ce73287",
+    "documentNamespace": "https://github.com/postalsys/emailengine/dependency_graph/sbom-42bdee1d9e71e3a6",
     "packages": [
       {
         "SPDXID": "SPDXRef-com.github.postalsys-emailengine",
@@ -276,6 +276,7 @@
         "versionInfo": "1.30.0",
         "downloadLocation": "NOASSERTION",
         "filesAnalyzed": false,
+        "licenseConcluded": "BSD-3-Clause",
         "supplier": "NOASSERTION",
         "externalRefs": [
           {
@@ -323,6 +324,7 @@
         "versionInfo": "4.12.4",
         "downloadLocation": "NOASSERTION",
         "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
         "supplier": "NOASSERTION",
         "externalRefs": [
           {
@@ -930,6 +932,7 @@
         "versionInfo": "9.1.2",
         "downloadLocation": "NOASSERTION",
         "filesAnalyzed": false,
+        "licenseConcluded": "MIT",
         "supplier": "NOASSERTION",
         "externalRefs": [
           {
