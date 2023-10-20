@@ -749,6 +749,8 @@ process.on('SIGINT', () => {
 });
 
 main().catch(err => {
-    logger.error({ msg: 'Execution failed', err });
-    setImmediate(() => process.exit(6));
+    logger.fatal({ msg: 'Execution failed', err });
+    logger.flush(() => {
+        process.exit(6);
+    });
 });
