@@ -25,8 +25,7 @@ cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.
 wget https://developers.google.com/static/search/apis/ipranges/special-crawlers.json -O data/google-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 
-curl -Ls \
-  -H "Accept: application/vnd.github+json" \
-  -H "Authorization: Bearer ${GITHUB_SBOM_TOKEN}" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  https://api.github.com/repos/postalsys/emailengine/dependency-graph/sbom -o sbom.json
+# brew install gh
+# gh auth login
+# gh ext install advanced-security/gh-sbom
+gh sbom -c -l > sbom.json
