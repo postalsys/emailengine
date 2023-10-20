@@ -75,5 +75,5 @@ run()
     })
     .catch(err => {
         logger.error({ msg: 'Failed to initialize IMAP server', err });
-        setImmediate(() => process.exit(3));
+        logger.flush(() => process.exit(3));
     });

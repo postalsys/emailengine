@@ -547,7 +547,7 @@ class ConnectionHandler {
             }
         });
 
-        process.exit(0);
+        logger.flush(() => process.exit());
     }
 
     // some general message
@@ -737,20 +737,18 @@ parentPort.on('message', message => {
 process.on('SIGTERM', () => {
     connectionHandler.kill().catch(err => {
         logger.error({ msg: 'Execution failed', err });
-        process.exit(4);
+        logger.flush(() => process.exit(4));
     });
 });
 
 process.on('SIGINT', () => {
     connectionHandler.kill().catch(err => {
         logger.error({ msg: 'Execution failed', err });
-        process.exit(5);
+        logger.flush(() => process.exit(5));
     });
 });
 
 main().catch(err => {
     logger.fatal({ msg: 'Execution failed', err });
-    logger.flush(() => {
-        process.exit(6);
-    });
+    logger.flush(() => process.exit(6));
 });

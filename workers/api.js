@@ -7861,5 +7861,5 @@ init()
     })
     .catch(err => {
         logger.error({ msg: 'Failed to initialize API', err });
-        setImmediate(() => process.exit(3));
+        logger.flush(() => process.exit(3));
     });

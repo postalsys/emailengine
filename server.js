@@ -256,7 +256,7 @@ if (preparedSettingsString) {
         preparedSettings = value;
     } catch (err) {
         logger.error({ msg: 'Received invalid settings string', input: preparedSettingsString, err });
-        process.exit(1);
+        logger.flush(() => process.exit(1));
     }
 }
 
@@ -270,7 +270,7 @@ if (preparedTokenString) {
         }
     } catch (err) {
         logger.error({ msg: 'Received invalid token string', input: preparedTokenString, err });
-        process.exit(1);
+        logger.flush(() => process.exit(1));
     }
 }
 
@@ -284,7 +284,7 @@ if (preparedPasswordString) {
         }
     } catch (err) {
         logger.error({ msg: 'Received invalid password string', input: preparedPasswordString, err });
-        process.exit(1);
+        logger.flush(() => process.exit(1));
     }
 }
 
@@ -1853,7 +1853,7 @@ process.on('SIGTERM', () => {
     }
     isClosing = true;
     closeQueues(() => {
-        process.exit();
+        logger.flush(() => process.exit());
     });
 });
 
@@ -1864,7 +1864,7 @@ process.on('SIGINT', () => {
     }
     isClosing = true;
     closeQueues(() => {
-        process.exit();
+        logger.flush(() => process.exit());
     });
 });
 
@@ -1888,7 +1888,7 @@ const startApplication = async () => {
             await setLicense(licenseData, licenseFile);
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
-            return process.exit(13);
+            return logger.flush(() => process.exit(13));
         }
     }
 
@@ -1901,7 +1901,7 @@ const startApplication = async () => {
             }
         } catch (err) {
             logger.fatal({ msg: 'Failed to verify provided license key data', source: 'import', err });
-            return process.exit(13);
+            return logger.flush(() => process.exit(13));
         }
     }
 
@@ -2126,5 +2126,5 @@ startApplication()
     })
     .catch(err => {
         logger.fatal({ msg: 'Failed to start application', err });
-        process.exit(1);
+        logger.flush(() => process.exit(1));
     });
