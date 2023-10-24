@@ -1429,6 +1429,11 @@ async function onCommand(worker, message) {
                 requestOpts.gptModel = openAiModel;
             }
 
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
+            }
+
             let openAiTemperature = message.data.openAiTemperature || (await settings.get('openAiTemperature'));
             if (openAiTemperature) {
                 requestOpts.temperature = openAiTemperature;
@@ -1446,7 +1451,7 @@ async function onCommand(worker, message) {
                 case 'gpt-3.5-turbo':
                 case 'gpt-3.5-turbo-instruct':
                 default:
-                    requestOpts.maxTokens = 3500;
+                    requestOpts.maxTokens = 3000;
                     break;
             }
 
@@ -1470,6 +1475,11 @@ async function onCommand(worker, message) {
 
             if (!openAiAPIKey) {
                 throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
             }
 
             requestOpts.user = message.data.account;
@@ -1501,6 +1511,11 @@ async function onCommand(worker, message) {
                 throw new Error(`OpenAI API key is not set`);
             }
 
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
+            }
+
             let openAiModel = message.data.openAiModel || (await settings.get('documentStoreChatModel')) || (await settings.get('openAiModel'));
             if (openAiModel) {
                 requestOpts.gptModel = openAiModel;
@@ -1513,7 +1528,7 @@ async function onCommand(worker, message) {
                 case 'gpt-3.5-turbo':
                 case 'gpt-3.5-turbo-instruct':
                 default:
-                    requestOpts.maxTokens = 3500;
+                    requestOpts.maxTokens = 3000;
                     break;
             }
 
@@ -1562,6 +1577,11 @@ async function onCommand(worker, message) {
                 throw new Error(`OpenAI API key is not set`);
             }
 
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
+            }
+
             let openAiModel = message.data.openAiModel || 'gpt-3.5-turbo-instruct';
             if (openAiModel) {
                 requestOpts.gptModel = openAiModel;
@@ -1590,6 +1610,11 @@ async function onCommand(worker, message) {
 
             if (!openAiAPIKey) {
                 throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
             }
 
             requestOpts.user = message.data.account;

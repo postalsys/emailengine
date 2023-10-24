@@ -109,6 +109,21 @@
                     the selected model, or analysis requests will fail.</small>
             </div>
 
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                        target="_blank">openAiAPIUrl</a>]
+                </div>
+
+                <label for="openAiAPIUrl">OpenAI API URL</label>
+                <input type="url" class="form-control {{#if errors.openAiAPIUrl}}is-invalid{{/if}}" id="openAiAPIUrl"
+                    name="openAiAPIUrl" value="{{values.openAiAPIUrl}}" placeholder="https://api.openai.com" />
+                {{#if errors.openAiAPIUrl}}
+                <span class="invalid-feedback">{{errors.openAiAPIUrl}}</span>
+                {{/if}}
+                <small class="form-text text-muted">OpenAI API URL. Leave blank to use the default.</small>
+            </div>
+
         </div>
     </div>
 
@@ -563,6 +578,7 @@
                 emailFile,
                 openAiPrompt: editorPrompt.getValue(),
                 openAiModel: document.getElementById('settingsServiceOpenAiModel').value,
+                openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
                 openAiAPIKey: document.getElementById('openAiAPIKey').value,
                 openAiTemperature: document.getElementById('settingsOpenAiTemperature').value,
                 openAiTopP: document.getElementById('settingsOpenAiTopP').value
