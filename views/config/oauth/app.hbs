@@ -39,7 +39,11 @@
                 <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
                 <ul>
                     <li><code>"IMAP.AccessAsUser.All"</code>
+
+                        {{#unless disabledScopes.SMTP_Send}}
                     <li><code>"SMTP.Send"</code>
+                        {{/unless}}
+
                     <li><code>"offline_access"</code>
                 </ul>
                 <div>
@@ -185,6 +189,17 @@
             <dd class="col-sm-9">
                 <ul>
                     {{#each app.extraScopes}}
+                    <li class="text-monospace"><small>{{ this }}</small></li>
+                    {{/each}}
+                </ul>
+            </dd>
+            {{/if}}
+
+            {{#if app.skipScopes}}
+            <dt class="col-sm-3">Disabled OAuth2 scopes</dt>
+            <dd class="col-sm-9">
+                <ul>
+                    {{#each app.skipScopes}}
                     <li class="text-monospace"><small>{{ this }}</small></li>
                     {{/each}}
                 </ul>

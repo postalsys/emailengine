@@ -280,3 +280,30 @@
         </div>
     </div>
 </div>
+
+<div class="card mb-4">
+    <a href="#skipScopes" class="d-block card-header py-3 {{#unless values.skipScopes}} collapsed{{/unless}}"
+        data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupScopes">
+        <h6 class="m-0 font-weight-bold text-primary">Disabled scopes</h6>
+    </a>
+    <div class="collapse {{#if values.skipScopes}} show{{/if}}" id="skipScopes">
+        <div class="card-body">
+
+            <p>Here you can list OAuth2 scopes that EmailEngine should not use. This is mainly needed
+                when you want to disable some base scopes like <code>SMTP.Send</code> in Outlook.</p>
+
+            <div class="form-group">
+                <label for="skipScopes">List of disabled OAuth2 scopes</label>
+
+                <textarea class="form-control text-monospace {{#if errors.skipScopes}}is-invalid{{/if}}" id="skipScopes"
+                    name="skipScopes" rows="5" spellcheck="false" data-enable-grammarly="false"
+                    placeholder="Scope identifiers like &quot;SMTP.Send&quot;&mldr;">{{values.skipScopes}}</textarea>
+                {{#if errors.skipScopes}}
+                <span class="invalid-feedback">{{errors.skipScopes}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Keep one scope per line</small>
+            </div>
+
+        </div>
+    </div>
+</div>

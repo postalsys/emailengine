@@ -6210,6 +6210,8 @@ When making API calls remember that requests against the same account are queued
 
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
+                    skipScopes: Joi.array().items(Joi.string().trim().max(255).example('SMTP.Send')).description('OAuth2 scopes to skip from the base set'),
+
                     serviceClient: Joi.string()
                         .trim()
                         .allow('', null, false)
