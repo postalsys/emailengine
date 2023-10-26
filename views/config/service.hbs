@@ -178,6 +178,29 @@
                         endpoint</a>. Access to OAuth2 tokens is disabled by default due to the security risk of
                     potentially leaking these tokens.</small>
             </div>
+
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                        target="_blank">ignoreMailCertErrors</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
+                    id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
+                    values.ignoreMailCertErrors}}checked{{/if}} />
+                <label class="form-check-label" for="ignoreMailCertErrors">Allow insecure certificates for
+                    IMAP/SMTP
+
+                    <span class="badge badge-{{#if values.ignoreMailCertErrors}}danger{{else}}success{{/if}}">{{#if
+                        values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
+
+                </label>
+                {{#if errors.ignoreMailCertErrors}}
+                <span class="invalid-feedback">{{errors.ignoreMailCertErrors}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Enabling this will permit EmailEngine to bypass security warnings
+                    related to self-signed or expired TLS certificates during IMAP and SMTP interactions.</small>
+            </div>
+
         </div>
     </div>
 
