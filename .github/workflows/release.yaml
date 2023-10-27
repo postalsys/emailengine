@@ -22,7 +22,7 @@ jobs:
               id: release
               with:
                   release-type: node
-                  package-name: ${{env.PACKAGE_NAME}}
+                  package-name: ${{vars.PACKAGE_NAME}}
                   pull-request-title-pattern: 'chore${scope}: release ${version} [skip-ci]'
                   prerelease: true
 
