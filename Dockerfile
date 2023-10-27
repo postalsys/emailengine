@@ -1,11 +1,11 @@
-FROM node:lts-alpine
+FROM node:18-alpine
 
 RUN apk add --no-cache dumb-init
 
 WORKDIR /emailengine
 COPY . .
 
-RUN npm install --verbose --omit=dev
+RUN npm install --omit=dev
 RUN npm run prepare-docker
 RUN chmod +x ./update-info.sh
 RUN ./update-info.sh
