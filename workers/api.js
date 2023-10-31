@@ -208,9 +208,8 @@ const CORS_CONFIG = !CORS_ORIGINS
                   )
               ) || ['*']
           ),
-          headers: ['Authorization'],
-          exposedHeaders: ['Accept'],
-          additionalExposedHeaders: [],
+          additionalHeaders: ['X-EE-Timeout'],
+          additionalExposedHeaders: ['Accept'],
           preflightStatusCode: 204,
           maxAge:
               getDuration(readEnvValue('EENGINE_CORS_MAX_AGE') || (config.cors && config.cors.maxAge), {
