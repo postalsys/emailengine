@@ -953,6 +953,7 @@ async function call(worker, message, transferList) {
         let mid = `${Date.now()}:${++mids}`;
 
         let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T1]');
             err.statusCode = 504;

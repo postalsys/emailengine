@@ -282,6 +282,7 @@ async function call(message, transferList) {
         let mid = `${Date.now()}:${++mids}`;
 
         let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+
         let timer = setTimeout(() => {
             let err = new Error('Timeout waiting for command response [T2]');
             err.statusCode = 504;
@@ -467,7 +468,20 @@ const init = async () => {
             stripTrailingSlash: true
         },
         routes: {
-            validate: { options: { messages: joiLocales } }
+            validate: {
+                options: {
+                    messages: joiLocales,
+                    convert: true
+                },
+                headers: Joi.object({
+                    'x-ee-timeout': Joi.number()
+                        .min(0)
+                        .max(2 * 3600 * 1000)
+                        .optional()
+                        .description(`Override the \`EENGINE_TIMEOUT\` environment variable for a single API request (in milliseconds)`)
+                        .label('X-EE-Timeout')
+                }).unknown()
+            }
         }
     });
 
@@ -598,7 +612,7 @@ const init = async () => {
         }
 
         // make license info available for the request
-        request.app.licenseInfo = await call({ cmd: 'license' });
+        request.app.licenseInfo = await call({ cmd: 'license', timeout: request.headers['x-ee-timeout'] });
 
         // flash notifications
         request.flash = async message => await flash(redis, request, message);
@@ -1056,8 +1070,8 @@ When making API calls remember that requests against the same account are queued
     server.route({
         method: 'GET',
         path: '/health',
-        async handler() {
-            const imapWorkerCount = await call({ cmd: 'imapWorkerCount' });
+        async handler(request) {
+            const imapWorkerCount = await call({ cmd: 'imapWorkerCount', timeout: request.headers['x-ee-timeout'] });
             if (imapWorkerCount < IMAP_WORKER_COUNT) {
                 let error = Boom.boomify(new Error('Not all IMAP workers available'), { statusCode: 500 });
                 throw error;
@@ -1238,7 +1252,13 @@ When making API calls remember that requests against the same account are queued
                 return 'not ok';
             }
 
-            let accountObject = new Account({ redis, account: data.acc, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: data.acc,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 // throws if account does not exist
@@ -1556,7 +1576,12 @@ When making API calls remember that requests against the same account are queued
                 delete accountData.delegated;
             }
 
-            let accountObject = new Account({ redis, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
             let result = await accountObject.create(accountData);
 
             let httpRedirectUrl;
@@ -1628,7 +1653,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/token',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.payload.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 // throws if account does not exist
@@ -1924,7 +1955,12 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account',
 
         async handler(request) {
-            let accountObject = new Account({ redis, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 if (request.payload.oauth2 && request.payload.oauth2.authorize) {
@@ -2233,7 +2269,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.update(request.payload);
@@ -2327,7 +2369,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/reconnect',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return { reconnect: await accountObject.requestReconnect(request.payload) };
@@ -2387,7 +2435,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/sync',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return { sync: await accountObject.requestSync(request.payload) };
@@ -2452,7 +2506,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 documentsQueue,
                 call,
-                secret: await getSecret()
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
             });
 
             try {
@@ -2515,7 +2570,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             try {
@@ -2579,7 +2635,13 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+                let accountObject = new Account({
+                    redis,
+                    account: request.params.account,
+                    call,
+                    secret: await getSecret(),
+                    timeout: request.headers['x-ee-timeout']
+                });
 
                 return await accountObject.listAccounts(request.query.state, request.query.query, request.query.page, request.query.pageSize);
             } catch (err) {
@@ -2685,7 +2747,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
             try {
                 let accountData = await accountObject.loadAccountData();
 
@@ -2879,7 +2947,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/mailboxes',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 let mailboxes = await accountObject.getMailboxListing(request.query);
@@ -2961,7 +3035,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/mailbox',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.createMailbox(request.payload.path);
@@ -3032,7 +3112,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/mailbox',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.renameMailbox(request.payload.path, request.payload.newPath);
@@ -3104,7 +3190,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/mailbox',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.deleteMailbox(request.query.path);
@@ -3166,7 +3258,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}/source',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.getRawMessage(request.params.message);
@@ -3220,7 +3318,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/attachment/{attachment}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.getAttachment(request.params.attachment);
@@ -3278,7 +3382,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             try {
@@ -3377,7 +3482,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.uploadMessage(request.payload);
@@ -3575,7 +3686,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.updateMessage(request.params.message, request.payload);
@@ -3642,7 +3759,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/messages',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.updateMessages(request.query.path, request.payload.search, request.payload.update);
@@ -3715,7 +3838,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}/move',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.moveMessage(request.params.message, request.payload);
@@ -3778,7 +3907,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/messages/move',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.moveMessages(request.query.path, request.payload.search, { path: request.payload.path });
@@ -3847,7 +3982,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/message/{message}',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.deleteMessage(request.params.message, request.query.force);
@@ -3916,7 +4057,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/messages/delete',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.deleteMessages(request.query.path, request.payload.search, request.query.force);
@@ -3998,7 +4145,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             try {
@@ -4081,7 +4229,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             try {
@@ -4152,7 +4301,8 @@ When making API calls remember that requests against the same account are queued
                 account: request.params.account,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             let extraValidationErrors = [];
@@ -4267,7 +4417,8 @@ When making API calls remember that requests against the same account are queued
                 redis,
                 call,
                 secret: await getSecret(),
-                esClient: await h.getESClient(request.logger)
+                esClient: await h.getESClient(request.logger),
+                timeout: request.headers['x-ee-timeout']
             });
 
             let extraValidationErrors = [];
@@ -4370,7 +4521,13 @@ When making API calls remember that requests against the same account are queued
         path: '/v1/account/{account}/submit',
 
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.queueMessage(request.payload, { source: 'api' });
@@ -5251,7 +5408,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                const licenseInfo = await call({ cmd: 'license' });
+                const licenseInfo = await call({ cmd: 'license', timeout: request.headers['x-ee-timeout'] });
                 if (!licenseInfo) {
                     let err = new Error('Failed to load license info');
                     err.statusCode = 403;
@@ -5294,7 +5451,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                const licenseInfo = await call({ cmd: 'removeLicense' });
+                const licenseInfo = await call({ cmd: 'removeLicense', timeout: request.headers['x-ee-timeout'] });
                 if (!licenseInfo) {
                     let err = new Error('Failed to clear license info');
                     err.statusCode = 403;
@@ -5343,7 +5500,7 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                const licenseInfo = await call({ cmd: 'updateLicense', license: request.payload.license });
+                const licenseInfo = await call({ cmd: 'updateLicense', license: request.payload.license, timeout: request.headers['x-ee-timeout'] });
                 if (!licenseInfo) {
                     let err = new Error('Failed to update license. Check license file contents.');
                     err.statusCode = 403;
@@ -6711,7 +6868,13 @@ When making API calls remember that requests against the same account are queued
                 throw error;
             }
 
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 return await accountObject.getActiveAccessTokenData();
@@ -6769,7 +6932,13 @@ When making API calls remember that requests against the same account are queued
         method: 'POST',
         path: '/v1/delivery-test/account/{account}',
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.params.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 // throws if account does not exist
@@ -7230,7 +7399,13 @@ ${now}`,
         method: 'POST',
         path: '/v1/blocklist/{listId}',
         async handler(request) {
-            let accountObject = new Account({ redis, account: request.payload.account, call, secret: await getSecret() });
+            let accountObject = new Account({
+                redis,
+                account: request.payload.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
             try {
                 // throws if account does not exist
@@ -7773,7 +7948,7 @@ ${now}`,
         path: '/metrics',
 
         async handler(request, h) {
-            const renderedMetrics = await call({ cmd: 'metrics' });
+            const renderedMetrics = await call({ cmd: 'metrics', timeout: request.headers['x-ee-timeout'] });
             const response = h.response('success');
             response.type('text/plain');
             return renderedMetrics;
