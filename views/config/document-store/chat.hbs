@@ -307,7 +307,7 @@
                 let liElm = document.createElement('li');
                 liElm.classList.add('list-group-item')
                 let smallElm = document.createElement('small');
-                smallElm.textContent = `• ${messageData.subject}`;
+                smallElm.textContent = `\u2022 ${messageData.subject}`;
                 chatResponseMessagesElm.appendChild(liElm);
                 liElm.appendChild(smallElm)
             }

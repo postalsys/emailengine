@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2023-08-15 13:09+0000\n"
+"POT-Creation-Date: 2023-10-31 12:21+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -17,10 +17,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d päev"
 msgstr[1] "%d päeva"
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
 
 #: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
 msgid "Unsubscribe"
@@ -65,6 +61,10 @@ msgstr "E-posti aadress"
 msgid "Enter your email address"
 msgstr "Sisestage oma e-posti aadress"
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr "Sinu nimi"
@@ -87,6 +87,14 @@ msgstr "Sisestage oma konto parool"
 #: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
 msgstr "Jätka"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Valige oma e-posti konto pakkuja"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standardne IMAP"
 
 #: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
@@ -195,45 +203,41 @@ msgstr "SMTP server vastas järgmise teatega:"
 msgid "HTTP error!"
 msgstr "HTTP viga!"
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Valige oma e-posti konto pakkuja"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "Standardne IMAP"
-
-#: lib/routes-ui.js:557
+#: lib/routes-ui.js:603
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAI jaoks vale API võti"
 
-#: lib/routes-ui.js:4193 lib/routes-ui.js:6143 lib/routes-ui.js:6154
+#: lib/routes-ui.js:4573 lib/routes-ui.js:6491 lib/routes-ui.js:6502
 msgid "Server hostname was not found"
 msgstr "Serverit ei leitud"
 
-#: lib/routes-ui.js:4196 lib/routes-ui.js:6146 lib/routes-ui.js:6157
+#: lib/routes-ui.js:4576 lib/routes-ui.js:6494 lib/routes-ui.js:6505
 msgid "Invalid username or password"
 msgstr "Vigane kasutajanimi või parool"
 
-#: lib/routes-ui.js:4200 lib/routes-ui.js:6161
+#: lib/routes-ui.js:4580 lib/routes-ui.js:6509
 msgid "TLS protocol error"
 msgstr "TLS protokolli viga"
 
-#: lib/routes-ui.js:5907 lib/routes-ui.js:6018 lib/routes-ui.js:6246
-msgid "Signature validation failed"
-msgstr "Päringu allkirja kontroll ebaõnnestus"
-
-#: lib/routes-ui.js:5944 lib/routes-ui.js:5984 lib/routes-ui.js:8621
+#: lib/routes-ui.js:6303 lib/routes-ui.js:6343 lib/routes-ui.js:9037
 msgid "Failed to validate request arguments"
 msgstr "Päringu argumentide kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:6081 lib/routes-ui.js:6332
+#: lib/routes-ui.js:6429 lib/routes-ui.js:6683
 msgid "Failed to process account"
 msgstr "Konto töötlemine ebaõnnestus"
 
-#: lib/routes-ui.js:8721 lib/routes-ui.js:8754
+#: lib/routes-ui.js:9137 lib/routes-ui.js:9170
 msgid "Failed to process request"
 msgstr "Päringu töötlemine ebaõnnestus"
+
+#: lib/tools.js:1334
+msgid "Signature validation failed"
+msgstr "Päringu allkirja kontroll ebaõnnestus"
+
+#: lib/tools.js:1343 lib/tools.js:1348
+msgid "Invalid or expired account setup URL"
+msgstr "Kehtetu või aegunud konto seadistamise URL"
 
 #~ msgid "Unknown OAuth provider"
 #~ msgstr "Tundmatu OAuth teenus"

@@ -115,7 +115,9 @@ const {
     FETCH_TIMEOUT,
     DEFAULT_MAX_BODY_SIZE,
     DEFAULT_EENGINE_TIMEOUT,
-    DEFAULT_MAX_ATTACHMENT_SIZE
+    DEFAULT_MAX_ATTACHMENT_SIZE,
+    MAX_FORM_TTL,
+    NONCE_BYTES
 } = consts;
 
 const { fetch: fetchCmd, Agent } = require('undici');
@@ -1583,6 +1585,20 @@ When making API calls remember that requests against the same account are queued
             });
             let result = await accountObject.create(accountData);
 
+            if (accountMeta.n) {
+                // store nonce to prevent this URL to be reused
+                const keyName = `${REDIS_PREFIX}account:form:${accountMeta.n}`;
+                try {
+                    await redis
+                        .multi()
+                        .set(keyName, (accountMeta.t || '0').toString())
+                        .expire(keyName, Math.floor(MAX_FORM_TTL / 1000))
+                        .exec();
+                } catch (err) {
+                    request.logger.error({ msg: 'Failed to set nonce for an account form request', err });
+                }
+            }
+
             let httpRedirectUrl;
             if (redirectUrl) {
                 let serviceUrl = await settings.get('serviceUrl');
@@ -1966,7 +1982,7 @@ When making API calls remember that requests against the same account are queued
                     // redirect to OAuth2 consent screen
 
                     const oAuth2Client = await oauth2Apps.getClient(request.payload.oauth2.provider);
-                    let nonce = crypto.randomBytes(12).toString('hex');
+                    const nonce = crypto.randomBytes(NONCE_BYTES).toString('base64url');
 
                     const accountData = request.payload;
 
@@ -1982,7 +1998,7 @@ When making API calls remember that requests against the same account are queued
                     await redis
                         .multi()
                         .set(`${REDIS_PREFIX}account:add:${nonce}`, JSON.stringify(accountData))
-                        .expire(`${REDIS_PREFIX}account:add:${nonce}`, 1 * 24 * 3600)
+                        .expire(`${REDIS_PREFIX}account:add:${nonce}`, Math.floor(MAX_FORM_TTL / 1000))
                         .exec();
 
                     // Generate the url that will be used for the consent dialog.
@@ -2130,7 +2146,10 @@ When making API calls remember that requests against the same account are queued
                     notifyFrom: request.payload.notifyFrom,
                     subconnections: request.payload.subconnections,
                     redirectUrl: request.payload.redirectUrl,
-                    delegated: request.payload.delegated
+                    delegated: request.payload.delegated,
+                    // identify request
+                    n: crypto.randomBytes(NONCE_BYTES).toString('base64'),
+                    t: Date.now()
                 });
 
                 let serviceUrl = await settings.get('serviceUrl');

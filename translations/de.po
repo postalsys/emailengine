@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2023-08-15 13:09+0000\n"
+"POT-Creation-Date: 2023-10-31 12:21+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -17,10 +17,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d Tag"
 msgstr[1] "%d Tage"
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Klicken Sie <a href=\"%s\">hier</a>, um fortzufahren&mldr;"
 
 #: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
 msgid "Unsubscribe"
@@ -65,6 +61,10 @@ msgstr "E-Mail-Adresse"
 msgid "Enter your email address"
 msgstr "Geben Sie Ihre E-Mail-Adresse ein"
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Klicken Sie <a href=\"%s\">hier</a>, um fortzufahren&mldr;"
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr "Ihr Name"
@@ -87,6 +87,14 @@ msgstr "Passwort für Ihr Konto eingeben"
 #: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
 msgstr "Weiter"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Wählen Sie Ihren E-Mail-Kontoanbieter"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standard IMAP"
 
 #: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
@@ -196,45 +204,41 @@ msgstr "Der SMTP-Server antwortete mit der folgenden Meldung:"
 msgid "HTTP error!"
 msgstr "HTTP-Fehler!"
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Wählen Sie Ihren E-Mail-Kontoanbieter"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "Standard IMAP"
-
-#: lib/routes-ui.js:557
+#: lib/routes-ui.js:603
 msgid "Invalid API key for OpenAI"
 msgstr "Ungültiger API-Schlüssel für OpenAI"
 
-#: lib/routes-ui.js:4193 lib/routes-ui.js:6143 lib/routes-ui.js:6154
+#: lib/routes-ui.js:4573 lib/routes-ui.js:6491 lib/routes-ui.js:6502
 msgid "Server hostname was not found"
 msgstr "Server-Hostname wurde nicht gefunden"
 
-#: lib/routes-ui.js:4196 lib/routes-ui.js:6146 lib/routes-ui.js:6157
+#: lib/routes-ui.js:4576 lib/routes-ui.js:6494 lib/routes-ui.js:6505
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder Passwort"
 
-#: lib/routes-ui.js:4200 lib/routes-ui.js:6161
+#: lib/routes-ui.js:4580 lib/routes-ui.js:6509
 msgid "TLS protocol error"
 msgstr "TLS-Protokollfehler"
 
-#: lib/routes-ui.js:5907 lib/routes-ui.js:6018 lib/routes-ui.js:6246
-msgid "Signature validation failed"
-msgstr "Signaturüberprüfung fehlgeschlagen"
-
-#: lib/routes-ui.js:5944 lib/routes-ui.js:5984 lib/routes-ui.js:8621
+#: lib/routes-ui.js:6303 lib/routes-ui.js:6343 lib/routes-ui.js:9037
 msgid "Failed to validate request arguments"
 msgstr "Validierung der Anforderungsargumente fehlgeschlagen"
 
-#: lib/routes-ui.js:6081 lib/routes-ui.js:6332
+#: lib/routes-ui.js:6429 lib/routes-ui.js:6683
 msgid "Failed to process account"
 msgstr "Konto konnte nicht bearbeitet werden"
 
-#: lib/routes-ui.js:8721 lib/routes-ui.js:8754
+#: lib/routes-ui.js:9137 lib/routes-ui.js:9170
 msgid "Failed to process request"
 msgstr "Anfrage konnte nicht bearbeitet werden"
+
+#: lib/tools.js:1334
+msgid "Signature validation failed"
+msgstr "Signaturüberprüfung fehlgeschlagen"
+
+#: lib/tools.js:1343 lib/tools.js:1348
+msgid "Invalid or expired account setup URL"
+msgstr "Ungültige oder abgelaufene URL für die Kontoeinrichtung"
 
 #~ msgid "Unknown OAuth provider"
 #~ msgstr "Unbekannter OAuth-Anbieter"
