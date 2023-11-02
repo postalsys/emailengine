@@ -86,7 +86,7 @@
         "license-checker": "25.0.1",
         "mailparser": "3.6.5",
         "mailsplit": "5.4.0",
-        "marked": "9.1.4",
+        "marked": "9.1.5",
         "minimist": "1.2.8",
         "msgpack5": "6.0.2",
         "murmurhash": "2.0.1",
