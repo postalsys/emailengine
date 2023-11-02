@@ -22,7 +22,11 @@
 
 {{#if values.webhooksEnabled}}
 {{#if webhookErrorFlag}}
-<div class="mt-3 mb-3 alert alert-danger">
+<div class="mt-3 mb-3 alert clear-alert-btn alert-danger" data-clear-alert="webhook-default">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+
     <p><strong>NB!</strong> The last attempted webhook failed with the response below.</p>
     <hr>
     <p class="mb-0">

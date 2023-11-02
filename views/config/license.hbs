@@ -258,10 +258,14 @@
             try {
                 let licenseFileTxt = await readContentFromFile(fileSelectElm, 'text');
                 if (licenseFileTxt) {
-                    licenseTextElm.value = (licenseFileTxt || '').toString().trim();
+                    licenseFileTxt = (licenseFileTxt || '').toString().trim()
+                    licenseTextElm.value = licenseFileTxt;
                     licenseTextElm.focus();
                     licenseTextElm.select();
-                    //document.getElementById('licenseForm').submit();
+
+                    if (licenseFileTxt.indexOf('BEGIN LICENSE') >= 0) {
+                        document.getElementById('licenseForm').submit();
+                    }
                 }
             } catch (err) {
                 if (err.code === 'NoFileSelected') {
@@ -273,6 +277,5 @@
         }
 
         fileSelectElm.addEventListener('change', loadFromFile);
-
     });
 </script>

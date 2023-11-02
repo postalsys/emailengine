@@ -435,7 +435,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify({
                     crumb: document.getElementById('crumb').value,
-                    alert: $(this).data('clearAlert') // eslint-disable-line no-invalid-this
+                    alert: $(this).data('clearAlert'), // eslint-disable-line no-invalid-this
+                    entry: $(this).data('clearEntry') || '' // eslint-disable-line no-invalid-this
                 })
             }).catch(err => console.error(err));
         });
