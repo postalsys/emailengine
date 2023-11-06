@@ -167,7 +167,7 @@ config.workers.webhooks = Number(readEnvValue('EENGINE_WORKERS_WEBHOOKS')) || co
 config.workers.submit = Number(readEnvValue('EENGINE_WORKERS_SUBMIT')) || config.workers.submit || 1;
 
 config.api.port =
-    (readEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (readEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
+    (hasEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (hasEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
 config.api.host = readEnvValue('EENGINE_HOST') || config.api.host;
 
 config.log.level = readEnvValue('EENGINE_LOG_LEVEL') || config.log.level;

@@ -34,7 +34,10 @@ const {
     matchIp,
     getSignedFormData,
     threadStats,
-    detectAutomatedRequest
+    detectAutomatedRequest,
+    hasEnvValue,
+    getBoolean,
+    loadTlsConfig
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -160,14 +163,15 @@ const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
 const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
-const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie'];
+const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
 
 const SMTP_TEST_HOST = 'https://api.nodemailer.com';
 
 config.api = config.api || {
     port: 3000,
     host: '127.0.0.1',
-    proxy: false
+    proxy: false,
+    tls: false
 };
 
 config.service = config.service || {};
@@ -183,8 +187,14 @@ const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.se
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 
 const API_PORT =
-    (readEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (readEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
+    (hasEnvValue('EENGINE_PORT') && Number(readEnvValue('EENGINE_PORT'))) || (hasEnvValue('PORT') && Number(readEnvValue('PORT'))) || config.api.port;
 const API_HOST = readEnvValue('EENGINE_HOST') || config.api.host;
+
+// Either an object (TLS enabled) or `false` (TLS disabled)
+const API_TLS = hasEnvValue('EENGINE_API_TLS') ? getBoolean(readEnvValue('EENGINE_API_TLS')) && (config.api.tls || {}) : config.api.tls || false;
+
+// Merge TLS settings from config params and environment
+loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
 
@@ -464,6 +474,7 @@ const init = async () => {
     const server = Hapi.server({
         port: API_PORT,
         host: API_HOST,
+        tls: API_TLS,
 
         router: {
             stripTrailingSlash: true

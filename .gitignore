@@ -6,7 +6,7 @@ yarn.lock
 swagger.json
 version-info.json
 ee-dist/
-config/development.toml
+config/development*
 .vscode
 .okta.env
 system.env
