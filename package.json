@@ -12,7 +12,7 @@
         "raw": "NODE_OPTIONS=--no-experimental-fetch EENGINE_LOG_RAW=true node server --dbs.redis='redis://127.0.0.1:6379/9' | eerawlog",
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
-        "build-source": "rm -rf node_modules && npm install && ./copy-static-files.sh && rm -rf node_modules && npm install --omit=dev && ./update-info.sh",
+        "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm install --omit=dev && ./update-info.sh",
         "build-dist": "npx pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "npx pkg --debug package.json && npm install && node winconf.js",
         "licenses": "license-checker --excludePackages emailengine-app --json | node license-table.js > static/licenses.html",
