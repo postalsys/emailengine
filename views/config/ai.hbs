@@ -356,12 +356,6 @@
                     Select an EML-formatted email file from the disk to send to the OpenAI API for inspection.
                 </p>
 
-                <div class="custom-file">
-                    <input type="file" class="custom-file-input" id="emlEmail">
-                    <label class="custom-file-label" for="emlEmail">Choose EML email</label>
-                    <small id="inputToHelp" class="form-text text-muted">Select the email to be analyzed</small>
-                </div>
-
                 <div id="testPromptError" class="d-none">
                     <div class="alert alert-danger"></div>
                 </div>
@@ -379,7 +373,7 @@
                     <span class="icon text-white-50">
                         <i class="fas fa-flask"></i>
                     </span>
-                    <span class="text">Analyze email</span>
+                    <span class="text">Select and Analyze email&#x2026;</span>
 
                 </button>
 
@@ -561,15 +555,13 @@
             document.getElementById('testPromptResponse').classList.add('d-none');
         }
 
-        let fileSelectElm = document.getElementById('emlEmail');
-
         async function testPromptFn() {
             let emailFile;
 
             clearResponses();
 
             try {
-                emailFile = await readContentFromFile(fileSelectElm, 'base64');
+                emailFile = await browseFileContents('base64');
             } catch (err) {
                 return showError(err.message)
             }
@@ -641,12 +633,6 @@
             runFileTest();
         });
 
-        fileSelectElm.addEventListener('change', () => {
-            if (testPromptBtn.disabled || !fileSelectElm.files || !fileSelectElm.files[0]) {
-                return
-            }
-            runFileTest();
-        });
 
         evaluationWorker.onmessage = e => {
             const { type, result, error } = e && e.data || {};

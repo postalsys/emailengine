@@ -51,18 +51,16 @@
 
         let serviceFileElm = document.getElementById('serviceFile');
         if (serviceFileElm) {
-            serviceFileElm.addEventListener('change', e => {
+            serviceFileElm.addEventListener('click', e => {
                 e.preventDefault();
+                browseFileContents('text').then(jsonStr => {
+                    if (!jsonStr) {
+                        return
+                    }
 
-                if (!serviceFileElm.files || !serviceFileElm.files.length) {
-                    return;
-                }
-
-                let fr = new FileReader();
-                fr.onload = (evt) => {
                     let data;
                     try {
-                        data = JSON.parse(evt.target.result);
+                        data = JSON.parse(jsonStr);
                     } catch (err) {
                         return showToast('Selected file is not JSON formatted', 'alert-triangle');
                     }
@@ -79,8 +77,11 @@
                     document.getElementById('serviceKey').value = data.private_key;
 
                     return showToast('Loaded service values from file', 'check-circle');
-                };
-                fr.readAsText(serviceFileElm.files[0]);
+
+                }).catch(err => {
+                    console.error(err);
+                    return showToast('Failed to load service key file', 'alert-triangle');
+                });
             });
         }
 
