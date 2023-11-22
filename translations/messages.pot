@@ -1,13 +1,58 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2023-10-31 12:21+0000\n"
+"POT-Creation-Date: 2023-11-22 08:44+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:21
+#: views/unsubscribe.hbs:69
+msgid "Email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27
+#: views/unsubscribe.hbs:75
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:114
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:192
+msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -41,51 +86,6 @@ msgstr ""
 
 #: views/unsubscribe.hbs:54
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:69
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:75
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:114
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:192
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:18
@@ -193,44 +193,44 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4573
-#: lib/routes-ui.js:6491
-#: lib/routes-ui.js:6502
+#: lib/routes-ui.js:4568
+#: lib/routes-ui.js:6490
+#: lib/routes-ui.js:6501
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4576
-#: lib/routes-ui.js:6494
-#: lib/routes-ui.js:6505
+#: lib/routes-ui.js:4571
+#: lib/routes-ui.js:6493
+#: lib/routes-ui.js:6504
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4580
-#: lib/routes-ui.js:6509
+#: lib/routes-ui.js:4575
+#: lib/routes-ui.js:6508
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6303
-#: lib/routes-ui.js:6343
-#: lib/routes-ui.js:9037
+#: lib/routes-ui.js:6302
+#: lib/routes-ui.js:6342
+#: lib/routes-ui.js:9036
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6429
-#: lib/routes-ui.js:6683
+#: lib/routes-ui.js:6428
+#: lib/routes-ui.js:6682
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9137
-#: lib/routes-ui.js:9170
+#: lib/routes-ui.js:9136
+#: lib/routes-ui.js:9169
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1334
+#: lib/tools.js:1338
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1343
-#: lib/tools.js:1348
+#: lib/tools.js:1347
+#: lib/tools.js:1352
 msgid "Invalid or expired account setup URL"
 msgstr ""
