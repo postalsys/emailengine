@@ -17,38 +17,38 @@
     },
     "array": {
         "base": "peab olema massiiv",
-        "includes": "positsioon {{pos}} ei vasta ühelegi lubatud tüübile",
+        "includes": "positsioon {{#pos}} ei vasta ühelegi lubatud tüübile",
         "includesSingle": "üksikväärtus \"{{!key}}\" ei vasta ühelegi lubatud tüübile",
-        "includesOne": "positsioon {{pos}} ebaõnnestub, sest {{reason}}",
+        "includesOne": "positsioon {{#pos}} ebaõnnestub, sest {{reason}}",
         "includesOneSingle": "üksikväärtus \"{{!key}}\" ebaõnnestub, sest {{reason}}",
         "includesRequiredUnknowns": "ei sisalda {{unknownMisses}} nõutavat väärtust",
         "includesRequiredKnowns": "ei sisalda {{knownMisses}}",
         "includesRequiredBoth": "ei sisalda {{knownMisses}} ja {{unknownMisses}} muud nõutavat väärtust",
-        "excludes": "positsioon {{pos}} sisaldab välistatud väärtust",
+        "excludes": "positsioon {{#pos}} sisaldab välistatud väärtust",
         "excludesSingle": "üksikväärtus \"{{!key}}\" sisaldab välistatud väärtust",
-        "min": "peab sisaldama vähemalt {{limit}} elementi",
-        "max": "tohib sisaldada maksimaalselt {{limit}} elementi",
-        "length": "peab sisaldama {{limit}} elementi",
-        "ordered": "positsioon {{pos}} ebaõnnestub, sest {{reason}}",
-        "orderedLength": "positsioon {{pos}} ebaõnnestub, sest massiiv peab sisaldama maksimaalselt {{limit}} elementi",
+        "min": "peab sisaldama vähemalt {{#limit}} elementi",
+        "max": "tohib sisaldada maksimaalselt {{#limit}} elementi",
+        "length": "peab sisaldama {{#limit}} elementi",
+        "ordered": "positsioon {{#pos}} ebaõnnestub, sest {{reason}}",
+        "orderedLength": "positsioon {{#pos}} ebaõnnestub, sest massiiv peab sisaldama maksimaalselt {{#limit}} elementi",
         "sparse": "ei tohi olla hõre massiiv",
-        "unique": "positsioon {{pos}} sisaldab dubleeritud väärtust"
+        "unique": "positsioon {{#pos}} sisaldab dubleeritud väärtust"
     },
     "boolean": {
         "base": "peab olema boolean"
     },
     "binary": {
         "base": "peab olema binaarväärtus või tekst",
-        "min": "peab olema vähemalt {{limit}} baiti",
-        "max": "peab olema maksimaalselt {{limit}} baiti",
-        "length": "peab olema {{limit}} baiti"
+        "min": "peab olema vähemalt {{#limit}} baiti",
+        "max": "peab olema maksimaalselt {{#limit}} baiti",
+        "length": "peab olema {{#limit}} baiti"
     },
     "date": {
         "base": "peab olema millisekundite arv või kuupäev",
-        "min": "peab olema hilisem kui \"{{limit}}\" või sellega võrdne",
-        "max": "peab olema varem kui \"{{limit}}\" või sellega võrdne",
+        "min": "peab olema hilisem kui \"{{#limit}}\" või sellega võrdne",
+        "max": "peab olema varem kui \"{{#limit}}\" või sellega võrdne",
         "isoDate": "peab olema korrektne ISO 8601 kuupäev",
-        "ref": "viide \"{{ref}}\" ei ole kuupäev"
+        "ref": "viide \"{{#ref}}\" ei ole kuupäev"
     },
     "function": {
         "base": "peab olema funktsioon"
@@ -56,9 +56,9 @@
     "object": {
         "base": "peab olema objekt",
         "child": "element \"{{!key}}\"  ebaõnnestub, sest {{reason}}",
-        "min": "peab sisaldama vähemalt {{limit}} elementi",
-        "max": "tohib sisaldada kuni {{limit}} elementi",
-        "length": "peab sisaldama {{limit}} elementi",
+        "min": "peab sisaldama vähemalt {{#limit}} elementi",
+        "max": "tohib sisaldada kuni {{#limit}} elementi",
+        "length": "peab sisaldama {{#limit}} elementi",
         "allowUnknown": "ei ole lubatud",
         "with": "väli \"{{peer}}\" on samuti nõutud",
         "without": "konflikt keelatud väljaga \"{{peer}}\"",
@@ -67,7 +67,7 @@
         "or": "peab sisaldama järgevast vähemalt ühte:{{peers}}",
         "and": "sisaldab väärtust {{present}} ilma nõutud väljadeta: {{missing}}",
         "nand": "!!\"{{main}}\" ei tohi olla seatud samaaegselt väljadega {{peers}}",
-        "assert": "!!\"{{ref}}\" kontroll ebaõnnestus, sest \"{{ref}}\" tekitas vea: {{message}}",
+        "assert": "!!\"{{#ref}}\" kontroll ebaõnnestus, sest \"{{#ref}}\" tekitas vea: {{message}}",
         "rename": {
             "multiple": "ei saa ümber nimetada elementi \"{{from}}\", sest mitmekordne ümbernimetamine on keelatud ja teine võti on juba ümber nimetatud \"{{to}}\"",
             "override": "ei saa ümber nimetada elementi \"{{from}}\", sest mitmekordne ümbernimetamine on keelatud ja võti \"{{to}}\" juba eksisteerib"
@@ -76,23 +76,23 @@
     },
     "number": {
         "base": "peab olema number",
-        "min": "peab olema suurem kui {{limit}} või sellega võrdne",
-        "max": "peab olema väiksem kui {{limit}} või sellega võrdne",
-        "less": "peab olema väiksem kui {{limit}}",
-        "greater": "peab olema suurem kui {{limit}}",
+        "min": "peab olema suurem kui {{#limit}} või sellega võrdne",
+        "max": "peab olema väiksem kui {{#limit}} või sellega võrdne",
+        "less": "peab olema väiksem kui {{#limit}}",
+        "greater": "peab olema suurem kui {{#limit}}",
         "float": "peab olema ujukoma number",
         "integer": "peab olema täisnumber",
         "negative": "peab olema negatiivne number",
         "positive": "peab olema positiivne number",
-        "precision": "ei tohi sisaldada rohkem kui {{limit}} kümnendkohta",
-        "ref": "viitab väärtusele \"{{ref}}\", mis ei ole number",
+        "precision": "ei tohi sisaldada rohkem kui {{#limit}} kümnendkohta",
+        "ref": "viitab väärtusele \"{{#ref}}\", mis ei ole number",
         "multiple": "peab olema {{multiple}} kordne"
     },
     "string": {
         "base": "peab olema tekst",
-        "min": "pikkus peab olema vähemal {{limit}} tähemärki",
-        "max": "pikkus peab olema väiksem või võrdne {{limit}} tähemärki",
-        "length": "pikkus peab olema {{limit}} tähemärki",
+        "min": "pikkus peab olema vähemal {{#limit}} tähemärki",
+        "max": "pikkus peab olema väiksem või võrdne {{#limit}} tähemärki",
+        "length": "pikkus peab olema {{#limit}} tähemärki",
         "alphanum": "tohib sisaldada ainult ladina tähti ning numbreid",
         "token": "tohib sisaldada ainult ladina tähti, numbreid ning alakriipsu",
         "regex": {
@@ -110,8 +110,8 @@
         "uppercase": "tohib sisaldada ainult suuri tähemärke",
         "trim": "ei tohi olla ees- ega tagaotsas tühikuid",
         "creditCard": "peab olema krediitkaardi number",
-        "ref": "viitab väärtusele \"{{ref}}\", mis ei ole number",
-        "ip": "peab olema kehtiv ip-aadress koos {{cidr}} CIDRiga",
-        "ipVersion": "peab olema kehtiv ip-aadress ühest järgmistest versioonidest {{versioon}} koos {{cidr}} CIDRiga"
+        "ref": "viitab väärtusele \"{{#ref}}\", mis ei ole number",
+        "ip": "peab olema kehtiv ip-aadress koos {{#cidr}} CIDRiga",
+        "ipVersion": "peab olema kehtiv ip-aadress ühest järgmistest versioonidest {{versioon}} koos {{#cidr}} CIDRiga"
     }
 }

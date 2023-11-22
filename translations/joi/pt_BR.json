@@ -1,117 +1,117 @@
 {
-  "root": "value",
-  "key": "\"{{!key}}\" ",
-  "messages": {
-    "wrapArrays": true
-  },
-  "any": {
-    "unknown": "não é permitido",
-    "invalid": "contém um valor inválido",
-    "empty": "não é permitido ser vazio",
-    "required": "é obrigatório",
-    "allowOnly": "precisa ser um dos seguintes valores: {{valids}}",
-    "default": "ocorreu um erro ao executar o método padrão"
-  },
-  "alternatives": {
-    "base": "não corresponde a nenhuma altenativa válida"
-  },
-  "array": {
-    "base": "deve ser uma matriz",
-    "includes": "na posição {{pos}} não corresponde a nenhuma tipo válido",
-    "includesSingle": "valor único de \"{{!key}}\" não corresponde a nenhuma tipo válido",
-    "includesOne": "na posição {{pos}} falha, pois {{reason}}",
-    "includesOneSingle": "valor único de \"{{!key}}\" falha, pois {{reason}}",
-    "includesRequiredUnknowns": "não contém {{unknownMisses}} valor(es) obrigatório(s)",
-    "includesRequiredKnowns": "não contém {{knownMisses}}",
-    "includesRequiredBoth": "não contém {{knownMisses}} e {{unknownMisses}} outros valor(es) obrigatório(s)",
-    "excludes": "na posição {{pos}} contém um valor excluído",
-    "excludesSingle": "valor único de \"{{!key}}\" contém um valor excluído",
-    "min": "deve conter no mínimo {{limit}} itens",
-    "max": "deve conter menos que ou igual a {{limit}} itens",
-    "length": "deve conter {{limit}} itens",
-    "ordered": "na posição {{pos}}  falha, pois {{reason}}",
-    "orderedLength": "na posição {{pos}} falha, pois a matriz deve conter até {{limit}} itens",
-    "sparse": "não pode ser uma matriz esparsa",
-    "unique": "na posição {{pos}} há um valor duplicado"
-  },
-  "boolean": {
-    "base": "deve ser boleano"
-  },
-  "binary": {
-    "base": "deve ser um buffer ou uma string",
-    "min": "deve conter no mínimo {{limit}} bytes",
-    "max": "deve conter no máximo {{limit}} bytes",
-    "length": "deve conter {{limit}} bytes"
-  },
-  "date": {
-    "base": "deve ser um número em milisegundos ou uma data válida",
-    "min": "deve ser maior ou igual a \"{{limit}}\"",
-    "max": "deve ser menor ou igual a \"{{limit}}\"",
-    "isoDate": "deve ser uma data no padrão ISO 8601",
-    "ref": "referencia a \"{{ref}}\" que não é uma data"
-  },
-  "function": {
-    "base": "deve ser uma função"
-  },
-  "object": {
-    "base": "deve ser um objeto",
-    "child": "falha em \"{{!key}}\", pois {{reason}}",
-    "min": "deve conter no mínimo {{limit}} filhos",
-    "max": "deve conter no máximo {{limit}} filhos",
-    "length": "deve conter {{limit}} filhos",
-    "allowUnknown": "não é permitido",
-    "with": "peer obrigatório não encontrado: \"{{peer}}\"",
-    "without": "peer conflitante ou proibido: \"{{peer}}\"",
-    "missing": "deve conter ao menos {{peers}}",
-    "xor": "contém um conflito entre peers exclusivos {{peers}}",
-    "or": "deve conter algum dos peers {{peers}}",
-    "and": "contém {{present}} sem seus peers obrigatórios {{missing}}",
-    "nand": "!!\"{{main}}\" não deve existir juntamente com {{peers}}",
-    "assert": "!!\"{{ref}}\" validação falha, pois \"{{ref}}\" falhou em {{message}}",
-    "rename": {
-      "multiple": "não pôde renomear \"{{from}}\" pois muitas renomeaçãoes estão desativadas e já havia sido renomeado para \"{{to}}\"",
-      "override": "não pôde renomear \"{{from}}\" pois sobrescrever está desabilitado e \"{{to}}\" já existe"
+    "root": "value",
+    "key": "\"{{!key}}\" ",
+    "messages": {
+        "wrapArrays": true
     },
-    "type": "deve ser um instância de \"{{type}}\""
-  },
-  "number": {
-    "base": "deve ser um número",
-    "min": "deve ser maior ou igual a {{limit}}",
-    "max": "deve ser menor ou igual a {{limit}}",
-    "less": "deve ser menor que {{limit}}",
-    "greater": "deve ser maior que {{limit}}",
-    "float": "deve ser um número decimal",
-    "integer": "deve ser um número inteiro",
-    "negative": "deve ser um número negativo",
-    "positive": "deve ser um número positivo",
-    "precision": "não pode conter mais que {{limit}} casas decimais",
-    "ref": "referencia a \"{{ref}}\" na qual não é um número",
-    "multiple": "deve ser múltiplo de {{multiple}}"
-  },
-  "string": {
-    "base": "deve ser um texto",
-    "min": "deve conter no mínimo {{limit}} caracteres",
-    "max": "deve conter no máximo {{limit}} caracteres",
-    "length": "deve conter {{limit}} caracteres",
-    "alphanum": "deve conter apenas caracteres alpha-numéricos",
-    "token": "deve conter apenas caracteres alpha-numéricos ou underscore '_'",
-    "regex": {
-      "base": "com o valor \"{{!value}}\" falha ao comparar ao padrão: {{pattern}}",
-      "name": "com o valor \"{{!value}}\" falha ao comparar ao padrão: {{name}}"
+    "any": {
+        "unknown": "não é permitido",
+        "invalid": "contém um valor inválido",
+        "empty": "não é permitido ser vazio",
+        "required": "é obrigatório",
+        "allowOnly": "precisa ser um dos seguintes valores: {{valids}}",
+        "default": "ocorreu um erro ao executar o método padrão"
     },
-    "email": "deve ser um email válido",
-    "uri": "dever ser uma URI válida",
-    "uriCustomScheme": "dever ser uma URI válida que se assemelhe ao padrão {{scheme}}",
-    "isoDate": "deve ser uma data no padrão ISO 8601",
-    "guid": "deve ser um GUID válido",
-    "hex": "deve conter apenas valores hexadecimais",
-    "hostname": "deve conter apenas hostname válido",
-    "lowercase": "deve conter apenas caracteres em caixa baixa",
-    "uppercase": "deve conter apenas caracteres em caixa alta",
-    "trim": "não deve haver espaços em branco",
-    "creditCard": "deve ser um cartão de crédito",
-    "ref": "referencia a \"{{ref}}\" que não é um número",
-    "ip": "deve ser um IP válido com o CIDR {{cidr}}",
-    "ipVersion": "deve ser um IP válido nas versões {{version}} com o CIDR {{cidr}}"
-  }
+    "alternatives": {
+        "base": "não corresponde a nenhuma altenativa válida"
+    },
+    "array": {
+        "base": "deve ser uma matriz",
+        "includes": "na posição {{#pos}} não corresponde a nenhuma tipo válido",
+        "includesSingle": "valor único de \"{{!key}}\" não corresponde a nenhuma tipo válido",
+        "includesOne": "na posição {{#pos}} falha, pois {{reason}}",
+        "includesOneSingle": "valor único de \"{{!key}}\" falha, pois {{reason}}",
+        "includesRequiredUnknowns": "não contém {{unknownMisses}} valor(es) obrigatório(s)",
+        "includesRequiredKnowns": "não contém {{knownMisses}}",
+        "includesRequiredBoth": "não contém {{knownMisses}} e {{unknownMisses}} outros valor(es) obrigatório(s)",
+        "excludes": "na posição {{#pos}} contém um valor excluído",
+        "excludesSingle": "valor único de \"{{!key}}\" contém um valor excluído",
+        "min": "deve conter no mínimo {{#limit}} itens",
+        "max": "deve conter menos que ou igual a {{#limit}} itens",
+        "length": "deve conter {{#limit}} itens",
+        "ordered": "na posição {{#pos}}  falha, pois {{reason}}",
+        "orderedLength": "na posição {{#pos}} falha, pois a matriz deve conter até {{#limit}} itens",
+        "sparse": "não pode ser uma matriz esparsa",
+        "unique": "na posição {{#pos}} há um valor duplicado"
+    },
+    "boolean": {
+        "base": "deve ser boleano"
+    },
+    "binary": {
+        "base": "deve ser um buffer ou uma string",
+        "min": "deve conter no mínimo {{#limit}} bytes",
+        "max": "deve conter no máximo {{#limit}} bytes",
+        "length": "deve conter {{#limit}} bytes"
+    },
+    "date": {
+        "base": "deve ser um número em milisegundos ou uma data válida",
+        "min": "deve ser maior ou igual a \"{{#limit}}\"",
+        "max": "deve ser menor ou igual a \"{{#limit}}\"",
+        "isoDate": "deve ser uma data no padrão ISO 8601",
+        "ref": "referencia a \"{{#ref}}\" que não é uma data"
+    },
+    "function": {
+        "base": "deve ser uma função"
+    },
+    "object": {
+        "base": "deve ser um objeto",
+        "child": "falha em \"{{!key}}\", pois {{reason}}",
+        "min": "deve conter no mínimo {{#limit}} filhos",
+        "max": "deve conter no máximo {{#limit}} filhos",
+        "length": "deve conter {{#limit}} filhos",
+        "allowUnknown": "não é permitido",
+        "with": "peer obrigatório não encontrado: \"{{peer}}\"",
+        "without": "peer conflitante ou proibido: \"{{peer}}\"",
+        "missing": "deve conter ao menos {{peers}}",
+        "xor": "contém um conflito entre peers exclusivos {{peers}}",
+        "or": "deve conter algum dos peers {{peers}}",
+        "and": "contém {{present}} sem seus peers obrigatórios {{missing}}",
+        "nand": "!!\"{{main}}\" não deve existir juntamente com {{peers}}",
+        "assert": "!!\"{{#ref}}\" validação falha, pois \"{{#ref}}\" falhou em {{message}}",
+        "rename": {
+            "multiple": "não pôde renomear \"{{from}}\" pois muitas renomeaçãoes estão desativadas e já havia sido renomeado para \"{{to}}\"",
+            "override": "não pôde renomear \"{{from}}\" pois sobrescrever está desabilitado e \"{{to}}\" já existe"
+        },
+        "type": "deve ser um instância de \"{{type}}\""
+    },
+    "number": {
+        "base": "deve ser um número",
+        "min": "deve ser maior ou igual a {{#limit}}",
+        "max": "deve ser menor ou igual a {{#limit}}",
+        "less": "deve ser menor que {{#limit}}",
+        "greater": "deve ser maior que {{#limit}}",
+        "float": "deve ser um número decimal",
+        "integer": "deve ser um número inteiro",
+        "negative": "deve ser um número negativo",
+        "positive": "deve ser um número positivo",
+        "precision": "não pode conter mais que {{#limit}} casas decimais",
+        "ref": "referencia a \"{{#ref}}\" na qual não é um número",
+        "multiple": "deve ser múltiplo de {{multiple}}"
+    },
+    "string": {
+        "base": "deve ser um texto",
+        "min": "deve conter no mínimo {{#limit}} caracteres",
+        "max": "deve conter no máximo {{#limit}} caracteres",
+        "length": "deve conter {{#limit}} caracteres",
+        "alphanum": "deve conter apenas caracteres alpha-numéricos",
+        "token": "deve conter apenas caracteres alpha-numéricos ou underscore '_'",
+        "regex": {
+            "base": "com o valor \"{{!value}}\" falha ao comparar ao padrão: {{pattern}}",
+            "name": "com o valor \"{{!value}}\" falha ao comparar ao padrão: {{name}}"
+        },
+        "email": "deve ser um email válido",
+        "uri": "dever ser uma URI válida",
+        "uriCustomScheme": "dever ser uma URI válida que se assemelhe ao padrão {{scheme}}",
+        "isoDate": "deve ser uma data no padrão ISO 8601",
+        "guid": "deve ser um GUID válido",
+        "hex": "deve conter apenas valores hexadecimais",
+        "hostname": "deve conter apenas hostname válido",
+        "lowercase": "deve conter apenas caracteres em caixa baixa",
+        "uppercase": "deve conter apenas caracteres em caixa alta",
+        "trim": "não deve haver espaços em branco",
+        "creditCard": "deve ser um cartão de crédito",
+        "ref": "referencia a \"{{#ref}}\" que não é um número",
+        "ip": "deve ser um IP válido com o CIDR {{#cidr}}",
+        "ipVersion": "deve ser um IP válido nas versões {{version}} com o CIDR {{#cidr}}"
+    }
 }
