@@ -1086,7 +1086,8 @@ let licenseCheckHandler = async opts => {
                     body: JSON.stringify({
                         key: licenseInfo.details.key,
                         version: packageData.version,
-                        app: '@postalsys/emailengine-app'
+                        app: '@postalsys/emailengine-app',
+                        instance: (await settings.get('serviceId')) || ''
                     }),
                     dispatcher: fetchAgent
                 });
@@ -1968,6 +1969,11 @@ const startApplication = async () => {
     }
 
     // prepare some required configuration values
+    let existingServiceId = await settings.get('serviceId');
+    if (existingServiceId === null) {
+        await settings.set('serviceId', crypto.randomBytes(16).toString('hex'));
+    }
+
     let existingSmtpEnabled = await settings.get('smtpServerEnabled');
     if (existingSmtpEnabled === null) {
         await settings.set('smtpServerEnabled', !!SMTP_ENABLED);
