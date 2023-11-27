@@ -120,7 +120,7 @@
                 <select id="settingsServicedocumentStoreChatModel" class="custom-select custom-select-sm"
                     name="documentStoreChatModel" {{#if errors.documentStoreChatModel}}is-invalid{{/if}}>
                     {{#each openAiModels}}
-                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}
                 </select>
                 {{#if errors.documentStoreChatModel}}

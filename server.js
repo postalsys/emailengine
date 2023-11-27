@@ -61,6 +61,7 @@ const {
     getChunkEmbeddings,
     embeddingsQuery,
     questionQuery,
+    listModels: openAiListModels,
     DEFAULT_USER_PROMPT: openAiDefaultPrompt
 } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd, Agent } = require('undici');
@@ -1622,6 +1623,29 @@ async function onCommand(worker, message) {
             requestOpts.user = message.data.account;
 
             const data = await getChunkEmbeddings(message.data.message, openAiAPIKey, requestOpts);
+
+            return data;
+        }
+
+        case 'openAiListModels': {
+            let requestOpts = {
+                verbose: getBoolean(process.env.EE_OPENAPI_VERBOSE)
+            };
+
+            let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
+
+            if (!openAiAPIKey) {
+                throw new Error(`OpenAI API key is not set`);
+            }
+
+            let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
+            if (openAiAPIUrl) {
+                requestOpts.baseApiUrl = openAiAPIUrl;
+            }
+
+            requestOpts.user = message.data.account;
+
+            const data = await openAiListModels(openAiAPIKey, requestOpts);
 
             return data;
         }

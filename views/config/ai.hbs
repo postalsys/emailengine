@@ -92,14 +92,23 @@
             </div>
 
             <div class="form-group">
+
+
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank">openAiModel</a>]</div>
 
-                <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                <div>
+                    <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+
+                    <button class="btn btn-link" id="reload-btn">
+                        <i class="fas fa-sync-alt fa-fw"></i>
+                        Reload models list</button>
+                </div>
+
                 <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
                     errors.openAiModel}}is-invalid{{/if}}>
                     {{#each openAiModels}}
-                    <option value="{{key}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}
                 </select>
                 {{#if errors.openAiModel}}
@@ -726,6 +735,76 @@
             }
             payloadSelectElm.selectedIndex = 0;
         });
+
+        function redrawModelList(models) {
+            let selectElm = document.getElementById('settingsServiceOpenAiModel');
+            let selected = selectElm.value;
+
+            selectElm.innerHTML = '';
+
+            for (let model of models) {
+                let elm = document.createElement('option');
+                elm.setAttribute('value', model.id);
+                elm.textContent = model.name;
+                if (model.id === selected) {
+                    elm.selected = true
+                }
+                selectElm.appendChild(elm);
+            }
+        }
+
+        let reloadBtn = document.getElementById('reload-btn');
+        let reloadBtnIcon = document.querySelector('#reload-btn i');
+
+        const requestReload = async () => {
+            const res = await fetch('/admin/config/ai/reload-models', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value,
+                    openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
+                    openAiAPIKey: document.getElementById('openAiAPIKey').value,
+                })
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+
+            return data;
+        }
+
+        let loading = false;
+        let reloadAddresses = () => {
+            if (loading) {
+                return
+            }
+            loading = true
+            reloadBtnIcon.classList.add('fa-spin');
+            reloadBtn.disabled = true;
+
+            requestReload().then(data => {
+                loading = false
+                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtn.disabled = false;
+                if (data.error) {
+                    showToast('Failed to send payload', 'alert-triangle')
+                    return;
+                }
+
+                if (data.models) {
+                    redrawModelList(data.models);
+                }
+
+            }).catch(err => {
+                loading = false
+                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtn.disabled = false;
+                showToast('Request failed\n' + err.message, 'alert-triangle');
+            });
+        }
+
+        reloadBtn.addEventListener('click', reloadAddresses);
     });
 
 
