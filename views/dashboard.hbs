@@ -211,6 +211,27 @@
         </div>
         {{/if}}
 
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-{{redisPing.color}} shadow">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-gray-800 text-uppercase mb-1" {{#if
+                                redisPing.comment}}title="{{redisPing.comment}}" data-toggle="tooltip"
+                                data-placement="top" {{/if}} style="cursor: default;">
+                                {{redisPing.title}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{redisPing.value}}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-{{redisPing.icon}} fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 

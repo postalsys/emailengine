@@ -378,6 +378,11 @@ const metrics = {
         help: 'Redis uptime in seconds'
     }),
 
+    redisPing: new promClient.Gauge({
+        name: 'redis_latency',
+        help: 'Redis latency in milliseconds'
+    }),
+
     redisRejectedConnectionsTotal: new promClient.Gauge({
         name: 'redis_rejected_connections_total',
         help: 'Number of connections rejected by Redis'
@@ -1212,6 +1217,64 @@ function checkUpgrade() {
     });
 }
 
+// measure Redis ping once in every 10 seconds
+
+let redisPingCounter = [];
+
+function getRedisPing() {
+    if (redisPingCounter.length < 14) {
+        return null;
+    }
+    let entries = redisPingCounter
+        .slice(-34)
+        .map(entry => entry[1])
+        .sort((a, b) => a - b);
+
+    // remove 2 highest and lowest
+    entries.shift();
+    entries.shift();
+    entries.pop();
+    entries.pop();
+
+    let sum = 0;
+    for (let entry of entries) {
+        sum += entry;
+    }
+
+    return Math.round(sum / entries.length);
+}
+
+const REDIS_PING_TIMEOUT = 10 * 1000;
+let redisPingTimer = false;
+const processRedisPing = async () => {
+    try {
+        let startTime = Date.now();
+        await redis.ping();
+        let endTime = Date.now();
+        let duration = endTime - startTime;
+        redisPingCounter.push([endTime, duration]);
+        if (redisPingCounter.length > 300) {
+            redisPingCounter = redisPingCounter.slice(0, 150);
+        }
+        return duration;
+    } catch (err) {
+        logger.error({ msg: 'Failed to run Redis ping', err });
+    }
+};
+
+const redisPingHandler = async () => {
+    await processRedisPing();
+    redisPingTimer = setTimeout(checkRedisPing, REDIS_PING_TIMEOUT);
+    redisPingTimer.unref();
+};
+
+function checkRedisPing() {
+    clearTimeout(redisPingTimer);
+    redisPingHandler().catch(err => {
+        logger.error('Failed to process Redis Ping', err);
+    });
+}
+
 async function updateQueueCounters() {
     metrics.emailengineConfig.set({ version: 'v' + packageData.version }, 1);
     metrics.emailengineConfig.set({ config: 'uvThreadpoolSize' }, Number(process.env.UV_THREADPOOL_SIZE));
@@ -1245,6 +1308,9 @@ async function updateQueueCounters() {
         metrics.redisVersion.set({ version: 'v' + redisInfo.redis_version }, 1);
 
         metrics.redisUptimeInSeconds.set(Number(redisInfo.uptime_in_seconds) || 0);
+
+        metrics.redisPing.set((await processRedisPing()) || 0);
+
         metrics.redisRejectedConnectionsTotal.set(Number(redisInfo.rejected_connections) || 0);
         metrics.redisConfigMaxclients.set(Number(redisInfo.maxclients) || 0);
         metrics.redisConnectedClients.set(Number(redisInfo.connected_clients) || 0);
@@ -1306,7 +1372,7 @@ async function onCommand(worker, message) {
                 }
             }
 
-            return { connections };
+            return { connections, redisPing: await getRedisPing() };
         }
 
         case 'imapWorkerCount': {
@@ -2175,6 +2241,9 @@ startApplication()
 
         upgradeCheckTimer = setTimeout(checkUpgrade, UPGRADE_CHECK_TIMEOUT);
         upgradeCheckTimer.unref();
+
+        redisPingTimer = setTimeout(checkRedisPing, REDIS_PING_TIMEOUT);
+        redisPingTimer.unref();
 
         queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
         queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
