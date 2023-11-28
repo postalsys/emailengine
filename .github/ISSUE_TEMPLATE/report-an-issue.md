@@ -6,4 +6,6 @@ labels: ''
 assignees: ''
 ---
 
-Please file only reproducible bugs. Do not file support request as issues in Github. Instead use the official support channels listed [here](https://emailengine.app/support).
+**Please file only reproducible bugs.**
+
+Do not file support request as issues in Github. Instead use the official support channels listed here: https://emailengine.app/support
