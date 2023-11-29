@@ -380,7 +380,7 @@ const metrics = {
 
     redisPing: new promClient.Gauge({
         name: 'redis_latency',
-        help: 'Redis latency in milliseconds'
+        help: 'Redis latency in nanoseconds'
     }),
 
     redisRejectedConnectionsTotal: new promClient.Gauge({
@@ -1222,19 +1222,22 @@ function checkUpgrade() {
 let redisPingCounter = [];
 
 function getRedisPing() {
-    if (redisPingCounter.length < 14) {
+    if (!redisPingCounter.length) {
         return null;
     }
-    let entries = redisPingCounter
+
+    let entries = []
+        .concat(redisPingCounter)
         .slice(-34)
-        .map(entry => entry[1])
         .sort((a, b) => a - b);
 
-    // remove 2 highest and lowest
-    entries.shift();
-    entries.shift();
-    entries.pop();
-    entries.pop();
+    // remove 2 highest and lowest if possible
+    for (let i = 0; i < 2; i++) {
+        if (entries.length > 4) {
+            entries.shift();
+            entries.pop();
+        }
+    }
 
     let sum = 0;
     for (let entry of entries) {
@@ -1246,13 +1249,29 @@ function getRedisPing() {
 
 const REDIS_PING_TIMEOUT = 10 * 1000;
 let redisPingTimer = false;
+
+const getCurrentRedisPing = async () => {
+    try {
+        // this request is not timed, it is to ensure that there is an open connection
+        await redis.ping();
+
+        let startTime = process.hrtime.bigint();
+        await redis.ping();
+        let endTime = process.hrtime.bigint();
+
+        let duration = Number(endTime - startTime);
+
+        return duration;
+    } catch (err) {
+        logger.error({ msg: 'Failed to run Redis ping', err });
+    }
+    return 0;
+};
+
 const processRedisPing = async () => {
     try {
-        let startTime = Date.now();
-        await redis.ping();
-        let endTime = Date.now();
-        let duration = endTime - startTime;
-        redisPingCounter.push([endTime, duration]);
+        let duration = await getCurrentRedisPing();
+        redisPingCounter.push(duration);
         if (redisPingCounter.length > 300) {
             redisPingCounter = redisPingCounter.slice(0, 150);
         }
@@ -1309,7 +1328,7 @@ async function updateQueueCounters() {
 
         metrics.redisUptimeInSeconds.set(Number(redisInfo.uptime_in_seconds) || 0);
 
-        metrics.redisPing.set((await processRedisPing()) || 0);
+        metrics.redisPing.set((await getCurrentRedisPing()) || 0);
 
         metrics.redisRejectedConnectionsTotal.set(Number(redisInfo.rejected_connections) || 0);
         metrics.redisConfigMaxclients.set(Number(redisInfo.maxclients) || 0);
