@@ -5,6 +5,25 @@
     </div>
 
 
+    {{#if isElastiCache}}
+    <div class="card border-left-danger mt-4">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatiblity warning
+                    </div>
+                    <p>EmailEngine is incompatible with Amazon ElastiCache as the database backend.</p>
+                    <p>Please switch to a standard Redis instance. Using ElastiCache with EmailEngine can result in data
+                        loss and several functionalities may not work.</p>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
 
     {{#unless hasAccounts}}
 
@@ -12,7 +31,7 @@
         <div class="card-body">
             <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Welcome to EmailEngine!
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Welcome to EmailEngine!
                     </div>
                     <p>To start using EmailEngine, add an email account to the <a href="/admin/accounts">account
                             registry</a>. Once registered, you can access this account to send
