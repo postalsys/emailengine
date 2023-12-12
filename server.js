@@ -1324,7 +1324,9 @@ async function updateQueueCounters() {
     try {
         let redisInfo = await getRedisStats(redis);
 
-        metrics.redisVersion.set({ version: 'v' + redisInfo.redis_version }, 1);
+        if (redisInfo.redis_version) {
+            metrics.redisVersion.set({ version: 'v' + redisInfo.redis_version }, 1);
+        }
 
         metrics.redisUptimeInSeconds.set(Number(redisInfo.uptime_in_seconds) || 0);
 
