@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.39.3](https://github.com/postalsys/emailengine/compare/v2.39.2...v2.39.3) (2023-12-12)
+
+
+### Bug Fixes
+
+* **llm:** Do not try to process an email without message contents ([9e4cbdc](https://github.com/postalsys/emailengine/commit/9e4cbdc692f4b666345442460d15c1250f2b7095))
+* **oauth2-outlook:** Enforce account selection when authenticating OAuth2 connections for MS365 ([1c6b56a](https://github.com/postalsys/emailengine/commit/1c6b56a67f0820e78098abfb526f7d71e0023021))
+* **redis:** Fixed Redis stats collections when using Upstash Redis ([9730123](https://github.com/postalsys/emailengine/commit/97301239aa1db2c4cd04b3dcac2cdf6b69598681))
+
 ## [2.39.2](https://github.com/postalsys/emailengine/compare/v2.39.1...v2.39.2) (2023-11-29)
 
 
