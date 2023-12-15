@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2023-12-11 12:00+0000\n"
+"POT-Creation-Date: 2023-12-15 12:45+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -55,6 +51,10 @@ msgstr ""
 #: views/unsubscribe.hbs:75
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -193,44 +193,44 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4621
-#: lib/routes-ui.js:6543
-#: lib/routes-ui.js:6554
+#: lib/routes-ui.js:4625
+#: lib/routes-ui.js:6547
+#: lib/routes-ui.js:6558
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4624
-#: lib/routes-ui.js:6546
-#: lib/routes-ui.js:6557
+#: lib/routes-ui.js:4628
+#: lib/routes-ui.js:6550
+#: lib/routes-ui.js:6561
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4628
-#: lib/routes-ui.js:6561
+#: lib/routes-ui.js:4632
+#: lib/routes-ui.js:6565
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6355
-#: lib/routes-ui.js:6395
-#: lib/routes-ui.js:9089
+#: lib/routes-ui.js:6359
+#: lib/routes-ui.js:6399
+#: lib/routes-ui.js:9093
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6481
-#: lib/routes-ui.js:6735
+#: lib/routes-ui.js:6485
+#: lib/routes-ui.js:6739
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9189
-#: lib/routes-ui.js:9222
+#: lib/routes-ui.js:9193
+#: lib/routes-ui.js:9226
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1338
+#: lib/tools.js:1390
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1347
-#: lib/tools.js:1352
+#: lib/tools.js:1399
+#: lib/tools.js:1404
 msgid "Invalid or expired account setup URL"
 msgstr ""
