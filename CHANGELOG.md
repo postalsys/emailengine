@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.39.4](https://github.com/postalsys/emailengine/compare/v2.39.3...v2.39.4) (2023-12-15)
+
+
+### Bug Fixes
+
+* **redis:** Show a warning on the dashboard if Amazon ElastiCache is used as the database ([814e724](https://github.com/postalsys/emailengine/commit/814e724a0b8613c2a53366507033547d9fba9b8f))
+* **redis:** Show warning when using Redis Cluster ([17b599e](https://github.com/postalsys/emailengine/commit/17b599eafcb3beed5a539abf868ef499e848e9db))
+
 ## [2.39.3](https://github.com/postalsys/emailengine/compare/v2.39.2...v2.39.3) (2023-12-12)
 
 
