@@ -1,3 +1,6 @@
+-- NB!
+-- This script is not compatible with Redis clustering if using account id as the hash slot key
+
 local listKey = KEYS[1];
 
 local filterState = ARGV[1];

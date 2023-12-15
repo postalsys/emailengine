@@ -25,6 +25,25 @@
     {{/if}}
 
 
+    {{#if isRedisCluster}}
+    <div class="card border-left-danger mt-4">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatiblity warning
+                    </div>
+                    <p>EmailEngine is incompatible with Redis Cluster setup.</p>
+                    <p>Please switch to a standard Redis primary instance.</p>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+
     {{#unless hasAccounts}}
 
     <div class="card border-left-success mt-4">
