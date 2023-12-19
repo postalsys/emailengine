@@ -2872,6 +2872,10 @@ When making API calls remember that requests against the same account are queued
                     result.counters = accountData.counters;
                 }
 
+                if (request.query.quota) {
+                    result.quota = await accountObject.getQuota();
+                }
+
                 return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -2906,6 +2910,15 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     account: accountIdSchema.required()
+                }),
+
+                query: Joi.object({
+                    quota: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If true, then include quota information in the response')
+                        .label('AccountQuota')
                 })
             },
 
@@ -2957,10 +2970,22 @@ When making API calls remember that requests against the same account are queued
                         .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
                         .example('outlook')
                         .description('Account type')
+                        .label('AccountType')
                         .required(),
                     app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
 
                     counters: accountCountersSchema,
+
+                    quota: Joi.object({
+                        usage: Joi.number().example(8547884032).description('How many bytes has the account stored in emails'),
+                        limit: Joi.number().example(16106127360).description('How many bytes can the account store emails'),
+                        status: Joi.string().example('53%').description('Textual information about the usage')
+                    })
+                        .label('AccountQuota')
+                        .allow(false)
+                        .description(
+                            'Account quota information if query argument quota=true. This value will be false if the server does not provide quota information.'
+                        ),
 
                     syncTime: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last sync time'),
 

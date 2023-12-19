@@ -439,6 +439,19 @@ class ConnectionHandler {
         return await accountData.connection.uploadMessage(message.data);
     }
 
+    async getQuota(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.getQuota();
+    }
+
     async createMailbox(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -607,6 +620,7 @@ class ConnectionHandler {
             case 'deleteMessage':
             case 'deleteMessages':
             case 'getRawMessage':
+            case 'getQuota':
             case 'createMailbox':
             case 'renameMailbox':
             case 'deleteMailbox':
