@@ -7701,6 +7701,39 @@ ${now}`,
 
         async context(request) {
             const pendingMessages = await flash(redis, request);
+            const {
+                upgrade: upgradeInfo,
+                subexp,
+                outlookAuthFlag,
+                gmailAuthFlag,
+                gmailServiceAuthFlag,
+                webhookErrorFlag,
+                webhooksEnabled,
+                disableTokens,
+                tract,
+                templateHeader: embeddedTemplateHeader,
+                documentStoreEnabled: showDocumentStore,
+                serviceUrl,
+                language,
+                timezone
+            } = await settings.getMulti(
+                'upgrade',
+                'subexp',
+                'outlookAuthFlag',
+                'gmailAuthFlag',
+                'gmailServiceAuthFlag',
+                'webhookErrorFlag',
+                'webhooksEnabled',
+                'disableTokens',
+                'tract',
+                'templateHeader',
+                'documentStoreEnabled',
+                'serviceUrl',
+                'language',
+                'timezone'
+            );
+
+            const systemAlerts = [];
             let authData;
 
             switch (request.auth.artifacts && request.auth.artifacts.provider) {
@@ -7736,8 +7769,6 @@ ${now}`,
                     break;
             }
 
-            let systemAlerts = [];
-            let upgradeInfo = await settings.get('upgrade');
             if (upgradeInfo && upgradeInfo.canUpgrade) {
                 systemAlerts.push({
                     url: '/admin/upgrade',
@@ -7747,7 +7778,6 @@ ${now}`,
                 });
             }
 
-            let subexp = await settings.get('subexp');
             if (subexp) {
                 let delayMs = new Date(subexp) - Date.now();
                 let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
@@ -7760,7 +7790,6 @@ ${now}`,
                 });
             }
 
-            let outlookAuthFlag = await settings.get('outlookAuthFlag');
             if (outlookAuthFlag && outlookAuthFlag.message) {
                 systemAlerts.push({
                     url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
@@ -7770,7 +7799,6 @@ ${now}`,
                 });
             }
 
-            let gmailAuthFlag = await settings.get('gmailAuthFlag');
             if (gmailAuthFlag && gmailAuthFlag.message) {
                 systemAlerts.push({
                     url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
@@ -7780,7 +7808,6 @@ ${now}`,
                 });
             }
 
-            let gmailServiceAuthFlag = await settings.get('gmailServiceAuthFlag');
             if (gmailServiceAuthFlag && gmailServiceAuthFlag.message) {
                 systemAlerts.push({
                     url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
@@ -7790,8 +7817,6 @@ ${now}`,
                 });
             }
 
-            let webhookErrorFlag = await settings.get('webhookErrorFlag');
-            let webhooksEnabled = await settings.get('webhooksEnabled');
             if (webhooksEnabled && webhookErrorFlag && webhookErrorFlag.message) {
                 systemAlerts.push({
                     url: '/admin/config/webhooks',
@@ -7830,7 +7855,6 @@ ${now}`,
                 });
             }
 
-            let disableTokens = await settings.get('disableTokens');
             if (disableTokens) {
                 systemAlerts.push({
                     url: '/admin/config/service#security',
@@ -7857,14 +7881,15 @@ ${now}`,
                 pendingMessages,
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
-                trialPossible: !(await settings.get('tract')),
+                trialPossible: !tract,
                 referrerPolicy,
                 authData,
                 packageData,
                 systemAlerts,
-                embeddedTemplateHeader: await settings.get('templateHeader'),
+                embeddedTemplateHeader,
                 currentYear: new Date().getFullYear(),
-                showDocumentStore: await settings.get('documentStoreEnabled')
+                showDocumentStore,
+                updateBrowserInfo: !serviceUrl || !language || !timezone
             };
         }
     });

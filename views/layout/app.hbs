@@ -460,6 +460,49 @@
     </script>
 
     {{/if}}
+
+    {{#if updateBrowserInfo}}
+    <input type="hidden" id="browser-info-crumb" value="{{crumb}}" />
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let sendBrowserInfo = async () => {
+                let timezone = false;
+                try {
+                    timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                } catch (err) {
+                    console.error(err);
+                }
+
+                try {
+                    const res = await fetch('/admin/config/browser', {
+                        method: 'post',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({
+                            crumb: document.getElementById('browser-info-crumb').value,
+                            serviceUrl: window.location.origin || false,
+                            timezone: timezone || false,
+                            language: navigator.language || false
+                        })
+                    });
+
+                    if (!res.ok) {
+                        console.error('Failed to post browser info');
+                    } else {
+                        let serviceUrlformEntry = document.querySelector('#settingsServiceUrl')
+                        if (serviceUrlformEntry && !serviceUrlformEntry.value) {
+                            serviceUrlformEntry.value = window.location.origin || ''
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
+
+            }
+
+            sendBrowserInfo().catch(err => console.error(err))
+        });
+    </script>
+    {{/if}}
 </body>
 
 </html>
