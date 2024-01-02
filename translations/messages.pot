@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2023-12-30 08:16+0000\n"
+"POT-Creation-Date: 2024-01-02 10:35+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -57,6 +53,10 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -78,14 +78,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:192
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:18
@@ -189,40 +181,48 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: lib/routes-ui.js:601
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4625
-#: lib/routes-ui.js:6547
-#: lib/routes-ui.js:6558
+#: lib/routes-ui.js:4627
+#: lib/routes-ui.js:6550
+#: lib/routes-ui.js:6561
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4628
-#: lib/routes-ui.js:6550
-#: lib/routes-ui.js:6561
+#: lib/routes-ui.js:4630
+#: lib/routes-ui.js:6553
+#: lib/routes-ui.js:6564
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4632
-#: lib/routes-ui.js:6565
+#: lib/routes-ui.js:4634
+#: lib/routes-ui.js:6568
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6359
-#: lib/routes-ui.js:6399
-#: lib/routes-ui.js:9093
+#: lib/routes-ui.js:6362
+#: lib/routes-ui.js:6402
+#: lib/routes-ui.js:9102
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6485
-#: lib/routes-ui.js:6739
+#: lib/routes-ui.js:6488
+#: lib/routes-ui.js:6744
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9193
-#: lib/routes-ui.js:9226
+#: lib/routes-ui.js:9202
+#: lib/routes-ui.js:9235
 msgid "Failed to process request"
 msgstr ""
 
