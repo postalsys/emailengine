@@ -487,6 +487,7 @@ const init = async () => {
                 },
                 headers: Joi.object({
                     'x-ee-timeout': Joi.number()
+                        .integer()
                         .min(0)
                         .max(2 * 3600 * 1000)
                         .optional()
@@ -2709,13 +2710,14 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     state: Joi.string()
                         .valid('init', 'syncing', 'connecting', 'connected', 'authenticationError', 'connectError', 'unset', 'disconnected')
                         .example('connected')
@@ -2727,9 +2729,9 @@ When making API calls remember that requests against the same account are queued
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     accounts: Joi.array()
                         .items(
@@ -2977,8 +2979,8 @@ When making API calls remember that requests against the same account are queued
                     counters: accountCountersSchema,
 
                     quota: Joi.object({
-                        usage: Joi.number().example(8547884032).description('How many bytes has the account stored in emails'),
-                        limit: Joi.number().example(16106127360).description('How many bytes can the account store emails'),
+                        usage: Joi.number().integer().example(8547884032).description('How many bytes has the account stored in emails'),
+                        limit: Joi.number().integer().example(16106127360).description('How many bytes can the account store emails'),
                         status: Joi.string().example('53%').description('Textual information about the usage')
                     })
                         .label('AccountQuota')
@@ -3475,6 +3477,7 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     maxBytes: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(5 * 1025 * 1024)
@@ -3710,9 +3713,9 @@ When making API calls remember that requests against the same account are queued
                         .description('Message ID. NB! This and other fields might not be present if server did not provide enough information')
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
-                    uid: Joi.number().example(12345).description('UID of uploaded message'),
+                    uid: Joi.number().integer().example(12345).description('UID of uploaded message'),
                     uidValidity: Joi.string().example('12345').description('UIDVALIDTITY of the target folder. Numeric value cast as string.'),
-                    seq: Joi.number().example(12345).description('Sequence number of uploaded message'),
+                    seq: Joi.number().integer().example(12345).description('Sequence number of uploaded message'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
 
@@ -3949,7 +3952,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
                     id: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
-                    uid: Joi.number().example(12345).description('UID of moved message')
+                    uid: Joi.number().integer().example(12345).description('UID of moved message')
                 }).label('MessageMoveResponse'),
                 failAction: 'log'
             }
@@ -4238,6 +4241,7 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     maxBytes: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(MAX_ATTACHMENT_SIZE)
@@ -4327,13 +4331,14 @@ When making API calls remember that requests against the same account are queued
                 query: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Mailbox folder path').label('Path'),
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     documentStore: documentStoreSchema.default(false)
                 }).label('MessageQuery')
             },
@@ -4430,12 +4435,13 @@ When making API calls remember that requests against the same account are queued
                         .example('INBOX')
                         .description('Mailbox folder path. Not required if `documentStore` is `true`'),
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page'),
                     documentStore: documentStoreSchema.default(false),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
@@ -4533,12 +4539,13 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page'),
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page'),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -4825,7 +4832,10 @@ When making API calls remember that requests against the same account are queued
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
-                    deliveryAttempts: Joi.number().example(10).description('How many delivery attempts to make until message is considered as failed'),
+                    deliveryAttempts: Joi.number()
+                        .integer()
+                        .example(10)
+                        .description('How many delivery attempts to make until message is considered as failed'),
                     gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
 
                     listId: Joi.string()
@@ -5184,10 +5194,13 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
                     jobs: Joi.object({
-                        active: Joi.number().example(123).description('Jobs that are currently being processed'),
-                        delayed: Joi.number().example(123).description('Jobs that are processed in the future'),
-                        paused: Joi.number().example(123).description('Jobs that would be processed once queue processing is resumed'),
-                        waiting: Joi.number().example(123).description('Jobs that should be processed, but are waiting until there are any free handlers')
+                        active: Joi.number().integer().example(123).description('Jobs that are currently being processed'),
+                        delayed: Joi.number().integer().example(123).description('Jobs that are processed in the future'),
+                        paused: Joi.number().integer().example(123).description('Jobs that would be processed once queue processing is resumed'),
+                        waiting: Joi.number()
+                            .integer()
+                            .example(123)
+                            .description('Jobs that should be processed, but are waiting until there are any free handlers')
                     }).label('QueueJobs'),
                     paused: Joi.boolean().example(false).description('Is the queue paused or not')
                 }).label('SettingsQueueResponse'),
@@ -5342,6 +5355,7 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     seconds: Joi.number()
+                        .integer()
                         .empty('')
                         .min(0)
                         .max(MAX_DAYS_STATS * 24 * 3600)
@@ -5356,17 +5370,17 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     version: Joi.string().example(packageData.version).description('EmailEngine version number'),
                     license: Joi.string().example(packageData.license).description('EmailEngine license'),
-                    accounts: Joi.number().example(26).description('Number of registered accounts'),
+                    accounts: Joi.number().integer().example(26).description('Number of registered accounts'),
                     node: Joi.string().example('16.10.0').description('Node.js Version'),
                     redis: Joi.string().example('6.2.4').description('Redis Version'),
                     connections: Joi.object({
-                        init: Joi.number().example(2).description('Accounts not yet initialized'),
-                        connected: Joi.number().example(8).description('Successfully connected accounts'),
-                        connecting: Joi.number().example(7).description('Connection is being established'),
-                        authenticationError: Joi.number().example(3).description('Authentication failed'),
-                        connectError: Joi.number().example(5).description('Connection failed due to technical error'),
-                        unset: Joi.number().example(0).description('Accounts without valid IMAP settings'),
-                        disconnected: Joi.number().example(1).description('IMAP connection was closed')
+                        init: Joi.number().integer().example(2).description('Accounts not yet initialized'),
+                        connected: Joi.number().integer().example(8).description('Successfully connected accounts'),
+                        connecting: Joi.number().integer().example(7).description('Connection is being established'),
+                        authenticationError: Joi.number().integer().example(3).description('Authentication failed'),
+                        connectError: Joi.number().integer().example(5).description('Connection failed due to technical error'),
+                        unset: Joi.number().integer().example(0).description('Accounts without valid IMAP settings'),
+                        disconnected: Joi.number().integer().example(1).description('IMAP connection was closed')
                     })
                         .description('Counts of accounts in different connection states')
                         .label('ConnectionsStats'),
@@ -5667,6 +5681,7 @@ When making API calls remember that requests against the same account are queued
 
                         host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
                         port: Joi.number()
+                            .integer()
                             .min(1)
                             .max(64 * 1024)
                             .required()
@@ -5681,6 +5696,7 @@ When making API calls remember that requests against the same account are queued
 
                         host: Joi.string().hostname().required().example('imap.gmail.com').description('Hostname to connect to'),
                         port: Joi.number()
+                            .integer()
                             .min(1)
                             .max(64 * 1024)
                             .required()
@@ -5738,21 +5754,22 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('OutbixListFilter')
             },
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     messages: Joi.array()
                         .items(
@@ -5777,8 +5794,11 @@ When making API calls remember that requests against the same account are queued
                                 scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
                                 nextAttempt: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Next delivery attempt'),
 
-                                attemptsMade: Joi.number().example(3).description('How many times EmailEngine has tried to deliver this email'),
-                                attempts: Joi.number().example(3).description('How many delivery attempts to make until message is considered as failed'),
+                                attemptsMade: Joi.number().integer().example(3).description('How many times EmailEngine has tried to deliver this email'),
+                                attempts: Joi.number()
+                                    .integer()
+                                    .example(3)
+                                    .description('How many delivery attempts to make until message is considered as failed'),
 
                                 progress: Joi.object({
                                     status: Joi.string()
@@ -5910,21 +5930,22 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('WebhookRoutesListRequest')
             },
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     webhooks: Joi.array()
                         .items(
@@ -5941,7 +5962,7 @@ When making API calls remember that requests against the same account are queued
                                 updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was last updated'),
                                 enabled: Joi.boolean().example(true).description('Is the route enabled').label('WebhookRouteEnabled'),
                                 targetUrl: settingsSchema.webhooks,
-                                tcount: Joi.number().example(123).description('How many times this route has been applied')
+                                tcount: Joi.number().integer().example(123).description('How many times this route has been applied')
                             }).label('WebhookRoutesListEntry')
                         )
                         .label('WebhookRoutesList')
@@ -6010,7 +6031,7 @@ When making API calls remember that requests against the same account are queued
                     updated: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this route was last updated'),
                     enabled: Joi.boolean().example(true).description('Is the route enabled').label('WebhookRouteEnabled'),
                     targetUrl: settingsSchema.webhooks,
-                    tcount: Joi.number().example(123).description('How many times this route has been applied'),
+                    tcount: Joi.number().integer().example(123).description('How many times this route has been applied'),
                     content: Joi.object({
                         fn: Joi.string().example('return true;').description('Filter function'),
                         map: Joi.string().example('payload.ts = Date.now(); return payload;').description('Mapping function')
@@ -6090,21 +6111,22 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('GatewaysFilter')
             },
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     apps: Joi.array()
                         .items(
@@ -6283,7 +6305,10 @@ When making API calls remember that requests against the same account are queued
                         .example('******')
                         .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
 
-                    accounts: Joi.number().example(12).description('The number of accounts registered with this application. Not available for legacy apps.'),
+                    accounts: Joi.number()
+                        .integer()
+                        .example(12)
+                        .description('The number of accounts registered with this application. Not available for legacy apps.'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('ApplicationResponse'),
@@ -6511,7 +6536,10 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the gateway deleted'),
-                    accounts: Joi.number().example(12).description('The number of accounts registered with this application. Not available for legacy apps.')
+                    accounts: Joi.number()
+                        .integer()
+                        .example(12)
+                        .description('The number of accounts registered with this application. Not available for legacy apps.')
                 }).label('DeleteAppRequestResponse'),
                 failAction: 'log'
             }
@@ -6563,28 +6591,29 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('GatewaysFilter')
             },
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     gateways: Joi.array()
                         .items(
                             Joi.object({
                                 gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
                                 name: Joi.string().max(256).example('My Email Gateway').description('Display name for the gateway'),
-                                deliveries: Joi.number().empty('').example(100).description('Count of email deliveries using this gateway'),
+                                deliveries: Joi.number().integer().empty('').example(100).description('Count of email deliveries using this gateway'),
                                 lastUse: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last delivery time'),
                                 lastError: lastErrorSchema.allow(null)
                             }).label('GatewayResponseItem')
@@ -6660,7 +6689,7 @@ When making API calls remember that requests against the same account are queued
                     gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
 
                     name: Joi.string().max(256).required().example('My Email Gateway').description('Display name for the gateway'),
-                    deliveries: Joi.number().empty('').example(100).description('Count of email deliveries using this gateway'),
+                    deliveries: Joi.number().integer().empty('').example(100).description('Count of email deliveries using this gateway'),
                     lastUse: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last delivery time'),
 
                     user: Joi.string().empty('').trim().max(1024).label('UserName'),
@@ -6668,6 +6697,7 @@ When making API calls remember that requests against the same account are queued
 
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
+                        .integer()
                         .min(1)
                         .max(64 * 1024)
                         .example(465)
@@ -6743,6 +6773,7 @@ When making API calls remember that requests against the same account are queued
 
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname').required(),
                     port: Joi.number()
+                        .integer()
                         .min(1)
                         .max(64 * 1024)
                         .example(465)
@@ -6824,6 +6855,7 @@ When making API calls remember that requests against the same account are queued
 
                     host: Joi.string().hostname().empty('').example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
+                        .integer()
                         .min(1)
                         .empty('')
                         .max(64 * 1024)
@@ -7326,27 +7358,28 @@ ${now}`,
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('PageListsRequest')
             },
 
             response: {
                 schema: Joi.object({
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
                     blocklists: Joi.array()
                         .items(
                             Joi.object({
                                 listId: Joi.string().max(256).required().example('example').description('List ID'),
-                                count: Joi.number().example(12).description('Count of blocked addresses in this list')
+                                count: Joi.number().integer().example(12).description('Count of blocked addresses in this list')
                             }).label('BlocklistsResponseItem')
                         )
                         .label('BlocklistsEntries')
@@ -7408,22 +7441,23 @@ ${now}`,
 
                 query: Joi.object({
                     page: Joi.number()
+                        .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
                         .description('Page number (zero indexed, so use 0 for first page)')
                         .label('PageNumber'),
-                    pageSize: Joi.number().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
                 }).label('PageListsRequest')
             },
 
             response: {
                 schema: Joi.object({
                     listId: Joi.string().max(256).required().example('example').description('List ID'),
-                    total: Joi.number().example(120).description('How many matching entries').label('TotalNumber'),
-                    page: Joi.number().example(0).description('Current page (0-based index)').label('PageNumber'),
-                    pages: Joi.number().example(24).description('Total page count').label('PagesNumber'),
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
                     addresses: Joi.array()
                         .items(
                             Joi.object({
