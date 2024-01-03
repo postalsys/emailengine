@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.39.5](https://github.com/postalsys/emailengine/compare/v2.39.4...v2.39.5) (2024-01-03)
+
+
+### Bug Fixes
+
+* **api:** Added quota information to account info response ([6341400](https://github.com/postalsys/emailengine/commit/63414007a1437e0b642e6402d92bd0f00c898232))
+* **api:** enforce numbers as integers in the validation schema ([84298c8](https://github.com/postalsys/emailengine/commit/84298c8a060c9ff6200060a78056e5536aeb8c66))
+* **documentstore:** prevent throwing an error when fetching an empty email ([c3dc0b6](https://github.com/postalsys/emailengine/commit/c3dc0b6bc43b8dee2c2936d228315985155a1797))
+* **settings:** Ensure setting service url and timezone if not set ([27faad9](https://github.com/postalsys/emailengine/commit/27faad98ce7861f8fc6b03ade906d357f79eb697))
+
 ## [2.39.4](https://github.com/postalsys/emailengine/compare/v2.39.3...v2.39.4) (2023-12-15)
 
 
