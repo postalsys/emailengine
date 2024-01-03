@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.6](https://github.com/postalsys/emailengine/compare/v2.39.5...v2.39.6) (2024-01-03)
+
+
+### Bug Fixes
+
+* **redis-locks:** Bumped ioredfour to fix issue with Redis servers where WITH is disabled ([b53007a](https://github.com/postalsys/emailengine/commit/b53007a450a5cc39389edcfaa9601a3f57232ad1))
+
 ## [2.39.5](https://github.com/postalsys/emailengine/compare/v2.39.4...v2.39.5) (2024-01-03)
 
 
