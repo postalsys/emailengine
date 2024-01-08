@@ -18,7 +18,8 @@
         "licenses": "license-checker --excludePackages emailengine-app --json | node license-table.js > static/licenses.html",
         "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js lib/tools.js -j -o translations/messages.pot",
         "prepare-docker": "echo \"EE_DOCKER_LEGACY=$EE_DOCKER_LEGACY\" >> system.env && cat system.env",
-        "update": "rm -rf node_modules package-lock.json && ncu -u && npm install && ./copy-static-files.sh && npm run licenses && npm run gettext"
+        "update": "rm -rf node_modules package-lock.json && ncu -u && npm install && ./copy-static-files.sh && npm run licenses && npm run gettext",
+        "test-gmail-api": "node lib/api-client/gmail-client.js --dbs.redis=redis://127.0.0.1/11"
     },
     "keywords": [
         "IMAP",
