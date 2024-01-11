@@ -476,6 +476,10 @@ const init = async () => {
         host: API_HOST,
         tls: API_TLS,
 
+        state: {
+            strictHeader: false
+        },
+
         router: {
             stripTrailingSlash: true
         },
