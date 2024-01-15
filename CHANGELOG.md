@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.39.7](https://github.com/postalsys/emailengine/compare/v2.39.6...v2.39.7) (2024-01-15)
+
+
+### Bug Fixes
+
+* **cookies:** do not validate cookies to prevent 'invalid cookie value' error for 3rd party cookies ([a869640](https://github.com/postalsys/emailengine/commit/a8696406c50bfc39495148f3d11679342001fff3))
+* **submit:** allow empty string as address name ([4d6b276](https://github.com/postalsys/emailengine/commit/4d6b276eebe8a603dbc0a2d6f2de86708d08bb14))
+* **webhooks:** fixed text.html field for messageNew if notifyWebSafeHtml is true ([47e64a8](https://github.com/postalsys/emailengine/commit/47e64a8ef0bd4e7a2f6c75b563b7cfffe175379c))
+
 ## [2.39.6](https://github.com/postalsys/emailengine/compare/v2.39.5...v2.39.6) (2024-01-03)
 
 
