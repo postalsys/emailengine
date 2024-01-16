@@ -538,7 +538,11 @@ class ConnectionHandler {
         }
 
         setImmediate(() => {
-            source.pipe(stream);
+            if (Buffer.isBuffer(source.data)) {
+                stream.end(source.data);
+            } else {
+                source.pipe(stream);
+            }
         });
 
         return {
