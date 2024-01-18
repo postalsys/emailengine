@@ -6421,9 +6421,9 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 payload: Joi.object({
-                    name: Joi.string().trim().empty('').max(256).example('My Gmail App').required().description('Application name'),
-                    description: Joi.string().trim().empty('').max(1024).example('My cool app').description('Application description'),
-                    title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
+                    name: Joi.string().trim().empty('').max(256).example('My Gmail App').description('Application name'),
+                    description: Joi.string().trim().allow('').max(1024).example('My cool app').description('Application description'),
+                    title: Joi.string().allow('').trim().max(256).example('App title').description('Title for the application button'),
 
                     enabled: Joi.boolean().truthy('Y', 'true', '1', 'on').falsy('N', 'false', 0, '').example(true).description('Enable this app'),
 
