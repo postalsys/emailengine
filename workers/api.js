@@ -2932,7 +2932,7 @@ When making API calls remember that requests against the same account are queued
                 schema: Joi.object({
                     account: accountIdSchema.required(),
 
-                    name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
+                    name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
                     copy: Joi.boolean().example(true).description('Copy submitted messages to Sent folder'),
@@ -2967,7 +2967,21 @@ When making API calls remember that requests against the same account are queued
                         .description('Informational account state')
                         .label('AccountInfoState'),
 
-                    smtpStatus: Joi.object().unknown().description('Information about the last SMTP connection attempt').label('SMTPInfoStatus'),
+                    smtpStatus: Joi.object({
+                        created: Joi.date()
+                            .iso()
+                            .allow(null)
+                            .example('2021-07-08T07:06:34.336Z')
+                            .description('When was the status for SMTP connection last updated'),
+                        status: Joi.string().valid('ok', 'error').description('Was the last SMTP attempt successful or not'),
+                        response: Joi.string().example('250 OK').description('SMTP response message for delivery attempt'),
+                        description: Joi.string().example('Authentication failed').description('Error information'),
+                        responseCode: Joi.number().integer().example(500).description('Error status code'),
+                        code: Joi.string().example('EAUTH').description('Error type identifier'),
+                        command: Joi.string().example('AUTH PLAIN').description('SMTP command that failed')
+                    })
+                        .description('Information about the last SMTP connection attempt')
+                        .label('SMTPInfoStatus'),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
