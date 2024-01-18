@@ -9,6 +9,30 @@
     EmailEngine can sync emails to a document store for caching and local processing.
 </p>
 
+<div class="card border-left-danger mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Deprecation Notice
+                </div>
+                <p>The Document Store feature in EmailEngine has been deprecated. This decision was made due
+                    to ongoing challenges in maintaining consistent synchronization between email accounts and their
+                    mirrored content on the ElasticSearch server.</p>
+                <ul>
+                    <li>The Document Store feature will not be removed from EmailEngine, and you can continue to use it
+                        as per your current needs.</li>
+                    <li>However, please be aware that as a deprecated feature, it will no longer receive new
+                        updates or enhancements.</li>
+
+                </ul>
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
         <a class="nav-link {{#if documentStoreSettings}}active{{/if}}" href="/admin/config/document-store">Settings</a>
