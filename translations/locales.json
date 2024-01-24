@@ -21,5 +21,11 @@
         "name": "German",
         "locale": "de",
         "file": "de.mo"
+    },
+
+    {
+        "name": "Japanese",
+        "locale": "ja",
+        "file": "ja.mo"
     }
 ]
