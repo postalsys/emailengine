@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.39.8](https://github.com/postalsys/emailengine/compare/v2.39.7...v2.39.8) (2024-02-02)
+
+
+### Bug Fixes
+
+* **deps:** bumped deps to clear vulnerability notifications ([fbe71ff](https://github.com/postalsys/emailengine/commit/fbe71ffc73338beaced229310afc3f6530547c06))
+* **deps:** bumped imapflow ([c79d160](https://github.com/postalsys/emailengine/commit/c79d1608663133615e518dc1408545648b5a9f06))
+* **document-store:** Added deprecation notice ([1ed38d8](https://github.com/postalsys/emailengine/commit/1ed38d8b22ee57f4e32006df427fadcc60acacaf))
+* **outh2-apps:** Allow to clear display title and description ([f04b115](https://github.com/postalsys/emailengine/commit/f04b115c6b1af8e251b9f20d8bf1547b980c144b))
+* **submit-timeout:** Allow to configure HTTP POST timeout for submit and message upload API endpoints (previous default 10s) ([89f0f01](https://github.com/postalsys/emailengine/commit/89f0f013fe3c0d0028e7832d3d54a62d363251b3))
+* **translations:** Added Japanese translation file for gettext (hosted authentication form) ([4bc743a](https://github.com/postalsys/emailengine/commit/4bc743a5000818fb806793f959495850fc16e2f2))
+* **translations:** Moved all field validation error translations into a separate project (joi-messages) ([5cb0c61](https://github.com/postalsys/emailengine/commit/5cb0c6136f997752d29b155c0bbfc2b6913b0d84))
+
 ## [2.39.7](https://github.com/postalsys/emailengine/compare/v2.39.6...v2.39.7) (2024-01-15)
 
 
