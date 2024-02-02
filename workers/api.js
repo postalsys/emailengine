@@ -117,6 +117,7 @@ const {
     LIST_UNSUBSCRIBE_NOTIFY,
     FETCH_TIMEOUT,
     DEFAULT_MAX_BODY_SIZE,
+    DEFAULT_MAX_PAYLOAD_TIMEOUT,
     DEFAULT_EENGINE_TIMEOUT,
     DEFAULT_MAX_ATTACHMENT_SIZE,
     MAX_FORM_TTL,
@@ -201,6 +202,9 @@ const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (con
 // Max POST body size for message uploads
 // NB! the default for other requests is 1MB
 const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE') || config.api.maxBodySize) || DEFAULT_MAX_BODY_SIZE;
+
+// Payload reception timeout in milliseconds for message upload requests
+const MAX_PAYLOAD_TIMEOUT = getByteSize(readEnvValue('EENGINE_MAX_PAYLOAD_TIMEOUT') || config.api.maxPayloadTimeout) || DEFAULT_MAX_PAYLOAD_TIMEOUT;
 
 // CORS configuration for API requests
 // By default, CORS is not enabled
@@ -3581,7 +3585,8 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             payload: {
-                maxBytes: MAX_BODY_SIZE
+                maxBytes: MAX_BODY_SIZE,
+                timeout: MAX_PAYLOAD_TIMEOUT
             },
 
             description: 'Upload message',
@@ -4627,7 +4632,8 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             payload: {
-                maxBytes: MAX_BODY_SIZE
+                maxBytes: MAX_BODY_SIZE,
+                timeout: MAX_PAYLOAD_TIMEOUT
             },
 
             description: 'Submit message for delivery',
