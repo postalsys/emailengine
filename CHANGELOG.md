@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.9](https://github.com/postalsys/emailengine/compare/v2.39.8...v2.39.9) (2024-02-03)
+
+
+### Bug Fixes
+
+* **build:** fixed broken build ([ae43242](https://github.com/postalsys/emailengine/commit/ae43242ebdc8ee95750cf6c91c7aaebc4ac1ca55))
+
 ## [2.39.8](https://github.com/postalsys/emailengine/compare/v2.39.7...v2.39.8) (2024-02-02)
 
 
