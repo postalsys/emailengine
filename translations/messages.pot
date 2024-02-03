@@ -1,7 +1,17 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-02-02 12:31+0000\n"
+"POT-Creation-Date: 2024-02-03 02:09+0000\n"
+
+#: views/config/license.hbs:48
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -46,16 +56,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
 msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/config/license.hbs:48
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -189,40 +189,40 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
-#: lib/routes-ui.js:603
+#: lib/routes-ui.js:602
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4630
-#: lib/routes-ui.js:6553
-#: lib/routes-ui.js:6564
+#: lib/routes-ui.js:4623
+#: lib/routes-ui.js:6546
+#: lib/routes-ui.js:6557
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4633
-#: lib/routes-ui.js:6556
-#: lib/routes-ui.js:6567
+#: lib/routes-ui.js:4626
+#: lib/routes-ui.js:6549
+#: lib/routes-ui.js:6560
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4637
-#: lib/routes-ui.js:6571
+#: lib/routes-ui.js:4630
+#: lib/routes-ui.js:6564
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6365
-#: lib/routes-ui.js:6405
-#: lib/routes-ui.js:9105
+#: lib/routes-ui.js:6358
+#: lib/routes-ui.js:6398
+#: lib/routes-ui.js:9098
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6491
-#: lib/routes-ui.js:6747
+#: lib/routes-ui.js:6484
+#: lib/routes-ui.js:6740
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9205
-#: lib/routes-ui.js:9238
+#: lib/routes-ui.js:9198
+#: lib/routes-ui.js:9231
 msgid "Failed to process request"
 msgstr ""
 
