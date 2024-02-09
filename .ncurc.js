@@ -3,6 +3,8 @@ module.exports = {
     reject: [
         // Block package upgrades that moved to ESM
         'nanoid',
+        'gettext-parser',
+        'xgettext-template',
 
         // no support for Node 16
         'marked',
