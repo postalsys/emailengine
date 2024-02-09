@@ -33,7 +33,9 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 }
 
 const { Connection } = require('../lib/connection');
+const { GmailClient } = require('../lib/api-client/gmail-client');
 const { Account } = require('../lib/account');
+const { oauth2Apps } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const { getESClient } = require('../lib/document-store');
@@ -138,22 +140,37 @@ class ConnectionHandler {
         });
 
         this.accounts.set(account, accountObject);
-        accountObject.connection = new Connection({
-            account,
-            accountObject,
-            redis,
-            secret,
-            notifyQueue,
-            submitQueue,
-            documentsQueue,
-            flowProducer,
-            accountLogger,
-            call: msg => this.call(msg),
-            logRaw: EENGINE_LOG_RAW
-        });
-        accountObject.logger = accountObject.connection.logger;
 
-        let accountData = await accountObject.loadAccountData();
+        const accountData = await accountObject.loadAccountData();
+
+        if (accountData.oauth2 && accountData.oauth2.auth) {
+            const oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
+            if (oauth2App.baseScopes === 'api') {
+                // Use API instead of IMAP
+                accountObject.connection = new GmailClient(account, {
+                    redis,
+                    accountLogger
+                });
+                accountData.state = 'connected';
+            }
+        }
+
+        if (!accountObject.connection) {
+            accountObject.connection = new Connection({
+                account,
+                accountObject,
+                redis,
+                secret,
+                notifyQueue,
+                submitQueue,
+                documentsQueue,
+                flowProducer,
+                accountLogger,
+                call: msg => this.call(msg),
+                logRaw: EENGINE_LOG_RAW
+            });
+            accountObject.logger = accountObject.connection.logger;
+        }
 
         if (accountData.state) {
             await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', accountData.state);
