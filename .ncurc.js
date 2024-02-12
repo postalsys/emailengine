@@ -5,6 +5,7 @@ module.exports = {
         'nanoid',
         'gettext-parser',
         'xgettext-template',
+        'chai',
 
         // no support for Node 16
         'marked',
