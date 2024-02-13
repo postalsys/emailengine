@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.10](https://github.com/postalsys/emailengine/compare/v2.39.9...v2.39.10) (2024-02-12)
+
+
+### Bug Fixes
+
+* **message-upload:** improvements regarding empty From header ([45df0fd](https://github.com/postalsys/emailengine/commit/45df0fd830c0dd3690bf367fe344572826c6d96e))
+
 ## [2.39.9](https://github.com/postalsys/emailengine/compare/v2.39.8...v2.39.9) (2024-02-03)
 
 
