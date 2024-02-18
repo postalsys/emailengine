@@ -81,7 +81,7 @@
         "ipaddr.js": "2.1.0",
         "joi": "17.12.1",
         "jquery": "3.7.1",
-        "js-beautify": "^1.14.9",
+        "js-beautify": "1.14.9",
         "libbase64": "1.2.1",
         "libmime": "5.2.1",
         "libqp": "2.0.1",
