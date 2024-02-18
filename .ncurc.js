@@ -6,6 +6,7 @@ module.exports = {
         'gettext-parser',
         'xgettext-template',
         'chai',
+        'js-beautify',
 
         // no support for Node 16
         'marked',
