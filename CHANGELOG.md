@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.39.11](https://github.com/postalsys/emailengine/compare/v2.39.10...v2.39.11) (2024-02-18)
+
+
+### Bug Fixes
+
+* **llm:** LLM processing did not work ([28973d4](https://github.com/postalsys/emailengine/commit/28973d40080e710fb439ed84ff55503c418a3786))
+
 ## [2.39.10](https://github.com/postalsys/emailengine/compare/v2.39.9...v2.39.10) (2024-02-12)
 
 
