@@ -204,7 +204,7 @@ const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (con
 const MAX_BODY_SIZE = getByteSize(readEnvValue('EENGINE_MAX_BODY_SIZE') || config.api.maxBodySize) || DEFAULT_MAX_BODY_SIZE;
 
 // Payload reception timeout in milliseconds for message upload requests
-const MAX_PAYLOAD_TIMEOUT = getByteSize(readEnvValue('EENGINE_MAX_PAYLOAD_TIMEOUT') || config.api.maxPayloadTimeout) || DEFAULT_MAX_PAYLOAD_TIMEOUT;
+const MAX_PAYLOAD_TIMEOUT = getDuration(readEnvValue('EENGINE_MAX_PAYLOAD_TIMEOUT') || config.api.maxPayloadTimeout) || DEFAULT_MAX_PAYLOAD_TIMEOUT;
 
 // CORS configuration for API requests
 // By default, CORS is not enabled
@@ -234,7 +234,20 @@ const CORS_CONFIG = !CORS_ORIGINS
           credentials: true
       };
 
-logger.debug({ msg: 'CORS config for API requests', cors: CORS_CONFIG });
+logger.info({
+    msg: 'API server configuration',
+    api: {
+        port: API_PORT,
+        host: API_HOST,
+        maxPayloadTimeout: MAX_PAYLOAD_TIMEOUT,
+        maxBodySize: MAX_BODY_SIZE,
+        maxSize: MAX_ATTACHMENT_SIZE
+    },
+    service: {
+        commandTimeout: EENGINE_TIMEOUT
+    },
+    cors: CORS_CONFIG
+});
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
 

@@ -2211,6 +2211,11 @@ const startApplication = async () => {
         await settings.set('cookiePassword', cookiePassword);
     }
 
+    // -- START WORKER THREADS
+
+    // single worker for HTTP, start first for health checks
+    await spawnWorker('api');
+
     // multiple IMAP connection handlers
     let workerPromises = [];
     for (let i = 0; i < config.workers.imap; i++) {
@@ -2246,9 +2251,6 @@ const startApplication = async () => {
         // single IMAP proxy interface worker
         await spawnWorker('imapProxy');
     }
-
-    // single worker for HTTP, start last to avoid running API requests for still-missing targets
-    await spawnWorker('api');
 };
 
 startApplication()
