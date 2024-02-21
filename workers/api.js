@@ -155,7 +155,8 @@ const {
     tokenRestrictionsSchema,
     accountIdSchema,
     ipSchema,
-    accountCountersSchema
+    accountCountersSchema,
+    accountPathSchema
 } = require('../lib/schemas');
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
@@ -2118,7 +2119,7 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).required().example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
-                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+                    path: accountPathSchema,
 
                     subconnections: accountSchemas.subconnections,
 
@@ -2371,7 +2372,7 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                     email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
 
-                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+                    path: accountPathSchema,
 
                     subconnections: accountSchemas.subconnections,
 
@@ -2958,7 +2959,7 @@ When making API calls remember that requests against the same account are queued
                     notifyFrom: accountSchemas.notifyFrom,
                     syncFrom: accountSchemas.syncFrom,
 
-                    path: Joi.string().empty('').max(1024).default('*').example('INBOX').description('Check changes only on selected path'),
+                    path: accountPathSchema,
 
                     subconnections: accountSchemas.subconnections,
 
