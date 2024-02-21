@@ -289,7 +289,7 @@ const documentsWorker = new Worker(
 
             // returns indexing response for the parent job
             case MESSAGE_NEW_NOTIFY: {
-                let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                let accountExists = await redis.hexists(`${REDIS_PREFIX}iad:${job.data.account}`, 'account');
                 if (!accountExists) {
                     // deleted account?
                     return false;
@@ -698,7 +698,7 @@ const documentsWorker = new Worker(
                     let messageData = job.data.data;
                     let messageId = messageData.id;
 
-                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    let accountExists = await redis.hexists(`${REDIS_PREFIX}iad:${job.data.account}`, 'account');
                     if (!accountExists) {
                         // deleted account?
                         return;
@@ -805,7 +805,7 @@ ${Object.keys(params)
                         return;
                     }
 
-                    let accountExists = await redis.exists(`${REDIS_PREFIX}iad:${job.data.account}`);
+                    let accountExists = await redis.hexists(`${REDIS_PREFIX}iad:${job.data.account}`, 'account');
                     if (!accountExists) {
                         // deleted account?
                         return;

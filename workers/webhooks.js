@@ -105,7 +105,7 @@ const notifyWorker = new Worker(
         let accountKey = getAccountKey(job.data.account);
 
         // validate if we should even process this webhook
-        let accountExists = await redis.exists(accountKey);
+        let accountExists = await redis.hexists(accountKey, 'account');
         if (!accountExists && job.name !== ACCOUNT_DELETED_NOTIFY) {
             logger.debug({
                 msg: 'Account is not enabled',
