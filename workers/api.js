@@ -4916,6 +4916,9 @@ When making API calls remember that requests against the same account are queued
                         .example('https://customer123.myservice.com')
                         .description('Optional base URL for trackers. This URL must point to your EmailEngine instance.'),
 
+                    proxy: settingsSchema.proxyUrl.description('Optional proxy URL to use when connecting to the SMTP server'),
+                    localAddress: ipSchema.description('Optional local IP address to bind to when connecting to the SMTP server'),
+
                     dryRun: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
