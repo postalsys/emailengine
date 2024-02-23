@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.40.0](https://github.com/postalsys/emailengine/compare/v2.39.11...v2.40.0) (2024-02-23)
+
+
+### Features
+
+* **connections:** If EmailEngine is syncing an account then use a secondary IMAP connection to serve API requests ([965b63c](https://github.com/postalsys/emailengine/commit/965b63c4747c93dd2151749002a0fa91f9996ea4))
+* **path:** Account path argument can take either a path string, or an array of strings to monitor multiple folders instead of just one ([a7c6abc](https://github.com/postalsys/emailengine/commit/a7c6abc146a8631a1b63d62180274b1a372cf598))
+* **submit:** Allow to set proxy url and local address when submitting emails for delivery ([af1d253](https://github.com/postalsys/emailengine/commit/af1d253dc2c194d7af12aa15b711a4fbeb246fe4))
+
+
+### Bug Fixes
+
+* **config:** Properly parse time values from EENGINE_MAX_PAYLOAD_TIMEOUT config option ([c3f5ac7](https://github.com/postalsys/emailengine/commit/c3f5ac79e45f7c79281105ef993f2e37a9f1ce53))
+
 ## [2.39.11](https://github.com/postalsys/emailengine/compare/v2.39.10...v2.39.11) (2024-02-18)
 
 
