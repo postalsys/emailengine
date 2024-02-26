@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.1](https://github.com/postalsys/emailengine/compare/v2.40.0...v2.40.1) (2024-02-26)
+
+
+### Bug Fixes
+
+* **network:** Fixed failing network scan for detecting local IP addresses ([048358d](https://github.com/postalsys/emailengine/commit/048358da34da2d6835c5872d08e5058fd2e138d1))
+
 ## [2.40.0](https://github.com/postalsys/emailengine/compare/v2.39.11...v2.40.0) (2024-02-23)
 
 
