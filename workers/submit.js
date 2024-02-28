@@ -286,7 +286,8 @@ const submitWorker = new Worker(
                         message: err.message,
                         code: err.code,
                         statusCode: err.statusCode
-                    }
+                    },
+                    networkRouting: err.info?.networkRouting
                 });
             } catch (err) {
                 // ignore
@@ -381,7 +382,8 @@ submitWorker.on('failed', async job => {
             await notify(job.data.account, EMAIL_FAILED_NOTIFY, {
                 messageId: job.data.messageId,
                 queueId: job.data.queueId,
-                error: job.stacktrace && job.stacktrace[0] && job.stacktrace[0].split('\n').shift()
+                error: job.stacktrace && job.stacktrace[0] && job.stacktrace[0].split('\n').shift(),
+                networkRouting: job.progress?.networkRouting
             });
         }
     }
@@ -422,6 +424,9 @@ parentPort.on('message', message => {
             }
             if (message.statusCode) {
                 err.statusCode = message.statusCode;
+            }
+            if (message.info) {
+                err.info = message.info;
             }
             return reject(err);
         } else {
