@@ -6,18 +6,18 @@
     </h1>
 </div>
 
-<p class="mb-4">Manage available IP addresses.</p>
+<p class="mb-4">Manage connection routing.</p>
 
 <form method="post" action="/admin/config/network">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Proxy</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Proxy Configuration</h6>
         </div>
         <div class="card-body">
-            <p>Here you can configure a default proxy for all email server connections. EmailEngine supports HTTP
-                CONNECT and SOCKS (both 4 and 5) proxies.</p>
+            <p>Configure a default proxy for EmailEngine to use with all email server connections. Supported proxy types
+                include HTTP CONNECT and SOCKS (versions 4 and 5).</p>
 
             <div class="form-group form-check">
 
@@ -27,11 +27,12 @@
                 <input type="checkbox"
                     class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
                     id="proxy_enabled" name="proxyEnabled" {{#if values.proxyEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="proxy_enabled">Enable proxy for all accounts</label>
+                <label class="form-check-label" for="proxy_enabled">Enable Proxy for All Accounts</label>
                 {{#if errors.proxyEnabled}}
                 <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Each account can have its own proxy configuration as well.</small>
+                <small class="form-text text-muted">Individual accounts can be configured with specific proxy settings
+                    as well.</small>
 
             </div>
 
@@ -42,13 +43,15 @@
 
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
-                    id="proxyUrl" placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;"
+                    id="proxyUrl"
+                    placeholder="Enter the proxy connection URL (e.g., &quot;socks://localhost:1080&quot;)"
                     value="{{values.proxyUrl}}" name="proxyUrl" data-target="proxy-status">
                 {{#if errors.proxyUrl}}
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
                 {{/if}}
-                <small id="proxyUrlBlock" class="form-text text-muted">Proxy URL must start with http://, https://,
-                    socks://, socks4:// or socks5://</small>
+                <small id="proxyUrlBlock" class="form-text text-muted">Enter the proxy connection URL (e.g.,
+                    "socks://localhost:1080"). Must begin with http://, https://, socks://,
+                    socks4://, or socks5://.</small>
             </div>
 
             <div class="form-group">
@@ -57,30 +60,34 @@
                         target="_blank">smtpEhloName</a>]</div>
 
                 <label for="smtpEhloName">SMTP Greeting Hostname</label>
-                <input type="text" class="form-control {{#if errors.proxyUrl}}is-invalid{{/if}}" id="smtpEhloName"
-                    placeholder="Proxy hostname like &quot;my.proxy.tld&quot;&mldr;" value="{{values.smtpEhloName}}"
-                    name="smtpEhloName">
+                <input type="text" class="form-control {{#if errors.smtpEhloName}}is-invalid{{/if}}" id="smtpEhloName"
+                    placeholder="Specify the hostname for the SMTP EHLO/HELO greeting (e.g., &quot;my.proxy.tld&quot;)"
+                    value="{{values.smtpEhloName}}" name="smtpEhloName">
                 {{#if errors.smtpEhloName}}
                 <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
                 {{/if}}
-                <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname to use for the SMTP EHLO/HELO
-                    greeting. Leave empty to use the default <code>{{defaultSmtpEhloName}}</code> or if you are using a
-                    dedicated IP address, then the name of the IP is preferred over this value.</small>
+                <small id="smtpEhloNameBlock" class="form-text text-muted">Specify the hostname for the SMTP EHLO/HELO
+                    greeting (e.g., "my.proxy.tld"). If left blank, <code>{{defaultSmtpEhloName}}</code> is used by
+                    default. For dedicated IP addresses, the IP's associated name is recommended.</small>
             </div>
         </div>
     </div>
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Default IP-address selection strategy</h6>
+            <h6 class="m-0 font-weight-bold text-primary">IP Address Selection Strategy</h6>
         </div>
         <div class="card-body">
-            <p>If your server can use multiple local IP addresses, you can choose how EmailEngine selects such an
-                address from the address pool when connecting to an email server.</p>
-            <p><em>Dedicated</em> means that the same account always gets the same IP address from the IP pool.
-                <em>Random</em> means that each connection gets a random IP address assigned from the pool. <em>Server
-                    default</em> means that EmailEngine does not select a local address for the connection.
-            </p>
+            <p>If your server has access to multiple IP addresses, EmailEngine allows you to define how it selects an IP
+                for email server connections.</p>
+            <ul>
+                <li><strong>Dedicated</strong>: Consistently assigns the same IP address from the pool to the same
+                    account.</li>
+                <li><strong>Random</strong>: Allocates a different, random IP address from the pool for each connection.
+                </li>
+                <li><strong>Server Default</strong>: EmailEngine will not specify a local IP address, utilizing the
+                    server's default settings instead.</li>
+            </ul>
         </div>
 
         <table class="table">
@@ -140,7 +147,7 @@
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3 d-flex justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary align-self-center">Allowed IP addresses</h6>
+            <h6 class="m-0 font-weight-bold text-primary align-self-center">Configurable IP Addresses</h6>
             <div class="align-self-center"><button class="btn btn-primary" id="reload-btn">
                     <i class="fa fa-sync-alt fa-fw"></i>
                     Scan addresses</button></div>
@@ -149,7 +156,8 @@
         <div class="card-body">
             <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                     target="_blank">localAddresses</a>]</div>
-            Mark all addresses that EmailEngine can use with <em>Dedicated</em> and <em>Random</em> strategies.
+            Enable EmailEngine to use these IP addresses under <em>Dedicated</em> or <em>Random</em> selection
+            strategies. If selected IPs are unavailable, EmailEngine defaults to the server's network.
         </div>
         <table class="table table-hover">
             <thead>
