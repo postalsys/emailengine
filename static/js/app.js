@@ -256,6 +256,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     name: 'Connected'
                 };
                 break;
+            case 'disabled':
+                stateLabel = {
+                    type: 'secondary',
+                    name: 'Disabled'
+                };
+                break;
+
             case 'authenticationError':
             case 'connectError': {
                 let errorMessage = error ? error.response : false;

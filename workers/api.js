@@ -4556,7 +4556,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Unified search for messages',
             notes: 'Filter messages from the Document Store for multiple accounts or paths. Document Store must be enabled for the unified search to work.',
-            tags: ['api', 'Message'],
+            tags: ['api', 'X1. Deprecated endpoints'],
 
             plugins: {},
 

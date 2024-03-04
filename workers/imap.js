@@ -439,7 +439,8 @@ class ConnectionHandler {
 
         return accountObject.connection.subconnections.map(subconnection => ({
             path: subconnection.path,
-            state: subconnection.state
+            state: subconnection.state,
+            disabledReason: subconnection.disabledReason
         }));
     }
 
