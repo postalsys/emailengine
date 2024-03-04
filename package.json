@@ -15,7 +15,7 @@
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm install --omit=dev && ./update-info.sh",
         "build-dist": "npx pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "npx pkg --debug package.json && npm install && node winconf.js",
-        "licenses": "license-checker --excludePackages emailengine-app --json | node list-licenses.js > static/licenses.html",
+        "licenses": "license-checker --excludePackages emailengine-app --json | node list-generate.js > static/licenses.html",
         "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && jsxgettext lib/routes-ui.js workers/api.js lib/tools.js -j -o translations/messages.pot",
         "prepare-docker": "echo \"EE_DOCKER_LEGACY=$EE_DOCKER_LEGACY\" >> system.env && cat system.env",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install && ./copy-static-files.sh && npm run licenses && npm run gettext",
