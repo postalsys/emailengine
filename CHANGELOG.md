@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.40.2](https://github.com/postalsys/emailengine/compare/v2.40.1...v2.40.2) (2024-03-04)
+
+
+### Bug Fixes
+
+* **mime:** Use custom MIME boundary pattern for generated emails ([0e2a110](https://github.com/postalsys/emailengine/commit/0e2a110c6c9731486238428cb053606e889a49e7))
+* **webhooks:** include network routing information in messageSent, messageDeliveryError and messageFailed webhooks ([16bd82d](https://github.com/postalsys/emailengine/commit/16bd82d81d2643f4e721e05f1b943c191619874c))
+
 ## [2.40.1](https://github.com/postalsys/emailengine/compare/v2.40.0...v2.40.1) (2024-02-26)
 
 
