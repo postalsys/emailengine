@@ -113,6 +113,19 @@
                     {{/if}}
 
                     {{account.stateLabel.name}}</span>
+
+                <div>
+                    <div class="text-danger">
+                        {{#if account.syncError}}
+                        Syncing stalled in <em>{{account.syncError.path}}</em>.
+                        {{#if account.syncError.error.responseText}}
+                        {{account.syncError.error.responseText}}
+                        {{else}}
+                        {{account.syncError.error.error}}
+                        {{/if}}
+                        {{/if}}
+                    </div>
+                </div>
             </dd>
             {{/if}}
 
