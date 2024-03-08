@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.40.3](https://github.com/postalsys/emailengine/compare/v2.40.2...v2.40.3) (2024-03-08)
+
+
+### Bug Fixes
+
+* **fetch:** allow to configure max fetch batch size with an ENV value ([de45851](https://github.com/postalsys/emailengine/commit/de45851c0a629d245a5dd1f7873283e9fd0d7cf3))
+* **fetch:** Allow to set the fetch batch size limit with a cli argument ([f5daf91](https://github.com/postalsys/emailengine/commit/f5daf91e8d46687e40f8844d6cdf68f2fe85e8f6))
+* **fetch:** If fetch fails while syncing, then set a warning flag and try again ([ffcb559](https://github.com/postalsys/emailengine/commit/ffcb559eed622a8d34a92cb1920690190687aca3))
+* **fetch:** use batches when fetching message entries for indexing ([1e83e64](https://github.com/postalsys/emailengine/commit/1e83e644ded8cd9d4a229ce0d1ac46679f8b0250))
+
 ## [2.40.2](https://github.com/postalsys/emailengine/compare/v2.40.1...v2.40.2) (2024-03-04)
 
 
