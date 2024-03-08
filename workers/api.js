@@ -7854,7 +7854,7 @@ ${now}`,
                 });
             }
 
-            if (subexp) {
+            if (subexp && !(request.app.licenseInfo && request.app.licenseInfo.details && request.app.licenseInfo.details.lt)) {
                 let delayMs = new Date(subexp) - Date.now();
                 let expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
 

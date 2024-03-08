@@ -125,14 +125,17 @@
             <dt class="col-sm-3">Environment</dt>
             <dd class="col-sm-9">{{licenseInfo.details.hostname}}</dd>
 
-
             {{#if licenseDetails.expires}}
             <dt class="col-sm-3">License expires</dt>
             <dd class="col-sm-9">in {{licenseDetails.expiresDays}} days</dd>
             {{/if}}
 
-        </dl>
+            {{#if licenseDetails.lt}}
+            <dt class="col-sm-3">License expires</dt>
+            <dd class="col-sm-9">This license does not expire</dd>
+            {{/if}}
 
+        </dl>
 
     </div>
 </div>

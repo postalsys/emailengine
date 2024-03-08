@@ -1076,10 +1076,15 @@ let licenseCheckHandler = async opts => {
             checkKv = true;
         }
 
+        if (licenseInfo.details.lt) {
+            await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
+        }
+
         if (
             checkKv &&
             licenseInfo.active &&
             !(licenseInfo.details && licenseInfo.details.expires) &&
+            !licenseInfo.details.lt &&
             (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
         ) {
             try {
