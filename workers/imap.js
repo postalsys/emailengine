@@ -32,7 +32,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
     logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
-const { Connection } = require('../lib/connection');
+const { IMAPConnection } = require('../lib/imap-connection');
 const { GmailClient } = require('../lib/api-client/gmail-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps } = require('../lib/oauth2-apps');
@@ -148,24 +148,27 @@ class ConnectionHandler {
             if (oauth2App.baseScopes === 'api') {
                 // Use API instead of IMAP
                 accountObject.connection = new GmailClient(account, {
+                    accountObject,
                     redis,
-                    accountLogger
+                    accountLogger,
+                    secret
                 });
                 accountData.state = 'connected';
             }
         }
 
         if (!accountObject.connection) {
-            accountObject.connection = new Connection({
-                account,
+            accountObject.connection = new IMAPConnection(account, {
                 accountObject,
                 redis,
+                accountLogger,
                 secret,
+
                 notifyQueue,
                 submitQueue,
                 documentsQueue,
                 flowProducer,
-                accountLogger,
+
                 call: msg => this.call(msg),
                 logRaw: EENGINE_LOG_RAW
             });
