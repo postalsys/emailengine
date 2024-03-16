@@ -2850,6 +2850,7 @@ When making API calls remember that requests against the same account are queued
                     'state',
                     'smtpStatus',
                     'syncError',
+                    'connections',
                     'locale',
                     'tz'
                 ]) {
