@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.5](https://github.com/postalsys/emailengine/compare/v2.40.4...v2.40.5) (2024-03-16)
+
+
+### Bug Fixes
+
+* **reconnection:** Tweaked reconnection logic on errors ([95067c5](https://github.com/postalsys/emailengine/commit/95067c51cd64d91e1ef86073a8a042982fac24b9))
+
 ## [2.40.4](https://github.com/postalsys/emailengine/compare/v2.40.3...v2.40.4) (2024-03-14)
 
 
