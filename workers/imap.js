@@ -127,7 +127,7 @@ class ConnectionHandler {
         };
     }
 
-    async assignConnection(account) {
+    async assignConnection(account, runIndex) {
         logger.info({ msg: 'Assigned account to worker', account });
 
         let accountLogger = await this.getAccountLogger(account);
@@ -148,6 +148,7 @@ class ConnectionHandler {
             if (oauth2App.baseScopes === 'api') {
                 // Use API instead of IMAP
                 accountObject.connection = new GmailClient(account, {
+                    runIndex,
                     accountObject,
                     redis,
                     accountLogger,
@@ -159,6 +160,8 @@ class ConnectionHandler {
 
         if (!accountObject.connection) {
             accountObject.connection = new IMAPConnection(account, {
+                runIndex,
+
                 accountObject,
                 redis,
                 accountLogger,
@@ -626,13 +629,15 @@ class ConnectionHandler {
             case 'resource-usage':
                 return threadStats.usage();
 
-            case 'assign':
             case 'delete':
             case 'update':
             case 'sync':
             case 'pause':
             case 'resume':
                 return await this[`${message.cmd}Connection`](message.account);
+
+            case 'assign':
+                return await this[`${message.cmd}Connection`](message.account, message.runIndex);
 
             case 'listMessages':
             case 'getText':

@@ -7,11 +7,13 @@ if redis.call("HEXISTS", hashKey, entryKey) == 1 then
     local existing = redis.call("HGET", hashKey, entryKey);
     if tonumber(value) > tonumber(existing) then
         redis.call("HSET", hashKey, entryKey, value);
-        return 2;
+        return 3;
+    else
+        return 1;
     end;
-else
+elseif redis.call("EXISTS", hashKey) == 1 then
     redis.call("HSET", hashKey, entryKey, value);
-    return 1;
+    return 2;
 end;
 
 return 0;

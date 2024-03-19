@@ -239,6 +239,8 @@ const THREAD_CONFIG_VALUES = {
 
 const queueEvents = {};
 
+let runIndex;
+
 let preparedSettings = false;
 const preparedSettingsString = readEnvValue('EENGINE_SETTINGS') || config.settings;
 if (preparedSettingsString) {
@@ -1033,7 +1035,8 @@ async function assignAccounts() {
 
             await call(worker, {
                 cmd: 'assign',
-                account
+                account,
+                runIndex
             });
 
             if (CONNECION_SETUP_DELAY) {
@@ -1835,6 +1838,10 @@ async function onCommand(worker, message) {
             );
             return;
 
+        case 'runIndex': {
+            return runIndex;
+        }
+
         case 'update':
         case 'sync':
         case 'pause':
@@ -2015,6 +2022,8 @@ process.on('SIGINT', () => {
 // START APPLICATION
 
 const startApplication = async () => {
+    runIndex = await redis.hincrby(`${REDIS_PREFIX}settings`, 'run', 1);
+
     // process license
     if (config.licensePath) {
         try {
