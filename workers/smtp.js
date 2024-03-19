@@ -440,6 +440,9 @@ async function init() {
             server.once('error', err => reject(err));
             server.listen(port, host, () => {
                 server.on('error', err => {
+                    if (/Socket closed unexpectedly/.test(err.message)) {
+                        return;
+                    }
                     logger.error({
                         msg: 'SMTP Server Error',
                         err
