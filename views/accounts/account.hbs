@@ -203,6 +203,18 @@
             <dd class="col-sm-9">
                 <a href="/admin/config/oauth/app/{{account.oauth2.app.id}}">{{account.type.comment}}</a>
                 (<em>{{account.oauth2.app.id}}</em>)
+
+                {{#if account.oauth2.app.meta.authFlag}}
+
+                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                    style="dispaly: inline-block;" data-title="OAuth2 application failure"
+                    data-content="{{account.oauth2.app.meta.authFlag.message}}"><i
+                        class="fas fa-exclamation-triangle text-danger"></i></a>
+
+
+                {{/if}}
+
+
             </dd>
             {{else}}
             <dd class="col-sm-9">{{account.type.comment}}</dd>

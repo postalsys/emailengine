@@ -125,7 +125,16 @@
         {{/if}}
 
         {{#if app.meta.authFlag}}
-        <div class="alert alert-danger">{{app.meta.authFlag.message}}</div>
+        <div class="alert alert-danger">{{app.meta.authFlag.message}}
+
+            {{#if app.meta.authFlag.description}}
+            <hr>
+            <p class="mb-0">
+                <small>{{app.meta.authFlag.description}}</small>
+            </p>
+            {{/if}}
+
+        </div>
         <hr>
         {{/if}}
 
