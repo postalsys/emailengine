@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.40.6](https://github.com/postalsys/emailengine/compare/v2.40.5...v2.40.6) (2024-03-20)
+
+
+### Bug Fixes
+
+* **account-listing:** Show accounts as initializing if account has not yet been processed after startup ([0e70898](https://github.com/postalsys/emailengine/commit/0e7089899513bfe9c0557a2f6eb24a1ebab8bfe0))
+* **connection:** Do not wait for subconnections when setting up the connection ([d8daff8](https://github.com/postalsys/emailengine/commit/d8daff8f1d7e00eeee71aa0b84276f24371e9456))
+* **oauth2-error:** If OAuth2 app is failing then show an indication about it on the account page ([dd44cd5](https://github.com/postalsys/emailengine/commit/dd44cd5e30ec66cf5340df2c355946f3ebd4b19a))
+
 ## [2.40.5](https://github.com/postalsys/emailengine/compare/v2.40.4...v2.40.5) (2024-03-16)
 
 
