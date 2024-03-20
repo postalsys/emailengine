@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.40.7](https://github.com/postalsys/emailengine/compare/v2.40.6...v2.40.7) (2024-03-20)
+
+
+### Bug Fixes
+
+* **gmail-smtp:** Fix failing SMTP connections for Gmail ([c3dd63a](https://github.com/postalsys/emailengine/commit/c3dd63a9df27798dac899932cec309d0b867beeb))
+
 ## [2.40.6](https://github.com/postalsys/emailengine/compare/v2.40.5...v2.40.6) (2024-03-20)
 
 
