@@ -130,6 +130,14 @@ class ConnectionHandler {
     async assignConnection(account, runIndex) {
         logger.info({ msg: 'Assigned account to worker', account });
 
+        if (!this.runIndex) {
+            this.runIndex = runIndex;
+        }
+
+        if (!runIndex && this.runIndex) {
+            runIndex = this.runIndex;
+        }
+
         let accountLogger = await this.getAccountLogger(account);
         let secret = await getSecret();
         let accountObject = new Account({
@@ -275,6 +283,25 @@ class ConnectionHandler {
 
                 return true;
             }
+        }
+    }
+
+    async reconnectConnection(account) {
+        logger.info({ msg: 'Account reconnection requested', account });
+        if (this.accounts.has(account)) {
+            let accountObject = this.accounts.get(account);
+            if (accountObject.connection) {
+                accountObject.connection.accountLogger.log({
+                    level: 'info',
+                    t: Date.now(),
+                    cid: accountObject.connection.cid,
+                    msg: 'Account reconnection requested'
+                });
+
+                await accountObject.connection.close();
+            }
+
+            await this.assignConnection(account);
         }
     }
 
@@ -634,6 +661,7 @@ class ConnectionHandler {
             case 'sync':
             case 'pause':
             case 'resume':
+            case 'reconnect':
                 return await this[`${message.cmd}Connection`](message.account);
 
             case 'assign':
