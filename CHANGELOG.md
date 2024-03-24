@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.40.8](https://github.com/postalsys/emailengine/compare/v2.40.7...v2.40.8) (2024-03-24)
+
+
+### Bug Fixes
+
+* **reconnect:** Force close previous connection if reconnect was requested ([ec0baf1](https://github.com/postalsys/emailengine/commit/ec0baf101f4219891b087f33c8b12cdabb04656c))
+* **smtp:** Do not override From: header in an email from SMTP interface ([69f6c32](https://github.com/postalsys/emailengine/commit/69f6c325278e79e8950e5c4e7efb299e06b0cbd0))
+
 ## [2.40.7](https://github.com/postalsys/emailengine/compare/v2.40.6...v2.40.7) (2024-03-20)
 
 
