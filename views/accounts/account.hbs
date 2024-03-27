@@ -254,6 +254,22 @@
             </dd>
             {{/if}}
 
+            {{#if account.oauth2.expiresStr}}
+            <dt class="col-sm-3">Access token validity</dt>
+            <dd class="col-sm-9">
+
+                {{#if account.oauth2.generatedStr}}
+                <span class="local-date-time code-link" data-time="{{account.oauth2.generatedStr}}"
+                    title="{{account.oauth2.generatedStr}}"></span> &mdash;
+                {{else}}
+                To
+                {{/if}}
+
+                <span class="local-date-time code-link" data-time="{{account.oauth2.expiresStr}}"
+                    title="{{account.oauth2.expiresStr}}"></span>
+            </dd>
+            {{/if}}
+
         </dl>
 
     </div>
