@@ -195,6 +195,21 @@
     </div>
     <div class="card-body">
 
+        {{#if account.oauth2.userFlag.message }}
+        <div class="alert alert-danger">{{account.oauth2.userFlag.message}}
+
+            {{#if account.oauth2.userFlag.description}}
+            <hr>
+            <p class="mb-0">
+                <small>{{account.oauth2.userFlag.description}}</small>
+            </p>
+            {{/if}}
+
+        </div>
+        <hr>
+
+        {{/if}}
+
         <dl class="row">
 
             {{#if account.oauth2.provider}}
