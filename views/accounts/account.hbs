@@ -152,7 +152,12 @@
                 {{/if}}
             </dd>
 
-            <dt class="col-sm-3">Recent logs</dt>
+            <dt class="col-sm-3">Recent logs <a href="#" tabindex="-1" role="button" data-toggle="popover"
+                    data-trigger="hover" style="dispaly: inline-block;"
+                    data-content="Up to last {{logs.maxLogLines}} log lines"><i
+                        class="fas fa-info-circle text-info"></i></a>
+            </dt>
+
             <dd class="col-sm-9">
                 {{#if logs.all}}
                 <div>
@@ -174,10 +179,6 @@
                 </div>
 
                 {{/if}}
-                <div>
-                    <small>Logging is session based so account reconnect is required for logging changes to take into
-                        effect</small>
-                </div>
             </dd>
         </dl>
 
