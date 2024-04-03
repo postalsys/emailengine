@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.40.9](https://github.com/postalsys/emailengine/compare/v2.40.8...v2.40.9) (2024-04-03)
+
+
+### Bug Fixes
+
+* **oauth2:** Show access token validity period on account details page ([6cee85f](https://github.com/postalsys/emailengine/commit/6cee85fb6bc87cb647e3fe7fe4379b42a2feb2fe))
+* **oauth2:** Show OAuth2 error on account page if token renewal failed due to invalid grant ([70f7bc8](https://github.com/postalsys/emailengine/commit/70f7bc8c35d17da38d8cb654564411b8940c7ea0))
+* **ui-tweak:** Automatically reconnect an account if log settings are updated via UI ([4d4be15](https://github.com/postalsys/emailengine/commit/4d4be15e8d8562cc05af4ae8a19c308a20218dc4))
+
 ## [2.40.8](https://github.com/postalsys/emailengine/compare/v2.40.7...v2.40.8) (2024-03-24)
 
 
