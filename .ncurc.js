@@ -7,6 +7,7 @@ module.exports = {
         'xgettext-template',
         'chai',
         'js-beautify',
+        'ical.js',
 
         // no support for Node 16
         'marked',
