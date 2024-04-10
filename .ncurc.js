@@ -9,6 +9,9 @@ module.exports = {
         'js-beautify',
         'ical.js',
 
+        // api changes, check and fix
+        'eslint',
+
         // no support for Node 16
         'marked',
         'undici',
