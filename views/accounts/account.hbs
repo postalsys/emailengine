@@ -360,6 +360,24 @@
             <dd class="col-sm-9">{{account.imap.sentMailPath}}</dd>
             {{/if}}
 
+            {{#if account.path}}
+            <dt class="col-sm-3">Syncing paths
+
+                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                    style="dispaly: inline-block;"
+                    data-content="EmailEngine only checks for new or updated emails from the selected paths"><i
+                        class="fas fa-info-circle text-info"></i></a>
+
+            </dt>
+            <dd class="col-sm-9">
+                {{#each account.path}}
+                <span class="badge badge-light">
+                    {{this}}
+                </span>
+                {{/each}}
+            </dd>
+            {{/if}}
+
             {{/unless}}
 
         </dl>

@@ -11,4 +11,3 @@ config/development*
 .okta.env
 system.env
 keylog.txt
-package-lock.json
