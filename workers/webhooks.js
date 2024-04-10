@@ -143,6 +143,23 @@ const notifyWorker = new Worker(
             return;
         }
 
+        let accountWebhooksCustomHeaders;
+        let accountWebhooksCustomHeadersJson = await redis.hget(accountKey, 'webhooksCustomHeaders');
+        if (accountWebhooksCustomHeadersJson) {
+            try {
+                accountWebhooksCustomHeaders = JSON.parse(accountWebhooksCustomHeadersJson);
+            } catch (err) {
+                logger.debug({
+                    msg: 'Failed to parse custom webhook headers',
+                    action: 'webhook',
+                    event: job.name,
+                    account: job.data.account,
+                    json: accountWebhooksCustomHeadersJson,
+                    err
+                });
+            }
+        }
+
         if (!customRoute) {
             // custom routes have their own mappings
             let webhookEvents = (await settings.get('webhookEvents')) || [];
@@ -266,6 +283,12 @@ const notifyWorker = new Worker(
         } else {
             let webhookCustomHeaders = await settings.get('webhooksCustomHeaders');
             for (let header of webhookCustomHeaders || []) {
+                headers[header.key] = header.value;
+            }
+        }
+
+        if (accountWebhooksCustomHeaders) {
+            for (let header of accountWebhooksCustomHeaders || []) {
                 headers[header.key] = header.value;
             }
         }

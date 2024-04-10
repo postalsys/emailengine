@@ -2151,6 +2151,8 @@ When making API calls remember that requests against the same account are queued
 
                     oauth2: Joi.object(oauth2Schema).allow(false).description('OAuth2 configuration').label('OAuth2'),
 
+                    webhooksCustomHeaders: settingsSchema.webhooksCustomHeaders.label('AccountWebhooksCustomHeaders'),
+
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
                 }).label('CreateAccount')
@@ -2401,6 +2403,8 @@ When making API calls remember that requests against the same account are queued
                     imap: Joi.object(imapUpdateSchema).allow(false).description('IMAP configuration').label('IMAPUpdate'),
                     smtp: Joi.object(smtpUpdateSchema).allow(false).description('SMTP configuration').label('SMTPUpdate'),
                     oauth2: Joi.object(oauth2UpdateSchema).allow(false).description('OAuth2 configuration').label('OAuth2Update'),
+
+                    webhooksCustomHeaders: settingsSchema.webhooksCustomHeaders.label('AccountWebhooksCustomHeaders'),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
@@ -2851,6 +2855,7 @@ When making API calls remember that requests against the same account are queued
                     'smtpStatus',
                     'syncError',
                     'connections',
+                    'webhooksCustomHeaders',
                     'locale',
                     'tz'
                 ]) {
@@ -3002,6 +3007,8 @@ When making API calls remember that requests against the same account are queued
                     })
                         .description('Information about the last SMTP connection attempt')
                         .label('SMTPInfoStatus'),
+
+                    webhooksCustomHeaders: settingsSchema.webhooksCustomHeaders.label('AccountWebhooksCustomHeaders'),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),

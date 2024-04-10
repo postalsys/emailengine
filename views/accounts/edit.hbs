@@ -283,16 +283,18 @@
             </div>
 
             <div class="form-group">
-                <label for="path">Path to sync</label>
-                <input type="text" class="form-control basicAutoComplete {{#if errors.path}}is-invalid{{/if}}" id="path"
-                    value="{{values.path}}" placeholder="Folder path like &quot;INBOX&quot;" name="path"
-                    data-lpignore="true" autocomplete="off">
-                {{#if errors.path}}
-                <span class="invalid-feedback">{{errors.path}}</span>
+                <label for="customHeaders">List of custom webhook request headers</label>
+
+                <textarea class="form-control text-monospace {{#if errors.customHeaders}}is-invalid{{/if}}"
+                    id="customHeaders" name="customHeaders" rows="5" spellcheck="false" data-enable-grammarly="false"
+                    placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
+                {{#if errors.customHeaders}}
+                <span class="invalid-feedback">{{errors.customHeaders}}</span>
                 {{/if}}
-                <small id="pathHelpBlock" class="form-text text-muted">Set a specific folder path to sync. By
-                    default all folders are synced. Leave it empty to keep the default.</small>
+                <small class="form-text text-muted">Keep one header per line. These headers will be added to the HTTP
+                    request when posting webhooks for this email account.</small>
             </div>
+
         </div>
     </div>
 
