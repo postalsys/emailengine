@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.41.0](https://github.com/postalsys/emailengine/compare/v2.40.9...v2.41.0) (2024-04-11)
+
+
+### Features
+
+* **custom-account-headers:** Allos setting account specific custom webhook headers ([f4c4c8b](https://github.com/postalsys/emailengine/commit/f4c4c8b943d6287dcb537c7781307466de8b73f9))
+
+
+### Bug Fixes
+
+* **account-form:** Added support for 'path' in the authentication form ([198ba41](https://github.com/postalsys/emailengine/commit/198ba4162435882b52c7498d3df0ba83b8a4ce4f))
+* **accountPath:** Use an array by default as the path type ([3faa977](https://github.com/postalsys/emailengine/commit/3faa977168070c7e9dcbc3af7794118e0ef7842b))
+* **web-ui:** Do not clear up IMAP settings when enabling/disabling IMAP in the web UI ([037091b](https://github.com/postalsys/emailengine/commit/037091b2731b65dab386eec9cc7474aa2fddd97f))
+
 ## [2.40.9](https://github.com/postalsys/emailengine/compare/v2.40.8...v2.40.9) (2024-04-03)
 
 
