@@ -2183,6 +2183,7 @@ When making API calls remember that requests against the same account are queued
                     subconnections: request.payload.subconnections,
                     redirectUrl: request.payload.redirectUrl,
                     delegated: request.payload.delegated,
+                    path: request.payload.path && !request.payload.path.includes('*') ? request.payload.path : null,
                     // identify request
                     n: crypto.randomBytes(NONCE_BYTES).toString('base64'),
                     t: Date.now()
@@ -2285,6 +2286,8 @@ When making API calls remember that requests against the same account are queued
                     notifyFrom: accountSchemas.notifyFrom,
 
                     subconnections: accountSchemas.subconnections,
+
+                    path: accountPathSchema.example(['*']).label('AccountFormPath'),
 
                     redirectUrl: Joi.string()
                         .empty('')
