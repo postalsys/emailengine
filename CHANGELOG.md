@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.41.1](https://github.com/postalsys/emailengine/compare/v2.41.0...v2.41.1) (2024-04-12)
+
+
+### Bug Fixes
+
+* **deps:** Bumped dependencies to clean up dependency tree (forgot before previous release) ([6d8ab9a](https://github.com/postalsys/emailengine/commit/6d8ab9af30b69072949d95e5bf5346194743e315))
+
 ## [2.41.0](https://github.com/postalsys/emailengine/compare/v2.40.9...v2.41.0) (2024-04-11)
 
 
