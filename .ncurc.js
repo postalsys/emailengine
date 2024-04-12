@@ -10,7 +10,7 @@ module.exports = {
         'ical.js',
 
         // api changes, check and fix
-        'eslint',
+        'eslint', 'grunt-eslint',
 
         // no support for Node 16
         'marked',
