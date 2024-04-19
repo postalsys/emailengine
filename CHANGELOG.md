@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.41.2](https://github.com/postalsys/emailengine/compare/v2.41.1...v2.41.2) (2024-04-19)
+
+
+### Bug Fixes
+
+* **sync:** send webhooks for old messages during first sync ([5d05986](https://github.com/postalsys/emailengine/commit/5d05986ad2363d8a1a13aea2c965bfc8a11f5b8c))
+
 ## [2.41.1](https://github.com/postalsys/emailengine/compare/v2.41.0...v2.41.1) (2024-04-12)
 
 
