@@ -24,6 +24,11 @@ local result = {}
 -- sort list by account IDs
 table.sort(list);
 
+local listAll = false;
+if strsearch and strsearch  ~= '' then
+    listAll = true;
+end
+
 for index, account in ipairs(list) do
 
     local state;
@@ -34,6 +39,7 @@ for index, account in ipairs(list) do
 
     -- string search match defaults to true
     local strmatch = true
+
     if strsearch and strsearch  ~= '' then
         local account = redis.call("HGET", prefix .. "iad:" .. account, "account") or ""; 
         local name = redis.call("HGET", prefix .. "iad:" .. account, "name") or ""; 
@@ -56,7 +62,7 @@ for index, account in ipairs(list) do
                 result[#result + 1] = redis.call("HGETALL", prefix .. "iad:" .. account);
             else
                 -- max number entries in result buffer
-                if filterState == '*' then
+                if filterState == '*' and listAll == false then
                     -- no point looking further, we already know the total count
                     matching = total;
                     break;
