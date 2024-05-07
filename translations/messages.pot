@@ -1,13 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-04-22 13:03+0000\n"
-
-#: views/config/license.hbs:48
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
+"POT-Creation-Date: 2024-05-07 07:49+0000\n"
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -56,6 +50,12 @@ msgstr ""
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
+
+#: views/config/license.hbs:48
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
