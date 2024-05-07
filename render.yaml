@@ -6,12 +6,14 @@ services:
     # Web service
     - type: web
       name: emailengine
-      env: node
+      runtime: node
       repo: https://github.com/postalsys/emailengine.git
-      plan: standard
+      plan: pro
+      previewPlan: standard
       numInstances: 1
       #healthCheckPath: /health
-      buildCommand: ./update-info.sh && npm install --omit=dev
+      buildCommand: npm install --omit=dev
+      preDeployCommand: ./update-info.sh
       startCommand: npm start
       envVars:
           - key: EENGINE_REDIS
