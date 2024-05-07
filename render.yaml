@@ -40,3 +40,5 @@ services:
       name: ee-redis
       ipAllowList: []
       maxmemoryPolicy: noeviction # optional (defaults to allkeys-lru)
+      plan: standard
+      previewPlan: standard
