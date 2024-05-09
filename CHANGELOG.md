@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.41.3](https://github.com/postalsys/emailengine/compare/v2.41.2...v2.41.3) (2024-05-08)
+
+
+### Bug Fixes
+
+* **empty-listing:** Treat empty LIST or LSUB response as an error condition ([53e3bc9](https://github.com/postalsys/emailengine/commit/53e3bc926952e7d50ad489b8f779eb49c82afc43))
+* **imapflow:** Bumped ImapFlow to prevent IDLE deadlocks ([869db0a](https://github.com/postalsys/emailengine/commit/869db0ae05a7e10f95e23830eb8e96d4c9ff82af))
+* **lua:** Fixed lua script to calculate total number of matching accounts for a query ([a4284c5](https://github.com/postalsys/emailengine/commit/a4284c53cfc7b157454938fb2cd43c34fa4c25ea))
+* **render:** Updated Render deployment blueprint ([031a457](https://github.com/postalsys/emailengine/commit/031a457f030c938b66c4d95354994548d8ae856f))
+
 ## [2.41.2](https://github.com/postalsys/emailengine/compare/v2.41.1...v2.41.2) (2024-04-19)
 
 
