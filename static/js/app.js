@@ -244,7 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'init':
                 stateLabel = {
                     type: 'info',
-                    name: 'Initializing'
+                    name: 'Initializing',
+                    spinner: true
                 };
                 break;
             case 'connecting':
