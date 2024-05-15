@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.41.4](https://github.com/postalsys/emailengine/compare/v2.41.3...v2.41.4) (2024-05-15)
+
+
+### Bug Fixes
+
+* **env:** Fixed EENGINE_MAX_PAYLOAD_TIMEOUT handling ([feaa0d2](https://github.com/postalsys/emailengine/commit/feaa0d261e4d0de06665600b78af58ed110a89dc))
+
 ## [2.41.3](https://github.com/postalsys/emailengine/compare/v2.41.2...v2.41.3) (2024-05-08)
 
 
