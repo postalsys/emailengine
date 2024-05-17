@@ -160,7 +160,14 @@ class ConnectionHandler {
                     accountObject,
                     redis,
                     accountLogger,
-                    secret
+                    secret,
+
+                    notifyQueue,
+                    submitQueue,
+                    documentsQueue,
+                    flowProducer,
+
+                    call: msg => this.call(msg)
                 });
                 accountData.state = 'connected';
             }
