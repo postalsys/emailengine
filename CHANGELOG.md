@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.42.0](https://github.com/postalsys/emailengine/compare/v2.41.4...v2.42.0) (2024-05-30)
+
+
+### Features
+
+* **gmail-api:** Alpha version of Gmail API support ([f7fd60a](https://github.com/postalsys/emailengine/commit/f7fd60ac3f27f5bdc18c9cc16242dbc1d3a65a93))
+
+
+### Bug Fixes
+
+* **ts:** Fixed API schema to pass TyepScript SDK generation ([29493ac](https://github.com/postalsys/emailengine/commit/29493ac88e31b79b771e8e43fc8de758b607977f))
+
 ## [2.41.4](https://github.com/postalsys/emailengine/compare/v2.41.3...v2.41.4) (2024-05-15)
 
 
