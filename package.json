@@ -59,7 +59,7 @@
         "ace-builds": "1.34.2",
         "base32.js": "0.1.0",
         "bull-arena": "4.4.1",
-        "bullmq": "5.7.12",
+        "bullmq": "5.7.14",
         "compare-versions": "6.1.0",
         "dotenv": "16.4.5",
         "encoding-japanese": "2.1.0",
