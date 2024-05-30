@@ -6493,7 +6493,7 @@ When making API calls remember that requests against the same account are queued
                     baseScopes: Joi.string()
                         .empty('')
                         .trim()
-                        .valid(...['imap'].concat(featureFlags.enabled('gmail api') ? 'api' : []))
+                        .valid(...['imap', 'api'])
                         .example('imap')
                         .description('OAuth2 Base Scopes'),
 

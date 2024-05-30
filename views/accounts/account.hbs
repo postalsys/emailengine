@@ -185,13 +185,12 @@
     </div>
 </div>
 
-
-
 {{#if account.oauth2.provider}}
 
 <div class="card mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">OAuth2</h6>
+        <h6 class="m-0 font-weight-bold text-primary">OAuth2
+        </h6>
     </div>
     <div class="card-body">
 
@@ -212,7 +211,7 @@
 
         <dl class="row">
 
-            {{#if account.oauth2.provider}}
+
             <dt class="col-sm-3">Provider</dt>
 
             {{#if account.oauth2.app}}
@@ -227,16 +226,20 @@
                     data-content="{{account.oauth2.app.meta.authFlag.message}}"><i
                         class="fas fa-exclamation-triangle text-danger"></i></a>
 
-
                 {{/if}}
-
-
             </dd>
             {{else}}
             <dd class="col-sm-9">{{account.type.comment}}</dd>
             {{/if}}
 
-            {{/if}}
+            <dt class="col-sm-3">Connection method</dt>
+            <dd class="col-sm-9">
+                {{#if account.isApi}}
+                API
+                {{else}}
+                IMAP
+                {{/if}}
+            </dd>
 
             {{#if account.oauth2.auth.user}}
             <dt class="col-sm-3">Username</dt>
@@ -276,6 +279,8 @@
 </div>
 
 {{/if}}
+
+{{#unless account.isApi}}
 
 <div class="card mb-4">
     <div class="card-header py-3">
@@ -588,6 +593,8 @@
 </div>
 
 {{/if}}
+
+{{/unless}}
 
 {{#if showAdvanced}}
 <div class="card mb-4">

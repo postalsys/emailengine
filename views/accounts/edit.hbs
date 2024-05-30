@@ -42,6 +42,8 @@
         </div>
     </div>
 
+    {{#unless isApi}}
+
     {{#if values.imap}}
     <input type="hidden" name="imap" value="on">
 
@@ -230,6 +232,8 @@
         </div>
     </div>
     {{/if}}
+
+    {{/unless}}
 
     <div class="card mb-4">
 

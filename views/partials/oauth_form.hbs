@@ -188,11 +188,7 @@
     </div>
 </div>
 
-{{#featureFlag "gmail api"}}
-{{! show this section only if the Gmail API feature flag is enabled}}
-
 {{#if activeGmail}}
-
 <div class="card mb-4">
 
     <div class="card-header py-3">
@@ -204,17 +200,20 @@
             <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap" {{#unless
                 baseScopesApi}}checked{{/unless}}>
             <label class="form-check-label" for="baseScopesImap">
-                IMAP and SMTP
+                IMAP and SMTP &mdash; <em class="text-muted">https://mail.google.com/</em>
             </label>
         </div>
         <div class="form-check">
             <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api" {{#if
                 baseScopesApi}}checked{{/if}}>
             <label class="form-check-label" for="baseScopesAPI">
-                Gmail API
+                Gmail API <span class="badge badge-danger" style="cursor:default;" data-toggle="popover"
+                    data-trigger="hover" data-title="Alpha feature"
+                    data-content="This feature is not stable; it has many bugs, and its behavior will change in the future. Use it for testing purposes only.">
+                    Alpha feature
+                </span> &mdash; <em class="text-muted">/auth/gmail.modify</em>
             </label>
         </div>
-
 
     </div>
 
@@ -225,7 +224,6 @@
     </div>
 </div>
 {{/if}}
-{{/featureFlag}}
 
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
