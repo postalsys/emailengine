@@ -1,0 +1,15 @@
+# flyctl launch added from .gitignore
+**/.DS_Store
+**/node_modules
+**/.env
+**/dist
+**/yarn.lock
+**/swagger.json
+**/version-info.json
+**/ee-dist
+**/config/development*
+**/.vscode
+**/.okta.env
+**/system.env
+**/keylog.txt
+fly.toml

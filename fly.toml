@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for cavalato-mail on 2024-05-24T13:20:16+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'cavalato-mail'
+primary_region = 'ams'
+
+[build]
+
+[http_service]
+  protocol = "tcp" 
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[env]
+  HOSTNAME = "0.0.0.0"
+  PORT = 3000
+  
