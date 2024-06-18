@@ -84,7 +84,21 @@ Read about running EmailEngine as a SystemD service [here](https://emailengine.a
 
 ![Docker Image Size (tag)](https://img.shields.io/docker/image-size/postalsys/emailengine/v2?label=Docker%20image%20size)
 
-See the documentation for using EmailEngine with Docker [here](https://emailengine.app/docker).
+To execute EmailEngine-CLI commands while using the Docker Container, you can use the following approach:
+
+1. Exec into the Docker Container:
+
+```
+$ docker exec -it <container-id> /bin/sh
+```
+
+2. Run the command by executing the `./bin/emailengine.js` file with node:
+
+```
+$ node bin/emailengine.js <command>
+```
+
+See the full documentation for using EmailEngine with Docker [here](https://emailengine.app/docker).
 
 ## Resolving issues with Redis
 
