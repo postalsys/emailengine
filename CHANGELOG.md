@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.42.1](https://github.com/postalsys/emailengine/compare/v2.42.0...v2.42.1) (2024-06-18)
+
+
+### Bug Fixes
+
+* **font-loading:** Use a locally cached font instead of loading from Google FOnts ([4e53929](https://github.com/postalsys/emailengine/commit/4e539296d4f8bac3d4772fdcf1941611d1289846))
+* **model-labels:** Model label improvements to have named models instead ([dc75dbc](https://github.com/postalsys/emailengine/commit/dc75dbc9693d48d7693df71961443607640f55fb))
+* **paging:** Fixed paging links for OAuth2 apps ([d698082](https://github.com/postalsys/emailengine/commit/d6980826a8136d9f8ae612c4be98a8665619accd))
+
 ## [2.42.0](https://github.com/postalsys/emailengine/compare/v2.41.4...v2.42.0) (2024-05-30)
 
 
