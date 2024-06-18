@@ -156,8 +156,23 @@ const {
     accountIdSchema,
     ipSchema,
     accountCountersSchema,
-    accountPathSchema
+    accountPathSchema,
+    defaultAccountTypeSchema,
+    fromAddressSchema
 } = require('../lib/schemas');
+
+const OAuth2ProviderSchema = Joi.string()
+    .valid(...Object.keys(OAUTH_PROVIDERS))
+    .required()
+    .example('gmail')
+    .description('OAuth2 provider')
+    .label('OAuth2Provider');
+
+const AccountTypeSchema = Joi.string()
+    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+    .example('outlook')
+    .description('Account type')
+    .required();
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
@@ -1756,7 +1771,12 @@ When making API calls remember that requests against the same account are queued
 
                     description: Joi.string().empty('').trim().max(1024).required().example('Token description').description('Token description'),
 
-                    scopes: Joi.array().items(Joi.string().valid('api', 'smtp', 'imap-proxy')).single().default(['api']).required().label('Scopes'),
+                    scopes: Joi.array()
+                        .items(Joi.string().valid('api', 'smtp', 'imap-proxy').label('TokenScope'))
+                        .single()
+                        .default(['api'])
+                        .required()
+                        .label('Scopes'),
 
                     metadata: Joi.string()
                         .empty('')
@@ -2161,7 +2181,12 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     account: accountIdSchema.required(),
-                    state: Joi.string().required().valid('existing', 'new').example('new').description('Is the account new or updated existing')
+                    state: Joi.string()
+                        .required()
+                        .valid('existing', 'new')
+                        .example('new')
+                        .description('Is the account new or updated existing')
+                        .label('CreateAccountState')
                 }).label('CreateAccountResponse'),
                 failAction: 'log'
             }
@@ -2296,14 +2321,7 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myapp/account/settings.php')
                         .description('The user will be redirected to this URL after submitting the authentication form'),
 
-                    type: Joi.string()
-                        .empty('')
-                        .allow(false)
-                        .default(false)
-                        .example('imap')
-                        .description(
-                            'Display the form for the specified account type (either "imap" or an OAuth2 app ID) instead of allowing the user to choose'
-                        )
+                    type: defaultAccountTypeSchema
                 }).label('RequestAuthForm')
             },
 
@@ -2768,11 +2786,7 @@ When making API calls remember that requests against the same account are queued
                                 account: accountIdSchema.required(),
                                 name: Joi.string().max(256).example('My Email Account').description('Display name for the account'),
                                 email: Joi.string().empty('').email().example('user@example.com').description('Default email address of the account'),
-                                type: Joi.string()
-                                    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
-                                    .example('outlook')
-                                    .description('Account type')
-                                    .required(),
+                                type: AccountTypeSchema,
                                 app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                                 state: Joi.string()
                                     .required()
@@ -3001,7 +3015,7 @@ When making API calls remember that requests against the same account are queued
                             .allow(null)
                             .example('2021-07-08T07:06:34.336Z')
                             .description('When was the status for SMTP connection last updated'),
-                        status: Joi.string().valid('ok', 'error').description('Was the last SMTP attempt successful or not'),
+                        status: Joi.string().valid('ok', 'error').description('Was the last SMTP attempt successful or not').label('SMTPStatusStatus'),
                         response: Joi.string().example('250 OK').description('SMTP response message for delivery attempt'),
                         description: Joi.string().example('Authentication failed').description('Error information'),
                         responseCode: Joi.number().integer().example(500).description('Error status code'),
@@ -3016,12 +3030,7 @@ When making API calls remember that requests against the same account are queued
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
-                    type: Joi.string()
-                        .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
-                        .example('outlook')
-                        .description('Account type')
-                        .label('AccountType')
-                        .required(),
+                    type: AccountTypeSchema,
                     app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
 
                     counters: accountCountersSchema,
@@ -3690,7 +3699,7 @@ When making API calls remember that requests against the same account are queued
                         )
                         .label('RFC822Raw'),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('FromAddress'),
+                    from: fromAddressSchema,
 
                     to: Joi.array()
                         .items(addressSchema)
@@ -4747,7 +4756,7 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.forbidden('y')
                         }),
 
-                    from: addressSchema.example({ name: 'From Me', address: 'sender@example.com' }).description('The From address').label('FromAddress'),
+                    from: fromAddressSchema,
 
                     replyTo: Joi.array()
                         .items(addressSchema.label('ReplyToAddress'))
@@ -5162,9 +5171,9 @@ When making API calls remember that requests against the same account are queued
             },
 
             response: {
-                schema: Joi.object({ updated: Joi.array().items(Joi.string().example('notifyHeaders')).description('List of updated setting keys') }).label(
-                    'SettingsResponse'
-                ),
+                schema: Joi.object({
+                    updated: Joi.array().items(Joi.string().example('notifyHeaders')).description('List of updated setting keys').label('UpdatedSettings')
+                }).label('SettingsUpdatedResponse'),
                 failAction: 'log'
             }
         }
@@ -6188,11 +6197,7 @@ When making API calls remember that requests against the same account are queued
                                 name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
                                 description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
                                 title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
-                                provider: Joi.string()
-                                    .valid(...Object.keys(OAUTH_PROVIDERS))
-                                    .required()
-                                    .example('gmail')
-                                    .description('OAuth2 provider'),
+                                provider: OAuth2ProviderSchema,
                                 enabled: Joi.boolean()
                                     .truthy('Y', 'true', '1', 'on')
                                     .falsy('N', 'false', 0, '')
@@ -6321,11 +6326,7 @@ When making API calls remember that requests against the same account are queued
                     name: Joi.string().max(256).example('My OAuth2 App').description('Display name for the app'),
                     description: Joi.string().empty('').trim().max(1024).example('App description').description('OAuth2 application description'),
                     title: Joi.string().empty('').trim().max(256).example('App title').description('Title for the application button'),
-                    provider: Joi.string()
-                        .valid(...Object.keys(OAUTH_PROVIDERS))
-                        .required()
-                        .example('gmail')
-                        .description('OAuth2 provider'),
+                    provider: OAuth2ProviderSchema,
                     enabled: Joi.boolean()
                         .truthy('Y', 'true', '1', 'on')
                         .falsy('N', 'false', 0, '')
@@ -6860,7 +6861,12 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
-                    state: Joi.string().required().valid('existing', 'new').example('new').description('Is the gateway new or updated existing')
+                    state: Joi.string()
+                        .required()
+                        .valid('existing', 'new')
+                        .example('new')
+                        .description('Is the gateway new or updated existing')
+                        .label('CreateGatewayState')
                 }).label('CreateGatewayResponse'),
                 failAction: 'log'
             }
@@ -7073,7 +7079,7 @@ When making API calls remember that requests against the same account are queued
                     account: accountIdSchema.required(),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
                     accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
-                    provider: Joi.string().max(256).example('gmail').description('OAuth2 provider')
+                    provider: OAuth2ProviderSchema
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
             }
