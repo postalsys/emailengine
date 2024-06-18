@@ -177,6 +177,11 @@
             <dd class="col-sm-9 text-monospace"><small>{{app.serviceClient}}</small></dd>
             {{/if}}
 
+            {{#if app.serviceProjectId}}
+            <dt class="col-sm-3">Service Project Id</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.serviceProjectId}}</small></dd>
+            {{/if}}
+
             {{#if app.clientSecret}}
             <dt class="col-sm-3">Client Secret</dt>
             <dd class="col-sm-9 text-monospace"><small>*****</small></dd>

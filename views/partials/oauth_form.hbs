@@ -63,21 +63,58 @@
                 type selection page.</small>
         </div>
 
+        {{#if activeGmail}}
+        <div class="form-group form-check">
+
+            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                name="enabled" {{#if values.enabled}}checked{{/if}} />
+            <label class="form-check-label" for="enabled">Enable this app</label>
+            {{#if errors.enabled}}
+            <span class="invalid-feedback">{{errors.enabled}}</span>
+            {{/if}}
+            <small class="form-text text-muted">If enabled, then this OAuth2 app is shown as an
+                account type option in the hosted authentication form.</small>
+        </div>
+        {{/if}}
+
+    </div>
+</div>
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">OAuth2 Credentials</h6>
+    </div>
+
+    <div class="card-body">
+
         {{#if activeGmailService}}
 
         <div class="form-group">
             <button type="button" class="btn btn-info btn-icon-split" id="serviceFile">
                 <span class="icon text-white-50">
-                    <i class="fas fa-file-import"></i>
+                    <i class="fas fa-cloud-upload-alt"></i>
                 </span>
-                <span class="text">Select service key file&#x2026;</span>
+                <span class="text">Load configuration from the service key file&#x2026;</span>
             </button>
             <small class="form-text text-muted">Select the JSON file you received after generating a new service key to
                 retrieve the service values.</small>
         </div>
 
         <div class="form-group">
+            <label for="serviceProjectId">
+                Project ID
+            </label>
+            <input type="text" class="form-control {{#if errors.serviceProjectId}}is-invalid{{/if}}"
+                id="serviceProjectId" name="serviceProjectId" value="{{values.serviceProjectId}}"
+                placeholder="Enter the project ID of the service, for example &quot;project-name-425411&quot;" />
+            {{#if errors.serviceProjectId}}
+            <span class="invalid-feedback">{{errors.serviceProjectId}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Service Project ID</small>
+        </div>
 
+        <div class="form-group">
             <label for="serviceClient">
                 Service client
             </label>
@@ -104,18 +141,6 @@
         </div>
 
         {{else}}
-
-        <div class="form-group form-check">
-
-            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
-                name="enabled" {{#if values.enabled}}checked{{/if}} />
-            <label class="form-check-label" for="enabled">Enable this app</label>
-            {{#if errors.enabled}}
-            <span class="invalid-feedback">{{errors.enabled}}</span>
-            {{/if}}
-            <small class="form-text text-muted">If enabled, then <em>"{{providerData.comment}}"</em> is shown as an
-                account type option when adding an account using the hosted authentication form.</small>
-        </div>
 
         <div class="form-group">
 
@@ -188,40 +213,127 @@
     </div>
 </div>
 
+{{#if activeGmailService}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
+    </div>
+
+    <div class="card-body">
+
+        Select base scopes for the OAuth2 app.
+
+    </div>
+
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>OAuth2 scopes</th>
+                <th>IMAP Proxy support</th>
+                <th>Description</th>
+            </tr>
+
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
+                            {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td><em class="text-muted">https://mail.google.com/</em></td>
+                <td><span class="badge badge-success">Yes</span></td>
+                <td>Regular email protocols</td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesPubsub" value="api"
+                            {{#if baseScopesPubsub}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesPubsub">
+                            Cloud Pub/Sub
+                        </label>
+                    </div>
+                </td>
+                <td><em class="text-muted">/auth/pubsub</em></td>
+                <td><span class="badge badge-warning">No</span></td>
+                <td>Webhook management</td>
+            </tr>
+        </tbody>
+
+    </table>
+</div>
+{{/if}}
+
 {{#if activeGmail}}
 <div class="card mb-4">
 
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
     </div>
+
     <div class="card-body">
 
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap" {{#unless
-                baseScopesApi}}checked{{/unless}}>
-            <label class="form-check-label" for="baseScopesImap">
-                IMAP and SMTP &mdash; <em class="text-muted">https://mail.google.com/</em>
-            </label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api" {{#if
-                baseScopesApi}}checked{{/if}}>
-            <label class="form-check-label" for="baseScopesAPI">
-                Gmail API <span class="badge badge-danger" style="cursor:default;" data-toggle="popover"
-                    data-trigger="hover" data-title="Alpha feature"
-                    data-content="This feature is not stable; it has many bugs, and its behavior will change in the future. Use it for testing purposes only.">
-                    Alpha feature
-                </span> &mdash; <em class="text-muted">/auth/gmail.modify</em>
-            </label>
-        </div>
+        Select base scopes for the OAuth2 app.
 
     </div>
 
-    <div class="card-footer text-muted">
-        <small><strong>Note:</strong>
-            <a href="/admin/config/imap-proxy">IMAP Proxy Interface</a> is only available for email accounts registered
-            using the IMAP and SMTP base scope.</small>
-    </div>
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>OAuth2 scopes</th>
+                <th>IMAP Proxy support</th>
+                <th>Description</th>
+            </tr>
+
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
+                            {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td><em class="text-muted">https://mail.google.com/</em></td>
+                <td><span class="badge badge-success">Yes</span></td>
+                <td>Regular email protocols</td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api"
+                            {{#if baseScopesApi}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesAPI">
+                            Gmail API <span class="badge badge-danger" style="cursor:default;" data-toggle="popover"
+                                data-trigger="hover" data-title="Alpha feature"
+                                data-content="This feature is not stable; it has many bugs, and its behavior will change in the future. Use it for testing purposes only.">
+                                Alpha feature
+                            </span>
+                        </label>
+                    </div>
+                </td>
+                <td><em class="text-muted">/auth/gmail.modify</em></td>
+                <td><span class="badge badge-warning">No</span></td>
+                <td>HTTP API</td>
+            </tr>
+        </tbody>
+
+    </table>
+
 </div>
 {{/if}}
 
