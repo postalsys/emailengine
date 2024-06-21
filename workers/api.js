@@ -6500,7 +6500,7 @@ When making API calls remember that requests against the same account are queued
                     baseScopes: Joi.string()
                         .empty('')
                         .trim()
-                        .valid(...['imap', 'api'])
+                        .valid(...['imap', 'api', 'pubsub'])
                         .example('imap')
                         .description('OAuth2 Base Scopes'),
 
