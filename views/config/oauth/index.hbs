@@ -30,6 +30,9 @@
                         <div class="p-2">Type</div>
                     </th>
                     <th class="p-0">
+                        <div class="p-2">Base scopes</div>
+                    </th>
+                    <th class="p-0">
                         <div class="p-2">Provider ID <a href="#" tabindex="-1" role="button" data-toggle="popover"
                                 data-trigger="hover" data-title="Provider ID"
                                 data-content="Use this value as the &quot;oauth2.provider&quot; property, when registering email accounts using the API."><i
@@ -60,6 +63,12 @@
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{providerData.comment}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{baseScopesText}}
                         </div>
                     </td>
 
