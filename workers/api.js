@@ -6238,6 +6238,11 @@ When making API calls remember that requests against the same account are queued
                                     .example('project-name-425411')
                                     .description('Service project ID for 2-legged OAuth2 applications'),
 
+                                serviceClientEmail: Joi.string()
+                                    .email()
+                                    .example('name@project-123.iam.gserviceaccount.com')
+                                    .description('Service Client Email for 2-legged OAuth2 applications'),
+
                                 serviceKey: Joi.string()
                                     .example('******')
                                     .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
@@ -6359,8 +6364,15 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/oauth')
                         .description('Redirect URL for 3-legged OAuth2 applications'),
 
-                    serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
                     serviceProjectId: Joi.string().example('project-name-425411').description('Service project ID for 2-legged OAuth2 applications'),
+
+                    serviceClientEmail: Joi.string()
+                        .email()
+                        .example('name@project-123.iam.gserviceaccount.com')
+                        .description('Service Client Email for 2-legged OAuth2 applications'),
+
+                    serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+
                     serviceKey: Joi.string()
                         .example('******')
                         .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
@@ -6521,6 +6533,11 @@ When making API calls remember that requests against the same account are queued
                         .max(256)
                         .example('project-name-425411')
                         .description('Service project ID for 2-legged OAuth2 applications'),
+
+                    serviceClientEmail: Joi.string()
+                        .email()
+                        .example('name@project-123.iam.gserviceaccount.com')
+                        .description('Service Client Email for 2-legged OAuth2 applications'),
 
                     serviceKey: Joi.string()
                         .trim()

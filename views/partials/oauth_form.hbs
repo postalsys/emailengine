@@ -42,6 +42,7 @@
             <small class="form-text text-muted">Optional application description or a comment.</small>
         </div>
 
+        {{#unless activeGmailService}}
         <div class="form-group">
 
             <label for="title">
@@ -62,6 +63,7 @@
             <small class="form-text text-muted">Optional display title next to the application button on the account
                 type selection page.</small>
         </div>
+        {{/unless}}
 
         {{#if activeGmail}}
         <div class="form-group form-check">
@@ -107,11 +109,26 @@
             </label>
             <input type="text" class="form-control {{#if errors.serviceProjectId}}is-invalid{{/if}}"
                 id="serviceProjectId" name="serviceProjectId" value="{{values.serviceProjectId}}"
-                placeholder="Enter the project ID of the service, for example &quot;project-name-425411&quot;" />
+                placeholder="Enter the project ID of the service, for example &quot;project-name-425411&quot;"
+                required />
             {{#if errors.serviceProjectId}}
             <span class="invalid-feedback">{{errors.serviceProjectId}}</span>
             {{/if}}
             <small class="form-text text-muted">OAuth2 Service Project ID</small>
+        </div>
+
+        <div class="form-group">
+            <label for="serviceClientEmail">
+                Client Email
+            </label>
+            <input type="text" class="form-control {{#if errors.serviceClientEmail}}is-invalid{{/if}}"
+                id="serviceClientEmail" name="serviceClientEmail" value="{{values.serviceClientEmail}}"
+                placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
+                required />
+            {{#if errors.serviceClientEmail}}
+            <span class="invalid-feedback">{{errors.serviceClientEmail}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Service Client Email</small>
         </div>
 
         <div class="form-group">

@@ -27,7 +27,7 @@
 </div>
 {{/if}}
 
-<form method="post" action="/admin/config/oauth/new">
+<form method="post" action="/admin/config/oauth/new" class="pending-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{values.provider}}">
 
@@ -74,6 +74,7 @@
                     document.getElementById('serviceClient').value = data.client_id;
                     document.getElementById('serviceKey').value = data.private_key;
                     document.getElementById('serviceProjectId').value = data.project_id;
+                    document.getElementById('serviceClientEmail').value = data.client_email;
 
                     return showToast('Loaded service values from file', 'check-circle');
 

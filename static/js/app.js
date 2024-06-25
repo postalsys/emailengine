@@ -482,4 +482,39 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(err => console.error(err));
         });
     }
+
+    for (let f of document.querySelectorAll('form.pending-form')) {
+        f.addEventListener('submit', () => {
+            for (let b of f.querySelectorAll('button[type="submit"], button:not([type])')) {
+                b.disabled = true;
+                b.classList.add('disabled');
+                let icon = b.querySelector('i.fas');
+                if (icon) {
+                    for (let [, className] of icon.classList.entries()) {
+                        if (/^fa-/.test(className)) {
+                            icon.classList.remove(className);
+                            icon.dataset.oldIcon = className;
+                            icon.classList.add('icon-updated');
+                        }
+                    }
+                    icon.classList.add('fa-spinner', 'fa-spin');
+                }
+            }
+        });
+    }
+});
+
+window.addEventListener('pageshow', () => {
+    for (let icon of document.querySelectorAll('i.icon-updated')) {
+        icon.classList.remove('fa-spinner', 'fa-spin', 'icon-updated');
+        if (icon.dataset.oldIcon) {
+            icon.classList.add(icon.dataset.oldIcon);
+            icon.dataset.oldIcon = '';
+        }
+    }
+
+    for (let b of document.querySelectorAll('.disabled')) {
+        b.classList.remove('disabled');
+        b.disabled = false;
+    }
 });

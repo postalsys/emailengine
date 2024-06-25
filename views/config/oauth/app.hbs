@@ -206,6 +206,11 @@
             <dd class="col-sm-9 text-monospace"><small>{{app.serviceProjectId}}</small></dd>
             {{/if}}
 
+            {{#if app.serviceClientEmail}}
+            <dt class="col-sm-3">Service Client Email</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.serviceClientEmail}}</small></dd>
+            {{/if}}
+
             {{#if app.clientSecret}}
             <dt class="col-sm-3">Client Secret</dt>
             <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
@@ -279,11 +284,11 @@
                     recoverable.</p>
             </div>
             <div class="modal-footer">
-                <form method="post" action="/admin/config/oauth/delete">
+                <form method="post" action="/admin/config/oauth/delete" class="pending-form">
                     <input type="hidden" name="crumb" value="{{crumb}}" />
                     <input type="hidden" name="app" value="{{app.id}}" />
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Delete</button>
                 </form>
             </div>
         </div>
