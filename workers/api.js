@@ -6509,13 +6509,6 @@ When making API calls remember that requests against the same account are queued
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
 
-                    baseScopes: Joi.string()
-                        .empty('')
-                        .trim()
-                        .valid(...['imap', 'api', 'pubsub'])
-                        .example('imap')
-                        .description('OAuth2 Base Scopes'),
-
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
                     skipScopes: Joi.array().items(Joi.string().trim().max(255).example('SMTP.Send')).description('OAuth2 scopes to skip from the base set'),
@@ -6559,13 +6552,13 @@ When making API calls remember that requests against the same account are queued
                         .uri({ scheme: ['http', 'https'], allowRelative: false })
                         .example('https://myservice.com/oauth')
                         .description('Redirect URL for 3-legged OAuth2 applications')
-                }).label('UpdateGateway')
+                }).label('UpdateOAuthApp')
             },
 
             response: {
                 schema: Joi.object({
-                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
-                }).label('UpdateGatewayResponse'),
+                    id: Joi.string().max(256).required().example('example').description('OAuth2 app ID')
+                }).label('UpdateOAuthAppResponse'),
                 failAction: 'log'
             }
         }

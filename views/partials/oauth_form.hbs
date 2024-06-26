@@ -230,6 +230,8 @@
     </div>
 </div>
 
+{{#if actionCreate}}
+
 {{#if activeGmailService}}
 
 <div class="card mb-4">
@@ -286,11 +288,20 @@
             </tr>
         </tbody>
 
+        <tfoot>
+            <tr>
+                <td colspan="4">
+                    <small><em>Base scopes can not be changed once set</em></small>
+                </td>
+            </tr>
+        </tfoot>
+
     </table>
 </div>
 {{/if}}
 
 {{#if activeGmail}}
+
 <div class="card mb-4">
 
     <div class="card-header py-3">
@@ -349,9 +360,19 @@
             </tr>
         </tbody>
 
+        <tfoot>
+            <tr>
+                <td colspan="4">
+                    <small><em>Base scopes can not be changed once set</em></small>
+                </td>
+            </tr>
+        </tfoot>
+
     </table>
 
 </div>
+{{/if}}
+
 {{/if}}
 
 <div class="card mb-4">
