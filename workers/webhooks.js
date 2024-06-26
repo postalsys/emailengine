@@ -7,6 +7,8 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
+const { GooglePubSub } = require('../lib/oauth/pubsub/google');
+
 const { readEnvValue, threadStats } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -48,6 +50,8 @@ config.queues = config.queues || {
 
 const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EENGINE_NOTIFY_QC'))) || config.queues.notify || 1;
 
+const googlePubSub = new GooglePubSub();
+
 function getAccountKey(account) {
     return `${REDIS_PREFIX}iad:${account}`;
 }
@@ -69,6 +73,9 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+        case 'googlePubSub':
+            await googlePubSub.update(command.app);
+            return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;
@@ -485,5 +492,14 @@ notifyWorker.on('failed', async job => {
         attemptsMade: job.attemptsMade
     });
 });
+
+googlePubSub
+    .start()
+    .then(() => {
+        logger.info({ msg: 'Started processing Google pub/sub' });
+    })
+    .catch(err => {
+        logger.fatal({ msg: 'Failed to start processing Google pub/sub', err });
+    });
 
 logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });

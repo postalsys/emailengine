@@ -6396,6 +6396,11 @@ When making API calls remember that requests against the same account are queued
         async handler(request) {
             try {
                 let result = await oauth2Apps.create(request.payload);
+
+                if (result?.pubsubUpdates?.pubSubSubscription) {
+                    await call({ cmd: 'googlePubSub', app: result.id });
+                }
+
                 return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -6450,7 +6455,13 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await oauth2Apps.update(request.params.app, request.payload);
+                let result = await oauth2Apps.update(request.params.app, request.payload);
+
+                if (result?.pubsubUpdates?.pubSubSubscription) {
+                    await call({ cmd: 'googlePubSub', app: result.id });
+                }
+
+                return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {

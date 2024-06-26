@@ -1920,6 +1920,13 @@ async function onCommand(worker, message) {
             let assignedWorker = assigned.get(message.account);
             return await call(assignedWorker, message, []);
         }
+
+        case 'googlePubSub': {
+            // notify all webhook workers about a new pubsub app
+            for (let worker of workers.get('webhooks')) {
+                await call(worker, message);
+            }
+        }
     }
 
     return 999;
