@@ -270,6 +270,50 @@
     </div>
 </div>
 
+{{#if baseScopesPubsub}}
+<div class="card mt-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Cloud Pub/Sub configuration</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+            <dt class="col-sm-3">Pub/Sub topic</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubTopic}}
+                <span class="badge badge-success" title="{{app.pubSubTopic}}" data-toggle="tooltip" data-placement="top"
+                    style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+
+            <dt class="col-sm-3">Pub/Sub subscription</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubSubscription}}
+                <span class="badge badge-success" title="{{app.pubSubSubscription}}" data-toggle="tooltip"
+                    data-placement="top" style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+
+            <dt class="col-sm-3">Gmail publishing bindings</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubIamPolicy}}
+                <span class="badge badge-success"
+                    title="{{app.pubSubIamPolicy.members.[0]}}: {{app.pubSubIamPolicy.role}}" data-toggle="tooltip"
+                    data-placement="top" style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+        </dl>
+    </div>
+</div>
+{{/if}}
+
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
