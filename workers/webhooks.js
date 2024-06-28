@@ -9,7 +9,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -48,9 +48,50 @@ config.queues = config.queues || {
     notify: 1
 };
 
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
+
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
 const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EENGINE_NOTIFY_QC'))) || config.queues.notify || 1;
 
-const googlePubSub = new GooglePubSub();
+let callQueue = new Map();
+let mids = 0;
+
+async function call(message, transferList) {
+    return new Promise((resolve, reject) => {
+        let mid = `${Date.now()}:${++mids}`;
+
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+        let timer = setTimeout(() => {
+            let err = new Error('Timeout waiting for command response [T5]');
+            err.statusCode = 504;
+            err.code = 'Timeout';
+            err.ttl = ttl;
+            reject(err);
+        }, ttl);
+
+        callQueue.set(mid, { resolve, reject, timer });
+
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
+    });
+}
+
+const googlePubSub = new GooglePubSub({
+    call
+});
 
 function getAccountKey(account) {
     return `${REDIS_PREFIX}iad:${account}`;
