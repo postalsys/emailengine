@@ -243,6 +243,20 @@
 
             </dd>
 
+            {{#if app.pubSubApp}}
+            <dt class="col-sm-3">Cloud Pub/Sub app for webhooks</dt>
+            <dd class="col-sm-9">
+
+                {{#if app.pubSubAppData}}
+                <a href="/admin/config/oauth/app/{{app.pubSubAppData.id}}">{{app.pubSubAppData.name}}{{#if
+                    app.pubSubAppData.description}} &mdash; <em>{{app.pubSubAppData.description}}</em>{{/if}}</a>
+                {{else}}
+                <em>App set but not found</em>
+                {{/if}}
+
+            </dd>
+            {{/if}}
+
             {{#if app.extraScopes}}
             <dt class="col-sm-3">Custom OAuth2 scopes</dt>
             <dd class="col-sm-9">

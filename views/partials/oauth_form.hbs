@@ -159,6 +159,20 @@
 
         {{else}}
 
+        {{#if activeGmail}}
+
+        <div class="form-group">
+            <button type="button" class="btn btn-info btn-icon-split" id="gmailConfigFile">
+                <span class="icon text-white-50">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </span>
+                <span class="text">Load configuration from the JSON file&#x2026;</span>
+            </button>
+            <small class="form-text text-muted">Select the JSON file you can download when viewing client credential
+                information in Google Cloud Console.</small>
+        </div>
+        {{/if}}
+
         <div class="form-group">
 
             <label for="clientId">
@@ -175,7 +189,7 @@
                 {{/if}}
             </label>
             <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
-                name="clientId" value="{{values.clientId}}" placeholder="Enter client ID&mldr;" />
+                name="clientId" value="{{values.clientId}}" placeholder="Enter client ID&mldr;" required />
             {{#if errors.clientId}}
             <span class="invalid-feedback">{{errors.clientId}}</span>
             {{/if}}
@@ -189,7 +203,7 @@
             <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
                 name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
                 placeholder="Client secret is set but not shown&mldr;" {{else}} placeholder="Enter client secret&mldr;"
-                {{/if}} />
+                {{/if}} required />
             {{#if errors.clientSecret}}
             <span class="invalid-feedback">{{errors.clientSecret}}</span>
             {{/if}}
@@ -201,7 +215,7 @@
             <label for="authority">Supported account types</label>
 
             <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="authority"
-                name="authority" value="{{values.authority}}" />
+                name="authority" value="{{values.authority}}" required />
             {{#if errors.authority}}
             <span class="invalid-feedback">{{errors.authority}}</span>
             {{/if}}
@@ -218,7 +232,7 @@
         <div class="form-group">
             <label for="redirectUrl">Redirect URL</label>
             <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
-                name="redirectUrl" value="{{values.redirectUrl}}" />
+                name="redirectUrl" value="{{values.redirectUrl}}" required />
             {{#if errors.redirectUrl}}
             <span class="invalid-feedback">{{errors.redirectUrl}}</span>
             {{/if}}
@@ -230,20 +244,12 @@
     </div>
 </div>
 
-{{#if actionCreate}}
-
 {{#if activeGmailService}}
 
 <div class="card mb-4">
 
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
-    </div>
-
-    <div class="card-body">
-
-        Select base scopes for the OAuth2 app.
-
     </div>
 
     <table class="table">
@@ -258,6 +264,8 @@
 
         </thead>
         <tbody>
+
+            {{#if actionCreate}}
             <tr>
                 <td>
                     <div class="form-check">
@@ -286,17 +294,35 @@
                 <td><span class="badge badge-warning">No email access</span></td>
                 <td>Webhook management</td>
             </tr>
+
+            {{else}}
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td><em class="text-muted">https://mail.google.com/</em></td>
+                <td><span class="badge badge-success">Yes</span></td>
+                <td>Regular email protocols</td>
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesPubsub}}
+            <tr>
+                <td>
+                    <strong>Cloud Pub/Sub</strong>
+                </td>
+                <td><em class="text-muted">/auth/pubsub</em></td>
+                <td><span class="badge badge-warning">No email access</span></td>
+                <td>Webhook management</td>
+            </tr>
+            {{/if}}
+
+            {{/if}}
         </tbody>
 
-        <tfoot>
-            <tr>
-                <td colspan="4">
-                    <small><em>Base scopes can not be changed once set</em></small>
-                </td>
-            </tr>
-        </tfoot>
-
     </table>
+
 </div>
 {{/if}}
 
@@ -308,11 +334,6 @@
         <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
     </div>
 
-    <div class="card-body">
-
-        Select base scopes for the OAuth2 app.
-
-    </div>
 
     <table class="table">
 
@@ -326,11 +347,13 @@
 
         </thead>
         <tbody>
+
+            {{#if actionCreate}}
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
-                            {{#if baseScopesImap}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesImap">
                             IMAP and SMTP
                         </label>
@@ -343,14 +366,10 @@
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api"
-                            {{#if baseScopesApi}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesAPI">
-                            Gmail API <span class="badge badge-danger" style="cursor:default;" data-toggle="popover"
-                                data-trigger="hover" data-title="Alpha feature"
-                                data-content="This feature is not stable; it has many bugs, and its behavior will change in the future. Use it for testing purposes only.">
-                                Alpha feature
-                            </span>
+                            Gmail API
                         </label>
                     </div>
                 </td>
@@ -358,22 +377,72 @@
                 <td><span class="badge badge-warning">No</span></td>
                 <td>HTTP API</td>
             </tr>
+
+            {{else}}
+
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td><em class="text-muted">https://mail.google.com/</em></td>
+                <td><span class="badge badge-success">Yes</span></td>
+                <td>Regular email protocols</td>
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesApi}}
+            <tr>
+                <td>
+                    <strong>Gmail API</strong>
+                </td>
+                <td><em class="text-muted">/auth/gmail.modify</em></td>
+                <td><span class="badge badge-warning">No</span></td>
+                <td>HTTP API</td>
+            </tr>
+            {{/if}}
+
+            {{/if}}
         </tbody>
 
-        <tfoot>
-            <tr>
-                <td colspan="4">
-                    <small><em>Base scopes can not be changed once set</em></small>
-                </td>
-            </tr>
-        </tfoot>
-
     </table>
+
+
+    <div id="select-pubsub-app" class="card-footer {{#unless baseScopesApi}}d-none{{/unless}}">
+
+        <p>
+            To enable webhooks for email accounts managed by this app, EmailEngine needs to set up a Cloud Pub/Sub
+            service using a Gmail Service Account with the <em>/auth/pubsub</em> scope. Select the Gmail Pub/Sub Service
+            Account below to configure this.
+        </p>
+
+        <select class="custom-select custom-select-sm" name="pubSubApp" {{#if errors.pubSubApp}}is-invalid{{/if}}
+            required>
+
+            {{#unless pubSubApps}}
+            <option value="">
+                &mdash; No Cloud Pub/Sub apps defined. Create one by adding a new OAuth2 app for the Gmail Service
+                Account.
+                &mdash;
+            </option>
+            {{/unless}}
+
+            {{#each pubSubApps}}
+            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if description}} &mdash;
+                {{description}}{{/if}}</option>
+            {{/each}}
+
+        </select>
+        {{#if errors.pubSubApp}}
+        <span class="invalid-feedback">{{errors.pubSubApp}}</span>
+        {{/if}}
+        </td>
+    </div>
 
 </div>
 {{/if}}
 
-{{/if}}
+
 
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
@@ -454,3 +523,75 @@
         </div>
     </div>
 </div>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        function checkScopesRadio() {
+            let baseScopesAPIElm = document.getElementById('baseScopesAPI');
+            let selectPubsubAppElm = document.getElementById('select-pubsub-app');
+
+            if (baseScopesAPI && selectPubsubAppElm) {
+                if (baseScopesAPI.checked) {
+                    selectPubsubAppElm.classList.remove('d-none');
+                } else {
+                    selectPubsubAppElm.classList.add('d-none');
+                }
+            }
+        }
+
+        document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
+            radioElm.addEventListener('change', checkScopesRadio);
+            radioElm.addEventListener('click', checkScopesRadio);
+        });
+
+        checkScopesRadio();
+
+
+        let gmailConfigFileElm = document.getElementById('gmailConfigFile');
+        if (gmailConfigFileElm) {
+            gmailConfigFileElm.addEventListener('click', e => {
+                e.preventDefault();
+                browseFileContents('text').then(jsonStr => {
+                    if (!jsonStr) {
+                        return
+                    }
+
+                    let data;
+                    try {
+                        data = JSON.parse(jsonStr);
+                    } catch (err) {
+                        return showToast('Selected file is not JSON formatted', 'alert-triangle');
+                    }
+
+                    if (!data.web) {
+                        return showToast('Selected file is not in a configuration format', 'alert-triangle');
+                    }
+
+                    if (!data.web.client_id || !data.web.client_secret) {
+                        return showToast('Selected file does not contain required values', 'alert-triangle');
+                    }
+
+                    document.getElementById('clientId').value = data.web.client_id;
+                    document.getElementById('clientSecret').value = data.web.client_secret;
+
+                    let redirectUrlValue = document.getElementById('redirectUrl').value
+
+                    if (data.web.redirect_uris && !data.web.redirect_uris.includes(redirectUrlValue)) {
+                        showToast('Provided redirect URI does not match redirect URIs in the configuration file', 'alert-triangle');
+                    }
+
+                    return showToast('Loaded configuration values from file', 'check-circle');
+
+                }).catch(err => {
+                    console.error(err);
+                    return showToast('Failed to load configuration file', 'alert-triangle');
+                });
+            });
+        }
+
+    });
+
+
+</script>

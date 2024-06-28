@@ -6520,6 +6520,12 @@ When making API calls remember that requests against the same account are queued
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
 
+                    pubSubApp: Joi.string()
+                        .base64({ paddingRequired: false, urlSafe: true })
+                        .max(512)
+                        .example('AAAAAQAACnA')
+                        .description('Cloud Pub/Sub app for Gmail API webhooks'),
+
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
                     skipScopes: Joi.array().items(Joi.string().trim().max(255).example('SMTP.Send')).description('OAuth2 scopes to skip from the base set'),
