@@ -203,7 +203,7 @@
             <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
                 name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
                 placeholder="Client secret is set but not shown&mldr;" {{else}} placeholder="Enter client secret&mldr;"
-                {{/if}} required />
+                {{/if}} {{#unless hasClientSecret}}required{{/unless}} />
             {{#if errors.clientSecret}}
             <span class="invalid-feedback">{{errors.clientSecret}}</span>
             {{/if}}
