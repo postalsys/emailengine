@@ -6113,7 +6113,7 @@ When making API calls remember that requests against the same account are queued
                 let response = await oauth2Apps.list(request.query.page, request.query.pageSize);
 
                 for (let app of response.apps) {
-                    for (let secretKey of ['clientSecret', 'serviceKey']) {
+                    for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
                         if (app[secretKey]) {
                             app[secretKey] = '******';
                         }
@@ -6266,7 +6266,7 @@ When making API calls remember that requests against the same account are queued
                 let app = await oauth2Apps.get(request.params.app);
 
                 // remove secrets
-                for (let secretKey of ['clientSecret', 'serviceKey']) {
+                for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
                     if (app[secretKey]) {
                         app[secretKey] = '******';
                     }
