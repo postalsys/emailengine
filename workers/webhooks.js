@@ -63,7 +63,7 @@ async function call(message, transferList) {
 
         let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response [T5]');
+            let err = new Error('Timeout waiting for command response [T6]');
             err.statusCode = 504;
             err.code = 'Timeout';
             err.ttl = ttl;
@@ -124,6 +124,27 @@ async function onCommand(command) {
 }
 
 parentPort.on('message', message => {
+    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
+        let { resolve, reject, timer } = callQueue.get(message.mid);
+        clearTimeout(timer);
+        callQueue.delete(message.mid);
+        if (message.error) {
+            let err = new Error(message.error);
+            if (message.code) {
+                err.code = message.code;
+            }
+            if (message.statusCode) {
+                err.statusCode = message.statusCode;
+            }
+            if (message.info) {
+                err.info = message.info;
+            }
+            return reject(err);
+        } else {
+            return resolve(message.response);
+        }
+    }
+
     if (message && message.cmd === 'call' && message.mid) {
         return onCommand(message.message)
             .then(response => {
