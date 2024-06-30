@@ -1483,6 +1483,8 @@ When making API calls remember that requests against the same account are queued
                         }
                     );
 
+                    accountData.googleHistoryId = Number(profileRes.historyId) || null;
+
                     request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.emailAddress, provider: oauth2App.provider });
                     break;
                 }
