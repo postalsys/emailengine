@@ -1,5 +1,7 @@
 'use strict';
 
+// NB! This file is processed by gettext parser and can not use newer syntax like ?.
+
 const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
@@ -6399,7 +6401,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 let result = await oauth2Apps.create(request.payload);
 
-                if (result?.pubsubUpdates?.pubSubSubscription) {
+                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
                     await call({ cmd: 'googlePubSub', app: result.id });
                 }
 
@@ -6459,7 +6461,7 @@ When making API calls remember that requests against the same account are queued
             try {
                 let result = await oauth2Apps.update(request.params.app, request.payload);
 
-                if (result?.pubsubUpdates?.pubSubSubscription) {
+                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
                     await call({ cmd: 'googlePubSub', app: result.id });
                 }
 

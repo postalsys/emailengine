@@ -1,13 +1,17 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-05-30 11:20+0000\n"
+"POT-Creation-Date: 2024-07-03 08:30+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -51,10 +55,6 @@ msgstr ""
 #: views/unsubscribe.hbs:75
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -189,48 +189,48 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
-#: lib/routes-ui.js:582
+#: lib/routes-ui.js:607
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4603
-#: lib/routes-ui.js:6529
-#: lib/routes-ui.js:6540
+#: lib/routes-ui.js:4733
+#: lib/routes-ui.js:6652
+#: lib/routes-ui.js:6663
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4606
-#: lib/routes-ui.js:6532
-#: lib/routes-ui.js:6543
+#: lib/routes-ui.js:4736
+#: lib/routes-ui.js:6655
+#: lib/routes-ui.js:6666
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4610
-#: lib/routes-ui.js:6547
+#: lib/routes-ui.js:4740
+#: lib/routes-ui.js:6670
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6341
-#: lib/routes-ui.js:6381
-#: lib/routes-ui.js:9136
+#: lib/routes-ui.js:6471
+#: lib/routes-ui.js:6504
+#: lib/routes-ui.js:9259
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6467
-#: lib/routes-ui.js:6724
+#: lib/routes-ui.js:6590
+#: lib/routes-ui.js:6847
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9236
-#: lib/routes-ui.js:9269
+#: lib/routes-ui.js:9359
+#: lib/routes-ui.js:9392
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1400
+#: lib/tools.js:1402
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1409
-#: lib/tools.js:1414
+#: lib/tools.js:1411
+#: lib/tools.js:1416
 msgid "Invalid or expired account setup URL"
 msgstr ""
