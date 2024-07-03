@@ -1,5 +1,7 @@
 'use strict';
 
+// NB! This file is processed by gettext parser and can not use newer syntax like ?.
+
 const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
@@ -158,7 +160,8 @@ const {
     accountCountersSchema,
     accountPathSchema,
     defaultAccountTypeSchema,
-    fromAddressSchema
+    fromAddressSchema,
+    outboxEntrySchema
 } = require('../lib/schemas');
 
 const OAuth2ProviderSchema = Joi.string()
@@ -1482,6 +1485,8 @@ When making API calls remember that requests against the same account are queued
                             }
                         }
                     );
+
+                    accountData.googleHistoryId = Number(profileRes.historyId) || null;
 
                     request.logger.info({ msg: 'Provisioned OAuth2 tokens', user: profileRes.emailAddress, provider: oauth2App.provider });
                     break;
@@ -5833,55 +5838,67 @@ When making API calls remember that requests against the same account are queued
                     page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
                     pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
 
-                    messages: Joi.array()
-                        .items(
-                            Joi.object({
-                                queueId: Joi.string().example('1869c5692565f756b33').description('Outbox queue ID'),
-                                account: accountIdSchema.required(),
-                                source: Joi.string().example('smtp').valid('smtp', 'api').description('How this message was added to the queue'),
-
-                                messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                                envelope: Joi.object({
-                                    from: Joi.string().email().allow('').example('sender@example.com'),
-                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com'))
-                                }).description('SMTP envelope'),
-
-                                subject: Joi.string()
-                                    .allow('')
-                                    .max(10 * 1024)
-                                    .example('What a wonderful message')
-                                    .description('Message subject'),
-
-                                created: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('The time this message was queued'),
-                                scheduled: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('When this message is supposed to be delivered'),
-                                nextAttempt: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Next delivery attempt'),
-
-                                attemptsMade: Joi.number().integer().example(3).description('How many times EmailEngine has tried to deliver this email'),
-                                attempts: Joi.number()
-                                    .integer()
-                                    .example(3)
-                                    .description('How many delivery attempts to make until message is considered as failed'),
-
-                                progress: Joi.object({
-                                    status: Joi.string()
-                                        .valid('queued', 'processing', 'submitted', 'error')
-                                        .example('queued')
-                                        .description('Current state of the sending'),
-                                    response: Joi.string()
-                                        .example('250 Message Accepted')
-                                        .description('Response from the SMTP server. Only if state=processing'),
-                                    error: Joi.object({
-                                        message: Joi.string().example('Authentication failed').description('Error message'),
-                                        code: Joi.string().example('EAUTH').description('Error code'),
-                                        statusCode: Joi.string().example(502).description('SMTP response code')
-                                    })
-                                        .label('OutboxListProgressError')
-                                        .description('Error information if state=error')
-                                }).label('OutboxListProgress')
-                            }).label('OutboxListItem')
-                        )
-                        .label('OutboxListEntries')
+                    messages: Joi.array().items(outboxEntrySchema).label('OutboxListEntries')
                 }).label('OutboxListResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/outbox/{queueId}',
+
+        async handler(request) {
+            try {
+                let outboxEntry = await outbox.get({ queueId: request.params.queueId, logger });
+                if (!outboxEntry) {
+                    let message = 'Requested queue entry was not found';
+                    let error = Boom.boomify(new Error(message), { statusCode: 404 });
+                    throw error;
+                }
+                return outboxEntry;
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'Get queued message',
+            notes: 'Gets a queued message in the Outbox',
+            tags: ['api', 'Outbox'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    queueId: Joi.string().max(100).example('d41f0423195f271f').description('Queue identifier for scheduled email').required()
+                }).label('OutboxEntryParams')
+            },
+
+            response: {
+                schema: outboxEntrySchema,
                 failAction: 'log'
             }
         }
@@ -5931,7 +5948,7 @@ When making API calls remember that requests against the same account are queued
 
                 params: Joi.object({
                     queueId: Joi.string().max(100).example('d41f0423195f271f').description('Queue identifier for scheduled email').required()
-                }).label('DeleteOutboxEntry')
+                }).label('OutboxEntryParams')
             },
 
             response: {
@@ -6113,7 +6130,7 @@ When making API calls remember that requests against the same account are queued
                 let response = await oauth2Apps.list(request.query.page, request.query.pageSize);
 
                 for (let app of response.apps) {
-                    for (let secretKey of ['clientSecret', 'serviceKey']) {
+                    for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
                         if (app[secretKey]) {
                             app[secretKey] = '******';
                         }
@@ -6233,6 +6250,16 @@ When making API calls remember that requests against the same account are queued
                                     .description('Redirect URL for 3-legged OAuth2 applications'),
 
                                 serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+
+                                serviceProjectId: Joi.string()
+                                    .example('project-name-425411')
+                                    .description('Service project ID for 2-legged OAuth2 applications'),
+
+                                serviceClientEmail: Joi.string()
+                                    .email()
+                                    .example('name@project-123.iam.gserviceaccount.com')
+                                    .description('Service Client Email for 2-legged OAuth2 applications'),
+
                                 serviceKey: Joi.string()
                                     .example('******')
                                     .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
@@ -6256,7 +6283,7 @@ When making API calls remember that requests against the same account are queued
                 let app = await oauth2Apps.get(request.params.app);
 
                 // remove secrets
-                for (let secretKey of ['clientSecret', 'serviceKey']) {
+                for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
                     if (app[secretKey]) {
                         app[secretKey] = '******';
                     }
@@ -6354,7 +6381,15 @@ When making API calls remember that requests against the same account are queued
                         .example('https://myservice.com/oauth')
                         .description('Redirect URL for 3-legged OAuth2 applications'),
 
+                    serviceProjectId: Joi.string().example('project-name-425411').description('Service project ID for 2-legged OAuth2 applications'),
+
+                    serviceClientEmail: Joi.string()
+                        .email()
+                        .example('name@project-123.iam.gserviceaccount.com')
+                        .description('Service Client Email for 2-legged OAuth2 applications'),
+
                     serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+
                     serviceKey: Joi.string()
                         .example('******')
                         .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
@@ -6378,6 +6413,11 @@ When making API calls remember that requests against the same account are queued
         async handler(request) {
             try {
                 let result = await oauth2Apps.create(request.payload);
+
+                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
+                    await call({ cmd: 'googlePubSub', app: result.id });
+                }
+
                 return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -6432,7 +6472,13 @@ When making API calls remember that requests against the same account are queued
 
         async handler(request) {
             try {
-                return await oauth2Apps.update(request.params.app, request.payload);
+                let result = await oauth2Apps.update(request.params.app, request.payload);
+
+                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
+                    await call({ cmd: 'googlePubSub', app: result.id });
+                }
+
+                return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -6491,12 +6537,11 @@ When making API calls remember that requests against the same account are queued
                         .example('boT7Q~dUljnfFdVuqpC11g8nGMjO8kpRAv-ZB')
                         .description('Client secret for 3-legged OAuth2 applications'),
 
-                    baseScopes: Joi.string()
-                        .empty('')
-                        .trim()
-                        .valid(...['imap', 'api'])
-                        .example('imap')
-                        .description('OAuth2 Base Scopes'),
+                    pubSubApp: Joi.string()
+                        .base64({ paddingRequired: false, urlSafe: true })
+                        .max(512)
+                        .example('AAAAAQAACnA')
+                        .description('Cloud Pub/Sub app for Gmail API webhooks'),
 
                     extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
 
@@ -6508,6 +6553,18 @@ When making API calls remember that requests against the same account are queued
                         .max(256)
                         .example('7103296518315821565203')
                         .description('Service client ID for 2-legged OAuth2 applications'),
+
+                    serviceProjectId: Joi.string()
+                        .trim()
+                        .allow('', null, false)
+                        .max(256)
+                        .example('project-name-425411')
+                        .description('Service project ID for 2-legged OAuth2 applications'),
+
+                    serviceClientEmail: Joi.string()
+                        .email()
+                        .example('name@project-123.iam.gserviceaccount.com')
+                        .description('Service Client Email for 2-legged OAuth2 applications'),
 
                     serviceKey: Joi.string()
                         .trim()
@@ -6529,13 +6586,13 @@ When making API calls remember that requests against the same account are queued
                         .uri({ scheme: ['http', 'https'], allowRelative: false })
                         .example('https://myservice.com/oauth')
                         .description('Redirect URL for 3-legged OAuth2 applications')
-                }).label('UpdateGateway')
+                }).label('UpdateOAuthApp')
             },
 
             response: {
                 schema: Joi.object({
-                    gateway: Joi.string().max(256).required().example('example').description('Gateway ID')
-                }).label('UpdateGatewayResponse'),
+                    id: Joi.string().max(256).required().example('example').description('OAuth2 app ID')
+                }).label('UpdateOAuthAppResponse'),
                 failAction: 'log'
             }
         }

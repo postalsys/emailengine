@@ -1920,6 +1920,30 @@ async function onCommand(worker, message) {
             let assignedWorker = assigned.get(message.account);
             return await call(assignedWorker, message, []);
         }
+
+        case 'googlePubSub': {
+            // notify all webhook workers about a new pubsub app
+            for (let worker of workers.get('webhooks')) {
+                await call(worker, message);
+            }
+            return true;
+        }
+
+        case 'gmailNotify': {
+            for (let account of message.accounts) {
+                if (!assigned.has(account)) {
+                    continue;
+                }
+
+                let assignedWorker = assigned.get(account);
+                try {
+                    await call(assignedWorker, { cmd: 'gmailNotify', account, historyId: message.historyId });
+                } catch (err) {
+                    logger.error({ msg: 'Failed to notify worker about account changes', cmd: 'gmailNotify', account, historyId: message.historyId, err });
+                }
+            }
+            return true;
+        }
     }
 
     return 999;

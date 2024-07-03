@@ -15,7 +15,19 @@
                 {{#if activeGmail}}
                 <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
                 <ul>
-                    <li><code>"https://mail.google.com/"</code>
+
+                    {{#if baseScopesImap}}
+                    <li><code>"https://mail.google.com/"</code></li>
+                    {{/if}}
+
+                    {{#if baseScopesApi}}
+                    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+                    {{/if}}
+
+                    {{#if baseScopesPubsub}}
+                    <li><code>"https://www.googleapis.com/auth/pubsub"</code></li>
+                    {{/if}}
+
                 </ul>
                 <div>Read about setting up the OAuth2 project in Google Cloud from <a
                         href="https://docs.emailengine.app/setting-up-gmail-oauth2-for-imap-api/" target="_blank"
@@ -26,7 +38,19 @@
                 {{#if activeGmailService}}
                 <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
                 <ul>
-                    <li><code>"https://mail.google.com/"</code>
+
+                    {{#if baseScopesImap}}
+                    <li><code>"https://mail.google.com/"</code></li>
+                    {{/if}}
+
+                    {{#if baseScopesApi}}
+                    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+                    {{/if}}
+
+                    {{#if baseScopesPubsub}}
+                    <li><code>"https://www.googleapis.com/auth/pubsub"</code></li>
+                    {{/if}}
+
                 </ul>
                 <div>Read about setting up Google service accounts from <a
                         href="https://docs.emailengine.app/oauth-legacy/gmail-service-accounts/" target="_blank"
@@ -177,6 +201,16 @@
             <dd class="col-sm-9 text-monospace"><small>{{app.serviceClient}}</small></dd>
             {{/if}}
 
+            {{#if app.serviceProjectId}}
+            <dt class="col-sm-3">Service Project Id</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.serviceProjectId}}</small></dd>
+            {{/if}}
+
+            {{#if app.serviceClientEmail}}
+            <dt class="col-sm-3">Service Client Email</dt>
+            <dd class="col-sm-9 text-monospace"><small>{{app.serviceClientEmail}}</small></dd>
+            {{/if}}
+
             {{#if app.clientSecret}}
             <dt class="col-sm-3">Client Secret</dt>
             <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
@@ -190,6 +224,37 @@
             {{#if app.redirectUrl}}
             <dt class="col-sm-3">Redirect URL</dt>
             <dd class="col-sm-9 text-monospace"><small>{{app.redirectUrl}}</small></dd>
+            {{/if}}
+
+            <dt class="col-sm-3">Base scopes</dt>
+            <dd class="col-sm-9">
+
+                {{#if baseScopesImap}}
+                IMAP and SMTP
+                {{/if}}
+
+                {{#if baseScopesApi}}
+                API
+                {{/if}}
+
+                {{#if baseScopesPubsub}}
+                Cloud Pub/Sub
+                {{/if}}
+
+            </dd>
+
+            {{#if app.pubSubApp}}
+            <dt class="col-sm-3">Cloud Pub/Sub app for webhooks</dt>
+            <dd class="col-sm-9">
+
+                {{#if app.pubSubAppData}}
+                <a href="/admin/config/oauth/app/{{app.pubSubAppData.id}}">{{app.pubSubAppData.name}}{{#if
+                    app.pubSubAppData.description}} &mdash; <em>{{app.pubSubAppData.description}}</em>{{/if}}</a>
+                {{else}}
+                <em>App set but not found</em>
+                {{/if}}
+
+            </dd>
             {{/if}}
 
             {{#if app.extraScopes}}
@@ -219,6 +284,50 @@
     </div>
 </div>
 
+{{#if baseScopesPubsub}}
+<div class="card mt-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Cloud Pub/Sub configuration</h6>
+    </div>
+    <div class="card-body">
+
+        <dl class="row">
+            <dt class="col-sm-3">Pub/Sub topic</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubTopic}}
+                <span class="badge badge-success" title="{{app.pubSubTopic}}" data-toggle="tooltip" data-placement="top"
+                    style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+
+            <dt class="col-sm-3">Pub/Sub subscription</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubSubscription}}
+                <span class="badge badge-success" title="{{app.pubSubSubscription}}" data-toggle="tooltip"
+                    data-placement="top" style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+
+            <dt class="col-sm-3">Gmail publishing bindings</dt>
+            <dd class="col-sm-9 text-monospace">
+                {{#if app.pubSubIamPolicy}}
+                <span class="badge badge-success"
+                    title="{{app.pubSubIamPolicy.members.[0]}}: {{app.pubSubIamPolicy.role}}" data-toggle="tooltip"
+                    data-placement="top" style="cursor: default;">Created</span>
+                {{else}}
+                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{/if}}
+            </dd>
+        </dl>
+    </div>
+</div>
+{{/if}}
+
+
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -233,11 +342,11 @@
                     recoverable.</p>
             </div>
             <div class="modal-footer">
-                <form method="post" action="/admin/config/oauth/delete">
+                <form method="post" action="/admin/config/oauth/delete" class="pending-form">
                     <input type="hidden" name="crumb" value="{{crumb}}" />
                     <input type="hidden" name="app" value="{{app.id}}" />
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Delete</button>
                 </form>
             </div>
         </div>
