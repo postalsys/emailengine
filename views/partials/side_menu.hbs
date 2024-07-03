@@ -91,8 +91,12 @@
             <a class="collapse-item {{#if menuConfigSmtp}}active{{/if}}" href="/admin/config/smtp">SMTP Interface</a>
             <a class="collapse-item {{#if menuConfigImapProxy}}active{{/if}}" href="/admin/config/imap-proxy">IMAP Proxy
                 Interface</a>
+
+            {{#if showDocumentStore}}
             <a class="collapse-item {{#if menuConfigDocumentStore}}active{{/if}}"
                 href="/admin/config/document-store">Document Store</label></a>
+            {{/if}}
+
             <a class="collapse-item {{#if menuConfigLicense}}active{{/if}}" href="/admin/config/license">
                 <div style="display: flex; justify-content: space-between;">
                     <div>License key</div>

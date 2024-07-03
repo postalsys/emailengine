@@ -19,15 +19,9 @@
         <a class="nav-link {{#if activeGmailService}}active{{/if}}" href="/admin/config/oauth-legacy/gmailService">Gmail
             Service Accounts</a>
     </li>
-
-    <!-- Do not expose Mail.RU by default (untested) -->
-    {{#if showMailRu}}
     <li class="nav-item">
-        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth-legacy/mailRu">Mail.ru <span
-                class="badge badge-dark">beta</span></a>
+        <a class="nav-link {{#if activeMailRu}}active{{/if}}" href="/admin/config/oauth-legacy/mailRu">Mail.ru</a>
     </li>
-    {{/if}}
-
 </ul>
 
 <div class="card border-left-info shadow mb-4">
