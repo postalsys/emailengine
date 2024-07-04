@@ -4392,7 +4392,11 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string().required().example('INBOX').description('Mailbox folder path').label('Path'),
+                    path: Joi.string()
+                        .required()
+                        .example('INBOX')
+                        .description('Mailbox folder path. Can use special use labels like "\\Sent".')
+                        .label('SpecialPath'),
 
                     cursor: Joi.string()
                         .trim()
@@ -4507,7 +4511,8 @@ When making API calls remember that requests against the same account are queued
                             otherwise: Joi.required()
                         })
                         .example('INBOX')
-                        .description('Mailbox folder path'),
+                        .description('Mailbox folder path. Can use special use labels like "\\Sent".')
+                        .label('SpecialPathDs'),
 
                     cursor: Joi.string()
                         .trim()
