@@ -3543,7 +3543,7 @@ When making API calls remember that requests against the same account are queued
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(5 * 1025 * 1024)
-                        .description('Max length of text content. This setting is ignored if `documentStore` is `true`.'),
+                        .description('Max length of text content'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
@@ -4308,7 +4308,7 @@ When making API calls remember that requests against the same account are queued
                         .min(0)
                         .max(1024 * 1024 * 1024)
                         .example(MAX_ATTACHMENT_SIZE)
-                        .description('Max length of text content. This setting is ignored if `documentStore` is `true`.'),
+                        .description('Max length of text content'),
                     textType: Joi.string()
                         .lowercase()
                         .valid('html', 'plain', '*')
@@ -4393,14 +4393,25 @@ When making API calls remember that requests against the same account are queued
 
                 query: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Mailbox folder path').label('Path'),
+
+                    cursor: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(1024 * 1024)
+                        .example('imap_kcQIji3UobDDTxc')
+                        .description('Paging cursor from `nextPageCursor` or `prevPageCursor` value')
+                        .label('PageCursor'),
                     page: Joi.number()
                         .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
-                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .description(
+                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                        )
                         .label('PageNumber'),
+
                     pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize'),
                     documentStore: documentStoreSchema.default(false)
                 }).label('MessageQuery')
@@ -4496,14 +4507,26 @@ When making API calls remember that requests against the same account are queued
                             otherwise: Joi.required()
                         })
                         .example('INBOX')
-                        .description('Mailbox folder path. Not required if `documentStore` is `true`'),
+                        .description('Mailbox folder path'),
+
+                    cursor: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(1024 * 1024)
+                        .example('imap_kcQIji3UobDDTxc')
+                        .description('Paging cursor from `nextPageCursor` or `prevPageCursor` value')
+                        .label('PageCursor'),
                     page: Joi.number()
                         .integer()
                         .min(0)
                         .max(1024 * 1024)
                         .default(0)
                         .example(0)
-                        .description('Page number (zero indexed, so use 0 for first page)'),
+                        .description(
+                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                        )
+                        .label('PageNumber'),
+
                     pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page'),
                     documentStore: documentStoreSchema.default(false),
                     exposeQuery: Joi.boolean()
