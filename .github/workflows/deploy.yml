@@ -34,3 +34,17 @@ jobs:
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
                   scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
                   ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"
+
+            - name: Deploy to demo server
+              env:
+                  TARGET_HOST_02: dev.emailengine.app
+                  NODE_ENV: production
+                  SERVICE_NAME: emailengine-demo
+              id: deploy-demo
+              run: |
+                  echo $GITHUB_SHA > commit.txt
+                  ./update-info.sh
+                  npm install --omit=dev
+                  tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
+                  scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
+                  ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" deploy@$TARGET_HOST_02 "/opt/deploy.sh ${SERVICE_NAME}"
