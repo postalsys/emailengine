@@ -104,15 +104,15 @@
         </div>
 
         <div class="form-group">
-            <label for="serviceProjectId">
+            <label for="googleProjectId">
                 Project ID
             </label>
-            <input type="text" class="form-control {{#if errors.serviceProjectId}}is-invalid{{/if}}"
-                id="serviceProjectId" name="serviceProjectId" value="{{values.serviceProjectId}}"
+            <input type="text" class="form-control {{#if errors.googleProjectId}}is-invalid{{/if}}" id="googleProjectId"
+                name="googleProjectId" value="{{values.googleProjectId}}"
                 placeholder="Enter the project ID of the service, for example &quot;project-name-425411&quot;"
                 required />
-            {{#if errors.serviceProjectId}}
-            <span class="invalid-feedback">{{errors.serviceProjectId}}</span>
+            {{#if errors.googleProjectId}}
+            <span class="invalid-feedback">{{errors.googleProjectId}}</span>
             {{/if}}
             <small class="form-text text-muted">OAuth2 Service Project ID</small>
         </div>
@@ -171,6 +171,20 @@
             <small class="form-text text-muted">Select the JSON file you can download when viewing client credential
                 information in Google Cloud Console.</small>
         </div>
+
+        <div class="form-group">
+            <label for="googleProjectId">
+                Project ID
+            </label>
+            <input type="text" class="form-control {{#if errors.googleProjectId}}is-invalid{{/if}}" id="googleProjectId"
+                name="googleProjectId" value="{{values.googleProjectId}}"
+                placeholder="Enter the project ID of the service, for example &quot;project-name-425411&quot;" />
+            {{#if errors.googleProjectId}}
+            <span class="invalid-feedback">{{errors.googleProjectId}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Project ID</small>
+        </div>
+
         {{/if}}
 
         <div class="form-group">
@@ -257,9 +271,9 @@
         <thead>
             <tr>
                 <th>Type</th>
-                <th>OAuth2 scopes</th>
-                <th>IMAP Proxy support</th>
                 <th>Description</th>
+                <th>Requirements</th>
+
             </tr>
 
         </thead>
@@ -276,9 +290,9 @@
                         </label>
                     </div>
                 </td>
-                <td><em class="text-muted">https://mail.google.com/</em></td>
-                <td><span class="badge badge-success">Yes</span></td>
                 <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
             </tr>
             <tr>
                 <td>
@@ -290,9 +304,9 @@
                         </label>
                     </div>
                 </td>
-                <td><em class="text-muted">/auth/pubsub</em></td>
-                <td><span class="badge badge-warning">No email access</span></td>
                 <td>Webhook management</td>
+                <td><code>"Pub/Sub Admin"</code> service credentials role</td>
+
             </tr>
 
             {{else}}
@@ -301,9 +315,9 @@
                 <td>
                     <strong>IMAP and SMTP</strong>
                 </td>
-                <td><em class="text-muted">https://mail.google.com/</em></td>
-                <td><span class="badge badge-success">Yes</span></td>
                 <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
             </tr>
             {{/if}}
 
@@ -312,9 +326,9 @@
                 <td>
                     <strong>Cloud Pub/Sub</strong>
                 </td>
-                <td><em class="text-muted">/auth/pubsub</em></td>
-                <td><span class="badge badge-warning">No email access</span></td>
                 <td>Webhook management</td>
+                <td><code>"Pub/Sub Admin"</code> service credentials role</td>
+
             </tr>
             {{/if}}
 
@@ -340,9 +354,8 @@
         <thead>
             <tr>
                 <th>Type</th>
-                <th>OAuth2 scopes</th>
-                <th>IMAP Proxy support</th>
                 <th>Description</th>
+                <th>Requirements</th>
             </tr>
 
         </thead>
@@ -359,9 +372,9 @@
                         </label>
                     </div>
                 </td>
-                <td><em class="text-muted">https://mail.google.com/</em></td>
-                <td><span class="badge badge-success">Yes</span></td>
                 <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
             </tr>
             <tr>
                 <td>
@@ -373,9 +386,9 @@
                         </label>
                     </div>
                 </td>
-                <td><em class="text-muted">/auth/gmail.modify</em></td>
-                <td><span class="badge badge-warning">No</span></td>
-                <td>HTTP API</td>
+                <td>Gmail HTTP API</td>
+                <td><code>"/auth/gmail.modify"</code> consent screen scope</td>
+
             </tr>
 
             {{else}}
@@ -385,9 +398,9 @@
                 <td>
                     <strong>IMAP and SMTP</strong>
                 </td>
-                <td><em class="text-muted">https://mail.google.com/</em></td>
-                <td><span class="badge badge-success">Yes</span></td>
                 <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
             </tr>
             {{/if}}
 
@@ -396,17 +409,15 @@
                 <td>
                     <strong>Gmail API</strong>
                 </td>
-                <td><em class="text-muted">/auth/gmail.modify</em></td>
-                <td><span class="badge badge-warning">No</span></td>
-                <td>HTTP API</td>
+                <td>Gmail HTTP API</td>
+                <td><code>"/auth/gmail.modify"</code> consent screen scope</td>
+
             </tr>
             {{/if}}
 
             {{/if}}
         </tbody>
-
     </table>
-
 
     <div id="select-pubsub-app" class="card-footer {{#unless baseScopesApi}}d-none{{/unless}}">
 
@@ -416,19 +427,13 @@
             Account below to configure this.
         </p>
 
-        <select class="custom-select custom-select-sm" name="pubSubApp" {{#if errors.pubSubApp}}is-invalid{{/if}}
-            required>
-
-            {{#unless pubSubApps}}
-            <option value="">
-                &mdash; No Cloud Pub/Sub apps defined. Create one by adding a new OAuth2 app for the Gmail Service
-                Account.
-                &mdash;
-            </option>
-            {{/unless}}
+        <label for="basic-url">Select service account to manage webhooks</label>
+        <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
+            errors.pubSubApp}}is-invalid{{/if}} required>
 
             {{#each pubSubApps}}
-            <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if description}} &mdash;
+            <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+                description}} &mdash;
                 {{description}}{{/if}}</option>
             {{/each}}
 
@@ -441,7 +446,6 @@
 
 </div>
 {{/if}}
-
 
 
 <div class="card mb-4">
@@ -532,8 +536,8 @@
             let baseScopesAPIElm = document.getElementById('baseScopesAPI');
             let selectPubsubAppElm = document.getElementById('select-pubsub-app');
 
-            if (baseScopesAPI && selectPubsubAppElm) {
-                if (baseScopesAPI.checked) {
+            if (baseScopesAPIElm && selectPubsubAppElm) {
+                if (baseScopesAPIElm.checked) {
                     selectPubsubAppElm.classList.remove('d-none');
                 } else {
                     selectPubsubAppElm.classList.add('d-none');
@@ -547,6 +551,31 @@
         });
 
         checkScopesRadio();
+
+        const projectIdElm = document.getElementById('googleProjectId')
+        const pubSubAppElm = document.getElementById('pubSubApp')
+
+        let filterPubSubApps = () => {
+            if (!projectIdElm || !pubSubAppElm) {
+                return
+            }
+            let projectId = projectIdElm.value;
+            if (projectId) {
+                pubSubAppElm.querySelectorAll('option').forEach(entry => {
+                    if (entry.value && entry.dataset.project !== projectId) {
+                        entry.classList.add('d-none');
+                    } else {
+                        entry.classList.remove('d-none');
+                    }
+                });
+            }
+        }
+
+        if (projectIdElm && pubSubAppElm) {
+            projectIdElm.addEventListener('click', filterPubSubApps)
+            projectIdElm.addEventListener('change', filterPubSubApps)
+            filterPubSubApps()
+        }
 
 
         let gmailConfigFileElm = document.getElementById('gmailConfigFile');
@@ -576,20 +605,24 @@
                     document.getElementById('clientId').value = data.web.client_id;
                     document.getElementById('clientSecret').value = data.web.client_secret;
 
+                    document.getElementById('googleProjectId').value = data.web.project_id || '';
+
                     let redirectUrlValue = document.getElementById('redirectUrl').value
 
                     if (data.web.redirect_uris && !data.web.redirect_uris.includes(redirectUrlValue)) {
                         showToast('Provided redirect URI does not match redirect URIs in the configuration file', 'alert-triangle');
                     }
 
-                    return showToast('Loaded configuration values from file', 'check-circle');
+                    filterPubSubApps()
 
+                    return showToast('Loaded configuration values from file', 'check-circle');
                 }).catch(err => {
                     console.error(err);
                     return showToast('Failed to load configuration file', 'alert-triangle');
                 });
             });
         }
+
 
     });
 
