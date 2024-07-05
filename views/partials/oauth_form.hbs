@@ -300,7 +300,7 @@
                         <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesPubsub"
                             value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesPubsub">
-                            Cloud Pub/Sub
+                            Cloud Pub/Sub <span class="badge badge-dark">beta</span>
                         </label>
                     </div>
                 </td>
@@ -324,7 +324,7 @@
             {{#if baseScopesPubsub}}
             <tr>
                 <td>
-                    <strong>Cloud Pub/Sub</strong>
+                    <strong>Cloud Pub/Sub</strong> <span class="badge badge-dark">beta</span>
                 </td>
                 <td>Webhook management</td>
                 <td><code>"Pub/Sub Admin"</code> service credentials role</td>
@@ -382,7 +382,7 @@
                         <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
                             id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesAPI">
-                            Gmail API
+                            Gmail API <span class="badge badge-dark">beta</span>
                         </label>
                     </div>
                 </td>
@@ -407,7 +407,7 @@
             {{#if baseScopesApi}}
             <tr>
                 <td>
-                    <strong>Gmail API</strong>
+                    <strong>Gmail API</strong> <span class="badge badge-dark">beta</span>
                 </td>
                 <td>Gmail HTTP API</td>
                 <td><code>"/auth/gmail.modify"</code> consent screen scope</td>
