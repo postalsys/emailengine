@@ -432,9 +432,10 @@
             errors.pubSubApp}}is-invalid{{/if}} required>
 
             {{#each pubSubApps}}
-            <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+            <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
+                baseScopesApi}}disabled{{/unless}}>{{name}}{{#if
                 description}} &mdash;
-                {{description}}{{/if}}</option>
+                {{description}}{{/if}} [{{googleProjectId}}]</option>
             {{/each}}
 
         </select>
@@ -532,6 +533,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
 
+        const projectIdElm = document.getElementById('googleProjectId');
+        const pubSubAppElm = document.getElementById('pubSubApp');
+
         function checkScopesRadio() {
             let baseScopesAPIElm = document.getElementById('baseScopesAPI');
             let selectPubsubAppElm = document.getElementById('select-pubsub-app');
@@ -539,8 +543,10 @@
             if (baseScopesAPIElm && selectPubsubAppElm) {
                 if (baseScopesAPIElm.checked) {
                     selectPubsubAppElm.classList.remove('d-none');
+                    pubSubAppElm.disabled = false;
                 } else {
                     selectPubsubAppElm.classList.add('d-none');
+                    pubSubAppElm.disabled = true;
                 }
             }
         }
@@ -552,9 +558,6 @@
 
         checkScopesRadio();
 
-        const projectIdElm = document.getElementById('googleProjectId')
-        const pubSubAppElm = document.getElementById('pubSubApp')
-
         let filterPubSubApps = () => {
             if (!projectIdElm || !pubSubAppElm) {
                 return
@@ -564,8 +567,10 @@
                 pubSubAppElm.querySelectorAll('option').forEach(entry => {
                     if (entry.value && entry.dataset.project !== projectId) {
                         entry.classList.add('d-none');
+                        entry.disabled = true;
                     } else {
                         entry.classList.remove('d-none');
+                        entry.disabled = false;
                     }
                 });
             }

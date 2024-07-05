@@ -6602,6 +6602,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Client secret for 3-legged OAuth2 applications'),
 
                     pubSubApp: Joi.string()
+                        .empty('')
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(512)
                         .example('AAAAAQAACnA')
