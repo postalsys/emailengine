@@ -567,13 +567,10 @@
             let projectId = projectIdElm.value;
             if (projectId) {
                 let unselected = !pubSubAppElm.value
-
                 pubSubAppElm.querySelectorAll('option').forEach(entry => {
                     if (entry.value && entry.dataset.project !== projectId) {
-                        entry.classList.add('d-none');
                         entry.disabled = true;
                     } else {
-                        entry.classList.remove('d-none');
                         entry.disabled = false;
                         if (unselected) {
                             entry.selected = true;
