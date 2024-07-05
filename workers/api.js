@@ -775,7 +775,44 @@ When making API calls remember that requests against the same account are queued
 
             if (tokenData.account) {
                 // account token
-                if (!request.params || request.params.account !== tokenData.account) {
+
+                let accountIdSource;
+
+                // allow specific routes that have an account component but not in the URL params section
+                switch (request.route.path) {
+                    case '/v1/templates':
+                        switch (request.method) {
+                            case 'get':
+                                accountIdSource = request.query && request.query.account;
+                                break;
+                        }
+                        break;
+
+                    case '/v1/templates/template/{template}': {
+                        let isAccountTemplate =
+                            request.params.template && (await redis.sismember(`${REDIS_PREFIX}tpl:${tokenData.account}:i`, request.params.template));
+                        if (isAccountTemplate) {
+                            accountIdSource = tokenData.account;
+                        }
+                        break;
+                    }
+
+                    case '/v1/templates/template': {
+                        switch (request.method) {
+                            case 'post':
+                                request.app.enforceAccount = tokenData.account;
+                                accountIdSource = tokenData.account;
+                                break;
+                        }
+                        break;
+                    }
+
+                    default:
+                        accountIdSource = request.params && request.params.account;
+                        break;
+                }
+
+                if (accountIdSource !== tokenData.account) {
                     logger.error({
                         msg: 'Trying to use invalid account for a token',
                         tokenAccount: tokenData.account,
