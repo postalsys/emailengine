@@ -431,6 +431,8 @@
         <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
             errors.pubSubApp}}is-invalid{{/if}} required {{#unless baseScopesApi}}disabled{{/unless}}>
 
+            <option value=""> &mdash; Select service account for your project &mdash; </option>
+
             {{#each pubSubApps}}
             <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
                 baseScopesApi}}disabled{{/unless}}>{{name}}{{#if
