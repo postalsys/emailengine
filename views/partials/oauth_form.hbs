@@ -423,7 +423,7 @@
 
         <p>
             To enable webhooks for email accounts managed by this app, EmailEngine needs to set up a Cloud Pub/Sub
-            service using a Gmail Service Account with the <em>/auth/pubsub</em> scope. Select the Gmail Pub/Sub Service
+            service using a Gmail Service Account with the <em>Pub/Sub Admin</em> role. Select the Gmail Pub/Sub Service
             Account below to configure this.
         </p>
 
@@ -431,7 +431,7 @@
         <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
             errors.pubSubApp}}is-invalid{{/if}} required {{#unless baseScopesApi}}disabled{{/unless}}>
 
-            <option value=""> &mdash; Select service account for your project &mdash; </option>
+            <option value=""> &mdash; Select the service account for your project &mdash; </option>
 
             {{#each pubSubApps}}
             <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
@@ -566,7 +566,7 @@
             }
             let projectId = projectIdElm.value;
             if (projectId) {
-                let unselected = !pubSubAppElm.value
+                let unselected = !pubSubAppElm.value;
                 pubSubAppElm.querySelectorAll('option').forEach(entry => {
                     if (entry.value && entry.dataset.project !== projectId) {
                         entry.disabled = true;
