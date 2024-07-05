@@ -429,7 +429,7 @@
 
         <label for="basic-url">Select service account to manage webhooks</label>
         <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
-            errors.pubSubApp}}is-invalid{{/if}} required>
+            errors.pubSubApp}}is-invalid{{/if}} required {{#unless baseScopesApi}}disabled{{/unless}}>
 
             {{#each pubSubApps}}
             <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
