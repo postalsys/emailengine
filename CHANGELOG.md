@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.43.0](https://github.com/postalsys/emailengine/compare/v2.42.0...v2.43.0) (2024-07-08)
+
+
+### Features
+
+* **gmail-api:** Gmail API Support ([#421](https://github.com/postalsys/emailengine/issues/421)) ([91b3cad](https://github.com/postalsys/emailengine/commit/91b3cad4537e8b5e2c2b9faad54f87c5d6997d15))
+
+
+### Bug Fixes
+
+* **api:** Added support for paging cursors ([d3f7685](https://github.com/postalsys/emailengine/commit/d3f76857a1d139aa15646fe96dd0ef5d8a791fbe))
+* **api:** Do not allow to proxy connections for accounts with API scopes ([9498fa9](https://github.com/postalsys/emailengine/commit/9498fa9efbf0c6f341239e77514de9903e6195ee))
+* Fix exception when Document Store is disabled but there are embeddings stored ([6d18a48](https://github.com/postalsys/emailengine/commit/6d18a48e146a2aceb7fcf94dad21ce6959188bc4))
+* **font-loading:** Use a locally cached font instead of loading from Google FOnts ([4e53929](https://github.com/postalsys/emailengine/commit/4e539296d4f8bac3d4772fdcf1941611d1289846))
+* **model-labels:** Model label improvements to have named models instead ([dc75dbc](https://github.com/postalsys/emailengine/commit/dc75dbc9693d48d7693df71961443607640f55fb))
+* **paging:** Fixed paging links for OAuth2 apps ([d698082](https://github.com/postalsys/emailengine/commit/d6980826a8136d9f8ae612c4be98a8665619accd))
+* **templates:** Allow running template API requests with account tokens ([dd2da5b](https://github.com/postalsys/emailengine/commit/dd2da5bceecca53b579c12fb83c97dbf59f77c55))
+
 ## [2.42.0](https://github.com/postalsys/emailengine/compare/v2.41.4...v2.42.0) (2024-05-30)
 
 
