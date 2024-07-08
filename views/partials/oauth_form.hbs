@@ -65,7 +65,7 @@
         </div>
         {{/unless}}
 
-        {{#if activeGmail}}
+        {{#unless activeGmailService}}
         <div class="form-group form-check">
 
             <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
@@ -77,7 +77,7 @@
             <small class="form-text text-muted">If enabled, then this OAuth2 app is shown as an
                 account type option in the hosted authentication form.</small>
         </div>
-        {{/if}}
+        {{/unless}}
 
     </div>
 </div>
