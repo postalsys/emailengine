@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.43.1](https://github.com/postalsys/emailengine/compare/v2.43.0...v2.43.1) (2024-07-21)
+
+
+### Bug Fixes
+
+* **api-docs:** Updated information about total/pages/nextPageCursor ([cd12547](https://github.com/postalsys/emailengine/commit/cd12547096da14b2407156745bb86326134db177))
+* **cli:** Added command 'export' to retrieve raw account data with credentials ([9932801](https://github.com/postalsys/emailengine/commit/99328017918cf978ceadc4cc87f64e9b924d4ee6))
+* **gmail-api:** Fixed webhook notifications for authenticationSuccess and authenticationError ([2c3d63a](https://github.com/postalsys/emailengine/commit/2c3d63a5f62ee3fdfe3245c1e5128e908a679e82))
+* **gmail-api:** Log API requests to user log ([f00f864](https://github.com/postalsys/emailengine/commit/f00f86439af8484c7d55aa3b0e386e09f209dce0))
+* **oauth2:** Fixed broken extra scopes handling ([9185359](https://github.com/postalsys/emailengine/commit/91853599c238c79a326886107e8f62b23dd26973))
+
 ## [2.43.0](https://github.com/postalsys/emailengine/compare/v2.42.0...v2.43.0) (2024-07-08)
 
 
