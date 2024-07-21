@@ -169,7 +169,8 @@ class ConnectionHandler {
 
                     call: msg => this.call(msg)
                 });
-                accountData.state = 'connected';
+                accountData.state = 'connecting';
+                accountObject.logger = accountObject.connection.logger;
             }
         }
 
