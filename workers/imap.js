@@ -34,6 +34,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 
 const { IMAPConnection } = require('../lib/imap-connection');
 const { GmailClient } = require('../lib/api-client/gmail-client');
+const { OutlookClient } = require('../lib/api-client/outlook-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
@@ -155,22 +156,49 @@ class ConnectionHandler {
             const oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
             if (oauth2App.baseScopes === 'api') {
                 // Use API instead of IMAP
-                accountObject.connection = new GmailClient(account, {
-                    runIndex,
-                    accountObject,
-                    redis,
-                    accountLogger,
-                    secret,
 
-                    notifyQueue,
-                    submitQueue,
-                    documentsQueue,
-                    flowProducer,
+                switch (oauth2App.provider) {
+                    case 'gmail':
+                        accountObject.connection = new GmailClient(account, {
+                            runIndex,
+                            accountObject,
+                            redis,
+                            accountLogger,
+                            secret,
 
-                    call: msg => this.call(msg)
-                });
-                accountData.state = 'connecting';
-                accountObject.logger = accountObject.connection.logger;
+                            notifyQueue,
+                            submitQueue,
+                            documentsQueue,
+                            flowProducer,
+
+                            call: msg => this.call(msg)
+                        });
+                        accountData.state = 'connecting';
+                        accountObject.logger = accountObject.connection.logger;
+                        break;
+
+                    case 'outlook':
+                        accountObject.connection = new OutlookClient(account, {
+                            runIndex,
+                            accountObject,
+                            redis,
+                            accountLogger,
+                            secret,
+
+                            notifyQueue,
+                            submitQueue,
+                            documentsQueue,
+                            flowProducer,
+
+                            call: msg => this.call(msg)
+                        });
+                        accountData.state = 'connecting';
+                        accountObject.logger = accountObject.connection.logger;
+                        break;
+
+                    default:
+                        throw new Error('Unsupported OAuth2 API');
+                }
             }
         }
 

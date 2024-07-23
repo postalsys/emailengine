@@ -451,6 +451,92 @@
 {{/if}}
 
 
+{{#if activeOutlook}}
+
+{{#featureFlag "ms api"}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
+    </div>
+
+
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Requirements</th>
+            </tr>
+
+        </thead>
+        <tbody>
+
+            {{#if actionCreate}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
+                            {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"IMAP.AccessAsUser.All"</code> and <code>"SMTP.Send"</code> consent screen scopes</td>
+
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api"
+                            {{#if baseScopesApi}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesAPI">
+                            MS Graph API <span class="badge badge-dark">beta</span>
+                        </label>
+                    </div>
+                </td>
+                <td>Microsoft HTTP API</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Sent"</code> consent screen scopes</td>
+
+            </tr>
+
+            {{else}}
+
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"IMAP.AccessAsUser.All"</code> and <code>"SMTP.Send"</code> consent screen scopes</td>
+
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesApi}}
+            <tr>
+                <td>
+                    <strong>MS Graph API</strong> <span class="badge badge-dark">beta</span>
+                </td>
+                <td>Microsoft HTTP API</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Sent"</code> consent screen scopes</td>
+
+            </tr>
+            {{/if}}
+
+            {{/if}}
+        </tbody>
+    </table>
+</div>
+
+{{/featureFlag}}
+{{/if}}
+
+
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
         data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupScopes">

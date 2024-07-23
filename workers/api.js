@@ -1591,6 +1591,8 @@ When making API calls remember that requests against the same account are queued
 
                     accountData.name = accountData.name || userInfo.name || '';
 
+                    const defaultScopes = (oauth2App.baseScopes && OUTLOOK_SCOPES[oauth2App.baseScopes]) || OUTLOOK_SCOPES.imap;
+
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
@@ -1598,7 +1600,7 @@ When making API calls remember that requests against the same account are queued
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : OUTLOOK_SCOPES,
+                            scope: r.scope ? r.scope.split(/\s+/) : defaultScopes,
                             tokenType: r.token_type
                         },
                         {
