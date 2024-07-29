@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-07-21 10:45+0000\n"
+"POT-Creation-Date: 2024-07-29 10:32+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -9,75 +9,8 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: views/unsubscribe.hbs:1
-#: views/unsubscribe.hbs:79
-msgid "Unsubscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:31
-#: views/accounts/register/imap-server.hbs:224
-msgid "Close"
-msgstr ""
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:69
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:75
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:114
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:192
-msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:18
@@ -87,6 +20,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:21
 #: views/accounts/register/imap-server.hbs:100
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:114
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:41
@@ -149,6 +88,11 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:192
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:200
 msgid "Continue without testing"
 msgstr ""
@@ -159,6 +103,11 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:220
 msgid "Failed to validate provided email server settings."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:224
+#: views/unsubscribe.hbs:31
+msgid "Close"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:293
@@ -187,6 +136,57 @@ msgstr ""
 
 #: views/accounts/register/index.hbs:15
 msgid "Standard IMAP"
+msgstr ""
+
+#: views/unsubscribe.hbs:1
+#: views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
 msgstr ""
 
 #: lib/routes-ui.js:606
