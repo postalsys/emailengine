@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.43.2](https://github.com/postalsys/emailengine/compare/v2.43.1...v2.43.2) (2024-07-29)
+
+
+### Bug Fixes
+
+* **reconnect:** Allow reconnecting paused accounts ([b8e212f](https://github.com/postalsys/emailengine/commit/b8e212f512ad007d3fa3c2678d8dfdbf8155c0ca))
+
 ## [2.43.1](https://github.com/postalsys/emailengine/compare/v2.43.0...v2.43.1) (2024-07-21)
 
 
