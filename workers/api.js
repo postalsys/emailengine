@@ -1159,6 +1159,25 @@ When making API calls remember that requests against the same account are queued
     });
 
     server.route({
+        method: 'OPTIONS',
+        path: '/v1/{any*}',
+        handler: async (request, reply) => {
+            const method = request.headers['access-control-request-method'];
+            const response = reply.response(Buffer.alloc(0));
+
+            if (method) {
+                response.header('Access-Control-Allow-Methods', method);
+            }
+
+            return response.code(200);
+        },
+        options: {
+            auth: false,
+            cors: CORS_CONFIG
+        }
+    });
+
+    server.route({
         method: 'GET',
         path: '/health',
         async handler(request) {
