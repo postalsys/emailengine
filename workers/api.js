@@ -3570,7 +3570,7 @@ When making API calls remember that requests against the same account are queued
                     account: accountIdSchema.required(),
                     attachment: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
-                        .max(256)
+                        .max(2 * 1024)
                         .required()
                         .example('AAAAAQAACnAcde')
                         .description('Attachment ID')
@@ -4501,7 +4501,7 @@ When making API calls remember that requests against the same account are queued
                         .default(0)
                         .example(0)
                         .description(
-                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                            'Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts. Deprecated; use the paging cursor instead. If the page cursor value is provided, then the page number value is ignored.'
                         )
                         .label('PageNumber'),
 
@@ -4617,7 +4617,7 @@ When making API calls remember that requests against the same account are queued
                         .default(0)
                         .example(0)
                         .description(
-                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                            'Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts. Deprecated; use the paging cursor instead. If the page cursor value is provided, then the page number value is ignored.'
                         )
                         .label('PageNumber'),
 
