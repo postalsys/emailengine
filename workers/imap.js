@@ -609,12 +609,19 @@ class ConnectionHandler {
         }
 
         setImmediate(() => {
-            source.pipe(stream);
+            if (Buffer.isBuffer(source)) {
+                stream.end(source);
+            } else {
+                source.pipe(stream);
+            }
         });
 
         return {
-            headers: source.headers,
-            contentType: source.contentType
+            headers: {
+                'content-type': 'message/rfc822',
+                'content-disposition': `attachment; filename=message.eml`
+            },
+            contentType: 'message/rfc822'
         };
     }
 
