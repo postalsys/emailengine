@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.43.3](https://github.com/postalsys/emailengine/compare/v2.43.2...v2.43.3) (2024-08-01)
+
+
+### Bug Fixes
+
+* **cors:** Added missing OPTIONS handler for CORS ([205480d](https://github.com/postalsys/emailengine/commit/205480d4c150f35aa14edaa918b7635774eface3))
+
 ## [2.43.2](https://github.com/postalsys/emailengine/compare/v2.43.1...v2.43.2) (2024-07-29)
 
 
