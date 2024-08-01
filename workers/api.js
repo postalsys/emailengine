@@ -1558,48 +1558,78 @@ When making API calls remember that requests against the same account are queued
 
                     let userInfo = {};
 
-                    let clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString()) : false;
+                    if (!oauth2App.baseScopes || oauth2App.baseScopes === 'imap') {
+                        // Read account info from GET arguments
+                        // This is needed because previously EmailEngine did not request for the User.Read scope
 
-                    if (clientInfo && typeof clientInfo.name === 'string') {
-                        userInfo.name = clientInfo.name;
-                    }
+                        let clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString()) : false;
 
-                    if (clientInfo && clientInfo.preferred_username && isEmail(clientInfo.preferred_username)) {
-                        userInfo.email = clientInfo.preferred_username;
-                    }
+                        if (clientInfo && typeof clientInfo.name === 'string') {
+                            userInfo.name = clientInfo.name;
+                        }
 
-                    if (r.id_token && typeof r.id_token === 'string') {
-                        let [, encodedValue] = r.id_token.split('.');
-                        if (encodedValue) {
-                            try {
-                                let decodedValue = JSON.parse(Buffer.from(encodedValue, 'base64url').toString());
-                                if (decodedValue && typeof decodedValue.name === 'string') {
-                                    userInfo.name = decodedValue.name;
+                        if (clientInfo && clientInfo.preferred_username && isEmail(clientInfo.preferred_username)) {
+                            userInfo.email = clientInfo.preferred_username;
+                        }
+
+                        if (r.id_token && typeof r.id_token === 'string') {
+                            let [, encodedValue] = r.id_token.split('.');
+                            if (encodedValue) {
+                                try {
+                                    let decodedValue = JSON.parse(Buffer.from(encodedValue, 'base64url').toString());
+                                    if (decodedValue && typeof decodedValue.name === 'string') {
+                                        userInfo.name = decodedValue.name;
+                                    }
+
+                                    if (decodedValue && typeof decodedValue.email === 'string' && isEmail(decodedValue.email)) {
+                                        userInfo.email = decodedValue.email;
+                                    }
+
+                                    if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
+                                        userInfo.email = decodedValue.preferred_username;
+                                    }
+                                } catch (err) {
+                                    request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
                                 }
-
-                                if (decodedValue && typeof decodedValue.email === 'string' && isEmail(decodedValue.email)) {
-                                    userInfo.email = decodedValue.email;
-                                }
-
-                                if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
-                                    userInfo.email = decodedValue.preferred_username;
-                                }
-                            } catch (err) {
-                                request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
                             }
+                        }
+                    } else {
+                        // Request profile info from API
+
+                        let profileRes;
+                        try {
+                            profileRes = await oAuth2Client.request(r.access_token, 'https://graph.microsoft.com/v1.0/me');
+                        } catch (err) {
+                            let response = err.oauthRequest && err.oauthRequest.response;
+                            if (response && response.error) {
+                                let message = response.error.message;
+                                let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
+                                throw error;
+                            }
+                            throw err;
+                        }
+
+                        if (profileRes.displayName) {
+                            userInfo.name = profileRes.displayName;
+                        }
+
+                        if (profileRes.mail) {
+                            userInfo.email = profileRes.mail;
+                        }
+
+                        if (profileRes.userPrincipalName) {
+                            userInfo.username = profileRes.userPrincipalName;
                         }
                     }
 
-                    if (!userInfo.email) {
+                    const authData = {
+                        user: userInfo.username || userInfo.email
+                    };
+
+                    if (!authData.user) {
                         let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
                         throw error;
                     }
-
-                    const authData = {
-                        user: userInfo.email
-                    };
-
-                    accountData.name = accountData.name || userInfo.name || '';
 
                     if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
                         // Shared mailbox
@@ -1608,7 +1638,9 @@ When making API calls remember that requests against the same account are queued
                         accountData.email = userInfo.email;
                     }
 
-                    accountData.name = accountData.name || userInfo.name || '';
+                    accountData.name = userInfo.name || accountData.name || '';
+
+                    const defaultScopes = (oauth2App.baseScopes && OUTLOOK_SCOPES[oauth2App.baseScopes]) || OUTLOOK_SCOPES.imap;
 
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
@@ -1617,7 +1649,7 @@ When making API calls remember that requests against the same account are queued
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : OUTLOOK_SCOPES,
+                            scope: r.scope ? r.scope.split(/\s+/) : defaultScopes,
                             tokenType: r.token_type
                         },
                         {
@@ -3538,7 +3570,7 @@ When making API calls remember that requests against the same account are queued
                     account: accountIdSchema.required(),
                     attachment: Joi.string()
                         .base64({ paddingRequired: false, urlSafe: true })
-                        .max(256)
+                        .max(2 * 1024)
                         .required()
                         .example('AAAAAQAACnAcde')
                         .description('Attachment ID')
@@ -4469,7 +4501,7 @@ When making API calls remember that requests against the same account are queued
                         .default(0)
                         .example(0)
                         .description(
-                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                            'Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts. Deprecated; use the paging cursor instead. If the page cursor value is provided, then the page number value is ignored.'
                         )
                         .label('PageNumber'),
 
@@ -4585,7 +4617,7 @@ When making API calls remember that requests against the same account are queued
                         .default(0)
                         .example(0)
                         .description(
-                            'Page number (zero indexed, so use 0 for first page). Only supported for IMAP accounts. Deprecated, use paging cursor instead.'
+                            'Page number (zero-indexed, so use 0 for the first page). Only supported for IMAP accounts. Deprecated; use the paging cursor instead. If the page cursor value is provided, then the page number value is ignored.'
                         )
                         .label('PageNumber'),
 

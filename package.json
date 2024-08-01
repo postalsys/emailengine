@@ -9,7 +9,7 @@
         "start": "node server.js",
         "dev": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.dev.txt  | pino-pretty",
         "single": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/10' --api.port=7002 --api.host=0.0.0.0 | tee $HOME/ee.log.single.txt | pino-pretty",
-        "gmail": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_FEATURE_GMAIL_API=true EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/11' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.gmail.txt | pino-pretty",
+        "gmail": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_FEATURE_MS_API=true EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/11' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.gmail.txt | pino-pretty",
         "test": "grunt && node --test test/",
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm install --omit=dev && ./update-info.sh",
