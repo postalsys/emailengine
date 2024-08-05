@@ -165,6 +165,9 @@ const {
     googleProjectIdSchema
 } = require('../lib/schemas');
 
+const listMessageFolderPathDescription =
+    'Mailbox folder path. Can use special use labels like "\\Sent". Special value "\\All" is available for Gmail IMAP, Gmail API, MS Graph API accounts.';
+
 const OAuth2ProviderSchema = Joi.string()
     .valid(...Object.keys(OAUTH_PROVIDERS))
     .required()
@@ -4239,7 +4242,7 @@ When making API calls remember that requests against the same account are queued
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .default(false)
-                        .description('Delete message even if not in Trash')
+                        .description('Delete message even if not in Trash. Not supported for Gmail API accounts.')
                         .label('ForceDelete')
                 }).label('MessageDeleteQuery'),
 
@@ -4481,11 +4484,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string()
-                        .required()
-                        .example('INBOX')
-                        .description('Mailbox folder path. Can use special use labels like "\\Sent".')
-                        .label('SpecialPath'),
+                    path: Joi.string().required().example('INBOX').description(listMessageFolderPathDescription).label('SpecialPath'),
 
                     cursor: Joi.string()
                         .trim()
@@ -4600,8 +4599,8 @@ When making API calls remember that requests against the same account are queued
                             otherwise: Joi.required()
                         })
                         .example('INBOX')
-                        .description('Mailbox folder path. Can use special use labels like "\\Sent".')
-                        .label('SpecialPathDs'),
+                        .description(listMessageFolderPathDescription)
+                        .label('Path'),
 
                     cursor: Joi.string()
                         .trim()
