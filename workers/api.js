@@ -3995,7 +3995,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Update messages',
-            notes: 'Update message information for matching emails',
+            notes: 'Update message information for matching emails. Not available for MS Graph API accounts.',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
@@ -4143,7 +4143,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Move messages',
-            notes: 'Move messages matching to a search query to another folder',
+            notes: 'Move messages matching to a search query to another folder. Not available for MS Graph API accounts.',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
@@ -4293,7 +4293,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Delete messages',
-            notes: 'Move messages to Trash or delete these if already in Trash',
+            notes: 'Move messages to Trash or delete these if already in Trash. Not available for MS Graph API accounts.',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
