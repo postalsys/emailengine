@@ -1641,7 +1641,7 @@ When making API calls remember that requests against the same account are queued
                         accountData.email = userInfo.email;
                     }
 
-                    accountData.name = userInfo.name || accountData.name || '';
+                    accountData.name = accountData.name || userInfo.name || '';
 
                     const defaultScopes = (oauth2App.baseScopes && OUTLOOK_SCOPES[oauth2App.baseScopes]) || OUTLOOK_SCOPES.imap;
 
