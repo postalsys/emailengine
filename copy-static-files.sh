@@ -28,4 +28,5 @@ node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers
 # brew install gh
 # gh auth login
 # gh ext install advanced-security/gh-sbom
-gh sbom -c -l > sbom.json
+# gh sbom -c -l > sbom.json
+gh sbom > sbom.json

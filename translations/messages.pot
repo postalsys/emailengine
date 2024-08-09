@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-07-29 10:32+0000\n"
+"POT-Creation-Date: 2024-08-09 16:04+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -11,6 +11,58 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/unsubscribe.hbs:1
+#: views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:31
+#: views/accounts/register/imap-server.hbs:224
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:18
@@ -105,11 +157,6 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:224
-#: views/unsubscribe.hbs:31
-msgid "Close"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:293
 msgid "Failed to validate IMAP server settings"
 msgstr ""
@@ -130,53 +177,6 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
-#: views/unsubscribe.hbs:1
-#: views/unsubscribe.hbs:79
-msgid "Unsubscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:69
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:75
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -193,36 +193,36 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4732
-#: lib/routes-ui.js:6651
-#: lib/routes-ui.js:6662
+#: lib/routes-ui.js:4739
+#: lib/routes-ui.js:6658
+#: lib/routes-ui.js:6669
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4735
-#: lib/routes-ui.js:6654
-#: lib/routes-ui.js:6665
+#: lib/routes-ui.js:4742
+#: lib/routes-ui.js:6661
+#: lib/routes-ui.js:6672
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4739
-#: lib/routes-ui.js:6669
+#: lib/routes-ui.js:4746
+#: lib/routes-ui.js:6676
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6470
-#: lib/routes-ui.js:6503
-#: lib/routes-ui.js:9258
+#: lib/routes-ui.js:6477
+#: lib/routes-ui.js:6510
+#: lib/routes-ui.js:9265
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6589
-#: lib/routes-ui.js:6846
+#: lib/routes-ui.js:6596
+#: lib/routes-ui.js:6853
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9358
-#: lib/routes-ui.js:9391
+#: lib/routes-ui.js:9365
+#: lib/routes-ui.js:9398
 msgid "Failed to process request"
 msgstr ""
 
