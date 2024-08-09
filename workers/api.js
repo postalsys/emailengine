@@ -1589,7 +1589,7 @@ When making API calls remember that requests against the same account are queued
                                     }
 
                                     if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
-                                        userInfo.email = decodedValue.preferred_username;
+                                        userInfo.userInfo.name = decodedValue.preferred_username;
                                     }
                                 } catch (err) {
                                     request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
@@ -4637,7 +4637,25 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     search: searchSchema,
                     documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
-                }).label('SearchQuery')
+                })
+                    .label('SearchQuery')
+                    .example({
+                        search: {
+                            unseen: true,
+                            flagged: true,
+                            from: 'Nyan Cat',
+                            body: 'Hello world',
+                            subject: 'Hello world',
+                            sentBefore: '2024-08-09',
+                            sentSince: '2022-08-09',
+                            emailId: '1278455344230334865',
+                            threadId: '1266894439832287888',
+                            header: {
+                                'Message-ID': '<12345@example.com>'
+                            },
+                            gmailRaw: 'has:attachment in:unread'
+                        }
+                    })
             },
 
             response: {
