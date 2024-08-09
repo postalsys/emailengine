@@ -2272,7 +2272,31 @@ When making API calls remember that requests against the same account are queued
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
-                }).label('CreateAccount')
+                })
+                    .label('CreateAccount')
+                    .example({
+                        account: 'example',
+                        name: 'Nyan Cat',
+                        email: 'nyan.cat@example.com',
+                        imap: {
+                            auth: {
+                                user: 'nyan.cat',
+                                pass: 'sercretpass'
+                            },
+                            host: 'mail.example.com',
+                            port: 993,
+                            secure: true
+                        },
+                        smtp: {
+                            auth: {
+                                user: 'nyan.cat',
+                                pass: 'secretpass'
+                            },
+                            host: 'mail.example.com',
+                            port: 465,
+                            secure: true
+                        }
+                    })
             },
 
             response: {
@@ -2526,7 +2550,20 @@ When making API calls remember that requests against the same account are queued
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
-                }).label('UpdateAccount')
+                })
+                    .label('UpdateAccount')
+                    .example({
+                        name: 'Nyan Cat',
+                        email: 'nyan.cat@example.com',
+                        imap: {
+                            partial: true,
+                            disabled: true
+                        },
+                        smtp: {
+                            partial: true,
+                            host: 'mail.example.com'
+                        }
+                    })
             },
 
             response: {
@@ -3995,7 +4032,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Update messages',
-            notes: 'Update message information for matching emails. Not available for MS Graph API accounts.',
+            notes: 'Update message information for matching emails',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
@@ -4143,7 +4180,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Move messages',
-            notes: 'Move messages matching to a search query to another folder. Not available for MS Graph API accounts.',
+            notes: 'Move messages matching to a search query to another folder',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
@@ -4179,10 +4216,17 @@ When making API calls remember that requests against the same account are queued
             response: {
                 schema: Joi.object({
                     path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
+
                     idMap: Joi.array()
-                        .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                        .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')).label('IdMapTuple'))
                         .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
                         .description('An optional map of source and target ID values, if the server provided this info')
+                        .label('IdMapArray'),
+
+                    emailIds: Joi.array()
+                        .items(Joi.string().example('1278455344230334865'))
+                        .description('An optional list of emailId values, if the server supports unique email IDs')
+                        .label('EmailIdsArray')
                 }).label('MessagesMoveResponse'),
                 failAction: 'log'
             }
@@ -4293,7 +4337,7 @@ When making API calls remember that requests against the same account are queued
         },
         options: {
             description: 'Delete messages',
-            notes: 'Move messages to Trash or delete these if already in Trash. Not available for MS Graph API accounts.',
+            notes: 'Move messages to Trash or delete these if already in Trash',
             tags: ['api', 'Multi Message Actions'],
 
             plugins: {},
@@ -4336,11 +4380,20 @@ When making API calls remember that requests against the same account are queued
                     deleted: Joi.boolean().example(false).description('Was the delete action executed'),
                     moved: Joi.object({
                         destination: Joi.string().required().example('Trash').description('Trash folder path').label('TrashPath'),
+
                         idMap: Joi.array()
-                            .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')))
+                            .items(Joi.array().length(2).items(Joi.string().max(256).required().description('Message ID')).label('IdMapTuple'))
                             .example([['AAAAAQAACnA', 'AAAAAwAAAD4']])
                             .description('An optional map of source and target ID values, if the server provided this info')
-                    }).description('Present if messages were moved to Trash')
+                            .label('IdMapArray'),
+
+                        emailIds: Joi.array()
+                            .items(Joi.string().example('1278455344230334865'))
+                            .description('An optional list of emailId values, if the server supports unique email IDs')
+                            .label('EmailIdsArray')
+                    })
+                        .label('MessagesMovedToTrash')
+                        .description('Value is present if messages were moved to Trash')
                 }).label('MessagesDeleteResponse'),
                 failAction: 'log'
             }
@@ -4636,14 +4689,19 @@ When making API calls remember that requests against the same account are queued
 
                 payload: Joi.object({
                     search: searchSchema,
-                    documentQuery: Joi.object().min(1).description('Document Store query. Only allowed with `documentStore`.').label('DocumentQuery').unknown()
+                    documentQuery: Joi.object()
+                        .min(1)
+                        .description('Document Store query. Only allowed with `documentStore`.')
+                        .label('DocumentQuery')
+                        .unknown()
+                        .meta({ swaggerHidden: true })
                 })
                     .label('SearchQuery')
                     .example({
                         search: {
                             unseen: true,
                             flagged: true,
-                            from: 'Nyan Cat',
+                            from: 'nyan.cat@example.com',
                             body: 'Hello world',
                             subject: 'Hello world',
                             sentBefore: '2024-08-09',
@@ -4716,7 +4774,7 @@ When making API calls remember that requests against the same account are queued
         options: {
             description: 'Unified search for messages',
             notes: 'Filter messages from the Document Store for multiple accounts or paths. Document Store must be enabled for the unified search to work.',
-            tags: ['api', 'X1. Deprecated endpoints (Document Store)'],
+            tags: ['Deprecated endpoints (Document Store)'],
 
             plugins: {},
 
@@ -4763,7 +4821,7 @@ When making API calls remember that requests against the same account are queued
                         .description('Optional list of mailbox folder paths or specialUse flags')
                         .label('UnifiedSearchPaths'),
                     search: searchSchema,
-                    documentQuery: Joi.object().min(1).description('Document Store query').label('DocumentQuery').unknown()
+                    documentQuery: Joi.object().min(1).description('Document Store query').label('DocumentQuery').unknown().meta({ swaggerHidden: true })
                 }).label('UnifiedSearchQuery')
             },
 
@@ -5114,7 +5172,8 @@ When making API calls remember that requests against the same account are queued
                         documentStore: Joi.boolean()
                             .example(true)
                             .description('Was the message dat aloaded from the document store')
-                            .label('ResponseDocumentStore'),
+                            .label('ResponseDocumentStore')
+                            .meta({ swaggerHidden: true }),
                         success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
                         error: Joi.string().example('Referenced message was not found').description('An error message if referenced message processing failed')
                     })
@@ -5149,7 +5208,8 @@ When making API calls remember that requests against the same account are queued
                                     documentStore: Joi.boolean()
                                         .example(true)
                                         .description('Was the message dat aloaded from the document store')
-                                        .label('ResponseDocumentStore'),
+                                        .label('ResponseDocumentStore')
+                                        .meta({ swaggerHidden: true }),
                                     success: Joi.boolean()
                                         .example(true)
                                         .description('Was the referenced message processed successfully')
