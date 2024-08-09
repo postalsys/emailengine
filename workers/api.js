@@ -4056,7 +4056,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path')
+                    path: Joi.string().empty('').required().example('INBOX').description(listMessageFolderPathDescription)
                 }).label('MessagesUpdateQuery'),
 
                 payload: Joi.object({
@@ -4204,7 +4204,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string().empty('').required().example('INBOX').description('Source mailbox folder path')
+                    path: Joi.string().empty('').required().example('INBOX').description(listMessageFolderPathDescription)
                 }).label('MessagesMoveQuery'),
 
                 payload: Joi.object({
@@ -4361,7 +4361,7 @@ When making API calls remember that requests against the same account are queued
                 }),
 
                 query: Joi.object({
-                    path: Joi.string().empty('').required().example('INBOX').description('Mailbox folder path'),
+                    path: Joi.string().empty('').required().example('INBOX').description(listMessageFolderPathDescription),
                     force: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
