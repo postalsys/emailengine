@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-08-09 16:04+0000\n"
+"POT-Creation-Date: 2024-08-11 20:10+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -57,6 +53,33 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:114
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:192
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr ""
@@ -72,12 +95,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:21
 #: views/accounts/register/imap-server.hbs:100
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:114
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:41
@@ -140,11 +157,6 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:192
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:200
 msgid "Continue without testing"
 msgstr ""
@@ -177,52 +189,40 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
 #: lib/routes-ui.js:606
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4739
-#: lib/routes-ui.js:6658
-#: lib/routes-ui.js:6669
+#: lib/routes-ui.js:4738
+#: lib/routes-ui.js:6657
+#: lib/routes-ui.js:6668
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4742
-#: lib/routes-ui.js:6661
-#: lib/routes-ui.js:6672
+#: lib/routes-ui.js:4741
+#: lib/routes-ui.js:6660
+#: lib/routes-ui.js:6671
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4746
-#: lib/routes-ui.js:6676
+#: lib/routes-ui.js:4745
+#: lib/routes-ui.js:6675
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6477
-#: lib/routes-ui.js:6510
-#: lib/routes-ui.js:9265
+#: lib/routes-ui.js:6476
+#: lib/routes-ui.js:6509
+#: lib/routes-ui.js:9264
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6596
-#: lib/routes-ui.js:6853
+#: lib/routes-ui.js:6595
+#: lib/routes-ui.js:6852
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9365
-#: lib/routes-ui.js:9398
+#: lib/routes-ui.js:9364
+#: lib/routes-ui.js:9397
 msgid "Failed to process request"
 msgstr ""
 

@@ -154,7 +154,7 @@
 
             <dt class="col-sm-3">Recent logs <a href="#" tabindex="-1" role="button" data-toggle="popover"
                     data-trigger="hover" style="dispaly: inline-block;"
-                    data-content="Up to last {{logs.maxLogLines}} log lines"><i
+                    data-content="Up to last {{formatInteger logs.maxLogLines userLocale}} log lines"><i
                         class="fas fa-info-circle text-info"></i></a>
             </dt>
 
@@ -1029,7 +1029,6 @@
                     return false
                 }
                 document.getElementById('test-send-results').classList.remove('d-none');
-                console.log('TEST RESULTS', results);
                 document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
 
                 // activate tabs

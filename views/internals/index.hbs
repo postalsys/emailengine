@@ -35,7 +35,7 @@
                         {{/if}}
 
                     </td>
-                    <td class="text-right">{{threadId}}</td>
+                    <td class="text-right">{{formatInteger threadId userLocale}}</td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                     </td>
@@ -46,9 +46,9 @@
                             data-title="Heap usage" data-content="{{heapRelative}} of maximum allowed {{heapMax}}"><i
                                 class="fas fa-info-circle"></i></a>
                     </td>
-                    <td class="text-right">{{accounts}}</td>
-                    <td class="text-right">{{called}}</td>
-                    <td class="text-right">{{messages}}</td>
+                    <td class="text-right">{{formatInteger accounts userLocale}}</td>
+                    <td class="text-right">{{formatInteger called userLocale}}</td>
+                    <td class="text-right">{{formatInteger messages userLocale}}</td>
                     <td class="text-right">
 
                         <button type="button" class="btn btn-info btn-circle btn-sm snapshot-thread-btn"

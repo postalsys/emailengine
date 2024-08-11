@@ -511,6 +511,24 @@ const init = async () => {
 
     handlebars.registerHelper('inc', (nr, inc) => Number(nr) + Number(inc));
 
+    handlebars.registerHelper('formatInteger', (intVal, locale) => {
+        if (isNaN(intVal)) {
+            // ignore non-numbers
+            return intVal;
+        }
+
+        locale = (locale || 'en_US').replace(/_/g, '-');
+
+        let formatter;
+        try {
+            formatter = new Intl.NumberFormat(locale, {});
+        } catch (err) {
+            formatter = new Intl.NumberFormat('en-US', {});
+        }
+
+        return formatter.format(intVal);
+    });
+
     const server = Hapi.server({
         port: API_PORT,
         host: API_HOST,
@@ -8053,6 +8071,7 @@ ${now}`,
                 documentStoreEnabled: showDocumentStore,
                 serviceUrl,
                 language,
+                locale,
                 timezone
             } = await settings.getMulti(
                 'upgrade',
@@ -8068,6 +8087,7 @@ ${now}`,
                 'documentStoreEnabled',
                 'serviceUrl',
                 'language',
+                'locale',
                 'timezone'
             );
 
@@ -8227,7 +8247,10 @@ ${now}`,
                 embeddedTemplateHeader,
                 currentYear: new Date().getFullYear(),
                 showDocumentStore,
-                updateBrowserInfo: !serviceUrl || !language || !timezone
+                updateBrowserInfo: !serviceUrl || !language || !timezone,
+
+                userLocale: locale,
+                userTimezone: timezone
             };
         }
     });
