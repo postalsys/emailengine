@@ -1462,9 +1462,6 @@ When making API calls remember that requests against the same account are queued
         method: 'POST',
         path: '/oauth/msg/notification',
         async handler(request, h) {
-            // TODO: process change notification for MS Graph API account
-            // FUTURE FEATURE
-
             if (request.query.validationToken) {
                 request.logger.debug({
                     msg: 'MS Graph subscription event',
