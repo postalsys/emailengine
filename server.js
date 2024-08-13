@@ -1936,7 +1936,7 @@ async function onCommand(worker, message) {
             return true;
         }
 
-        case 'gmailNotify': {
+        case 'externalNotify': {
             for (let account of message.accounts) {
                 if (!assigned.has(account)) {
                     continue;
@@ -1944,9 +1944,9 @@ async function onCommand(worker, message) {
 
                 let assignedWorker = assigned.get(account);
                 try {
-                    await call(assignedWorker, { cmd: 'gmailNotify', account, historyId: message.historyId });
+                    await call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId });
                 } catch (err) {
-                    logger.error({ msg: 'Failed to notify worker about account changes', cmd: 'gmailNotify', account, historyId: message.historyId, err });
+                    logger.error({ msg: 'Failed to notify worker about account changes', cmd: 'externalNotify', account, historyId: message.historyId, err });
                 }
             }
             return true;

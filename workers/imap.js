@@ -526,7 +526,7 @@ class ConnectionHandler {
         return await accountData.connection.uploadMessage(message.data);
     }
 
-    async gmailNotify(message) {
+    async externalNotify(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
         }
@@ -536,7 +536,7 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.gmailNotify(message.historyId);
+        return await accountData.connection.externalNotify(message);
     }
 
     async getQuota(message) {
@@ -743,7 +743,7 @@ class ConnectionHandler {
             case 'queueMessage':
             case 'uploadMessage':
             case 'subconnections':
-            case 'gmailNotify':
+            case 'externalNotify':
                 return await this[message.cmd](message);
 
             case 'countConnections': {

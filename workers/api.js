@@ -1475,30 +1475,23 @@ When making API calls remember that requests against the same account are queued
                 return h.response(request.query.validationToken).header('Content-Type', 'text/plain').code(200);
             }
 
-            let account = request.query.account;
-            let outlookSubscription = await redis.hget(`${REDIS_PREFIX}iad:${account}`, 'outlookSubscription');
-            if (outlookSubscription) {
-                try {
-                    outlookSubscription = JSON.parse(outlookSubscription);
-                } catch (err) {
-                    // ignore, I guess?
-                }
-            }
+            let accountObject = new Account({
+                account: request.query.account,
+                redis,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
 
-            if (!outlookSubscription) {
+            let accountData = await accountObject.loadAccountData();
+            if (!accountData.outlookSubscription) {
                 request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
                 return h.response(Buffer.alloc(0)).code(202);
             }
 
-            for (let entry of (request.payload && request.payload.value) || []) {
-                request.logger.debug({
-                    msg: 'MS Graph subscription event',
-                    type: 'notification',
-                    account: request.query.account,
-                    changeType: entry.changeType,
-                    resource: entry.resourceData && entry.resourceData.id
-                });
+            const outlookSubscription = accountData.outlookSubscription;
 
+            for (let entry of (request.payload && request.payload.value) || []) {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
                     request.logger.error({
@@ -1522,13 +1515,7 @@ When making API calls remember that requests against the same account are queued
                     message: entry.resourceData && entry.resourceData.id
                 };
 
-                // FIXME: create actual event handler
-                request.logger.debug({
-                    msg: 'MS Graph subscription event',
-                    type: 'event',
-                    account: request.query.account,
-                    event
-                });
+                await accountObject.pushQueueEvent(event);
             }
 
             return h.response(Buffer.alloc(0)).code(202);
