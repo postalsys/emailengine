@@ -590,7 +590,7 @@ let updateServerState = async (type, state, payload) => {
 };
 
 async function sendWebhook(account, event, data) {
-    let serviceUrl = (await settings.get('serviceUrl')) || true;
+    let serviceUrl = (await settings.get('serviceUrl')) || null;
 
     let payload = {
         serviceUrl,
@@ -658,8 +658,8 @@ let spawnWorker = async type => {
             workerMeta.online = Date.now();
             workersMeta.set(worker, workerMeta);
 
-            if (type !== 'imap') {
-                // imap workers need to wait until ready to accept accounts
+            if (type !== 'imap' && type !== 'api') {
+                // IMAP and API workers need to wait until ready to accept accounts
                 isOnline = true;
                 resolve(threadId);
             }
@@ -949,6 +949,13 @@ let spawnWorker = async type => {
                         if (imapInitialWorkersLoaded) {
                             assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 2, err }));
                         }
+                    }
+                    break;
+
+                case 'api':
+                    if (message.cmd === 'ready') {
+                        isOnline = true;
+                        resolve(worker.threadId);
                     }
                     break;
             }

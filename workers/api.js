@@ -123,7 +123,8 @@ const {
     DEFAULT_EENGINE_TIMEOUT,
     DEFAULT_MAX_ATTACHMENT_SIZE,
     MAX_FORM_TTL,
-    NONCE_BYTES
+    NONCE_BYTES,
+    OUTLOOK_EXPIRATION_TIME
 } = consts;
 
 const { fetch: fetchCmd, Agent } = require('undici');
@@ -390,7 +391,7 @@ async function sendWebhook(account, event, data) {
         event
     });
 
-    let serviceUrl = (await settings.get('serviceUrl')) || true;
+    let serviceUrl = (await settings.get('serviceUrl')) || null;
 
     let payload = {
         serviceUrl,
@@ -1447,6 +1448,248 @@ When making API calls remember that requests against the same account are queued
                 payload: Joi.object({
                     'List-Unsubscribe': Joi.string().required().valid('One-Click')
                 }).label('OneClickUnsubPayload')
+            },
+
+            plugins: {
+                crumb: false
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/oauth/msg/notification',
+        async handler(request, h) {
+            // TODO: process change notification for MS Graph API account
+            // FUTURE FEATURE
+
+            if (request.query.validationToken) {
+                request.logger.debug({
+                    msg: 'MS Graph subscription event',
+                    type: 'notification',
+                    account: request.query.account,
+                    validationToken: request.query.validationToken
+                });
+                return h.response(request.query.validationToken).header('Content-Type', 'text/plain').code(200);
+            }
+
+            let account = request.query.account;
+            let outlookSubscription = await redis.hget(`${REDIS_PREFIX}iad:${account}`, 'outlookSubscription');
+            if (outlookSubscription) {
+                try {
+                    outlookSubscription = JSON.parse(outlookSubscription);
+                } catch (err) {
+                    // ignore, I guess?
+                }
+            }
+
+            if (!outlookSubscription) {
+                request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
+                return h.response(Buffer.alloc(0)).code(202);
+            }
+
+            for (let entry of (request.payload && request.payload.value) || []) {
+                request.logger.debug({
+                    msg: 'MS Graph subscription event',
+                    type: 'notification',
+                    account: request.query.account,
+                    changeType: entry.changeType,
+                    resource: entry.resourceData && entry.resourceData.id
+                });
+
+                // enumerate and queue all entries
+                if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
+                    request.logger.error({
+                        msg: 'Invalid subcsription details',
+                        account: request.query.account,
+                        expected: {
+                            subscriptionId: outlookSubscription.id,
+                            clientState: outlookSubscription.clientState
+                        },
+                        actual: {
+                            subscriptionId: entry.subscriptionId,
+                            clientState: entry.clientState
+                        },
+                        entry
+                    });
+                    continue;
+                }
+
+                let event = {
+                    type: entry.changeType,
+                    message: entry.resourceData && entry.resourceData.id
+                };
+
+                // FIXME: create actual event handler
+                request.logger.debug({
+                    msg: 'MS Graph subscription event',
+                    type: 'event',
+                    account: request.query.account,
+                    event
+                });
+            }
+
+            return h.response(Buffer.alloc(0)).code(202);
+        },
+        options: {
+            description: 'MS Graph API notification handler',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                query: Joi.object({
+                    account: accountIdSchema.required(),
+                    validationToken: Joi.string()
+                }).label('MSGNotificationQuery')
+            },
+
+            plugins: {
+                crumb: false
+            },
+
+            auth: false
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/oauth/msg/lifecycle',
+        async handler(request, h) {
+            if (request.query.validationToken) {
+                request.logger.debug({
+                    msg: 'MS Graph subscription event',
+                    type: 'lifecycle',
+                    account: request.query.account,
+                    validationToken: request.query.validationToken
+                });
+                return h.response(request.query.validationToken).header('Content-Type', 'text/plain').code(200);
+            }
+
+            let accountObject = new Account({
+                account: request.query.account,
+                redis,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
+
+            let accountData = await accountObject.loadAccountData();
+            if (!accountData.outlookSubscription) {
+                request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
+                return h.response(Buffer.alloc(0)).code(202);
+            }
+
+            const outlookSubscription = accountData.outlookSubscription;
+
+            for (let entry of (request.payload && request.payload.value) || []) {
+                request.logger.debug({
+                    msg: 'MS Graph subscription event',
+                    type: 'lifecycle',
+                    account: request.query.account,
+                    lifecycleEvent: entry.lifecycleEvent,
+                    subscriptionId: entry.subscriptionId
+                });
+
+                // enumerate and queue all entries
+                if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
+                    request.logger.error({
+                        msg: 'Invalid subcsription details',
+                        account: request.query.account,
+                        expected: {
+                            subscriptionId: outlookSubscription.id,
+                            clientState: outlookSubscription.clientState
+                        },
+                        actual: {
+                            subscriptionId: entry.subscriptionId,
+                            clientState: entry.clientState
+                        },
+                        entry
+                    });
+                    continue;
+                }
+
+                switch (entry.lifecycleEvent) {
+                    case 'reauthorizationRequired': {
+                        // Extend subscription lifetime
+
+                        outlookSubscription.state = {
+                            state: 'renewing',
+                            time: Date.now()
+                        };
+                        await accountObject.update({ outlookSubscription });
+
+                        let subscriptionPayload = {
+                            expirationDateTime: new Date(Date.now() + OUTLOOK_EXPIRATION_TIME).toISOString()
+                        };
+
+                        let subscriptionRes;
+                        try {
+                            subscriptionRes = await accountObject.oauth2Request(
+                                `https://graph.microsoft.com/v1.0/subscriptions/${outlookSubscription.id}`,
+                                'PATCH',
+                                subscriptionPayload
+                            );
+                            if (subscriptionRes && subscriptionRes.expirationDateTime) {
+                                outlookSubscription.expirationDateTime = subscriptionRes.expirationDateTime;
+                            }
+                            outlookSubscription.state = {
+                                state: 'created',
+                                time: Date.now()
+                            };
+                        } catch (err) {
+                            outlookSubscription.state = {
+                                state: 'error',
+                                error: `Renewal failed: ${
+                                    (err.oauthRequest &&
+                                        err.oauthRequest.response &&
+                                        err.oauthRequest.response.error &&
+                                        err.oauthRequest.response.error.message) ||
+                                    err.message
+                                }`,
+                                time: Date.now()
+                            };
+                        } finally {
+                            await accountObject.update({ outlookSubscription });
+                        }
+
+                        break;
+                    }
+
+                    case 'subscriptionRemoved': {
+                        // subscription was removed, should we recreate it?
+                        await accountObject.update({
+                            outlookSubscription: {
+                                state: {
+                                    state: 'error',
+                                    error: `Subscription removed`,
+                                    time: Date.now()
+                                }
+                            }
+                        });
+                        break;
+                    }
+                }
+            }
+
+            return h.response(Buffer.alloc(0)).code(202);
+        },
+        options: {
+            description: 'MS Graph API notification handler',
+
+            validate: {
+                options: {
+                    stripUnknown: true,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction
             },
 
             plugins: {
@@ -8475,6 +8718,7 @@ init()
             maxBodySize: MAX_BODY_SIZE,
             version: packageData.version
         });
+        parentPort.postMessage({ cmd: 'ready' });
     })
     .catch(err => {
         logger.error({ msg: 'Failed to initialize API', err });

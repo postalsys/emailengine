@@ -113,7 +113,7 @@ async function notify(account, event, data) {
         event
     });
 
-    let serviceUrl = (await settings.get('serviceUrl')) || true;
+    let serviceUrl = (await settings.get('serviceUrl')) || null;
 
     let payload = {
         serviceUrl,

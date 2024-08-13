@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-08-11 20:10+0000\n"
+"POT-Creation-Date: 2024-08-13 07:08+0000\n"
 
 #: views/config/license.hbs:48
 msgid "%d day"
@@ -51,10 +51,6 @@ msgstr ""
 #: views/unsubscribe.hbs:75
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -189,40 +185,44 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: lib/routes-ui.js:606
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: lib/routes-ui.js:623
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4738
-#: lib/routes-ui.js:6657
-#: lib/routes-ui.js:6668
+#: lib/routes-ui.js:4755
+#: lib/routes-ui.js:6674
+#: lib/routes-ui.js:6685
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4741
-#: lib/routes-ui.js:6660
-#: lib/routes-ui.js:6671
+#: lib/routes-ui.js:4758
+#: lib/routes-ui.js:6677
+#: lib/routes-ui.js:6688
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4745
-#: lib/routes-ui.js:6675
+#: lib/routes-ui.js:4762
+#: lib/routes-ui.js:6692
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6476
-#: lib/routes-ui.js:6509
-#: lib/routes-ui.js:9264
+#: lib/routes-ui.js:6493
+#: lib/routes-ui.js:6526
+#: lib/routes-ui.js:9281
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6595
-#: lib/routes-ui.js:6852
+#: lib/routes-ui.js:6612
+#: lib/routes-ui.js:6869
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9364
-#: lib/routes-ui.js:9397
+#: lib/routes-ui.js:9381
+#: lib/routes-ui.js:9414
 msgid "Failed to process request"
 msgstr ""
 
