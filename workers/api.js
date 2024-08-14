@@ -1834,7 +1834,7 @@ When making API calls remember that requests against the same account are queued
                                     }
 
                                     if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
-                                        userInfo.userInfo.name = decodedValue.preferred_username;
+                                        userInfo.username = decodedValue.preferred_username;
                                     }
                                 } catch (err) {
                                     request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
