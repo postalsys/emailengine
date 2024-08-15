@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.44.1](https://github.com/postalsys/emailengine/compare/v2.44.0...v2.44.1) (2024-08-15)
+
+
+### Bug Fixes
+
+* **oauth2:** Fixed Gmail API OAuth2 schema ([205f34e](https://github.com/postalsys/emailengine/commit/205f34e1c89eaf003d027aa0664023af0029c53e))
+
 ## [2.44.0](https://github.com/postalsys/emailengine/compare/v2.43.3...v2.44.0) (2024-08-15)
 
 
