@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.44.0](https://github.com/postalsys/emailengine/compare/v2.43.3...v2.44.0) (2024-08-15)
+
+
+### Features
+
+* **ms-graph-api:** MS Graph API support ([#431](https://github.com/postalsys/emailengine/issues/431)) ([5e10dd3](https://github.com/postalsys/emailengine/commit/5e10dd3528c8c5ca6898f2ed0800f0d168fb8b33))
+
+
+### Bug Fixes
+
+* **app-password:** Add T-Online to providers needing an app password ([#430](https://github.com/postalsys/emailengine/issues/430)) ([823939b](https://github.com/postalsys/emailengine/commit/823939b1d5e6934876537597ea52b52b4f12ab59))
+* **oauth-tokens:** Fix renewal check for access tokens ([f687aa1](https://github.com/postalsys/emailengine/commit/f687aa11752a2981a1237cc84cca1d26f24d1f49))
+* **outlook-oauth:** Show 'supported account types' as a selectable list instead of a text field input ([fe62e5b](https://github.com/postalsys/emailengine/commit/fe62e5b293307d42c6e8e1c200911d4eff4e26de))
+
 ## [2.43.3](https://github.com/postalsys/emailengine/compare/v2.43.2...v2.43.3) (2024-08-01)
 
 
