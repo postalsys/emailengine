@@ -225,21 +225,53 @@
         </div>
 
         {{#if activeOutlook}}
-        <div class="form-group">
-            <label for="authority">Supported account types</label>
 
-            <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="authority"
-                name="authority" value="{{values.authority}}" required />
-            {{#if errors.authority}}
-            <span class="invalid-feedback">{{errors.authority}}</span>
+        <label for="clientSecret">Supported account types</label>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityOrganizations"
+                value="organizations" {{#if authorityOrganizations}}checked{{/if}}>
+            <label class="form-check-label" for="authorityOrganizations">
+                Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant)
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityCommon" value="common"
+                {{#if authorityCommon}}checked{{/if}}>
+            <label class="form-check-label" for="authorityCommon">
+                Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal
+                Microsoft accounts (e.g. Skype, Xbox)
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityConsumers"
+                value="consumers" {{#if authorityConsumers}}checked{{/if}}>
+            <label class="form-check-label" for="authorityConsumers">
+                Personal Microsoft accounts only
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityTenant" value="tenant"
+                {{#if authorityTenant}}checked{{/if}}>
+            <label class="form-check-label" for="authorityTenant">
+                Accounts in the specified organizational directory only (Single tenant)
+            </label>
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="tenant">Directory (tenant) ID</label>
+
+            <input type="text" class="form-control {{#if errors.tenant}}is-invalid{{/if}}" id="tenant" name="tenant"
+                value="{{values.tenant}}" />
+            {{#if errors.tenant}}
+            <span class="invalid-feedback">{{errors.tenant}}</span>
             {{/if}}
-            <small class="form-text text-muted">Supported account types. Usually, <em>"consumers"</em> is for Microsoft
-                accounts, <em>"organizations"</em> for Organisation accounts, and <em>"common"</em> for both types of
-                accounts. You can also specify organization's <em data-toggle="tooltip" data-placement="top"
-                    title="Directory ID is a UUID value like &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;"
-                    style="cursor: default;">Directory
-                    ID</em> to only allow members of a specific organization to use
-                this app.</small>
+            <small class="form-text text-muted">Fill this value if you checked "Accounts in the specified organizational
+                directory only" above. The Directory ID is a UUID value like
+                &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;</small>
         </div>
         {{/if}}
 
@@ -498,7 +530,7 @@
                     </div>
                 </td>
                 <td>Microsoft HTTP API</td>
-                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Sent"</code> consent screen scopes</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Send"</code> consent screen scopes</td>
 
             </tr>
 
@@ -521,7 +553,7 @@
                     <strong>MS Graph API</strong> <span class="badge badge-dark">beta</span>
                 </td>
                 <td>Microsoft HTTP API</td>
-                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Sent"</code> consent screen scopes</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Send"</code> consent screen scopes</td>
 
             </tr>
             {{/if}}
@@ -716,6 +748,28 @@
             });
         }
 
+        let authorityElms = document.querySelectorAll('.r-auth');
+        let tenantElm = document.getElementById('tenant');
+        let checkAuthorityState = () => {
+            let showtenant = false;
+            for (let aElm of authorityElms) {
+                if (aElm.checked) {
+                    if (aElm.value === 'tenant') {
+                        showtenant = true
+                    }
+                    break;
+                }
+            }
+            tenantElm.disabled = !showtenant;
+            tenantElm.required = showtenant;
+        }
+
+        for (let aElm of authorityElms) {
+            aElm.addEventListener('click', checkAuthorityState)
+            aElm.addEventListener('change', checkAuthorityState)
+        }
+
+        checkAuthorityState();
 
     });
 
