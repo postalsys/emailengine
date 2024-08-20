@@ -5246,10 +5246,7 @@ When making API calls remember that requests against the same account are queued
                     template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from'),
 
                     render: Joi.object({
-                        format: Joi.string()
-                            .valid('html', 'mjml', 'markdown')
-                            .default('html')
-                            .description('Markup language for HTML ("html", "markdown" or "mjml")'),
+                        format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML ("html" or "markdown")'),
                         params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
                     })
                         .allow(false)
