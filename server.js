@@ -13,6 +13,13 @@ try {
 
 process.title = 'emailengine';
 
+try {
+    structuredClone(true);
+} catch (err) {
+    console.error(`Please upgrade your Node.js version as the current version (${process.version}) is not supported.`);
+    process.exit(1);
+}
+
 const os = require('os');
 process.env.UV_THREADPOOL_SIZE =
     process.env.UV_THREADPOOL_SIZE && !isNaN(process.env.UV_THREADPOOL_SIZE) ? Number(process.env.UV_THREADPOOL_SIZE) : Math.max(os.cpus().length, 4);

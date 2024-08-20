@@ -51,7 +51,7 @@
         "@hapi/vision": "7.0.3",
         "@phc/pbkdf2": "1.1.14",
         "@postalsys/certs": "1.0.10",
-        "@postalsys/email-ai-tools": "1.8.8",
+        "@postalsys/email-ai-tools": "1.8.9",
         "@postalsys/email-text-tools": "2.1.9",
         "@postalsys/hecks": "3.0.0-fork.3",
         "@postalsys/joi-messages": "1.0.2",
@@ -105,7 +105,7 @@
         "speakeasy": "2.0.0",
         "startbootstrap-sb-admin-2": "3.3.7",
         "timezones-list": "3.0.3",
-        "undici": "5.28.4",
+        "undici": "6.19.8",
         "uuid": "10.0.0",
         "wild-config": "1.7.1",
         "xml2js": "0.6.2"
@@ -125,7 +125,7 @@
         "xgettext-template": "5.0.0"
     },
     "engines": {
-        "node": ">=16.x"
+        "node": ">=18.x"
     },
     "pkg": {
         "scripts": [
