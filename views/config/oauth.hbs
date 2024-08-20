@@ -36,10 +36,10 @@
                     <li><code>"https://www.googleapis.com/auth/gmail.modify"</code> when using Gmail API
                 </ul>
                 <div>Read about setting up the OAuth2 project in Google Cloud for <a
-                        href="https://emailengine.app/gmail-over-imap" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">IMAP and SMTP</a> or for <a
-                        href="https://emailengine.app/gmail-api" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">Gmail API</a>.
+                        href="https://emailengine.app/gmail-over-imap" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">IMAP
+                        and SMTP</a> or for <a href="https://emailengine.app/gmail-api" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Gmail API</a>.
                 </div>
                 {{/if}}
 
@@ -50,7 +50,7 @@
                 </ul>
                 <div>Read about setting up Google service accounts from <a
                         href="https://emailengine.app/google-service-accounts/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.
 
                 </div>
                 {{/if}}
@@ -64,8 +64,8 @@
                 </ul>
                 <div>
                     Read about setting up the OAuth2 project in Azure Active Directory from <a
-                        href="https://emailengine.app/outlook-and-ms-365" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                        href="https://emailengine.app/outlook-and-ms-365" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">here</a>.
                 </div>
                 {{/if}}
 
@@ -77,8 +77,8 @@
                 </ul>
 
                 <div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
-                    for your <a href="https://oauth.mail.ru/app/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">OAuth2
+                    for your <a href="https://oauth.mail.ru/app/" target="_blank" rel="noopener noreferrer"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">OAuth2
                         apps</a> by default.</div>
                 {{/if}}
 
@@ -116,7 +116,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceClient</a>]
+                        target="_blank" rel="noopener noreferrer">serviceClient</a>]
                 </div>
 
                 <label for="serviceClient">
@@ -132,7 +132,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceKey</a>]
+                        target="_blank" rel="noopener noreferrer">serviceKey</a>]
                 </div>
 
                 <label for="serviceKey">Secret service key</label>
@@ -151,7 +151,7 @@
             <div class="form-group form-check">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">{{values.provider}}Enabled</a>]
+                        target="_blank" rel="noopener noreferrer">{{values.provider}}Enabled</a>]
                 </div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.oauth2Enabled}}is-invalid{{/if}}"
@@ -168,7 +168,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">{{values.provider}}ClientId</a>]
+                        target="_blank" rel="noopener noreferrer">{{values.provider}}ClientId</a>]
                 </div>
 
                 <label for="clientId">
@@ -195,7 +195,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">{{values.provider}}ClientSecret</a>]
+                        target="_blank" rel="noopener noreferrer">{{values.provider}}ClientSecret</a>]
                 </div>
 
                 <label for="clientSecret">Client Secret</label>
@@ -213,7 +213,7 @@
             {{#if activeOutlook}}
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">{{values.provider}}Authority</a>]
+                        target="_blank" rel="noopener noreferrer">{{values.provider}}Authority</a>]
                 </div>
 
                 <label for="authority">Supported account types</label>
@@ -232,7 +232,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">{{values.provider}}RedirectUrl</a>]
+                        target="_blank" rel="noopener noreferrer">{{values.provider}}RedirectUrl</a>]
                 </div>
 
                 <label for="redirectUrl">Redirect URL</label>
@@ -264,8 +264,8 @@
                 {{#if activeGmail}}
                 <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                     enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                        href="https://console.cloud.google.com/apis/dashboard" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
+                        href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">Google Cloud Console</a>)
                     before registering accounts with these permissions. Otherwise, token generations will fail.
                 </div>
                 {{/if}}
@@ -273,15 +273,15 @@
                 {{#if activeGmailService}}
                 <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                     enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                        href="https://console.cloud.google.com/apis/dashboard" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
+                        href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">Google Cloud Console</a>)
                     before registering accounts with these permissions. Otherwise, token generations will fail.
                 </div>
                 {{/if}}
 
                 <div class="form-group">
                     <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">{{values.provider}}ExtraScopes</a>]
+                            target="_blank" rel="noopener noreferrer">{{values.provider}}ExtraScopes</a>]
                     </div>
 
                     <label for="extraScopes">List of OAuth2 scopes</label>

@@ -22,7 +22,7 @@
             <div class="form-group form-check">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">proxyEnabled</a>]</div>
+                        target="_blank" rel="noopener noreferrer">proxyEnabled</a>]</div>
 
                 <input type="checkbox"
                     class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
@@ -39,7 +39,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">proxyUrl</a>]</div>
+                        target="_blank" rel="noopener noreferrer">proxyUrl</a>]</div>
 
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
@@ -57,7 +57,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpEhloName</a>]</div>
+                        target="_blank" rel="noopener noreferrer">smtpEhloName</a>]</div>
 
                 <label for="smtpEhloName">SMTP Greeting Hostname</label>
                 <input type="text" class="form-control {{#if errors.smtpEhloName}}is-invalid{{/if}}" id="smtpEhloName"
@@ -104,7 +104,8 @@
                     </td>
                     <td>
                         <div class="text-muted float-right code-link">[<a
-                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank">imapStrategy</a>]
+                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
+                                rel="noopener noreferrer">imapStrategy</a>]
                         </div>
                         <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
                             errors.imapStrategy}}is-invalid{{/if}}>
@@ -125,7 +126,8 @@
                     </td>
                     <td>
                         <div class="text-muted float-right code-link">[<a
-                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank">smtpStrategy</a>]
+                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
+                                rel="noopener noreferrer">smtpStrategy</a>]
                         </div>
                         <select class="custom-select custom-select-sm" name="smtpStrategy" {{#if
                             errors.smtpStrategy}}is-invalid{{/if}}>
@@ -155,7 +157,7 @@
 
         <div class="card-body">
             <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                    target="_blank">localAddresses</a>]</div>
+                    target="_blank" rel="noopener noreferrer">localAddresses</a>]</div>
             Enable EmailEngine to use these IP addresses under <em>Dedicated</em> or <em>Random</em> selection
             strategies. If selected IPs are unavailable, EmailEngine defaults to the server's network.
         </div>

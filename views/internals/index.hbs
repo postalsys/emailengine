@@ -116,7 +116,8 @@
                 pending processing.
             </div>
             <div class="modal-footer">
-                <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank">
+                <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank"
+                    rel="noopener noreferrer">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" id="snapshot-thread" name="thread" value="">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

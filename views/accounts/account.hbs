@@ -464,7 +464,8 @@
             {{#if account.imapServerInfo.[support-url]}}
             <dt class="col-sm-3">Support URL</dt>
             <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}">{{account.imapServerInfo.[support-url]}}</a></dd>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer">{{account.imapServerInfo.[support-url]}}</a>
+            </dd>
             {{/if}}
 
             <dt class="col-sm-3">Capabilities</dt>
@@ -472,7 +473,7 @@
                 {{#each capabilities}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{capability}}</small>
                 {{/if}}
@@ -485,7 +486,7 @@
                 {{#if url}}
                 <a href="{{url}}" class="{{#if lastUsed}}badge badge-secondary{{/if}}" data-toggle="tooltip"
                     data-placement="top" title="{{#if lastUsed}}Active method | {{/if}}{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{capability}}</small>
                 {{/if}}
@@ -601,7 +602,7 @@
                 {{#each account.smtpAuthMechanisms}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{auth}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{auth}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{this}}</small>
                 {{/if}}

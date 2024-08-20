@@ -58,7 +58,7 @@
                     </p>
                     <p>You can add email accounts by using the API endpoint for <a
                             href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">registering
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">registering
                             accounts</a> or the hosted authentication form.
                     </p>
                     <div>
@@ -287,19 +287,21 @@
 
                 <ul class="list-group">
                     <li class="list-group-item"><a href="https://emailengine.app/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">EmailEngine</a> v{{packageData.version}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">EmailEngine</a>
+                        v{{packageData.version}}</li>
                     <li class="list-group-item"><a href="https://nodejs.org/en/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">Node.js</a> v{{stats.node}} ({{stats.arch}})</li>
-                    <li class="list-group-item"><a href="https://redis.io/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">Redis</a> v{{stats.redis}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">Node.js</a> v{{stats.node}}
+                        ({{stats.arch}})</li>
+                    <li class="list-group-item"><a href="https://redis.io/" target="_blank" rel="noopener noreferrer"
+                            referrerpolicy="no-referrer">Redis</a> v{{stats.redis}}</li>
                     <li class="list-group-item"><a href="https://imapflow.com/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">ImapFlow</a> v{{stats.imapflow}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">ImapFlow</a> v{{stats.imapflow}}</li>
                     <li class="list-group-item"><a href="https://docs.bullmq.io/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">BullMQ</a> v{{stats.bullmq}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">BullMQ</a> v{{stats.bullmq}}</li>
                     {{#if stats.build.commit}}
                     <li class="list-group-item">Code version: <a
                             href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">{{stats.build.commit}}</a>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">{{stats.build.commit}}</a>
                     </li>
                     {{/if}}
                 </ul>

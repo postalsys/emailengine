@@ -19,7 +19,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceUrl</a>]</div>
+                        target="_blank" rel="noopener noreferrer">serviceUrl</a>]</div>
 
                 <label for="settingsServiceUrl">Service URL</label>
                 <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
@@ -33,7 +33,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">enableApiProxy</a>]</div>
+                        target="_blank" rel="noopener noreferrer">enableApiProxy</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
                     id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
@@ -48,7 +48,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">locale</a>]</div>
+                        target="_blank" rel="noopener noreferrer">locale</a>]</div>
 
                 <label for="settingsServiceLocale">Default language</label>
                 <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
@@ -64,17 +64,17 @@
                         data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
                         style="cursor: default;">public pages</u>, e.g., for the <a
-                        href="https://emailengine.app/hosted-authentication" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">hosted authentication</a>
+                        href="https://emailengine.app/hosted-authentication" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">hosted authentication</a>
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md"
-                        target="_blank" referrerpolicy="{{referrerPolicy}}">See
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">See
                         here</a>
                     if you would like to add an additional translation.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">timezone</a>]</div>
+                        target="_blank" rel="noopener noreferrer">timezone</a>]</div>
 
                 <label for="settingsServiceTimezone">Default timezone</label>
                 <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
@@ -98,7 +98,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceSecret</a>]</div>
+                        target="_blank" rel="noopener noreferrer">serviceSecret</a>]</div>
 
                 <label for="settingsServiceSecret">Service secret</label>
 
@@ -143,7 +143,7 @@
 
                 <div class="text-muted float-right code-link">[<a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">EENGINE_SECRET</a>]</div>
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">EENGINE_SECRET</a>]</div>
 
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
@@ -157,7 +157,7 @@
                     <code>EENGINE_SECRET</code>
                     environment variable when starting EmailEngine to enable encryption. Read more <a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">from the
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">from the
                         documentation</a>.</small>
             </div>
 
@@ -174,7 +174,8 @@
                 {{/if}}
                 <small class="form-text text-muted">If you want to re-use access tokens managed by EmailEngine in other
                     parts of your app, you can enable the <a
-                        href="/admin/iframe/docs#/Account/getV1AccountAccountOauthtoken" target="_blank">oauth-token API
+                        href="/admin/iframe/docs#/Account/getV1AccountAccountOauthtoken" target="_blank"
+                        rel="noopener noreferrer">oauth-token API
                         endpoint</a>. Access to OAuth2 tokens is disabled by default due to the security risk of
                     potentially leaking these tokens.</small>
             </div>
@@ -182,7 +183,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">ignoreMailCertErrors</a>]</div>
+                        target="_blank" rel="noopener noreferrer">ignoreMailCertErrors</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
                     id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
@@ -226,7 +227,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">queueKeep</a>]</div>
+                        target="_blank" rel="noopener noreferrer">queueKeep</a>]</div>
 
                 <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
                 <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
@@ -236,7 +237,8 @@
                 <span class="invalid-feedback">{{errors.queueKeep}}</span>
                 {{/if}}
                 <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
-                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank">Bull Arena</a>.
+                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank"
+                        rel="noopener noreferrer">Bull Arena</a>.
                     Set this value if you want to keep a fixed number of the latest entries in the list.</small>
             </div>
 
@@ -251,7 +253,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">deliveryAttempts</a>]</div>
+                        target="_blank" rel="noopener noreferrer">deliveryAttempts</a>]</div>
 
                 <label for="settingsDeliveryAttempts">How many times to retry a failed email sending</label>
                 <input type="number" min="0" class="form-control {{#if errors.deliveryAttempts}}is-invalid{{/if}}"
@@ -289,7 +291,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">templateHeader</a>]</div>
+                        target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
 
                 <label>Template header for public pages (HTML code)</label>
 
@@ -332,7 +334,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">scriptEnv</a>]</div>
+                        target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
 
                 <label>Environment variable (JSON object)</label>
 
@@ -370,7 +372,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">trackSentMessages</a>]</div>
+                        target="_blank" rel="noopener noreferrer">trackSentMessages</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
                     id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
@@ -381,14 +383,16 @@
                 <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
                     through EmailEngine to track opens and clicks. You can also set this in the message level to
                     override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
-                        target="_blank" referrerpolicy="{{referrerPolicy}}">documentation</a> for details.<br />
-                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a> for
+                    details.<br />
+                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank"
+                        rel="noopener noreferrer">{{values.serviceUrl}}</a> must
                     be publicly accessible for tracking to work.</small>
             </div>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">resolveGmailCategories</a>]</div>
+                        target="_blank" rel="noopener noreferrer">resolveGmailCategories</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
                     id="resolveGmailCategories" name="resolveGmailCategories" {{#if

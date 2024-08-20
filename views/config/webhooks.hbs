@@ -48,7 +48,7 @@
         <div class="card-body">
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">webhooksEnabled</a>]
+                        target="_blank" rel="noopener noreferrer">webhooksEnabled</a>]
                 </div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.webhooksEnabled}}is-invalid{{/if}}"
@@ -84,7 +84,7 @@
         <div class="card-body">
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">webhooks</a>]
+                        target="_blank" rel="noopener noreferrer">webhooks</a>]
                 </div>
 
                 <label for="settingsWebhooks">Webhook URL</label>
@@ -108,7 +108,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">webhookEvents</a>="*"]
+                        target="_blank" rel="noopener noreferrer">webhookEvents</a>="*"]
                 </div>
 
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyAll}}is-invalid{{/if}}"
@@ -124,7 +124,7 @@
                 {{#each notificationTypes}}
                 <div>
                     <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">webhookEvents</a>="{{name}}"]
+                            target="_blank" rel="noopener noreferrer">webhookEvents</a>="{{name}}"]
                     </div>
                     <input type="checkbox" class="form-check-input event-type {{#if error}}is-invalid{{/if}}"
                         id="notify_{{name}}" name="notify_{{name}}" {{#if checked}}checked{{/if}}>
@@ -137,7 +137,7 @@
 
                 <div style="padding-left: 20px;">
                     <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">inboxNewOnly</a>]
+                            target="_blank" rel="noopener noreferrer">inboxNewOnly</a>]
                     </div>
                     <input type="checkbox" class="form-check-input {{#if error}}is-invalid{{/if}}" id="inboxNewOnly"
                         name="inboxNewOnly" {{#if ../values.inboxNewOnly}}checked{{/if}}>
@@ -172,7 +172,7 @@
 
                 <div class="form-group">
                     <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">webhooksCustomHeaders</a>]
+                            target="_blank" rel="noopener noreferrer">webhooksCustomHeaders</a>]
                     </div>
 
                     <label for="customHeaders">List of custom headers</label>
@@ -206,7 +206,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyHeaders</a>="*"]
+                        target="_blank" rel="noopener noreferrer">notifyHeaders</a>="*"]
                 </div>
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.headersAll}}is-invalid{{/if}}"
                     data-target="header-list" id="headers_all" name="headersAll" {{#if
@@ -219,7 +219,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyHeaders</a>]
+                        target="_blank" rel="noopener noreferrer">notifyHeaders</a>]
                 </div>
                 <label for="settingsNotifyHeaders">Selected headers</label>
                 <textarea class="form-control header-list {{#if errors.notifyHeaders}}is-invalid{{/if}}"
@@ -250,7 +250,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyText</a>]
+                        target="_blank" rel="noopener noreferrer">notifyText</a>]
                 </div>
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyText}}is-invalid{{/if}}"
                     data-target="text-list" data-reverse="true" id="settingsNotifyText" name="notifyText" {{#if
@@ -264,7 +264,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyWebSafeHtml</a>]
+                        target="_blank" rel="noopener noreferrer">notifyWebSafeHtml</a>]
                 </div>
                 <input type="checkbox"
                     class="form-check-input text-list {{#if errors.notifyWebSafeHtml}}is-invalid{{/if}}"
@@ -284,7 +284,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyTextSize</a>]
+                        target="_blank" rel="noopener noreferrer">notifyTextSize</a>]
                 </div>
                 <label for="settingsNotifyTextSize">Maximum text size</label>
                 <input type="number" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
@@ -302,7 +302,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">notifyCalendarEvents</a>]
+                        target="_blank" rel="noopener noreferrer">notifyCalendarEvents</a>]
                 </div>
                 <input type="checkbox" class="form-check-input {{#if errors.notifyCalendarEvents}}is-invalid{{/if}}"
                     data-target="text-list" id="settingsnotifyCalendarEvents" name="notifyCalendarEvents" {{#if

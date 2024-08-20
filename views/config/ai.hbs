@@ -59,7 +59,7 @@
 
                 <div class="text-right">
                     <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">generateEmailSummary</a>]</div>
+                            target="_blank" rel="noopener noreferrer">generateEmailSummary</a>]</div>
                     {{#if
                     values.generateEmailSummary}}
                     <span class="badge badge-success badge-pill">enabled</span>
@@ -75,7 +75,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiAPIKey</a>]
+                        target="_blank" rel="noopener noreferrer">openAiAPIKey</a>]
                 </div>
 
                 <label for="openAiAPIKey">OpenAI API key</label>
@@ -93,7 +93,7 @@
 
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiModel</a>]</div>
+                        target="_blank" rel="noopener noreferrer">openAiModel</a>]</div>
 
                 <div>
                     <label for="settingsServiceOpenAiModel">OpenAI Model</label>
@@ -119,7 +119,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiAPIUrl</a>]
+                        target="_blank" rel="noopener noreferrer">openAiAPIUrl</a>]
                 </div>
 
                 <label for="openAiAPIUrl">OpenAI API URL</label>
@@ -160,10 +160,10 @@
                     <div class="form-group">
                         <div class="text-muted float-right code-link">[<a
                                 href="https://emailengine.app/pre-processing-functions" target="_blank"
-                                referrerpolicy="{{referrerPolicy}}">documentation</a>]
+                                rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a>]
 
                             [<a href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
-                                referrerpolicy="{{referrerPolicy}}">openAiPreProcessingFn</a>]
+                                rel="noopener noreferrer" referrerpolicy="no-referrer">openAiPreProcessingFn</a>]
                         </div>
                         <label for="editor-fn">Filter function</label>
                         <div style="line-height: 1; margin-bottom: 10px;">
@@ -270,7 +270,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiPrompt</a>]</div>
+                        target="_blank" rel="noopener noreferrer">openAiPrompt</a>]</div>
 
                 <label>Prompt for LLM requests</label>
 
@@ -302,7 +302,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiTemperature</a>]
+                        target="_blank" rel="noopener noreferrer">openAiTemperature</a>]
                 </div>
                 <label for="settingsOpenAiTemperature">Temperature</label>
                 <input type="number" class="form-control text-list {{#if errors.openAiTemperature}}is-invalid{{/if}}"
@@ -313,14 +313,15 @@
                 {{/if}}
                 <small class="form-text text-muted"><a
                         href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">Temperature</a> value in the range of 0 to 2. Leave empty
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Temperature</a> value in the range of 0
+                    to 2. Leave empty
                     for
                     default.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiTopP</a>]
+                        target="_blank" rel="noopener noreferrer">openAiTopP</a>]
                 </div>
                 <label for="settingsOpenAiTopP">Top-p sampling</label>
                 <input type="number" class="form-control text-list {{#if errors.openAiTopP}}is-invalid{{/if}}"
@@ -331,7 +332,8 @@
                 {{/if}}
                 <small class="form-text text-muted"><a
                         href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">Top_p</a> value in the range of 0 to 1. Leave empty for
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Top_p</a> value in the range of 0 to 1.
+                    Leave empty for
                     default.</small>
             </div>
 

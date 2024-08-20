@@ -8419,8 +8419,6 @@ ${now}`,
 
             let licenseDetails = Object.assign({}, (request.app.licenseInfo && request.app.licenseInfo.details) || {});
 
-            let referrerPolicy = licenseDetails.trial ? 'origin' : 'no-referrer';
-
             if (licenseDetails.expires) {
                 let delayMs = new Date(licenseDetails.expires) - Date.now();
                 licenseDetails.expiresDays = Math.max(Math.ceil(delayMs / (24 * 3600 * 1000)), 0);
@@ -8464,7 +8462,6 @@ ${now}`,
                 licenseInfo: request.app.licenseInfo,
                 licenseDetails,
                 trialPossible: !tract,
-                referrerPolicy,
                 authData,
                 packageData,
                 systemAlerts,

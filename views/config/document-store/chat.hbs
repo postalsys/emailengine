@@ -35,12 +35,14 @@
                     <small class="form-text text-muted">If enabled, then EmailEngine uses the OpenAI API to produce text
                         embeddings for emails in the document store. For this feature to work, ensure document store
                         syncing is active and that the OpenAI API key is configured. You can run chat requests with the
-                        <a href="/admin/iframe/docs#/Chat/postV1ChatAccount" target="_blank">Chat
+                        <a href="/admin/iframe/docs#/Chat/postV1ChatAccount" target="_blank"
+                            rel="noopener noreferrer">Chat
                             API method</a>.</small>
                     <div class="mt-2"><small><strong>Important:</strong> EmailEngine will only create embeddings for
                             emails processed when the feature is active. To generate embeddings for previously stored
                             emails, utilize the <a href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
-                                target="_blank">Flush API method</a>. This will force EmailEngine to re-process all
+                                target="_blank" rel="noopener noreferrer">Flush API method</a>. This will force
+                            EmailEngine to re-process all
                             emails in the Document Store.</small>
                     </div>
 
@@ -52,14 +54,14 @@
 
                     <div>
                         <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                                target="_blank">documentStoreGenerateEmbeddings</a>]</div>
+                                target="_blank" rel="noopener noreferrer">documentStoreGenerateEmbeddings</a>]</div>
 
                         <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Chat/postV1ChatAccount"
-                                target="_blank">Chat&nbsp;with&nbsp;emails</a>]</div>
+                                target="_blank" rel="noopener noreferrer">Chat&nbsp;with&nbsp;emails</a>]</div>
 
                         <div class="text-muted code-link">[<a
-                                href="/admin/iframe/docs#/Account/putV1AccountAccountFlush"
-                                target="_blank">Request&nbsp;account&nbsp;flush</a>]</div>
+                                href="/admin/iframe/docs#/Account/putV1AccountAccountFlush" target="_blank"
+                                rel="noopener noreferrer">Request&nbsp;account&nbsp;flush</a>]</div>
 
                         <div>
                             {{#if
@@ -97,7 +99,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">openAiAPIKey</a>]
+                        target="_blank" rel="noopener noreferrer">openAiAPIKey</a>]
                 </div>
 
                 <label for="openAiAPIKey">OpenAI API key</label>
@@ -114,7 +116,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">documentStoreChatModel</a>]</div>
+                        target="_blank" rel="noopener noreferrer">documentStoreChatModel</a>]</div>
 
                 <label for="settingsServicedocumentStoreChatModel">OpenAI Model</label>
                 <select id="settingsServicedocumentStoreChatModel" class="custom-select custom-select-sm"
@@ -158,8 +160,8 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <div class="text-muted float-right code-link">[API Reference: <a
-                                href="/admin/iframe/docs#/Chat/postV1ChatAccount"
-                                target="_blank">/v1/chat/{account}</a>]
+                                href="/admin/iframe/docs#/Chat/postV1ChatAccount" target="_blank"
+                                rel="noopener noreferrer">/v1/chat/{account}</a>]
                         </div>
                         <label for="inputAccount">Account ID</label>
                         <input type="text" class="form-control" name="account" id="inputAccount"
