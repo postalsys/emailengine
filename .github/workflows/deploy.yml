@@ -13,10 +13,10 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v4.1.7
 
             - name: Install SSH key
-              uses: shimataro/ssh-key-action@v2
+              uses: shimataro/ssh-key-action@v2.7.0
               with:
                   key: ${{ secrets.SSH_KEY }}
                   known_hosts: ${{ secrets.KNOWN_HOSTS }}
