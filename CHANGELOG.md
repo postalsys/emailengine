@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.45.0](https://github.com/postalsys/emailengine/compare/v2.44.1...v2.45.0) (2024-08-22)
+
+
+### Features
+
+* Require minimally Node v18 (previously v16) ([dc8282e](https://github.com/postalsys/emailengine/commit/dc8282e09033d0554301c9c824e8cb74c79bdb19))
+* **templates:** Removed MJML support ([b976e53](https://github.com/postalsys/emailengine/commit/b976e53ff2e9eeb6591b16ac983e87f85ff70c76))
+
+
+### Bug Fixes
+
+* **deps:** Bumped dependencies to fix web safe HTML ([7b20aff](https://github.com/postalsys/emailengine/commit/7b20affbeaa41377ac22accbbc39f2dddfc10961))
+* Use no-referrer policy for all _blank links ([eef5757](https://github.com/postalsys/emailengine/commit/eef5757579667e9950aefce11d4cd5e68e1c2421))
+
 ## [2.44.1](https://github.com/postalsys/emailengine/compare/v2.44.0...v2.44.1) (2024-08-15)
 
 
