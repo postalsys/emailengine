@@ -4136,7 +4136,9 @@ When making API calls remember that requests against the same account are queued
                         .label('UploadAttachmentList'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
+                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown().example({
+                        'X-My-Custom-Header': 'Custom header value'
+                    }),
 
                     locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone')
@@ -4930,6 +4932,7 @@ When making API calls remember that requests against the same account are queued
                             then: Joi.optional(),
                             otherwise: Joi.forbidden()
                         })
+                        .meta({ swaggerHidden: true })
                 }),
 
                 payload: Joi.object({
@@ -5052,6 +5055,7 @@ When making API calls remember that requests against the same account are queued
                         .description('If enabled then returns the ElasticSearch query for debugging as part of the response')
                         .label('exposeQuery')
                         .optional()
+                        .meta({ swaggerHidden: true })
                 }),
 
                 payload: Joi.object({
@@ -5254,7 +5258,8 @@ When making API calls remember that requests against the same account are queued
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
                             then: Joi.forbidden('y')
-                        }),
+                        })
+                        .label('TemplateRender'),
 
                     mailMerge: Joi.array()
                         .items(
@@ -5393,6 +5398,24 @@ When making API calls remember that requests against the same account are queued
                     .oxor('raw', 'text')
                     .oxor('raw', 'attachments')
                     .label('SubmitMessage')
+                    .example({
+                        to: [
+                            {
+                                name: 'Nyan Cat',
+                                address: 'nyan.cat@example.com'
+                            }
+                        ],
+                        subject: 'What a wonderful message!',
+                        text: 'Hello from myself!',
+                        html: '<p>Hello from myself!</p>',
+                        attachments: [
+                            {
+                                filename: 'transparent.gif',
+                                content: 'R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=',
+                                contentType: 'image/gif'
+                            }
+                        ]
+                    })
             },
 
             response: {
