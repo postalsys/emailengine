@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.45.1](https://github.com/postalsys/emailengine/compare/v2.45.0...v2.45.1) (2024-08-23)
+
+
+### Bug Fixes
+
+* Fixed a bug with invalid logger object ([e44de90](https://github.com/postalsys/emailengine/commit/e44de9041a041caa16499d83806543fbd2af8d0c))
+
 ## [2.45.0](https://github.com/postalsys/emailengine/compare/v2.44.1...v2.45.0) (2024-08-22)
 
 
