@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-08-22 10:30+0000\n"
+"POT-Creation-Date: 2024-08-23 07:47+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -57,14 +57,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -86,6 +78,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:194
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:18

@@ -713,15 +713,12 @@ const init = async () => {
         //auth: 'api-token',
 
         info: {
-            title: 'EmailEngine',
+            title: 'EmailEngine API',
             version: packageData.version,
-            contact: {
-                name: 'Postal Systems OÜ',
-                email: 'info@emailengine.app'
-            },
-            description: `You will need an Access Token to use this API (generate one <a href="/admin/tokens" target="_parent">here</a>).
 
-When making API calls remember that requests against the same account are queued and not executed in parallel. If a previous request takes too much time to finish, a queued request might time out before EmailEngine can run it.`
+            description: `<strong>Authentication Required:</strong> You must provide an Access Token to use this API. (Generate your Access Token <a href="/admin/tokens" target="_parent">here</a>).
+
+<strong>Note on Request Handling:</strong> Requests made to the same account are processed sequentially and are not executed in parallel. If a previous request is still processing, subsequent requests may be queued. In the event of a prolonged request, queued requests may time out before being executed by EmailEngine.`
         },
 
         securityDefinitions: {
