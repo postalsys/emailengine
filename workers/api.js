@@ -744,7 +744,8 @@ const init = async () => {
                 name: 'Account'
             },
             {
-                name: 'Mailbox'
+                name: 'Mailbox',
+                description: 'Manage mailbox folders'
             },
             {
                 name: 'Message'
@@ -757,16 +758,19 @@ const init = async () => {
                 }
             },
             {
-                name: 'Outbox'
+                name: 'Outbox',
+                description: 'Manage scheduled and pending emails in the sending queue'
             },
             {
-                name: 'Delivery Test'
+                name: 'Delivery Test',
+                description: 'Test email deliverability, including SPF, DKIM, and DMARC alignment'
             },
             {
                 name: 'Access Tokens'
             },
             {
-                name: 'Settings'
+                name: 'Settings',
+                description: 'Runtime configuration for EmailEngine'
             },
             {
                 name: 'Templates',
