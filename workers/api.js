@@ -704,6 +704,8 @@ const init = async () => {
 
         expanded: 'list',
         sortEndpoints: 'method',
+        sortTags: 'unsorted',
+
         tryItOutEnabled: true,
 
         templates: Path.join(__dirname, '..', 'views', 'swagger', 'ui'),
@@ -735,7 +737,74 @@ const init = async () => {
         cors: !!CORS_CONFIG,
         cache: {
             expiresIn: 7 * 24 * 60 * 60 * 1000
-        }
+        },
+
+        tags: [
+            {
+                name: 'Account'
+            },
+            {
+                name: 'Mailbox'
+            },
+            {
+                name: 'Message'
+            },
+            {
+                name: 'Submit',
+                externalDocs: {
+                    description: 'Documentation',
+                    url: 'https://emailengine.app/sending-emails'
+                }
+            },
+            {
+                name: 'Outbox'
+            },
+            {
+                name: 'Delivery Test'
+            },
+            {
+                name: 'Access Tokens'
+            },
+            {
+                name: 'Settings'
+            },
+            {
+                name: 'Templates',
+                description: 'Manage templates for sending emails',
+                externalDocs: {
+                    description: 'Documentation',
+                    url: 'https://emailengine.app/email-templates'
+                }
+            },
+            {
+                name: 'Logs'
+            },
+            {
+                name: 'Stats'
+            },
+            {
+                name: 'License'
+            },
+            {
+                name: 'Webhooks'
+            },
+            {
+                name: 'OAuth2 Applications',
+                externalDocs: {
+                    description: 'Documentation',
+                    url: 'https://emailengine.app/oauth2-configuration'
+                }
+            },
+            {
+                name: 'SMTP Gateway'
+            },
+            {
+                name: 'Blocklists'
+            },
+            {
+                name: 'Multi Message Actions'
+            }
+        ]
     };
 
     await server.register(AuthBearer);
@@ -3746,7 +3815,7 @@ const init = async () => {
         method: 'GET',
         path: '/v1/account/{account}/message/{message}/source',
 
-        async handler(request) {
+        async handler(request, h) {
             let accountObject = new Account({
                 redis,
                 account: request.params.account,
@@ -3756,7 +3825,8 @@ const init = async () => {
             });
 
             try {
-                return await accountObject.getRawMessage(request.params.message);
+                const response = await accountObject.getRawMessage(request.params.message);
+                return h.response(response);
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -3779,6 +3849,12 @@ const init = async () => {
                 mode: 'required'
             },
             cors: CORS_CONFIG,
+
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['message/rfc822']
+                }
+            },
 
             validate: {
                 options: {
@@ -3839,6 +3915,12 @@ const init = async () => {
                 mode: 'required'
             },
             cors: CORS_CONFIG,
+
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['application/octet-stream']
+                }
+            },
 
             validate: {
                 options: {
@@ -5834,6 +5916,12 @@ const init = async () => {
                 mode: 'required'
             },
             cors: CORS_CONFIG,
+
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['text/plain']
+                }
+            },
 
             validate: {
                 options: {
@@ -8251,7 +8339,11 @@ ${now}`,
             notes: 'Stream account state changes as an EventSource',
             tags: ['api', 'Account'],
 
-            plugins: {},
+            plugins: {
+                'hapi-swagger': {
+                    produces: ['text/event-stream']
+                }
+            },
 
             auth: {
                 strategy: 'api-token',
