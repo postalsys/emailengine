@@ -2985,7 +2985,7 @@ const init = async () => {
         },
         options: {
             description: 'Request syncing',
-            notes: 'Requests account syncing to be run immediatelly',
+            notes: 'Immediately trigger account syncing for IMAP accounts',
             tags: ['api', 'Account'],
 
             plugins: {},
@@ -3051,8 +3051,9 @@ const init = async () => {
             }
         },
         options: {
-            description: 'Remove synced account',
-            notes: 'Stop syncing IMAP account and delete cached values',
+            description: 'Remove account',
+            notes: "Stop processing and clear the account's cache",
+
             tags: ['api', 'Account'],
 
             plugins: {},
@@ -3726,7 +3727,7 @@ const init = async () => {
                 }),
 
                 payload: Joi.object({
-                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    path: Joi.string().required().example('Previous Folder Name').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
                     newPath: Joi.array()
                         .items(Joi.string().max(256))
                         .single()
