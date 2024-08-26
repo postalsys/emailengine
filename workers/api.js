@@ -184,7 +184,6 @@ const AccountTypeSchema = Joi.string()
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
-const { OUTLOOK_SCOPES } = require('../lib/oauth/outlook');
 const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
@@ -1685,11 +1684,7 @@ const init = async () => {
 
                         let subscriptionRes;
                         try {
-                            subscriptionRes = await accountObject.oauth2Request(
-                                `https://graph.microsoft.com/v1.0/subscriptions/${outlookSubscription.id}`,
-                                'PATCH',
-                                subscriptionPayload
-                            );
+                            subscriptionRes = await accountObject.oauth2Request(`/v1.0/subscriptions/${outlookSubscription.id}`, 'PATCH', subscriptionPayload);
                             if (subscriptionRes && subscriptionRes.expirationDateTime) {
                                 outlookSubscription.expirationDateTime = subscriptionRes.expirationDateTime;
                             }
@@ -1916,7 +1911,7 @@ const init = async () => {
 
                         let profileRes;
                         try {
-                            profileRes = await oAuth2Client.request(r.access_token, 'https://graph.microsoft.com/v1.0/me');
+                            profileRes = await oAuth2Client.request(r.access_token, `${oAuth2Client.apiBase}/me`);
                         } catch (err) {
                             let response = err.oauthRequest && err.oauthRequest.response;
                             if (response && response.error) {
@@ -1958,8 +1953,6 @@ const init = async () => {
 
                     accountData.name = accountData.name || userInfo.name || '';
 
-                    const defaultScopes = (oauth2App.baseScopes && OUTLOOK_SCOPES[oauth2App.baseScopes]) || OUTLOOK_SCOPES.imap;
-
                     accountData.oauth2 = Object.assign(
                         accountData.oauth2 || {},
                         {
@@ -1967,7 +1960,7 @@ const init = async () => {
                             accessToken: r.access_token,
                             refreshToken: r.refresh_token,
                             expires: new Date(Date.now() + r.expires_in * 1000),
-                            scope: r.scope ? r.scope.split(/\s+/) : defaultScopes,
+                            scope: r.scope ? r.scope.split(/\s+/) : oAuth2Client.scopes,
                             tokenType: r.token_type
                         },
                         {
@@ -7123,6 +7116,16 @@ const init = async () => {
                         .example('common')
                         .description('Authorization tenant value for Outlook OAuth2 applications')
                         .label('SupportedAccountTypes'),
+
+                    cloud: Joi.string()
+                        .trim()
+                        .empty('')
+                        .valid('global', 'gcc-high', 'dod', 'china')
+                        .example('global')
+                        .description('Azure cloud type for Outlook OAuth2 applications')
+                        .label('AzureCloud'),
+
+                    tenant: Joi.string().trim().empty('').max(1024).example('f8cdef31-a31e-4b4a-93e4-5f571e91255a').label('Directorytenant'),
 
                     redirectUrl: Joi.string()
                         .allow('', null, false)

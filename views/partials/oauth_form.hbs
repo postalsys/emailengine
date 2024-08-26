@@ -226,6 +226,23 @@
 
         {{#if activeOutlook}}
 
+        <div class="form-group">
+            <label for="cloud">Azure cloud</label>
+            <select class="custom-select custom-select-sm" id="cloud" name="cloud" {{#if errors.cloud}}is-invalid{{/if}}
+                required>
+
+                {{#each azureClouds}}
+                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+                    description}} &mdash;
+                    {{description}}{{/if}}</option>
+                {{/each}}
+            </select>
+        </div>
+
+        {{/if}}
+
+        {{#if activeOutlook}}
+
         <label for="clientSecret">Supported account types</label>
 
         <div class="form-check">
@@ -274,6 +291,8 @@
                 &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;</small>
         </div>
         {{/if}}
+
+
 
         <div class="form-group">
             <label for="redirectUrl">Redirect URL</label>
@@ -459,7 +478,7 @@
             Account below to configure this.
         </p>
 
-        <label for="basic-url">Select service account to manage webhooks</label>
+        <label for="pubSubApp">Select service account to manage webhooks</label>
         <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
             errors.pubSubApp}}is-invalid{{/if}} required {{#unless baseScopesApi}}disabled{{/unless}}>
 
