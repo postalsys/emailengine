@@ -111,6 +111,12 @@
                 {{/if}}
             </dd>
 
+            {{#if app.cloudData}}
+            <dt class="col-sm-3">Cloud environment</dt>
+            <dd class="col-sm-9">{{app.cloudData.name}} <em>&mdash;
+                    {{app.cloudData.description}}</em></dd>
+            {{/if}}
+
             {{#unless app.legacy}}
             <dt class="col-sm-3">Accounts</dt>
             <dd class="col-sm-9 text-monospace"><small>{{app.accounts}}</small></dd>

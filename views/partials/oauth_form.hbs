@@ -227,8 +227,8 @@
         {{#if activeOutlook}}
 
         <div class="form-group">
-            <label for="cloud">Azure cloud</label>
-            <select class="custom-select custom-select-sm" id="cloud" name="cloud" {{#if errors.cloud}}is-invalid{{/if}}
+            <label for="cloud">Azure cloud environment</label>
+            <select class="custom-select custom-select-sm {{#if errors.cloud}}is-invalid{{/if}}" id="cloud" name="cloud"
                 required>
 
                 {{#each azureClouds}}
@@ -237,6 +237,11 @@
                     {{description}}{{/if}}</option>
                 {{/each}}
             </select>
+            {{#if errors.cloud}}
+            <span class="invalid-feedback">{{errors.cloud}}</span>
+            {{/if}}
+            <small class="form-text text-muted">Accounts hosted in different cloud environments use different OAuth2
+                endpoints and scopes.</small>
         </div>
 
         {{/if}}
@@ -479,8 +484,9 @@
         </p>
 
         <label for="pubSubApp">Select service account to manage webhooks</label>
-        <select class="custom-select custom-select-sm" id="pubSubApp" name="pubSubApp" {{#if
-            errors.pubSubApp}}is-invalid{{/if}} required {{#unless baseScopesApi}}disabled{{/unless}}>
+        <select class="custom-select custom-select-sm {{#if
+            errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" required {{#unless
+            baseScopesApi}}disabled{{/unless}}>
 
             <option value=""> &mdash; Select the service account for your project &mdash; </option>
 
