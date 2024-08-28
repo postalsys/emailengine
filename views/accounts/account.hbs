@@ -305,11 +305,29 @@
 
 <div class="card mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+        <h6 class="m-0 font-weight-bold text-primary">IMAP {{#if account.lastErrorState}}<span
+                class="badge badge-danger">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
+        {{#if account.lastErrorState}}
         <dl class="row">
+            {{#if account.lastErrorState.description}}
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{account.lastErrorState.description}}</dd>
+            {{/if}}
+
+            {{#if account.lastErrorState.response}}
+            <dt class="col-sm-3">IMAP response</dt>
+            <dd class="col-sm-9"><code>{{account.lastErrorState.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+        <hr>
+        {{/if}}
+
+        <dl class="row">
+
 
             <dt class="col-sm-3">Enabled</dt>
 
