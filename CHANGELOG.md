@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.46.0](https://github.com/postalsys/emailengine/compare/v2.45.1...v2.46.0) (2024-08-29)
+
+
+### Features
+
+* **azure:** Added suppor for different Azure cloud environments ([#440](https://github.com/postalsys/emailengine/issues/440)) ([93a7010](https://github.com/postalsys/emailengine/commit/93a7010223558036d2b2d09c7008e888a48cc071))
+
+
+### Bug Fixes
+
+* **autoconf-validation:** If autoconfig does not respond with full settings, do not auto-attempt configuration check ([cdc5765](https://github.com/postalsys/emailengine/commit/cdc57650479941e230fc99d53709cfdc0ed7ebb1))
+* **autoconfig:** Added configuration information for ATT email accounts ([729de83](https://github.com/postalsys/emailengine/commit/729de83e0e2bb9728ca33d01eff2345d8795938e))
+* **imap:** Disable IMAP syncing if authentication fails too many times ([def4404](https://github.com/postalsys/emailengine/commit/def4404e62ce76838f9e6dc37c1cbefc2f5cf8d0))
+* **link-tracking:** Fixed unsubscribe links when click tracking is enabled ([34cdc38](https://github.com/postalsys/emailengine/commit/34cdc38ae801c7b04264c900c8fb2b35970f398c))
+
 ## [2.45.1](https://github.com/postalsys/emailengine/compare/v2.45.0...v2.45.1) (2024-08-23)
 
 
