@@ -8649,7 +8649,7 @@ ${now}`,
             return res.code(request.errorInfo.statusCode || 500);
         }
 
-        if (/^\/v1\//.test(request.path) || /^\/health$/.test(request.path)) {
+        if (/^\/v1\//.test(request.path) || /^\/health$|\/test$/.test(request.path)) {
             // API path
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }

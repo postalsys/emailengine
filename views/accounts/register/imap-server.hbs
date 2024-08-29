@@ -288,8 +288,13 @@
 
             errorsListElm.innerHTML = '';
 
-            if (data.error) {
-                addErrorRow('General error', data.error.message || data.error)
+            if (data.error && !data.fields) {
+                addErrorRow('{{_ "General error" }}', data.error.message || data.error)
+            } else if (data.fields) {
+                addErrorRow('{{_ "Validation error" }}', data.message);
+                for (let field of data.fields) {
+                    addErrorRow('-', field.message, 'aaaa', 'bbbbbb');
+                }
             } else {
                 if (!data.imap || !data.imap.success) {
                     let error = data.imap && data.imap.error || '{{_ "Failed to validate IMAP server settings" }}'
@@ -350,8 +355,17 @@
                 method: 'post',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify(body)
-            })
+            });
+
             if (!res.ok) {
+                try {
+                    let errData = await res.json();
+                    return errData
+                } catch (err) {
+                    // ignore
+                    console.error(err)
+                }
+
                 throw new Error(`{{_ "HTTP error!"}} status: ${res.status}`);
             }
 

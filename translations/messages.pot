@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-08-28 11:06+0000\n"
+"POT-Creation-Date: 2024-08-29 07:08+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -57,37 +57,6 @@ msgstr ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:115
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:194
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
 msgstr ""
@@ -95,6 +64,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:21
 #: views/accounts/register/imap-server.hbs:101
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:115
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:42
@@ -157,6 +132,11 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:194
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:202
 msgid "Continue without testing"
 msgstr ""
@@ -169,24 +149,52 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:295
+#: views/accounts/register/imap-server.hbs:292
+msgid "General error"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:294
+msgid "Validation error"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:300
 msgid "Failed to validate IMAP server settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:297
+#: views/accounts/register/imap-server.hbs:302
 msgid "IMAP Server responded with the following message:"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:304
+#: views/accounts/register/imap-server.hbs:309
 msgid "Failed to validate SMTP server settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:306
+#: views/accounts/register/imap-server.hbs:311
 msgid "SMTP Server responded with the following message:"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:355
+#: views/accounts/register/imap-server.hbs:369
 msgid "HTTP error!"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
 msgstr ""
 
 #: lib/routes-ui.js:653
@@ -194,43 +202,48 @@ msgid "Invalid API key for OpenAI"
 msgstr ""
 
 #: lib/routes-ui.js:4853
-#: lib/routes-ui.js:6772
-#: lib/routes-ui.js:6783
+#: lib/routes-ui.js:6782
+#: lib/routes-ui.js:6793
 msgid "Server hostname was not found"
 msgstr ""
 
 #: lib/routes-ui.js:4856
-#: lib/routes-ui.js:6775
-#: lib/routes-ui.js:6786
+#: lib/routes-ui.js:6785
+#: lib/routes-ui.js:6796
 msgid "Invalid username or password"
 msgstr ""
 
 #: lib/routes-ui.js:4860
-#: lib/routes-ui.js:6790
+#: lib/routes-ui.js:6800
 msgid "TLS protocol error"
 msgstr ""
 
 #: lib/routes-ui.js:6591
 #: lib/routes-ui.js:6624
-#: lib/routes-ui.js:9379
+#: lib/routes-ui.js:9392
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6710
-#: lib/routes-ui.js:6967
+#: lib/routes-ui.js:6720
+#: lib/routes-ui.js:6980
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9479
-#: lib/routes-ui.js:9512
+#: lib/routes-ui.js:9357
+#: lib/tools.js:731
+msgid "Invalid input"
+msgstr ""
+
+#: lib/routes-ui.js:9492
+#: lib/routes-ui.js:9525
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1408
+#: lib/tools.js:1409
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1417
-#: lib/tools.js:1422
+#: lib/tools.js:1418
+#: lib/tools.js:1423
 msgid "Invalid or expired account setup URL"
 msgstr ""
