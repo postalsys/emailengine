@@ -48,7 +48,7 @@ if [[ -z $DOMAIN_NAME ]]; then
 
     echo "Enter the domain name for your new EmailEngine installation."
     echo "(ex. example.com or test.example.com)"
-    echo "Leave emtpy to autogenerate a domain name."
+    echo "Leave empty to autogenerate a domain name."
 
     while [ -z "$DOMAIN_NAME" ]
     do

@@ -164,7 +164,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
-const CONNECION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECION_SETUP_DELAY') || config.service.setupDelay) || 0;
+const CONNECTION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECTION_SETUP_DELAY') || config.service.setupDelay) || 0;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -1028,7 +1028,7 @@ async function assignAccounts() {
             msg: 'Assigning connections',
             unassigned: unassigned.size,
             workersAvailable: availableIMAPWorkers.size,
-            setupDelay: CONNECION_SETUP_DELAY
+            setupDelay: CONNECTION_SETUP_DELAY
         });
 
         for (let account of unassigned) {
@@ -1053,8 +1053,8 @@ async function assignAccounts() {
                 runIndex
             });
 
-            if (CONNECION_SETUP_DELAY) {
-                await new Promise(r => setTimeout(r, CONNECION_SETUP_DELAY));
+            if (CONNECTION_SETUP_DELAY) {
+                await new Promise(r => setTimeout(r, CONNECTION_SETUP_DELAY));
             }
         }
     } finally {

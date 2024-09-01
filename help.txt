@@ -73,7 +73,7 @@ Token management commands
 Account management commands
 
   emailengine export         Exports raw account data including credentials
-    --account, -a            Account indentifier                         [string]
+    --account, -a            Account identifier                          [string]
 
 Password management commands
   emailengine password       Set admin password

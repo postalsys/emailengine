@@ -1561,7 +1561,7 @@ const init = async () => {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
                     request.logger.error({
-                        msg: 'Invalid subcsription details',
+                        msg: 'Invalid subscription details',
                         account: request.query.account,
                         expected: {
                             subscriptionId: outlookSubscription.id,
@@ -1653,7 +1653,7 @@ const init = async () => {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
                     request.logger.error({
-                        msg: 'Invalid subcsription details',
+                        msg: 'Invalid subscription details',
                         account: request.query.account,
                         expected: {
                             subscriptionId: outlookSubscription.id,
@@ -2201,7 +2201,7 @@ const init = async () => {
 
                     restrictions: tokenRestrictionsSchema,
 
-                    ip: ipSchema.description('IP address of the requestor').label('TokenIP')
+                    ip: ipSchema.description('IP address of the requester').label('TokenIP')
                 }).label('CreateToken')
             },
 
@@ -2333,7 +2333,7 @@ const init = async () => {
                                     .example('{"example": "value"}')
                                     .description('Related metadata in JSON format')
                                     .label('JsonMetaData'),
-                                ip: ipSchema.description('IP address of the requestor').label('TokenIP')
+                                ip: ipSchema.description('IP address of the requester').label('TokenIP')
                             }).label('RootTokensItem')
                         )
                         .label('RootTokensEntries')
@@ -2414,7 +2414,7 @@ const init = async () => {
 
                                 restrictions: tokenRestrictionsSchema,
 
-                                ip: ipSchema.description('IP address of the requestor').label('TokenIP')
+                                ip: ipSchema.description('IP address of the requester').label('TokenIP')
                             }).label('AccountTokensItem')
                         )
                         .label('AccountTokensEntries')

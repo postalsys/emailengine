@@ -77,7 +77,7 @@ async function main() {
         console.error(' --service.secret is the secret value to use for encryption.');
         console.error('   Leave empty to remove encryption.');
         console.error(' --decrypt is the old secret value. Not needed if current passwords are not encrypted.');
-        console.error('   You can set this value multiple times if accounts are enrypted with different secrets.');
+        console.error('   You can set this value multiple times if accounts are encrypted with different secrets.');
         return;
     }
 
