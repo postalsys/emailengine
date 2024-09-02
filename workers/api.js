@@ -5393,7 +5393,13 @@ const init = async () => {
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
                     headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
 
-                    trackingEnabled: Joi.boolean().example(false).description('Should EmailEngine track clicks and opens for this message'),
+                    trackingEnabled: Joi.boolean()
+                        .example(false)
+                        .description('Should EmailEngine track clicks and opens for this message')
+                        .meta({ swaggerHidden: true }),
+
+                    trackOpens: Joi.boolean().example(false).description('Should EmailEngine track opens for this message'),
+                    trackClicks: Joi.boolean().example(false).description('Should EmailEngine track clicks for this message'),
 
                     copy: Joi.boolean()
                         .allow(null)
