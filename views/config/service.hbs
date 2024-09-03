@@ -13,7 +13,7 @@
 
     <div class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
         </div>
         <div class="card-body">
 
@@ -28,7 +28,7 @@
                 {{#if errors.serviceUrl}}
                 <span class="invalid-feedback">{{errors.serviceUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Base URL for EmailEngine without the path part.</small>
+                <small class="form-text text-muted">The base URL for EmailEngine, excluding any path components.</small>
             </div>
 
             <div class="form-group form-check">
@@ -37,20 +37,20 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
                     id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
-                <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
+                <label class="form-check-label" for="enableApiProxy">Reverse Proxy Support</label>
                 {{#if errors.enableApiProxy}}
                 <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine looks for the client
-                    IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
-                    web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
+                <small class="form-text text-muted">Enable this option if EmailEngine is behind a reverse proxy (e.g.,
+                    Nginx or Caddy) to correctly identify the client IP address using the <code>X-Forwarded-For</code>
+                    header. Disable this if EmailEngine handles web requests directly without a reverse proxy.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">locale</a>]</div>
 
-                <label for="settingsServiceLocale">Default language</label>
+                <label for="settingsServiceLocale">Default Language</label>
                 <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
                     errors.locale}}is-invalid{{/if}}>
                     {{#each locales}}
@@ -60,23 +60,22 @@
                 {{#if errors.locale}}
                 <span class="invalid-feedback">{{errors.locale}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Language for <u data-toggle="popover" data-trigger="hover"
-                        data-html="true"
+                <small class="form-text text-muted">Select the language for <u data-toggle="popover"
+                        data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
-                        style="cursor: default;">public pages</u>, e.g., for the <a
+                        style="cursor: default;">public-facing pages</u>, such as the <a
                         href="https://emailengine.app/hosted-authentication" target="_blank" rel="noopener noreferrer"
                         referrerpolicy="no-referrer">hosted authentication</a>
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md"
-                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">See
-                        here</a>
-                    if you would like to add an additional translation.</small>
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more about adding
+                        additional translations.</a></small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">timezone</a>]</div>
 
-                <label for="settingsServiceTimezone">Default timezone</label>
+                <label for="settingsServiceTimezone">Default Timezone</label>
                 <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
                     errors.timezone}}is-invalid{{/if}}>
                     {{#each timezones}}
