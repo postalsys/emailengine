@@ -6,8 +6,8 @@
 </div>
 
 <p class="mb-4">
-    You can store all IMAP and SMTP traffic except user credentials and message content for selected accounts. You can
-    then download these logs for inspection. Account logging is not enabled by default.
+    Enable logging of IMAP and SMTP traffic, excluding user credentials and message content, for selected accounts. You
+    can download these logs for inspection. By default, account logging is disabled.
 </p>
 
 <form method="post" action="/admin/config/logging">
@@ -22,28 +22,29 @@
 
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.all}}is-invalid{{/if}}"
                     data-target="log-list" id="settingsLogsAll" name="all" {{#if values.all}}checked{{/if}} />
-                <label class="form-check-label" for="settingsLogsAll">Store logs for all accounts</label>
+                <label class="form-check-label" for="settingsLogsAll">Store Logs for All Accounts</label>
                 {{#if errors.all}}
                 <span class="invalid-feedback">{{errors.all}}</span>
                 {{/if}}
-                <small class="form-text text-muted">It is not recommended if EmailEngine tracks a large number of
-                    accounts.</small>
+                <small class="form-text text-muted">Enabling this option stores logs for all accounts. This is not
+                    recommended if EmailEngine is tracking a large number of accounts due to potential performance
+                    impacts..</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">logs.maxLogLines</a>]</div>
 
-                <label for="settingsLogsMaxLogLines">Maximum lines of logs to store per account</label>
+                <label for="settingsLogsMaxLogLines">Maximum Lines of Logs to Store Per Account</label>
                 <input type="number" class="form-control {{#if errors.maxLogLines}}is-invalid{{/if}}"
                     id="settingsLogsMaxLogLines" min="0" max="10000000" name="maxLogLines"
                     value="{{values.maxLogLines}}" />
                 {{#if errors.maxLogLines}}
                 <span class="invalid-feedback">{{errors.maxLogLines}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Logs are stored in Redis, which in other words means RAM, so it
-                    might
-                    not be a good idea to store too much data in it.</small>
+                <small class="form-text text-muted">Specify the maximum number of log lines to store per account. Logs
+                    are stored in Redis (i.e., in RAM), so be cautious about storing excessive data to avoid memory
+                    issues.</small>
             </div>
         </div>
     </div>
@@ -53,7 +54,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Update Settings</span>
         </button>
     </div>
 
