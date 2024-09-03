@@ -6,10 +6,10 @@
     </h1>
 </div>
 
-<p>You can use EmailEngine's LLM integration to enhance your emails by sending them to the OpenAI API with a custom
-    prompt. Once analyzed, the returned data in JSON format is attached to the email object. <a href="#" tabindex="-1"
-        role="button" data-toggle="popover" data-trigger="hover" style="display: inline-block;" data-title="PII alert"
-        data-content="EmailEngine uploads the text content of incoming emails to the API servers of OpenAI. Uploaded content is not used for training, but you need to verify if OpenAPI terms are in accordance with your data processing agreements with your users."><i
+<p>Enhance your emails by integrating EmailEngine with OpenAI's API. Emails can be sent to the OpenAI API with a custom
+    prompt, and the returned JSON data is attached to the email object for further use. <a href="#" tabindex="-1"
+        role="button" data-toggle="popover" data-trigger="hover" style="display: inline-block;" data-title="PII Alert"
+        data-content="EmailEngine uploads the text content of incoming emails to OpenAI's API servers. While the uploaded content is not used for training purposes, you must verify that OpenAI's terms align with your data processing agreements with your users"><i
             class="fas fa-info-circle"></i></a>
 </p>
 
@@ -19,7 +19,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
         </div>
 
         {{#if openAiError}}
@@ -29,7 +29,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
 
-                <p><strong>NB!</strong> The last attempted OpenAI request failed with the response below.</p>
+                <p><strong>NB!</strong> The last attempted OpenAI request failed with the following response:</p>
                 <hr>
                 <p class="mb-0">
                     <code>{{openAiError.message}}{{#if openAiError.code}} ({{openAiError.code}}){{/if}}</code>
@@ -47,13 +47,12 @@
                     <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
                         id="generateEmailSummary" name="generateEmailSummary" {{#if
                         values.generateEmailSummary}}checked{{/if}} />
-                    <label class="form-check-label" for="generateEmailSummary">Enable email processing with
-                        AI</label>
+                    <label class="form-check-label" for="generateEmailSummary">Enable Email Processing with AI</label>
                     {{#if errors.generateEmailSummary}}
                     <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">EmailEngine will send new emails to OpenAI API for
-                        processing and uses the response data to enrich the email information for
+                    <small class="form-text text-muted">When enabled, EmailEngine will send new emails to the OpenAI API
+                        for processing. The response data will be used to enrich the email information in
                         <code>messageNew</code> webhooks.</small>
                 </div>
 
@@ -78,7 +77,7 @@
                         target="_blank" rel="noopener noreferrer">openAiAPIKey</a>]
                 </div>
 
-                <label for="openAiAPIKey">OpenAI API key</label>
+                <label for="openAiAPIKey">OpenAI API Key</label>
                 <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
                     id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
                     autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
@@ -86,7 +85,7 @@
                 {{#if errors.openAiAPIKey}}
                 <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
                 {{/if}}
-                <small class="form-text text-muted">OpenAI API key.</small>
+                <small class="form-text text-muted">Enter your OpenAI API key.</small>
             </div>
 
             <div class="form-group">
@@ -100,7 +99,7 @@
 
                     <button class="btn btn-link" id="reload-btn">
                         <i class="fas fa-sync-alt fa-fw"></i>
-                        Reload models list</button>
+                        Reload Models List</button>
                 </div>
 
                 <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
@@ -112,8 +111,8 @@
                 {{#if errors.openAiModel}}
                 <span class="invalid-feedback">{{errors.openAiModel}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Select the model to use for analysis. Ensure your account can use
-                    the selected model, or analysis requests will fail.</small>
+                <small class="form-text text-muted">Select the model for analysis. Ensure your account has access to the
+                    chosen model, or analysis requests may fail.</small>
             </div>
 
             <div class="form-group">
@@ -128,7 +127,8 @@
                 {{#if errors.openAiAPIUrl}}
                 <span class="invalid-feedback">{{errors.openAiAPIUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">OpenAI API URL. Leave blank to use the default.</small>
+                <small class="form-text text-muted">Enter the OpenAI API URL. Leave blank to use the default
+                    URL.</small>
             </div>
 
         </div>
@@ -136,7 +136,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Pre-processing settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Pre-processing Settings</h6>
         </div>
         <div class="card-body">
 
@@ -144,12 +144,12 @@
             <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
-                        aria-selected="true">Filter function</a>
+                        aria-selected="true">Filter Function</a>
                 </li>
 
                 <li class="nav-item" role="presentation">
                     <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
-                        aria-controls="errors" aria-selected="false">Error log</a>
+                        aria-controls="errors" aria-selected="false">Error Log</a>
                 </li>
             </ul>
             {{/if}}
@@ -165,14 +165,12 @@
                             [<a href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
                                 rel="noopener noreferrer" referrerpolicy="no-referrer">openAiPreProcessingFn</a>]
                         </div>
-                        <label for="editor-fn">Filter function</label>
+                        <label for="editor-fn">Filter Function</label>
                         <div style="line-height: 1; margin-bottom: 10px;">
-                            <small>JavaScript code to determine if the email should be processed by LLM. If the code
-                                evaluates
-                                to <code>true</code> then the email is sent to LLM for processing, otherwise it is
-                                skipped. The
-                                script includes <code>payload</code> as a global variable that contains the email
-                                data.</small>
+                            <small>Provide JavaScript code to determine if an email should be processed by the LLM. If
+                                the code evaluates to <code>true</code>, the email is sent to the LLM for processing;
+                                otherwise, it is skipped. The script includes <code>payload</code> as a global variable
+                                containing the email data.</small>
                         </div>
                         <div id="editor-fn" class="code-editor"></div>
                         <div class="editor-embed-block">
@@ -250,7 +248,7 @@
 
     <div id="prompt_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Prompt settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Prompt Settings</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -272,7 +270,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">openAiPrompt</a>]</div>
 
-                <label>Prompt for LLM requests</label>
+                <label>Prompt for LLM Requests</label>
 
                 <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
@@ -295,8 +293,8 @@
                 <span class="invalid-feedback">{{errors.openAiPrompt}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Edit the prompt that is sent to LLM for each email. EmailEngine asks
-                    for the response to be in JSON, so your prompt must describe the JSON properties to return.
+                <small class="form-text text-muted">Edit the prompt sent to the LLM for each email. Since EmailEngine
+                    requests the response in JSON format, your prompt must specify the JSON properties to return.
                 </small>
             </div>
 
@@ -311,30 +309,27 @@
                 {{#if errors.openAiTemperature}}
                 <span class="invalid-feedback">{{errors.openAiTemperature}}</span>
                 {{/if}}
-                <small class="form-text text-muted"><a
+                <small class="form-text text-muted">Specify the <a
                         href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Temperature</a> value in the range of 0
-                    to 2. Leave empty
-                    for
-                    default.</small>
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">temperature</a> value (range: 0 to 2).
+                    Leave empty to use the default value.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">openAiTopP</a>]
                 </div>
-                <label for="settingsOpenAiTopP">Top-p sampling</label>
+                <label for="settingsOpenAiTopP">Top-p Sampling</label>
                 <input type="number" class="form-control text-list {{#if errors.openAiTopP}}is-invalid{{/if}}"
                     id="settingsOpenAiTopP" step="0.001" min="0" max="1" name="openAiTopP"
                     value="{{values.openAiTopP}}" />
                 {{#if errors.openAiTopP}}
                 <span class="invalid-feedback">{{errors.openAiTopP}}</span>
                 {{/if}}
-                <small class="form-text text-muted"><a
+                <small class="form-text text-muted">Specify the <a
                         href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Top_p</a> value in the range of 0 to 1.
-                    Leave empty for
-                    default.</small>
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Top_p</a> value (range: 0 to 1). Leave
+                    empty to use the default value.</small>
             </div>
 
         </div>
@@ -345,7 +340,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Update Settings</span>
         </button>
     </div>
 
