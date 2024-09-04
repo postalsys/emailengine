@@ -2,7 +2,7 @@
 
 # EmailEngine Email API
 
-Headless email client application that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
+Headless email client application that makes IMAP and SMTP, Gmail API, and MS Graph API resources available over an unified REST API. Integrate email accounts with your service with ease!
 
 -   Documentation and details: [EmailEngine.app](https://emailengine.app/)
 
