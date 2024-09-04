@@ -220,6 +220,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 // check for upgrades once in 8 hours
 const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000;
 const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000;
+const MAX_LICENSE_CHECK_DELAY = 30 * 24 * 60 * 60 * 1000;
 
 const licenseInfo = {
     active: false,
@@ -1138,7 +1139,9 @@ let licenseCheckHandler = async opts => {
                     await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
                     await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
                     if (data.validatedUntil) {
-                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(data.validatedUntil).getTime().toString(16));
+                        let validatedUntil = new Date(data.validatedUntil);
+                        let nextCheck = Math.min(now + MAX_LICENSE_CHECK_DELAY, validatedUntil.getTime());
+                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
                     }
                 }
             } catch (err) {
