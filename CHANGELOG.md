@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.46.1](https://github.com/postalsys/emailengine/compare/v2.46.0...v2.46.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* **click-open-tracking:** Allow to configure clicks and opens tracking separately with trackOpens and trackClicks options ([1cc55bc](https://github.com/postalsys/emailengine/commit/1cc55bcfa7bf9f83b459d3690e510854bb2157d7))
+
 ## [2.46.0](https://github.com/postalsys/emailengine/compare/v2.45.1...v2.46.0) (2024-08-29)
 
 ### Features
