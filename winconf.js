@@ -11,7 +11,7 @@ const options = {
     version: PackageData.version,
     properties: {
         LegalCopyright: 'Postal Systems OÜ',
-        FileDescription: 'EmailEngine allows access to email accounts using REST',
+        FileDescription: 'EmailEngine allows access to email accounts using REST API',
         ProductName: 'EmailEngine'
     },
     icon: 'static/emailengine.ico'
