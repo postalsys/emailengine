@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.46.2](https://github.com/postalsys/emailengine/compare/v2.46.1...v2.46.2) (2024-09-07)
+
+
+### Bug Fixes
+
+* **oauth2-api:** Set default value for Outlook OAuth2 cloud property when creating a new OAuth2 app via API ([d4e1993](https://github.com/postalsys/emailengine/commit/d4e199382c5759762afd2ffa832acbf9ea1a0318))
+* Upgraded dependencies ([abb9edf](https://github.com/postalsys/emailengine/commit/abb9edf05c79e7fdc3a5149b901e46d3bac3fd2f))
+
 ## [2.46.1](https://github.com/postalsys/emailengine/compare/v2.46.0...v2.46.1) (2024-09-04)
 
 
