@@ -220,6 +220,13 @@ const API_TLS = hasEnvValue('EENGINE_API_TLS') ? getBoolean(readEnvValue('EENGIN
 // Merge TLS settings from config params and environment
 loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
 
+const ADMIN_ACCESS_ADDRESSES = hasEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
+    ? readEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
+          .split(',')
+          .map(v => v.trim())
+          .filter(v => v)
+    : null;
+
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
 
 // Max POST body size for message uploads
@@ -691,6 +698,24 @@ const init = async () => {
 
         // flash notifications
         request.flash = async message => await flash(redis, request, message);
+
+        if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length) {
+            if (/^\/admin\b/i.test(request.path) && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+                return h
+                    .view(
+                        'error',
+                        {
+                            pageTitle: 'Access Denied',
+                            message: 'Access Denied'
+                        },
+                        {
+                            layout: 'public'
+                        }
+                    )
+                    .code(403)
+                    .takeover();
+            }
+        }
 
         return h.continue;
     });
