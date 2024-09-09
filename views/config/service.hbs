@@ -159,6 +159,26 @@
                         referrerpolicy="no-referrer">documentation</a>.</small>
             </div>
 
+
+            <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[EENGINE_ADMIN_ACCESS_ADDRESSES]</div>
+
+                <input type="checkbox" class="form-check-input" id="adminAccessLimit" {{#if
+                    adminAccessLimit}}checked{{/if}} disabled />
+                <label class="form-check-label" for="adminAccessLimit">Limit Access to Admin Interface
+
+                    <span class="badge badge-{{#if adminAccessLimit}}success{{else}}danger{{/if}}">{{#if
+                        adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
+
+                </label>
+                <small class="form-text text-muted">Access to the Admin interface cannot be modified at runtime. To
+                    restrict access to EmailEngine’s Admin interface while keeping other parts of the app open, set the
+                    <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> environment variable when starting EmailEngine. Provide
+                    a comma-separated list of IP addresses that are permitted to access the Admin interface.</small>
+            </div>
+
+
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.enableOAuthTokensApi}}is-invalid{{/if}}"

@@ -701,6 +701,18 @@ const init = async () => {
 
         if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length) {
             if (/^\/admin\b/i.test(request.path) && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+                logger.info({
+                    msg: 'Blocked access from unlisted IP address',
+                    remoteAddress: request.app.ip,
+                    allowedAddresses: ADMIN_ACCESS_ADDRESSES,
+                    component: 'api',
+                    req: {
+                        method: request.method,
+                        url: request.path,
+                        query: request.query
+                    }
+                });
+
                 return h
                     .view(
                         'error',
