@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.46.3](https://github.com/postalsys/emailengine/compare/v2.46.2...v2.46.3) (2024-09-10)
+
+
+### Bug Fixes
+
+* **security:** Allow limiting IP addresses that are allowed to access /admin paths ([7b64009](https://github.com/postalsys/emailengine/commit/7b6400963eb6ce781074e39c63a2e3281f3b916d))
+
 ## [2.46.2](https://github.com/postalsys/emailengine/compare/v2.46.1...v2.46.2) (2024-09-07)
 
 
