@@ -26,9 +26,9 @@ jobs:
                 ports:
                     - 6379:6379
         steps:
-            - uses: actions/checkout@v4.1.7
+            - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node }}
-              uses: actions/setup-node@v4.0.3
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node }}
             - run: npm install
