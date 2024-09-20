@@ -1,0 +1,30 @@
+# .github/workflows/fascan.yml
+name: Fluid Attacks Scan
+on: [push, pull_request]
+jobs:
+    machineStandalone:
+        name: machineStandalone job
+        runs-on: ubuntu-latest
+
+        permissions:
+            # Give the default GITHUB_TOKEN write permission to commit and push the
+            # added or changed files to the repository.
+            contents: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.head_ref }}
+
+            - name: Fluid-Attacks scan
+              uses: docker://ghcr.io/fluidattacks/makes/amd64
+              with:
+                  args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+
+            - name: Commit and push changes
+              run: |
+                  git config user.name github-actions
+                  git config user.email github-actions@github.com
+                  git commit -am "Fluid-Attacks Results.csv commit" || exit 0
+                  git push
