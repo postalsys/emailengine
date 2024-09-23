@@ -5,6 +5,10 @@ on:
 
 name: Scan SAST and Deploy test instance
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
     fluidAttacksScan:
         name: Fluid Attacks SAST Scan
