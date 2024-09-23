@@ -20,12 +20,32 @@ jobs:
               with:
                   node-version: 20
             - run: npm install
-            - name: Run tests
+            - name: Run License Checks
               run: |
                   npm run licenses
+
+    fluidAttacksScan:
+        name: Fluid Attacks SAST Scan
+        runs-on: ubuntu-latest
+
+        permissions:
+            # Give the default GITHUB_TOKEN write permission to commit and push the
+            # added or changed files to the repository.
+            contents: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.head_ref }}
+
+            - name: Fluid-Attacks scan
+              uses: docker://ghcr.io/fluidattacks/makes/amd64
+              with:
+                  args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+
     test:
         name: Test Suite
-        needs: license_check
         strategy:
             matrix:
                 node: [18.x, 20.x]
