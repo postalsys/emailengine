@@ -2,6 +2,9 @@
 
 const he = require('he');
 const packageData = require('./package.json');
+const satisfies = require('spdx-satisfies');
+
+const ALLOWED_LICENSES = ['ISC', 'MIT', 'Apache-1.0+', 'CC-BY-3.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD', 'CC0-1.0', 'MIT-0', 'MPL-2.0', 'Python-2.0'];
 
 let chunks = [];
 process.stdin.on('readable', () => {
@@ -39,6 +42,22 @@ process.stdin.on('end', () => {
         console.log('<tr>');
 
         console.log(`<td><a href="https://npmjs.com/package/${he.encode(packageName)}">${he.encode(packageName)}</a></td>`);
+
+        for (let license of [].concat(data.licenses || [])) {
+            license = license.replace(/MIT\*/, 'MIT');
+
+            let _satisfies;
+            try {
+                _satisfies = satisfies(license, `(${ALLOWED_LICENSES.join(' OR ')})`);
+            } catch (err) {
+                console.error(err);
+            }
+
+            if (!_satisfies) {
+                console.error(`Failed to verify license for ${packageName}. Found: "${license}"`);
+                process.exit(1);
+            }
+        }
 
         [packageVersion, [].concat(data.licenses || []).join(', '), data.publisher, data.email]
             .map(entry => entry || '')
