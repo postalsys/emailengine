@@ -143,8 +143,7 @@
             "LICENSE_EMAILENGINE.txt",
             "help.txt",
             "version-info.json",
-            "sbom.json",
-            "Fluid-Attacks-Results.csv"
+            "sbom.json"
         ],
         "targets": [
             "latest-linux-x64",

@@ -26,17 +26,9 @@ jobs:
               with:
                   args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
 
-            - name: Commit and push changes
-              run: |
-                  git config user.name github-actions
-                  git config user.email github-actions@github.com
-                  git commit -am "Fluid-Attacks Results.csv commit" || exit 0
-                  git push
-
     deploy:
         name: Deploy Demo App
         runs-on: ubuntu-latest
-        needs: fluidAttacksScan
 
         steps:
             - name: Checkout

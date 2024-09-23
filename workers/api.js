@@ -1245,17 +1245,6 @@ const init = async () => {
 
     server.route({
         method: 'GET',
-        path: '/Fluid-Attacks-Results.csv',
-        handler: {
-            file: { path: pathlib.join(__dirname, '..', 'Fluid-Attacks-Results.csv'), confine: false }
-        },
-        options: {
-            auth: false
-        }
-    });
-
-    server.route({
-        method: 'GET',
         path: '/license.html',
         async handler(request, h) {
             return h.view(
