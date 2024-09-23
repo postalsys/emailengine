@@ -24,6 +24,8 @@ jobs:
               run: |
                   npm run licenses
     test:
+        name: Test Suite
+        needs: license_check
         strategy:
             matrix:
                 node: [18.x, 20.x]
