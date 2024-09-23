@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-09-19 09:25+0000\n"
+"POT-Creation-Date: 2024-09-23 18:32+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -57,29 +57,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:115
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:194
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr ""
@@ -95,6 +72,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:21
 #: views/accounts/register/imap-server.hbs:101
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:115
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:42
@@ -157,6 +140,11 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:194
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:202
 msgid "Continue without testing"
 msgstr ""
@@ -197,61 +185,73 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: lib/routes-ui.js:661
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: lib/routes-ui.js:660
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4932
-#: lib/routes-ui.js:6881
-#: lib/routes-ui.js:6892
+#: lib/routes-ui.js:4945
+#: lib/routes-ui.js:6894
+#: lib/routes-ui.js:6905
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4935
-#: lib/routes-ui.js:6884
-#: lib/routes-ui.js:6895
+#: lib/routes-ui.js:4948
+#: lib/routes-ui.js:6897
+#: lib/routes-ui.js:6908
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4939
-#: lib/routes-ui.js:6899
+#: lib/routes-ui.js:4952
+#: lib/routes-ui.js:6912
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6628
-#: lib/routes-ui.js:6663
-#: lib/routes-ui.js:6778
-#: lib/routes-ui.js:6825
-#: lib/routes-ui.js:7053
-#: lib/routes-ui.js:7089
+#: lib/routes-ui.js:6641
+#: lib/routes-ui.js:6676
+#: lib/routes-ui.js:6791
+#: lib/routes-ui.js:6838
+#: lib/routes-ui.js:7066
+#: lib/routes-ui.js:7102
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6688
-#: lib/routes-ui.js:6721
-#: lib/routes-ui.js:9514
+#: lib/routes-ui.js:6701
+#: lib/routes-ui.js:6734
+#: lib/routes-ui.js:9527
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6818
-#: lib/routes-ui.js:7082
+#: lib/routes-ui.js:6831
+#: lib/routes-ui.js:7095
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9477
+#: lib/routes-ui.js:9490
 #: lib/tools.js:731
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9487
-#: lib/routes-ui.js:9605
-#: lib/routes-ui.js:9622
-#: lib/routes-ui.js:9657
+#: lib/routes-ui.js:9500
+#: lib/routes-ui.js:9618
+#: lib/routes-ui.js:9635
+#: lib/routes-ui.js:9670
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9616
-#: lib/routes-ui.js:9650
+#: lib/routes-ui.js:9629
+#: lib/routes-ui.js:9663
 msgid "Failed to process request"
 msgstr ""
 
