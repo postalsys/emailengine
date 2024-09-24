@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.46.4](https://github.com/postalsys/emailengine/compare/v2.46.3...v2.46.4) (2024-09-23)
+
+
+### Bug Fixes
+
+* **search:** Fixed resolving special use paths like \All ([3fb0c9c](https://github.com/postalsys/emailengine/commit/3fb0c9c34a864558172ba2660259432af8ed9260))
+* **security:** Genereate Fluid-Attacks SAST Scan Results ([5780708](https://github.com/postalsys/emailengine/commit/5780708fc6c94240c9d34b8aa685348153e0fbf7))
+* **security:** Replaced node-gettext with @postalsys/gettext ([a13378a](https://github.com/postalsys/emailengine/commit/a13378a32bfdaed8afb9eb0dba045669e9004f45))
+
 ## [2.46.3](https://github.com/postalsys/emailengine/compare/v2.46.2...v2.46.3) (2024-09-10)
 
 
