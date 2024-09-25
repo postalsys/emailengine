@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.46.5](https://github.com/postalsys/emailengine/compare/v2.46.4...v2.46.5) (2024-09-25)
+
+
+### Bug Fixes
+
+* **release:** Use node v20 for prepackaged binaries ([ed2a161](https://github.com/postalsys/emailengine/commit/ed2a16165c6b7b57171d3d638ee5894831910687))
+
 ## [2.46.4](https://github.com/postalsys/emailengine/compare/v2.46.3...v2.46.4) (2024-09-23)
 
 
