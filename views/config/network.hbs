@@ -6,7 +6,7 @@
     </h1>
 </div>
 
-<p class="mb-4">Manage connection routing.</p>
+<p class="mb-4">Manage connection routing for EmailEngine.</p>
 
 <form method="post" action="/admin/config/network">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
@@ -22,7 +22,7 @@
             <div class="form-group form-check">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">proxyEnabled</a>]</div>
+                        target="_blank" rel="noopener noreferrer">proxyEnabled</a>]</div>
 
                 <input type="checkbox"
                     class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
@@ -31,15 +31,15 @@
                 {{#if errors.proxyEnabled}}
                 <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Individual accounts can be configured with specific proxy settings
-                    as well.</small>
+                <small class="form-text text-muted">Enable this option to apply the proxy settings to all accounts.
+                    Individual accounts can still be configured with specific proxy settings if needed.</small>
 
             </div>
 
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">proxyUrl</a>]</div>
+                        target="_blank" rel="noopener noreferrer">proxyUrl</a>]</div>
 
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
@@ -50,14 +50,14 @@
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
                 {{/if}}
                 <small id="proxyUrlBlock" class="form-text text-muted">Enter the proxy connection URL (e.g.,
-                    "socks://localhost:1080"). Must begin with http://, https://, socks://,
-                    socks4://, or socks5://.</small>
+                    "socks://localhost:1080"). The URL must start with <code>http://</code>, <code>https://</code>,
+                    <code>socks://</code>, <code>socks4://</code>, or <code>socks5://</code>.</small>
             </div>
 
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpEhloName</a>]</div>
+                        target="_blank" rel="noopener noreferrer">smtpEhloName</a>]</div>
 
                 <label for="smtpEhloName">SMTP Greeting Hostname</label>
                 <input type="text" class="form-control {{#if errors.smtpEhloName}}is-invalid{{/if}}" id="smtpEhloName"
@@ -66,9 +66,10 @@
                 {{#if errors.smtpEhloName}}
                 <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
                 {{/if}}
-                <small id="smtpEhloNameBlock" class="form-text text-muted">Specify the hostname for the SMTP EHLO/HELO
-                    greeting (e.g., "my.proxy.tld"). If left blank, <code>{{defaultSmtpEhloName}}</code> is used by
-                    default. For dedicated IP addresses, the IP's associated name is recommended.</small>
+                <small id="smtpEhloNameBlock" class="form-text text-muted">Specify the hostname to be used in the SMTP
+                    EHLO/HELO greeting (e.g., "my.proxy.tld"). If left blank, <code>{{defaultSmtpEhloName}}</code> is
+                    used by default. For dedicated IP addresses, using the associated hostname of the IP is
+                    recommended.</small>
             </div>
         </div>
     </div>
@@ -78,15 +79,15 @@
             <h6 class="m-0 font-weight-bold text-primary">IP Address Selection Strategy</h6>
         </div>
         <div class="card-body">
-            <p>If your server has access to multiple IP addresses, EmailEngine allows you to define how it selects an IP
-                for email server connections.</p>
+            <p>If your server has access to multiple IP addresses, you can define how EmailEngine selects an IP for
+                email server connections:</p>
             <ul>
-                <li><strong>Dedicated</strong>: Consistently assigns the same IP address from the pool to the same
-                    account.</li>
+                <li><strong>Dedicated</strong>: Assigns the same IP address from the pool to a specific account
+                    consistently.</li>
                 <li><strong>Random</strong>: Allocates a different, random IP address from the pool for each connection.
                 </li>
-                <li><strong>Server Default</strong>: EmailEngine will not specify a local IP address, utilizing the
-                    server's default settings instead.</li>
+                <li><strong>Server Default</strong>: EmailEngine will not specify a local IP address and will use the
+                    server's default network settings.</li>
             </ul>
         </div>
 
@@ -104,7 +105,8 @@
                     </td>
                     <td>
                         <div class="text-muted float-right code-link">[<a
-                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank">imapStrategy</a>]
+                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
+                                rel="noopener noreferrer">imapStrategy</a>]
                         </div>
                         <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
                             errors.imapStrategy}}is-invalid{{/if}}>
@@ -125,7 +127,8 @@
                     </td>
                     <td>
                         <div class="text-muted float-right code-link">[<a
-                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank">smtpStrategy</a>]
+                                href="/admin/iframe/docs#/Settings/postV1Settings" target="_blank"
+                                rel="noopener noreferrer">smtpStrategy</a>]
                         </div>
                         <select class="custom-select custom-select-sm" name="smtpStrategy" {{#if
                             errors.smtpStrategy}}is-invalid{{/if}}>
@@ -155,9 +158,10 @@
 
         <div class="card-body">
             <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                    target="_blank">localAddresses</a>]</div>
-            Enable EmailEngine to use these IP addresses under <em>Dedicated</em> or <em>Random</em> selection
-            strategies. If selected IPs are unavailable, EmailEngine defaults to the server's network.
+                    target="_blank" rel="noopener noreferrer">localAddresses</a>]</div>
+            Specify the IP addresses that EmailEngine can use under the <em>Dedicated</em> or <em>Random</em>
+            selection strategies. If the selected IPs are unavailable, EmailEngine will default to the server's standard
+            network settings.
         </div>
         <table class="table table-hover">
             <thead>
@@ -191,7 +195,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Update Settings</span>
         </button>
     </div>
 

@@ -29,7 +29,7 @@
         <div class="card-body">
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerEnabled</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerEnabled</a>]
                 </div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.imapProxyServerEnabled}}is-invalid{{/if}}"
@@ -43,7 +43,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerPort</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerPort</a>]
                 </div>
 
                 <label for="imapProxyServerPort">IMAP proxy port</label>
@@ -61,7 +61,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerHost</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerHost</a>]
                 </div>
 
                 <label for="imapProxyServerHost">IMAP proxy host</label>
@@ -80,7 +80,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerProxy</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerProxy</a>]
                 </div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.imapProxyServerProxy}}is-invalid{{/if}}"
@@ -104,7 +104,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerPassword</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerPassword</a>]
                 </div>
 
                 <label for="imapProxyServerPassword">IMAP proxy password</label>
@@ -148,7 +148,7 @@
         <div class="card-body">
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">imapProxyServerTLSEnabled</a>]
+                        target="_blank" rel="noopener noreferrer">imapProxyServerTLSEnabled</a>]
                 </div>
 
                 <input type="checkbox"
@@ -184,7 +184,7 @@
 
                     You need to set a valid domain name for the <a
                         href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> in order to provision TLS sertificates.
+                        URL</a> in order to provision TLS certificates.
 
                     {{/if}}
 
@@ -197,8 +197,9 @@
         <div class="card-footer">
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
-                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}"
-                        target="_blank">{{serviceUrl}}</a></em> to provision a valid TLS certificate. Otherwise,
+                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}" target="_blank"
+                        rel="noopener noreferrer">{{serviceUrl}}</a></em> to provision a valid TLS certificate.
+                Otherwise,
                 EmailEngine will use a self-signed certificate.
             </small>
         </div>
@@ -273,7 +274,7 @@
 
                 <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
                         class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
-                <h5 class="modal-title modal-show-error">Certifciate reqest failed</h5>
+                <h5 class="modal-title modal-show-error">Certificate request failed</h5>
 
                 <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>

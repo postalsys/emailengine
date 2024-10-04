@@ -15,8 +15,8 @@
             <div class="col mr-2">
 
                 <div>Read about setting up {{providerData.comment}} OAuth2 project from <a
-                        href="{{providerData.tutorialUrl}}" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">here</a>.
+                        href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">here</a>.
                 </div>
 
             </div>
@@ -28,7 +28,7 @@
 </div>
 {{/if}}
 
-<form method="post" action="/admin/config/oauth/edit">
+<form method="post" action="/admin/config/oauth/edit" class="pending-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" name="provider" value="{{appData.provider}}">
     <input type="hidden" name="app" value="{{appData.id}}">
@@ -36,7 +36,7 @@
     {{> oauth_form }}
 
     <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
+        <button type="submit" class="btn btn-primary btn-icon-split ee-save-btn">
             <span class="icon text-white-50">
                 <i class="fas fa-save"></i>
             </span>
@@ -75,6 +75,8 @@
 
                     document.getElementById('serviceClient').value = data.client_id;
                     document.getElementById('serviceKey').value = data.private_key;
+                    document.getElementById('googleProjectId').value = data.project_id;
+                    document.getElementById('serviceClientEmail').value = data.client_email;
 
                     return showToast('Loaded service values from file', 'check-circle');
 

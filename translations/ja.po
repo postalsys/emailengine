@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-01-16 08:50+0000\n"
+"POT-Creation-Date: 2024-09-04 05:45+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -11,11 +11,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.2\n"
-
-#: views/config/license.hbs:48
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] "%d日"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -41,7 +36,7 @@ msgstr "再購読"
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr "メールアドレス<em>%s</em>を再購読しますか？"
 
-#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:224
+#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:226
 msgid "Close"
 msgstr "閉じる"
 
@@ -61,6 +56,34 @@ msgstr "メールアドレス"
 msgid "Enter your email address"
 msgstr "メールアドレスを入力してください"
 
+#: views/config/license.hbs:49
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d日"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "名前"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "フルネームを入力してください"
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:115
+msgid "Password"
+msgstr "パスワード"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "アカウントのパスワードを入力してください"
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:194
+msgid "Continue"
+msgstr "続行"
+
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr "メールアカウントプロバイダーを選択してください"
@@ -74,48 +97,42 @@ msgid "IMAP"
 msgstr "IMAP"
 
 #: views/accounts/register/imap-server.hbs:21
-#: views/accounts/register/imap-server.hbs:100
+#: views/accounts/register/imap-server.hbs:101
 msgid "Username"
 msgstr "ユーザー名"
 
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:114
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
-msgstr "パスワード"
-
-#: views/accounts/register/imap-server.hbs:41
-#: views/accounts/register/imap-server.hbs:46
-#: views/accounts/register/imap-server.hbs:120
-#: views/accounts/register/imap-server.hbs:125
+#: views/accounts/register/imap-server.hbs:42
+#: views/accounts/register/imap-server.hbs:47
+#: views/accounts/register/imap-server.hbs:122
+#: views/accounts/register/imap-server.hbs:127
 msgid "Application Password"
 msgstr "アプリケーションパスワード"
 
-#: views/accounts/register/imap-server.hbs:42
-#: views/accounts/register/imap-server.hbs:121
+#: views/accounts/register/imap-server.hbs:43
+#: views/accounts/register/imap-server.hbs:123
 msgid "%s accounts require to use an application password for %s."
 msgstr "%sアカウントでは%s用のアプリケーションパスワードの使用が必要です。"
 
-#: views/accounts/register/imap-server.hbs:43
-#: views/accounts/register/imap-server.hbs:122
+#: views/accounts/register/imap-server.hbs:44
+#: views/accounts/register/imap-server.hbs:124
 msgid "Instructions"
 msgstr "指示"
 
-#: views/accounts/register/imap-server.hbs:61
-#: views/accounts/register/imap-server.hbs:140
+#: views/accounts/register/imap-server.hbs:62
+#: views/accounts/register/imap-server.hbs:142
 msgid "Hostname"
 msgstr "ホスト名"
 
-#: views/accounts/register/imap-server.hbs:71
-#: views/accounts/register/imap-server.hbs:150
+#: views/accounts/register/imap-server.hbs:72
+#: views/accounts/register/imap-server.hbs:152
 msgid "Port"
 msgstr "ポート"
 
-#: views/accounts/register/imap-server.hbs:85
+#: views/accounts/register/imap-server.hbs:86
 msgid "TLS for IMAP"
 msgstr "IMAPのTLS"
 
-#: views/accounts/register/imap-server.hbs:86
+#: views/accounts/register/imap-server.hbs:87
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -123,20 +140,20 @@ msgstr ""
 "TLS（SSLとも呼ばれます）は、通常ポート993を使用する場合にのみ必要です。その"
 "他のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
 
-#: views/accounts/register/imap-server.hbs:88
-#: views/accounts/register/imap-server.hbs:167
+#: views/accounts/register/imap-server.hbs:89
+#: views/accounts/register/imap-server.hbs:169
 msgid "Use TLS"
 msgstr "TLSを使用する"
 
-#: views/accounts/register/imap-server.hbs:97
+#: views/accounts/register/imap-server.hbs:98
 msgid "SMTP"
 msgstr "SMTP"
 
-#: views/accounts/register/imap-server.hbs:164
+#: views/accounts/register/imap-server.hbs:166
 msgid "TLS for SMTP"
 msgstr "SMTPのTLS"
 
-#: views/accounts/register/imap-server.hbs:165
+#: views/accounts/register/imap-server.hbs:167
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -144,91 +161,96 @@ msgstr ""
 "TLS（SSLとも呼ばれます）は、通常ポート465を使用する場合にのみ必要です。その"
 "他のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
 
-#: views/accounts/register/imap-server.hbs:183
+#: views/accounts/register/imap-server.hbs:185
 msgid "Test settings"
 msgstr "設定のテスト"
 
-#: views/accounts/register/imap-server.hbs:192
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr "続行"
-
-#: views/accounts/register/imap-server.hbs:200
+#: views/accounts/register/imap-server.hbs:202
 msgid "Continue without testing"
 msgstr "テストせずに続行"
 
-#: views/accounts/register/imap-server.hbs:214
+#: views/accounts/register/imap-server.hbs:216
 msgid "Test failed"
 msgstr "テスト失敗"
 
-#: views/accounts/register/imap-server.hbs:220
+#: views/accounts/register/imap-server.hbs:222
 msgid "Failed to validate provided email server settings."
 msgstr "提供されたメールサーバーの設定の検証に失敗しました。"
 
-#: views/accounts/register/imap-server.hbs:293
+#: views/accounts/register/imap-server.hbs:292
+msgid "General error"
+msgstr "一般的なエラー"
+
+#: views/accounts/register/imap-server.hbs:294
+msgid "Validation error"
+msgstr "検証のエラー"
+
+#: views/accounts/register/imap-server.hbs:300
 msgid "Failed to validate IMAP server settings"
 msgstr "IMAPサーバー設定の検証に失敗しました"
 
-#: views/accounts/register/imap-server.hbs:295
+#: views/accounts/register/imap-server.hbs:302
 msgid "IMAP Server responded with the following message:"
 msgstr "IMAPサーバーは以下のメッセージで応答しました："
 
-#: views/accounts/register/imap-server.hbs:302
+#: views/accounts/register/imap-server.hbs:309
 msgid "Failed to validate SMTP server settings"
 msgstr "SMTPサーバー設定の検証に失敗しました"
 
-#: views/accounts/register/imap-server.hbs:304
+#: views/accounts/register/imap-server.hbs:311
 msgid "SMTP Server responded with the following message:"
 msgstr "SMTPサーバーは以下のメッセージで応答しました："
 
-#: views/accounts/register/imap-server.hbs:353
+#: views/accounts/register/imap-server.hbs:369
 msgid "HTTP error!"
 msgstr "HTTPエラー！"
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr "名前"
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr "フルネームを入力してください"
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr "アカウントのパスワードを入力してください"
-
-#: lib/routes-ui.js:601
+#: lib/routes-ui.js:653
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAIの無効なAPIキー"
 
-#: lib/routes-ui.js:4627 lib/routes-ui.js:6550 lib/routes-ui.js:6561
+#: lib/routes-ui.js:4918 lib/routes-ui.js:6867 lib/routes-ui.js:6878
 msgid "Server hostname was not found"
 msgstr "サーバーホスト名が見つかりませんでした"
 
-#: lib/routes-ui.js:4630 lib/routes-ui.js:6553 lib/routes-ui.js:6564
+#: lib/routes-ui.js:4921 lib/routes-ui.js:6870 lib/routes-ui.js:6881
 msgid "Invalid username or password"
 msgstr "無効なユーザー名またはパスワード"
 
-#: lib/routes-ui.js:4634 lib/routes-ui.js:6568
+#: lib/routes-ui.js:4925 lib/routes-ui.js:6885
 msgid "TLS protocol error"
 msgstr "TLSプロトコルエラー"
 
-#: lib/routes-ui.js:6362 lib/routes-ui.js:6402 lib/routes-ui.js:9102
+#: lib/routes-ui.js:6614 lib/routes-ui.js:6649 lib/routes-ui.js:6764
+#: lib/routes-ui.js:6811 lib/routes-ui.js:7039 lib/routes-ui.js:7075
+msgid "Email Account Setup"
+msgstr "メールアカウント設定"
+
+#: lib/routes-ui.js:6674 lib/routes-ui.js:6707 lib/routes-ui.js:9500
 msgid "Failed to validate request arguments"
 msgstr "リクエスト引数の検証に失敗しました"
 
-#: lib/routes-ui.js:6488 lib/routes-ui.js:6744
+#: lib/routes-ui.js:6804 lib/routes-ui.js:7068
 msgid "Failed to process account"
 msgstr "アカウントの処理に失敗しました"
 
-#: lib/routes-ui.js:9202 lib/routes-ui.js:9235
+#: lib/routes-ui.js:9463 lib/tools.js:731
+msgid "Invalid input"
+msgstr "無効な入力"
+
+#: lib/routes-ui.js:9473 lib/routes-ui.js:9591 lib/routes-ui.js:9608
+#: lib/routes-ui.js:9643
+msgid "Subscription Management"
+msgstr "サブスクリプション管理"
+
+#: lib/routes-ui.js:9602 lib/routes-ui.js:9636
 msgid "Failed to process request"
 msgstr "リクエストの処理に失敗しました"
 
-#: lib/tools.js:1390
+#: lib/tools.js:1409
 msgid "Signature validation failed"
 msgstr "署名の検証に失敗しました"
 
-#: lib/tools.js:1399 lib/tools.js:1404
+#: lib/tools.js:1418 lib/tools.js:1423
 msgid "Invalid or expired account setup URL"
 msgstr "無効または期限切れのアカウント設定URL"

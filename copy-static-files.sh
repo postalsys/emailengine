@@ -22,10 +22,15 @@ cp node_modules/ace-builds/src-min/snippets/javascript.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/snippets/markdown.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.js
 
+rm -rf static/openapi-themes/
+mkdir -p static/openapi-themes/
+cp node_modules/swagger-ui-themes/themes/3.x/theme-material.css static/openapi-themes/
+
 wget https://developers.google.com/static/search/apis/ipranges/special-crawlers.json -O data/google-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 
 # brew install gh
 # gh auth login
 # gh ext install advanced-security/gh-sbom
-gh sbom -c -l > sbom.json
+# gh sbom -c -l > sbom.json
+gh sbom > sbom.json

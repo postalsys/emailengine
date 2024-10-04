@@ -990,6 +990,10 @@ const clearExpungedEmbeddings = async () => {
                 };
 
                 const { index, client } = await getESClient(logger);
+                if (!client) {
+                    // Document store not enabled
+                    return;
+                }
 
                 let existingResult;
                 try {

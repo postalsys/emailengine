@@ -1,4 +1,6 @@
-FROM --platform=${BUILDPLATFORM} node:lts-alpine
+#  node:20.16.0-alpine
+FROM --platform=${BUILDPLATFORM} node@sha256:eb8101caae9ac02229bd64c024919fe3d4504ff7f329da79ca60a04db08cef52
+
 ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -10,6 +12,9 @@ RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
 
 RUN apk add --no-cache dumb-init
 
+# Create a non-root user and group
+RUN addgroup -S emailenginegroup && adduser -S emailengineuser -G emailenginegroup
+
 WORKDIR /emailengine
 COPY . .
 
@@ -17,6 +22,12 @@ RUN npm install --omit=dev
 RUN npm run prepare-docker
 RUN chmod +x ./update-info.sh
 RUN ./update-info.sh
+
+# Ensure permissions are set correctly for the non-root user
+RUN chown -R emailengineuser:emailenginegroup /emailengine
+
+# Switch to non-root user
+USER emailengineuser
 
 ENV EENGINE_APPDIR=/emailengine
 ENV EENGINE_HOST=0.0.0.0

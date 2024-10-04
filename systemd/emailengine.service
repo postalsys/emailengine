@@ -81,7 +81,7 @@ Type=simple
 Restart=always
 RestartSec=5
 
-# Increse limits
+# Increase limits
 # file size, ulimit -f
 LimitFSIZE=infinity
 # open files, ulimit -n

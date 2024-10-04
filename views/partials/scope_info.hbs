@@ -1,0 +1,111 @@
+{{#if activeGmail}}
+<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<ul>
+
+    {{#if baseScopesImap}}
+    <li><code>"https://mail.google.com/"</code></li>
+    {{/if}}
+
+    {{#if baseScopesApi}}
+    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+    {{/if}}
+
+    {{#if baseScopesPubsub}}
+    <li><code>"https://www.googleapis.com/auth/pubsub"</code></li>
+    {{/if}}
+
+</ul>
+<div>Read about setting up the OAuth2 project in Google Cloud from
+
+    {{#if baseScopesImap}}
+    <a href="https://emailengine.app/gmail-over-imap" target="_blank" rel="noopener noreferrer"
+        referrerpolicy="no-referrer">here</a>.
+    {{/if}}
+
+    {{#if baseScopesApi}}
+    <a href="https://emailengine.app/gmail-api" target="_blank" rel="noopener noreferrer"
+        referrerpolicy="no-referrer">here</a>.
+    {{/if}}
+</div>
+{{/if}}
+
+{{#if activeGmailService}}
+
+{{#if baseScopesImap}}
+<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<ul>
+    <li><code>"https://mail.google.com/"</code></li>
+</ul>
+
+<div>Read about setting up Google service accounts from <a href="https://emailengine.app/google-service-accounts"
+        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.
+</div>
+{{/if}}
+
+{{#if baseScopesApi}}
+<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<ul>
+    <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+</ul>
+{{/if}}
+
+{{#if baseScopesPubsub}}
+<div>Your OAuth2 Service App Credentials <strong>must</strong> have the following role enabled:</div>
+<ul>
+    <li><code>Pub/Sub Admin</code></li>
+</ul>
+
+<div>Read about setting up Google service accounts for Pub/Sub from <a href="https://emailengine.app/gmail-api"
+        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.
+</div>
+{{/if}}
+
+{{/if}}
+
+{{#if activeOutlook}}
+<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<ul>
+
+    {{#if baseScopesImap}}
+    <li><code>"IMAP.AccessAsUser.All"</code></li>
+
+    {{#unless disabledScopes.SMTP_Send}}
+    <li><code>"SMTP.Send"</code></li>
+    {{/unless}}
+
+    <li><code>"offline_access"</code></li>
+
+    {{/if}}
+
+    {{#if baseScopesApi}}
+
+    <li><code>"Mail.ReadWrite"</code></li>
+
+    {{#unless disabledScopes.Mail_Send}}
+    <li><code>"Mail.Send"</code></li>
+    {{/unless}}
+
+    <li><code>"offline_access"</code></li>
+
+    {{/if}}
+</ul>
+<div>
+    Read about setting up the OAuth2 project in Azure Active Directory from <a
+        href="https://emailengine.app/outlook-and-ms-365" target="_blank" rel="noopener noreferrer"
+        referrerpolicy="no-referrer">here</a>.
+</div>
+{{/if}}
+
+{{#if activeMailRu}}
+<div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
+<ul>
+    <li><code>"userinfo"</code>
+    <li><code>"mail.imap"</code>
+</ul>
+
+<div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
+    for your <a href="https://oauth.mail.ru/app/" target="_blank" rel="noopener noreferrer"
+        referrerpolicy="no-referrer">OAuth2
+        apps</a> by
+    default.</div>
+{{/if}}

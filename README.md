@@ -1,122 +1,135 @@
-![logo](https://raw.githubusercontent.com/postalsys/emailengine/master/static/logo/EmailEngine_logo_vert.png)
+![EmailEngine Logo](https://raw.githubusercontent.com/postalsys/emailengine/master/static/logo/EmailEngine_logo_vert.png)
 
 # EmailEngine Email API
 
-Headless email client application that makes IMAP and SMTP resources available over REST. Integrate email accounts with your service with ease!
+A headless email client application that provides access to IMAP, SMTP, Gmail API, and MS Graph API resources via a unified REST API. Easily integrate email accounts with your service!
 
--   Documentation and details: [EmailEngine.app](https://emailengine.app/)
+-   Full documentation: [EmailEngine.app](https://emailengine.app/)
 
-## Use cases
+## Use Cases
 
--   Syncing users' emails to your service and sending out emails on behalf of your users
--   Integrating your app with a specific email account, eg. your support email
--   [Monitor INBOX and Junk folders](https://docs.emailengine.app/measuging-inbox-spam-placement/) of a test email account to see where the emails you send out end up in
--   Lightweight webmail and mobile email apps that do not want to process IMAP and MIME
+-   Sync users' emails with your service and send emails on their behalf.
+-   Integrate your app with a dedicated email account, such as your support email.
+-   [Monitor INBOX and Junk folders](https://docs.emailengine.app/measuging-inbox-spam-placement/) of a test email account to track where sent emails land.
+-   Ideal for lightweight webmail and mobile email apps that prefer to avoid direct IMAP and MIME processing.
 
 ## Quickstart
 
--   [Set-up instructions](https://emailengine.app/set-up)
+-   [Setup Instructions](https://emailengine.app/set-up)
 
 ## Screenshots
 
-![](https://cldup.com/dC_4_suWrh.png)
+![Screenshot 1](https://cldup.com/dC_4_suWrh.png)
+![Screenshot 2](https://cldup.com/KibGXRw8Mm.png)
+![Screenshot 3](https://cldup.com/mCxzWWjcLL.png)
 
-![](https://cldup.com/KibGXRw8Mm.png)
+## Version and License
 
-![](https://cldup.com/mCxzWWjcLL.png)
+Run the following command to check the version and license information for both EmailEngine and its included modules:
 
-## Version and license
-
-Run the following command to see the version and license information both for EmailEngine and for the included modules.
-
-```
+```bash
 $ emailengine license
 ```
 
 ## Requirements
 
--   **Redis** – any version
+-   **Redis** – Any version
 
-There is no official [Redis](https://redis.io/) release for Windows but you can use an alternative like [Memurai](https://www.memurai.com/).
+> [!NOTE]
+> While Redis does not officially support Windows, alternatives like [Memurai](https://www.memurai.com/) are available.
 
-> **Tip!** Try to keep the latency between EmailEngine and Redis as low as possible, best if these would run in the same machine or at least in the same DC. EmailEngine runs a separate Redis command for each message in a folder when syncing messages, so if the latency is not low then it takes a long time to sync a folder with a lot of messages,
+> [!TIP]
+> Minimize the latency between EmailEngine and Redis by running both on the same machine or in the same data center. Since EmailEngine runs a separate Redis command for each message in a folder during syncing, high latency can lead to slow sync times for folders with many messages.
 
 ## Documentation
 
 -   [API Reference](https://api.emailengine.app/)
--   [Blog posts](https://docs.emailengine.app/tag/email-engine/)
--   For Postman you can import OpenAPI specification [here](https://api.emailengine.app/swagger.json).
+-   [Blog Posts](https://docs.emailengine.app/tag/email-engine/)
+-   OpenAPI specification for Postman: [Swagger.json](https://api.emailengine.app/swagger.json)
 
 ## Configuring EmailEngine
 
-See the documentation for configuring EmailEngine [here](https://emailengine.app/configuration).
+Refer to the [configuration documentation](https://emailengine.app/configuration) for details on setting up EmailEngine.
 
-## App access
+## App Access
 
-By default EmailEngine allows connections only from localhost. To change this either edit config file or use `--api.host="0.0.0.0"` cli option. This would enable outside access, so you should use firewall or a proxy to only allow trusted sources.
+By default, EmailEngine only allows connections from localhost. To enable external access, either edit the config file or use the CLI option `--api.host="0.0.0.0"`. Ensure to secure external access with a firewall or proxy to allow only trusted sources.
 
 ## Deployment
 
 ### Ubuntu or Debian
 
-You can use the included install script to set up
+You can use the included install script to set up:
 
 -   EmailEngine as a SystemD service
 -   Caddy as a reverse proxy and HTTPS certificate handler
 
-```
+```bash
 $ wget https://raw.githubusercontent.com/postalsys/emailengine/master/install.sh
 $ chmod +x install.sh
 $ ./install.sh example.com
 ```
 
-Where
+Where **example.com** is the domain name for EmailEngine.
 
--   **example.com** is the domain name for EmailEngine
-
-> **NB!** Tested with Ubuntu 20.04 and Debian 11. Might not work with other OS versions.
+> [!NOTE]
+> Tested on Ubuntu 20.04 and Debian 11. Other versions may not be supported.
 
 ### SystemD
 
-Read about running EmailEngine as a SystemD service [here](https://emailengine.app/system-d-service)
+Learn more about running EmailEngine as a SystemD service [here](https://emailengine.app/system-d-service).
 
 ### Docker
 
-![Docker Image Size (tag)](https://img.shields.io/docker/image-size/postalsys/emailengine/v2?label=Docker%20image%20size)
+![Docker Image Size](https://img.shields.io/docker/image-size/postalsys/emailengine/v2?label=Docker%20image%20size)
 
-See the documentation for using EmailEngine with Docker [here](https://emailengine.app/docker).
+To execute EmailEngine-CLI commands within a Docker container:
 
-## Resolving issues with Redis
+1. Exec into the container:
 
-EmailEngine is using Redis as it's data store. Redis stores everything in RAM so if something weird happens, EmailEngine could flood Redis and make the app unusable once there is no available space left.
+    ```bash
+    $ docker exec -it <container-id> /bin/sh
+    ```
 
-First thing to do is to check what is actually going on. EmailEngine provides a few tools for that:
+2. Run commands using `./bin/emailengine.js`:
 
-1. Check Bull queues in Redis. You can use the built in Bull Arena UI to view the state of the queues. Open [http://127.0.0.1:3000/admin/arena](http://127.0.0.1:3000/admin/arena) in your browser to see the queues.
-2. Scan the used keyspace. EmailEngine provides a tool that groups keys by type. Run it like this (use the same config for DB as you are using for the main app):
+    ```bash
+    $ node bin/emailengine.js <command>
+    ```
 
-```
-$ emailengine scan > keyspace.csv
-```
+For full Docker usage documentation, visit [here](https://emailengine.app/docker).
+
+## Resolving Issues with Redis
+
+EmailEngine relies on Redis as its data store. Redis stores everything in RAM, so if an issue arises, EmailEngine may flood Redis, rendering the app unusable if space runs out.
+
+To diagnose problems:
+
+1. **Check Bull Queues:** Use the built-in Bull Arena UI to monitor queue states at [http://127.0.0.1:3000/admin/arena](http://127.0.0.1:3000/admin/arena).
+2. **Scan Keyspace:** Run the following to group Redis keys by type and generate a report:
+
+    ```bash
+    $ emailengine scan > keyspace.csv
+    ```
 
 ## Monitoring
 
-There is a Prometheus output available at `/metrics` URL path of the app.
+EmailEngine provides Prometheus metrics, available at the `/metrics` URL path.
 
-## Log analysis
+## Log Analysis
 
-Read about logging options [here](https://emailengine.app/logging)
+For information on logging options, read the documentation [here](https://emailengine.app/logging).
 
-To start EmailEngine to trail the IMAP traffic of a specific account
+To trace IMAP traffic for a specific account, use the following command:
 
-```
+```bash
 $ npm run raw -- --filter.account=account1
 ```
 
-## Security and Data compliance
+## Security and Data Compliance
 
-[Read here](https://docs.emailengine.app/data-compliance/).
+For detailed security and data compliance information, refer to [this guide](https://docs.emailengine.app/data-compliance/).
 
 ## Licensing
 
-Licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).
+EmailEngine is licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).

@@ -13,6 +13,13 @@ try {
 
 process.title = 'emailengine';
 
+try {
+    structuredClone(true);
+} catch (err) {
+    console.error(`Please upgrade your Node.js version as the current version (${process.version}) is not supported.`);
+    process.exit(1);
+}
+
 const os = require('os');
 process.env.UV_THREADPOOL_SIZE =
     process.env.UV_THREADPOOL_SIZE && !isNaN(process.env.UV_THREADPOOL_SIZE) ? Number(process.env.UV_THREADPOOL_SIZE) : Math.max(os.cpus().length, 4);
@@ -157,7 +164,7 @@ const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
-const CONNECION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECION_SETUP_DELAY') || config.service.setupDelay) || 0;
+const CONNECTION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECTION_SETUP_DELAY') || config.service.setupDelay) || 0;
 
 config.api.maxSize = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
 config.dbs.redis = readEnvValue('EENGINE_REDIS') || readEnvValue('REDIS_URL') || config.dbs.redis;
@@ -213,6 +220,7 @@ const NO_ACTIVE_HANDLER_RESP = {
 // check for upgrades once in 8 hours
 const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000;
 const LICENSE_CHECK_TIMEOUT = 20 * 60 * 1000;
+const MAX_LICENSE_CHECK_DELAY = 30 * 24 * 60 * 60 * 1000;
 
 const licenseInfo = {
     active: false,
@@ -590,7 +598,7 @@ let updateServerState = async (type, state, payload) => {
 };
 
 async function sendWebhook(account, event, data) {
-    let serviceUrl = (await settings.get('serviceUrl')) || true;
+    let serviceUrl = (await settings.get('serviceUrl')) || null;
 
     let payload = {
         serviceUrl,
@@ -658,8 +666,8 @@ let spawnWorker = async type => {
             workerMeta.online = Date.now();
             workersMeta.set(worker, workerMeta);
 
-            if (type !== 'imap') {
-                // imap workers need to wait until ready to accept accounts
+            if (type !== 'imap' && type !== 'api') {
+                // IMAP and API workers need to wait until ready to accept accounts
                 isOnline = true;
                 resolve(threadId);
             }
@@ -951,6 +959,13 @@ let spawnWorker = async type => {
                         }
                     }
                     break;
+
+                case 'api':
+                    if (message.cmd === 'ready') {
+                        isOnline = true;
+                        resolve(worker.threadId);
+                    }
+                    break;
             }
         });
     });
@@ -1014,7 +1029,7 @@ async function assignAccounts() {
             msg: 'Assigning connections',
             unassigned: unassigned.size,
             workersAvailable: availableIMAPWorkers.size,
-            setupDelay: CONNECION_SETUP_DELAY
+            setupDelay: CONNECTION_SETUP_DELAY
         });
 
         for (let account of unassigned) {
@@ -1039,8 +1054,8 @@ async function assignAccounts() {
                 runIndex
             });
 
-            if (CONNECION_SETUP_DELAY) {
-                await new Promise(r => setTimeout(r, CONNECION_SETUP_DELAY));
+            if (CONNECTION_SETUP_DELAY) {
+                await new Promise(r => setTimeout(r, CONNECTION_SETUP_DELAY));
             }
         }
     } finally {
@@ -1124,7 +1139,9 @@ let licenseCheckHandler = async opts => {
                     await redis.hdel(`${REDIS_PREFIX}settings`, 'subexp');
                     await redis.hset(`${REDIS_PREFIX}settings`, 'kv', Buffer.from(packageData.version).toString('hex'));
                     if (data.validatedUntil) {
-                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(data.validatedUntil).getTime().toString(16));
+                        let validatedUntil = new Date(data.validatedUntil);
+                        let nextCheck = Math.min(now + MAX_LICENSE_CHECK_DELAY, validatedUntil.getTime());
+                        await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
                     }
                 }
             } catch (err) {
@@ -1919,6 +1936,30 @@ async function onCommand(worker, message) {
 
             let assignedWorker = assigned.get(message.account);
             return await call(assignedWorker, message, []);
+        }
+
+        case 'googlePubSub': {
+            // notify all webhook workers about a new pubsub app
+            for (let worker of workers.get('webhooks')) {
+                await call(worker, message);
+            }
+            return true;
+        }
+
+        case 'externalNotify': {
+            for (let account of message.accounts) {
+                if (!assigned.has(account)) {
+                    continue;
+                }
+
+                let assignedWorker = assigned.get(account);
+                try {
+                    await call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId });
+                } catch (err) {
+                    logger.error({ msg: 'Failed to notify worker about account changes', cmd: 'externalNotify', account, historyId: message.historyId, err });
+                }
+            }
+            return true;
         }
     }
 

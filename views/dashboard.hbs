@@ -10,7 +10,7 @@
         <div class="card-body">
             <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatiblity warning
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatibility warning
                     </div>
                     <p>EmailEngine is incompatible with Amazon ElastiCache as the database backend.</p>
                     <p>Please switch to a standard Redis instance. Using ElastiCache with EmailEngine can result in data
@@ -30,7 +30,7 @@
         <div class="card-body">
             <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatiblity warning
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatibility warning
                     </div>
                     <p>EmailEngine is incompatible with Redis Cluster setup.</p>
                     <p>Please switch to a standard Redis primary instance.</p>
@@ -58,7 +58,7 @@
                     </p>
                     <p>You can add email accounts by using the API endpoint for <a
                             href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">registering
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">registering
                             accounts</a> or the hosted authentication form.
                     </p>
                     <div>
@@ -94,7 +94,8 @@
                                 data-placement="top" style="cursor: default;">
                                 <a href="/admin/accounts">Accounts total</a>
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.accounts}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{formatInteger stats.accounts
+                                userLocale}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -113,7 +114,8 @@
                                 data-toggle="tooltip" data-placement="top" style="cursor: default;">
                                 <a href="/admin/accounts?state=connected">Accounts active</a>
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{stats.connectedAccounts}}</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{formatInteger stats.connectedAccounts
+                                userLocale}}</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -135,7 +137,7 @@
                                 style="cursor: default;">
                                 {{title}}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{value}}
+                                {{formatInteger value userLocale}}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -166,9 +168,9 @@
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.notify.total}}</span> /
+                                    data-placement="top">{{formatInteger stats.queues.notify.total userLocale}}</span> /
                                 <span title="Delayed queue entries" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.notify.delayed}}</span>
+                                    data-placement="top">{{formatInteger stats.queues.notify.delayed userLocale}}</span>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -198,10 +200,11 @@
                             </div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.submit.total}}</span> /
+                                    data-placement="top">{{formatInteger stats.queues.submit.total userLocale}}</span> /
                                 <span
                                     title="Delayed queue entries. This includes emails that are scheduled to be sent in the future."
-                                    data-toggle="tooltip" data-placement="top">{{stats.queues.submit.delayed}}</span>
+                                    data-toggle="tooltip" data-placement="top">{{formatInteger
+                                    stats.queues.submit.delayed userLocale}}</span>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -233,11 +236,12 @@
                             <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
                                 <span title="Queue entries total" data-toggle="tooltip" data-placement="top"></span>
 
-                                {{stats.queues.documents.total}}
+                                {{formatInteger stats.queues.documents.total userLocale}}
 
                                 </span> /
                                 <span title="Delayed queue entries" data-toggle="tooltip"
-                                    data-placement="top">{{stats.queues.documents.delayed}}</span>
+                                    data-placement="top">{{formatInteger stats.queues.documents.delayed
+                                    userLocale}}</span>
                             </div>
                         </div>
                         <div class="col-auto">
@@ -283,19 +287,21 @@
 
                 <ul class="list-group">
                     <li class="list-group-item"><a href="https://emailengine.app/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">EmailEngine</a> v{{packageData.version}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">EmailEngine</a>
+                        v{{packageData.version}}</li>
                     <li class="list-group-item"><a href="https://nodejs.org/en/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">Node.js</a> v{{stats.node}} ({{stats.arch}})</li>
-                    <li class="list-group-item"><a href="https://redis.io/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">Redis</a> v{{stats.redis}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">Node.js</a> v{{stats.node}}
+                        ({{stats.arch}})</li>
+                    <li class="list-group-item"><a href="https://redis.io/" target="_blank" rel="noopener noreferrer"
+                            referrerpolicy="no-referrer">Redis</a> v{{stats.redis}}</li>
                     <li class="list-group-item"><a href="https://imapflow.com/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">ImapFlow</a> v{{stats.imapflow}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">ImapFlow</a> v{{stats.imapflow}}</li>
                     <li class="list-group-item"><a href="https://docs.bullmq.io/" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">BullMQ</a> v{{stats.bullmq}}</li>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">BullMQ</a> v{{stats.bullmq}}</li>
                     {{#if stats.build.commit}}
                     <li class="list-group-item">Code version: <a
                             href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
-                            referrerpolicy="{{referrerPolicy}}">{{stats.build.commit}}</a>
+                            rel="noopener noreferrer" referrerpolicy="no-referrer">{{stats.build.commit}}</a>
                     </li>
                     {{/if}}
                 </ul>

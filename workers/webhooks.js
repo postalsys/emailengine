@@ -7,7 +7,9 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
-const { readEnvValue, threadStats } = require('../lib/tools');
+const { GooglePubSub } = require('../lib/oauth/pubsub/google');
+
+const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -46,7 +48,50 @@ config.queues = config.queues || {
     notify: 1
 };
 
+const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
+
+const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
+
 const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EENGINE_NOTIFY_QC'))) || config.queues.notify || 1;
+
+let callQueue = new Map();
+let mids = 0;
+
+async function call(message, transferList) {
+    return new Promise((resolve, reject) => {
+        let mid = `${Date.now()}:${++mids}`;
+
+        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+        let timer = setTimeout(() => {
+            let err = new Error('Timeout waiting for command response [T6]');
+            err.statusCode = 504;
+            err.code = 'Timeout';
+            err.ttl = ttl;
+            reject(err);
+        }, ttl);
+
+        callQueue.set(mid, { resolve, reject, timer });
+
+        try {
+            parentPort.postMessage(
+                {
+                    cmd: 'call',
+                    mid,
+                    message
+                },
+                transferList
+            );
+        } catch (err) {
+            clearTimeout(timer);
+            callQueue.delete(mid);
+            return reject(err);
+        }
+    });
+}
+
+const googlePubSub = new GooglePubSub({
+    call
+});
 
 function getAccountKey(account) {
     return `${REDIS_PREFIX}iad:${account}`;
@@ -69,6 +114,9 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+        case 'googlePubSub':
+            await googlePubSub.update(command.app);
+            return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;
@@ -76,6 +124,27 @@ async function onCommand(command) {
 }
 
 parentPort.on('message', message => {
+    if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
+        let { resolve, reject, timer } = callQueue.get(message.mid);
+        clearTimeout(timer);
+        callQueue.delete(message.mid);
+        if (message.error) {
+            let err = new Error(message.error);
+            if (message.code) {
+                err.code = message.code;
+            }
+            if (message.statusCode) {
+                err.statusCode = message.statusCode;
+            }
+            if (message.info) {
+                err.info = message.info;
+            }
+            return reject(err);
+        } else {
+            return resolve(message.response);
+        }
+    }
+
     if (message && message.cmd === 'call' && message.mid) {
         return onCommand(message.message)
             .then(response => {
@@ -485,5 +554,14 @@ notifyWorker.on('failed', async job => {
         attemptsMade: job.attemptsMade
     });
 });
+
+googlePubSub
+    .start()
+    .then(() => {
+        logger.info({ msg: 'Started processing Google pub/sub' });
+    })
+    .catch(err => {
+        logger.fatal({ msg: 'Failed to start processing Google pub/sub', err });
+    });
 
 logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });

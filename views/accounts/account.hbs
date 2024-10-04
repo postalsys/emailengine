@@ -153,8 +153,8 @@
             </dd>
 
             <dt class="col-sm-3">Recent logs <a href="#" tabindex="-1" role="button" data-toggle="popover"
-                    data-trigger="hover" style="dispaly: inline-block;"
-                    data-content="Up to last {{logs.maxLogLines}} log lines"><i
+                    data-trigger="hover" style="display: inline-block;"
+                    data-content="Up to last {{formatInteger logs.maxLogLines userLocale}} log lines"><i
                         class="fas fa-info-circle text-info"></i></a>
             </dt>
 
@@ -222,7 +222,7 @@
                 {{#if account.oauth2.app.meta.authFlag}}
 
                 <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                    style="dispaly: inline-block;" data-title="OAuth2 application failure"
+                    style="display: inline-block;" data-title="OAuth2 application failure"
                     data-content="{{account.oauth2.app.meta.authFlag.message}}"><i
                         class="fas fa-exclamation-triangle text-danger"></i></a>
 
@@ -273,6 +273,27 @@
             </dd>
             {{/if}}
 
+            {{#if account.outlookSubscription}}
+            <dt class="col-sm-3">Change subscription</dt>
+            <dd class="col-sm-9">
+
+                <span
+                    class="badge badge-pill badge-{{#if account.outlookSubscription.isValid}}success{{else}}danger{{/if}}"
+                    style="cursor:default;" {{#if account.outlookSubscription.state.error}} data-toggle="popover"
+                    data-trigger="hover" data-title="Subscription error"
+                    data-content="{{account.outlookSubscription.state.error}}" {{/if}}>
+                    {{account.outlookSubscription.stateLabel}}
+                </span>
+
+                {{#if account.outlookSubscription.expirationDateTime}}
+                Valid until <span class="local-date-time code-link"
+                    data-time="{{account.outlookSubscription.subscriptionExpiresStr}}"
+                    title="{{account.outlookSubscription.subscriptionExpiresStr}}"></span>
+                {{/if}}
+
+            </dd>
+            {{/if}}
+
         </dl>
 
     </div>
@@ -284,11 +305,29 @@
 
 <div class="card mb-4">
     <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+        <h6 class="m-0 font-weight-bold text-primary">IMAP {{#if account.lastErrorState}}<span
+                class="badge badge-danger">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
+        {{#if account.lastErrorState}}
         <dl class="row">
+            {{#if account.lastErrorState.description}}
+            <dt class="col-sm-3">Error</dt>
+            <dd class="col-sm-9">{{account.lastErrorState.description}}</dd>
+            {{/if}}
+
+            {{#if account.lastErrorState.response}}
+            <dt class="col-sm-3">IMAP response</dt>
+            <dd class="col-sm-9"><code>{{account.lastErrorState.response}}</code></dd>
+            {{/if}}
+        </dl>
+
+        <hr>
+        {{/if}}
+
+        <dl class="row">
+
 
             <dt class="col-sm-3">Enabled</dt>
 
@@ -369,7 +408,7 @@
             <dt class="col-sm-3">Syncing paths
 
                 <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                    style="dispaly: inline-block;"
+                    style="display: inline-block;"
                     data-content="EmailEngine only checks for new or updated emails from the selected paths"><i
                         class="fas fa-info-circle text-info"></i></a>
 
@@ -443,7 +482,8 @@
             {{#if account.imapServerInfo.[support-url]}}
             <dt class="col-sm-3">Support URL</dt>
             <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}">{{account.imapServerInfo.[support-url]}}</a></dd>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer">{{account.imapServerInfo.[support-url]}}</a>
+            </dd>
             {{/if}}
 
             <dt class="col-sm-3">Capabilities</dt>
@@ -451,7 +491,7 @@
                 {{#each capabilities}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{capability}}</small>
                 {{/if}}
@@ -464,7 +504,7 @@
                 {{#if url}}
                 <a href="{{url}}" class="{{#if lastUsed}}badge badge-secondary{{/if}}" data-toggle="tooltip"
                     data-placement="top" title="{{#if lastUsed}}Active method | {{/if}}{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{capability}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{capability}}</small>
                 {{/if}}
@@ -580,7 +620,7 @@
                 {{#each account.smtpAuthMechanisms}}
                 {{#if url}}
                 <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}"><small>{{auth}}</small></a>
+                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{auth}}</small></a>
                 {{else}}
                 <small style="cursor: default;">{{this}}</small>
                 {{/if}}
@@ -1029,7 +1069,6 @@
                     return false
                 }
                 document.getElementById('test-send-results').classList.remove('d-none');
-                console.log('TEST RESULTS', results);
                 document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
 
                 // activate tabs

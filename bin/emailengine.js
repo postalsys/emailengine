@@ -9,6 +9,9 @@ const settings = require('../lib/settings');
 const { checkLicense } = require('../lib/tools');
 const pbkdf2 = require('@phc/pbkdf2');
 const { PDKDF2_ITERATIONS, PDKDF2_SALT_SIZE, PDKDF2_DIGEST, generateWebhookTable } = require('../lib/consts');
+const { Account } = require('../lib/account');
+const getSecret = require('../lib/get-secret');
+const { redis } = require('../lib/db');
 
 const argv = require('minimist')(process.argv.slice(2));
 const msgpack = require('msgpack5')();
@@ -262,6 +265,29 @@ function run() {
         case 'webhooks':
             generateWebhookTable();
             process.exit(1);
+            break;
+
+        case 'export':
+            {
+                getSecret()
+                    .then(secret => {
+                        let account = (argv.account || argv.a || '').toString();
+                        let accountObject = new Account({
+                            redis,
+                            account,
+                            secret
+                        });
+                        return accountObject.loadAccountData(account, false);
+                    })
+                    .then(accountData => {
+                        process.stdout.write(JSON.stringify(accountData));
+                        process.exit(0);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        process.exit(1);
+                    });
+            }
             break;
 
         default:

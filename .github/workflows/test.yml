@@ -1,14 +1,54 @@
-name: Run tests
+name: Run Tests
 
 on:
     push:
     pull_request:
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
+    license_check:
+        name: License Compliance Check
+        runs-on: ubuntu-latest
+        # Service containers to run with `container-job`
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - run: npm install
+            - name: Run License Checks
+              run: |
+                  npm run licenses
+
+    fluidAttacksScan:
+        name: Fluid Attacks SAST Scan
+        runs-on: ubuntu-latest
+
+        permissions:
+            # Give the default GITHUB_TOKEN write permission to commit and push the
+            # added or changed files to the repository.
+            contents: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.head_ref }}
+
+            - name: Fluid-Attacks scan
+              uses: docker://ghcr.io/fluidattacks/makes/amd64
+              with:
+                  args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+
     test:
+        name: Test Suite
         strategy:
             matrix:
-                node: [16.x, 18.x, 20.x]
+                node: [18.x, 20.x]
                 os: [ubuntu-20.04]
         runs-on: ${{ matrix.os }}
         # Service containers to run with `container-job`
@@ -28,11 +68,12 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node }}
-              uses: actions/setup-node@v1
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node }}
             - run: npm install
             - name: Run tests
-              run: npm test
+              run: |
+                  npm test
               env:
                   EENGINE_REDIS: redis://127.0.0.1:6379/1

@@ -42,6 +42,7 @@
             <small class="form-text text-muted">Optional application description or a comment.</small>
         </div>
 
+        {{#unless activeGmailService}}
         <div class="form-group">
 
             <label for="title">
@@ -62,22 +63,75 @@
             <small class="form-text text-muted">Optional display title next to the application button on the account
                 type selection page.</small>
         </div>
+        {{/unless}}
+
+        {{#unless activeGmailService}}
+        <div class="form-group form-check">
+
+            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
+                name="enabled" {{#if values.enabled}}checked{{/if}} />
+            <label class="form-check-label" for="enabled">Enable this app</label>
+            {{#if errors.enabled}}
+            <span class="invalid-feedback">{{errors.enabled}}</span>
+            {{/if}}
+            <small class="form-text text-muted">If enabled, then this OAuth2 app is shown as an
+                account type option in the hosted authentication form.</small>
+        </div>
+        {{/unless}}
+
+    </div>
+</div>
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">OAuth2 Credentials</h6>
+    </div>
+
+    <div class="card-body">
 
         {{#if activeGmailService}}
 
         <div class="form-group">
             <button type="button" class="btn btn-info btn-icon-split" id="serviceFile">
                 <span class="icon text-white-50">
-                    <i class="fas fa-file-import"></i>
+                    <i class="fas fa-cloud-upload-alt"></i>
                 </span>
-                <span class="text">Select service key file&#x2026;</span>
+                <span class="text">Load configuration from the service key file&#x2026;</span>
             </button>
             <small class="form-text text-muted">Select the JSON file you received after generating a new service key to
                 retrieve the service values.</small>
         </div>
 
         <div class="form-group">
+            <label for="googleProjectId">
+                Google Cloud Project ID
+            </label>
+            <input type="text" class="form-control {{#if errors.googleProjectId}}is-invalid{{/if}}" id="googleProjectId"
+                name="googleProjectId" value="{{values.googleProjectId}}"
+                placeholder="Enter the Google Cloud Project ID of the service, for example &quot;project-name-425411&quot;"
+                required />
+            {{#if errors.googleProjectId}}
+            <span class="invalid-feedback">{{errors.googleProjectId}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Service Project ID</small>
+        </div>
 
+        <div class="form-group">
+            <label for="serviceClientEmail">
+                Client Email
+            </label>
+            <input type="text" class="form-control {{#if errors.serviceClientEmail}}is-invalid{{/if}}"
+                id="serviceClientEmail" name="serviceClientEmail" value="{{values.serviceClientEmail}}"
+                placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
+                required />
+            {{#if errors.serviceClientEmail}}
+            <span class="invalid-feedback">{{errors.serviceClientEmail}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Service Client Email</small>
+        </div>
+
+        <div class="form-group">
             <label for="serviceClient">
                 Service client
             </label>
@@ -105,17 +159,33 @@
 
         {{else}}
 
-        <div class="form-group form-check">
+        {{#if activeGmail}}
 
-            <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
-                name="enabled" {{#if values.enabled}}checked{{/if}} />
-            <label class="form-check-label" for="enabled">Enable this app</label>
-            {{#if errors.enabled}}
-            <span class="invalid-feedback">{{errors.enabled}}</span>
-            {{/if}}
-            <small class="form-text text-muted">If enabled, then <em>"{{providerData.comment}}"</em> is shown as an
-                account type option when adding an account using the hosted authentication form.</small>
+        <div class="form-group">
+            <button type="button" class="btn btn-info btn-icon-split" id="gmailConfigFile">
+                <span class="icon text-white-50">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </span>
+                <span class="text">Load configuration from the JSON file&#x2026;</span>
+            </button>
+            <small class="form-text text-muted">Select the JSON file you can download when viewing client credential
+                information in Google Cloud Console.</small>
         </div>
+
+        <div class="form-group">
+            <label for="googleProjectId">
+                Google Cloud Project ID
+            </label>
+            <input type="text" class="form-control {{#if errors.googleProjectId}}is-invalid{{/if}}" id="googleProjectId"
+                name="googleProjectId" value="{{values.googleProjectId}}"
+                placeholder="Enter the Google Cloud Project ID of the service, for example &quot;project-name-425411&quot;" />
+            {{#if errors.googleProjectId}}
+            <span class="invalid-feedback">{{errors.googleProjectId}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Project ID</small>
+        </div>
+
+        {{/if}}
 
         <div class="form-group">
 
@@ -133,7 +203,7 @@
                 {{/if}}
             </label>
             <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
-                name="clientId" value="{{values.clientId}}" placeholder="Enter client ID&mldr;" />
+                name="clientId" value="{{values.clientId}}" placeholder="Enter client ID&mldr;" required />
             {{#if errors.clientId}}
             <span class="invalid-feedback">{{errors.clientId}}</span>
             {{/if}}
@@ -147,7 +217,7 @@
             <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
                 name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
                 placeholder="Client secret is set but not shown&mldr;" {{else}} placeholder="Enter client secret&mldr;"
-                {{/if}} />
+                {{/if}} {{#unless hasClientSecret}}required{{/unless}} />
             {{#if errors.clientSecret}}
             <span class="invalid-feedback">{{errors.clientSecret}}</span>
             {{/if}}
@@ -155,28 +225,84 @@
         </div>
 
         {{#if activeOutlook}}
-        <div class="form-group">
-            <label for="authority">Supported account types</label>
 
-            <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="authority"
-                name="authority" value="{{values.authority}}" />
-            {{#if errors.authority}}
-            <span class="invalid-feedback">{{errors.authority}}</span>
+        <div class="form-group">
+            <label for="cloud">Azure cloud environment</label>
+            <select class="custom-select custom-select-sm {{#if errors.cloud}}is-invalid{{/if}}" id="cloud" name="cloud"
+                required>
+
+                {{#each azureClouds}}
+                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+                    description}} &mdash;
+                    {{description}}{{/if}}</option>
+                {{/each}}
+            </select>
+            {{#if errors.cloud}}
+            <span class="invalid-feedback">{{errors.cloud}}</span>
             {{/if}}
-            <small class="form-text text-muted">Supported account types. Usually, <em>"consumers"</em> is for Microsoft
-                accounts, <em>"organizations"</em> for Organisation accounts, and <em>"common"</em> for both types of
-                accounts. You can also specify organization's <em data-toggle="tooltip" data-placement="top"
-                    title="Directory ID is a UUID value like &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;"
-                    style="cursor: default;">Directory
-                    ID</em> to only allow members of a specific organization to use
-                this app.</small>
+            <small class="form-text text-muted">Accounts hosted in different cloud environments use different OAuth2
+                endpoints and scopes.</small>
+        </div>
+
+        {{/if}}
+
+        {{#if activeOutlook}}
+
+        <label for="clientSecret">Supported account types</label>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityOrganizations"
+                value="organizations" {{#if authorityOrganizations}}checked{{/if}}>
+            <label class="form-check-label" for="authorityOrganizations">
+                Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant)
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityCommon" value="common"
+                {{#if authorityCommon}}checked{{/if}}>
+            <label class="form-check-label" for="authorityCommon">
+                Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal
+                Microsoft accounts (e.g. Skype, Xbox)
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityConsumers"
+                value="consumers" {{#if authorityConsumers}}checked{{/if}}>
+            <label class="form-check-label" for="authorityConsumers">
+                Personal Microsoft accounts only
+            </label>
+        </div>
+
+        <div class="form-check">
+            <input class="form-check-input r-auth" type="radio" name="authority" id="authorityTenant" value="tenant"
+                {{#if authorityTenant}}checked{{/if}}>
+            <label class="form-check-label" for="authorityTenant">
+                Accounts in the specified organizational directory only (Single tenant)
+            </label>
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="tenant">Directory (tenant) ID</label>
+
+            <input type="text" class="form-control {{#if errors.tenant}}is-invalid{{/if}}" id="tenant" name="tenant"
+                value="{{values.tenant}}" />
+            {{#if errors.tenant}}
+            <span class="invalid-feedback">{{errors.tenant}}</span>
+            {{/if}}
+            <small class="form-text text-muted">Fill this value if you checked "Accounts in the specified organizational
+                directory only" above. The Directory ID is a UUID value like
+                &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;</small>
         </div>
         {{/if}}
+
+
 
         <div class="form-group">
             <label for="redirectUrl">Redirect URL</label>
             <input type="url" class="form-control {{#if errors.redirectUrl}}is-invalid{{/if}}" id="redirectUrl"
-                name="redirectUrl" value="{{values.redirectUrl}}" />
+                name="redirectUrl" value="{{values.redirectUrl}}" required />
             {{#if errors.redirectUrl}}
             <span class="invalid-feedback">{{errors.redirectUrl}}</span>
             {{/if}}
@@ -188,42 +314,282 @@
     </div>
 </div>
 
-{{#if activeGmail}}
+{{#if activeGmailService}}
+
 <div class="card mb-4">
 
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
     </div>
-    <div class="card-body">
 
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap" {{#unless
-                baseScopesApi}}checked{{/unless}}>
-            <label class="form-check-label" for="baseScopesImap">
-                IMAP and SMTP &mdash; <em class="text-muted">https://mail.google.com/</em>
-            </label>
-        </div>
-        <div class="form-check">
-            <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api" {{#if
-                baseScopesApi}}checked{{/if}}>
-            <label class="form-check-label" for="baseScopesAPI">
-                Gmail API <span class="badge badge-danger" style="cursor:default;" data-toggle="popover"
-                    data-trigger="hover" data-title="Alpha feature"
-                    data-content="This feature is not stable; it has many bugs, and its behavior will change in the future. Use it for testing purposes only.">
-                    Alpha feature
-                </span> &mdash; <em class="text-muted">/auth/gmail.modify</em>
-            </label>
-        </div>
+    <table class="table">
 
-    </div>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Requirements</th>
 
-    <div class="card-footer text-muted">
-        <small><strong>Note:</strong>
-            <a href="/admin/config/imap-proxy">IMAP Proxy Interface</a> is only available for email accounts registered
-            using the IMAP and SMTP base scope.</small>
-    </div>
+            </tr>
+
+        </thead>
+        <tbody>
+
+            {{#if actionCreate}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
+                            {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesPubsub"
+                            value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesPubsub">
+                            Cloud Pub/Sub <span class="badge badge-dark">beta</span>
+                        </label>
+                    </div>
+                </td>
+                <td>Webhook management</td>
+                <td><code>"Pub/Sub Admin"</code> service credentials role</td>
+
+            </tr>
+
+            {{else}}
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesPubsub}}
+            <tr>
+                <td>
+                    <strong>Cloud Pub/Sub</strong> <span class="badge badge-dark">beta</span>
+                </td>
+                <td>Webhook management</td>
+                <td><code>"Pub/Sub Admin"</code> service credentials role</td>
+
+            </tr>
+            {{/if}}
+
+            {{/if}}
+        </tbody>
+
+    </table>
+
 </div>
 {{/if}}
+
+{{#if activeGmail}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
+    </div>
+
+
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Requirements</th>
+            </tr>
+
+        </thead>
+        <tbody>
+
+            {{#if actionCreate}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesAPI">
+                            Gmail API <span class="badge badge-dark">beta</span>
+                        </label>
+                    </div>
+                </td>
+                <td>Gmail HTTP API</td>
+                <td><code>"/auth/gmail.modify"</code> consent screen scope</td>
+
+            </tr>
+
+            {{else}}
+
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"https://mail.google.com/"</code> consent screen scope</td>
+
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesApi}}
+            <tr>
+                <td>
+                    <strong>Gmail API</strong> <span class="badge badge-dark">beta</span>
+                </td>
+                <td>Gmail HTTP API</td>
+                <td><code>"/auth/gmail.modify"</code> consent screen scope</td>
+
+            </tr>
+            {{/if}}
+
+            {{/if}}
+        </tbody>
+    </table>
+
+    <div id="select-pubsub-app" class="card-footer {{#unless baseScopesApi}}d-none{{/unless}}">
+
+        <p>
+            To enable webhooks for email accounts managed by this app, EmailEngine needs to set up a Cloud Pub/Sub
+            service using a Gmail Service Account with the <em>Pub/Sub Admin</em> role. Select the Gmail Pub/Sub Service
+            Account below to configure this.
+        </p>
+
+        <label for="pubSubApp">Select service account to manage webhooks</label>
+        <select class="custom-select custom-select-sm {{#if
+            errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" required {{#unless
+            baseScopesApi}}disabled{{/unless}}>
+
+            <option value=""> &mdash; Select the service account for your project &mdash; </option>
+
+            {{#each pubSubApps}}
+            <option value="{{id}}" data-project="{{googleProjectId}}" {{#if selected}}selected{{/if}} {{#unless
+                baseScopesApi}}disabled{{/unless}}>{{name}}{{#if
+                description}} &mdash;
+                {{description}}{{/if}} [{{googleProjectId}}]</option>
+            {{/each}}
+
+        </select>
+        {{#if errors.pubSubApp}}
+        <span class="invalid-feedback">{{errors.pubSubApp}}</span>
+        {{/if}}
+        </td>
+    </div>
+
+</div>
+{{/if}}
+
+
+{{#if activeOutlook}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Base scopes</h6>
+    </div>
+
+
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Requirements</th>
+            </tr>
+
+        </thead>
+        <tbody>
+
+            {{#if actionCreate}}
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
+                            {{#if baseScopesImap}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesImap">
+                            IMAP and SMTP
+                        </label>
+                    </div>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"IMAP.AccessAsUser.All"</code> and <code>"SMTP.Send"</code> consent screen scopes</td>
+
+            </tr>
+            <tr>
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api"
+                            {{#if baseScopesApi}}checked{{/if}}>
+                        <label class="form-check-label" for="baseScopesAPI">
+                            MS Graph API <span class="badge badge-dark">beta</span>
+                        </label>
+                    </div>
+                </td>
+                <td>Microsoft HTTP API</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Send"</code> consent screen scopes</td>
+
+            </tr>
+
+            {{else}}
+
+            {{#if baseScopesImap}}
+            <tr>
+                <td>
+                    <strong>IMAP and SMTP</strong>
+                </td>
+                <td>Regular email protocols</td>
+                <td><code>"IMAP.AccessAsUser.All"</code> and <code>"SMTP.Send"</code> consent screen scopes</td>
+
+            </tr>
+            {{/if}}
+
+            {{#if baseScopesApi}}
+            <tr>
+                <td>
+                    <strong>MS Graph API</strong> <span class="badge badge-dark">beta</span>
+                </td>
+                <td>Microsoft HTTP API</td>
+                <td><code>"Mail.ReadWrite"</code> and <code>"Mail.Send"</code> consent screen scopes</td>
+
+            </tr>
+            {{/if}}
+
+            {{/if}}
+        </tbody>
+    </table>
+</div>
+
+{{/if}}
+
 
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
@@ -240,8 +606,8 @@
             {{#if activeGmail}}
             <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                 enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                    href="https://console.cloud.google.com/apis/dashboard" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
+                    href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">Google Cloud Console</a>)
                 before registering accounts with these permissions. Otherwise, token generations will fail.
             </div>
             {{/if}}
@@ -249,8 +615,8 @@
             {{#if activeGmailService}}
             <div class="alert alert-info">When adding new scopes, ensure that related APIs are
                 enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                    href="https://console.cloud.google.com/apis/dashboard" target="_blank"
-                    referrerpolicy="{{referrerPolicy}}">Google Cloud Console</a>)
+                    href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">Google Cloud Console</a>)
                 before registering accounts with these permissions. Otherwise, token generations will fail.
             </div>
             {{/if}}
@@ -304,3 +670,133 @@
         </div>
     </div>
 </div>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const projectIdElm = document.getElementById('googleProjectId');
+        const pubSubAppElm = document.getElementById('pubSubApp');
+
+        function checkScopesRadio() {
+            let baseScopesAPIElm = document.getElementById('baseScopesAPI');
+            let selectPubsubAppElm = document.getElementById('select-pubsub-app');
+
+            if (baseScopesAPIElm && selectPubsubAppElm) {
+                if (baseScopesAPIElm.checked) {
+                    selectPubsubAppElm.classList.remove('d-none');
+                    pubSubAppElm.disabled = false;
+                } else {
+                    selectPubsubAppElm.classList.add('d-none');
+                    pubSubAppElm.disabled = true;
+                }
+            }
+        }
+
+        document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
+            radioElm.addEventListener('change', checkScopesRadio);
+            radioElm.addEventListener('click', checkScopesRadio);
+        });
+
+        checkScopesRadio();
+
+        let filterPubSubApps = () => {
+            if (!projectIdElm || !pubSubAppElm) {
+                return
+            }
+            let projectId = projectIdElm.value;
+            if (projectId) {
+                let unselected = !pubSubAppElm.value;
+                pubSubAppElm.querySelectorAll('option').forEach(entry => {
+                    if (entry.value && entry.dataset.project !== projectId) {
+                        entry.disabled = true;
+                    } else {
+                        entry.disabled = false;
+                        if (unselected) {
+                            entry.selected = true;
+                            unselected = false;
+                        }
+                    }
+                });
+            }
+        }
+
+        if (projectIdElm && pubSubAppElm) {
+            projectIdElm.addEventListener('click', filterPubSubApps)
+            projectIdElm.addEventListener('change', filterPubSubApps)
+            filterPubSubApps()
+        }
+
+
+        let gmailConfigFileElm = document.getElementById('gmailConfigFile');
+        if (gmailConfigFileElm) {
+            gmailConfigFileElm.addEventListener('click', e => {
+                e.preventDefault();
+                browseFileContents('text').then(jsonStr => {
+                    if (!jsonStr) {
+                        return
+                    }
+
+                    let data;
+                    try {
+                        data = JSON.parse(jsonStr);
+                    } catch (err) {
+                        return showToast('Selected file is not JSON formatted', 'alert-triangle');
+                    }
+
+                    if (!data.web) {
+                        return showToast('Selected file is not in a configuration format', 'alert-triangle');
+                    }
+
+                    if (!data.web.client_id || !data.web.client_secret) {
+                        return showToast('Selected file does not contain required values', 'alert-triangle');
+                    }
+
+                    document.getElementById('clientId').value = data.web.client_id;
+                    document.getElementById('clientSecret').value = data.web.client_secret;
+
+                    document.getElementById('googleProjectId').value = data.web.project_id || '';
+
+                    let redirectUrlValue = document.getElementById('redirectUrl').value
+
+                    if (data.web.redirect_uris && !data.web.redirect_uris.includes(redirectUrlValue)) {
+                        showToast('Provided redirect URI does not match redirect URIs in the configuration file', 'alert-triangle');
+                    }
+
+                    filterPubSubApps()
+
+                    return showToast('Loaded configuration values from file', 'check-circle');
+                }).catch(err => {
+                    console.error(err);
+                    return showToast('Failed to load configuration file', 'alert-triangle');
+                });
+            });
+        }
+
+        let authorityElms = document.querySelectorAll('.r-auth');
+        let tenantElm = document.getElementById('tenant');
+        let checkAuthorityState = () => {
+            let showtenant = false;
+            for (let aElm of authorityElms) {
+                if (aElm.checked) {
+                    if (aElm.value === 'tenant') {
+                        showtenant = true
+                    }
+                    break;
+                }
+            }
+            tenantElm.disabled = !showtenant;
+            tenantElm.required = showtenant;
+        }
+
+        for (let aElm of authorityElms) {
+            aElm.addEventListener('click', checkAuthorityState)
+            aElm.addEventListener('change', checkAuthorityState)
+        }
+
+        checkAuthorityState();
+
+    });
+
+
+</script>

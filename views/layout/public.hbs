@@ -9,7 +9,8 @@
     <meta name="description" content="EmailEngine Homepage" />
     <meta name="author" content="Postal Systems OÜ">
 
-    <title>EmailEngine{{#if pageTitle}} &ndash; {{pageTitle}}{{/if}}</title>
+    <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}EmailEngine{{#if pageTitle}} &ndash;
+        {{pageTitle}}{{/if}}{{/if}}</title>
 
     <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
     <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
@@ -19,9 +20,7 @@
 
     <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
 
-    <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
-        rel="stylesheet">
+    <link href="/static/fonts/nunito-font.css" rel="stylesheet">
 
     <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
     <link href="/static/css/app.css" rel="stylesheet">

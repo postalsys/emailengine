@@ -13,13 +13,13 @@
 
     <div class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
         </div>
         <div class="card-body">
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceUrl</a>]</div>
+                        target="_blank" rel="noopener noreferrer">serviceUrl</a>]</div>
 
                 <label for="settingsServiceUrl">Service URL</label>
                 <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
@@ -28,29 +28,29 @@
                 {{#if errors.serviceUrl}}
                 <span class="invalid-feedback">{{errors.serviceUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Base URL for EmailEngine without the path part.</small>
+                <small class="form-text text-muted">The base URL for EmailEngine, excluding any path components.</small>
             </div>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">enableApiProxy</a>]</div>
+                        target="_blank" rel="noopener noreferrer">enableApiProxy</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
                     id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
-                <label class="form-check-label" for="enableApiProxy">Reverse proxy support</label>
+                <label class="form-check-label" for="enableApiProxy">Reverse Proxy Support</label>
                 {{#if errors.enableApiProxy}}
                 <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine looks for the client
-                    IP address from the <code>X-Forwarded-For</code> header. Disable this option if EmailEngine handles
-                    web requests directly and is not behind a reverse proxy like Nginx or Caddy.</small>
+                <small class="form-text text-muted">Enable this option if EmailEngine is behind a reverse proxy (e.g.,
+                    Nginx or Caddy) to correctly identify the client IP address using the <code>X-Forwarded-For</code>
+                    header. Disable this if EmailEngine handles web requests directly without a reverse proxy.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">locale</a>]</div>
+                        target="_blank" rel="noopener noreferrer">locale</a>]</div>
 
-                <label for="settingsServiceLocale">Default language</label>
+                <label for="settingsServiceLocale">Default Language</label>
                 <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
                     errors.locale}}is-invalid{{/if}}>
                     {{#each locales}}
@@ -60,23 +60,22 @@
                 {{#if errors.locale}}
                 <span class="invalid-feedback">{{errors.locale}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Language for <u data-toggle="popover" data-trigger="hover"
-                        data-html="true"
+                <small class="form-text text-muted">Select the language for <u data-toggle="popover"
+                        data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
-                        style="cursor: default;">public pages</u>, e.g., for the <a
-                        href="https://emailengine.app/hosted-authentication" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">hosted authentication</a>
+                        style="cursor: default;">public-facing pages</u>, such as the <a
+                        href="https://emailengine.app/hosted-authentication" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">hosted authentication</a>
                     form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md"
-                        target="_blank" referrerpolicy="{{referrerPolicy}}">See
-                        here</a>
-                    if you would like to add an additional translation.</small>
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more about adding
+                        additional translations.</a></small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">timezone</a>]</div>
+                        target="_blank" rel="noopener noreferrer">timezone</a>]</div>
 
-                <label for="settingsServiceTimezone">Default timezone</label>
+                <label for="settingsServiceTimezone">Default Timezone</label>
                 <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
                     errors.timezone}}is-invalid{{/if}}>
                     {{#each timezones}}
@@ -98,9 +97,9 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">serviceSecret</a>]</div>
+                        target="_blank" rel="noopener noreferrer">serviceSecret</a>]</div>
 
-                <label for="settingsServiceSecret">Service secret</label>
+                <label for="settingsServiceSecret">Service Secret</label>
 
                 <div class="input-group">
                     <input type="password" class="form-control {{#if errors.serviceSecret}}is-invalid{{/if}}"
@@ -116,8 +115,8 @@
                 {{#if errors.serviceSecret}}
                 <span class="invalid-feedback">{{errors.serviceSecret}}</span>
                 {{/if}}
-                <small class="form-text text-muted">HMAC secret for signing public requests. Changing this value
-                    invalidates all tracking links in emails that were sent with the tracking option enabled.</small>
+                <small class="form-text text-muted">HMAC secret used for signing public requests. Changing this value
+                    will invalidate all tracking links in emails sent with tracking enabled.</small>
             </div>
 
             <div class="form-group form-check">
@@ -134,61 +133,78 @@
                 {{#if errors.enableTokens}}
                 <span class="invalid-feedback">{{errors.enableTokens}}</span>
                 {{/if}}
-                <small class="form-text text-muted">You can disable access tokens when in development. Not
-                    requiring access tokens to authorize API requests makes running API requests from the
-                    command line easier. Always enable access tokens in production.</small>
+                <small class="form-text text-muted">Disable this option during development to simplify running API
+                    requests from the command line. However, it is recommended to always enable access tokens in
+                    production to ensure secure API request authorization.</small>
             </div>
 
             <div class="form-group form-check">
 
                 <div class="text-muted float-right code-link">[<a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">EENGINE_SECRET</a>]</div>
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">EENGINE_SECRET</a>]</div>
 
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
-                <label class="form-check-label" for="encryption">Field level encryption
+                <label class="form-check-label" for="encryption">Field-Level Encryption
 
                     <span class="badge badge-{{#if encryption}}success{{else}}danger{{/if}}">{{#if
                         encryption}}enabled{{else}}disabled{{/if}}</span>
 
                 </label>
-                <small class="form-text text-muted">You can not change encryption settings runtime. Set
-                    <code>EENGINE_SECRET</code>
-                    environment variable when starting EmailEngine to enable encryption. Read more <a
-                        href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        referrerpolicy="{{referrerPolicy}}">from the
-                        documentation</a>.</small>
+                <small class="form-text text-muted">Encryption settings cannot be changed at runtime. To enable
+                    encryption, set the <code>EENGINE_SECRET</code> environment variable when starting EmailEngine. For
+                    more information, refer to the <a href="https://docs.emailengine.app/enabling-secret-encryption/"
+                        target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">documentation</a>.</small>
             </div>
+
+
+            <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[EENGINE_ADMIN_ACCESS_ADDRESSES]</div>
+
+                <input type="checkbox" class="form-check-input" id="adminAccessLimit" {{#if
+                    adminAccessLimit}}checked{{/if}} disabled />
+                <label class="form-check-label" for="adminAccessLimit">Limit Access to Admin Interface
+
+                    <span class="badge badge-{{#if adminAccessLimit}}success{{else}}danger{{/if}}">{{#if
+                        adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
+
+                </label>
+                <small class="form-text text-muted">Access to the Admin interface cannot be modified at runtime. To
+                    restrict access to EmailEngine's Admin interface while keeping other parts of the app open, set the
+                    <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> environment variable when starting EmailEngine. Provide
+                    a comma-separated list of IP addresses that are permitted to access the Admin interface.</small>
+            </div>
+
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.enableOAuthTokensApi}}is-invalid{{/if}}"
                     id="enableOAuthTokensApi" name="enableOAuthTokensApi" {{#if
                     values.enableOAuthTokensApi}}checked{{/if}} />
-                <label class="form-check-label" for="enableOAuthTokensApi">Allow the API endpoint for fetching OAuth2
-                    access
-                    tokens</label>
+                <label class="form-check-label" for="enableOAuthTokensApi">Allow API Endpoint for Fetching OAuth2 Access
+                    Tokens</label>
                 {{#if errors.enableOAuthTokensApi}}
                 <span class="invalid-feedback">{{errors.enableOAuthTokensApi}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If you want to re-use access tokens managed by EmailEngine in other
-                    parts of your app, you can enable the <a
-                        href="/admin/iframe/docs#/Account/getV1AccountAccountOauthtoken" target="_blank">oauth-token API
-                        endpoint</a>. Access to OAuth2 tokens is disabled by default due to the security risk of
-                    potentially leaking these tokens.</small>
+                <small class="form-text text-muted">Enable this option if you need to reuse OAuth2 access tokens managed
+                    by EmailEngine in other parts of your application. Note that <a
+                        href="/admin/iframe/docs#/Account/getV1AccountAccountOauthtoken" target="_blank"
+                        rel="noopener noreferrer">access to OAuth2 tokens</a> is disabled by default due to the
+                    potential security risks of leaking these tokens.</small>
             </div>
 
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">ignoreMailCertErrors</a>]</div>
+                        target="_blank" rel="noopener noreferrer">ignoreMailCertErrors</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
                     id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
                     values.ignoreMailCertErrors}}checked{{/if}} />
-                <label class="form-check-label" for="ignoreMailCertErrors">Allow insecure certificates for
-                    IMAP/SMTP
+                <label class="form-check-label" for="ignoreMailCertErrors">Allow Insecure Certificates for IMAP/SMTP
 
                     <span class="badge badge-{{#if values.ignoreMailCertErrors}}danger{{else}}success{{/if}}">{{#if
                         values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
@@ -197,8 +213,9 @@
                 {{#if errors.ignoreMailCertErrors}}
                 <span class="invalid-feedback">{{errors.ignoreMailCertErrors}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enabling this will permit EmailEngine to bypass security warnings
-                    related to self-signed or expired TLS certificates during IMAP and SMTP interactions.</small>
+                <small class="form-text text-muted">Enabling this option allows EmailEngine to bypass security warnings
+                    related to self-signed or expired TLS certificates during IMAP and SMTP operations. Use with
+                    caution.</small>
             </div>
 
         </div>
@@ -226,7 +243,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">queueKeep</a>]</div>
+                        target="_blank" rel="noopener noreferrer">queueKeep</a>]</div>
 
                 <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
                 <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
@@ -236,7 +253,8 @@
                 <span class="invalid-feedback">{{errors.queueKeep}}</span>
                 {{/if}}
                 <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
-                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank">Bull Arena</a>.
+                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank"
+                        rel="noopener noreferrer">Bull Arena</a>.
                     Set this value if you want to keep a fixed number of the latest entries in the list.</small>
             </div>
 
@@ -251,7 +269,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">deliveryAttempts</a>]</div>
+                        target="_blank" rel="noopener noreferrer">deliveryAttempts</a>]</div>
 
                 <label for="settingsDeliveryAttempts">How many times to retry a failed email sending</label>
                 <input type="number" min="0" class="form-control {{#if errors.deliveryAttempts}}is-invalid{{/if}}"
@@ -289,7 +307,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">templateHeader</a>]</div>
+                        target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
 
                 <label>Template header for public pages (HTML code)</label>
 
@@ -332,7 +350,7 @@
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">scriptEnv</a>]</div>
+                        target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
 
                 <label>Environment variable (JSON object)</label>
 
@@ -360,47 +378,80 @@
         </div>
     </div>
 
-    <div class="card mb-4" id="labs">
+    <div id="labs"></div>
+
+    <div class="card mb-4" id="tracking">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Labs <span class="badge badge-dark">beta</span></h6>
+            <h6 class="m-0 font-weight-bold text-primary">Sent Email Tracking</h6>
         </div>
         <div class="card-body">
 
-            <p>The following options are not well tested and might change in the futurue. Use these with care.</p>
-
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">trackSentMessages</a>]</div>
+                        target="_blank" rel="noopener noreferrer">trackClicks</a>]</div>
 
-                <input type="checkbox" class="form-check-input {{#if errors.trackSentMessages}}is-invalid{{/if}}"
-                    id="trackSentMessages" name="trackSentMessages" {{#if values.trackSentMessages}}checked{{/if}} />
-                <label class="form-check-label" for="trackSentMessages">Track opens and clicks</label>
-                {{#if errors.trackSentMessages}}
-                <span class="invalid-feedback">{{errors.trackSentMessages}}</span>
+                <input type="checkbox" class="form-check-input {{#if errors.trackClicks}}is-invalid{{/if}}"
+                    id="trackClicks" name="trackClicks" {{#if values.trackClicks}}checked{{/if}} />
+                <label class="form-check-label" for="trackClicks">Track Clicks</label>
+                {{#if errors.trackClicks}}
+                <span class="invalid-feedback">{{errors.trackClicks}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, then EmailEngine rewrites HTML links in emails sent
-                    through EmailEngine to track opens and clicks. You can also set this in the message level to
-                    override the default. See the <a href="https://emailengine.app/sending-emails#tracking"
-                        target="_blank" referrerpolicy="{{referrerPolicy}}">documentation</a> for details.<br />
-                    <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank">{{values.serviceUrl}}</a> must
-                    be publicly accessible for tracking to work.</small>
+                <small class="form-text text-muted">When enabled, EmailEngine rewrites HTML links in emails sent through
+                    the service to monitor and track user clicks.</small>
             </div>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">resolveGmailCategories</a>]</div>
+                        target="_blank" rel="noopener noreferrer">trackOpens</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.trackOpens}}is-invalid{{/if}}"
+                    id="trackOpens" name="trackOpens" {{#if values.trackOpens}}checked{{/if}} />
+                <label class="form-check-label" for="trackOpens">Track Opens</label>
+                {{#if errors.trackOpens}}
+                <span class="invalid-feedback">{{errors.trackOpens}}</span>
+                {{/if}}
+                <small class="form-text text-muted">When enabled, EmailEngine inserts an open beacon in HTML messages
+                    sent through the service to track email opens.</small>
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank"
+                rel="noopener noreferrer">{{values.serviceUrl}}</a> must
+            be publicly accessible for clicks and opens tracking to work. You can also set tracking options in the
+            message level to
+            override the defaults. See the <a href="https://emailengine.app/sending-emails#tracking" target="_blank"
+                rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a> for
+            details.</small>
+
+        </div>
+    </div>
+
+    <div class="card mb-4" id="gmail">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Gmail-Specific Options</h6>
+        </div>
+        <div class="card-body">
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">resolveGmailCategories</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
                     id="resolveGmailCategories" name="resolveGmailCategories" {{#if
                     values.resolveGmailCategories}}checked{{/if}} />
-                <label class="form-check-label" for="resolveGmailCategories">Resolve Gmail categories</label>
+                <label class="form-check-label" for="resolveGmailCategories">Resolve Gmail Categories for IMAP
+                    Accounts</label>
                 {{#if errors.resolveGmailCategories}}
                 <span class="invalid-feedback">{{errors.resolveGmailCategories}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, EmailEngine resolves the inbox category (also known as
-                    the Gmail tab) for incoming emails. Possible category values are the following: <em>social</em>,
-                    <em>promotions</em>, <em>updates</em>, <em>forums</em>, and <em>primary</em>. You can find the value
-                    in the <em>category</em> property of the <em>messageNew</em> webhook payload.</small>
+                <small class="form-text text-muted">When enabled, EmailEngine determines the inbox category
+                    (also known as the Gmail tab) for incoming emails when using Gmail IMAP. For accounts using
+                    the Gmail API, category labels are resolved by default. The possible category values
+                    include: <em>social</em>,
+                    <em>promotions</em>, <em>updates</em>, <em>forums</em>, and <em>primary</em>. The resolved
+                    category can be found in the <em>category</em> property of the <em>messageNew</em> webhook
+                    payload.</small>
             </div>
 
         </div>

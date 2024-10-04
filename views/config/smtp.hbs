@@ -14,7 +14,7 @@
 
 <p>To queue an email for delivery with EmailEngine, you can use the Simple Mail Transfer Protocol (SMTP)
     interface or the <a href="https://api.emailengine.app/#tag/submit" target="_blank"
-        referrerpolicy="{{referrerPolicy}}">message submission API</a>. The
+        referrerpolicy="no-referrer">message submission API</a>. The
     preferred way to send emails would be the message submission API. EmailEngine provides the SMTP interface for legacy
     applications that can only send emails using the SMTP protocol.</p>
 <p class="mb-4">On this page, you can configure the settings for the SMTP interface.</p>
@@ -46,7 +46,7 @@
 
                 <div class="text-right">
                     <div class="text-muted code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                            target="_blank">smtpServerEnabled</a>]</div>
+                            target="_blank" rel="noopener noreferrer">smtpServerEnabled</a>]</div>
 
                 </div>
             </li>
@@ -57,7 +57,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerPort</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerPort</a>]
                 </div>
 
                 <label for="smtpServerPort">SMTP port</label>
@@ -75,7 +75,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerHost</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerHost</a>]
                 </div>
 
                 <label for="smtpServerHost">SMTP host</label>
@@ -94,7 +94,7 @@
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerProxy</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerProxy</a>]
                 </div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerProxy}}is-invalid{{/if}}"
@@ -116,7 +116,7 @@
         <div class="card-body">
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerAuthEnabled</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerAuthEnabled</a>]
                 </div>
 
                 <input type="checkbox"
@@ -131,7 +131,7 @@
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerPassword</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerPassword</a>]
                 </div>
 
                 <label for="smtpServerPassword">SMTP password</label>
@@ -174,7 +174,7 @@
         <div class="card-body">
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
-                        target="_blank">smtpServerTLSEnabled</a>]
+                        target="_blank" rel="noopener noreferrer">smtpServerTLSEnabled</a>]
                 </div>
 
                 <input type="checkbox"
@@ -209,7 +209,7 @@
 
                     You need to set a valid domain name for the <a
                         href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> in order to provision TLS sertificates.
+                        URL</a> in order to provision TLS certificates.
 
                     {{/if}}
 
@@ -222,8 +222,9 @@
         <div class="card-footer">
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
-                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}"
-                        target="_blank">{{serviceUrl}}</a></em> to provision a valid TLS certificate. Otherwise,
+                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}" target="_blank"
+                        rel="noopener noreferrer">{{serviceUrl}}</a></em> to provision a valid TLS certificate.
+                Otherwise,
                 EmailEngine will use a self-signed certificate.
             </small>
         </div>
@@ -304,7 +305,7 @@
 
                 <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
                         class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
-                <h5 class="modal-title modal-show-error">Certifciate reqest failed</h5>
+                <h5 class="modal-title modal-show-error">Certificate request failed</h5>
 
                 <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
