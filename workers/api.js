@@ -734,9 +734,7 @@ const init = async () => {
 
     const swaggerOptions = {
         swaggerUI: true,
-        swaggerUIPath: '/admin/iframe/swagger/',
-        documentationPage: true,
-        documentationPath: '/admin/iframe/docs',
+        swaggerUIPath: '/admin/swagger/resources/',
 
         expanded: 'list',
         sortEndpoints: 'method',
