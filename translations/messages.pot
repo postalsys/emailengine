@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-09-23 18:32+0000\n"
+"POT-Creation-Date: 2024-10-06 09:40+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -65,6 +65,29 @@ msgstr ""
 msgid "Standard IMAP"
 msgstr ""
 
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:35
+#: views/accounts/register/imap-server.hbs:115
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:194
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:18
 msgid "IMAP"
 msgstr ""
@@ -72,12 +95,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:21
 #: views/accounts/register/imap-server.hbs:101
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:115
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:42
@@ -140,11 +157,6 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:194
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:202
 msgid "Continue without testing"
 msgstr ""
@@ -183,18 +195,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:369
 msgid "HTTP error!"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
 msgstr ""
 
 #: lib/routes-ui.js:660
