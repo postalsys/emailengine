@@ -304,15 +304,18 @@
         </div>
         <div class="card-body">
 
+            <p>These settings apply to all publicly accessible pages, such as 404 error pages, the hosted authentication
+                form, and the virtual mailing list unsubscribe page.</p>
+
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
 
-                <label>Template header for public pages (HTML code)</label>
+                <label>Header HTML for Public Pages</label>
 
-                <input type="hidden" class="{{#if errors.templateHeaderElement}}is-invalid{{/if}}"
-                    id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
+                <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
+                    name="templateHeader" value="{{values.templateHeader}}">
 
                 <div id="editor-html" class="code-editor"></div>
                 <div class="editor-embed-block">
@@ -328,10 +331,38 @@
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Insert here the HTML code you want to display <u
+                <small class="form-text text-muted">Enter the HTML code you want to display at the <u
                         data-toggle="popover" data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
-                        style="cursor: default;">on top of public pages</u> like the hosted authentication form.</small>
+                        style="cursor: default;">top of public pages</u> (e.g., the hosted authentication form).</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">templateHtmlHead</a>]</div>
+
+                <label>HTML Code for the &lt;head&gt; Section of Public Pages</label>
+
+                <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
+                    id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
+
+                <div id="editor-html-head" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        HTML content
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" class="toggle-fullscreen" data-target="editor-html-head">Toggle fullscreen</a>
+                    </div>
+                </div>
+
+                {{#if errors.templateHtmlHead}}
+                <span class="invalid-feedback">{{errors.templateHtmlHead}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">Enter the HTML code you want to include within the &lt;head&gt;
+                    section of public pages (e.g., the hosted authentication form).</small>
             </div>
 
         </div>
@@ -572,9 +603,22 @@
         editorEnv.session.setMode("ace/mode/json");
         editorEnv.session.setValue(document.getElementById('scriptEnvElement').value);
 
+        const editorHtmlHead = ace.edit("editor-html-head", {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-html-head", editorHtmlHead);
+
+        editorHtmlHead.setTheme("ace/theme/xcode");
+        editorHtmlHead.session.setMode("ace/mode/handlebars");
+        editorHtmlHead.session.setValue(document.getElementById('templateHtmlHeadElement').value);
+
         document.getElementById('settings-form').addEventListener('submit', () => {
             document.getElementById('templateHeaderElement').value = editorHtml.getValue();
             document.getElementById('scriptEnvElement').value = editorEnv.getValue();
+            document.getElementById('templateHtmlHeadElement').value = editorHtmlHead.getValue();
         });
 
         for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
