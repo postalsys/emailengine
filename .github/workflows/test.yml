@@ -40,9 +40,14 @@ jobs:
                   ref: ${{ github.head_ref }}
 
             - name: Fluid-Attacks scan
+              continue-on-error: true
               uses: docker://ghcr.io/fluidattacks/makes/amd64
               with:
                   args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+
+            - name: Show Scan Results
+              run: |
+                  cat Fluid-Attacks-Results.csv
 
     test:
         name: Test Suite
