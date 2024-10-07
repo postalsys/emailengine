@@ -12,8 +12,7 @@ RUN npm run prepare-docker
 RUN chmod +x ./update-info.sh
 RUN ./update-info.sh
 
-ENV EENGINE_APPDIR=/emailengine
 ENV EENGINE_HOST=0.0.0.0
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD node ${EENGINE_APPDIR}/server.js
+CMD ["node", "/emailengine/server.js"]
