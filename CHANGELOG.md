@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.47.0](https://github.com/postalsys/emailengine/compare/v2.46.5...v2.47.0) (2024-10-07)
+
+
+### Features
+
+* **bullmq:** Replaced Bull Arena with Bull Board ([e6762b9](https://github.com/postalsys/emailengine/commit/e6762b9c4c23a8fbb63f19bd10dd6c8676b94f43))
+
+
+### Bug Fixes
+
+* **oauth:** Added 'useAuthServer' support for API based email accounts ([04c2aa9](https://github.com/postalsys/emailengine/commit/04c2aa905de8793f6150f69cc47e0ac26bf1e9d1))
+* **swagger:** Use embedded Swagger UI instead of Iframe ([ce9fd6a](https://github.com/postalsys/emailengine/commit/ce9fd6a02685f76eed060b9eef2551a91874e732))
+* **templates:** Allow to inject HTML code to the &lt;head&gt; tag of the public pages like authentication form or 404 error page ([bd97a7c](https://github.com/postalsys/emailengine/commit/bd97a7c06430407a2e6be9aea33136eec1e6626b))
+
 ## [2.46.5](https://github.com/postalsys/emailengine/compare/v2.46.4...v2.46.5) (2024-09-25)
 
 
