@@ -86,13 +86,11 @@ const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const { autodetectImapSettings } = require('../lib/autodetect-imap-settings');
 
-const Hecks = require('@postalsys/hecks');
-const { arenaExpress } = require('../lib/arena-express');
 const outbox = require('../lib/outbox');
 
 const { lists } = require('../lib/lists');
 
-const { redis, REDIS_CONF, documentsQueue, notifyQueue, submitQueue } = require('../lib/db');
+const { redis, documentsQueue, notifyQueue, submitQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
 const { Gateway } = require('../lib/gateway');
 const settings = require('../lib/settings');
@@ -132,6 +130,7 @@ const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
 const templateRoutes = require('../lib/api-routes/template-routes');
 const chatRoutes = require('../lib/api-routes/chat-routes');
+const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
 
 const {
     settingsSchema,
@@ -734,9 +733,7 @@ const init = async () => {
 
     const swaggerOptions = {
         swaggerUI: true,
-        swaggerUIPath: '/admin/iframe/swagger/',
-        documentationPage: true,
-        documentationPath: '/admin/iframe/docs',
+        swaggerUIPath: '/admin/swagger/resources/',
 
         expanded: 'list',
         sortEndpoints: 'method',
@@ -8455,6 +8452,7 @@ ${now}`,
                 disableTokens,
                 tract,
                 templateHeader: embeddedTemplateHeader,
+                templateHtmlHead: embeddedTemplateHtmlHead,
                 documentStoreEnabled: showDocumentStore,
                 serviceUrl,
                 language,
@@ -8471,6 +8469,7 @@ ${now}`,
                 'disableTokens',
                 'tract',
                 'templateHeader',
+                'templateHtmlHead',
                 'documentStoreEnabled',
                 'serviceUrl',
                 'language',
@@ -8629,6 +8628,7 @@ ${now}`,
                 packageData,
                 systemAlerts,
                 embeddedTemplateHeader,
+                embeddedTemplateHtmlHead,
                 currentYear: new Date().getFullYear(),
                 showDocumentStore,
                 updateBrowserInfo: !serviceUrl || !language || !timezone,
@@ -8746,26 +8746,11 @@ ${now}`,
         }
     });
 
+    // setup web UI
     routesUi(server, call);
 
-    // Bull-UI
-    const arenaBasePath = '/admin/iframe/arena';
-    await server.register(Hecks);
-    server.route({
-        method: '*',
-        path: `${arenaBasePath}/{expressPath*}`,
-        options: {
-            tags: ['external'],
-            //auth: false,
-            handler: {
-                express: arenaExpress(Object.assign({ connectionName: `${REDIS_CONF.connectionName}[arena]` }, REDIS_CONF), arenaBasePath)
-            },
-            state: {
-                parse: true,
-                failAction: 'error'
-            }
-        }
-    });
+    // setup "Bull board" routes
+    await bullBoardRoutes({ server });
 
     server.route({
         method: 'GET',

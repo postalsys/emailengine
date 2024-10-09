@@ -32,9 +32,9 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
     logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
 
-const { IMAPConnection } = require('../lib/imap-connection');
-const { GmailClient } = require('../lib/api-client/gmail-client');
-const { OutlookClient } = require('../lib/api-client/outlook-client');
+const { IMAPClient } = require('../lib/email-client/imap-client');
+const { GmailClient } = require('../lib/email-client/gmail-client');
+const { OutlookClient } = require('../lib/email-client/outlook-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
@@ -203,7 +203,7 @@ class ConnectionHandler {
         }
 
         if (!accountObject.connection) {
-            accountObject.connection = new IMAPConnection(account, {
+            accountObject.connection = new IMAPClient(account, {
                 runIndex,
 
                 accountObject,

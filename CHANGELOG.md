@@ -1,42 +1,51 @@
 # Changelog
 
-## [2.46.5](https://github.com/postalsys/emailengine/compare/v2.46.4...v2.46.5) (2024-09-25)
+## [2.47.0](https://github.com/postalsys/emailengine/compare/v2.46.5...v2.47.0) (2024-10-07)
+
+
+### Features
+
+* **bullmq:** Replaced Bull Arena with Bull Board ([e6762b9](https://github.com/postalsys/emailengine/commit/e6762b9c4c23a8fbb63f19bd10dd6c8676b94f43))
 
 
 ### Bug Fixes
 
-* **release:** Use node v20 for prepackaged binaries ([ed2a161](https://github.com/postalsys/emailengine/commit/ed2a16165c6b7b57171d3d638ee5894831910687))
+* **oauth:** Added 'useAuthServer' support for API based email accounts ([04c2aa9](https://github.com/postalsys/emailengine/commit/04c2aa905de8793f6150f69cc47e0ac26bf1e9d1))
+* **swagger:** Use embedded Swagger UI instead of Iframe ([ce9fd6a](https://github.com/postalsys/emailengine/commit/ce9fd6a02685f76eed060b9eef2551a91874e732))
+* **templates:** Allow to inject HTML code to the &lt;head&gt; tag of the public pages like authentication form or 404 error page ([bd97a7c](https://github.com/postalsys/emailengine/commit/bd97a7c06430407a2e6be9aea33136eec1e6626b))
+
+## [2.46.5](https://github.com/postalsys/emailengine/compare/v2.46.4...v2.46.5) (2024-09-25)
+
+### Bug Fixes
+
+-   **release:** Use node v20 for prepackaged binaries ([ed2a161](https://github.com/postalsys/emailengine/commit/ed2a16165c6b7b57171d3d638ee5894831910687))
 
 ## [2.46.4](https://github.com/postalsys/emailengine/compare/v2.46.3...v2.46.4) (2024-09-23)
 
-
 ### Bug Fixes
 
-* **search:** Fixed resolving special use paths like \All ([3fb0c9c](https://github.com/postalsys/emailengine/commit/3fb0c9c34a864558172ba2660259432af8ed9260))
-* **security:** Genereate Fluid-Attacks SAST Scan Results ([5780708](https://github.com/postalsys/emailengine/commit/5780708fc6c94240c9d34b8aa685348153e0fbf7))
-* **security:** Replaced node-gettext with @postalsys/gettext ([a13378a](https://github.com/postalsys/emailengine/commit/a13378a32bfdaed8afb9eb0dba045669e9004f45))
+-   **search:** Fixed resolving special use paths like \All ([3fb0c9c](https://github.com/postalsys/emailengine/commit/3fb0c9c34a864558172ba2660259432af8ed9260))
+-   **security:** Generate Fluid-Attacks SAST Scan Results ([5780708](https://github.com/postalsys/emailengine/commit/5780708fc6c94240c9d34b8aa685348153e0fbf7))
+-   **security:** Replaced node-gettext with @postalsys/gettext ([a13378a](https://github.com/postalsys/emailengine/commit/a13378a32bfdaed8afb9eb0dba045669e9004f45))
 
 ## [2.46.3](https://github.com/postalsys/emailengine/compare/v2.46.2...v2.46.3) (2024-09-10)
 
-
 ### Bug Fixes
 
-* **security:** Allow limiting IP addresses that are allowed to access /admin paths ([7b64009](https://github.com/postalsys/emailengine/commit/7b6400963eb6ce781074e39c63a2e3281f3b916d))
+-   **security:** Allow limiting IP addresses that are allowed to access /admin paths ([7b64009](https://github.com/postalsys/emailengine/commit/7b6400963eb6ce781074e39c63a2e3281f3b916d))
 
 ## [2.46.2](https://github.com/postalsys/emailengine/compare/v2.46.1...v2.46.2) (2024-09-07)
 
-
 ### Bug Fixes
 
-* **oauth2-api:** Set default value for Outlook OAuth2 cloud property when creating a new OAuth2 app via API ([d4e1993](https://github.com/postalsys/emailengine/commit/d4e199382c5759762afd2ffa832acbf9ea1a0318))
-* Upgraded dependencies ([abb9edf](https://github.com/postalsys/emailengine/commit/abb9edf05c79e7fdc3a5149b901e46d3bac3fd2f))
+-   **oauth2-api:** Set default value for Outlook OAuth2 cloud property when creating a new OAuth2 app via API ([d4e1993](https://github.com/postalsys/emailengine/commit/d4e199382c5759762afd2ffa832acbf9ea1a0318))
+-   Upgraded dependencies ([abb9edf](https://github.com/postalsys/emailengine/commit/abb9edf05c79e7fdc3a5149b901e46d3bac3fd2f))
 
 ## [2.46.1](https://github.com/postalsys/emailengine/compare/v2.46.0...v2.46.1) (2024-09-04)
 
-
 ### Bug Fixes
 
-* **click-open-tracking:** Allow to configure clicks and opens tracking separately with trackOpens and trackClicks options ([1cc55bc](https://github.com/postalsys/emailengine/commit/1cc55bcfa7bf9f83b459d3690e510854bb2157d7))
+-   **click-open-tracking:** Allow to configure clicks and opens tracking separately with trackOpens and trackClicks options ([1cc55bc](https://github.com/postalsys/emailengine/commit/1cc55bcfa7bf9f83b459d3690e510854bb2157d7))
 
 ## [2.46.0](https://github.com/postalsys/emailengine/compare/v2.45.1...v2.46.0) (2024-08-29)
 

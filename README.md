@@ -105,7 +105,7 @@ EmailEngine relies on Redis as its data store. Redis stores everything in RAM, s
 
 To diagnose problems:
 
-1. **Check Bull Queues:** Use the built-in Bull Arena UI to monitor queue states at [http://127.0.0.1:3000/admin/arena](http://127.0.0.1:3000/admin/arena).
+1. **Check Bull Queues:** Use the built-in Bull Arena UI to monitor queue states at [http://127.0.0.1:3000/admin/bull-board](http://127.0.0.1:3000/admin/bull-board).
 2. **Scan Keyspace:** Run the following to group Redis keys by type and generate a report:
 
     ```bash

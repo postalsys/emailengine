@@ -15,11 +15,13 @@ jobs:
         # Service containers to run with `container-job`
         steps:
             - uses: actions/checkout@v4
+
             - name: Use Node.js 20
               uses: actions/setup-node@v4
               with:
                   node-version: 20
             - run: npm install
+
             - name: Run License Checks
               run: |
                   npm run licenses
@@ -39,10 +41,22 @@ jobs:
               with:
                   ref: ${{ github.head_ref }}
 
+            # Ensure that Node.js is available
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+
             - name: Fluid-Attacks scan
+              continue-on-error: true
               uses: docker://ghcr.io/fluidattacks/makes/amd64
               with:
                   args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+
+            - name: Show Scan Results
+              run: |
+                  cat Fluid-Attacks-Results.csv
+                  node -e 'require("fs").readFileSync("Fluid-Attacks-Results.csv","utf-8").indexOf("No vulnerabilities were found in your targets")<0 && process.exit(1)'
 
     test:
         name: Test Suite

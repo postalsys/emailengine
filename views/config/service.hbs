@@ -18,7 +18,7 @@
         <div class="card-body">
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">serviceUrl</a>]</div>
 
                 <label for="settingsServiceUrl">Service URL</label>
@@ -32,7 +32,7 @@
             </div>
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">enableApiProxy</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
@@ -47,7 +47,7 @@
             </div>
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">locale</a>]</div>
 
                 <label for="settingsServiceLocale">Default Language</label>
@@ -72,7 +72,7 @@
             </div>
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">timezone</a>]</div>
 
                 <label for="settingsServiceTimezone">Default Timezone</label>
@@ -96,7 +96,7 @@
         <div class="card-body">
 
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">serviceSecret</a>]</div>
 
                 <label for="settingsServiceSecret">Service Secret</label>
@@ -191,14 +191,14 @@
                 {{/if}}
                 <small class="form-text text-muted">Enable this option if you need to reuse OAuth2 access tokens managed
                     by EmailEngine in other parts of your application. Note that <a
-                        href="/admin/iframe/docs#/Account/getV1AccountAccountOauthtoken" target="_blank"
+                        href="/admin/swagger#/Account/getV1AccountAccountOauthtoken" target="_blank"
                         rel="noopener noreferrer">access to OAuth2 tokens</a> is disabled by default due to the
                     potential security risks of leaking these tokens.</small>
             </div>
 
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">ignoreMailCertErrors</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
@@ -242,7 +242,7 @@
         <div class="card-body">
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">queueKeep</a>]</div>
 
                 <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
@@ -253,8 +253,8 @@
                 <span class="invalid-feedback">{{errors.queueKeep}}</span>
                 {{/if}}
                 <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
-                    "Failed" and "Completed" lists are empty in <a href="/admin/arena" target="_blank"
-                        rel="noopener noreferrer">Bull Arena</a>.
+                    "Failed" and "Completed" lists are empty in <a href="/admin/bull-board" target="_blank"
+                        rel="noopener noreferrer">Bull Board</a>.
                     Set this value if you want to keep a fixed number of the latest entries in the list.</small>
             </div>
 
@@ -268,7 +268,7 @@
         <div class="card-body">
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">deliveryAttempts</a>]</div>
 
                 <label for="settingsDeliveryAttempts">How many times to retry a failed email sending</label>
@@ -304,15 +304,18 @@
         </div>
         <div class="card-body">
 
+            <p>These settings apply to all publicly accessible pages, such as 404 error pages, the hosted authentication
+                form, and the virtual mailing list unsubscribe page.</p>
+
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
 
-                <label>Template header for public pages (HTML code)</label>
+                <label>Header HTML for Public Pages</label>
 
-                <input type="hidden" class="{{#if errors.templateHeaderElement}}is-invalid{{/if}}"
-                    id="templateHeaderElement" name="templateHeader" value="{{values.templateHeader}}">
+                <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
+                    name="templateHeader" value="{{values.templateHeader}}">
 
                 <div id="editor-html" class="code-editor"></div>
                 <div class="editor-embed-block">
@@ -328,10 +331,38 @@
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Insert here the HTML code you want to display <u
+                <small class="form-text text-muted">Enter the HTML code you want to display at the <u
                         data-toggle="popover" data-trigger="hover" data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
-                        style="cursor: default;">on top of public pages</u> like the hosted authentication form.</small>
+                        style="cursor: default;">top of public pages</u> (e.g., the hosted authentication form).</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">templateHtmlHead</a>]</div>
+
+                <label>HTML Code for the &lt;head&gt; Section of Public Pages</label>
+
+                <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
+                    id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
+
+                <div id="editor-html-head" class="code-editor"></div>
+                <div class="editor-embed-block">
+                    <div class="editor-embed-content editor-embed-content-left">
+                        HTML content
+                    </div>
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" class="toggle-fullscreen" data-target="editor-html-head">Toggle fullscreen</a>
+                    </div>
+                </div>
+
+                {{#if errors.templateHtmlHead}}
+                <span class="invalid-feedback">{{errors.templateHtmlHead}}</span>
+                {{/if}}
+
+                <small class="form-text text-muted">Enter the HTML code you want to include within the &lt;head&gt;
+                    section of public pages (e.g., the hosted authentication form).</small>
             </div>
 
         </div>
@@ -344,12 +375,12 @@
         <div class="card-body">
 
 
-            <p>The following options apply for pre-processing scripts like the filter and map function of the webhook
-                routes and document store settings.</p>
+            <p>The following options apply for pre-processing scripts like the <em>filter</em> and <em>map</em> function
+                of the <a href="/admin/webhooks">webhook routes</a>.</p>
 
             <div class="form-group">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
 
                 <label>Environment variable (JSON object)</label>
@@ -387,7 +418,7 @@
         <div class="card-body">
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">trackClicks</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.trackClicks}}is-invalid{{/if}}"
@@ -401,7 +432,7 @@
             </div>
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">trackOpens</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.trackOpens}}is-invalid{{/if}}"
@@ -434,7 +465,7 @@
         <div class="card-body">
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/iframe/docs#/Settings/postV1Settings"
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">resolveGmailCategories</a>]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
@@ -572,9 +603,22 @@
         editorEnv.session.setMode("ace/mode/json");
         editorEnv.session.setValue(document.getElementById('scriptEnvElement').value);
 
+        const editorHtmlHead = ace.edit("editor-html-head", {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-html-head", editorHtmlHead);
+
+        editorHtmlHead.setTheme("ace/theme/xcode");
+        editorHtmlHead.session.setMode("ace/mode/handlebars");
+        editorHtmlHead.session.setValue(document.getElementById('templateHtmlHeadElement').value);
+
         document.getElementById('settings-form').addEventListener('submit', () => {
             document.getElementById('templateHeaderElement').value = editorHtml.getValue();
             document.getElementById('scriptEnvElement').value = editorEnv.getValue();
+            document.getElementById('templateHtmlHeadElement').value = editorHtmlHead.getValue();
         });
 
         for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
