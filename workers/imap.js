@@ -203,6 +203,8 @@ class ConnectionHandler {
         }
 
         if (!accountObject.connection) {
+            let imapIndexer = typeof accountData.imap?.imapIndexer === 'boolean' ? accountData.imap?.indexer : (await settings.get('imapIndexer')) || 'full';
+
             accountObject.connection = new IMAPClient(account, {
                 runIndex,
 
@@ -210,6 +212,8 @@ class ConnectionHandler {
                 redis,
                 accountLogger,
                 secret,
+
+                imapIndexer,
 
                 notifyQueue,
                 submitQueue,
