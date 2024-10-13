@@ -312,7 +312,10 @@
                 <small class="form-text text-muted">Specifies the default indexing method for IMAP accounts. Select
                     <em>"full"</em> to build a comprehensive index that tracks deleted and updated emails, or
                     <em>"fast"</em> to detect only newly received emails. You can also customize this setting in each
-                    account's settings to use different indexing methods for different accounts.</small>
+                    account's settings to use different indexing methods for different accounts.<br>
+                    <em>Note:</em> Changing this setting applies only to new accounts. To change the indexer for
+                    existing accounts, you must perform an <a
+                        href="/admin/swagger#/Account/putV1AccountAccountFlush">account flush</a>.</small>
             </div>
 
         </div>
