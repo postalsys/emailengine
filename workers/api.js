@@ -2604,6 +2604,8 @@ const init = async () => {
                     proxy: settingsSchema.proxyUrl,
                     smtpEhloName: settingsSchema.smtpEhloName,
 
+                    imapIndexer: accountSchemas.imapIndexer,
+
                     imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
 
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
@@ -3170,6 +3172,7 @@ const init = async () => {
                 payload: Joi.object({
                     flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true'),
                     notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    imapIndexer: accountSchemas.imapIndexer,
                     syncFrom: accountSchemas.syncFrom
                 }).label('RequestFlush')
             },
@@ -3342,6 +3345,7 @@ const init = async () => {
                     'webhooks',
                     'proxy',
                     'smtpEhloName',
+                    'imapIndexer',
                     'imap',
                     'smtp',
                     'oauth2',

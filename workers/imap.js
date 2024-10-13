@@ -203,7 +203,7 @@ class ConnectionHandler {
         }
 
         if (!accountObject.connection) {
-            let imapIndexer = typeof accountData.imap?.imapIndexer === 'string' && accountData.imap?.imapIndexer ? accountData.imap?.indexer : null;
+            let imapIndexer = typeof accountData.imapIndexer === 'string' && accountData.imapIndexer ? accountData.imapIndexer : 'full';
 
             accountObject.connection = new IMAPClient(account, {
                 runIndex,
