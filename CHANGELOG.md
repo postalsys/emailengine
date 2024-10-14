@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.48.0](https://github.com/postalsys/emailengine/compare/v2.47.0...v2.48.0) (2024-10-14)
+
+
+### Features
+
+* **imap:** Added new IMAP indexing option: 'fast' ([1d6df05](https://github.com/postalsys/emailengine/commit/1d6df05e5a95b45eabda368bee8f93471fc21377))
+
+
+### Bug Fixes
+
+* **outlook:** Fixed Outlook OAuth2 connection ([920aa20](https://github.com/postalsys/emailengine/commit/920aa20fc2847cc419592a181d127a7c796df940))
+
 ## [2.47.0](https://github.com/postalsys/emailengine/compare/v2.46.5...v2.47.0) (2024-10-07)
 
 
