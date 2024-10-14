@@ -1,0 +1,21 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-045ed282915218a2d247a155f22797647447aadfd2254a8c462732b9239ab779",
+  "author": "Unknown Author",
+  "timestamp": "2024-10-11T09:40:51.734025+02:00",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2024-47764"
+      },
+      "timestamp": "2024-10-11T09:40:51.734025+02:00",
+      "products": [
+        {
+          "@id": "pkg:npm/cookie@0.6.0"
+        }
+      ],
+      "status": "under_investigation"
+    }
+  ]
+}
