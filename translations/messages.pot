@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-10-14 09:53+0000\n"
+"POT-Creation-Date: 2024-10-18 11:56+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -229,7 +229,7 @@ msgstr ""
 
 #: lib/routes-ui.js:6690
 #: lib/routes-ui.js:6723
-#: lib/routes-ui.js:9516
+#: lib/routes-ui.js:9522
 msgid "Failed to validate request arguments"
 msgstr ""
 
@@ -238,20 +238,20 @@ msgstr ""
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9479
+#: lib/routes-ui.js:9485
 #: lib/tools.js:731
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9489
-#: lib/routes-ui.js:9607
-#: lib/routes-ui.js:9624
-#: lib/routes-ui.js:9659
+#: lib/routes-ui.js:9495
+#: lib/routes-ui.js:9613
+#: lib/routes-ui.js:9630
+#: lib/routes-ui.js:9665
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9618
-#: lib/routes-ui.js:9652
+#: lib/routes-ui.js:9624
+#: lib/routes-ui.js:9658
 msgid "Failed to process request"
 msgstr ""
 
