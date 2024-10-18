@@ -1945,7 +1945,7 @@ const init = async () => {
 
                         let profileRes;
                         try {
-                            profileRes = await oAuth2Client.request(r.access_token, `${oAuth2Client.apiBase}/me`);
+                            profileRes = await oAuth2Client.request(r.access_token, `${oAuth2Client.apiBase}/v1.0/me`);
                         } catch (err) {
                             let response = err.oauthRequest && err.oauthRequest.response;
                             if (response && response.error) {
@@ -2604,6 +2604,8 @@ const init = async () => {
                     proxy: settingsSchema.proxyUrl,
                     smtpEhloName: settingsSchema.smtpEhloName,
 
+                    imapIndexer: accountSchemas.imapIndexer,
+
                     imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
 
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
@@ -3170,6 +3172,7 @@ const init = async () => {
                 payload: Joi.object({
                     flush: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(false).description('Only flush the account if true'),
                     notifyFrom: accountSchemas.notifyFrom.default('now'),
+                    imapIndexer: accountSchemas.imapIndexer,
                     syncFrom: accountSchemas.syncFrom
                 }).label('RequestFlush')
             },
@@ -3342,6 +3345,7 @@ const init = async () => {
                     'webhooks',
                     'proxy',
                     'smtpEhloName',
+                    'imapIndexer',
                     'imap',
                     'smtp',
                     'oauth2',
@@ -3368,14 +3372,16 @@ const init = async () => {
                     result[key] = result[key] || null;
                 }
 
+                let oauth2App;
                 if (accountData.oauth2 && accountData.oauth2.provider) {
-                    let app = await oauth2Apps.get(accountData.oauth2.provider);
+                    oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
 
-                    if (app) {
-                        result.type = app.provider;
-                        if (app.id !== app.provider) {
-                            result.app = app.id;
+                    if (oauth2App) {
+                        result.type = oauth2App.provider;
+                        if (oauth2App.id !== oauth2App.provider) {
+                            result.app = oauth2App.id;
                         }
+                        result.baseScopes = oauth2App.baseScope || 'imap';
                     } else {
                         result.type = 'oauth2';
                     }
@@ -3383,6 +3389,10 @@ const init = async () => {
                     result.type = 'imap';
                 } else {
                     result.type = 'sending';
+                }
+
+                if ((accountData.imap || (oauth2App && (!oauth2App.baseScopes || oauth2App.baseScopes === 'imap'))) && !result.imapIndexer) {
+                    result.imapIndexer = 'full';
                 }
 
                 if (accountData.sync) {
@@ -3462,6 +3472,8 @@ const init = async () => {
 
                     path: accountPathSchema.example(['*']).label('AccountPath'),
 
+                    imapIndexer: accountSchemas.imapIndexer,
+
                     subconnections: accountSchemas.subconnections,
 
                     webhooks: Joi.string()
@@ -3509,6 +3521,12 @@ const init = async () => {
 
                     type: AccountTypeSchema,
                     app: Joi.string().max(256).example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                    baseScopes: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid(...['imap', 'api', 'pubsub'])
+                        .example('imap')
+                        .description('OAuth2 Base Scopes'),
 
                     counters: accountCountersSchema,
 

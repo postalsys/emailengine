@@ -285,6 +285,42 @@
         </div>
     </div>
 
+    <div id="submission_settings" class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">IMAP processing settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">imapIndexer</a>]</div>
+
+                <label for="settingsImapIndexer">Indexing Method for IMAP Accounts</label>
+
+
+                <select id="settingsImapIndexer" class="custom-select custom-select-sm" name="imapIndexer" {{#if
+                    errors.imapIndexer}}is-invalid{{/if}}>
+                    {{#each imapIndexers}}
+                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+
+
+                {{#if errors.imapIndexer}}
+                <span class="invalid-feedback">{{errors.imapIndexer}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Specifies the default indexing method for IMAP accounts. Select
+                    <em>"full"</em> to build a comprehensive index that tracks deleted and updated emails, or
+                    <em>"fast"</em> to detect only newly received emails. You can also customize this setting in each
+                    account's settings to use different indexing methods for different accounts.<br>
+                    <em>Note:</em> Changing this setting applies only to new accounts. To change the indexer for
+                    existing accounts, you must perform an <a
+                        href="/admin/swagger#/Account/putV1AccountAccountFlush">account flush</a>.</small>
+            </div>
+
+        </div>
+    </div>
+
     <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Templates</h6>
