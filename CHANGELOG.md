@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.48.1](https://github.com/postalsys/emailengine/compare/v2.48.0...v2.48.1) (2024-10-18)
+
+
+### Bug Fixes
+
+* **certs:** Show a proper error response for failed ACME validation requests ([71dfeba](https://github.com/postalsys/emailengine/commit/71dfeba07c9fd22c2b26003e6f4f44b1062ddbfc))
+* **oauth-api:** Use a default cloud value for outlook OAuth2 apps if AzureCloud is not specified ([1affc1d](https://github.com/postalsys/emailengine/commit/1affc1d8dd29ca96d18cd91af810c6abd7820058))
+* **oauth2:** Double check if OAuth2 account is actually already used before throwing AccountAlreadyExists error ([3f967a9](https://github.com/postalsys/emailengine/commit/3f967a93e6ade6d0f25429521cd551eb6f48de53))
+
 ## [2.48.0](https://github.com/postalsys/emailengine/compare/v2.47.0...v2.48.0) (2024-10-14)
 
 
