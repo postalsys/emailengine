@@ -162,7 +162,8 @@ const {
     defaultAccountTypeSchema,
     fromAddressSchema,
     outboxEntrySchema,
-    googleProjectIdSchema
+    googleProjectIdSchema,
+    googleWorkspaceAccountsSchema
 } = require('../lib/schemas');
 
 const listMessageFolderPathDescription =
@@ -6852,6 +6853,7 @@ const init = async () => {
                                 serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
 
                                 googleProjectId: googleProjectIdSchema,
+                                googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                                 serviceClientEmail: Joi.string()
                                     .email()
@@ -6980,6 +6982,7 @@ const init = async () => {
                         .description('Redirect URL for 3-legged OAuth2 applications'),
 
                     googleProjectId: googleProjectIdSchema,
+                    googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
@@ -7154,6 +7157,7 @@ const init = async () => {
                         .description('Service client ID for 2-legged OAuth2 applications'),
 
                     googleProjectId: googleProjectIdSchema,
+                    googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
