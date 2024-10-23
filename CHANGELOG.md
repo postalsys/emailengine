@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.48.2](https://github.com/postalsys/emailengine/compare/v2.48.1...v2.48.2) (2024-10-23)
+
+
+### Bug Fixes
+
+* **metrics:** Ensure that unassigned accounts are included in the 'disconnectedä state count ([d502425](https://github.com/postalsys/emailengine/commit/d5024256f3f715a0b9ad849d911684cb059ad742))
+* **metrics:** Include thread counts in Prometheus output ([04e978e](https://github.com/postalsys/emailengine/commit/04e978e9ef8962cef05619dea508a4b8e9a4c191))
+* **oauth2:** Allow to specify to show only Google Workspace accounts on OAuth2 login screen ([a3b2412](https://github.com/postalsys/emailengine/commit/a3b2412342a79b2f012c328bae8839e36a6a07d4))
+* **submit:** Added additional and optional reference field 'messageId'. If set then this value is validated against the Message-ID header of the referenced email ([8d76345](https://github.com/postalsys/emailengine/commit/8d76345fa51827cb81e1849ffbfee3f1cecdb2e3))
+
 ## [2.48.1](https://github.com/postalsys/emailengine/compare/v2.48.0...v2.48.1) (2024-10-18)
 
 
