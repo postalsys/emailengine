@@ -2033,6 +2033,8 @@ async function collectMetrics() {
         }
     }
 
+    metricsResult.disconnected = (Number(metricsResult.disconnected) || 0) + (unassigned ? unassigned.size : 0);
+
     Object.keys(metricsResult).forEach(status => {
         metrics.imapConnections.set({ status }, metricsResult[status]);
     });
