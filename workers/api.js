@@ -5371,7 +5371,7 @@ const init = async () => {
                                     .allow(false, null)
                                     .example('AAAAAQAACnAcde')
                                     .description(
-                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                        'References an existing attachment by its ID instead of providing new attachment content. If this field is set, the `content` field must not be included. If not set, the `content` field is required.'
                                     )
                             }).label('UploadAttachment')
                         )
@@ -5379,7 +5379,9 @@ const init = async () => {
                         .label('UploadAttachmentList'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
+                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown().example({
+                        'X-My-Custom-Header': 'Custom header value'
+                    }),
 
                     trackingEnabled: Joi.boolean()
                         .example(false)
