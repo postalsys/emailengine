@@ -163,7 +163,8 @@ const {
     fromAddressSchema,
     outboxEntrySchema,
     googleProjectIdSchema,
-    googleWorkspaceAccountsSchema
+    googleWorkspaceAccountsSchema,
+    messageReferenceSchema
 } = require('../lib/schemas');
 
 const listMessageFolderPathDescription =
@@ -4163,54 +4164,7 @@ const init = async () => {
                     flags: Joi.array().items(Joi.string().max(128)).example(['\\Seen', '\\Draft']).default([]).description('Message flags').label('Flags'),
                     internalDate: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Sets the internal date for this message'),
 
-                    reference: Joi.object({
-                        message: Joi.string()
-                            .base64({ paddingRequired: false, urlSafe: true })
-                            .max(256)
-                            .required()
-                            .example('AAAAAQAACnA')
-                            .description(
-                                "The EmailEngine-specific ID of the referenced message. Note: This is not the Message-ID found in the email's headers"
-                            ),
-                        action: Joi.string()
-                            .lowercase()
-                            .valid('forward', 'reply')
-                            .example('reply')
-                            .default('reply')
-                            .description("Specifies the action to perform on the referenced message. Possible values are 'reply' or 'forward'"),
-                        inline: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, includes the original email content as blockquoted text in the reply')
-                            .label('InlineReply'),
-                        forwardAttachments: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, includes attachments from the original email in the forwarded message')
-                            .when('action', {
-                                is: 'forward',
-                                then: Joi.optional(),
-                                otherwise: Joi.forbidden()
-                            })
-                            .label('ForwardAttachments'),
-                        ignoreMissing: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, processes the email even if the original referenced message is no longer available.')
-                            .label('IgnoreMissing'),
-                        messageId: Joi.string()
-                            .max(996)
-                            .example('<test123@example.com>')
-                            .description(
-                                "Specifies the expected Message-ID of the referenced email. When set, the reference action (such as 'reply' or 'forward') will only proceed if the Message-ID of the referenced email matches this value. If the Message-IDs do not match, an error is returned. This ensures that the action is applied to the correct email."
-                            ),
-                        documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
-                    })
-                        .description('Contains information needed when replying to or forwarding an email')
-                        .label('MessageReference'),
+                    reference: messageReferenceSchema,
 
                     raw: Joi.string()
                         .base64()
@@ -5285,54 +5239,7 @@ const init = async () => {
                 }),
 
                 payload: Joi.object({
-                    reference: Joi.object({
-                        message: Joi.string()
-                            .base64({ paddingRequired: false, urlSafe: true })
-                            .max(256)
-                            .required()
-                            .example('AAAAAQAACnA')
-                            .description(
-                                "The EmailEngine-specific ID of the referenced message. Note: This is not the Message-ID found in the email's headers"
-                            ),
-                        action: Joi.string()
-                            .lowercase()
-                            .valid('forward', 'reply')
-                            .example('reply')
-                            .default('reply')
-                            .description("Specifies the action to perform on the referenced message. Possible values are 'reply' or 'forward'"),
-                        inline: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, includes the original email content as blockquoted text in the reply')
-                            .label('InlineReply'),
-                        forwardAttachments: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, includes attachments from the original email in the forwarded message')
-                            .when('action', {
-                                is: 'forward',
-                                then: Joi.optional(),
-                                otherwise: Joi.forbidden()
-                            })
-                            .label('ForwardAttachments'),
-                        ignoreMissing: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('When set to `true`, processes the email even if the original referenced message is no longer available.')
-                            .label('IgnoreMissing'),
-                        messageId: Joi.string()
-                            .max(996)
-                            .example('<test123@example.com>')
-                            .description(
-                                "Specifies the expected Message-ID of the referenced email. When set, the reference action (such as 'reply' or 'forward') will only proceed if the Message-ID of the referenced email matches this value. If the Message-IDs do not match, an error is returned. This ensures that the action is applied to the correct email."
-                            ),
-                        documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
-                    })
-                        .description('Contains information needed when replying to or forwarding an email')
-                        .label('MessageReference'),
+                    reference: messageReferenceSchema,
 
                     envelope: Joi.object({
                         from: Joi.string().email().allow('').example('sender@example.com'),
