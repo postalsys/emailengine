@@ -4204,7 +4204,9 @@ const init = async () => {
                         messageId: Joi.string()
                             .max(996)
                             .example('<test123@example.com>')
-                            .description("Optional. Apply the reference action only if the referenced email's Message-ID matches this value."),
+                            .description(
+                                "Specifies the expected Message-ID of the referenced email. When set, the reference action (such as 'reply' or 'forward') will only proceed if the Message-ID of the referenced email matches this value. If the Message-IDs do not match, an error is returned. This ensures that the action is applied to the correct email."
+                            ),
                         documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
                     })
                         .description('Contains information needed when replying to or forwarding an email')
@@ -5324,7 +5326,9 @@ const init = async () => {
                         messageId: Joi.string()
                             .max(996)
                             .example('<test123@example.com>')
-                            .description("Optional. Apply the reference action only if the referenced email's Message-ID matches this value."),
+                            .description(
+                                "Specifies the expected Message-ID of the referenced email. When set, the reference action (such as 'reply' or 'forward') will only proceed if the Message-ID of the referenced email matches this value. If the Message-IDs do not match, an error is returned. This ensures that the action is applied to the correct email."
+                            ),
                         documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
                     })
                         .description('Contains information needed when replying to or forwarding an email')
