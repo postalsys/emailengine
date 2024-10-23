@@ -4169,19 +4169,26 @@ const init = async () => {
                             .max(256)
                             .required()
                             .example('AAAAAQAACnA')
-                            .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
+                            .description(
+                                "The EmailEngine-specific ID of the referenced message. Note: This is not the Message-ID found in the email's headers"
+                            ),
+                        action: Joi.string()
+                            .lowercase()
+                            .valid('forward', 'reply')
+                            .example('reply')
+                            .default('reply')
+                            .description("Specifies the action to perform on the referenced message. Possible values are 'reply' or 'forward'"),
                         inline: Joi.boolean()
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then blockquotes the email that is being replied to')
+                            .description('When set to `true`, includes the original email content as blockquoted text in the reply')
                             .label('InlineReply'),
                         forwardAttachments: Joi.boolean()
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then includes attachments in forwarded message')
+                            .description('When set to `true`, includes attachments from the original email in the forwarded message')
                             .when('action', {
                                 is: 'forward',
                                 then: Joi.optional(),
@@ -4192,11 +4199,15 @@ const init = async () => {
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .description('When set to `true`, processes the email even if the original referenced message is no longer available.')
                             .label('IgnoreMissing'),
-                        documentStore: documentStoreSchema.default(false)
+                        messageId: Joi.string()
+                            .max(996)
+                            .example('<test123@example.com>')
+                            .description("Optional. Apply the reference action only if the referenced email's Message-ID matches this value."),
+                        documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
                     })
-                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
+                        .description('Contains information needed when replying to or forwarding an email')
                         .label('MessageReference'),
 
                     raw: Joi.string()
@@ -4204,7 +4215,7 @@ const init = async () => {
                         .max(MAX_ATTACHMENT_SIZE)
                         .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
                         .description(
-                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                            'A Base64-encoded email message in RFC 822 format. If you provide other fields along with raw, those fields will override the corresponding values in the raw message.'
                         )
                         .label('RFC822Raw'),
 
@@ -4258,7 +4269,7 @@ const init = async () => {
                                     .allow(false, null)
                                     .example('AAAAAQAACnAcde')
                                     .description(
-                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                        'References an existing attachment by its ID instead of providing new attachment content. If this field is set, the `content` field must not be included. If not set, the `content` field is required.'
                                     )
                             }).label('UploadAttachment')
                         )
@@ -5278,19 +5289,26 @@ const init = async () => {
                             .max(256)
                             .required()
                             .example('AAAAAQAACnA')
-                            .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
+                            .description(
+                                "The EmailEngine-specific ID of the referenced message. Note: This is not the Message-ID found in the email's headers"
+                            ),
+                        action: Joi.string()
+                            .lowercase()
+                            .valid('forward', 'reply')
+                            .example('reply')
+                            .default('reply')
+                            .description("Specifies the action to perform on the referenced message. Possible values are 'reply' or 'forward'"),
                         inline: Joi.boolean()
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then blockquotes the email that is being replied to')
+                            .description('When set to `true`, includes the original email content as blockquoted text in the reply')
                             .label('InlineReply'),
                         forwardAttachments: Joi.boolean()
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then includes attachments in forwarded message')
+                            .description('When set to `true`, includes attachments from the original email in the forwarded message')
                             .when('action', {
                                 is: 'forward',
                                 then: Joi.optional(),
@@ -5301,18 +5319,24 @@ const init = async () => {
                             .truthy('Y', 'true', '1')
                             .falsy('N', 'false', 0)
                             .default(false)
-                            .description('If true, then processes the email even if the original message is not available anymore')
+                            .description('When set to `true`, processes the email even if the original referenced message is no longer available.')
                             .label('IgnoreMissing'),
-                        documentStore: documentStoreSchema.default(false)
+                        messageId: Joi.string()
+                            .max(996)
+                            .example('<test123@example.com>')
+                            .description("Optional. Apply the reference action only if the referenced email's Message-ID matches this value."),
+                        documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true })
                     })
-                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
+                        .description('Contains information needed when replying to or forwarding an email')
                         .label('MessageReference'),
 
                     envelope: Joi.object({
                         from: Joi.string().email().allow('').example('sender@example.com'),
                         to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
                     })
-                        .description('Optional SMTP envelope. If not set then derived from message headers.')
+                        .description(
+                            "An optional object specifying the SMTP envelope used during email transmission. If not provided, the envelope is automatically derived from the email's message headers. This is useful when you need the envelope addresses to differ from those in the email headers."
+                        )
                         .label('SMTPEnvelope')
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
@@ -5324,7 +5348,7 @@ const init = async () => {
                         .max(MAX_ATTACHMENT_SIZE)
                         .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
                         .description(
-                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                            'A Base64-encoded email message in RFC 822 format. If you provide other fields along with raw, those fields will override the corresponding values in the raw message.'
                         )
                         .label('RFC822Raw')
                         .when('mailMerge', {
