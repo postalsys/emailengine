@@ -5018,7 +5018,17 @@ const init = async () => {
                         .label('PageNumber'),
 
                     pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page'),
-                    documentStore: documentStoreSchema.default(false),
+
+                    useOutlookSearch: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .description(
+                            'MS Graph only. If enabled, uses the $search parameter for MS Graph search queries instead of $filter. This allows searching the "to", "cc", "bcc", "larger", "smaller", "body", "before", "sentBefore", "since", and the "sentSince" fields. Note that $search returns up to 1,000 results, does not indicate the total number of matching results or pages, and returns results sorted by relevance rather than date.'
+                        )
+                        .label('useOutlookSearch')
+                        .optional(),
+
+                    documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true }),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -5034,14 +5044,6 @@ const init = async () => {
 
                 payload: Joi.object({
                     search: searchSchema,
-                    useOutlookSearch: Joi.boolean()
-                        .truthy('Y', 'true', '1')
-                        .falsy('N', 'false', 0)
-                        .description(
-                            'MS Graph only. If enabled, uses the $search parameter for MS Graph search queries instead of $filter. This allows searching the "to", "cc", and "bcc" fields. Note that $search does not support paging, returns results sorted by relevance rather than date, and may time out if ordering is applied with many results.'
-                        )
-                        .label('useOutlookSearch')
-                        .optional(),
                     documentQuery: Joi.object()
                         .min(1)
                         .description('Document Store query. Only allowed with `documentStore`.')
