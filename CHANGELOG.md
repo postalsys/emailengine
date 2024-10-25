@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.48.3](https://github.com/postalsys/emailengine/compare/v2.48.2...v2.48.3) (2024-10-25)
+
+
+### Bug Fixes
+
+* **change-events:** Trigger a 'disconnected' event when an account is deleted and the connection is closed ([bf56440](https://github.com/postalsys/emailengine/commit/bf56440d429b19ef1960a8b4527502a43bcc89a1))
+* **oauth-api:** Do not try to convert null to string when making an OAuth2 API request ([5231327](https://github.com/postalsys/emailengine/commit/523132714a91c2b625095ea62bb1ec2d6e2c5ba8))
+* **outlook-api:** Ensure seemsLikeNew value for new message webhooks ([16e12c0](https://github.com/postalsys/emailengine/commit/16e12c000e57b993344fb329f037cb46a9f7b2b1))
+* **outlook-search:** Allow using $search instead of $filter by setting the useOutlookSearch query argument ([3a0d75e](https://github.com/postalsys/emailengine/commit/3a0d75e45043b0a5beb32e6465ebbf7cc2676c85))
+* **redis:** Do not set connection name to prevent calling CLIENT.SETNAME command ([166a947](https://github.com/postalsys/emailengine/commit/166a94708301a758be7b479f6f42b25df8d1faa5))
+
 ## [2.48.2](https://github.com/postalsys/emailengine/compare/v2.48.1...v2.48.2) (2024-10-23)
 
 
