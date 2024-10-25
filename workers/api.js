@@ -5034,13 +5034,13 @@ const init = async () => {
 
                 payload: Joi.object({
                     search: searchSchema,
-                    useSearchParam: Joi.boolean()
+                    useOutlookSearch: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
                         .description(
                             'MS Graph only. If enabled, uses the $search parameter for MS Graph search queries instead of $filter. This allows searching the "to", "cc", and "bcc" fields. Note that $search does not support paging, returns results sorted by relevance rather than date, and may time out if ordering is applied with many results.'
                         )
-                        .label('useSearchParam')
+                        .label('useOutlookSearch')
                         .optional(),
                     documentQuery: Joi.object()
                         .min(1)
