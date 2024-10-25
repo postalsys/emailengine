@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.48.4](https://github.com/postalsys/emailengine/compare/v2.48.3...v2.48.4) (2024-10-25)
+
+
+### Bug Fixes
+
+* **account-state:** Only swiths to disconnected if the account was previously connected ([4f56fe3](https://github.com/postalsys/emailengine/commit/4f56fe365af98b338b51710b9911abf8021e0afe))
+* **outlook-api:** Fixed missing redis object ([c248e49](https://github.com/postalsys/emailengine/commit/c248e49443b5bdbf85f36707a32965a264f8d8b4))
+
 ## [2.48.3](https://github.com/postalsys/emailengine/compare/v2.48.2...v2.48.3) (2024-10-25)
 
 
