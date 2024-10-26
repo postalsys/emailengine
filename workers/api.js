@@ -5451,7 +5451,7 @@ const init = async () => {
                             .description('Defines the conditions under which a DSN response should be sent'),
                         recipient: Joi.string().trim().empty('').email().description('The email address the DSN should be sent (ORCPT)')
                     })
-                        .description('Request DNS notifications')
+                        .description('Request DSN notifications')
                         .label('DSN'),
 
                     baseUrl: Joi.string()
