@@ -1958,6 +1958,13 @@ const init = async () => {
                             throw err;
                         }
 
+                        request.logger.info({
+                            msg: 'User profile returned by MS Graph API',
+                            user: userInfo.email,
+                            provider: oauth2App.provider,
+                            profile: profileRes
+                        });
+
                         if (profileRes.displayName) {
                             userInfo.name = profileRes.displayName;
                         }
@@ -1968,6 +1975,10 @@ const init = async () => {
 
                         if (profileRes.userPrincipalName) {
                             userInfo.username = profileRes.userPrincipalName;
+                        }
+
+                        if (!userInfo.email && userInfo.username) {
+                            userInfo.email = userInfo.username;
                         }
                     }
 
