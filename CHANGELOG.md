@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.48.5](https://github.com/postalsys/emailengine/compare/v2.48.4...v2.48.5) (2024-10-31)
+
+
+### Bug Fixes
+
+* **hosted-authentication:** If a user tries to add an hotmail/outlook account with a password, show a warning about MS disabling password based auth ([dd0407e](https://github.com/postalsys/emailengine/commit/dd0407e858bbbdd7244259733ee5d37de6296901))
+* **outlook-api:** Detect if message is from Inbox when processing messageNew webhook ([2a72aa0](https://github.com/postalsys/emailengine/commit/2a72aa098340f4cbd12b08a71a858960ffb52ece))
+* **outlook-api:** If mail property is not provided in user profile, then use userPrincipalName instead ([2e2224c](https://github.com/postalsys/emailengine/commit/2e2224cb8ded44286af9148ebe8a75234ae422db))
+* **redis:** Do not use Redis connectionName to avoid calling CLIENT command ([aafc732](https://github.com/postalsys/emailengine/commit/aafc7328992baa6ce26292a9f67007b3989fd0b0))
+
 ## [2.48.4](https://github.com/postalsys/emailengine/compare/v2.48.3...v2.48.4) (2024-10-25)
 
 
