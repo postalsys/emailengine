@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2024-10-31 07:51+0000\n"
+"POT-Creation-Date: 2024-11-01 08:08+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -57,6 +53,41 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:218
+msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
 msgstr ""
@@ -66,24 +97,16 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
+#: views/accounts/register/imap-server.hbs:45
+#: views/accounts/register/imap-server.hbs:136
+msgid "Important"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:46
 #: views/accounts/register/imap-server.hbs:53
 #: views/accounts/register/imap-server.hbs:60
-#: views/accounts/register/imap-server.hbs:137
 #: views/accounts/register/imap-server.hbs:144
 #: views/accounts/register/imap-server.hbs:151
 msgid "Application Password"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:138
-msgid "Important"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:54
@@ -139,11 +162,6 @@ msgstr ""
 msgid "Test settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:218
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:226
 msgid "Continue without testing"
 msgstr ""
@@ -182,26 +200,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:393
 msgid "HTTP error!"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: lib/routes-ui.js:677
@@ -271,7 +269,7 @@ msgstr ""
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:69
+#: lib/autodetect-imap-settings.js:70
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
