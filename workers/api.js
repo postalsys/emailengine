@@ -1978,7 +1978,7 @@ const init = async () => {
                         }
                     }
 
-                    if (!userInfo.email && userInfo.username) {
+                    if (!userInfo.email && userInfo.username && isEmail(userInfo.username)) {
                         userInfo.email = userInfo.username;
                     }
 
