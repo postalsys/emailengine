@@ -1976,10 +1976,10 @@ const init = async () => {
                         if (profileRes.userPrincipalName) {
                             userInfo.username = profileRes.userPrincipalName;
                         }
+                    }
 
-                        if (!userInfo.email && userInfo.username) {
-                            userInfo.email = userInfo.username;
-                        }
+                    if (!userInfo.email && userInfo.username) {
+                        userInfo.email = userInfo.username;
                     }
 
                     const authData = {
