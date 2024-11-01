@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.48.6](https://github.com/postalsys/emailengine/compare/v2.48.5...v2.48.6) (2024-11-01)
+
+
+### Bug Fixes
+
+* **admin:** Fixed pagination URL for oauth2 listing ([4140e34](https://github.com/postalsys/emailengine/commit/4140e3458d640e5f1ecdb4a270363be3e506dd00))
+* **outlook-api:** Falls back to username as account email if failed to retrieve account email address ([57f3d82](https://github.com/postalsys/emailengine/commit/57f3d827ce68f33971ffb53dfc02421885d6b960))
+* **stats:** Correctly detect account state for Gmail/MS Graph API accounts ([a5af1de](https://github.com/postalsys/emailengine/commit/a5af1de3e9145570756fc081c686d6c329914a7b))
+
 ## [2.48.5](https://github.com/postalsys/emailengine/compare/v2.48.4...v2.48.5) (2024-10-31)
 
 
