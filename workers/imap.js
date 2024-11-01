@@ -749,24 +749,20 @@ class ConnectionHandler {
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
 
-                let count = status => {
-                    if (!results[status]) {
-                        results[status] = 0;
-                    }
-                    results[status] += 1;
-                };
-
-                this.accounts.forEach(accountObject => {
+                for (let accountObject of this.accounts) {
                     let state;
 
                     if (!accountObject || !accountObject.connection) {
                         state = 'unassigned';
                     } else {
-                        state = accountObject.connection.currentState();
+                        state = await accountObject.connection.currentState();
                     }
 
-                    return count(state);
-                });
+                    if (!results[state]) {
+                        results[state] = 0;
+                    }
+                    results[state] += 1;
+                }
 
                 return results;
             }
