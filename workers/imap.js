@@ -749,7 +749,7 @@ class ConnectionHandler {
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
 
-                for (let accountObject of this.accounts) {
+                for (let accountObject of this.accounts.values()) {
                     let state;
 
                     if (!accountObject || !accountObject.connection) {
