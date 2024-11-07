@@ -4257,7 +4257,9 @@ const init = async () => {
                 schema: Joi.object({
                     id: Joi.string()
                         .example('AAAAAgAACrI')
-                        .description('Message ID. NB! This and other fields might not be present if server did not provide enough information')
+                        .description(
+                            'Unique identifier for the message. NB! This and other fields might not be present if server did not provide enough information'
+                        )
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().integer().example(12345).description('UID of uploaded message'),
