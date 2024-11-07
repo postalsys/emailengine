@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.48.7](https://github.com/postalsys/emailengine/compare/v2.48.6...v2.48.7) (2024-11-07)
+
+
+### Bug Fixes
+
+* **gateway:** Fixed gateway testing ([6c29c87](https://github.com/postalsys/emailengine/commit/6c29c870bf065bc846b7244516489e9943779247))
+* **imap-auth:** Always use username and password as string, not atom for LOGIN command ([1064d1f](https://github.com/postalsys/emailengine/commit/1064d1fdb0040ca812ecca151b129dd34c4ab081))
+* **imap-auth:** Prefer AUTH=LOGIN and AUTH=PLAIN to LOGIN for better compatibility of special characters ([7e09d2d](https://github.com/postalsys/emailengine/commit/7e09d2de20c328394057f90c89e8af2ccdcc4339))
+
 ## [2.48.6](https://github.com/postalsys/emailengine/compare/v2.48.5...v2.48.6) (2024-11-01)
 
 
