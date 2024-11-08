@@ -3418,6 +3418,8 @@ const init = async () => {
                     } else {
                         result.type = 'oauth2';
                     }
+                } else if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedAccount) {
+                    result.type = 'delegated';
                 } else if (accountData.imap && !accountData.imap.disabled) {
                     result.type = 'imap';
                 } else {
