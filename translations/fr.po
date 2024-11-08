@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-10-31 07:51+0000\n"
+"POT-Creation-Date: 2024-11-08 10:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -17,10 +17,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d jour"
 msgstr[1] "%d jours"
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
 
 #: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
 msgid "Unsubscribe"
@@ -62,6 +58,41 @@ msgstr "Adresse e-mail"
 msgid "Enter your email address"
 msgstr "Entrez votre adresse email"
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Choisissez votre fournisseur de compte de messagerie"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "IMAP Standard"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "Votre nom"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "Entrer votre nom et prénom"
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr "Mot de passe"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "Saisissez le mot de passe de votre compte"
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:218
+msgid "Continue"
+msgstr "Continuer"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
+
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
 msgstr "IMAP"
@@ -71,25 +102,17 @@ msgstr "IMAP"
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
-msgstr "Mot de passe"
+#: views/accounts/register/imap-server.hbs:45
+#: views/accounts/register/imap-server.hbs:136
+msgid "Important"
+msgstr "Important"
 
-#: views/accounts/register/imap-server.hbs:46
 #: views/accounts/register/imap-server.hbs:53
 #: views/accounts/register/imap-server.hbs:60
-#: views/accounts/register/imap-server.hbs:137
 #: views/accounts/register/imap-server.hbs:144
 #: views/accounts/register/imap-server.hbs:151
 msgid "Application Password"
 msgstr "Mot de passe de l'application"
-
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:138
-msgid "Important"
-msgstr "Important"
 
 #: views/accounts/register/imap-server.hbs:54
 #: views/accounts/register/imap-server.hbs:145
@@ -150,11 +173,6 @@ msgstr ""
 msgid "Test settings"
 msgstr "Tester"
 
-#: views/accounts/register/imap-server.hbs:218
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr "Continuer"
-
 #: views/accounts/register/imap-server.hbs:226
 msgid "Continue without testing"
 msgstr "Continuer sans tester"
@@ -196,65 +214,83 @@ msgstr "Le serveur SMTP a répondu avec le message suivant :"
 msgid "HTTP error!"
 msgstr "Erreur HTTP!"
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr "Votre nom"
+#: lib/routes-ui.js:504
+msgid "Delegated"
+msgstr "Délégué"
 
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr "Entrer votre nom et prénom"
+#: lib/routes-ui.js:505
+msgid "Using credentials from \"%s\""
+msgstr "Utilisation des informations d'identification de \"%s\""
 
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr "Saisissez le mot de passe de votre compte"
+#: lib/routes-ui.js:555
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"La connexion a expiré. Cela se produit généralement si vous êtes derrière un "
+"pare-feu ou si vous vous connectez au mauvais port."
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Choisissez votre fournisseur de compte de messagerie"
+#: lib/routes-ui.js:558
+msgid "The server unexpectedly closed the connection."
+msgstr "Le serveur a fermé la connexion de manière inattendue."
 
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "IMAP Standard"
+#: lib/routes-ui.js:561
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"Le serveur a fermé la connexion de manière inattendue. Cela se produit "
+"généralement lors d'une tentative de connexion à un port TLS sans que le "
+"protocole TLS soit activé."
 
-#: lib/routes-ui.js:677
+#: lib/routes-ui.js:566
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"Le serveur a refusé la connexion. Cela se produit généralement si le serveur "
+"ne fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais "
+"hôte ou au mauvais port."
+
+#: lib/routes-ui.js:684
 msgid "Invalid API key for OpenAI"
 msgstr "Clé API invalide pour OpenAI"
 
-#: lib/routes-ui.js:4940 lib/routes-ui.js:6889 lib/routes-ui.js:6900
+#: lib/routes-ui.js:4947 lib/routes-ui.js:6896 lib/routes-ui.js:6907
 msgid "Server hostname was not found"
 msgstr "Le nom d'hôte du serveur est introuvable"
 
-#: lib/routes-ui.js:4943 lib/routes-ui.js:6892 lib/routes-ui.js:6903
+#: lib/routes-ui.js:4950 lib/routes-ui.js:6899 lib/routes-ui.js:6910
 msgid "Invalid username or password"
 msgstr "Nom d'utilisateur ou mot de passe invalide"
 
-#: lib/routes-ui.js:4947 lib/routes-ui.js:6907
+#: lib/routes-ui.js:4954 lib/routes-ui.js:6914
 msgid "TLS protocol error"
 msgstr "Erreur de protocole TLS"
 
-#: lib/routes-ui.js:6636 lib/routes-ui.js:6671 lib/routes-ui.js:6786
-#: lib/routes-ui.js:6833 lib/routes-ui.js:7061 lib/routes-ui.js:7097
+#: lib/routes-ui.js:6643 lib/routes-ui.js:6678 lib/routes-ui.js:6793
+#: lib/routes-ui.js:6840 lib/routes-ui.js:7068 lib/routes-ui.js:7104
 msgid "Email Account Setup"
 msgstr "Configuration du compte de messagerie"
 
-#: lib/routes-ui.js:6696 lib/routes-ui.js:6729 lib/routes-ui.js:9528
+#: lib/routes-ui.js:6703 lib/routes-ui.js:6736 lib/routes-ui.js:9535
 msgid "Failed to validate request arguments"
 msgstr "Impossible de valider les arguments de la demande"
 
-#: lib/routes-ui.js:6826 lib/routes-ui.js:7090
+#: lib/routes-ui.js:6833 lib/routes-ui.js:7097
 msgid "Failed to process account"
 msgstr "Échec du traitement du compte"
 
-#: lib/routes-ui.js:9491 lib/tools.js:731
+#: lib/routes-ui.js:9498 lib/tools.js:731
 msgid "Invalid input"
 msgstr "Entrée invalide"
 
-#: lib/routes-ui.js:9501 lib/routes-ui.js:9619 lib/routes-ui.js:9636
-#: lib/routes-ui.js:9671
+#: lib/routes-ui.js:9508 lib/routes-ui.js:9626 lib/routes-ui.js:9643
+#: lib/routes-ui.js:9678
 msgid "Subscription Management"
 msgstr "Gestion des abonnements"
 
-#: lib/routes-ui.js:9630 lib/routes-ui.js:9664
+#: lib/routes-ui.js:9637 lib/routes-ui.js:9671
 msgid "Failed to process request"
 msgstr "Le traitement de la demande a échoué."
 
@@ -266,7 +302,7 @@ msgstr "La validation de la signature a échoué"
 msgid "Invalid or expired account setup URL"
 msgstr "URL de configuration du compte invalide ou expirée"
 
-#: lib/autodetect-imap-settings.js:69
+#: lib/autodetect-imap-settings.js:70
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
 "Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
