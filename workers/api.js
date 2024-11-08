@@ -1585,7 +1585,17 @@ const init = async () => {
                 timeout: request.headers['x-ee-timeout']
             });
 
-            let accountData = await accountObject.loadAccountData();
+            let accountData;
+            try {
+                accountData = await accountObject.loadAccountData();
+            } catch (err) {
+                if (err.output?.statusCode === 404) {
+                    //ignore, this subscription will expire after a while anyway
+                    return h.response(Buffer.alloc(0)).code(202);
+                }
+                throw err;
+            }
+
             if (!accountData.outlookSubscription) {
                 request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
                 return h.response(Buffer.alloc(0)).code(202);
@@ -1596,7 +1606,7 @@ const init = async () => {
             for (let entry of (request.payload && request.payload.value) || []) {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
-                    request.logger.error({
+                    request.logger.warn({
                         msg: 'Invalid subscription details',
                         account: request.query.account,
                         expected: {
@@ -1669,7 +1679,17 @@ const init = async () => {
                 timeout: request.headers['x-ee-timeout']
             });
 
-            let accountData = await accountObject.loadAccountData();
+            let accountData;
+            try {
+                accountData = await accountObject.loadAccountData();
+            } catch (err) {
+                if (err.output?.statusCode === 404) {
+                    //ignore, this subscription will expire after a while anyway
+                    return h.response(Buffer.alloc(0)).code(202);
+                }
+                throw err;
+            }
+
             if (!accountData.outlookSubscription) {
                 request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
                 return h.response(Buffer.alloc(0)).code(202);
