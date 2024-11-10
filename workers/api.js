@@ -1589,7 +1589,7 @@ const init = async () => {
             try {
                 accountData = await accountObject.loadAccountData();
             } catch (err) {
-                if (err.output?.statusCode === 404) {
+                if (err.output && err.output.statusCode === 404) {
                     //ignore, this subscription will expire after a while anyway
                     return h.response(Buffer.alloc(0)).code(202);
                 }
@@ -1683,7 +1683,7 @@ const init = async () => {
             try {
                 accountData = await accountObject.loadAccountData();
             } catch (err) {
-                if (err.output?.statusCode === 404) {
+                if (err.output && err.output.statusCode === 404) {
                     //ignore, this subscription will expire after a while anyway
                     return h.response(Buffer.alloc(0)).code(202);
                 }
