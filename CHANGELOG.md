@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.49.0](https://github.com/postalsys/emailengine/compare/v2.48.7...v2.49.0) (2024-11-10)
+
+
+### Features
+
+* **delegated-accounts:** Allow using credentials from another existing account for a shared MS365 mailbox account ([fc17b02](https://github.com/postalsys/emailengine/commit/fc17b029c06c4053342fd10834b221828af1e387))
+* **delegated-accounts:** Allow using delegated MS Graph API accounts; pull request [#475](https://github.com/postalsys/emailengine/issues/475) from postalsys/shared-ms-api ([f0627e9](https://github.com/postalsys/emailengine/commit/f0627e9cf382c72acfe0e2134dd8fb1e0e5a1239))
+
+
+### Bug Fixes
+
+* **gateway:** Fixed gateway based sending for API accounts ([86c2c02](https://github.com/postalsys/emailengine/commit/86c2c02cc8f73d7967dd9fd37c3fb0fee9abefba))
+
 ## [2.48.7](https://github.com/postalsys/emailengine/compare/v2.48.6...v2.48.7) (2024-11-07)
 
 
