@@ -1,5 +1,7 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=ascii\n"
+msgstr ""
+"Content-Type: text/plain; charset=ascii\n"
+"POT-Creation-Date: 2024-11-10 14:55+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -198,4 +200,109 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:393
 msgid "HTTP error!"
+msgstr ""
+
+#: lib/routes-ui.js:504
+msgid "Delegated"
+msgstr ""
+
+#: lib/routes-ui.js:505
+msgid "Using credentials from \"%s\""
+msgstr ""
+
+#: lib/routes-ui.js:555
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+
+#: lib/routes-ui.js:558
+msgid "The server unexpectedly closed the connection."
+msgstr ""
+
+#: lib/routes-ui.js:561
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+
+#: lib/routes-ui.js:566
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+
+#: lib/routes-ui.js:684
+msgid "Invalid API key for OpenAI"
+msgstr ""
+
+#: lib/routes-ui.js:4947
+#: lib/routes-ui.js:6896
+#: lib/routes-ui.js:6907
+msgid "Server hostname was not found"
+msgstr ""
+
+#: lib/routes-ui.js:4950
+#: lib/routes-ui.js:6899
+#: lib/routes-ui.js:6910
+msgid "Invalid username or password"
+msgstr ""
+
+#: lib/routes-ui.js:4954
+#: lib/routes-ui.js:6914
+msgid "TLS protocol error"
+msgstr ""
+
+#: lib/routes-ui.js:6643
+#: lib/routes-ui.js:6678
+#: lib/routes-ui.js:6793
+#: lib/routes-ui.js:6840
+#: lib/routes-ui.js:7068
+#: lib/routes-ui.js:7104
+msgid "Email Account Setup"
+msgstr ""
+
+#: lib/routes-ui.js:6703
+#: lib/routes-ui.js:6736
+#: lib/routes-ui.js:9538
+msgid "Failed to validate request arguments"
+msgstr ""
+
+#: lib/routes-ui.js:6833
+#: lib/routes-ui.js:7097
+msgid "Failed to process account"
+msgstr ""
+
+#: lib/routes-ui.js:9501
+#: lib/tools.js:731
+msgid "Invalid input"
+msgstr ""
+
+#: lib/routes-ui.js:9511
+#: lib/routes-ui.js:9629
+#: lib/routes-ui.js:9646
+#: lib/routes-ui.js:9681
+msgid "Subscription Management"
+msgstr ""
+
+#: lib/routes-ui.js:9640
+#: lib/routes-ui.js:9674
+msgid "Failed to process request"
+msgstr ""
+
+#: lib/tools.js:1409
+msgid "Signature validation failed"
+msgstr ""
+
+#: lib/tools.js:1418
+#: lib/tools.js:1423
+msgid "Invalid or expired account setup URL"
+msgstr ""
+
+#: lib/autodetect-imap-settings.js:70
+msgid ""
+"Microsoft has disabled password-based sign-ins (including app passwords) "
+"for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
+"continue, please use the \"Sign in with Microsoft\" button to securely "
+"connect your account."
 msgstr ""
