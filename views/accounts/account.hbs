@@ -277,11 +277,18 @@
             <dt class="col-sm-3">Change subscription</dt>
             <dd class="col-sm-9">
 
-                <span
-                    class="badge badge-pill badge-{{#if account.outlookSubscription.isValid}}success{{else}}danger{{/if}}"
-                    style="cursor:default;" {{#if account.outlookSubscription.state.error}} data-toggle="popover"
-                    data-trigger="hover" data-title="Subscription error"
-                    data-content="{{account.outlookSubscription.state.error}}" {{/if}}>
+                <span class="badge badge-pill 
+{{#if account.outlookSubscription.isValid}}
+    badge-success
+{{else}}
+    {{#if account.outlookSubscription.state.error}}
+        badge-danger
+    {{else}}
+        badge-warning
+    {{/if}}
+{{/if}}
+" style="cursor:default;" {{#if account.outlookSubscription.state.error}} data-toggle="popover" data-trigger="hover"
+                    data-title="Subscription error" data-content="{{account.outlookSubscription.state.error}}" {{/if}}>
                     {{account.outlookSubscription.stateLabel}}
                 </span>
 
