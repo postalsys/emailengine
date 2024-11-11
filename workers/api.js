@@ -573,7 +573,15 @@ const init = async () => {
 
     let getServiceDomain = async () => {
         let serviceUrl = await settings.get('serviceUrl');
-        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
+        let parsedUrl;
+
+        try {
+            parsedUrl = new URL(serviceUrl);
+        } catch (err) {
+            parsedUrl = {};
+        }
+
+        let hostname = (parsedUrl.hostname || '').toString().toLowerCase().trim();
         if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
             return false;
         }
@@ -8848,6 +8856,7 @@ init()
             maxBodySize: MAX_BODY_SIZE,
             version: packageData.version
         });
+
         parentPort.postMessage({ cmd: 'ready' });
     })
     .catch(err => {
