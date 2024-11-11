@@ -642,13 +642,13 @@
             <div class="alert alert-info">
 
                 {{#if baseScopesImap}}
-                All scopes must come exclusively from <code>https://outlook.office.com/</code>, and not
-                <code>https://graph.microsoft.com/</code>.
+                All scopes must come exclusively from <code>https://outlook.office.com/</code>; scopes from
+                <code>https://graph.microsoft.com/</code> are not allowed.
                 {{/if}}
 
                 {{#if baseScopesApi}}
-                All scopes must come exclusively from <code>https://graph.microsoft.com/</code>, and not
-                <code>https://outlook.office.com/</code>.
+                All scopes must come exclusively from <code>https://graph.microsoft.com/</code>; scopes from
+                <code>https://outlook.office.com/</code> are not allowed.
                 {{/if}}
 
                 You cannot mix APIs from different endpoints within a single application.
