@@ -1,4 +1,4 @@
-#  node:20.16.0-alpine
+#  node:20.18-alpine
 FROM --platform=${BUILDPLATFORM} node@sha256:c13b26e7e602ef2f1074aef304ce6e9b7dd284c419b35d89fcf3cc8e44a8def9
 
 ARG TARGETPLATFORM
