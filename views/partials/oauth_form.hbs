@@ -639,9 +639,9 @@
             {{/if}}
 
             {{#if activeOutlook}}
-            <div class="alert alert-info">EmailEngine only operates on <code>https://outlook.office.com/</code>
-                APIs, not <code>https://graph.microsoft.com/</code>. You can't mix APIs from different endpoints in
-                a single application.
+            <div class="alert alert-info">All scopes must come exclusively from either
+                <code>https://outlook.office.com/</code> or <code>https://graph.microsoft.com/</code>. You cannot mix
+                APIs from different endpoints within a single application.
             </div>
             {{/if}}
 
