@@ -27,7 +27,7 @@ process.env.UV_THREADPOOL_SIZE =
 // cache before wild-config
 const argv = process.argv.slice(2);
 
-const { Worker, SHARE_ENV } = require('worker_threads');
+const { Worker: WorkerThread, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
 const config = require('wild-config');
 const logger = require('./lib/logger');
@@ -695,7 +695,7 @@ let spawnWorker = async type => {
         await updateServerState(type, 'spawning');
     }
 
-    let worker = new Worker(pathlib.join(__dirname, 'workers', `${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.js`), {
+    let worker = new WorkerThread(pathlib.join(__dirname, 'workers', `${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.js`), {
         argv,
         env: SHARE_ENV,
         trackUnmanagedFds: true
