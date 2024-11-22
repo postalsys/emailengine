@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-09-04 05:45+0000\n"
+"POT-Creation-Date: 2024-11-08 10:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -12,9 +12,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2\n"
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
+#: views/config/license.hbs:49
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "%d jour"
+msgstr[1] "%d jours"
 
 #: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
 msgid "Unsubscribe"
@@ -36,7 +38,7 @@ msgstr "Se réabonner"
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr "Êtes-vous sûr de vouloir réabonner votre adresse e-mail <em>%s</em> ?"
 
-#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:226
+#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:250
 msgid "Close"
 msgstr "Fermer"
 
@@ -56,11 +58,13 @@ msgstr "Adresse e-mail"
 msgid "Enter your email address"
 msgstr "Entrez votre adresse email"
 
-#: views/config/license.hbs:49
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] "%d jour"
-msgstr[1] "%d jours"
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Choisissez votre fournisseur de compte de messagerie"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "IMAP Standard"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -71,8 +75,8 @@ msgid "Enter your full name"
 msgstr "Entrer votre nom et prénom"
 
 #: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:115
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
 msgid "Password"
 msgstr "Mot de passe"
 
@@ -81,59 +85,60 @@ msgid "Enter your account password"
 msgstr "Saisissez le mot de passe de votre compte"
 
 #: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:194
+#: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
 msgstr "Continuer"
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Choisissez votre fournisseur de compte de messagerie"
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
 
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "IMAP Standard"
-
-#: views/accounts/register/imap-server.hbs:18
+#: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
 msgstr "IMAP"
 
-#: views/accounts/register/imap-server.hbs:21
-#: views/accounts/register/imap-server.hbs:101
+#: views/accounts/register/imap-server.hbs:22
+#: views/accounts/register/imap-server.hbs:114
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-#: views/accounts/register/imap-server.hbs:42
-#: views/accounts/register/imap-server.hbs:47
-#: views/accounts/register/imap-server.hbs:122
-#: views/accounts/register/imap-server.hbs:127
+#: views/accounts/register/imap-server.hbs:45
+#: views/accounts/register/imap-server.hbs:136
+msgid "Important"
+msgstr "Important"
+
+#: views/accounts/register/imap-server.hbs:53
+#: views/accounts/register/imap-server.hbs:60
+#: views/accounts/register/imap-server.hbs:144
+#: views/accounts/register/imap-server.hbs:151
 msgid "Application Password"
 msgstr "Mot de passe de l'application"
 
-#: views/accounts/register/imap-server.hbs:43
-#: views/accounts/register/imap-server.hbs:123
+#: views/accounts/register/imap-server.hbs:54
+#: views/accounts/register/imap-server.hbs:145
 msgid "%s accounts require to use an application password for %s."
 msgstr "Les comptes %s doivent utiliser un mot de passe d'application pour %s."
 
-#: views/accounts/register/imap-server.hbs:44
-#: views/accounts/register/imap-server.hbs:124
+#: views/accounts/register/imap-server.hbs:55
+#: views/accounts/register/imap-server.hbs:146
 msgid "Instructions"
 msgstr "Instructions"
 
-#: views/accounts/register/imap-server.hbs:62
-#: views/accounts/register/imap-server.hbs:142
+#: views/accounts/register/imap-server.hbs:75
+#: views/accounts/register/imap-server.hbs:166
 msgid "Hostname"
 msgstr "Nom d'hôte"
 
-#: views/accounts/register/imap-server.hbs:72
-#: views/accounts/register/imap-server.hbs:152
+#: views/accounts/register/imap-server.hbs:85
+#: views/accounts/register/imap-server.hbs:176
 msgid "Port"
 msgstr "Port"
 
-#: views/accounts/register/imap-server.hbs:86
+#: views/accounts/register/imap-server.hbs:99
 msgid "TLS for IMAP"
 msgstr "TLS pour IMAP"
 
-#: views/accounts/register/imap-server.hbs:87
+#: views/accounts/register/imap-server.hbs:100
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -142,20 +147,20 @@ msgstr ""
 "lors de l'utilisation du port 993. Pour les autres ports, EmailEngine "
 "revient à l'utilisation du cryptage basé sur STARTTLS."
 
-#: views/accounts/register/imap-server.hbs:89
-#: views/accounts/register/imap-server.hbs:169
+#: views/accounts/register/imap-server.hbs:102
+#: views/accounts/register/imap-server.hbs:193
 msgid "Use TLS"
 msgstr "Utiliser TLS"
 
-#: views/accounts/register/imap-server.hbs:98
+#: views/accounts/register/imap-server.hbs:111
 msgid "SMTP"
 msgstr "SMTP"
 
-#: views/accounts/register/imap-server.hbs:166
+#: views/accounts/register/imap-server.hbs:190
 msgid "TLS for SMTP"
 msgstr "TLS pour SMTP"
 
-#: views/accounts/register/imap-server.hbs:167
+#: views/accounts/register/imap-server.hbs:191
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 465. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
@@ -164,90 +169,128 @@ msgstr ""
 "lors de l'utilisation du port 465. Pour les autres ports, EmailEngine "
 "revient à l'utilisation du cryptage basé sur STARTTLS."
 
-#: views/accounts/register/imap-server.hbs:185
+#: views/accounts/register/imap-server.hbs:209
 msgid "Test settings"
 msgstr "Tester"
 
-#: views/accounts/register/imap-server.hbs:202
+#: views/accounts/register/imap-server.hbs:226
 msgid "Continue without testing"
 msgstr "Continuer sans tester"
 
-#: views/accounts/register/imap-server.hbs:216
+#: views/accounts/register/imap-server.hbs:240
 msgid "Test failed"
 msgstr "Test échoué"
 
-#: views/accounts/register/imap-server.hbs:222
+#: views/accounts/register/imap-server.hbs:246
 msgid "Failed to validate provided email server settings."
 msgstr ""
 "Échec de la validation des paramètres de serveur de messagerie fournis."
 
-#: views/accounts/register/imap-server.hbs:292
+#: views/accounts/register/imap-server.hbs:316
 msgid "General error"
 msgstr "Erreur générale"
 
-#: views/accounts/register/imap-server.hbs:294
+#: views/accounts/register/imap-server.hbs:318
 msgid "Validation error"
 msgstr "Erreur de validation"
 
-#: views/accounts/register/imap-server.hbs:300
+#: views/accounts/register/imap-server.hbs:324
 msgid "Failed to validate IMAP server settings"
 msgstr "Impossible de valider les paramètres du serveur IMAP"
 
-#: views/accounts/register/imap-server.hbs:302
+#: views/accounts/register/imap-server.hbs:326
 msgid "IMAP Server responded with the following message:"
 msgstr "Le serveur IMAP a répondu avec le message suivant :"
 
-#: views/accounts/register/imap-server.hbs:309
+#: views/accounts/register/imap-server.hbs:333
 msgid "Failed to validate SMTP server settings"
 msgstr "Impossible de valider les paramètres du serveur SMTP"
 
-#: views/accounts/register/imap-server.hbs:311
+#: views/accounts/register/imap-server.hbs:335
 msgid "SMTP Server responded with the following message:"
 msgstr "Le serveur SMTP a répondu avec le message suivant :"
 
-#: views/accounts/register/imap-server.hbs:369
+#: views/accounts/register/imap-server.hbs:393
 msgid "HTTP error!"
 msgstr "Erreur HTTP!"
 
-#: lib/routes-ui.js:653
+#: lib/routes-ui.js:504
+msgid "Delegated"
+msgstr "Délégué"
+
+#: lib/routes-ui.js:505
+msgid "Using credentials from \"%s\""
+msgstr "Utilisation des informations d'identification de \"%s\""
+
+#: lib/routes-ui.js:555
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"La connexion a expiré. Cela se produit généralement si vous êtes derrière un "
+"pare-feu ou si vous vous connectez au mauvais port."
+
+#: lib/routes-ui.js:558
+msgid "The server unexpectedly closed the connection."
+msgstr "Le serveur a fermé la connexion de manière inattendue."
+
+#: lib/routes-ui.js:561
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"Le serveur a fermé la connexion de manière inattendue. Cela se produit "
+"généralement lors d'une tentative de connexion à un port TLS sans que le "
+"protocole TLS soit activé."
+
+#: lib/routes-ui.js:566
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"Le serveur a refusé la connexion. Cela se produit généralement si le serveur "
+"ne fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais "
+"hôte ou au mauvais port."
+
+#: lib/routes-ui.js:684
 msgid "Invalid API key for OpenAI"
 msgstr "Clé API invalide pour OpenAI"
 
-#: lib/routes-ui.js:4918 lib/routes-ui.js:6867 lib/routes-ui.js:6878
+#: lib/routes-ui.js:4947 lib/routes-ui.js:6896 lib/routes-ui.js:6907
 msgid "Server hostname was not found"
 msgstr "Le nom d'hôte du serveur est introuvable"
 
-#: lib/routes-ui.js:4921 lib/routes-ui.js:6870 lib/routes-ui.js:6881
+#: lib/routes-ui.js:4950 lib/routes-ui.js:6899 lib/routes-ui.js:6910
 msgid "Invalid username or password"
 msgstr "Nom d'utilisateur ou mot de passe invalide"
 
-#: lib/routes-ui.js:4925 lib/routes-ui.js:6885
+#: lib/routes-ui.js:4954 lib/routes-ui.js:6914
 msgid "TLS protocol error"
 msgstr "Erreur de protocole TLS"
 
-#: lib/routes-ui.js:6614 lib/routes-ui.js:6649 lib/routes-ui.js:6764
-#: lib/routes-ui.js:6811 lib/routes-ui.js:7039 lib/routes-ui.js:7075
+#: lib/routes-ui.js:6643 lib/routes-ui.js:6678 lib/routes-ui.js:6793
+#: lib/routes-ui.js:6840 lib/routes-ui.js:7068 lib/routes-ui.js:7104
 msgid "Email Account Setup"
 msgstr "Configuration du compte de messagerie"
 
-#: lib/routes-ui.js:6674 lib/routes-ui.js:6707 lib/routes-ui.js:9500
+#: lib/routes-ui.js:6703 lib/routes-ui.js:6736 lib/routes-ui.js:9535
 msgid "Failed to validate request arguments"
 msgstr "Impossible de valider les arguments de la demande"
 
-#: lib/routes-ui.js:6804 lib/routes-ui.js:7068
+#: lib/routes-ui.js:6833 lib/routes-ui.js:7097
 msgid "Failed to process account"
 msgstr "Échec du traitement du compte"
 
-#: lib/routes-ui.js:9463 lib/tools.js:731
+#: lib/routes-ui.js:9498 lib/tools.js:731
 msgid "Invalid input"
 msgstr "Entrée invalide"
 
-#: lib/routes-ui.js:9473 lib/routes-ui.js:9591 lib/routes-ui.js:9608
-#: lib/routes-ui.js:9643
+#: lib/routes-ui.js:9508 lib/routes-ui.js:9626 lib/routes-ui.js:9643
+#: lib/routes-ui.js:9678
 msgid "Subscription Management"
 msgstr "Gestion des abonnements"
 
-#: lib/routes-ui.js:9602 lib/routes-ui.js:9636
+#: lib/routes-ui.js:9637 lib/routes-ui.js:9671
 msgid "Failed to process request"
 msgstr "Le traitement de la demande a échoué."
 
@@ -258,6 +301,19 @@ msgstr "La validation de la signature a échoué"
 #: lib/tools.js:1418 lib/tools.js:1423
 msgid "Invalid or expired account setup URL"
 msgstr "URL de configuration du compte invalide ou expirée"
+
+#: lib/autodetect-imap-settings.js:70
+msgid ""
+"Microsoft has disabled password-based sign-ins (including app passwords) for "
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
+"please use the \"Sign in with Microsoft\" button to securely connect your "
+"account."
+msgstr ""
+"Microsoft a désactivé les connexions basées sur un mot de passe (y compris "
+"les mots de passe des applications) pour les comptes de messagerie Outlook."
+"com, Hotmail.com et Microsoft 365. Pour continuer, veuillez utiliser le "
+"bouton \"Sign in with Microsoft\" pour connecter votre compte en toute "
+"sécurité."
 
 #~ msgid "Unknown OAuth provider"
 #~ msgstr "Fournisseur OAuth inconnu"

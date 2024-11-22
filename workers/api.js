@@ -162,7 +162,9 @@ const {
     defaultAccountTypeSchema,
     fromAddressSchema,
     outboxEntrySchema,
-    googleProjectIdSchema
+    googleProjectIdSchema,
+    googleWorkspaceAccountsSchema,
+    messageReferenceSchema
 } = require('../lib/schemas');
 
 const listMessageFolderPathDescription =
@@ -571,7 +573,15 @@ const init = async () => {
 
     let getServiceDomain = async () => {
         let serviceUrl = await settings.get('serviceUrl');
-        let hostname = (new URL(serviceUrl).hostname || '').toString().toLowerCase().trim();
+        let parsedUrl;
+
+        try {
+            parsedUrl = new URL(serviceUrl);
+        } catch (err) {
+            parsedUrl = {};
+        }
+
+        let hostname = (parsedUrl.hostname || '').toString().toLowerCase().trim();
         if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
             return false;
         }
@@ -1583,7 +1593,17 @@ const init = async () => {
                 timeout: request.headers['x-ee-timeout']
             });
 
-            let accountData = await accountObject.loadAccountData();
+            let accountData;
+            try {
+                accountData = await accountObject.loadAccountData();
+            } catch (err) {
+                if (err.output && err.output.statusCode === 404) {
+                    //ignore, this subscription will expire after a while anyway
+                    return h.response(Buffer.alloc(0)).code(202);
+                }
+                throw err;
+            }
+
             if (!accountData.outlookSubscription) {
                 request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
                 return h.response(Buffer.alloc(0)).code(202);
@@ -1594,7 +1614,7 @@ const init = async () => {
             for (let entry of (request.payload && request.payload.value) || []) {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
-                    request.logger.error({
+                    request.logger.warn({
                         msg: 'Invalid subscription details',
                         account: request.query.account,
                         expected: {
@@ -1667,7 +1687,17 @@ const init = async () => {
                 timeout: request.headers['x-ee-timeout']
             });
 
-            let accountData = await accountObject.loadAccountData();
+            let accountData;
+            try {
+                accountData = await accountObject.loadAccountData();
+            } catch (err) {
+                if (err.output && err.output.statusCode === 404) {
+                    //ignore, this subscription will expire after a while anyway
+                    return h.response(Buffer.alloc(0)).code(202);
+                }
+                throw err;
+            }
+
             if (!accountData.outlookSubscription) {
                 request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
                 return h.response(Buffer.alloc(0)).code(202);
@@ -1956,6 +1986,13 @@ const init = async () => {
                             throw err;
                         }
 
+                        request.logger.info({
+                            msg: 'User profile returned by MS Graph API',
+                            user: userInfo.email,
+                            provider: oauth2App.provider,
+                            profile: profileRes
+                        });
+
                         if (profileRes.displayName) {
                             userInfo.name = profileRes.displayName;
                         }
@@ -1967,6 +2004,10 @@ const init = async () => {
                         if (profileRes.userPrincipalName) {
                             userInfo.username = profileRes.userPrincipalName;
                         }
+                    }
+
+                    if (!userInfo.email && userInfo.username && isEmail(userInfo.username)) {
+                        userInfo.email = userInfo.username;
                     }
 
                     const authData = {
@@ -3385,6 +3426,8 @@ const init = async () => {
                     } else {
                         result.type = 'oauth2';
                     }
+                } else if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedAccount) {
+                    result.type = 'delegated';
                 } else if (accountData.imap && !accountData.imap.disabled) {
                     result.type = 'imap';
                 } else {
@@ -4162,48 +4205,14 @@ const init = async () => {
                     flags: Joi.array().items(Joi.string().max(128)).example(['\\Seen', '\\Draft']).default([]).description('Message flags').label('Flags'),
                     internalDate: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Sets the internal date for this message'),
 
-                    reference: Joi.object({
-                        message: Joi.string()
-                            .base64({ paddingRequired: false, urlSafe: true })
-                            .max(256)
-                            .required()
-                            .example('AAAAAQAACnA')
-                            .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
-                        inline: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then blockquotes the email that is being replied to')
-                            .label('InlineReply'),
-                        forwardAttachments: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then includes attachments in forwarded message')
-                            .when('action', {
-                                is: 'forward',
-                                then: Joi.optional(),
-                                otherwise: Joi.forbidden()
-                            })
-                            .label('ForwardAttachments'),
-                        ignoreMissing: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing'),
-                        documentStore: documentStoreSchema.default(false)
-                    })
-                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
-                        .label('MessageReference'),
+                    reference: messageReferenceSchema,
 
                     raw: Joi.string()
                         .base64()
                         .max(MAX_ATTACHMENT_SIZE)
                         .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
                         .description(
-                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                            'A Base64-encoded email message in RFC 822 format. If you provide other fields along with raw, those fields will override the corresponding values in the raw message.'
                         )
                         .label('RFC822Raw'),
 
@@ -4257,7 +4266,7 @@ const init = async () => {
                                     .allow(false, null)
                                     .example('AAAAAQAACnAcde')
                                     .description(
-                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                        'References an existing attachment by its ID instead of providing new attachment content. If this field is set, the `content` field must not be included. If not set, the `content` field is required.'
                                     )
                             }).label('UploadAttachment')
                         )
@@ -4278,7 +4287,9 @@ const init = async () => {
                 schema: Joi.object({
                     id: Joi.string()
                         .example('AAAAAgAACrI')
-                        .description('Message ID. NB! This and other fields might not be present if server did not provide enough information')
+                        .description(
+                            'Unique identifier for the message. NB! This and other fields might not be present if server did not provide enough information'
+                        )
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().integer().example(12345).description('UID of uploaded message'),
@@ -5050,7 +5061,17 @@ const init = async () => {
                         .label('PageNumber'),
 
                     pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page'),
-                    documentStore: documentStoreSchema.default(false),
+
+                    useOutlookSearch: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .description(
+                            'MS Graph only. If enabled, uses the $search parameter for MS Graph search queries instead of $filter. This allows searching the "to", "cc", "bcc", "larger", "smaller", "body", "before", "sentBefore", "since", and the "sentSince" fields. Note that $search returns up to 1,000 results, does not indicate the total number of matching results or pages, and returns results sorted by relevance rather than date.'
+                        )
+                        .label('useOutlookSearch')
+                        .optional(),
+
+                    documentStore: documentStoreSchema.default(false).meta({ swaggerHidden: true }),
                     exposeQuery: Joi.boolean()
                         .truthy('Y', 'true', '1')
                         .falsy('N', 'false', 0)
@@ -5271,47 +5292,15 @@ const init = async () => {
                 }),
 
                 payload: Joi.object({
-                    reference: Joi.object({
-                        message: Joi.string()
-                            .base64({ paddingRequired: false, urlSafe: true })
-                            .max(256)
-                            .required()
-                            .example('AAAAAQAACnA')
-                            .description('Referenced message ID'),
-                        action: Joi.string().lowercase().valid('forward', 'reply').example('reply').default('reply'),
-                        inline: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then blockquotes the email that is being replied to')
-                            .label('InlineReply'),
-                        forwardAttachments: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then includes attachments in forwarded message')
-                            .when('action', {
-                                is: 'forward',
-                                then: Joi.optional(),
-                                otherwise: Joi.forbidden()
-                            })
-                            .label('ForwardAttachments'),
-                        ignoreMissing: Joi.boolean()
-                            .truthy('Y', 'true', '1')
-                            .falsy('N', 'false', 0)
-                            .default(false)
-                            .description('If true, then processes the email even if the original message is not available anymore')
-                            .label('IgnoreMissing'),
-                        documentStore: documentStoreSchema.default(false)
-                    })
-                        .description('Message reference for a reply or a forward. This is EmailEngine specific ID, not Message-ID header value.')
-                        .label('MessageReference'),
+                    reference: messageReferenceSchema,
 
                     envelope: Joi.object({
                         from: Joi.string().email().allow('').example('sender@example.com'),
                         to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
                     })
-                        .description('Optional SMTP envelope. If not set then derived from message headers.')
+                        .description(
+                            "An optional object specifying the SMTP envelope used during email transmission. If not provided, the envelope is automatically derived from the email's message headers. This is useful when you need the envelope addresses to differ from those in the email headers."
+                        )
                         .label('SMTPEnvelope')
                         .when('mailMerge', {
                             is: Joi.exist().not(false, null),
@@ -5323,7 +5312,7 @@ const init = async () => {
                         .max(MAX_ATTACHMENT_SIZE)
                         .example('TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGhlbGxvIHdvcmxkDQoNCkhlbGxvIQ0K')
                         .description(
-                            'Base64 encoded email message in rfc822 format. If you provide other keys as well then these will override the values in the raw message.'
+                            'A Base64-encoded email message in RFC 822 format. If you provide other fields along with raw, those fields will override the corresponding values in the raw message.'
                         )
                         .label('RFC822Raw')
                         .when('mailMerge', {
@@ -5435,7 +5424,7 @@ const init = async () => {
                                     .allow(false, null)
                                     .example('AAAAAQAACnAcde')
                                     .description(
-                                        'Reference an existing attachment ID instead of providing attachment content. If set, then `content` option is not allowed. Otherwise `content` is required.'
+                                        'References an existing attachment by its ID instead of providing new attachment content. If this field is set, the `content` field must not be included. If not set, the `content` field is required.'
                                     )
                             }).label('UploadAttachment')
                         )
@@ -5443,7 +5432,9 @@ const init = async () => {
                         .label('UploadAttachmentList'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
-                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown(),
+                    headers: Joi.object().label('CustomHeaders').description('Custom Headers').unknown().example({
+                        'X-My-Custom-Header': 'Custom header value'
+                    }),
 
                     trackingEnabled: Joi.boolean()
                         .example(false)
@@ -5503,7 +5494,7 @@ const init = async () => {
                             .description('Defines the conditions under which a DSN response should be sent'),
                         recipient: Joi.string().trim().empty('').email().description('The email address the DSN should be sent (ORCPT)')
                     })
-                        .description('Request DNS notifications')
+                        .description('Request DSN notifications')
                         .label('DSN'),
 
                     baseUrl: Joi.string()
@@ -6852,6 +6843,7 @@ const init = async () => {
                                 serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
 
                                 googleProjectId: googleProjectIdSchema,
+                                googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                                 serviceClientEmail: Joi.string()
                                     .email()
@@ -6980,6 +6972,7 @@ const init = async () => {
                         .description('Redirect URL for 3-legged OAuth2 applications'),
 
                     googleProjectId: googleProjectIdSchema,
+                    googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
@@ -7154,6 +7147,7 @@ const init = async () => {
                         .description('Service client ID for 2-legged OAuth2 applications'),
 
                     googleProjectId: googleProjectIdSchema,
+                    googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
@@ -8862,6 +8856,7 @@ init()
             maxBodySize: MAX_BODY_SIZE,
             version: packageData.version
         });
+
         parentPort.postMessage({ cmd: 'ready' });
     })
     .catch(err => {

@@ -1,5 +1,75 @@
 # Changelog
 
+## [2.49.0](https://github.com/postalsys/emailengine/compare/v2.48.7...v2.49.0) (2024-11-10)
+
+
+### Features
+
+* **delegated-accounts:** Allow using credentials from another existing account for a shared MS365 mailbox account ([fc17b02](https://github.com/postalsys/emailengine/commit/fc17b029c06c4053342fd10834b221828af1e387))
+* **delegated-accounts:** Allow using delegated MS Graph API accounts; pull request [#475](https://github.com/postalsys/emailengine/issues/475) from postalsys/shared-ms-api ([f0627e9](https://github.com/postalsys/emailengine/commit/f0627e9cf382c72acfe0e2134dd8fb1e0e5a1239))
+
+
+### Bug Fixes
+
+* **gateway:** Fixed gateway based sending for API accounts ([86c2c02](https://github.com/postalsys/emailengine/commit/86c2c02cc8f73d7967dd9fd37c3fb0fee9abefba))
+
+## [2.48.7](https://github.com/postalsys/emailengine/compare/v2.48.6...v2.48.7) (2024-11-07)
+
+
+### Bug Fixes
+
+* **gateway:** Fixed gateway testing ([6c29c87](https://github.com/postalsys/emailengine/commit/6c29c870bf065bc846b7244516489e9943779247))
+* **imap-auth:** Always use username and password as string, not atom for LOGIN command ([1064d1f](https://github.com/postalsys/emailengine/commit/1064d1fdb0040ca812ecca151b129dd34c4ab081))
+* **imap-auth:** Prefer AUTH=LOGIN and AUTH=PLAIN to LOGIN for better compatibility of special characters ([7e09d2d](https://github.com/postalsys/emailengine/commit/7e09d2de20c328394057f90c89e8af2ccdcc4339))
+
+## [2.48.6](https://github.com/postalsys/emailengine/compare/v2.48.5...v2.48.6) (2024-11-01)
+
+
+### Bug Fixes
+
+* **admin:** Fixed pagination URL for oauth2 listing ([4140e34](https://github.com/postalsys/emailengine/commit/4140e3458d640e5f1ecdb4a270363be3e506dd00))
+* **outlook-api:** Falls back to username as account email if failed to retrieve account email address ([57f3d82](https://github.com/postalsys/emailengine/commit/57f3d827ce68f33971ffb53dfc02421885d6b960))
+* **stats:** Correctly detect account state for Gmail/MS Graph API accounts ([a5af1de](https://github.com/postalsys/emailengine/commit/a5af1de3e9145570756fc081c686d6c329914a7b))
+
+## [2.48.5](https://github.com/postalsys/emailengine/compare/v2.48.4...v2.48.5) (2024-10-31)
+
+
+### Bug Fixes
+
+* **hosted-authentication:** If a user tries to add an hotmail/outlook account with a password, show a warning about MS disabling password based auth ([dd0407e](https://github.com/postalsys/emailengine/commit/dd0407e858bbbdd7244259733ee5d37de6296901))
+* **outlook-api:** Detect if message is from Inbox when processing messageNew webhook ([2a72aa0](https://github.com/postalsys/emailengine/commit/2a72aa098340f4cbd12b08a71a858960ffb52ece))
+* **outlook-api:** If mail property is not provided in user profile, then use userPrincipalName instead ([2e2224c](https://github.com/postalsys/emailengine/commit/2e2224cb8ded44286af9148ebe8a75234ae422db))
+* **redis:** Do not use Redis connectionName to avoid calling CLIENT command ([aafc732](https://github.com/postalsys/emailengine/commit/aafc7328992baa6ce26292a9f67007b3989fd0b0))
+
+## [2.48.4](https://github.com/postalsys/emailengine/compare/v2.48.3...v2.48.4) (2024-10-25)
+
+
+### Bug Fixes
+
+* **account-state:** Only swiths to disconnected if the account was previously connected ([4f56fe3](https://github.com/postalsys/emailengine/commit/4f56fe365af98b338b51710b9911abf8021e0afe))
+* **outlook-api:** Fixed missing redis object ([c248e49](https://github.com/postalsys/emailengine/commit/c248e49443b5bdbf85f36707a32965a264f8d8b4))
+
+## [2.48.3](https://github.com/postalsys/emailengine/compare/v2.48.2...v2.48.3) (2024-10-25)
+
+
+### Bug Fixes
+
+* **change-events:** Trigger a 'disconnected' event when an account is deleted and the connection is closed ([bf56440](https://github.com/postalsys/emailengine/commit/bf56440d429b19ef1960a8b4527502a43bcc89a1))
+* **oauth-api:** Do not try to convert null to string when making an OAuth2 API request ([5231327](https://github.com/postalsys/emailengine/commit/523132714a91c2b625095ea62bb1ec2d6e2c5ba8))
+* **outlook-api:** Ensure seemsLikeNew value for new message webhooks ([16e12c0](https://github.com/postalsys/emailengine/commit/16e12c000e57b993344fb329f037cb46a9f7b2b1))
+* **outlook-search:** Allow using $search instead of $filter by setting the useOutlookSearch query argument ([3a0d75e](https://github.com/postalsys/emailengine/commit/3a0d75e45043b0a5beb32e6465ebbf7cc2676c85))
+* **redis:** Do not set connection name to prevent calling CLIENT.SETNAME command ([166a947](https://github.com/postalsys/emailengine/commit/166a94708301a758be7b479f6f42b25df8d1faa5))
+
+## [2.48.2](https://github.com/postalsys/emailengine/compare/v2.48.1...v2.48.2) (2024-10-23)
+
+
+### Bug Fixes
+
+* **metrics:** Ensure that unassigned accounts are included in the 'disconnectedä state count ([d502425](https://github.com/postalsys/emailengine/commit/d5024256f3f715a0b9ad849d911684cb059ad742))
+* **metrics:** Include thread counts in Prometheus output ([04e978e](https://github.com/postalsys/emailengine/commit/04e978e9ef8962cef05619dea508a4b8e9a4c191))
+* **oauth2:** Allow to specify to show only Google Workspace accounts on OAuth2 login screen ([a3b2412](https://github.com/postalsys/emailengine/commit/a3b2412342a79b2f012c328bae8839e36a6a07d4))
+* **submit:** Added additional and optional reference field 'messageId'. If set then this value is validated against the Message-ID header of the referenced email ([8d76345](https://github.com/postalsys/emailengine/commit/8d76345fa51827cb81e1849ffbfee3f1cecdb2e3))
+
 ## [2.48.1](https://github.com/postalsys/emailengine/compare/v2.48.0...v2.48.1) (2024-10-18)
 
 

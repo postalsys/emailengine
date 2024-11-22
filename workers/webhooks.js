@@ -42,6 +42,7 @@ const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY, FETCH_TIMEOUT 
 const he = require('he');
 
 const { fetch: fetchCmd, Agent } = require('undici');
+
 const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
 
 config.queues = config.queues || {
@@ -254,15 +255,18 @@ const notifyWorker = new Worker(
                     if (
                         (job.data.account && job.data.path === 'INBOX') ||
                         job.data.specialUse === '\\Inbox' ||
+                        (job.data.data && job.data.data.messageSpecialUse === '\\Inbox') ||
                         (job.data.data && job.data.data.labels && job.data.data.labels.includes('\\Inbox'))
                     ) {
                         isInbox = true;
                     }
 
-                    const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
-                    if (inboxNewOnly && !isInbox) {
-                        // ignore this message
-                        return;
+                    if (!isInbox) {
+                        const inboxNewOnly = (await settings.get('inboxNewOnly')) || false;
+                        if (inboxNewOnly) {
+                            // ignore this message
+                            return;
+                        }
                     }
 
                     break;

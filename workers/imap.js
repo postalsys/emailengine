@@ -35,6 +35,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 const { IMAPClient } = require('../lib/email-client/imap-client');
 const { GmailClient } = require('../lib/email-client/gmail-client');
 const { OutlookClient } = require('../lib/email-client/outlook-client');
+const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
@@ -153,7 +154,22 @@ class ConnectionHandler {
         const accountData = await accountObject.loadAccountData();
 
         if (accountData.oauth2 && accountData.oauth2.auth) {
-            const oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
+            let oauth2App;
+
+            if (accountData?.oauth2?.auth?.delegatedUser && accountData?.oauth2?.auth?.delegatedAccount) {
+                let baseClient = new BaseClient(account, {
+                    runIndex,
+                    accountObject,
+                    redis,
+                    accountLogger,
+                    secret
+                });
+                let delegatedAccountData = await baseClient.getDelegatedAccount(accountData);
+                oauth2App = await oauth2Apps.get(delegatedAccountData.oauth2.provider);
+            } else {
+                oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
+            }
+
             if (oauth2App.baseScopes === 'api') {
                 // Use API instead of IMAP
 
@@ -749,24 +765,20 @@ class ConnectionHandler {
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
 
-                let count = status => {
-                    if (!results[status]) {
-                        results[status] = 0;
-                    }
-                    results[status] += 1;
-                };
-
-                this.accounts.forEach(accountObject => {
+                for (let accountObject of this.accounts.values()) {
                     let state;
 
                     if (!accountObject || !accountObject.connection) {
                         state = 'unassigned';
                     } else {
-                        state = accountObject.connection.currentState();
+                        state = await accountObject.connection.currentState();
                     }
 
-                    return count(state);
-                });
+                    if (!results[state]) {
+                        results[state] = 0;
+                    }
+                    results[state] += 1;
+                }
 
                 return results;
             }

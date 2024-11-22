@@ -65,6 +65,23 @@
         </div>
         {{/unless}}
 
+
+        {{#if activeGmail}}
+        <div class="form-group form-check">
+
+            <input type="checkbox" class="form-check-input {{#if errors.googleWorkspaceAccounts}}is-invalid{{/if}}"
+                id="googleWorkspaceAccounts" name="googleWorkspaceAccounts" {{#if
+                values.googleWorkspaceAccounts}}checked{{/if}} />
+            <label class="form-check-label" for="googleWorkspaceAccounts">Show only Google Workspace accounts on the
+                OAuth2 login page</label>
+            {{#if errors.googleWorkspaceAccounts}}
+            <span class="invalid-feedback">{{errors.googleWorkspaceAccounts}}</span>
+            {{/if}}
+            <small class="form-text text-muted">When enabled, only Google Workspace accounts will be available on the
+                Gmail OAuth2 login screen.</small>
+        </div>
+        {{/if}}
+
         {{#unless activeGmailService}}
         <div class="form-group form-check">
 
@@ -622,9 +639,21 @@
             {{/if}}
 
             {{#if activeOutlook}}
-            <div class="alert alert-info">EmailEngine only operates on <code>https://outlook.office.com/</code>
-                APIs, not <code>https://graph.microsoft.com/</code>. You can't mix APIs from different endpoints in
-                a single application.
+            <div class="alert alert-info">
+
+                {{#if baseScopesImap}}
+                All scopes must come exclusively from <code>https://outlook.office.com/</code>; scopes from
+                <code>https://graph.microsoft.com/</code> are not allowed.
+                {{/if}}
+
+                {{#if baseScopesApi}}
+                All scopes must come exclusively from <code>https://graph.microsoft.com/</code>; scopes from
+                <code>https://outlook.office.com/</code> are not allowed.
+                {{/if}}
+
+                You cannot mix APIs from different endpoints within a single application.
+
+
             </div>
             {{/if}}
 
