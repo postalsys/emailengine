@@ -32,6 +32,11 @@ services:
             EENGINE_SECRET: 'secret'
             # Database connection URL
             EENGINE_REDIS: 'redis://redis:6379/2'
+        logging:
+            driver: 'json-file'
+            options:
+                max-size: '200m'
+                max-file: '5'
 
     redis:
         image: redis:alpine
