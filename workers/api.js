@@ -7790,7 +7790,7 @@ const init = async () => {
 
                 if (request.payload.gateway) {
                     // try to load the gateway, throws if not set
-                    let gatewayObject = new Gateway({ redis, gateway: request.params.gateway, call, secret: await getSecret() });
+                    let gatewayObject = new Gateway({ redis, gateway: request.payload.gateway, call, secret: await getSecret() });
                     await gatewayObject.loadGatewayData();
                 }
 
