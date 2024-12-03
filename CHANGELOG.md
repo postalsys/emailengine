@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.2](https://github.com/postalsys/emailengine/compare/v2.49.1...v2.49.2) (2024-12-03)
+
+
+### Bug Fixes
+
+* **deps:** Downgraded elasticsearch dependency to avoid including ESM dependencies ([78d6aed](https://github.com/postalsys/emailengine/commit/78d6aed2a0baba61fd381785d1cc63e9b1654871))
+
 ## [2.49.1](https://github.com/postalsys/emailengine/compare/v2.49.0...v2.49.1) (2024-12-03)
 
 
