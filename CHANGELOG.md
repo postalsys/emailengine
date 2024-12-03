@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.49.1](https://github.com/postalsys/emailengine/compare/v2.49.0...v2.49.1) (2024-12-03)
+
+
+### Bug Fixes
+
+* **delivery-test:** Fixed gateway usage with delivery tests ([ec94223](https://github.com/postalsys/emailengine/commit/ec9422397fe392f815c8c3c0f8337f4a5cef55cd))
+* **deps:** Bumped email-text-tools to fix failing preProcessHtml and webSafeHtml ([4de02ae](https://github.com/postalsys/emailengine/commit/4de02aeb98a1f481cabcc309f6b58bfa5820affe))
+* Prevent throwing an exception if serviceUrl is not set ([e947a0b](https://github.com/postalsys/emailengine/commit/e947a0bf6f15cacbd2426dd81df03f9acba6a340))
+
 ## [2.49.0](https://github.com/postalsys/emailengine/compare/v2.48.7...v2.49.0) (2024-11-10)
 
 
