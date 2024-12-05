@@ -1185,6 +1185,9 @@ let licenseCheckHandler = async opts => {
                             licenseInfo.active = false;
                             licenseInfo.details = false;
                             licenseInfo.type = packageData.license;
+                        } else {
+                            let nextCheck = now + SUBSCRIPTION_CHECK_TIMEOUT;
+                            await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
                         }
                     }
                 } else {
