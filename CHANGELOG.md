@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.49.3](https://github.com/postalsys/emailengine/compare/v2.49.2...v2.49.3) (2024-12-09)
+
+
+### Bug Fixes
+
+* **gmail-api:** Fixed attachment forwarding when using Gmail API ([6aef655](https://github.com/postalsys/emailengine/commit/6aef65556d501a3df7dde845ae9470bf575ebb56))
+* **gmail-api:** Fixed threading for replied messages when using Gmail API ([2b4d5bb](https://github.com/postalsys/emailengine/commit/2b4d5bbbebf66ecf44a4dcefa789e7813b043d1e))
+
 ## [2.49.2](https://github.com/postalsys/emailengine/compare/v2.49.1...v2.49.2) (2024-12-03)
 
 
