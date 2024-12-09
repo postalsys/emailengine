@@ -60,7 +60,7 @@
         "@postalsys/templates": "2.0.0",
         "ace-builds": "1.36.5",
         "base32.js": "0.1.0",
-        "bullmq": "5.31.1",
+        "bullmq": "5.33.0",
         "compare-versions": "6.1.1",
         "dotenv": "16.4.7",
         "encoding-japanese": "2.2.0",
