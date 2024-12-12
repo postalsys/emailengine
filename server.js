@@ -162,6 +162,7 @@ const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const DEFAULT_MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
 const SUBSCRIPTION_CHECK_TIMEOUT = 1 * 24 * 60 * 60 * 1000;
+const SUBSCRIPTION_RECHECK_TIMEOUT = 1 * 60 * 60 * 1000;
 const SUBSCRIPTION_ALLOW_DELAY = 28 * 24 * 60 * 60 * 1000;
 
 const CONNECTION_SETUP_DELAY = getDuration(readEnvValue('EENGINE_CONNECTION_SETUP_DELAY') || config.service.setupDelay) || 0;
@@ -1185,6 +1186,9 @@ let licenseCheckHandler = async opts => {
                             licenseInfo.active = false;
                             licenseInfo.details = false;
                             licenseInfo.type = packageData.license;
+                        } else {
+                            let nextCheck = now + SUBSCRIPTION_RECHECK_TIMEOUT;
+                            await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
                         }
                     }
                 } else {

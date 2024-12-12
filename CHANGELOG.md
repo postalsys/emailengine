@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.49.3](https://github.com/postalsys/emailengine/compare/v2.49.2...v2.49.3) (2024-12-09)
+
+
+### Bug Fixes
+
+* **gmail-api:** Fixed attachment forwarding when using Gmail API ([6aef655](https://github.com/postalsys/emailengine/commit/6aef65556d501a3df7dde845ae9470bf575ebb56))
+* **gmail-api:** Fixed threading for replied messages when using Gmail API ([2b4d5bb](https://github.com/postalsys/emailengine/commit/2b4d5bbbebf66ecf44a4dcefa789e7813b043d1e))
+
+## [2.49.2](https://github.com/postalsys/emailengine/compare/v2.49.1...v2.49.2) (2024-12-03)
+
+
+### Bug Fixes
+
+* **deps:** Downgraded elasticsearch dependency to avoid including ESM dependencies ([78d6aed](https://github.com/postalsys/emailengine/commit/78d6aed2a0baba61fd381785d1cc63e9b1654871))
+
+## [2.49.1](https://github.com/postalsys/emailengine/compare/v2.49.0...v2.49.1) (2024-12-03)
+
+
+### Bug Fixes
+
+* **delivery-test:** Fixed gateway usage with delivery tests ([ec94223](https://github.com/postalsys/emailengine/commit/ec9422397fe392f815c8c3c0f8337f4a5cef55cd))
+* **deps:** Bumped email-text-tools to fix failing preProcessHtml and webSafeHtml ([4de02ae](https://github.com/postalsys/emailengine/commit/4de02aeb98a1f481cabcc309f6b58bfa5820affe))
+* Prevent throwing an exception if serviceUrl is not set ([e947a0b](https://github.com/postalsys/emailengine/commit/e947a0bf6f15cacbd2426dd81df03f9acba6a340))
+
 ## [2.49.0](https://github.com/postalsys/emailengine/compare/v2.48.7...v2.49.0) (2024-11-10)
 
 

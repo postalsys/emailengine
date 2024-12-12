@@ -8,6 +8,7 @@ module.exports = {
         'chai',
         'js-beautify',
         'ical.js',
+        '@elastic/elasticsearch',
 
         // api changes, check and fix
         'eslint',
