@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.4](https://github.com/postalsys/emailengine/compare/v2.49.3...v2.49.4) (2024-12-12)
+
+
+### Bug Fixes
+
+* **cors:** Removed custom OPTIONS preflight handler in favor of default Hapi CORS handler ([6427728](https://github.com/postalsys/emailengine/commit/6427728bcc56249bb4acb4adcc817bd9c2221f2f))
+
 ## [2.49.3](https://github.com/postalsys/emailengine/compare/v2.49.2...v2.49.3) (2024-12-09)
 
 
