@@ -218,7 +218,7 @@ async function main() {
 
         try {
             let appUpdated = false;
-            for (let key of ['clientSecret', 'serviceKey']) {
+            for (let key of ['clientSecret', 'serviceKey', 'accessToken']) {
                 if (entry[key]) {
                     let value = await processSecret(entry[key], encryptSecret);
                     if (value !== entry[key]) {
