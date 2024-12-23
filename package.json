@@ -10,7 +10,7 @@
         "dev": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.dev.txt  | pino-pretty",
         "single": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_SECRET=your-encryption-key EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/10' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.single.txt | pino-pretty",
         "gmail": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_SECRET=your-encryption-key EENGINE_WORKERS=2 node --inspect server --dbs.redis='redis://127.0.0.1:6379/11' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.gmail.txt | pino-pretty",
-        "test": "grunt && node --test test/",
+        "test": "NODE_ENV=test grunt",
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
@@ -117,10 +117,13 @@
         "grunt": "1.6.1",
         "grunt-cli": "1.5.0",
         "grunt-eslint": "24.3.0",
+        "grunt-shell-spawn": "^0.4.0",
+        "grunt-wait": "^0.3.0",
         "jsxgettext": "0.11.0",
         "pino-pretty": "13.0.0",
         "resedit": "2.0.3",
         "spdx-satisfies": "5.0.1",
+        "supertest": "^7.0.0",
         "xgettext-template": "5.0.0"
     },
     "engines": {

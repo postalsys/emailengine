@@ -1,0 +1,33 @@
+
+
+# JSON formatted settings
+settings = '''
+{
+  "webhooksEnabled": false,
+  "serviceUrl": "http://127.0.0.1:7077",
+  "ignoreMailCertErrors": true,
+  "serviceSecret": "a cat"
+}
+'''
+
+# static access token
+# 2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660
+preparedToken = "hKJpZNlAZWEzODczZjkyMzRmYjNiOGI3MDAwNDMzNzMxMzhjNzMwYzU2ZmQyZjdmYTI3ZGJjZGM2MWQ0YzljMmIyZGY4ZKdjcmVhdGVk1_-UiOcAZ2lLVqZzY29wZXORoSqrZGVzY3JpcHRpb26qdGVzdCB0b2tlbg"
+
+
+[service]
+secret = "secret cat"
+
+[workers]
+imap = 1
+
+[log]
+raw = true
+
+[dbs]
+# redis connection
+redis = "redis://127.0.0.1:6379/13"
+
+[api]
+host = "0.0.0.0"
+port = 7077
