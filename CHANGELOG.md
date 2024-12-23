@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.5](https://github.com/postalsys/emailengine/compare/v2.49.4...v2.49.5) (2024-12-23)
+
+
+### Bug Fixes
+
+* **Auth-server:** Ensure correct oauth2 username and history ID for accounts added with auth server ([aa68c0d](https://github.com/postalsys/emailengine/commit/aa68c0d7519565d0ce7915a4397148199fc664d2))
+
 ## [2.49.4](https://github.com/postalsys/emailengine/compare/v2.49.3...v2.49.4) (2024-12-13)
 
 
