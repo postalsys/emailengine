@@ -85,6 +85,11 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node }}
+            - name: Setup Redis CLI
+              uses: shogo82148/actions-setup-redis@v1
+              with:
+                  redis-version: '7.x'
+                  auto-start: 'false'
             - run: npm install
             - name: Run tests
               run: |
