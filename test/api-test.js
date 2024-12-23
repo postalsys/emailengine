@@ -5,6 +5,8 @@ const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const nodemailer = require('nodemailer');
+const Redis = require('ioredis');
+const redis = new Redis(config.dbs.redis);
 
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 
@@ -16,6 +18,10 @@ const defaultAccountId = 'main-account';
 test('API tests', async t => {
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
+    });
+
+    t.after(() => {
+        redis.quit();
     });
 
     await t.test('list existing users (empty list)', async () => {
@@ -106,6 +112,15 @@ test('API tests', async t => {
         const response = await server.get(`/v1/accounts`).expect(200);
 
         assert.strictEqual(response.body.accounts.length, 1);
+    });
+
+    await t.test('check if account credentials are encrypted', async () => {
+        let accountData = await redis.hgetall(`iad:${defaultAccountId}`);
+        let imapData = JSON.parse(accountData.imap);
+        let smtpData = JSON.parse(accountData.smtp);
+
+        assert.ok(imapData.auth.pass.indexOf('$wd01$') === 0);
+        assert.ok(smtpData.auth.pass.indexOf('$wd01$') === 0);
     });
 
     await t.test('list mailboxes for an account', async () => {

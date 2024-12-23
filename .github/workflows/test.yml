@@ -95,4 +95,4 @@ jobs:
               run: |
                   npm test
               env:
-                  EENGINE_REDIS: redis://127.0.0.1:6379/13
+                  NODE_ENV: test
