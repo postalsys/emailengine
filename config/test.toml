@@ -3,7 +3,15 @@
 # JSON formatted settings
 settings = '''
 {
-  "webhooksEnabled": false,
+  "webhooksEnabled": true,
+  "webhooks": "http://127.0.0.1:7078/webhooks",
+  "webhookEvents": ["*"],
+  "webhooksCustomHeaders": [
+    {
+      "key": "Custom-Header",
+      "value": "Custom-Value"
+    }
+  ],
   "serviceUrl": "http://127.0.0.1:7077",
   "ignoreMailCertErrors": true,
   "serviceSecret": "a cat"
@@ -31,3 +39,7 @@ redis = "redis://127.0.0.1:6379/13"
 [api]
 host = "0.0.0.0"
 port = 7077
+
+
+[webhooksServer]
+port = 7078
