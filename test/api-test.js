@@ -137,20 +137,6 @@ test('API tests', async t => {
         assert.ok(smtpData.auth.pass.indexOf('$wd01$') === 0);
     });
 
-    await t.test('create a mailbox', async () => {
-        const response = await server
-            .post(`/v1/account/${defaultAccountId}/mailbox`)
-            .send({
-                path: ['My Target Folder 😇']
-            })
-            .expect(200);
-
-        assert.strictEqual(response.body.path, 'My Target Folder 😇');
-        assert.ok(response.body.created);
-
-        await server.get(`/v1/account/${defaultAccountId}/messages?path=${encodeURIComponent('My Target Folder 😇')}`).expect(200);
-    });
-
     await t.test('list mailboxes for an account', async () => {
         const response = await server.get(`/v1/account/${defaultAccountId}/mailboxes`).expect(200);
 
@@ -407,6 +393,31 @@ test('API tests', async t => {
         assert.ok(/Begin forwarded message/.test(messageNewWebhook.data.text.plain));
         assert.strictEqual(messageNewWebhook.data.attachments[0].filename, 'transparent.gif');
         assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
+    });
+
+    await t.test('create a mailbox', async () => {
+        const response = await server
+            .post(`/v1/account/${defaultAccountId}/mailbox`)
+            .send({
+                path: ['My Target Folder 😇']
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Target Folder 😇');
+        assert.ok(response.body.created);
+
+        let received = false;
+        let mailboxNewWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+            mailboxNewWebhook = webhooks.find(wh => wh.path === 'My Target Folder 😇' && wh.event === 'mailboxNew');
+            if (mailboxNewWebhook) {
+                received = true;
+            }
+        }
+
+        assert.ok(mailboxNewWebhook);
     });
 
     await t.test('move message to another folder', async () => {
