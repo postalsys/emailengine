@@ -81,7 +81,8 @@ test('API tests', async t => {
                     auth: {
                         user: testAccount.user,
                         pass: testAccount.pass
-                    }
+                    },
+                    resyncDelay: 60 * 1000
                 },
                 smtp: {
                     host: testAccount.smtp.host,
@@ -340,6 +341,72 @@ test('API tests', async t => {
         }
 
         assert.deepEqual(messageUpdatedWebhook.data.changes.flags.added, ['\\Seen']);
+    });
+
+    await t.test('upload by reference', async () => {
+        await server
+            .post(`/v1/account/${defaultAccountId}/message`)
+            .send({
+                path: 'Inbox',
+                reference: {
+                    message: message2.id,
+                    action: 'forward',
+                    inline: true,
+                    forwardAttachments: true,
+                    messageId: '<invalid@value>'
+                },
+                to: [
+                    {
+                        name: 'Test Received',
+                        address: 'test.received@example.com'
+                    }
+                ],
+                text: 'Hallo hallo! 🙃',
+                html: '<b>Hallo hallo! 🙃</b>',
+                messageId: '<test3@example.com>'
+            })
+            // fails message-id test
+            .expect(404);
+
+        const response = await server
+            .post(`/v1/account/${defaultAccountId}/message`)
+            .send({
+                path: 'Inbox',
+                reference: {
+                    message: message2.id,
+                    action: 'forward',
+                    inline: true,
+                    forwardAttachments: true,
+                    messageId: '<test2@example.com>'
+                },
+                to: [
+                    {
+                        name: 'Test Received',
+                        address: 'test.received@example.com'
+                    }
+                ],
+                text: 'Hallo hallo! 🙃',
+                html: '<b>Hallo hallo! 🙃</b>',
+                messageId: '<test3@example.com>'
+            })
+            .expect(200);
+
+        assert.ok(response.body.id);
+
+        let received = false;
+        let messageNewWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+            messageNewWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test3@example.com>');
+            if (messageNewWebhook) {
+                received = true;
+            }
+        }
+
+        assert.ok(/Begin forwarded message/.test(messageNewWebhook.data.text.plain));
+        assert.strictEqual(messageNewWebhook.data.attachments[0].filename, 'transparent.gif');
+        assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
     });
 
     await t.test('move message to another folder', async () => {
