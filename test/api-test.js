@@ -395,6 +395,48 @@ test('API tests', async t => {
         assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
     });
 
+    await t.test('submit by reference', async () => {
+        const response = await server
+            .post(`/v1/account/${defaultAccountId}/submit`)
+            .send({
+                reference: {
+                    message: message2.id,
+                    action: 'forward',
+                    inline: true,
+                    forwardAttachments: true,
+                    messageId: '<test2@example.com>'
+                },
+                to: [
+                    {
+                        name: 'Test Received',
+                        address: 'test.received@example.com'
+                    }
+                ],
+                text: 'Hallo hallo! 🙃',
+                html: '<b>Hallo hallo! 🙃</b>',
+                messageId: '<test4@example.com>'
+            })
+            .expect(200);
+
+        assert.ok(response.body.messageId);
+        assert.ok(response.body.queueId);
+
+        let received = false;
+        let messageNewWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+            messageNewWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test4@example.com>');
+            if (messageNewWebhook) {
+                received = true;
+            }
+        }
+
+        assert.ok(/Begin forwarded message/.test(messageNewWebhook.data.text.plain));
+        assert.strictEqual(messageNewWebhook.data.attachments[0].filename, 'transparent.gif');
+        assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
+    });
+
     await t.test('create a mailbox', async () => {
         const response = await server
             .post(`/v1/account/${defaultAccountId}/mailbox`)
