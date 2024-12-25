@@ -62,7 +62,7 @@ jobs:
         name: Test Suite
         strategy:
             matrix:
-                node: [18.x, 20.x]
+                node: [20.x]
                 os: [ubuntu-20.04]
         runs-on: ${{ matrix.os }}
         # Service containers to run with `container-job`
