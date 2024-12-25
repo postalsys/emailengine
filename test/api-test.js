@@ -17,6 +17,8 @@ let testAccount;
 const defaultAccountId = 'main-account';
 
 test('API tests', async t => {
+    let message2;
+
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
         await webhooksServer.init();
@@ -134,6 +136,20 @@ test('API tests', async t => {
         assert.ok(smtpData.auth.pass.indexOf('$wd01$') === 0);
     });
 
+    await t.test('create a mailbox', async () => {
+        const response = await server
+            .post(`/v1/account/${defaultAccountId}/mailbox`)
+            .send({
+                path: ['My Target Folder 😇']
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Target Folder 😇');
+        assert.ok(response.body.created);
+
+        await server.get(`/v1/account/${defaultAccountId}/messages?path=${encodeURIComponent('My Target Folder 😇')}`).expect(200);
+    });
+
     await t.test('list mailboxes for an account', async () => {
         const response = await server.get(`/v1/account/${defaultAccountId}/mailboxes`).expect(200);
 
@@ -164,6 +180,7 @@ test('API tests', async t => {
                 ],
                 subject: 'Test message 🤣',
                 text: 'Hello world! 🙃',
+                html: '<b>Hello world! 🙃</b>',
                 messageId: '<test1@example.com>'
             })
             .expect(200);
@@ -186,7 +203,17 @@ test('API tests', async t => {
                 ],
                 subject: 'Test message 🤣',
                 text: 'Hello world! 🙃',
-                messageId: '<test2@example.com>'
+                html: '<b>Hello world! 🙃</b>',
+                messageId: '<test2@example.com>',
+                attachments: [
+                    {
+                        filename: 'transparent.gif',
+                        content: 'R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=',
+                        contentType: 'image/gif',
+                        contentDisposition: 'inline',
+                        encoding: 'base64'
+                    }
+                ]
             })
             .expect(200);
 
@@ -205,6 +232,8 @@ test('API tests', async t => {
             }
         }
 
+        message2 = messageNewWebhook2.data;
+
         assert.equal(messageNewWebhook1.data.subject, 'Test message 🤣');
     });
 
@@ -218,5 +247,123 @@ test('API tests', async t => {
     await t.test('list mailboxes with counters', async () => {
         const response = await server.get(`/v1/account/${defaultAccountId}/mailboxes?counters=true`).expect(200);
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox' && mb.status.messages === 2 && mb.status.unseen === 1));
+    });
+
+    await t.test('retrieve message text', async () => {
+        const response = await server.get(`/v1/account/${defaultAccountId}/text/${message2.text.id}?textType=*`).expect(200);
+        assert.deepEqual(response.body, { plain: 'Hello world! 🙃', html: '<b>Hello world! 🙃</b>', hasMore: false });
+    });
+
+    await t.test('download attachment', async () => {
+        const response = await server.get(`/v1/account/${defaultAccountId}/attachment/${message2.attachments[0].id}`).expect(200);
+
+        assert.strictEqual(response.headers['content-type'], `image/gif`);
+        assert.strictEqual(response.headers['content-disposition'], `attachment; filename="transparent.gif"; filename*=utf-8''transparent.gif`);
+
+        let attachment = response._body.toString('base64');
+
+        assert.strictEqual(attachment, 'R0lGODlhAQABAIAAAP///wAAACwAAAAAAQABAAACAkQBADs=');
+    });
+
+    await t.test('get message information', async () => {
+        const response = await server.get(`/v1/account/${defaultAccountId}/message/${message2.id}?textType=*`).expect(200);
+
+        let message = response.body;
+
+        assert.strictEqual(message.id, message2.id);
+        assert.strictEqual(message.subject, 'Test message 🤣');
+        assert.strictEqual(message.messageSpecialUse, '\\Inbox');
+        assert.strictEqual(message.text.plain, 'Hello world! 🙃');
+        assert.strictEqual(message.text.html, '<b>Hello world! 🙃</b>');
+        assert.ok(!message.text.webSafe);
+    });
+
+    await t.test('get message information, websafe', async () => {
+        const response = await server.get(`/v1/account/${defaultAccountId}/message/${message2.id}?webSafeHtml=true`).expect(200);
+
+        let message = response.body;
+
+        assert.strictEqual(message.id, message2.id);
+        assert.strictEqual(message.subject, 'Test message 🤣');
+        assert.strictEqual(message.messageSpecialUse, '\\Inbox');
+        assert.strictEqual(message.text.plain, 'Hello world! 🙃');
+        assert.strictEqual(message.text.html, '<div style="overflow: auto;"><b>Hello world! 🙃</b></div>');
+        assert.strictEqual(message.text.webSafe, true);
+    });
+
+    await t.test('download raw message', async () => {
+        const response = await server.get(`/v1/account/${defaultAccountId}/message/${message2.id}/source`).expect(200);
+
+        assert.strictEqual(response.headers['content-type'], `message/rfc822`);
+        assert.strictEqual(response.headers['content-disposition'], `attachment; filename=message.eml`);
+
+        let eml = response.text;
+
+        assert.ok(/^Message-ID:/im.test(eml));
+    });
+
+    await t.test('search unseen messages', async () => {
+        const response = await server
+            .post(`/v1/account/${defaultAccountId}/search?path=INBOX`)
+            .send({
+                search: {
+                    unseen: true
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.total, 1);
+        assert.strictEqual(response.body.messages[0].messageId, '<test2@example.com>');
+    });
+
+    await t.test('mark message as seen', async () => {
+        const response = await server
+            .put(`/v1/account/${defaultAccountId}/message/${message2.id}`)
+            .send({
+                flags: {
+                    add: ['\\Seen']
+                }
+            })
+            .expect(200);
+
+        assert.ok(response.body.flags.add);
+
+        let received = false;
+        let messageUpdatedWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+            messageUpdatedWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageUpdated' && wh.data.id === message2.id);
+            if (messageUpdatedWebhook) {
+                received = true;
+            }
+        }
+
+        assert.deepEqual(messageUpdatedWebhook.data.changes.flags.added, ['\\Seen']);
+    });
+
+    await t.test('move message to another folder', async () => {
+        const response = await server
+            .put(`/v1/account/${defaultAccountId}/message/${message2.id}/move`)
+            .send({
+                path: 'My Target Folder 😇'
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Target Folder 😇');
+
+        assert.strictEqual(response.body.uid, 1);
+
+        const responseSearchTarget = await server
+            .post(`/v1/account/${defaultAccountId}/search?path=${encodeURIComponent('My Target Folder 😇')}`)
+            .send({
+                search: {
+                    uid: '1'
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(responseSearchTarget.body.total, 1);
+        assert.strictEqual(responseSearchTarget.body.messages[0].messageId, '<test2@example.com>');
     });
 });
