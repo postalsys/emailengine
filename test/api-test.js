@@ -1,5 +1,7 @@
 'use strict';
 
+require('dotenv').config();
+
 const config = require('wild-config');
 const supertest = require('supertest');
 const test = require('node:test');
@@ -15,9 +17,12 @@ const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(acces
 
 let testAccount;
 const defaultAccountId = 'main-account';
+const gmailAccountId1 = 'gmail-account1';
 
 test('API tests', async t => {
     let message2;
+    let oauth2PubsubId;
+    let oauth2AppId;
 
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
@@ -485,5 +490,99 @@ test('API tests', async t => {
 
         assert.strictEqual(responseSearchTarget.body.total, 1);
         assert.strictEqual(responseSearchTarget.body.messages[0].messageId, '<test2@example.com>');
+    });
+
+    await t.test('Create Gmail API OAuth2 service project', async () => {
+        let gmailServiceData = {
+            name: 'Gmail API Pub/Sub',
+            provider: 'gmailService',
+            baseScopes: 'pubsub',
+            googleProjectId: process.env.GMAIL_API_PROJECT_ID,
+            serviceClient: process.env.GMAIL_API_SERVICE_CLIENT,
+            serviceClientEmail: process.env.GMAIL_API_SERVICE_EMAIL,
+            serviceKey: process.env.GMAIL_API_SERVICE_KEY
+        };
+
+        const response = await server.post(`/v1/oauth2`).send(gmailServiceData).expect(200);
+
+        oauth2PubsubId = response.body.id;
+        assert.ok(oauth2PubsubId);
+
+        console.log('SERVICE', oauth2PubsubId);
+    });
+
+    await t.test('Create Gmail API OAuth2 client project', async () => {
+        let gmailClientData = {
+            name: 'Gmail API Client',
+            provider: 'gmail',
+            baseScopes: 'api',
+            googleProjectId: process.env.GMAIL_API_PROJECT_ID,
+            clientId: process.env.GMAIL_API_CLIENT_ID,
+            clientSecret: process.env.GMAIL_API_CLIENT_SECRET,
+            pubSubApp: oauth2PubsubId,
+            redirectUrl: 'http://127.0.0.1:7003/oauth'
+        };
+
+        const response = await server.post(`/v1/oauth2`).send(gmailClientData).expect(200);
+
+        oauth2AppId = response.body.id;
+        assert.ok(oauth2AppId);
+
+        console.log('APP', oauth2AppId);
+    });
+
+    await t.test('Register new Gmail account 1', async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: gmailAccountId1,
+                name: 'Gmail User 1 🫥',
+                email: process.env.GMAIL_API_ACCOUNT_EMAIL_1,
+                oauth2: {
+                    provider: oauth2AppId,
+                    auth: {
+                        user: process.env.GMAIL_API_ACCOUNT_EMAIL_1
+                    },
+                    refreshToken: process.env.GMAIL_API_ACCOUNT_REFRESH_1
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('wait until gmail account 1 is available', async () => {
+        // wait until connected
+        let available = false;
+        while (!available) {
+            await new Promise(r => setTimeout(r, 1000));
+            const response = await server.get(`/v1/account/${gmailAccountId1}`).expect(200);
+            switch (response.body.state) {
+                case 'authenticationError':
+                case 'connectError':
+                    throw new Error('Invalid account state ' + response.body.state);
+                case 'connected':
+                    available = true;
+                    break;
+            }
+        }
+
+        // check if we have all expected webhooks
+        let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
+        for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
+            assert.ok(webhooks.some(wh => wh.event === event));
+        }
+    });
+
+    await t.test('list mailboxes for gmail account 1', async () => {
+        const response = await server.get(`/v1/account/${gmailAccountId1}/mailboxes`).expect(200);
+
+        assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
+    });
+
+    await t.test('list inbox messages for gmail account 1 (greeting emails)', async () => {
+        const response = await server.get(`/v1/account/${gmailAccountId1}/messages?path=INBOX`).expect(200);
+
+        assert.ok(response.body.total > 0);
     });
 });
