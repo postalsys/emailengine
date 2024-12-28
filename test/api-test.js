@@ -18,6 +18,7 @@ const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(acces
 let testAccount;
 const defaultAccountId = 'main-account';
 const gmailAccountId1 = 'gmail-account1';
+const gmailAccountId2 = 'gmail-account2';
 
 test('API tests', async t => {
     let message2;
@@ -507,8 +508,6 @@ test('API tests', async t => {
 
         oauth2PubsubId = response.body.id;
         assert.ok(oauth2PubsubId);
-
-        console.log('SERVICE', oauth2PubsubId);
     });
 
     await t.test('Create Gmail API OAuth2 client project', async () => {
@@ -527,11 +526,9 @@ test('API tests', async t => {
 
         oauth2AppId = response.body.id;
         assert.ok(oauth2AppId);
-
-        console.log('APP', oauth2AppId);
     });
 
-    await t.test('Register new Gmail account 1', async () => {
+    await t.test('Register Gmail account 1', async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -551,38 +548,113 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until gmail account 1 is available', async () => {
-        // wait until connected
-        let available = false;
-        while (!available) {
-            await new Promise(r => setTimeout(r, 1000));
-            const response = await server.get(`/v1/account/${gmailAccountId1}`).expect(200);
-            switch (response.body.state) {
-                case 'authenticationError':
-                case 'connectError':
-                    throw new Error('Invalid account state ' + response.body.state);
-                case 'connected':
-                    available = true;
-                    break;
-            }
-        }
+    await t.test('Register Gmail account 2', async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: gmailAccountId2,
+                name: 'Gmail User 2 🫥',
+                email: process.env.GMAIL_API_ACCOUNT_EMAIL_2,
+                oauth2: {
+                    provider: oauth2AppId,
+                    auth: {
+                        user: process.env.GMAIL_API_ACCOUNT_EMAIL_2
+                    },
+                    refreshToken: process.env.GMAIL_API_ACCOUNT_REFRESH_2
+                }
+            })
+            .expect(200);
 
-        // check if we have all expected webhooks
-        let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
-        for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
-            assert.ok(webhooks.some(wh => wh.event === event));
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('wait until Gmail accounts are available', async () => {
+        for (let account of [gmailAccountId1, gmailAccountId2]) {
+            // wait until connected
+            let available = false;
+            while (!available) {
+                await new Promise(r => setTimeout(r, 1000));
+                const response = await server.get(`/v1/account/${account}`).expect(200);
+                switch (response.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + response.body.state);
+                    case 'connected':
+                        available = true;
+                        break;
+                }
+            }
+
+            // check if we have all expected webhooks
+            let webhooks = webhooksServer.webhooks.get(account);
+            for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
+                assert.ok(webhooks.some(wh => wh.event === event));
+            }
         }
     });
 
-    await t.test('list mailboxes for gmail account 1', async () => {
+    await t.test('list mailboxes for Gmail account 1', async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
     });
 
-    await t.test('list inbox messages for gmail account 1 (greeting emails)', async () => {
+    await t.test('list inbox messages for Gmail account 1 (greeting emails)', async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/messages?path=INBOX`).expect(200);
 
         assert.ok(response.body.total > 0);
+    });
+
+    await t.test('submit by API', async () => {
+        let messageId = `<test-${Date.now()}@example.com>`;
+
+        const response = await server
+            .post(`/v1/account/${gmailAccountId2}/submit`)
+            .send({
+                to: [
+                    {
+                        name: 'Test Account 1',
+                        address: process.env.GMAIL_API_ACCOUNT_EMAIL_1
+                    }
+                ],
+                subject: 'Hallo hallo 🤣',
+                text: 'Hallo hallo! 🙃',
+                html: '<b>Hallo hallo! 🙃</b>',
+                messageId
+            })
+            .expect(200);
+
+        assert.ok(response.body.messageId);
+        assert.ok(response.body.queueId);
+
+        let finalMessageId;
+
+        let sent = false;
+        let messageSentWebhook = false;
+        while (!sent) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
+            messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            if (messageSentWebhook) {
+                finalMessageId = messageSentWebhook.data.messageId;
+                sent = true;
+            }
+        }
+
+        let received = false;
+        let messageNewWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
+            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === finalMessageId);
+            if (messageNewWebhook) {
+                received = true;
+            }
+        }
+
+        // * is added by gmail
+        assert.strictEqual(messageNewWebhook.data.text.plain.trim(), '*Hallo hallo! 🙃*');
+        assert.strictEqual(messageNewWebhook.data.messageId, finalMessageId);
+        assert.strictEqual(messageNewWebhook.data.subject.trim(), 'Hallo hallo 🤣');
     });
 });
