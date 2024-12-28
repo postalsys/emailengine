@@ -682,7 +682,7 @@ test('API tests', async t => {
         assert.ok(response.body.messageId);
         assert.ok(response.body.queueId);
 
-        let gmailReceivedMessageId;
+        let finalMessageId;
 
         let sent = false;
         let messageSentWebhook = false;
@@ -691,7 +691,7 @@ test('API tests', async t => {
             let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
             messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
             if (messageSentWebhook) {
-                gmailReceivedMessageId = messageSentWebhook.data.messageId;
+                finalMessageId = messageSentWebhook.data.messageId;
                 sent = true;
             }
         }
@@ -701,7 +701,7 @@ test('API tests', async t => {
         while (!received) {
             await new Promise(r => setTimeout(r, 1000));
             let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
-            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === gmailReceivedMessageId);
+            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === finalMessageId);
             if (messageNewWebhook) {
                 received = true;
             }
