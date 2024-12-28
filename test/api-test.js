@@ -25,6 +25,9 @@ test('API tests', async t => {
     let oauth2PubsubId;
     let oauth2AppId;
 
+    let gmailReceivedEmailId;
+    let gmailReceivedMessageId;
+
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
         await webhooksServer.init();
@@ -627,8 +630,6 @@ test('API tests', async t => {
         assert.ok(response.body.messageId);
         assert.ok(response.body.queueId);
 
-        let finalMessageId;
-
         let sent = false;
         let messageSentWebhook = false;
         while (!sent) {
@@ -636,7 +637,7 @@ test('API tests', async t => {
             let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
             messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
             if (messageSentWebhook) {
-                finalMessageId = messageSentWebhook.data.messageId;
+                gmailReceivedMessageId = messageSentWebhook.data.messageId;
                 sent = true;
             }
         }
@@ -646,7 +647,7 @@ test('API tests', async t => {
         while (!received) {
             await new Promise(r => setTimeout(r, 1000));
             let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
-            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === finalMessageId);
+            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === gmailReceivedMessageId);
             if (messageNewWebhook) {
                 received = true;
             }
@@ -654,7 +655,61 @@ test('API tests', async t => {
 
         // * is added by gmail
         assert.strictEqual(messageNewWebhook.data.text.plain.trim(), '*Hallo hallo! 🙃*');
-        assert.strictEqual(messageNewWebhook.data.messageId, finalMessageId);
+        assert.strictEqual(messageNewWebhook.data.messageId, gmailReceivedMessageId);
         assert.strictEqual(messageNewWebhook.data.subject.trim(), 'Hallo hallo 🤣');
+
+        gmailReceivedEmailId = messageNewWebhook.data.id;
+        assert.ok(gmailReceivedEmailId);
+    });
+
+    await t.test('reply by reference by API', async () => {
+        let messageId = `<test-${Date.now()}@example.com>`;
+
+        const response = await server
+            .post(`/v1/account/${gmailAccountId1}/submit`)
+            .send({
+                reference: {
+                    message: gmailReceivedEmailId,
+                    action: 'reply',
+                    inline: true
+                },
+                text: 'Keedu kartul! 🍟',
+                html: '<b>Keedu kartul! 🍟</b>',
+                messageId
+            })
+            .expect(200);
+
+        assert.ok(response.body.messageId);
+        assert.ok(response.body.queueId);
+
+        let gmailReceivedMessageId;
+
+        let sent = false;
+        let messageSentWebhook = false;
+        while (!sent) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
+            messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            if (messageSentWebhook) {
+                gmailReceivedMessageId = messageSentWebhook.data.messageId;
+                sent = true;
+            }
+        }
+
+        let received = false;
+        let messageNewWebhook = false;
+        while (!received) {
+            await new Promise(r => setTimeout(r, 1000));
+            let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
+            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === gmailReceivedMessageId);
+            if (messageNewWebhook) {
+                received = true;
+            }
+        }
+
+        assert.strictEqual(messageNewWebhook.data.subject.trim(), 'Re: Hallo hallo 🤣');
+        assert.strictEqual(messageNewWebhook.data.inReplyTo, gmailReceivedMessageId);
+
+        assert.ok(messageNewWebhook);
     });
 });
