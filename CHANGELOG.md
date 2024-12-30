@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.49.5](https://github.com/postalsys/emailengine/compare/v2.49.4...v2.49.5) (2024-12-30)
+
+
+### Bug Fixes
+
+* **Auth-server:** Ensure correct oauth2 username and history ID for accounts added with auth server ([aa68c0d](https://github.com/postalsys/emailengine/commit/aa68c0d7519565d0ce7915a4397148199fc664d2))
+* **oauth-flow:** Fixed page title on the redirect page after OAuth2 code has been received ([b2c0c5a](https://github.com/postalsys/emailengine/commit/b2c0c5a28da3550eeb8754b5efec18254b6d8ff5))
+* **templates:** Allow setting brand name to replace 'EmailEngine' in the HTML title ([bf85c06](https://github.com/postalsys/emailengine/commit/bf85c06aaf92d2f3d54dbfde5771a2df3a71b9b9))
+
 ## [2.49.4](https://github.com/postalsys/emailengine/compare/v2.49.3...v2.49.4) (2024-12-13)
 
 
