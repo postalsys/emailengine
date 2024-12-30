@@ -8453,7 +8453,8 @@ ${now}`,
                 serviceUrl,
                 language,
                 locale,
-                timezone
+                timezone,
+                pageBrandName
             } = await settings.getMulti(
                 'upgrade',
                 'subexp',
@@ -8470,7 +8471,8 @@ ${now}`,
                 'serviceUrl',
                 'language',
                 'locale',
-                'timezone'
+                'timezone',
+                'pageBrandName'
             );
 
             const systemAlerts = [];
@@ -8614,6 +8616,7 @@ ${now}`,
             }
 
             return {
+                pageBrandName: pageBrandName || 'EmailEngine',
                 values: request.payload || {},
                 errors: (request.error && request.error.details) || {},
                 pendingMessages,

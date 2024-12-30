@@ -344,6 +344,21 @@
                 form, and the virtual mailing list unsubscribe page.</p>
 
             <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">pageBrandName</a>]</div>
+
+                <label for="settingsPageBrandName">Brand name</label>
+                <input type="text" class="form-control {{#if errors.pageBrandName}}is-invalid{{/if}}"
+                    id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
+                    data-lpignore="true" autocomplete="off" placeholder="Brand name like &quot;EmailEngine&quot;" />
+                {{#if errors.pageBrandName}}
+                <span class="invalid-feedback">{{errors.pageBrandName}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Brand name to use in the HTML title element (defaults to
+                    <em>"EmailEngine"</em>)</small>
+            </div>
+
+            <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
