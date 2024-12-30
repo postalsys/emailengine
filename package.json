@@ -41,8 +41,8 @@
     "homepage": "https://emailengine.app/",
     "dependencies": {
         "@bugsnag/js": "8.1.2",
-        "@bull-board/api": "6.5.3",
-        "@bull-board/hapi": "6.5.3",
+        "@bull-board/api": "6.5.4",
+        "@bull-board/hapi": "6.5.4",
         "@elastic/elasticsearch": "8.15.3",
         "@hapi/bell": "13.0.2",
         "@hapi/boom": "10.0.1",
