@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.6](https://github.com/postalsys/emailengine/compare/v2.49.5...v2.49.6) (2025-01-02)
+
+
+### Bug Fixes
+
+* **ui:** Replaced 2024 with 2025 in static HTML pages ([99e805b](https://github.com/postalsys/emailengine/commit/99e805b5ce1e373b60bbaa2b9f0fa138f8f8d27b))
+
 ## [2.49.5](https://github.com/postalsys/emailengine/compare/v2.49.4...v2.49.5) (2024-12-30)
 
 
