@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="EmailEngine" />
-        <title>EmailEngine</title>
+        <title>EmailEngine Set-up</title>
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css"
@@ -23,9 +23,10 @@
                 <div class="row mt-4">
                     <div class="col-12 col-sm-12 col-md-12 col-lg-8">
                         <p>
-                            <a href="https://emailengine.app" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">EmailEngine</a> is an email
-                            client for apps, not people. It connects to the user's email server, translates REST API requests from the app to IMAP and SMTP
-                            commands, and sends webhooks for changes like new or deleted emails.
+                            <a href="https://emailengine.app/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">EmailEngine</a> is an
+                            email client designed for applications, not individual users. It connects to users' email servers and translates REST API requests
+                            from the app into IMAP and SMTP commands, or into Gmail API or Microsoft Graph API requests. Additionally, it sends webhooks to
+                            notify the app of events such as new or deleted emails.
                         </p>
 
                         <div class="mt-4 alert alert-info">
@@ -44,7 +45,7 @@
                         <a href="https://emailengine.app" target="_blank" rel="noopener noreferrer" rel="noopener noreferrer" referrerpolicy="no-referrer"
                             >EmailEngine</a
                         >
-                        <span class="text-muted">&copy; 2020-2024</span>
+                        <span class="text-muted">&copy; 2020-<span id="curyear">2025</span></span>
                         <a class="text-muted" href="mailto:info@postalsys.com" target="_blank" rel="noopener noreferrer">Postal Systems OÜ</a>.
                     </div>
                 </div>
@@ -53,6 +54,7 @@
 
         <script>
             document.getElementById('hostname').textContent = window.location.hostname;
+            document.getElementById('curyear').textContent = new Date().getFullYear();
         </script>
     </body>
 </html>
