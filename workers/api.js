@@ -39,7 +39,8 @@ const {
     detectAutomatedRequest,
     hasEnvValue,
     getBoolean,
-    loadTlsConfig
+    loadTlsConfig,
+    retryAgent
 } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
@@ -115,7 +116,6 @@ const {
     TLS_RENEW_CHECK_INTERVAL,
     DEFAULT_CORS_MAX_AGE,
     LIST_UNSUBSCRIBE_NOTIFY,
-    FETCH_TIMEOUT,
     DEFAULT_MAX_BODY_SIZE,
     DEFAULT_MAX_PAYLOAD_TIMEOUT,
     DEFAULT_EENGINE_TIMEOUT,
@@ -125,8 +125,7 @@ const {
     OUTLOOK_EXPIRATION_TIME
 } = consts;
 
-const { fetch: fetchCmd, Agent } = require('undici');
-const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
+const { fetch: fetchCmd } = require('undici');
 
 const templateRoutes = require('../lib/api-routes/template-routes');
 const chatRoutes = require('../lib/api-routes/chat-routes');
@@ -7748,7 +7747,7 @@ const init = async () => {
                         requestor: '@postalsys/emailengine-app'
                     }),
                     headers,
-                    dispatcher: fetchAgent
+                    dispatcher: retryAgent
                 });
 
                 if (!res.ok) {
@@ -7901,7 +7900,7 @@ ${now}`,
                 let res = await fetchCmd(`${SMTP_TEST_HOST}/test-address/${request.params.deliveryTest}`, {
                     method: 'get',
                     headers,
-                    dispatcher: fetchAgent
+                    dispatcher: retryAgent
                 });
 
                 if (!res.ok) {

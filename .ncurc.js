@@ -9,7 +9,6 @@ module.exports = {
         'js-beautify',
         'ical.js',
         '@elastic/elasticsearch',
-        'escape-string-regexp',
 
         // api changes, check and fix
         'eslint',

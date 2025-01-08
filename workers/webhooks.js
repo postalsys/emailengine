@@ -9,7 +9,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, retryAgent } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -38,12 +38,10 @@ const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');
 const settings = require('../lib/settings');
 
-const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY, FETCH_TIMEOUT } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
 const he = require('he');
 
-const { fetch: fetchCmd, Agent } = require('undici');
-
-const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
+const { fetch: fetchCmd } = require('undici');
 
 config.queues = config.queues || {
     notify: 1
@@ -383,7 +381,7 @@ const notifyWorker = new Worker(
                     method: 'post',
                     body,
                     headers,
-                    dispatcher: fetchAgent
+                    dispatcher: retryAgent
                 });
                 duration = Date.now() - start;
             } catch (err) {

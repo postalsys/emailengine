@@ -45,7 +45,8 @@ const {
     checkForUpgrade,
     setLicense,
     getRedisStats,
-    threadStats
+    threadStats,
+    retryAgent
 } = require('./lib/tools');
 
 const {
@@ -57,8 +58,7 @@ const {
     ACCOUNT_ADDED_NOTIFY,
     ACCOUNT_DELETED_NOTIFY,
     LIST_UNSUBSCRIBE_NOTIFY,
-    LIST_SUBSCRIBE_NOTIFY,
-    FETCH_TIMEOUT
+    LIST_SUBSCRIBE_NOTIFY
 } = require('./lib/consts');
 
 const { webhooks: Webhooks } = require('./lib/webhooks');
@@ -71,8 +71,7 @@ const {
     listModels: openAiListModels,
     DEFAULT_USER_PROMPT: openAiDefaultPrompt
 } = require('@postalsys/email-ai-tools');
-const { fetch: fetchCmd, Agent } = require('undici');
-const fetchAgent = new Agent({ connect: { timeout: FETCH_TIMEOUT } });
+const { fetch: fetchCmd } = require('undici');
 
 const v8 = require('node:v8');
 
@@ -1171,7 +1170,7 @@ let licenseCheckHandler = async opts => {
                         app: '@postalsys/emailengine-app',
                         instance: (await settings.get('serviceId')) || ''
                     }),
-                    dispatcher: fetchAgent
+                    dispatcher: retryAgent
                 });
 
                 let data = await res.json();
