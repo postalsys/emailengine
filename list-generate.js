@@ -48,7 +48,7 @@ process.stdin.on('end', () => {
 
             let _satisfies;
             try {
-                _satisfies = satisfies(license, `(${ALLOWED_LICENSES.join(' OR ')})`);
+                _satisfies = satisfies(license, ALLOWED_LICENSES);
             } catch (err) {
                 console.error(err);
             }

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-01-07 10:15+0000\n"
+"POT-Creation-Date: 2025-01-08 08:24+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -13,12 +13,48 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
+#: views/unsubscribe.hbs:1
+#: views/unsubscribe.hbs:79
+msgid "Unsubscribe"
 msgstr ""
 
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:31
+#: views/accounts/register/imap-server.hbs:250
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -27,16 +63,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:21
-#: views/unsubscribe.hbs:69
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-#: views/unsubscribe.hbs:75
-msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:31
@@ -52,6 +78,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -140,11 +174,6 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:250
-#: views/unsubscribe.hbs:31
-msgid "Close"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:316
 msgid "General error"
 msgstr ""
@@ -171,35 +200,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:393
 msgid "HTTP error!"
-msgstr ""
-
-#: views/unsubscribe.hbs:1
-#: views/unsubscribe.hbs:79
-msgid "Unsubscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Your email address <em>%s</em> was re-subscribed."
 msgstr ""
 
 #: lib/routes-ui.js:504
