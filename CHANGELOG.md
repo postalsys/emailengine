@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.49.6](https://github.com/postalsys/emailengine/compare/v2.49.5...v2.49.6) (2025-01-08)
+
+
+### Bug Fixes
+
+* **deps:** Bumped ImapFlow to handle invalid BODYSTRUCTURE from BlueMind ([1174a29](https://github.com/postalsys/emailengine/commit/1174a29aea60f5f2fc24c35eb565f0e2e1633e86))
+* **http-requests:** Use undici RetryAgent for HTTP request network errors and 429 rate limiting, removed custom 429 handler ([bafcd1c](https://github.com/postalsys/emailengine/commit/bafcd1c1551a2c00809b07d31e2ba67b1c9d19df))
+* **message-upload:** Fix message upload if uploading to a child folder of Inbox using MS Graph API ([2c14b5e](https://github.com/postalsys/emailengine/commit/2c14b5eb80ff1fe60e03504bd6550e06698210ee))
+* **ms-graph-api:** Upload message as a JSON structure instead of EML with MS Graph API in order to set meta info like flags ([c7fde6f](https://github.com/postalsys/emailengine/commit/c7fde6fedb127773cfbf4cff1937cad1a91148cd))
+* **ui:** Replaced 2024 with 2025 in static HTML pages ([99e805b](https://github.com/postalsys/emailengine/commit/99e805b5ce1e373b60bbaa2b9f0fa138f8f8d27b))
+
 ## [2.49.5](https://github.com/postalsys/emailengine/compare/v2.49.4...v2.49.5) (2024-12-30)
 
 
