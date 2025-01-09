@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.49.7](https://github.com/postalsys/emailengine/compare/v2.49.6...v2.49.7) (2025-01-09)
+
+
+### Bug Fixes
+
+* **imap-auth:** Bumped ImapFlow dependency to fix issue with AUTHENTICATE LOGIN on some IMAP servers ([c1a5fba](https://github.com/postalsys/emailengine/commit/c1a5fbaedd7c1d3ade881ee48db8cc9e238a042b))
+
 ## [2.49.6](https://github.com/postalsys/emailengine/compare/v2.49.5...v2.49.6) (2025-01-08)
 
 
