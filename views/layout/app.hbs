@@ -94,6 +94,7 @@
                         method="get" action="{{searchTarget}}">
                         <div class="input-group">
 
+                            {{#if stateOptions}}
                             <div class="dropdown input-group-prepend">
                                 <a class="btn btn-light dropdown-toggle" href="#" role="button" data-toggle="dropdown"
                                     aria-expanded="false">
@@ -117,12 +118,14 @@
                                     {{/each}}
                                 </div>
                             </div>
+                            <input type="hidden" name="state" value="{{state}}">
+                            {{/if}}
 
                             <input type="text" class="form-control bg-light border-0 small"
                                 placeholder="{{searchPlaceholder}}" aria-label="Search" aria-describedby="basic-addon2"
                                 name="query" value="{{query}}">
 
-                            <input type="hidden" name="state" value="{{state}}">
+
 
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit">
