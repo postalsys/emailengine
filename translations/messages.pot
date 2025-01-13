@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-01-09 08:00+0000\n"
+"POT-Creation-Date: 2025-01-13 13:14+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -11,39 +11,6 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:21
-#: views/unsubscribe.hbs:69
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-#: views/unsubscribe.hbs:75
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:218
-msgid "Continue"
 msgstr ""
 
 #: views/unsubscribe.hbs:1
@@ -78,6 +45,47 @@ msgstr ""
 
 #: views/unsubscribe.hbs:54
 msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:69
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:218
+msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -194,14 +202,6 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/routes-ui.js:503
 msgid "Delegated"
 msgstr ""
@@ -236,58 +236,58 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4951
-#: lib/routes-ui.js:6900
-#: lib/routes-ui.js:6911
+#: lib/routes-ui.js:4960
+#: lib/routes-ui.js:6909
+#: lib/routes-ui.js:6920
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4954
-#: lib/routes-ui.js:6903
-#: lib/routes-ui.js:6914
+#: lib/routes-ui.js:4963
+#: lib/routes-ui.js:6912
+#: lib/routes-ui.js:6923
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4958
-#: lib/routes-ui.js:6918
+#: lib/routes-ui.js:4967
+#: lib/routes-ui.js:6927
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6647
-#: lib/routes-ui.js:6682
-#: lib/routes-ui.js:6797
-#: lib/routes-ui.js:6844
-#: lib/routes-ui.js:7072
-#: lib/routes-ui.js:7108
+#: lib/routes-ui.js:6656
+#: lib/routes-ui.js:6691
+#: lib/routes-ui.js:6806
+#: lib/routes-ui.js:6853
+#: lib/routes-ui.js:7081
+#: lib/routes-ui.js:7117
 #: workers/api.js:2126
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6707
-#: lib/routes-ui.js:6740
-#: lib/routes-ui.js:9542
+#: lib/routes-ui.js:6716
+#: lib/routes-ui.js:6749
+#: lib/routes-ui.js:9551
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6837
-#: lib/routes-ui.js:7101
+#: lib/routes-ui.js:6846
+#: lib/routes-ui.js:7110
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9505
+#: lib/routes-ui.js:9514
 #: lib/tools.js:745
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9515
-#: lib/routes-ui.js:9633
-#: lib/routes-ui.js:9650
-#: lib/routes-ui.js:9685
+#: lib/routes-ui.js:9524
+#: lib/routes-ui.js:9642
+#: lib/routes-ui.js:9659
+#: lib/routes-ui.js:9694
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9644
-#: lib/routes-ui.js:9678
+#: lib/routes-ui.js:9653
+#: lib/routes-ui.js:9687
 msgid "Failed to process request"
 msgstr ""
 
