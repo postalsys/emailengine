@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.50.0](https://github.com/postalsys/emailengine/compare/v2.49.7...v2.50.0) (2025-01-13)
+
+
+### Features
+
+* **oauth2-apps:** Added search field to the OAuth2 application listing page to search OAuth2 applications ([69144fe](https://github.com/postalsys/emailengine/commit/69144fe01fdfba3d5448419a7ef46abba5c1aa4c))
+
+
+### Bug Fixes
+
+* **ms-graph-api:** Fixed plaintext content handling when retrieving emails from MS Graph API ([0166a0a](https://github.com/postalsys/emailengine/commit/0166a0a8121feab6900da49d2d544899f2f23fd7))
+
 ## [2.49.7](https://github.com/postalsys/emailengine/compare/v2.49.6...v2.49.7) (2025-01-09)
 
 
