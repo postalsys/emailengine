@@ -323,7 +323,7 @@
 
     <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Templates</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Public website templates</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -553,6 +553,8 @@
 <form id="preview-form" method="post" action="/admin/config/service/preview">
     <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="templateHeader" id="preview-header-elm">
+    <input type="hidden" name="templateHtmlHead" id="preview-head-elm">
+    <input type="hidden" name="pageBrandName" id="preview-brand-name-elm">
 </form>
 
 
@@ -618,14 +620,7 @@
         });
 
 
-        document.getElementById('preview-header-btn').addEventListener('click', e => {
-            e.preventDefault();
-            let previewWindow = window.open('about:blank', 'preview-window', '');
-            let previewForm = document.getElementById('preview-form');
-            previewForm.target = 'preview-window';
-            document.getElementById('preview-header-elm').value = editorHtml.getValue();
-            previewForm.submit();
-        });
+
 
 
         const editors = new Map();
@@ -665,6 +660,20 @@
         editorHtmlHead.setTheme("ace/theme/xcode");
         editorHtmlHead.session.setMode("ace/mode/handlebars");
         editorHtmlHead.session.setValue(document.getElementById('templateHtmlHeadElement').value);
+
+
+        document.getElementById('preview-header-btn').addEventListener('click', e => {
+            e.preventDefault();
+            let previewWindow = window.open('about:blank', 'preview-window', '');
+            let previewForm = document.getElementById('preview-form');
+            previewForm.target = 'preview-window';
+
+            document.getElementById('preview-brand-name-elm').value = document.getElementById('settingsPageBrandName').value;
+            document.getElementById('preview-header-elm').value = editorHtml.getValue();
+            document.getElementById('preview-head-elm').value = editorHtmlHead.getValue();
+
+            previewForm.submit();
+        });
 
         document.getElementById('settings-form').addEventListener('submit', () => {
             document.getElementById('templateHeaderElement').value = editorHtml.getValue();

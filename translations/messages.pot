@@ -1,13 +1,25 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-01-15 11:33+0000\n"
+"POT-Creation-Date: 2025-01-17 08:49+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -74,18 +86,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
