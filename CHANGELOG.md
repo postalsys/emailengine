@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.1](https://github.com/postalsys/emailengine/compare/v2.50.0...v2.50.1) (2025-01-19)
+
+
+### Bug Fixes
+
+* **web:** Fixed preview function for public website templates in the admin UI ([6f3567b](https://github.com/postalsys/emailengine/commit/6f3567be5abd796f3397014a37021809a6645112))
+
 ## [2.50.0](https://github.com/postalsys/emailengine/compare/v2.49.7...v2.50.0) (2025-01-13)
 
 
