@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.50.2](https://github.com/postalsys/emailengine/compare/v2.50.1...v2.50.2) (2025-01-23)
+
+
+### Bug Fixes
+
+* **filename:** Fixed filename handling for message responses from servers without parameter continuation support ([1463506](https://github.com/postalsys/emailengine/commit/14635065b2d5a9c12190aa3f5b2a5177948f0d01))
+* **oauth-smtp:** Fixed authentication username for shared outlook SMTP accounts ([c4ca913](https://github.com/postalsys/emailengine/commit/c4ca913f14321cc8c852158c8d9cdecf0eb58061))
+
 ## [2.50.1](https://github.com/postalsys/emailengine/compare/v2.50.0...v2.50.1) (2025-01-19)
 
 
