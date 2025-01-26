@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.3](https://github.com/postalsys/emailengine/compare/v2.50.2...v2.50.3) (2025-01-26)
+
+
+### Bug Fixes
+
+* **redis:** Tolerate Redis reconnections better ([5d3627c](https://github.com/postalsys/emailengine/commit/5d3627c62662428e3a9e9316f54ff4cd8062fcce))
+
 ## [2.50.2](https://github.com/postalsys/emailengine/compare/v2.50.1...v2.50.2) (2025-01-23)
 
 
