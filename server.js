@@ -551,7 +551,9 @@ const countUnassignment = async account => {
         }
     }
 
-    await redis.hSetExists(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected');
+    redis.hSetExists(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected').catch(err => {
+        logger.error({ msg: 'Failed to post update account state', account, state: 'disconnected', err });
+    });
 
     for (let worker of workers.get('api')) {
         let callPayload = {
@@ -754,6 +756,7 @@ let spawnWorker = async type => {
                             })
                             .finally(() => {
                                 unassigned.add(account);
+
                                 if (shouldReassign) {
                                     assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
                                 }
@@ -1063,6 +1066,7 @@ async function assignAccounts() {
     if (assigning) {
         return false;
     }
+
     assigning = true;
     try {
         if (!unassigned) {

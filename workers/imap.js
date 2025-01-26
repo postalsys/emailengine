@@ -823,6 +823,9 @@ class ConnectionHandler {
 let connectionHandler = new ConnectionHandler();
 
 async function main() {
+    // Try to run a redis command to be sure that Redis is connected
+    await redis.ping();
+
     logger.info({ msg: 'Started IMAP worker thread', version: packageData.version });
     await connectionHandler.init();
 }
