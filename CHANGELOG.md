@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.50.4](https://github.com/postalsys/emailengine/compare/v2.50.3...v2.50.4) (2025-01-29)
+
+
+### Bug Fixes
+
+* **deps:** Bumped ImapFlow to improve handling of unstable IMAP connections ([3dfa5fa](https://github.com/postalsys/emailengine/commit/3dfa5fa7f0dfcb99f3319dd4bbbb1d4cdb14c5b6))
+* **ms-graph:** Added new setting notificationBaseUrl to set a different webhook URLs for MS Graph notificationUrl and lifecycleNotificationUrl than serviceUrl ([0963041](https://github.com/postalsys/emailengine/commit/09630414cd80b37cb9c223b3acd140dffac64d12))
+* **translations:** Added Polish translations; Merge pull request [#497](https://github.com/postalsys/emailengine/issues/497) from jakubmieszczanin/master ([b0b29e5](https://github.com/postalsys/emailengine/commit/b0b29e5e716724d2e143afd7120c0677bfbe6fec))
+
 ## [2.50.3](https://github.com/postalsys/emailengine/compare/v2.50.2...v2.50.3) (2025-01-26)
 
 
