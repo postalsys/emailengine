@@ -56,7 +56,7 @@
         "@postalsys/email-ai-tools": "1.8.13",
         "@postalsys/email-text-tools": "2.1.13",
         "@postalsys/gettext": "4.0.1",
-        "@postalsys/joi-messages": "1.0.2",
+        "@postalsys/joi-messages": "1.0.4",
         "@postalsys/templates": "2.0.0",
         "ace-builds": "1.37.5",
         "base32.js": "0.1.0",

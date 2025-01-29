@@ -24,6 +24,12 @@
     },
 
     {
+        "name": "Polish",
+        "locale": "pl",
+        "file": "pl.mo"
+    },
+
+    {
         "name": "Japanese",
         "locale": "ja",
         "file": "ja.mo"
