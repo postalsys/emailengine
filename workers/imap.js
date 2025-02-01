@@ -444,7 +444,7 @@ class ConnectionHandler {
             return NO_ACTIVE_HANDLER_RESP;
         }
 
-        return await accountData.connection.moveMessage(message.message, message.target);
+        return await accountData.connection.moveMessage(message.message, message.target, message.options);
     }
 
     async moveMessages(message) {

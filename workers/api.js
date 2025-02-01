@@ -4472,7 +4472,17 @@ const init = async () => {
             });
 
             try {
-                return await accountObject.moveMessage(request.params.message, request.payload);
+                return await accountObject.moveMessage(
+                    request.params.message,
+                    { path: request.payload.path },
+                    {
+                        source: request.payload.source
+                            ? {
+                                  path: request.payload.source
+                              }
+                            : null
+                    }
+                );
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -4486,8 +4496,8 @@ const init = async () => {
             }
         },
         options: {
-            description: 'Move message',
-            notes: 'Move message to another folder',
+            description: 'Move a message to a specified folder',
+            notes: 'Moves a message to a target folder',
             tags: ['api', 'Message'],
 
             plugins: {},
@@ -4512,15 +4522,23 @@ const init = async () => {
                 }),
 
                 payload: Joi.object({
-                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path')
-                }).label('MessageMove')
+                    path: Joi.string().required().example('INBOX').description('Destination mailbox folder path'),
+                    source: Joi.string()
+                        .example('INBOX')
+                        .description('Source mailbox folder path (Gmail API only). Needed to remove the label from the message.')
+                })
+                    .example({ path: 'Target/Folder' })
+                    .label('MessageMove')
             },
 
             response: {
                 schema: Joi.object({
-                    path: Joi.string().required().example('INBOX').description('Target mailbox folder path'),
-                    id: Joi.string().max(256).required().example('AAAAAQAACnA').description('Message ID'),
-                    uid: Joi.number().integer().example(12345).description('UID of moved message')
+                    path: Joi.string().required().example('INBOX').description('Destination mailbox folder path'),
+                    id: Joi.string().max(256).example('AAAAAQAACnA').description('ID of the moved message. Only included if the server provides it.'),
+                    uid: Joi.number()
+                        .integer()
+                        .example(12345)
+                        .description('UID of the moved message, applies only to IMAP accounts. Only included if the server provides it.')
                 }).label('MessageMoveResponse'),
                 failAction: 'log'
             }
