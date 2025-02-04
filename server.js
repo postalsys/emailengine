@@ -526,63 +526,6 @@ const postMessage = (worker, payload, ignoreOffline, transferList) => {
     return result;
 };
 
-const countUnassignment = async account => {
-    if (!unassignCounter.has(account)) {
-        unassignCounter.set(account, []);
-    }
-    let arr = unassignCounter.get(account);
-    arr.push(Date.now());
-
-    if (arr.length > 10) {
-        arr = arr.slice(-10);
-        unassignCounter.set(account, arr);
-    }
-
-    let delay = 0;
-    if (arr.length === 1) {
-        delay = 0;
-    } else {
-        let lastDelay = arr[arr.length - 1] - arr[arr.length - 2];
-        // if last delay was longer than a minute, then reset
-        if (lastDelay >= 60 * 1000) {
-            delay = 0;
-        } else {
-            delay = Math.min(Math.ceil(lastDelay * 1.5), 60 * 1000);
-        }
-    }
-
-    redis.hSetExists(`${REDIS_PREFIX}iad:${account}`, 'state', 'disconnected').catch(err => {
-        logger.error({ msg: 'Failed to post update account state', account, state: 'disconnected', err });
-    });
-
-    for (let worker of workers.get('api')) {
-        let callPayload = {
-            cmd: 'change',
-            account,
-            type: 'state',
-            key: 'disconnected',
-            payload: null
-        };
-
-        try {
-            postMessage(worker, callPayload, true);
-        } catch (err) {
-            logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
-        }
-    }
-
-    if (delay) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return true;
-    } else {
-        return false;
-    }
-};
-
-let clearUnassignmentCounter = account => {
-    unassignCounter.delete(account);
-};
-
 let updateServerState = async (type, state, payload) => {
     await redis.hset(`${REDIS_PREFIX}${type}`, 'state', state);
     if (payload) {
@@ -743,25 +686,13 @@ let spawnWorker = async type => {
                 if (workerAssigned.has(worker)) {
                     let accountList = workerAssigned.get(worker);
                     workerAssigned.delete(worker);
-                    accountList.forEach(account => {
-                        assigned.delete(account);
-                        let shouldReassign = false;
-                        // graceful reconnect
-                        countUnassignment(account)
-                            .then(sr => {
-                                shouldReassign = sr;
-                            })
-                            .catch(() => {
-                                shouldReassign = true;
-                            })
-                            .finally(() => {
-                                unassigned.add(account);
 
-                                if (shouldReassign) {
-                                    assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
-                                }
-                            });
-                    });
+                    for (let account of accountList) {
+                        assigned.delete(account);
+                        unassigned.add(account);
+                    }
+
+                    assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
                 }
             }
 
@@ -1880,7 +1811,6 @@ async function onCommand(worker, message) {
 
         case 'delete':
             unassigned.delete(message.account); // if set
-            clearUnassignmentCounter(message.account);
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 if (workerAssigned.has(assignedWorker)) {
@@ -2330,7 +2260,7 @@ const startApplication = async () => {
     try {
         await assignAccounts();
     } catch (err) {
-        logger.error({ msg: 'Failed to assign accounts', n: 2, err });
+        logger.error({ msg: 'Failed to assign accounts', n: 4, err });
     }
     imapInitialWorkersLoaded = true;
 

@@ -1,4 +1,5 @@
-version: '3.7'
+name: emailengine-bundle
+
 services:
     emailengine:
         restart: always
