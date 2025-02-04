@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.50.5](https://github.com/postalsys/emailengine/compare/v2.50.4...v2.50.5) (2025-02-04)
+
+
+### Bug Fixes
+
+* **api:** Improved message-move API endpoint for Gmail API accounts. There is now a new payload option 'source' that specifies the folder the message is moved from ([861bc23](https://github.com/postalsys/emailengine/commit/861bc2369229346815863859dfe2d5281748e865))
+* **gmail-api:** clear label cache after modifying labels ([ca60f89](https://github.com/postalsys/emailengine/commit/ca60f89e8eddc736da5fd4fab33029fc4947c3fc))
+* **oauth:** Return 'id' not 'message' for message upload requests against Gmail API and MS Graph API ([d1bd122](https://github.com/postalsys/emailengine/commit/d1bd1226f6297224efed6775bc8d72b656b8faa0))
+* **worker-close:** If worker dies then do not try to update accounts statuses to prevent race conditions ([d532365](https://github.com/postalsys/emailengine/commit/d532365b321efef63d3c68965631b61381533c45))
+
 ## [2.50.4](https://github.com/postalsys/emailengine/compare/v2.50.3...v2.50.4) (2025-01-29)
 
 
