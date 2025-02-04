@@ -498,7 +498,6 @@ let assigning = false;
 
 let unassigned = false;
 let assigned = new Map();
-let unassignCounter = new Map();
 let workerAssigned = new WeakMap();
 let onlineWorkers = new WeakSet();
 
