@@ -9,6 +9,8 @@ RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
     && printf ", TARGETVARIANT=${TARGETVARIANT} \n" \
     && printf "With uname -s : " && uname -s \
     && printf "and  uname -m : " && uname -mm
+
+RUN node -e "console.log(process.versions)"
 RUN node -e "console.log('node arch: ' + os.arch())"
 
 RUN apk add --no-cache dumb-init
