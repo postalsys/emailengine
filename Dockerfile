@@ -1,10 +1,11 @@
 #  node:22.13.1-alpine
-FROM --platform=${TARGETPLATFORM} node@sha256:e2b39f7b64281324929257d0f8004fb6cb4bf0fdfb9aa8cedb235a766aec31da
+FROM --platform=${BUILDPLATFORM} node@sha256:e2b39f7b64281324929257d0f8004fb6cb4bf0fdfb9aa8cedb235a766aec31da
 
 ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETVARIANT
 RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
+    && printf ", BUILDPLATFORM=${BUILDPLATFORM}" \
     && printf ", TARGETARCH=${TARGETARCH}" \
     && printf ", TARGETVARIANT=${TARGETVARIANT} \n" \
     && printf "With uname -s : " && uname -s \
