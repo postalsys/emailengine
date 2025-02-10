@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.50.6](https://github.com/postalsys/emailengine/compare/v2.50.5...v2.50.6) (2025-02-10)
+
+
+### Bug Fixes
+
+* **dockerfile:** Unpin Node version ([4feb420](https://github.com/postalsys/emailengine/commit/4feb420009a7af613343690007d787063e20e1a0))
+* **docker:** Pin Node version in Dockerfile ([decb751](https://github.com/postalsys/emailengine/commit/decb7510ef9e9b107277c8d687ab8e3af94b3975))
+* **docker:** Publish tags to Github Registry as well ([24db762](https://github.com/postalsys/emailengine/commit/24db762b72a3bf45679e4c0263c35a24f9bb261f))
+
 ## [2.50.5](https://github.com/postalsys/emailengine/compare/v2.50.4...v2.50.5) (2025-02-04)
 
 
