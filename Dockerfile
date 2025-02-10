@@ -1,5 +1,5 @@
-#  node:20.18.2-alpine3.21
-FROM --platform=${TARGETPLATFORM} node@sha256:2cd2a6f4cb37cf8a007d5f1e9aef090ade6b62974c7a274098c390599e8c72b4
+#  node:22.13.1-alpine
+FROM --platform=${TARGETPLATFORM} node@sha256:e2b39f7b64281324929257d0f8004fb6cb4bf0fdfb9aa8cedb235a766aec31da
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
@@ -11,8 +11,6 @@ RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
     && printf ", TARGETVARIANT=${TARGETVARIANT} \n" \
     && printf "With uname -s : " && uname -s \
     && printf "and  uname -m : " && uname -mm
-
-RUN uname -i
 
 RUN apk add --no-cache dumb-init
 
