@@ -12,9 +12,6 @@ RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
     && printf "With uname -s : " && uname -s \
     && printf "and  uname -m : " && uname -mm
 
-RUN node -e "console.log('node arch: ' + os.arch())"
-RUN node -e "console.log(process.versions)"
-
 RUN apk add --no-cache dumb-init
 
 # Create a non-root user and group
@@ -50,6 +47,9 @@ RUN ./update-info.sh
 
 # Ensure permissions are set correctly for the non-root user
 RUN chown -R emailengineuser:emailenginegroup /emailengine
+
+RUN node -e "console.log('node arch: ' + os.arch())"
+RUN node -e "console.log(process.versions)"
 
 # Switch to non-root user
 USER emailengineuser
