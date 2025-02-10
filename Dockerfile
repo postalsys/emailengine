@@ -12,6 +12,8 @@ RUN printf "I'm building for TARGETPLATFORM=${TARGETPLATFORM}" \
     && printf "With uname -s : " && uname -s \
     && printf "and  uname -m : " && uname -mm
 
+RUN uname -i
+
 RUN apk add --no-cache dumb-init
 
 # Create a non-root user and group
