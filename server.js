@@ -1884,7 +1884,8 @@ async function onCommand(worker, message) {
         case 'submitMessage':
         case 'queueMessage':
         case 'uploadMessage':
-        case 'getAttachment': {
+        case 'getAttachment':
+        case 'listSignatures': {
             if (!assigned.has(message.account)) {
                 return NO_ACTIVE_HANDLER_RESP;
             }

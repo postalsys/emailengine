@@ -7736,6 +7736,74 @@ const init = async () => {
     });
 
     server.route({
+        method: 'GET',
+        path: '/v1/account/{account}/server-signatures',
+
+        async handler(request) {
+            let accountObject = new Account({
+                redis,
+                account: request.params.account,
+                call,
+                secret: await getSecret(),
+                timeout: request.headers['x-ee-timeout']
+            });
+            try {
+                return await accountObject.listSignatures(request.query);
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List Account Signatures',
+            notes: 'Returns signatures associated with the account. Currently only Gmail is supported, and only "new message" signatures from the "sendAs" list are returned.',
+            tags: ['api', 'Account'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+                params: Joi.object({
+                    account: accountIdSchema.required()
+                })
+            },
+
+            response: {
+                schema: Joi.object({
+                    signatures: Joi.array()
+                        .items(
+                            Joi.object({
+                                address: Joi.string().email().example('user@example.com').description('Email address associated with the signature').required(),
+                                signature: Joi.string().example('<div>Best regards,</div>').description('Signature HTML code').required()
+                            }).label('SignatureResponseItem')
+                        )
+                        .label('SignatureEntries')
+                }).label('AccountTokenResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
         method: 'POST',
         path: '/v1/delivery-test/account/{account}',
         async handler(request) {

@@ -370,6 +370,19 @@ class ConnectionHandler {
         return await accountData.connection.listMessages(message);
     }
 
+    async listSignatures(message) {
+        if (!this.accounts.has(message.account)) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            return NO_ACTIVE_HANDLER_RESP;
+        }
+
+        return await accountData.connection.listSignatures(message.account);
+    }
+
     async getText(message) {
         if (!this.accounts.has(message.account)) {
             return NO_ACTIVE_HANDLER_RESP;
@@ -760,6 +773,7 @@ class ConnectionHandler {
             case 'uploadMessage':
             case 'subconnections':
             case 'externalNotify':
+            case 'listSignatures':
                 return await this[message.cmd](message);
 
             case 'countConnections': {
