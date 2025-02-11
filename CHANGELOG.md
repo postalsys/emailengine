@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.50.7](https://github.com/postalsys/emailengine/compare/v2.50.6...v2.50.7) (2025-02-11)
+
+
+### Bug Fixes
+
+* **api:** Added new method to list Gmail signatures for an account ([c7e379a](https://github.com/postalsys/emailengine/commit/c7e379aad46843419dad0ce2fd30f269a241c484))
+* **notificationBaseUrl:** Allow using a path component in the base URL ([d2af058](https://github.com/postalsys/emailengine/commit/d2af058cc987636481093466e4ffe7574782533b))
+* **submit:** Added new message reference action 'reply-all' ([b0bd69f](https://github.com/postalsys/emailengine/commit/b0bd69f8ac5abc9b63110cc8eaf63f2ba41b8b64))
+
 ## [2.50.6](https://github.com/postalsys/emailengine/compare/v2.50.5...v2.50.6) (2025-02-10)
 
 
