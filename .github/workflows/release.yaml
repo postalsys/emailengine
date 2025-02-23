@@ -73,23 +73,16 @@ jobs:
                   username: ${{ github.repository_owner }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Docker meta
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                  images: |
-                      ${{ github.repository }}
-                      ghcr.io/${{ github.repository }}
-                  tags: |
-                      type=semver,pattern=v{{major}}
-                      type=semver,pattern=v{{major}}.v{{minor}}
-                      type=semver,pattern=v{{version}}
-
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
                   context: .
                   platforms: ${{ steps.buildx.outputs.platforms }}
                   push: true
-                  tags: ${{ steps.meta.outputs.tags }}
-                  labels: ${{ steps.meta.outputs.labels }}
+                  tags: |
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
+                      ${{ github.repository }}:v${{needs.release_please.outputs.major}}
+                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
+                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
+                      ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}
