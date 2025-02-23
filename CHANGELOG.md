@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.8](https://github.com/postalsys/emailengine/compare/v2.50.7...v2.50.8) (2025-02-22)
+
+
+### Bug Fixes
+
+* **inline-html:** Fixed reply and forward inline emails if only text was set ([2efaa77](https://github.com/postalsys/emailengine/commit/2efaa77c122b099a2607e045c10cb6ab05900e78))
+
 ## [2.50.7](https://github.com/postalsys/emailengine/compare/v2.50.6...v2.50.7) (2025-02-11)
 
 
