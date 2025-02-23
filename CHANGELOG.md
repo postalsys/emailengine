@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.9](https://github.com/postalsys/emailengine/compare/v2.50.8...v2.50.9) (2025-02-23)
+
+
+### Bug Fixes
+
+* **docker:** reverted docker release action ([c205aae](https://github.com/postalsys/emailengine/commit/c205aae5953a63e2fab1cf52e534468d3dedddeb))
+
 ## [2.50.8](https://github.com/postalsys/emailengine/compare/v2.50.7...v2.50.8) (2025-02-22)
 
 
