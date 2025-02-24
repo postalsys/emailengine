@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.50.10](https://github.com/postalsys/emailengine/compare/v2.50.9...v2.50.10) (2025-02-24)
+
+
+### Bug Fixes
+
+* maintenance release ([bed7e16](https://github.com/postalsys/emailengine/commit/bed7e16ff3377fcca6e5a47fc69a987aed511514))
+
 ## [2.50.9](https://github.com/postalsys/emailengine/compare/v2.50.8...v2.50.9) (2025-02-23)
 
 
