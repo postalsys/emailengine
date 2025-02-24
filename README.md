@@ -7,7 +7,7 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 -   Full documentation: [EmailEngine.app](https://emailengine.app/)
 
 > [!WARNING]
-> EmailEngine is not free open-source software. It is "source available" software, meaning you can view and copy the source code, but you need a paid subscription to run it beyond the free 14-day trial. Each EmailEngine instance comes with this trial, so you can test EmailEngine without any commitment.
+> EmailEngine is not free open-source software. It is "source available" software, meaning you can view and copy the source code, but you need a <a href="https://postalsys.com/plans">paid subscription</a> to run it beyond the free 14-day trial. Each EmailEngine instance comes with this trial, so you can test EmailEngine without any commitment.
 
 ## Use Cases
 
