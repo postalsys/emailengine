@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.51.0](https://github.com/postalsys/emailengine/compare/v2.50.10...v2.51.0) (2025-03-07)
+
+
+### Features
+
+* Attachments in new message webhooks ([#514](https://github.com/postalsys/emailengine/issues/514)) ([81d0d8f](https://github.com/postalsys/emailengine/commit/81d0d8f48a7bcc5a9ac1a9c5b00e7556fad2edb0))
+
+
+### Bug Fixes
+
+* schema updates for message update ([4d293a1](https://github.com/postalsys/emailengine/commit/4d293a1954b9d7968c95a758175882a640292328))
+* **webhook-routing:** Do not throw 500 when viewing a failing webhook routing page ([a8acde2](https://github.com/postalsys/emailengine/commit/a8acde26cedda4831b0996805adc7bcacc4c807e))
+
 ## [2.50.10](https://github.com/postalsys/emailengine/compare/v2.50.9...v2.50.10) (2025-02-24)
 
 
