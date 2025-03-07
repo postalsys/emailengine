@@ -318,52 +318,58 @@
 
     <div class="card mt-4 mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Attachments<small class="text-muted"> &mdash; Applies to All
-                    Webhooks, Including <a href="/admin/webhooks">Routed
-                        Webhooks</a></small>
+            <h6 class="m-0 font-weight-bold text-primary">
+                Attachments
+                <small class="text-muted">
+                    &mdash; Applies to all webhooks, including
+                    <a href="/admin/webhooks">routed webhooks</a>
+                </small>
             </h6>
-
         </div>
         <div class="card-body">
-
-            <p>By default, attachments are not included in new message payloads.</p>
+            <p>By default, attachments are not included in new email webhook payloads.</p>
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">notifyAttachments</a>]
+                <div class="text-muted float-right code-link">
+                    [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank"
+                        rel="noopener noreferrer">notifyAttachments</a>]
                 </div>
                 <input type="checkbox"
                     class="form-check-input or-else-all {{#if errors.notifyAttachments}}is-invalid{{/if}}"
                     data-target="attachment-list" data-reverse="true" id="settingsNotifyAttachments"
                     name="notifyAttachments" {{#if values.notifyAttachments}}checked{{/if}} />
-                <label class="form-check-label" for="settingsNotifyAttachments">Include Attachments in New Email
-                    Webhooks. Attachment content is encoded as base64 strings.</label>
+                <label class="form-check-label" for="settingsNotifyAttachments">
+                    Include attachments in new email webhooks. The attachment content is base64-encoded.
+                </label>
                 {{#if errors.notifyAttachments}}
                 <span class="invalid-feedback">{{errors.notifyAttachments}}</span>
                 {{/if}}
             </div>
 
-
             <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">notifyAttachmentSize</a>]
+                <div class="text-muted float-right code-link">
+                    [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank"
+                        rel="noopener noreferrer">notifyAttachmentSize</a>]
                 </div>
                 <label for="settingsNotifyAttachmentSize">Maximum Attachment Size</label>
                 <input type="text"
                     class="form-control attachment-list {{#if errors.notifyAttachmentSize}}is-invalid{{/if}}"
                     id="settingsNotifyAttachmentSize" min="0" name="notifyAttachmentSize"
-                    value="{{values.notifyAttachmentSize}}" placeholder="For example: &quot;2MB&quot;" />
+                    value="{{values.notifyAttachmentSize}}" placeholder="Example: &quot;2MB&quot;" />
                 {{#if errors.notifyAttachmentSize}}
                 <span class="invalid-feedback">{{errors.notifyAttachmentSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specify a maximum file size for attachmetns to keep the webhook
-                    payload size
-                    manageable. Attachments larger than the provided value are skipped and not included in the webhook
-                    payload.</small>
+                <small class="form-text text-muted">
+                    Specify the maximum file size for attachments to keep the webhook payload manageable.
+                    Attachments larger than this limit are skipped and not included in the webhook payload.
+                    <br>
+                    <strong>Warning:</strong> EmailEngine stores unposted webhook payloads in Redis. If many
+                    large attachments are processed, these cached payloads can quickly fill up the Redis DB.
+                </small>
             </div>
-
         </div>
     </div>
+
 
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
