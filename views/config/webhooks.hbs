@@ -284,8 +284,9 @@
                         target="_blank" rel="noopener noreferrer">notifyTextSize</a>]
                 </div>
                 <label for="settingsNotifyTextSize">Maximum Text Size</label>
-                <input type="number" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
-                    id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}" />
+                <input type="text" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
+                    id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}"
+                    placeholder="For example: &quot;1MB&quot;" />
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
@@ -310,6 +311,55 @@
                     attachments. If such an attachment is found, the basic details and the calendar file (in base64
                     encoding) will be included in the <code>calendarEvents</code> array in the <code>messageNew</code>
                     webhook payload.</small>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card mt-4 mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Attachments<small class="text-muted"> &mdash; Applies to All
+                    Webhooks, Including <a href="/admin/webhooks">Routed
+                        Webhooks</a></small>
+            </h6>
+
+        </div>
+        <div class="card-body">
+
+            <p>By default, attachments are not included in new message payloads.</p>
+
+            <div class="form-group form-check">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">notifyAttachments</a>]
+                </div>
+                <input type="checkbox"
+                    class="form-check-input or-else-all {{#if errors.notifyAttachments}}is-invalid{{/if}}"
+                    data-target="attachment-list" data-reverse="true" id="settingsNotifyAttachments"
+                    name="notifyAttachments" {{#if values.notifyAttachments}}checked{{/if}} />
+                <label class="form-check-label" for="settingsNotifyAttachments">Include Attachments in New Email
+                    Webhooks. Attachment content is encoded as base64 strings.</label>
+                {{#if errors.notifyAttachments}}
+                <span class="invalid-feedback">{{errors.notifyAttachments}}</span>
+                {{/if}}
+            </div>
+
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">notifyAttachmentSize</a>]
+                </div>
+                <label for="settingsNotifyAttachmentSize">Maximum Attachment Size</label>
+                <input type="text"
+                    class="form-control attachment-list {{#if errors.notifyAttachmentSize}}is-invalid{{/if}}"
+                    id="settingsNotifyAttachmentSize" min="0" name="notifyAttachmentSize"
+                    value="{{values.notifyAttachmentSize}}" placeholder="For example: &quot;2MB&quot;" />
+                {{#if errors.notifyAttachmentSize}}
+                <span class="invalid-feedback">{{errors.notifyAttachmentSize}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Specify a maximum file size for attachmetns to keep the webhook
+                    payload size
+                    manageable. Attachments larger than the provided value are skipped and not included in the webhook
+                    payload.</small>
             </div>
 
         </div>
