@@ -6,6 +6,8 @@ on:
 permissions:
     contents: write
     pull-requests: write
+    packages: write
+    attestations: write
     id-token: write
 
 name: Manage Release
