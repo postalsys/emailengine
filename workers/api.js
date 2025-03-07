@@ -518,6 +518,16 @@ const init = async () => {
 
     handlebars.registerHelper('inc', (nr, inc) => Number(nr) + Number(inc));
 
+    handlebars.registerHelper('json', payload => {
+        let res;
+        try {
+            res = JSON.stringify(payload, false, 2);
+        } catch (err) {
+            res = util.inspect(payload, false, 4, false);
+        }
+        return res;
+    });
+
     handlebars.registerHelper('formatInteger', (intVal, locale) => {
         if (isNaN(intVal)) {
             // ignore non-numbers
