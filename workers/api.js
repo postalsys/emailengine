@@ -525,7 +525,7 @@ const init = async () => {
         } catch (err) {
             res = util.inspect(payload, false, 4, false);
         }
-        return res;
+        return new handlebars.SafeString(res);
     });
 
     handlebars.registerHelper('formatInteger', (intVal, locale) => {
