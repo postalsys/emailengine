@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.51.1](https://github.com/postalsys/emailengine/compare/v2.51.0...v2.51.1) (2025-03-17)
+
+
+### Bug Fixes
+
+* **connection-counter:** Only decrease connection counter if a connection was actually removed ([d402888](https://github.com/postalsys/emailengine/commit/d4028884ad4261eaf0c09faedab8bb395a92abde))
+
 ## [2.51.0](https://github.com/postalsys/emailengine/compare/v2.50.10...v2.51.0) (2025-03-07)
 
 
