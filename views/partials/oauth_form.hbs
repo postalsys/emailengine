@@ -356,8 +356,8 @@
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
-                            {{#if baseScopesImap}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesImap">
                             IMAP and SMTP
                         </label>
@@ -370,8 +370,8 @@
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesPubsub"
-                            value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesPubsub" value="pubsub" {{#if baseScopesPubsub}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesPubsub">
                             Cloud Pub/Sub <span class="badge badge-dark">beta</span>
                         </label>
@@ -409,6 +409,42 @@
         </tbody>
 
     </table>
+
+    <div id="select-pubsub-app" class="card-footer {{#unless baseScopesPubsub}}d-none{{/unless}}">
+
+        {{#if actionCreate}}
+
+        <div class="form-group">
+            <label for="googleTopicName">
+                Google Pub/Sub Topic Name
+            </label>
+            <input type="text" class="form-control {{#if errors.googleTopicName}}is-invalid{{/if}}" id="googleTopicName"
+                name="googleTopicName" value="{{values.googleTopicName}}"
+                placeholder="Enter the Topic Name for the Google Pub/Sub subscription, for example &quot;ee-pubsub-12345&quot;" />
+            {{#if errors.googleTopicName}}
+            <span class="invalid-feedback">{{errors.googleTopicName}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Pub/Sub Topic Name. Automatically generated if not set.</small>
+        </div>
+
+        {{else}}
+
+        {{#if appData.pubSubTopic}}
+
+        Pub/Sub Topic:
+        <code>
+            {{lastVal appData.pubSubTopic "/"}}
+        </code>
+
+        {{else}}
+
+        Pub/Sub Topic not set up
+
+        {{/if}}
+
+        {{/if}}
+
+    </div>
 
 </div>
 {{/if}}
@@ -709,6 +745,7 @@
 
         function checkScopesRadio() {
             let baseScopesAPIElm = document.getElementById('baseScopesAPI');
+            let baseScopesPubsubElm = document.getElementById('baseScopesPubsub');
             let selectPubsubAppElm = document.getElementById('select-pubsub-app');
 
             if (baseScopesAPIElm && selectPubsubAppElm) {
@@ -720,6 +757,15 @@
                     pubSubAppElm.disabled = true;
                 }
             }
+
+            if (baseScopesPubsubElm && selectPubsubAppElm) {
+                if (baseScopesPubsubElm.checked) {
+                    selectPubsubAppElm.classList.remove('d-none');
+                } else {
+                    selectPubsubAppElm.classList.add('d-none');
+                }
+            }
+
         }
 
         document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
@@ -805,6 +851,10 @@
         let authorityElms = document.querySelectorAll('.r-auth');
         let tenantElm = document.getElementById('tenant');
         let checkAuthorityState = () => {
+            if (!tenantElm) {
+                return
+            }
+
             let showtenant = false;
             for (let aElm of authorityElms) {
                 if (aElm.checked) {

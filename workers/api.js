@@ -163,6 +163,7 @@ const {
     outboxEntrySchema,
     googleProjectIdSchema,
     googleWorkspaceAccountsSchema,
+    googleTopicNameSchema,
     messageReferenceSchema
 } = require('../lib/schemas');
 
@@ -525,6 +526,14 @@ const init = async () => {
         } catch (err) {
             res = util.inspect(payload, false, 4, false);
         }
+        return new handlebars.SafeString(res);
+    });
+
+    handlebars.registerHelper('lastVal', (value, separator) => {
+        separator = separator || '/';
+
+        let res = (value || '').toString().split(separator).pop();
+
         return new handlebars.SafeString(res);
     });
 
@@ -6861,6 +6870,7 @@ const init = async () => {
 
                                 googleProjectId: googleProjectIdSchema,
                                 googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
+                                googleTopicName: googleTopicNameSchema,
 
                                 serviceClientEmail: Joi.string()
                                     .email()
@@ -6990,6 +7000,7 @@ const init = async () => {
 
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
+                    googleTopicName: googleTopicNameSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
@@ -7165,6 +7176,7 @@ const init = async () => {
 
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
+                    googleTopicName: googleTopicNameSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
