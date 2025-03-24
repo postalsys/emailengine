@@ -58,9 +58,9 @@
         "@postalsys/gettext": "4.0.1",
         "@postalsys/joi-messages": "1.0.4",
         "@postalsys/templates": "2.0.0",
-        "ace-builds": "1.39.0",
+        "ace-builds": "1.39.1",
         "base32.js": "0.1.0",
-        "bullmq": "5.43.1",
+        "bullmq": "5.44.3",
         "compare-versions": "6.1.1",
         "dotenv": "16.4.7",
         "encoding-japanese": "2.2.0",
@@ -123,7 +123,7 @@
         "pino-pretty": "13.0.0",
         "resedit": "2.0.3",
         "spdx-satisfies": "6.0.0",
-        "supertest": "7.0.0",
+        "supertest": "7.1.0",
         "xgettext-template": "5.0.0"
     },
     "engines": {
