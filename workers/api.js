@@ -164,6 +164,7 @@ const {
     googleProjectIdSchema,
     googleWorkspaceAccountsSchema,
     googleTopicNameSchema,
+    googleSubscriptionNameSchema,
     messageReferenceSchema
 } = require('../lib/schemas');
 
@@ -6871,6 +6872,7 @@ const init = async () => {
                                 googleProjectId: googleProjectIdSchema,
                                 googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
                                 googleTopicName: googleTopicNameSchema,
+                                googleSubscriptionName: googleSubscriptionNameSchema,
 
                                 serviceClientEmail: Joi.string()
                                     .email()
@@ -7001,6 +7003,7 @@ const init = async () => {
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
                     googleTopicName: googleTopicNameSchema,
+                    googleSubscriptionName: googleSubscriptionNameSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()
@@ -7177,6 +7180,7 @@ const init = async () => {
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
                     googleTopicName: googleTopicNameSchema,
+                    googleSubscriptionName: googleSubscriptionNameSchema,
 
                     serviceClientEmail: Joi.string()
                         .email()

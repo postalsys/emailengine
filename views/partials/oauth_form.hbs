@@ -138,7 +138,7 @@
             <label for="serviceClientEmail">
                 Client Email
             </label>
-            <input type="text" class="form-control {{#if errors.serviceClientEmail}}is-invalid{{/if}}"
+            <input type="email" class="form-control {{#if errors.serviceClientEmail}}is-invalid{{/if}}"
                 id="serviceClientEmail" name="serviceClientEmail" value="{{values.serviceClientEmail}}"
                 placeholder="Enter the principal of the service, for example &quot;name@project-123.iam.gserviceaccount.com&quot;"
                 required />
@@ -153,7 +153,8 @@
                 Service client
             </label>
             <input type="text" class="form-control {{#if errors.serviceClient}}is-invalid{{/if}}" id="serviceClient"
-                name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;" />
+                name="serviceClient" value="{{values.serviceClient}}" placeholder="Enter service client ID&mldr;"
+                required />
             {{#if errors.serviceClient}}
             <span class="invalid-feedback">{{errors.serviceClient}}</span>
             {{/if}}
@@ -167,8 +168,8 @@
             <textarea class="form-control droptxt autoselect {{#if errors.serviceKey}}is-invalid{{/if}}" id="serviceKey"
                 name="serviceKey" rows="4" data-enable-grammarly="false" spellcheck="false" {{#if
                 hasServiceKey}}placeholder="Service key is set but not shown&mldr;" {{else}}
-                placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;&mldr;"
-                {{/if}}>{{values.serviceKey}}</textarea>
+                placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;&mldr;" {{/if}} {{#unless
+                hasServiceKey}}required{{/unless}}>{{values.serviceKey}}</textarea>
             {{#if errors.serviceKey}}
             <span class="invalid-feedback">{{errors.serviceKey}}</span>
             {{/if}}
@@ -420,27 +421,52 @@
             </label>
             <input type="text" class="form-control {{#if errors.googleTopicName}}is-invalid{{/if}}" id="googleTopicName"
                 name="googleTopicName" value="{{values.googleTopicName}}"
-                placeholder="Enter the Topic Name for the Google Pub/Sub subscription, for example &quot;ee-pubsub-12345&quot;" />
+                placeholder="Enter the Topic Name for the Google Pub/Sub subscription, for example &quot;ee-pub-12345&quot;" />
             {{#if errors.googleTopicName}}
             <span class="invalid-feedback">{{errors.googleTopicName}}</span>
             {{/if}}
             <small class="form-text text-muted">OAuth2 Pub/Sub Topic Name. Automatically generated if not set.</small>
         </div>
 
+        <div class="form-group">
+            <label for="googleSubscriptionName">
+                Google Pub/Sub Subscription Name
+            </label>
+            <input type="text" class="form-control {{#if errors.googleSubscriptionName}}is-invalid{{/if}}"
+                id="googleSubscriptionName" name="googleSubscriptionName" value="{{values.googleSubscriptionName}}"
+                placeholder="Enter the Subscription Name for the Google Pub/Sub subscription, for example &quot;ee-sub-12345&quot;" />
+            {{#if errors.googleSubscriptionName}}
+            <span class="invalid-feedback">{{errors.googleSubscriptionName}}</span>
+            {{/if}}
+            <small class="form-text text-muted">OAuth2 Pub/Sub Subscription Name. Automatically generated if not
+                set.</small>
+        </div>
+
         {{else}}
 
-        {{#if appData.pubSubTopic}}
+        <dl class="row">
 
-        Pub/Sub Topic:
-        <code>
-            {{lastVal appData.pubSubTopic "/"}}
-        </code>
+            <dt class="col-sm-3">Pub/Sub Topic</dt>
+            <dd class="col-sm-9">
+                {{#if appData.pubSubTopic}}
 
-        {{else}}
+                <code>{{lastVal appData.pubSubTopic "/"}}</code>
+                {{else}}
+                Not initialized
+                {{/if}}
+            </dd>
 
-        Pub/Sub Topic not set up
 
-        {{/if}}
+            <dt class="col-sm-3">Pub/Sub Subscription</dt>
+            <dd class="col-sm-9">
+                {{#if appData.pubSubSubscription}}
+                <code>{{lastVal appData.pubSubSubscription "/"}}</code>
+                {{else}}
+                Not initialized
+                {{/if}}
+            </dd>
+        </dl>
+
 
         {{/if}}
 

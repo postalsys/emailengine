@@ -228,6 +228,7 @@
                 {{#if app.pubSubTopic}}
                 <span class="badge badge-success" title="{{app.pubSubTopic}}" data-toggle="tooltip" data-placement="top"
                     style="cursor: default;">Created</span>
+                <small class="text-monospace">{{lastVal app.pubSubTopic "/"}}</small>
                 {{else}}
                 <span class="badge badge-danger" style="cursor: default;">Not set</span>
                 {{/if}}
@@ -238,6 +239,8 @@
                 {{#if app.pubSubSubscription}}
                 <span class="badge badge-success" title="{{app.pubSubSubscription}}" data-toggle="tooltip"
                     data-placement="top" style="cursor: default;">Created</span>
+
+                <small class="text-monospace">{{lastVal app.pubSubSubscription "/"}}</small>
                 {{else}}
                 <span class="badge badge-danger" style="cursor: default;">Not set</span>
                 {{/if}}
