@@ -222,6 +222,20 @@
     </div>
     <div class="card-body">
 
+        {{#if app.meta.pubSubFlag}}
+        <div class="alert alert-danger">{{app.meta.pubSubFlag.message}}
+
+            {{#if app.meta.pubSubFlag.description}}
+            <hr>
+            <p class="mb-0">
+                <small>{{app.meta.pubSubFlag.description}}</small>
+            </p>
+            {{/if}}
+
+        </div>
+        <hr>
+        {{/if}}
+
         <dl class="row">
             <dt class="col-sm-3">Pub/Sub topic</dt>
             <dd class="col-sm-9 text-monospace">
