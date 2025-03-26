@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.51.3](https://github.com/postalsys/emailengine/compare/v2.51.2...v2.51.3) (2025-03-26)
+
+
+### Bug Fixes
+
+* **gmail-watch:** Allow setting subscription name for Gmail PubSub ([529f698](https://github.com/postalsys/emailengine/commit/529f698837a90f4f813832026fcafcc1e62762e9))
+* **gmail-watch:** Log and show information watch renewal failures ([7a59ce9](https://github.com/postalsys/emailengine/commit/7a59ce9a97a2e9d5c44e20598a1f3d2c7a1f3ae8))
+* **websafe:** Process web safe HTML before injecting base64 attachments to speed the process up ([b04d0fe](https://github.com/postalsys/emailengine/commit/b04d0fed1852677a6787438d1d0f73f2d9cc4f4d))
+
 ## [2.51.2](https://github.com/postalsys/emailengine/compare/v2.51.1...v2.51.2) (2025-03-25)
 
 
