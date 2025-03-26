@@ -273,6 +273,62 @@
             </dd>
             {{/if}}
 
+            {{#if gmailWatch}}
+            <dt class="col-sm-3">Change subscription</dt>
+
+            <dd class="col-sm-9">
+
+                <span class="badge badge-pill 
+{{#if gmailWatch.active}}
+    badge-success
+{{else}}
+    {{#if gmailWatch.error}}
+        badge-danger
+    {{else}}
+        badge-warning
+    {{/if}}
+{{/if}}
+" style="cursor:default;" {{#if gmailWatch.error}} data-toggle="popover" data-trigger="hover"
+                    data-title="Subscription error" data-content="{{gmailWatch.error}}" {{/if}}>
+                    {{gmailWatch.stateLabel}}
+                </span>
+
+                {{#if gmailWatch.expiresStr}}
+                Valid until <span class="local-date-time code-link" data-time="{{gmailWatch.expiresStr}}"
+                    title="{{gmailWatch.expiresStr}}"></span>
+                {{/if}}
+
+                {{#if gmailWatch.error}}
+                <div class="mt-3">
+                    <div class="alert alert-danger">
+                        <div>
+                            <small>The last attempt to renew the change subcription failed with the following
+                                error.</small>
+                        </div>
+                        <div>
+                            {{gmailWatch.error}}
+                        </div>
+
+                        {{#if gmailWatch.request}}
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#watchDetails"
+                                data-placement="top">
+                                Show details
+                            </button>
+                        </div>
+                        {{/if}}
+                    </div>
+
+                </div>
+                {{/if}}
+
+            </dd>
+
+
+
+
+            {{/if}}
+
             {{#if account.outlookSubscription}}
             <dt class="col-sm-3">Change subscription</dt>
             <dd class="col-sm-9">
@@ -772,6 +828,64 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="watchDetails" tabindex="-1" aria-labelledby="watchDetailsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="watchDetailsLabel">Renewal request details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+
+                    <dt class="col-sm-3">Error message</dt>
+                    <dd class="col-sm-9">
+                        {{gmailWatch.error}}</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Request time</dt>
+                    <dd class="col-sm-9">
+                        <span class="local-date-time" data-time="{{gmailWatch.lastCheckStr}}"
+                            title="{{gmailWatch.lastCheckStr}}"></span>
+                    </dd>
+
+                    {{#if gmailWatch.request.status}}
+                    <dt class="col-sm-3">Response status</dt>
+                    <dd class="col-sm-9">
+                        {{gmailWatch.request.status}}
+                    </dd>
+                    {{/if}}
+
+                    {{#if gmailWatch.request.contentType}}
+                    <dt class="col-sm-3">Content Type</dt>
+                    <dd class="col-sm-9">
+                        <span class="code-link">{{gmailWatch.request.contentType}}</span>
+                    </dd>
+                    {{/if}}
+
+
+
+                </div>
+
+                {{#if gmailWatch.request.response}}
+
+                <div class="form-group">
+                    <textarea class="form-control text-monospace" rows="5" spellcheck="false"
+                        data-enable-grammarly="false" readonly>{{json gmailWatch.request.response}}</textarea>
+                </div>
+
+                {{/if}}
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

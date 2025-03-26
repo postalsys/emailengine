@@ -129,7 +129,7 @@ class ConnectionHandler {
         };
     }
 
-    async assignConnection(account, runIndex) {
+    async assignConnection(account, runIndex, initOpts) {
         logger.info({ msg: 'Assigned account to worker', account });
 
         if (!this.runIndex) {
@@ -244,7 +244,7 @@ class ConnectionHandler {
         }
 
         // do not wait before returning as it may take forever
-        accountObject.connection.init().catch(err => {
+        accountObject.connection.init(initOpts).catch(err => {
             logger.error({ account, err });
         });
     }
@@ -353,7 +353,7 @@ class ConnectionHandler {
                 await accountObject.connection.close();
             }
 
-            await this.assignConnection(account);
+            await this.assignConnection(account, false, { forceWatchRenewal: true });
         }
     }
 

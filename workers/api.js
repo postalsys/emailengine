@@ -522,7 +522,7 @@ const init = async () => {
     handlebars.registerHelper('json', payload => {
         let res;
         try {
-            res = JSON.stringify(payload, false, 2);
+            res = typeof payload === 'undefined' ? 'undefined' : JSON.stringify(payload, false, 2);
         } catch (err) {
             res = util.inspect(payload, false, 4, false);
         }
