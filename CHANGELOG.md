@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.51.4](https://github.com/postalsys/emailengine/compare/v2.51.3...v2.51.4) (2025-04-02)
+
+
+### Bug Fixes
+
+* **markAsSeen:** fix markAsSeen option for Gmail API and MS Graph API ([7e2dcdc](https://github.com/postalsys/emailengine/commit/7e2dcdcbd4a9726855f5ec216fac0d4212ca2e5f))
+
 ## [2.51.3](https://github.com/postalsys/emailengine/compare/v2.51.2...v2.51.3) (2025-03-26)
 
 
