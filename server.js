@@ -2249,6 +2249,9 @@ const startApplication = async () => {
     // single worker for HTTP, start first for health checks
     await spawnWorker('api');
 
+    // artificail delay to allow starting api workers in case there is a large number of accounts
+    await new Promise(r => setTimeout(r, 100));
+
     // multiple IMAP connection handlers
     let workerPromises = [];
     for (let i = 0; i < config.workers.imap; i++) {

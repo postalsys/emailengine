@@ -1,13 +1,50 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-04-02 07:57+0000\n"
+"POT-Creation-Date: 2025-04-07 06:20+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:21
+#: views/unsubscribe.hbs:69
+msgid "Email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27
+#: views/unsubscribe.hbs:75
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:218
+msgid "Continue"
+msgstr ""
 
 #: views/unsubscribe.hbs:1
 #: views/unsubscribe.hbs:79
@@ -43,49 +80,12 @@ msgstr ""
 msgid "Your email address <em>%s</em> was re-subscribed."
 msgstr ""
 
-#: views/unsubscribe.hbs:69
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:75
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr ""
 
 #: views/accounts/register/index.hbs:15
 msgid "Standard IMAP"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-#: views/accounts/register/imap-server.hbs:218
-msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
