@@ -7,7 +7,14 @@
     {{/if}}
 
     {{#if baseScopesApi}}
+
+    {{#unless disabledScopes.Gmail_Modify}}
     <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
+    {{else}}
+    <li><code>"https://www.googleapis.com/auth/gmail.readonly"</code></li>
+    <li><code>"https://www.googleapis.com/auth/gmail.labels"</code></li>
+    {{/unless}}
+
     {{/if}}
 
     {{#if baseScopesPubsub}}
@@ -15,6 +22,7 @@
     {{/if}}
 
 </ul>
+
 <div>Read about setting up the OAuth2 project in Google Cloud from
 
     {{#if baseScopesImap}}

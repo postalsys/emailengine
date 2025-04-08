@@ -744,7 +744,9 @@
         <div class="card-body">
 
             <p>Here you can list OAuth2 scopes that EmailEngine should not use. This is mainly needed
-                when you want to disable some base scopes like <code>SMTP.Send</code> in Outlook.</p>
+                when you want to disable some default scopes like <code>"SMTP.Send"</code> in Outlook or
+                <code>"https://www.googleapis.com/auth/gmail.modify"</code> in Gmail.
+            </p>
 
             <div class="form-group">
                 <label for="skipScopes">List of disabled OAuth2 scopes</label>
