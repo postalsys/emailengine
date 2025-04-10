@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.52.0](https://github.com/postalsys/emailengine/compare/v2.51.3...v2.52.0) (2025-04-10)
+
+
+### Features
+
+* **sending:** Support 'Idempotency-Key' header for /submit message requests and 'X-EE-Idempotency-Key' SMTP header to avoid sending duplicate emails ([1423135](https://github.com/postalsys/emailengine/commit/1423135b7049449bfb4be68cc03baa7f1b6a1a62))
+
+
+### Bug Fixes
+
+* **gmail-api:** Show a failure message if OAuth2 configured scopes are insufficient ([f72b5f3](https://github.com/postalsys/emailengine/commit/f72b5f3f72d03f1750d36f5adffa525d1b90c1d9))
+* **markAsSeen:** fix markAsSeen option for Gmail API and MS Graph API ([7e2dcdc](https://github.com/postalsys/emailengine/commit/7e2dcdcbd4a9726855f5ec216fac0d4212ca2e5f))
+* **ms-graph-api:** Fix fetching message/rfc822 attachments ([c55bcbd](https://github.com/postalsys/emailengine/commit/c55bcbdcd1dc88c2ed3b4442fb8c074e31c9256c))
+
 ## [2.51.3](https://github.com/postalsys/emailengine/compare/v2.51.2...v2.51.3) (2025-03-26)
 
 
