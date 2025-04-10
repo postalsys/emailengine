@@ -5272,7 +5272,10 @@ const init = async () => {
             });
 
             try {
-                return await accountObject.queueMessage(request.payload, { source: 'api' });
+                return await accountObject.queueMessage(request.payload, {
+                    source: 'api',
+                    idempotencyKey: request.headers['idempotency-key']
+                });
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -5317,6 +5320,24 @@ const init = async () => {
                 params: Joi.object({
                     account: accountIdSchema.required()
                 }),
+
+                headers: Joi.object({
+                    'x-ee-timeout': Joi.number()
+                        .integer()
+                        .min(0)
+                        .max(2 * 3600 * 1000)
+                        .optional()
+                        .description(`Override the \`EENGINE_TIMEOUT\` environment variable for a single API request (in milliseconds)`)
+                        .label('X-EE-Timeout'),
+                    'idempotency-key': Joi.string()
+                        .min(0)
+                        .max(1024)
+                        .optional()
+                        .description(
+                            'A unique identifier provided by the client to ensure that repeated requests with the same key are processed only once. The value should be unique per operation and can be up to 1024 characters in length.'
+                        )
+                        .label('Idempotency-Key')
+                }).unknown(),
 
                 payload: Joi.object({
                     reference: messageReferenceSchema,

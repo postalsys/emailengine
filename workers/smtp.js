@@ -222,6 +222,12 @@ function processMessage(stream, session, meta) {
         if (requestedAccount) {
             meta.requestedAccount = requestedAccount;
         }
+
+        let idempotencyKey = headers.getFirst('x-ee-idempotency-key');
+        headers.remove('x-ee-idempotency-key');
+        if (idempotencyKey) {
+            meta.idempotencyKey = idempotencyKey;
+        }
     });
 
     stream.once('error', err => joiner.emit('error', err));
@@ -372,7 +378,10 @@ async function init() {
                     };
 
                     accountObject
-                        .queueMessage(payload, { source: 'smtp' })
+                        .queueMessage(payload, {
+                            source: 'smtp',
+                            idempotencyKey: messageMeta.idempotencyKey
+                        })
                         .then(res => {
                             // queued for later
                             metrics(logger, 'events', 'inc', {
@@ -384,7 +393,8 @@ async function init() {
                                 account: session.user,
                                 messageId: res.messageId,
                                 sendAt: res.sendAt,
-                                queueId: res.queueId
+                                queueId: res.queueId,
+                                idempotency: res.idempotency
                             });
 
                             return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
