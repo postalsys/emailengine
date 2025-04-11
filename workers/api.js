@@ -165,7 +165,9 @@ const {
     googleWorkspaceAccountsSchema,
     googleTopicNameSchema,
     googleSubscriptionNameSchema,
-    messageReferenceSchema
+    messageReferenceSchema,
+    idempotencyKeySchema,
+    headerTimeoutSchema
 } = require('../lib/schemas');
 
 const listMessageFolderPathDescription =
@@ -575,13 +577,7 @@ const init = async () => {
                     convert: true
                 },
                 headers: Joi.object({
-                    'x-ee-timeout': Joi.number()
-                        .integer()
-                        .min(0)
-                        .max(2 * 3600 * 1000)
-                        .optional()
-                        .description(`Override the \`EENGINE_TIMEOUT\` environment variable for a single API request (in milliseconds)`)
-                        .label('X-EE-Timeout')
+                    'x-ee-timeout': headerTimeoutSchema
                 }).unknown()
             }
         }
@@ -5322,21 +5318,8 @@ const init = async () => {
                 }),
 
                 headers: Joi.object({
-                    'x-ee-timeout': Joi.number()
-                        .integer()
-                        .min(0)
-                        .max(2 * 3600 * 1000)
-                        .optional()
-                        .description(`Override the \`EENGINE_TIMEOUT\` environment variable for a single API request (in milliseconds)`)
-                        .label('X-EE-Timeout'),
-                    'idempotency-key': Joi.string()
-                        .min(0)
-                        .max(1024)
-                        .optional()
-                        .description(
-                            'A unique identifier provided by the client to ensure that repeated requests with the same key are processed only once. The value should be unique per operation and can be up to 1024 characters in length.'
-                        )
-                        .label('Idempotency-Key')
+                    'x-ee-timeout': headerTimeoutSchema,
+                    'idempotency-key': idempotencyKeySchema
                 }).unknown(),
 
                 payload: Joi.object({
