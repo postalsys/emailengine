@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.52.1](https://github.com/postalsys/emailengine/compare/v2.52.0...v2.52.1) (2025-04-18)
+
+
+### Bug Fixes
+
+* **messageBounce:** Check messages in the Junk folder as well for bounces ([0def3e3](https://github.com/postalsys/emailengine/commit/0def3e3635376118ea9379369f018b52f0f8d66e))
+* **workmail:** better detection of bounce emails with AWS WorkMail ([1a8e750](https://github.com/postalsys/emailengine/commit/1a8e7503447f1a6db4b67fa9771374274c9f2e3b))
+
 ## [2.52.0](https://github.com/postalsys/emailengine/compare/v2.51.3...v2.52.0) (2025-04-10)
 
 
