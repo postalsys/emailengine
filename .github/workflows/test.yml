@@ -63,7 +63,7 @@ jobs:
         strategy:
             matrix:
                 node: [20.x]
-                os: [ubuntu-20.04]
+                os: [ubuntu-22.04]
         runs-on: ${{ matrix.os }}
         # Service containers to run with `container-job`
         services:
