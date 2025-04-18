@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-04-07 06:20+0000\n"
+"POT-Creation-Date: 2025-04-18 16:47+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -11,6 +11,14 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -78,14 +86,6 @@ msgstr ""
 
 #: views/unsubscribe.hbs:54
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -236,67 +236,67 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4997
-#: lib/routes-ui.js:6946
-#: lib/routes-ui.js:6957
+#: lib/routes-ui.js:5004
+#: lib/routes-ui.js:6953
+#: lib/routes-ui.js:6964
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5000
-#: lib/routes-ui.js:6949
-#: lib/routes-ui.js:6960
+#: lib/routes-ui.js:5007
+#: lib/routes-ui.js:6956
+#: lib/routes-ui.js:6967
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5004
-#: lib/routes-ui.js:6964
+#: lib/routes-ui.js:5011
+#: lib/routes-ui.js:6971
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6693
-#: lib/routes-ui.js:6728
-#: lib/routes-ui.js:6843
-#: lib/routes-ui.js:6890
-#: lib/routes-ui.js:7118
-#: lib/routes-ui.js:7154
-#: workers/api.js:2146
+#: lib/routes-ui.js:6700
+#: lib/routes-ui.js:6735
+#: lib/routes-ui.js:6850
+#: lib/routes-ui.js:6897
+#: lib/routes-ui.js:7125
+#: lib/routes-ui.js:7161
+#: workers/api.js:2142
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6753
-#: lib/routes-ui.js:6786
-#: lib/routes-ui.js:9621
+#: lib/routes-ui.js:6760
+#: lib/routes-ui.js:6793
+#: lib/routes-ui.js:9628
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6883
-#: lib/routes-ui.js:7147
+#: lib/routes-ui.js:6890
+#: lib/routes-ui.js:7154
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9584
-#: lib/tools.js:768
+#: lib/routes-ui.js:9591
+#: lib/tools.js:774
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9594
-#: lib/routes-ui.js:9712
-#: lib/routes-ui.js:9729
-#: lib/routes-ui.js:9764
+#: lib/routes-ui.js:9601
+#: lib/routes-ui.js:9719
+#: lib/routes-ui.js:9736
+#: lib/routes-ui.js:9771
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9723
-#: lib/routes-ui.js:9757
+#: lib/routes-ui.js:9730
+#: lib/routes-ui.js:9764
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1446
+#: lib/tools.js:1452
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1455
-#: lib/tools.js:1460
+#: lib/tools.js:1461
+#: lib/tools.js:1466
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
