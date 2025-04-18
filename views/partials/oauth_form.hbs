@@ -562,7 +562,8 @@
             Account below to configure this.
         </p>
 
-        <label for="pubSubApp">Select service account to manage webhooks</label>
+        <label for="pubSubApp">Select service account to manage webhooks. The service account must be for the same
+            Google Cloud Project.</label>
         <select class="custom-select custom-select-sm {{#if
             errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" required {{#unless
             baseScopesApi}}disabled{{/unless}}>
@@ -612,8 +613,8 @@
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesImap" value="imap"
-                            {{#if baseScopesImap}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesImap" value="imap" {{#if baseScopesImap}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesImap">
                             IMAP and SMTP
                         </label>
@@ -626,8 +627,8 @@
             <tr>
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="baseScopes" id="baseScopesAPI" value="api"
-                            {{#if baseScopesApi}}checked{{/if}}>
+                        <input class="form-check-input base-scopes-radio" type="radio" name="baseScopes"
+                            id="baseScopesAPI" value="api" {{#if baseScopesApi}}checked{{/if}}>
                         <label class="form-check-label" for="baseScopesAPI">
                             MS Graph API <span class="badge badge-dark">beta</span>
                         </label>
@@ -665,6 +666,30 @@
             {{/if}}
         </tbody>
     </table>
+
+    <div id="select-pubsub-app" class="card-footer {{#unless baseScopesApi}}d-none{{/unless}}">
+
+        <p>Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
+
+        <pre><code>{{mainServiceUrl}}/oauth/msg/lifecycle
+{{mainServiceUrl}}/oauth/msg/notification</code></pre>
+
+        <p>
+            Both endpoints must be publicly reachable for anonymous HTTPS
+            <strong>POST</strong> requests. When a notification arrives, EmailEngine
+            immediately forwards the event to your application through its own webhooks.
+        </p>
+
+        <p>
+            If your EmailEngine instance cannot be exposed directly, configure a public
+            proxy domain in <span class="text-muted code-link"><a href="/admin/swagger#/Settings/postV1Settings"
+                    target="_blank" rel="noopener noreferrer">notificationBaseUrl</a></span>. Microsoft Graph will then
+            post to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code> instead of
+            <code>{{mainServiceUrl}}</code>.
+        </p>
+
+
+    </div>
 </div>
 
 {{/if}}
@@ -779,10 +804,16 @@
             if (baseScopesAPIElm && selectPubsubAppElm) {
                 if (baseScopesAPIElm.checked) {
                     selectPubsubAppElm.classList.remove('d-none');
-                    pubSubAppElm.disabled = false;
+                    console.log('SHOW', selectPubsubAppElm)
+                    if (pubSubAppElm) {
+                        pubSubAppElm.disabled = false;
+                    }
                 } else {
                     selectPubsubAppElm.classList.add('d-none');
-                    pubSubAppElm.disabled = true;
+                    console.log('HIDE', selectPubsubAppElm)
+                    if (pubSubAppElm) {
+                        pubSubAppElm.disabled = true;
+                    }
                 }
             }
 

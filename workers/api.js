@@ -8575,7 +8575,8 @@ ${now}`,
                 language,
                 locale,
                 timezone,
-                pageBrandName
+                pageBrandName,
+                notificationBaseUrl
             } = await settings.getMulti(
                 'upgrade',
                 'subexp',
@@ -8593,7 +8594,8 @@ ${now}`,
                 'language',
                 'locale',
                 'timezone',
-                'pageBrandName'
+                'pageBrandName',
+                'notificationBaseUrl'
             );
 
             const systemAlerts = [];
@@ -8752,6 +8754,9 @@ ${now}`,
                 currentYear: new Date().getFullYear(),
                 showDocumentStore,
                 updateBrowserInfo: !serviceUrl || !language || !timezone,
+
+                mainServiceUrl: serviceUrl,
+                notificationBaseUrl,
 
                 userLocale: locale,
                 userTimezone: timezone
