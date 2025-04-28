@@ -96,7 +96,7 @@ msgstr "Standaard IMAP"
 
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
-msgstr ""
+msgstr "IMAP"
 
 #: views/accounts/register/imap-server.hbs:22
 #: views/accounts/register/imap-server.hbs:114
@@ -154,7 +154,7 @@ msgstr "Gebruik TLS"
 
 #: views/accounts/register/imap-server.hbs:111
 msgid "SMTP"
-msgstr ""
+msgstr "SMTP"
 
 #: views/accounts/register/imap-server.hbs:190
 msgid "TLS for SMTP"
@@ -194,7 +194,7 @@ msgstr "Validatiefout"
 
 #: views/accounts/register/imap-server.hbs:324
 msgid "Failed to validate IMAP server settings"
-msgstr "Het valideren van de IMAP-serverinstellingen is mislukt."
+msgstr "Het valideren van de IMAP-serverinstellingen is mislukt"
 
 #: views/accounts/register/imap-server.hbs:326
 msgid "IMAP Server responded with the following message:"
@@ -202,7 +202,7 @@ msgstr "De IMAP-server antwoordde met de volgende boodschap:"
 
 #: views/accounts/register/imap-server.hbs:333
 msgid "Failed to validate SMTP server settings"
-msgstr "Het valideren van de SMTP-serverinstellingen is mislukt."
+msgstr "Het valideren van de SMTP-serverinstellingen is mislukt"
 
 #: views/accounts/register/imap-server.hbs:335
 msgid "SMTP Server responded with the following message:"
@@ -210,7 +210,7 @@ msgstr "De SMTP-server antwoordde met de volgende boodschap:"
 
 #: views/accounts/register/imap-server.hbs:393
 msgid "HTTP error!"
-msgstr ""
+msgstr "HTTP fout!"
 
 #: lib/routes-ui.js:529
 msgid "Delegated"
@@ -230,7 +230,7 @@ msgstr ""
 
 #: lib/routes-ui.js:583
 msgid "The server unexpectedly closed the connection."
-msgstr "De server sloot onverwacht de verbinding. "
+msgstr "De server sloot onverwacht de verbinding."
 
 #: lib/routes-ui.js:586
 msgid ""
@@ -273,11 +273,11 @@ msgstr "E-mailaccountinstelling"
 
 #: lib/routes-ui.js:6760 lib/routes-ui.js:6793 lib/routes-ui.js:9628
 msgid "Failed to validate request arguments"
-msgstr "Het valideren van de aanvraag-argumenten is mislukt."
+msgstr "Het valideren van de aanvraag-argumenten is mislukt"
 
 #: lib/routes-ui.js:6890 lib/routes-ui.js:7154
 msgid "Failed to process account"
-msgstr "Het verwerken van het account is mislukt."
+msgstr "Het verwerken van het account is mislukt"
 
 #: lib/routes-ui.js:9591 lib/tools.js:774
 msgid "Invalid input"
@@ -294,11 +294,11 @@ msgstr "Verzoek kon niet worden verwerkt."
 
 #: lib/tools.js:1452
 msgid "Signature validation failed"
-msgstr "Handtekeningvalidatie mislukt."
+msgstr "Handtekeningvalidatie mislukt"
 
 #: lib/tools.js:1461 lib/tools.js:1466
 msgid "Invalid or expired account setup URL"
-msgstr "Ongeldige of verlopen accountinstellings-URL."
+msgstr "Ongeldige of verlopen accountinstellings-URL"
 
 #: lib/autodetect-imap-settings.js:69
 msgid ""
