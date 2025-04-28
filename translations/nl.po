@@ -1,0 +1,313 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-04-24 18:05+0000\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.6\n"
+
+#: views/config/license.hbs:49
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] "dag"
+msgstr[1] "dagen"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Klik <a href=\"%s\">hier</a> om door te gaan&mldr;"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "Jouw naam"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "Vul je naam in"
+
+#: views/accounts/register/imap.hbs:21 views/unsubscribe.hbs:69
+msgid "Email address"
+msgstr "E-mailadres"
+
+#: views/accounts/register/imap.hbs:27 views/unsubscribe.hbs:75
+msgid "Enter your email address"
+msgstr "Vul je email in"
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr "Wachtwoord"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "Vul je wachtwoord in"
+
+#: views/accounts/register/imap.hbs:51
+#: views/accounts/register/imap-server.hbs:218
+msgid "Continue"
+msgstr "Doorgaan"
+
+#: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
+msgid "Unsubscribe"
+msgstr "Uitschrijven"
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr "Je e-mailadres is uitgeschreven."
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+"Was dit een vergissing. Klik dan <a%s>hier</a> om u opnieuw aan te melden."
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr "Opnieuw aanmelden"
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr "Weet je zeker dat je je e-mailadres <em>%s</em> weer wilt aanmelden?"
+
+#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:250
+msgid "Close"
+msgstr "Sluiten"
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr "Abonneren"
+
+#: views/unsubscribe.hbs:54
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr "Je e-mailadres <em>%s</em> is weer aangemeld."
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Kies je e-mailprovider"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standaard IMAP"
+
+#: views/accounts/register/imap-server.hbs:19
+msgid "IMAP"
+msgstr "IMAP"
+
+#: views/accounts/register/imap-server.hbs:22
+#: views/accounts/register/imap-server.hbs:114
+msgid "Username"
+msgstr "Gebruikersnaam"
+
+#: views/accounts/register/imap-server.hbs:45
+#: views/accounts/register/imap-server.hbs:136
+msgid "Important"
+msgstr "Belangrijk"
+
+#: views/accounts/register/imap-server.hbs:53
+#: views/accounts/register/imap-server.hbs:60
+#: views/accounts/register/imap-server.hbs:144
+#: views/accounts/register/imap-server.hbs:151
+msgid "Application Password"
+msgstr "Applicatie wachtwoord"
+
+#: views/accounts/register/imap-server.hbs:54
+#: views/accounts/register/imap-server.hbs:145
+msgid "%s accounts require to use an application password for %s."
+msgstr "Voor %s-accounts moet je een applicatiewachtwoord gebruiken voor %s."
+
+#: views/accounts/register/imap-server.hbs:55
+#: views/accounts/register/imap-server.hbs:146
+msgid "Instructions"
+msgstr "Instructies"
+
+#: views/accounts/register/imap-server.hbs:75
+#: views/accounts/register/imap-server.hbs:166
+msgid "Hostname"
+msgstr "Hostnaam"
+
+#: views/accounts/register/imap-server.hbs:85
+#: views/accounts/register/imap-server.hbs:176
+msgid "Port"
+msgstr "Poort"
+
+#: views/accounts/register/imap-server.hbs:99
+msgid "TLS for IMAP"
+msgstr "TLS voor IMAP"
+
+#: views/accounts/register/imap-server.hbs:100
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (ook wel SSL genoemd) is meestal alleen nodig bij het gebruik van poort "
+"993. Voor andere poorten schakelt EmailEngine over op STARTTLS-versleuteling."
+
+#: views/accounts/register/imap-server.hbs:102
+#: views/accounts/register/imap-server.hbs:193
+msgid "Use TLS"
+msgstr "Gebruik TLS"
+
+#: views/accounts/register/imap-server.hbs:111
+msgid "SMTP"
+msgstr "SMTP"
+
+#: views/accounts/register/imap-server.hbs:190
+msgid "TLS for SMTP"
+msgstr "TLS voor SMTP"
+
+#: views/accounts/register/imap-server.hbs:191
+msgid ""
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
+msgstr ""
+"TLS (ook wel SSL genoemd) is meestal alleen nodig bij het gebruik van poort "
+"465. Voor andere poorten schakelt EmailEngine over op STARTTLS-versleuteling."
+
+#: views/accounts/register/imap-server.hbs:209
+msgid "Test settings"
+msgstr "Test instellingen"
+
+#: views/accounts/register/imap-server.hbs:226
+msgid "Continue without testing"
+msgstr "Doorgaan zonder testen"
+
+#: views/accounts/register/imap-server.hbs:240
+msgid "Test failed"
+msgstr "Test mislukt"
+
+#: views/accounts/register/imap-server.hbs:246
+msgid "Failed to validate provided email server settings."
+msgstr "Het valideren van de opgegeven e-mailserverinstellingen is mislukt."
+
+#: views/accounts/register/imap-server.hbs:316
+msgid "General error"
+msgstr "Algemene fout"
+
+#: views/accounts/register/imap-server.hbs:318
+msgid "Validation error"
+msgstr "Validatiefout"
+
+#: views/accounts/register/imap-server.hbs:324
+msgid "Failed to validate IMAP server settings"
+msgstr "Het valideren van de IMAP-serverinstellingen is mislukt"
+
+#: views/accounts/register/imap-server.hbs:326
+msgid "IMAP Server responded with the following message:"
+msgstr "De IMAP-server antwoordde met de volgende boodschap:"
+
+#: views/accounts/register/imap-server.hbs:333
+msgid "Failed to validate SMTP server settings"
+msgstr "Het valideren van de SMTP-serverinstellingen is mislukt"
+
+#: views/accounts/register/imap-server.hbs:335
+msgid "SMTP Server responded with the following message:"
+msgstr "De SMTP-server antwoordde met de volgende boodschap:"
+
+#: views/accounts/register/imap-server.hbs:393
+msgid "HTTP error!"
+msgstr "HTTP fout!"
+
+#: lib/routes-ui.js:529
+msgid "Delegated"
+msgstr "Gedelegeerd"
+
+#: lib/routes-ui.js:530
+msgid "Using credentials from \"%s\""
+msgstr "Gebruikmakend van inloggegevens van \"%s\""
+
+#: lib/routes-ui.js:580
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"De verbinding is verlopen. Dit gebeurt meestal als je achter een firewall "
+"zit of verbinding maakt met de verkeerde poort."
+
+#: lib/routes-ui.js:583
+msgid "The server unexpectedly closed the connection."
+msgstr "De server sloot onverwacht de verbinding."
+
+#: lib/routes-ui.js:586
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"De server sloot onverwacht de verbinding. Dit gebeurt meestal wanneer je "
+"probeert verbinding te maken met een TLS-poort zonder TLS ingeschakeld."
+
+#: lib/routes-ui.js:591
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"De server weigerde de verbinding. Dit gebeurt meestal als de server niet "
+"draait, overbelast is, of als je verbinding maakt met de verkeerde host of "
+"poort."
+
+#: lib/routes-ui.js:709
+msgid "Invalid API key for OpenAI"
+msgstr "Ongeldige API-sleutel voor OpenAI"
+
+#: lib/routes-ui.js:5004 lib/routes-ui.js:6953 lib/routes-ui.js:6964
+msgid "Server hostname was not found"
+msgstr "De serverhostnaam kon niet worden gevonden."
+
+#: lib/routes-ui.js:5007 lib/routes-ui.js:6956 lib/routes-ui.js:6967
+msgid "Invalid username or password"
+msgstr "Ongeldige gebruikersnaam of wachtwoord"
+
+#: lib/routes-ui.js:5011 lib/routes-ui.js:6971
+msgid "TLS protocol error"
+msgstr "TLS-protocolfout"
+
+#: lib/routes-ui.js:6700 lib/routes-ui.js:6735 lib/routes-ui.js:6850
+#: lib/routes-ui.js:6897 lib/routes-ui.js:7125 lib/routes-ui.js:7161
+#: workers/api.js:2142
+msgid "Email Account Setup"
+msgstr "E-mailaccountinstelling"
+
+#: lib/routes-ui.js:6760 lib/routes-ui.js:6793 lib/routes-ui.js:9628
+msgid "Failed to validate request arguments"
+msgstr "Het valideren van de aanvraag-argumenten is mislukt"
+
+#: lib/routes-ui.js:6890 lib/routes-ui.js:7154
+msgid "Failed to process account"
+msgstr "Het verwerken van het account is mislukt"
+
+#: lib/routes-ui.js:9591 lib/tools.js:774
+msgid "Invalid input"
+msgstr "Ongeldige invoer"
+
+#: lib/routes-ui.js:9601 lib/routes-ui.js:9719 lib/routes-ui.js:9736
+#: lib/routes-ui.js:9771
+msgid "Subscription Management"
+msgstr "Abonnementenbeheer"
+
+#: lib/routes-ui.js:9730 lib/routes-ui.js:9764
+msgid "Failed to process request"
+msgstr "Verzoek kon niet worden verwerkt."
+
+#: lib/tools.js:1452
+msgid "Signature validation failed"
+msgstr "Handtekeningvalidatie mislukt"
+
+#: lib/tools.js:1461 lib/tools.js:1466
+msgid "Invalid or expired account setup URL"
+msgstr "Ongeldige of verlopen accountinstellings-URL"
+
+#: lib/autodetect-imap-settings.js:69
+msgid ""
+"Microsoft has disabled password-based sign-ins (including app passwords) for "
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
+"please use the \"Sign in with Microsoft\" button to securely connect your "
+"account."
+msgstr ""
+"Microsoft heeft wachtwoordgebaseerde inlogmethodes (inclusief "
+"applicatiewachtwoorden) uitgeschakeld voor Outlook.com, Hotmail.com en "
+"Microsoft 365 e-mailaccounts. Gebruik de knop \"Inloggen met Microsoft\" om "
+"je account veilig te verbinden."
