@@ -1820,7 +1820,7 @@ const init = async () => {
 
             if (!request.query.code) {
                 // throw
-                let error = Boom.boomify(new Error(`Oauth failed: node code received`), { statusCode: 400 });
+                let error = Boom.boomify(new Error(`Oauth failed: no code received`), { statusCode: 400 });
                 throw error;
             }
 
@@ -2015,7 +2015,9 @@ const init = async () => {
                         throw error;
                     }
 
-                    if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
+                    if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
+                        authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
+                    } else if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
                         // Shared mailbox
                         authData.delegatedUser = accountData.email;
                     } else {
