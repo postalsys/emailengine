@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.52.2](https://github.com/postalsys/emailengine/compare/v2.52.1...v2.52.2) (2025-04-30)
+
+
+### Bug Fixes
+
+* Allow adding shared MS accounts directly via the /v1/accounts endpoint ([c77e61e](https://github.com/postalsys/emailengine/commit/c77e61ea16d67c84b1a7b1b0d49f60f577a73839))
+* Dutch translations ([#526](https://github.com/postalsys/emailengine/issues/526)) ([ebbd783](https://github.com/postalsys/emailengine/commit/ebbd783d5787f056b1d25a22f15932b18dd6deff))
+* **schema:** Updated settings schema descriptions. Added imapClient... setting keys to configure RFC2971 IMAP ID extension ([bc38322](https://github.com/postalsys/emailengine/commit/bc383225a522c4c7b1912f260f9a902a6e4be4b1))
+
 ## [2.52.1](https://github.com/postalsys/emailengine/compare/v2.52.0...v2.52.1) (2025-04-18)
 
 
