@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.3](https://github.com/postalsys/emailengine/compare/v2.52.2...v2.52.3) (2025-05-01)
+
+
+### Bug Fixes
+
+* **gmail-api:** Fixed special use label handling when updating messages ([9e06ed7](https://github.com/postalsys/emailengine/commit/9e06ed79c3c1e4db0995df64f84c587e02645a7e))
+
 ## [2.52.2](https://github.com/postalsys/emailengine/compare/v2.52.1...v2.52.2) (2025-04-30)
 
 
