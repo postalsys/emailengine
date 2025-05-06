@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.4](https://github.com/postalsys/emailengine/compare/v2.52.3...v2.52.4) (2025-05-06)
+
+
+### Bug Fixes
+
+* **message/rfc822:** Fixed message/rfc822 attachment handling when sending emails ([af2bf30](https://github.com/postalsys/emailengine/commit/af2bf308a7634c01c065f06c75503597b6c42690))
+
 ## [2.52.3](https://github.com/postalsys/emailengine/compare/v2.52.2...v2.52.3) (2025-05-01)
 
 
