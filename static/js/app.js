@@ -173,11 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateRelativeTimes, 15 * 1000);
 
     for (let t of document.querySelectorAll('.local-time')) {
+        if (!t.dataset.time) {
+            continue;
+        }
         let date = new Date(t.dataset.time);
         t.textContent = new Intl.DateTimeFormat().format(date);
     }
 
     for (let t of document.querySelectorAll('.local-date-time')) {
+        if (!t.dataset.time) {
+            continue;
+        }
         let date = new Date(t.dataset.time);
         t.textContent = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium', dateStyle: 'short' }).format(date);
     }
