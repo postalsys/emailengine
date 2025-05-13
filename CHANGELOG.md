@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.52.4](https://github.com/postalsys/emailengine/compare/v2.52.3...v2.52.4) (2025-05-13)
+
+
+### Bug Fixes
+
+* **encryption:** Cache keys in memory to avoid using scrypt every time a secret is accessed ([cbfcde5](https://github.com/postalsys/emailengine/commit/cbfcde507cbb920ac888e0c23f13437c0b4017f4))
+* **message/rfc822:** Fixed message/rfc822 attachment handling when sending emails ([af2bf30](https://github.com/postalsys/emailengine/commit/af2bf308a7634c01c065f06c75503597b6c42690))
+* **UI:** prevent trying to format a non-existing timestamp value ([d97bb92](https://github.com/postalsys/emailengine/commit/d97bb923de611c5bd45b0ef7df1ddbbec0b184b1))
+* **webhooks:** Include envelope property in messageSent for Gmail API and MS Graph API submissions ([6b1a3fa](https://github.com/postalsys/emailengine/commit/6b1a3fa98b6370af5ba006ee486d400737fd9845))
+
 ## [2.52.3](https://github.com/postalsys/emailengine/compare/v2.52.2...v2.52.3) (2025-05-01)
 
 
