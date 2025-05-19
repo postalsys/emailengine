@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-05-12 13:59+0000\n"
+"POT-Creation-Date: 2025-05-19 19:54+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -282,12 +282,12 @@ msgstr ""
 #: lib/routes-ui.js:9602
 #: lib/routes-ui.js:9720
 #: lib/routes-ui.js:9737
-#: lib/routes-ui.js:9772
+#: lib/routes-ui.js:9773
 msgid "Subscription Management"
 msgstr ""
 
 #: lib/routes-ui.js:9731
-#: lib/routes-ui.js:9765
+#: lib/routes-ui.js:9766
 msgid "Failed to process request"
 msgstr ""
 
