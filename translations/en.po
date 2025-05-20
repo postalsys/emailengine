@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2024-11-08 10:25+0000\n"
-"PO-Revision-Date: 2024-11-08 12:25+0200\n"
+"POT-Creation-Date: 2025-05-20 07:26+0000\n"
+"PO-Revision-Date: 2025-05-20 10:28+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: en\n"
@@ -10,8 +10,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.2\n"
+"X-Generator: Poedit 3.6\n"
 "X-Poedit-Basepath: .\n"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -19,60 +23,20 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: views/unsubscribe.hbs:1 views/unsubscribe.hbs:79
-msgid "Unsubscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:31 views/accounts/register/imap-server.hbs:250
-msgid "Close"
-msgstr ""
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:69 views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:75 views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:21 views/unsubscribe.hbs:73
+msgid "Email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27 views/unsubscribe.hbs:79
+msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:31
@@ -90,8 +54,12 @@ msgstr ""
 msgid "Continue"
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -180,6 +148,10 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:250 views/unsubscribe.hbs:31
+msgid "Close"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:316
 msgid "General error"
 msgstr ""
@@ -208,87 +180,120 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: lib/routes-ui.js:504
+#: views/unsubscribe.hbs:3 views/unsubscribe.hbs:60 views/unsubscribe.hbs:83
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:54
+msgid "Subscription resumed"
+msgstr ""
+
+#: views/unsubscribe.hbs:56
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: lib/routes-ui.js:529
 msgid "Delegated"
 msgstr ""
 
-#: lib/routes-ui.js:505
+#: lib/routes-ui.js:530
 msgid "Using credentials from \"%s\""
 msgstr ""
 
-#: lib/routes-ui.js:555
+#: lib/routes-ui.js:580
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/routes-ui.js:558
+#: lib/routes-ui.js:583
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/routes-ui.js:561
+#: lib/routes-ui.js:586
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/routes-ui.js:566
+#: lib/routes-ui.js:591
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/routes-ui.js:684
+#: lib/routes-ui.js:709
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4947 lib/routes-ui.js:6896 lib/routes-ui.js:6907
+#: lib/routes-ui.js:5004 lib/routes-ui.js:6954 lib/routes-ui.js:6965
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4950 lib/routes-ui.js:6899 lib/routes-ui.js:6910
+#: lib/routes-ui.js:5007 lib/routes-ui.js:6957 lib/routes-ui.js:6968
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4954 lib/routes-ui.js:6914
+#: lib/routes-ui.js:5011 lib/routes-ui.js:6972
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6643 lib/routes-ui.js:6678 lib/routes-ui.js:6793
-#: lib/routes-ui.js:6840 lib/routes-ui.js:7068 lib/routes-ui.js:7104
+#: lib/routes-ui.js:6701 lib/routes-ui.js:6736 lib/routes-ui.js:6851
+#: lib/routes-ui.js:6898 lib/routes-ui.js:7126 lib/routes-ui.js:7162
+#: workers/api.js:2144
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6703 lib/routes-ui.js:6736 lib/routes-ui.js:9535
+#: lib/routes-ui.js:6761 lib/routes-ui.js:6794 lib/routes-ui.js:9629
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6833 lib/routes-ui.js:7097
+#: lib/routes-ui.js:6891 lib/routes-ui.js:7155
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9498 lib/tools.js:731
+#: lib/routes-ui.js:9592 lib/tools.js:774
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9508 lib/routes-ui.js:9626 lib/routes-ui.js:9643
-#: lib/routes-ui.js:9678
+#: lib/routes-ui.js:9602 lib/routes-ui.js:9720 lib/routes-ui.js:9737
+#: lib/routes-ui.js:9773
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9637 lib/routes-ui.js:9671
+#: lib/routes-ui.js:9731 lib/routes-ui.js:9766
 msgid "Failed to process request"
 msgstr ""
 
-#: lib/tools.js:1409
+#: lib/tools.js:1452
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1418 lib/tools.js:1423
+#: lib/tools.js:1461 lib/tools.js:1466
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:70
+#: lib/autodetect-imap-settings.js:69
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
 "Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "

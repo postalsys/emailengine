@@ -1,6 +1,6 @@
-<h1 class="h4 text-gray-900 mb-4">{{_ "Unsubscribe" }}</h1>
-
 {{#if unsubscribed}}
+
+<h1 class="h4 text-gray-900 mb-4">{{_ "Unsubscribe" }}</h1>
 
 <p>{{_ "Your email address was unsubscribed." }}</p>
 
@@ -51,9 +51,13 @@
 
 {{#if reSubscribed}}
 
+<h1 class="h4 text-gray-900 mb-4">{{_ "Subscription resumed" }}</h1>
+
 <p>{{_ "Your email address <em>%s</em> was re-subscribed." values.email}}</p>
 
 {{else}}
+
+<h1 class="h4 text-gray-900 mb-4">{{_ "Unsubscribe" }}</h1>
 
 <div class="row">
     <div class="col-6">

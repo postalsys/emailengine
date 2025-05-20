@@ -104,7 +104,7 @@
         "speakeasy": "2.0.0",
         "startbootstrap-sb-admin-2": "3.3.7",
         "timezones-list": "3.1.0",
-        "undici": "7.9.0",
+        "undici": "7.10.0",
         "wild-config": "1.7.1",
         "xml2js": "0.6.2"
     },
