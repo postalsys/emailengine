@@ -1404,7 +1404,7 @@ const init = async () => {
 
     server.route({
         method: 'GET',
-        path: '/open.gif',
+        path: '/tclientify',
         async handler(request, h) {
             let data = Buffer.from(request.query.data, 'base64url').toString();
             let serviceSecret = await settings.get('serviceSecret');
