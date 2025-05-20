@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.5](https://github.com/postalsys/emailengine/compare/v2.52.4...v2.52.5) (2025-05-20)
+
+
+### Bug Fixes
+
+* **virtual-list:** Fixed authentication requirement for the public re-subscribe page ([956fdfa](https://github.com/postalsys/emailengine/commit/956fdfaaa0946004939e9774a42306b50b51d7aa))
+
 ## [2.52.4](https://github.com/postalsys/emailengine/compare/v2.52.3...v2.52.4) (2025-05-13)
 
 
