@@ -56,17 +56,12 @@ load().then(ResEdit => {
     // Add icon
     if (options.icon) {
         const iconFile = ResEdit.Data.IconFile.from(readFileSync(options.icon));
-        const icons = iconFile.icons
-            .map(item => {
-                if (!item.data.width && item.data.bitmapInfo?.width) {
-                    item.data.width = item.data.bitmapInfo?.width;
-                    item.data.height = item.data.bitmapInfo?.width;
-                }
-                return item.data;
-            })
-            .sort((a, b) => b.width - a.width);
-
-        ResEdit.Resource.IconGroupEntry.replaceIconsForResource(res.entries, 1, language.lang, icons);
+        ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
+            res.entries,
+            1,
+            language.lang,
+            iconFile.icons.map(item => item.data)
+        );
     }
 
     // Regenerate and write to .exe
