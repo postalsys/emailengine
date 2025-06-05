@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.52.6](https://github.com/postalsys/emailengine/compare/v2.52.5...v2.52.6) (2025-06-05)
+
+
+### Bug Fixes
+
+* Reverted ICOn handling for windows app ([7abba87](https://github.com/postalsys/emailengine/commit/7abba87b749ed36ccd663dabfc26fa7a2d2b320d))
+
 ## [2.52.5](https://github.com/postalsys/emailengine/compare/v2.52.4...v2.52.5) (2025-05-20)
 
 
