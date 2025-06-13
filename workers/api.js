@@ -8,6 +8,7 @@ const packageData = require('../package.json');
 const config = require('wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
+const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
@@ -190,6 +191,7 @@ const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', 
 
 const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
+const { param } = require('jquery');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
 
@@ -496,7 +498,12 @@ const init = async () => {
 
     handlebars.registerHelper('_', (...args) => {
         let params = args.slice(1, args.length - 1);
-        let translated = gt.gettext(args[0]);
+
+        let locale = params.shift();
+
+        let localGt = locale ? gt.useLocale(locale) : gt;
+
+        let translated = localGt.gettext(args[0]);
         if (params.length) {
             translated = util.format(translated, ...params);
         }
@@ -681,22 +688,32 @@ const init = async () => {
         return certificateData;
     });
 
-    server.ext('onPostAuth', async (request, h) => {
-        let defaultLocale = (await settings.get('locale')) || 'en';
+    server.ext('onPreAuth', async (request, h) => {
+        const defaultLocale = (await settings.get('locale')) || 'en';
         if (defaultLocale && gt.locale !== defaultLocale) {
             gt.setLocale(defaultLocale);
         }
 
-        if (joiLocales[defaultLocale] && request.route.settings.validate.options) {
-            if (!request.route.settings.validate.options.errors) {
-                request.route.settings.validate.options.errors = {};
+        const reqLang = request.query.lang || (request.state && request.state.lang && request.state.lang.locale);
+        const reqLocale = reqLang && Gettext.getLanguageCode(reqLang);
+        if (reqLocale && gt.catalogs.hasOwnProperty(reqLocale)) {
+            request.app.gt = gt.useLocale(reqLocale);
+            request.app.locale = reqLocale;
+            if (!request.state || !request.state.lang || reqLang !== request.state.lang.locale) {
+                h.state('lang', { locale: reqLocale });
             }
-            request.route.settings.validate.options.errors.language = defaultLocale;
+        } else {
+            request.app.locale = defaultLocale;
+            request.app.gt = gt;
         }
+
         return h.continue;
     });
 
     server.ext('onRequest', async (request, h) => {
+        // set default, will be overriden once active language is resolved
+        request.app.gt = gt;
+
         // check if client IP is resolved from X-Forwarded-For or not
         let enableApiProxy = (await settings.get('enableApiProxy')) || false;
         if (enableApiProxy) {
@@ -1054,6 +1071,13 @@ const init = async () => {
     } catch (err) {
         // skip
     }
+
+    server.state('lang', {
+        ttl: null,
+        encoding: 'base64json',
+        clearInvalid: true,
+        path: '/'
+    });
 
     // Authentication for admin pages
     server.auth.strategy('session', 'cookie', {
@@ -2141,7 +2165,7 @@ const init = async () => {
             return h.view(
                 'redirect',
                 {
-                    pageTitleFull: gt.gettext('Email Account Setup'),
+                    pageTitleFull: request.app.gt.gettext('Email Account Setup'),
                     httpRedirectUrl
                 },
                 {
@@ -6321,7 +6345,7 @@ const init = async () => {
 
         async handler(request) {
             try {
-                let serverSettings = await autodetectImapSettings(request.query.email);
+                let serverSettings = await autodetectImapSettings(request.query.email, request.app.gt);
                 return serverSettings;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -8761,7 +8785,9 @@ ${now}`,
                 notificationBaseUrl,
 
                 userLocale: locale,
-                userTimezone: timezone
+                userTimezone: timezone,
+
+                templateLocale: request.app.locale
             };
         }
     });
@@ -8789,8 +8815,8 @@ ${now}`,
         const ctx = {
             message:
                 error.output.statusCode === 404
-                    ? 'page not found'
-                    : (error.output && error.output.payload && error.output.payload.message) || 'something went wrong',
+                    ? request.app.gt.gettext('Requested page not found')
+                    : (error.output && error.output.payload && error.output.payload.message) || request.app.gt.gettext('Something went wrong'),
             details: error.output && error.output.payload && error.output.payload.details
         };
 
@@ -8901,8 +8927,8 @@ ${now}`,
     server.route({
         method: '*',
         path: '/{any*}',
-        async handler() {
-            throw Boom.notFound('Requested page not found'); // 404
+        async handler(request) {
+            throw Boom.notFound(request.app.gt.gettext('Requested page not found')); // 404
         }
     });
 

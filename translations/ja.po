@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-05-20 07:26+0000\n"
+"POT-Creation-Date: 2025-06-13 18:59+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -12,14 +12,58 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Poedit 3.6\n"
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "続けるには<a href=\"%s\">ここ</a>をクリックしてください。"
-
 #: views/config/license.hbs:49
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d日"
+
+#: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
+msgid "Unsubscribe"
+msgstr "購読解除"
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr "メールアドレスの購読が解除されました。"
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr "間違いでしたか？<a%s>ここ</a>をクリックして再購読してください。"
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr "再購読"
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr "メールアドレス<em>%s</em>を再購読しますか？"
+
+#: views/unsubscribe.hbs:32 views/accounts/register/imap-server.hbs:251
+msgid "Close"
+msgstr "閉じる"
+
+#: views/unsubscribe.hbs:34
+msgid "Subscribe"
+msgstr "購読する"
+
+#: views/unsubscribe.hbs:56
+msgid "Subscription resumed"
+msgstr "定期購入が再開されました"
+
+#: views/unsubscribe.hbs:58
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr "メールアドレス<em>%s</em>が再購読されました。"
+
+#: views/unsubscribe.hbs:75 views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr "メールアドレス"
+
+#: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
+msgstr "メールアドレスを入力してください"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "続けるには<a href=\"%s\">ここ</a>をクリックしてください。"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -28,14 +72,6 @@ msgstr "名前"
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
 msgstr "フルネームを入力してください"
-
-#: views/accounts/register/imap.hbs:21 views/unsubscribe.hbs:73
-msgid "Email address"
-msgstr "メールアドレス"
-
-#: views/accounts/register/imap.hbs:27 views/unsubscribe.hbs:79
-msgid "Enter your email address"
-msgstr "メールアドレスを入力してください"
 
 #: views/accounts/register/imap.hbs:31
 #: views/accounts/register/imap-server.hbs:36
@@ -87,7 +123,7 @@ msgid "%s accounts require to use an application password for %s."
 msgstr "%sアカウントでは%s用のアプリケーションパスワードの使用が必要です。"
 
 #: views/accounts/register/imap-server.hbs:55
-#: views/accounts/register/imap-server.hbs:146
+#: views/accounts/register/imap-server.hbs:145
 msgid "Instructions"
 msgstr "指示"
 
@@ -142,87 +178,51 @@ msgstr "設定のテスト"
 msgid "Continue without testing"
 msgstr "テストせずに続行"
 
-#: views/accounts/register/imap-server.hbs:240
+#: views/accounts/register/imap-server.hbs:241
 msgid "Test failed"
 msgstr "テスト失敗"
 
-#: views/accounts/register/imap-server.hbs:246
+#: views/accounts/register/imap-server.hbs:247
 msgid "Failed to validate provided email server settings."
 msgstr "提供されたメールサーバーの設定の検証に失敗しました。"
 
-#: views/accounts/register/imap-server.hbs:250 views/unsubscribe.hbs:31
-msgid "Close"
-msgstr "閉じる"
-
-#: views/accounts/register/imap-server.hbs:316
+#: views/accounts/register/imap-server.hbs:318
 msgid "General error"
 msgstr "一般的なエラー"
 
-#: views/accounts/register/imap-server.hbs:318
+#: views/accounts/register/imap-server.hbs:320
 msgid "Validation error"
 msgstr "検証のエラー"
 
-#: views/accounts/register/imap-server.hbs:324
+#: views/accounts/register/imap-server.hbs:326
 msgid "Failed to validate IMAP server settings"
 msgstr "IMAPサーバー設定の検証に失敗しました"
 
-#: views/accounts/register/imap-server.hbs:326
+#: views/accounts/register/imap-server.hbs:328
 msgid "IMAP Server responded with the following message:"
 msgstr "IMAPサーバーは以下のメッセージで応答しました："
 
-#: views/accounts/register/imap-server.hbs:333
+#: views/accounts/register/imap-server.hbs:335
 msgid "Failed to validate SMTP server settings"
 msgstr "SMTPサーバー設定の検証に失敗しました"
 
-#: views/accounts/register/imap-server.hbs:335
+#: views/accounts/register/imap-server.hbs:337
 msgid "SMTP Server responded with the following message:"
 msgstr "SMTPサーバーは以下のメッセージで応答しました："
 
-#: views/accounts/register/imap-server.hbs:393
+#: views/accounts/register/imap-server.hbs:395
 msgid "HTTP error!"
 msgstr "HTTPエラー！"
 
-#: views/unsubscribe.hbs:3 views/unsubscribe.hbs:60 views/unsubscribe.hbs:83
-msgid "Unsubscribe"
-msgstr "購読解除"
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr "メールアドレスの購読が解除されました。"
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr "間違いでしたか？<a%s>ここ</a>をクリックして再購読してください。"
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr "再購読"
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "メールアドレス<em>%s</em>を再購読しますか？"
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr "購読する"
-
-#: views/unsubscribe.hbs:54
-msgid "Subscription resumed"
-msgstr "定期購入が再開されました"
-
-#: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "メールアドレス<em>%s</em>が再購読されました。"
-
-#: lib/routes-ui.js:529
+#: lib/routes-ui.js:530
 msgid "Delegated"
 msgstr "委任された"
 
-#: lib/routes-ui.js:530
+#: lib/routes-ui.js:531
 msgid "Using credentials from \"%s\""
 msgstr "0]」の認証情報を使用"
 
-#: lib/routes-ui.js:580
+#: lib/routes-ui.js:581
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -230,11 +230,11 @@ msgstr ""
 "接続がタイムアウトしました。これは通常、ファイアウォールの内側にいるか、間"
 "違ったポートに接続している場合に発生します。"
 
-#: lib/routes-ui.js:583
+#: lib/routes-ui.js:584
 msgid "The server unexpectedly closed the connection."
 msgstr "サーバーが予期せず接続を閉じました。"
 
-#: lib/routes-ui.js:586
+#: lib/routes-ui.js:587
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -242,7 +242,7 @@ msgstr ""
 "サーバーが予期せず接続を切断しました。これは通常、TLSが有効になっていないTLS"
 "ポートに接続しようとしたときに発生する。"
 
-#: lib/routes-ui.js:591
+#: lib/routes-ui.js:592
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -250,58 +250,66 @@ msgstr ""
 "サーバーが接続を拒否しました。これは通常、サーバーが稼動していないか、過負荷"
 "になっているか、間違ったホストまたはポートに接続している場合に発生します。"
 
-#: lib/routes-ui.js:709
+#: lib/routes-ui.js:710
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAIの無効なAPIキー"
 
-#: lib/routes-ui.js:5004 lib/routes-ui.js:6954 lib/routes-ui.js:6965
+#: lib/routes-ui.js:5067 lib/routes-ui.js:7053 lib/routes-ui.js:7064
 msgid "Server hostname was not found"
 msgstr "サーバーホスト名が見つかりませんでした"
 
-#: lib/routes-ui.js:5007 lib/routes-ui.js:6957 lib/routes-ui.js:6968
+#: lib/routes-ui.js:5070 lib/routes-ui.js:7056 lib/routes-ui.js:7067
 msgid "Invalid username or password"
 msgstr "無効なユーザー名またはパスワード"
 
-#: lib/routes-ui.js:5011 lib/routes-ui.js:6972
+#: lib/routes-ui.js:5074 lib/routes-ui.js:7071
 msgid "TLS protocol error"
 msgstr "TLSプロトコルエラー"
 
-#: lib/routes-ui.js:6701 lib/routes-ui.js:6736 lib/routes-ui.js:6851
-#: lib/routes-ui.js:6898 lib/routes-ui.js:7126 lib/routes-ui.js:7162
-#: workers/api.js:2144
+#: lib/routes-ui.js:6794 lib/routes-ui.js:6829 lib/routes-ui.js:6947
+#: lib/routes-ui.js:6994 lib/routes-ui.js:7228 lib/routes-ui.js:7264
+#: workers/api.js:2168
 msgid "Email Account Setup"
 msgstr "メールアカウント設定"
 
-#: lib/routes-ui.js:6761 lib/routes-ui.js:6794 lib/routes-ui.js:9629
+#: lib/routes-ui.js:6854 lib/routes-ui.js:6887 lib/routes-ui.js:9767
 msgid "Failed to validate request arguments"
 msgstr "リクエスト引数の検証に失敗しました"
 
-#: lib/routes-ui.js:6891 lib/routes-ui.js:7155
+#: lib/routes-ui.js:6987 lib/routes-ui.js:7257
 msgid "Failed to process account"
 msgstr "アカウントの処理に失敗しました"
 
-#: lib/routes-ui.js:9592 lib/tools.js:774
+#: lib/routes-ui.js:9730 lib/tools.js:773
 msgid "Invalid input"
 msgstr "無効な入力"
 
-#: lib/routes-ui.js:9602 lib/routes-ui.js:9720 lib/routes-ui.js:9737
-#: lib/routes-ui.js:9773
+#: lib/routes-ui.js:9740 lib/routes-ui.js:9858 lib/routes-ui.js:9875
+#: lib/routes-ui.js:9911
 msgid "Subscription Management"
 msgstr "サブスクリプション管理"
 
-#: lib/routes-ui.js:9731 lib/routes-ui.js:9766
+#: lib/routes-ui.js:9869 lib/routes-ui.js:9904
 msgid "Failed to process request"
 msgstr "リクエストの処理に失敗しました"
 
-#: lib/tools.js:1452
+#: workers/api.js:8818 workers/api.js:8931
+msgid "Requested page not found"
+msgstr "リクエストされたページが見つかりません"
+
+#: workers/api.js:8819
+msgid "Something went wrong"
+msgstr "問題がありました"
+
+#: lib/tools.js:1451
 msgid "Signature validation failed"
 msgstr "署名の検証に失敗しました"
 
-#: lib/tools.js:1461 lib/tools.js:1466
+#: lib/tools.js:1460 lib/tools.js:1465
 msgid "Invalid or expired account setup URL"
 msgstr "無効または期限切れのアカウント設定URL"
 
-#: lib/autodetect-imap-settings.js:69
+#: lib/autodetect-imap-settings.js:68
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
 "Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "

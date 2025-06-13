@@ -8,33 +8,33 @@
             <div class="col-sm">
 
                 <div class="form-group">
-                    <label for="name">{{_ "Your name" }}</label>
+                    <label for="name">{{_ "Your name" templateLocale }}</label>
                     <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
                         value="{{values.name}}" {{#unless values.name}}autofocus{{/unless}} />
                     {{#if errors.name}}
                     <span class="invalid-feedback">{{errors.name}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">{{_ "Enter your full name" }}</small>
+                    <small class="form-text text-muted">{{_ "Enter your full name" templateLocale }}</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="email">{{_ "Email address" }}</label>
+                    <label for="email">{{_ "Email address" templateLocale }}</label>
                     <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email"
                         name="email" value="{{values.email}}" {{#if values.name}}autofocus{{/if}} required />
                     {{#if errors.email}}
                     <span class="invalid-feedback">{{errors.email}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">{{_ "Enter your email address" }}</small>
+                    <small class="form-text text-muted">{{_ "Enter your email address" templateLocale }}</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">{{_ "Password" }}</label>
+                    <label for="password">{{_ "Password" templateLocale }}</label>
                     <input type="password" class="form-control {{#if errors.password}}is-invalid{{/if}}" id="password"
                         name="password" value="{{values.password}}" required />
                     {{#if errors.password}}
                     <span class="invalid-feedback">{{errors.password}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">{{_ "Enter your account password" }}</small>
+                    <small class="form-text text-muted">{{_ "Enter your account password" templateLocale }}</small>
                 </div>
 
             </div>
@@ -48,7 +48,7 @@
                     <span class="icon text-white-50">
                         <i class="fas fa-arrow-right"></i>
                     </span>
-                    <span class="text">{{_ "Continue" }}</span>
+                    <span class="text">{{_ "Continue" templateLocale }}</span>
                 </button>
             </div>
         </div>
