@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.52.6](https://github.com/postalsys/emailengine/compare/v2.52.5...v2.52.6) (2025-06-23)
+
+
+### Bug Fixes
+
+* Reverted ICOn handling for windows app ([7abba87](https://github.com/postalsys/emailengine/commit/7abba87b749ed36ccd663dabfc26fa7a2d2b320d))
+* **submit:** Added configuration ENV option EENGINE_SUBMIT_DELAY / --submitDelay=duration argument to allow rate limiting message sending (this is global, not account specific) ([531caad](https://github.com/postalsys/emailengine/commit/531caadb00d8b7d8710668509845d9452c9c924d))
+* **translations:** Allow changing active language with ?lang=lang_code query argument ([1f2a0e6](https://github.com/postalsys/emailengine/commit/1f2a0e6070a9dfa5989e6055648fb1d0f4d8c095))
+
 ## [2.52.5](https://github.com/postalsys/emailengine/compare/v2.52.4...v2.52.5) (2025-05-20)
 
 
