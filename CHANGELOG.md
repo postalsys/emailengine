@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.53.0](https://github.com/postalsys/emailengine/compare/v2.52.6...v2.53.0) (2025-06-30)
+
+
+### Features
+
+* Use persistent SMTP connections instead of logging separately for every email sent by the same account ([866e24f](https://github.com/postalsys/emailengine/commit/866e24fd06760ab92752629b259577fcf620b781))
+
+
+### Bug Fixes
+
+* Bumped deps to fix formwat=flowed parsing issue ([efffe4e](https://github.com/postalsys/emailengine/commit/efffe4e7be778667a1119343e71e86817e1dc71e))
+
 ## [2.52.6](https://github.com/postalsys/emailengine/compare/v2.52.5...v2.52.6) (2025-06-23)
 
 
