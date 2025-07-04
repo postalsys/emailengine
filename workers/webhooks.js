@@ -4,12 +4,13 @@ const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
 const config = require('wild-config');
+const { createHmac } = require('crypto');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, retryAgent } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, retryAgent, getServiceSecret } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -373,6 +374,11 @@ const notifyWorker = new Worker(
             webhookPayload.eventId = undefined; // not included in JSON
         }
         let body = Buffer.from(JSON.stringify(webhookPayload));
+
+        const serviceSecret = await getServiceSecret();
+        let hmac = createHmac('sha256', serviceSecret);
+        hmac.update(body);
+        headers['X-EE-Wh-Signature'] = hmac.digest('base64url');
 
         try {
             let res;
