@@ -191,7 +191,6 @@ const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', 
 
 const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
-const { param } = require('jquery');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
 
@@ -793,17 +792,50 @@ const init = async () => {
             title: 'EmailEngine API',
             version: packageData.version,
 
-            description: `<strong>Authentication Required:</strong> You must provide an Access Token to use this API. (Generate your Access Token <a href="/admin/tokens" target="_parent">here</a>).
+            description: `EmailEngine provides a RESTful API for managing email accounts, sending messages, and processing email data across multiple providers.
 
-<strong>Note on Request Handling:</strong> Requests made to the same account are processed sequentially and are not executed in parallel. If a previous request is still processing, subsequent requests may be queued. In the event of a prolonged request, queued requests may time out before being executed by EmailEngine.`
+<h3>Authentication</h3>
+All API requests require authentication using an Access Token. You can generate and manage your tokens from the <a href="/admin/tokens" target="_parent"><strong>Access Tokens</strong></a> page.
+
+Include your token in requests using one of these methods:
+- Query parameter: <code>?access_token=YOUR_TOKEN</code>
+- Authorization header: <code>Authorization: Bearer YOUR_TOKEN</code>
+
+<h3>Request Processing</h3>
+
+<strong>Sequential Processing:</strong> Requests to the same email account are processed sequentially to maintain data consistency. Multiple simultaneous requests will be queued.
+
+<strong>Timeouts:</strong> Long-running operations may cause queued requests to timeout. Configure appropriate timeout values using the <code>X-EE-Timeout</code> header (in milliseconds).
+
+<h3>Getting Started</h3>
+1. <a href="/admin/tokens" target="_parent">Generate an Access Token</a>
+2. <a href="/admin/accounts" target="_parent">Add an email account</a>
+3. Start making API requests using the endpoints below`,
+
+            contact: {
+                name: 'EmailEngine Support',
+                url: 'https://emailengine.app/support',
+                email: 'support@emailengine.app'
+            },
+
+            license: {
+                name: 'EmailEngine License',
+                url: 'https://emailengine.dev/LICENSE_EMAILENGINE.txt'
+            }
+        },
+
+        externalDocs: {
+            description: 'EmailEngine Documentation',
+            url: 'https://emailengine.app/'
         },
 
         securityDefinitions: {
             bearerAuth: {
                 type: 'apiKey',
-                //scheme: 'bearer',
                 name: 'access_token',
-                in: 'query'
+                in: 'query',
+                description:
+                    'Access token for API authentication. Can be provided as a query parameter (?access_token=TOKEN) or in the Authorization header (Bearer TOKEN).'
             }
         },
 
@@ -816,74 +848,101 @@ const init = async () => {
 
         tags: [
             {
-                name: 'Account'
+                name: 'Account',
+                description: 'Manage email accounts, including IMAP/SMTP configuration, OAuth2 authentication, and account health monitoring'
             },
             {
                 name: 'Mailbox',
-                description: 'Manage mailbox folders'
+                description: 'List, create, rename, and manage mailbox folders. Retrieve folder statistics and special-use designations'
             },
             {
-                name: 'Message'
+                name: 'Message',
+                description: 'Search, retrieve, update, and delete email messages. Manage flags, labels, and message content'
             },
             {
                 name: 'Submit',
+                description:
+                    'Send emails with attachments, reply to threads, forward messages, and upload to folders. Supports both immediate and scheduled sending',
                 externalDocs: {
-                    description: 'Documentation',
+                    description: 'Sending Emails Documentation',
                     url: 'https://emailengine.app/sending-emails'
                 }
             },
             {
                 name: 'Outbox',
-                description: 'Manage scheduled and pending emails in the sending queue'
+                description: 'Monitor and manage the email sending queue. View pending messages, retry failed deliveries, and track sending progress'
             },
             {
                 name: 'Delivery Test',
-                description: 'Test email deliverability, including SPF, DKIM, and DMARC alignment'
+                description: 'Test email deliverability and authentication. Verify SPF, DKIM signatures, DMARC alignment, and analyze potential delivery issues'
             },
             {
-                name: 'Access Tokens'
+                name: 'Access Tokens',
+                description: 'Create and manage API access tokens with customizable permissions, IP restrictions, and rate limits'
             },
             {
                 name: 'Settings',
-                description: 'Runtime configuration for EmailEngine'
+                description: 'Configure EmailEngine runtime settings including webhooks, tracking, AI features, and email processing options'
             },
             {
                 name: 'Templates',
-                description: 'Manage templates for sending emails',
+                description: 'Create and manage reusable email templates with variable substitution, HTML/text content, and attachments',
                 externalDocs: {
-                    description: 'Documentation',
+                    description: 'Email Templates Documentation',
                     url: 'https://emailengine.app/email-templates'
                 }
             },
             {
-                name: 'Logs'
+                name: 'Logs',
+                description: 'Access system and account-level logs for debugging, monitoring, and audit purposes'
             },
             {
-                name: 'Stats'
+                name: 'Stats',
+                description: 'Retrieve usage statistics, performance metrics, and account activity data',
+                externalDocs: {
+                    description: 'Monitoring and Analytics',
+                    url: 'https://emailengine.app/monitoring'
+                }
             },
             {
-                name: 'License'
+                name: 'License',
+                description: 'Manage EmailEngine licensing, view license status, and handle license-related operations'
             },
             {
-                name: 'Webhooks'
+                name: 'Webhooks',
+                description: 'Configure webhook endpoints, manage event subscriptions, and monitor webhook delivery status',
+                externalDocs: {
+                    description: 'Webhooks Guide',
+                    url: 'https://emailengine.app/webhooks'
+                }
             },
             {
                 name: 'OAuth2 Applications',
+                description: 'Configure OAuth2 applications for Gmail, Outlook, and other providers. Manage client credentials and authentication flows',
                 externalDocs: {
-                    description: 'Documentation',
+                    description: 'OAuth2 Configuration Guide',
                     url: 'https://emailengine.app/oauth2-configuration'
                 }
             },
             {
-                name: 'SMTP Gateway'
+                name: 'SMTP Gateway',
+                description: 'Configure and manage the built-in SMTP server for receiving emails and integrating with external systems'
             },
             {
-                name: 'Blocklists'
+                name: 'Blocklists',
+                description: 'Manage email address blocklists to prevent sending to specific recipients or domains'
             },
             {
-                name: 'Multi Message Actions'
+                name: 'Multi Message Actions',
+                description: 'Perform bulk operations on multiple messages simultaneously, such as marking as read, moving, or deleting'
             }
-        ]
+        ],
+
+        // Custom vendor extensions for additional metadata
+        'x-logo': {
+            url: 'https://emailengine.dev/static/logo.png',
+            altText: 'EmailEngine Logo'
+        }
     };
 
     await server.register(AuthBearer);
