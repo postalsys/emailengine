@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-06-30 08:33+0000\n"
+"POT-Creation-Date: 2025-07-04 12:19+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
@@ -13,12 +13,53 @@ msgstr[1] ""
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
+#: views/unsubscribe.hbs:3
+#: views/unsubscribe.hbs:62
+#: views/unsubscribe.hbs:85
+msgid "Unsubscribe"
 msgstr ""
 
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:15
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:21
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:32
+#: views/accounts/register/imap-server.hbs:251
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:34
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:56
+msgid "Subscription resumed"
+msgstr ""
+
+#: views/unsubscribe.hbs:58
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:75
+#: views/accounts/register/imap.hbs:21
+msgid "Email address"
+msgstr ""
+
+#: views/unsubscribe.hbs:81
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -27,16 +68,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:21
-#: views/unsubscribe.hbs:75
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:27
-#: views/unsubscribe.hbs:81
-msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:31
@@ -140,11 +171,6 @@ msgstr ""
 msgid "Failed to validate provided email server settings."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:251
-#: views/unsubscribe.hbs:32
-msgid "Close"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:318
 msgid "General error"
 msgstr ""
@@ -173,38 +199,12 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/unsubscribe.hbs:3
-#: views/unsubscribe.hbs:62
-#: views/unsubscribe.hbs:85
-msgid "Unsubscribe"
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
 msgstr ""
 
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:34
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:56
-msgid "Subscription resumed"
-msgstr ""
-
-#: views/unsubscribe.hbs:58
-msgid "Your email address <em>%s</em> was re-subscribed."
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: lib/routes-ui.js:530
@@ -264,7 +264,7 @@ msgstr ""
 #: lib/routes-ui.js:6994
 #: lib/routes-ui.js:7228
 #: lib/routes-ui.js:7264
-#: workers/api.js:2168
+#: workers/api.js:2237
 msgid "Email Account Setup"
 msgstr ""
 
@@ -280,7 +280,7 @@ msgid "Failed to process account"
 msgstr ""
 
 #: lib/routes-ui.js:9730
-#: lib/tools.js:773
+#: lib/tools.js:788
 msgid "Invalid input"
 msgstr ""
 
@@ -296,21 +296,21 @@ msgstr ""
 msgid "Failed to process request"
 msgstr ""
 
-#: workers/api.js:8818
-#: workers/api.js:8931
+#: workers/api.js:8887
+#: workers/api.js:9000
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:8819
+#: workers/api.js:8888
 msgid "Something went wrong"
 msgstr ""
 
-#: lib/tools.js:1451
+#: lib/tools.js:1466
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1460
-#: lib/tools.js:1465
+#: lib/tools.js:1475
+#: lib/tools.js:1480
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
