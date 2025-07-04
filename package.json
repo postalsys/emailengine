@@ -152,6 +152,9 @@
             "node20-macos-arm64",
             "node20-win-x64"
         ],
-        "outputPath": "ee-dist"
+        "outputPath": "ee-dist",
+        "options": {
+            "max_old_space_size": "4096"
+        }
     }
 }

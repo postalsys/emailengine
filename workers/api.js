@@ -294,6 +294,13 @@ class ResponseStream extends Transform {
         registeredPublishers.add(this);
         this.periodicKeepAliveTimer = false;
         this.updateTimer();
+
+        this._finalized = false;
+
+        // Ensure cleanup on all stream end scenarios
+        this.once('error', () => this.finalize());
+        this.once('close', () => this.finalize());
+        this.once('end', () => this.finalize());
     }
 
     updateTimer() {
@@ -322,6 +329,9 @@ class ResponseStream extends Transform {
     }
 
     finalize() {
+        if (this._finalized) return; // Prevent double cleanup
+        this._finalized = true;
+
         clearTimeout(this.periodicKeepAliveTimer);
         registeredPublishers.delete(this);
     }
