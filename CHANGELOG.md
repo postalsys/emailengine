@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.53.1](https://github.com/postalsys/emailengine/compare/v2.53.0...v2.53.1) (2025-07-04)
+
+
+### Bug Fixes
+
+* **multi-operations:** Added new search term 'emailIds', if set it will use the predefined email IDs instead of executing the search ([aac3aab](https://github.com/postalsys/emailengine/commit/aac3aab65e1eea3b51ea302b5634f3e2b1a30063))
+* removed dotenv debug log line ([9c5fc1b](https://github.com/postalsys/emailengine/commit/9c5fc1b4b3cb1c38c7604eec75f5427bf0f8482b))
+* **webhooks:** Include a HMAC signature in webhook headers ([7516188](https://github.com/postalsys/emailengine/commit/75161881c9100c2d5a2bec22790aa3311a2de87f))
+
 ## [2.53.0](https://github.com/postalsys/emailengine/compare/v2.52.6...v2.53.0) (2025-06-30)
 
 
