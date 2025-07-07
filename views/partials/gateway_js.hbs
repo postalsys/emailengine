@@ -15,8 +15,8 @@
             resolver: 'custom',
             events: {
                 search: function (query, callback) {
-                    let matches = wellKnownServices.filter(a => a.key.toLowerCase().indexOf(query.toLowerCase().trim()) >= 0);
-                    callback(matches.map(entry => entry.key))
+                    let matches = wellKnownServices.filter(entry => (`${entry.key} / ${entry.description}`).toLowerCase().indexOf(query.toLowerCase().trim()) >= 0);
+                    callback(matches.map(entry => `${entry.key} / ${entry.description}`))
                 },
                 typed: function (newValue, origJQElement) {
                     return newValue
@@ -27,7 +27,7 @@
         }).on('change', function (a) {
         }).on('autocomplete.select', function (e) {
             if (e && e.type === 'autocomplete') {
-                let selectedValue = e.currentTarget && e.currentTarget.value || '';
+                let selectedValue = (e.currentTarget && e.currentTarget.value || '').split(' / ').shift().trim();
                 if (selectedValue) {
                     let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue.toLowerCase().trim())
                     if (entry) {
