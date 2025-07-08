@@ -49,9 +49,9 @@ jobs:
 
             - name: Fluid-Attacks scan
               continue-on-error: true
-              uses: docker://ghcr.io/fluidattacks/makes/amd64
+              uses: docker://docker.io/fluidattacks/cli:latest
               with:
-                  args: m gitlab:fluidattacks/universe@trunk /skims scan ./fascan.yml
+                  args: skims scan /github/workspace/fascan.yml
 
             - name: Show Scan Results
               run: |

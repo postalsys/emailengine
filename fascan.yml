@@ -1,8 +1,8 @@
 namespace: emailengine
 output:
-  file_path: ./Fluid-Attacks-Results.csv
+  file_path: /github/workspace/Fluid-Attacks-Results.csv
   format: CSV
-working_dir: .
+working_dir: /github/workspace
 language: EN
 
 strict: true
