@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.53.2](https://github.com/postalsys/emailengine/compare/v2.53.1...v2.53.2) (2025-07-09)
+
+
+### Bug Fixes
+
+* **language:** Added language selection with ?locale=et query argument ([b911ec3](https://github.com/postalsys/emailengine/commit/b911ec31e93c75be281d7f79f18b9dcbab2ba1cb))
+* **no active handler:** Return 503 error, not 200 ([d1e0702](https://github.com/postalsys/emailengine/commit/d1e070292df2000005cca2f000094fc21e5d43df))
+* **smtp:** Improved Message-ID rewriting detection for AWS SES ([fbe7ff3](https://github.com/postalsys/emailengine/commit/fbe7ff3b99b4142cc263d15dcea47733f343a2ce))
+* Special envelope handling for LarkSuite accounts ([f448d39](https://github.com/postalsys/emailengine/commit/f448d39ecb958f926c05a28d7ad3ca110f16c17a))
+
 ## [2.53.1](https://github.com/postalsys/emailengine/compare/v2.53.0...v2.53.1) (2025-07-04)
 
 
