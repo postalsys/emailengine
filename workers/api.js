@@ -461,6 +461,7 @@ parentPort.on('message', message => {
         let { resolve, reject, timer } = callQueue.get(message.mid);
         clearTimeout(timer);
         callQueue.delete(message.mid);
+
         if (message.error) {
             let err = new Error(message.error);
             if (message.code) {
@@ -472,6 +473,7 @@ parentPort.on('message', message => {
             if (message.info) {
                 err.info = message.info;
             }
+
             return reject(err);
         } else {
             return resolve(message.response);
