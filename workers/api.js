@@ -9,7 +9,7 @@ const config = require('wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
-const { loadTranslations, gt, joiLocales } = require('../lib/translations');
+const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const featureFlags = require('../lib/feature-flags');
@@ -75,6 +75,7 @@ const Joi = require('joi');
 const hapiPino = require('hapi-pino');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
+const Accept = require('@hapi/accept');
 const HapiSwagger = require('hapi-swagger');
 
 const pathlib = require('path');
@@ -186,6 +187,8 @@ const AccountTypeSchema = Joi.string()
     .example('outlook')
     .description('Account type')
     .required();
+
+const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
@@ -590,7 +593,10 @@ const init = async () => {
             validate: {
                 options: {
                     messages: joiLocales,
-                    convert: true
+                    convert: true,
+                    errors: {
+                        language: 'en' // Default language
+                    }
                 },
                 headers: Joi.object({
                     'x-ee-timeout': headerTimeoutSchema
@@ -698,22 +704,88 @@ const init = async () => {
     });
 
     server.ext('onPreAuth', async (request, h) => {
+        const tags = (request.route && request.route.settings && request.route.settings.tags) || [];
+        // Skip if it's a static file route
+        if (tags.includes('static')) {
+            return h.continue;
+        }
+
         const defaultLocale = (await settings.get('locale')) || 'en';
         if (defaultLocale && gt.locale !== defaultLocale) {
             gt.setLocale(defaultLocale);
         }
 
-        const reqLang = request.query.lang || (request.state && request.state.lang && request.state.lang.locale);
-        const reqLocale = reqLang && Gettext.getLanguageCode(reqLang);
+        let detectedLocale = defaultLocale;
+        let updateLocaleCookie;
+        // Priority order:
+        // 1. Query parameter (?locale=nl)
+        if (request.query.locale && SUPPORTED_LOCALES.includes(request.query.locale)) {
+            detectedLocale = request.query.locale;
+            updateLocaleCookie = detectedLocale;
+        }
+        // 2. Custom header (X-EE-Locale: nl)
+        else if (request.headers['x-ee-locale'] && SUPPORTED_LOCALES.includes(request.headers['x-ee-locale'])) {
+            detectedLocale = request.headers['x-ee-locale'];
+            updateLocaleCookie = detectedLocale;
+        }
+        // 3. Use the locale store in cookie
+        else if (request.state && request.state.locale && request.state.locale.locale) {
+            detectedLocale = request.state && request.state.locale && request.state.locale.locale;
+        }
+        // 4. Accept-Language header negotiation
+        else if (request.headers['accept-language']) {
+            try {
+                detectedLocale = Accept.language(request.headers['accept-language'], SUPPORTED_LOCALES);
+            } catch (err) {
+                // Keep default locale on parse error
+                request.logger.debug({
+                    msg: 'Accept-Language parse error',
+                    err,
+                    header: request.headers['accept-language']
+                });
+            }
+        }
+        // 5. If still no match, keep the default
+
+        // Save selected locale in a cookie for UI requests
+        // Only use the value from query argument or custom header, not from Accept-Language header
+
+        if (
+            updateLocaleCookie &&
+            (!request.state || !request.state.locale || updateLocaleCookie !== request.state.locale.locale) &&
+            // skip API paths
+            !request.route.path.startsWith('/v1/') &&
+            !request.route.path.startsWith('/health')
+        ) {
+            // set locale cookie
+            h.state('locale', { locale: detectedLocale });
+        }
+
+        // Set the locale for the request
+        const reqLocale = detectedLocale && Gettext.getLanguageCode(detectedLocale);
         if (reqLocale && gt.catalogs.hasOwnProperty(reqLocale)) {
             request.app.gt = gt.useLocale(reqLocale);
             request.app.locale = reqLocale;
-            if (!request.state || !request.state.lang || reqLang !== request.state.lang.locale) {
-                h.state('lang', { locale: reqLocale });
-            }
         } else {
             request.app.locale = defaultLocale;
             request.app.gt = gt;
+        }
+
+        // Make sure validation errors use selected locale
+        if (request.route.settings.validate && request.route.settings.validate.options) {
+            // Get user's locale
+            const locale = request.app.locale || 'en';
+
+            // Create new validation options for this request
+            const validationOptions = {
+                ...request.route.settings.validate.options,
+                errors: {
+                    language: locale
+                }
+            };
+
+            // Apply to this request only
+            request.route.settings.validate.options = validationOptions;
         }
 
         return h.continue;
@@ -750,7 +822,7 @@ const init = async () => {
         request.flash = async message => await flash(redis, request, message);
 
         if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length) {
-            if (/^\/admin\b/i.test(request.path) && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+            if (request.route.path.startsWith('/admin') && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
                 logger.info({
                     msg: 'Blocked access from unlisted IP address',
                     remoteAddress: request.app.ip,
@@ -1141,7 +1213,7 @@ Include your token in requests using one of these methods:
         // skip
     }
 
-    server.state('lang', {
+    server.state('locale', {
         ttl: null,
         encoding: 'base64json',
         clearInvalid: true,
@@ -1275,7 +1347,8 @@ Include your token in requests using one of these methods:
     ]);
 
     server.events.on('response', request => {
-        if (!/^\/v1\//.test(request.route.path)) {
+        const tags = request.route && request.route.settings && request.route.settings.tags;
+        if (!tags || !tags.includes('api')) {
             // only log API calls
             return;
         }
@@ -1310,7 +1383,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'static', 'favicon.ico'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1321,7 +1395,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'static', 'licenses.html'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1332,7 +1407,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1343,7 +1419,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'LICENSE_EMAILENGINE.txt'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1354,7 +1431,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'sbom.json'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1384,7 +1462,8 @@ Include your token in requests using one of these methods:
             file: { path: pathlib.join(__dirname, '..', 'static', 'robots.txt'), confine: false }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1397,7 +1476,8 @@ Include your token in requests using one of these methods:
             }
         },
         options: {
-            auth: false
+            auth: false,
+            tags: ['static']
         }
     });
 
@@ -1422,7 +1502,8 @@ Include your token in requests using one of these methods:
         },
         options: {
             description: 'Health check',
-            auth: false
+            auth: false,
+            tags: ['static', 'health']
         }
     });
 
@@ -8914,7 +8995,10 @@ ${now}`,
             return res.code(request.errorInfo.statusCode || 500);
         }
 
-        if (/^\/v1\//.test(request.path) || /^\/health$|\/test$/.test(request.path)) {
+        const tags = (request.route && request.route.settings && request.route.settings.tags) || [];
+        const isApiRoute = tags.includes('api') || tags.includes('test');
+
+        if (isApiRoute) {
             // API path
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }

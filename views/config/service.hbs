@@ -46,30 +46,6 @@
                     header. Disable this if EmailEngine handles web requests directly without a reverse proxy.</small>
             </div>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">locale</a>]</div>
-
-                <label for="settingsServiceLocale">Default Language</label>
-                <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
-                    errors.locale}}is-invalid{{/if}}>
-                    {{#each locales}}
-                    <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-                    {{/each}}
-                </select>
-                {{#if errors.locale}}
-                <span class="invalid-feedback">{{errors.locale}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Select the language for <u data-toggle="popover"
-                        data-trigger="hover" data-html="true"
-                        data-content="&#x3C;img src=&#x22;/static/preview/translation.png&#x22; width=&#x22;250&#x22; &#x3E;"
-                        style="cursor: default;">public-facing pages</u>, such as the <a
-                        href="https://emailengine.app/hosted-authentication" target="_blank" rel="noopener noreferrer"
-                        referrerpolicy="no-referrer">hosted authentication</a>
-                    form. <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md"
-                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more about adding
-                        additional translations.</a></small>
-            </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
@@ -86,6 +62,64 @@
                 <span class="invalid-feedback">{{errors.timezone}}</span>
                 {{/if}}
             </div>
+        </div>
+    </div>
+
+    <div class="card mb-4" id="language">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Language settings</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">locale</a>]</div>
+
+                <label for="settingsServiceLocale">Default Language</label>
+                <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
+                    errors.locale}}is-invalid{{/if}}>
+                    {{#each locales}}
+                    <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}} ({{locale}})</option>
+                    {{/each}}
+                </select>
+                {{#if errors.locale}}
+                <span class="invalid-feedback">{{errors.locale}}</span>
+                {{/if}}
+                <small class="form-text text-muted">
+                    Sets the default language for EmailEngine when no specific language preference is provided.
+                    <a href="#languageDetails" data-toggle="collapse" aria-expanded="false"
+                        aria-controls="languageDetails">
+                        Learn more about language selection <i class="fas fa-chevron-down fa-sm"></i>
+                    </a>
+                </small>
+            </div>
+
+            <div class="collapse" id="languageDetails">
+                <div class="alert alert-info">
+                    <h6 class="alert-heading font-weight-bold">How Language Selection Works</h6>
+                    <p>EmailEngine determines the display language for both API responses and public pages using the
+                        following priority:</p>
+                    <ol class="mb-3">
+                        <li><strong>Query parameter:</strong> <code>?locale=xx</code> (highest priority)</li>
+                        <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API requests only)</li>
+                        <li><strong>Standard HTTP header:</strong> <code>Accept-Language</code></li>
+                        <li><strong>Default language:</strong> The language selected above</li>
+                    </ol>
+
+                    <strong>Examples:</strong>
+                    <ul class="mb-0">
+                        <li>Public page: <code>/accounts/new?locale=et</code></li>
+                        <li>API request: <code>GET /v1/accounts?locale=nl</code></li>
+                        <li>API with header: <code>X-EE-Locale: de</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="mb-0">
+                <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md" target="_blank"
+                    rel="noopener noreferrer" referrerpolicy="no-referrer">
+                    <i class="fas fa-external-link-alt fa-sm"></i> Translation documentation
+                </a>
+            </p>
         </div>
     </div>
 
