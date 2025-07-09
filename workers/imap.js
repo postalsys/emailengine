@@ -356,7 +356,7 @@ class ConnectionHandler {
     }
 
     async listMessages(message) {
-        if (!this.accounts.has(message.account) || 1) {
+        if (!this.accounts.has(message.account)) {
             throw NO_ACTIVE_HANDLER_RESP;
         }
 
