@@ -34,7 +34,7 @@ process.title = 'emailengine';
 try {
     structuredClone(true);
 } catch (err) {
-    console.error(`Please upgrade your Node.js version as the current version (${process.version}) is not supported.`);
+    console.error(`Node.js version ${process.version} is not supported. Please upgrade to Node.js 17 or later.`);
     process.exit(1);
 }
 
@@ -245,7 +245,7 @@ const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EE
 
 // Log startup information
 logger.info({
-    msg: 'Starting EmailEngine',
+    msg: 'EmailEngine starting up',
     version: packageData.version,
     node: process.versions.node,
     uvThreadpoolSize: Number(process.env.UV_THREADPOOL_SIZE),
@@ -256,7 +256,7 @@ logger.info({
 
 // Standard response for when no active worker is available
 const NO_ACTIVE_HANDLER_RESP = {
-    error: 'No active handler for requested account. Try again later.',
+    error: 'Service temporarily unavailable. Please try again in a moment.',
     statusCode: 503,
     code: 'WorkerNotAvailable'
 };
@@ -328,7 +328,7 @@ if (preparedSettingsString) {
 
         preparedSettings = value;
     } catch (err) {
-        logger.error({ msg: 'Received invalid settings string', input: preparedSettingsString, err });
+        logger.error({ msg: 'Invalid settings configuration provided', input: preparedSettingsString, err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -340,10 +340,10 @@ if (preparedTokenString) {
     try {
         preparedToken = msgpack.decode(Buffer.from(preparedTokenString, 'base64url'));
         if (!preparedToken || !/^[0-9a-f]{64}$/i.test(preparedToken.id)) {
-            throw new Error('Invalid token format');
+            throw new Error('Token format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Received invalid token string', input: preparedTokenString, err });
+        logger.error({ msg: 'Invalid API token provided', input: preparedTokenString, err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -355,10 +355,10 @@ if (preparedPasswordString) {
     try {
         preparedPassword = Buffer.from(preparedPasswordString, 'base64url').toString();
         if (!preparedPassword || preparedPassword.indexOf('$pbkdf2') !== 0) {
-            throw new Error('Invalid password format');
+            throw new Error('Password format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Received invalid password string', input: preparedPasswordString, err });
+        logger.error({ msg: 'Invalid password hash provided', input: preparedPasswordString, err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -595,7 +595,7 @@ const postMessage = (worker, payload, ignoreOffline, transferList) => {
         if (ignoreOffline) {
             return false;
         }
-        throw new Error('Requested worker thread not available');
+        throw new Error('Worker thread is not available');
     }
 
     // Send the message
@@ -636,7 +636,7 @@ let updateServerState = async (type, state, payload) => {
             try {
                 postMessage(worker, callPayload, true);
             } catch (err) {
-                logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
+                logger.error({ msg: 'Unable to notify worker about state change', worker: worker.threadId, callPayload, err });
             }
         }
     }
@@ -775,7 +775,7 @@ let spawnWorker = async type => {
         // Handle worker coming online
         worker.on('online', () => {
             if (['smtp', 'imapProxy'].includes(type)) {
-                updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Failed to update ${type} server state`, err }));
+                updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Unable to update ${type} server state`, err }));
             }
             onlineWorkers.add(worker);
 
@@ -820,7 +820,7 @@ let spawnWorker = async type => {
                         unassigned.add(account);
                     }
 
-                    assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 1, err }));
+                    assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts', n: 1, err }));
                 }
             }
 
@@ -830,9 +830,9 @@ let spawnWorker = async type => {
 
             // Log worker exit
             if (suspendedWorkerTypes.has(type)) {
-                logger.info({ msg: 'Worker thread closed', exitCode, type });
+                logger.info({ msg: 'Worker thread terminated', exitCode, type });
             } else {
-                logger.error({ msg: 'Worker exited', exitCode, type });
+                logger.error({ msg: 'Worker unexpectedly exited', exitCode, type });
             }
 
             // Respawn worker after delay
@@ -843,7 +843,7 @@ let spawnWorker = async type => {
         // Handle worker exit
         worker.on('exit', exitCode => {
             if (!isOnline) {
-                let error = new Error(`Failed to start ${type} worker thread on initialization`);
+                let error = new Error(`Unable to start ${type} worker thread`);
 
                 error.workerType = type;
                 error.exitCode = exitCode;
@@ -853,7 +853,7 @@ let spawnWorker = async type => {
             }
 
             exitHandler(exitCode).catch(err => {
-                logger.error({ msg: 'Failed to handle worker exit', exitCode, type, worker: worker.threadId, err });
+                logger.error({ msg: 'Error handling worker exit', exitCode, type, worker: worker.threadId, err });
             });
         });
 
@@ -917,7 +917,7 @@ let spawnWorker = async type => {
                                 callPayload.response = `Buffer <${callPayload.response.length}B>`;
                             }
 
-                            logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
+                            logger.error({ msg: 'Unable to send response to worker', worker: worker.threadId, callPayload, err });
                         }
                     })
                     .catch(err => {
@@ -933,7 +933,7 @@ let spawnWorker = async type => {
                         try {
                             postMessage(worker, callPayload);
                         } catch (err) {
-                            logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload, err });
+                            logger.error({ msg: 'Unable to send error response to worker', worker: worker.threadId, callPayload, err });
                         }
                     });
             }
@@ -1042,7 +1042,7 @@ let spawnWorker = async type => {
                         try {
                             postMessage(worker, message);
                         } catch (err) {
-                            logger.error({ msg: 'Failed to post command to child', worker: worker.threadId, callPayload: message, err });
+                            logger.error({ msg: 'Unable to forward settings to worker', worker: worker.threadId, callPayload: message, err });
                         }
                     });
                     return;
@@ -1054,7 +1054,7 @@ let spawnWorker = async type => {
                         case 'imapProxyServerState': {
                             let type = message.type.replace(/ServerState$/, '');
                             updateServerState(type, message.key, message.payload).catch(err =>
-                                logger.error({ msg: `Failed to update ${type} server state`, err })
+                                logger.error({ msg: `Unable to update ${type} server state`, err })
                             );
                             break;
                         }
@@ -1064,7 +1064,7 @@ let spawnWorker = async type => {
                                 try {
                                     postMessage(worker, message, true);
                                 } catch (err) {
-                                    logger.error({ msg: 'Failed to post state change to child', worker: worker.threadId, callPayload: message, err });
+                                    logger.error({ msg: 'Unable to forward state change to worker', worker: worker.threadId, callPayload: message, err });
                                 }
                             }
                     }
@@ -1082,7 +1082,7 @@ let spawnWorker = async type => {
 
                         if (imapInitialWorkersLoaded) {
                             // Assign accounts if all workers are loaded
-                            assignAccounts().catch(err => logger.error({ msg: 'Failed to assign accounts', n: 2, err }));
+                            assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', n: 2, err }));
                         }
                     }
                     break;
@@ -1117,7 +1117,7 @@ async function call(worker, message, transferList) {
 
         // Set timeout handler
         let timer = setTimeout(() => {
-            let err = new Error('Timeout waiting for command response [T1]');
+            let err = new Error('Request timed out');
             err.statusCode = 504;
             err.code = 'Timeout';
             err.ttl = ttl;
@@ -1173,7 +1173,7 @@ async function assignAccounts() {
         }
 
         logger.info({
-            msg: 'Assigning connections',
+            msg: 'Starting account assignment',
             unassigned: unassigned.size,
             workersAvailable: availableIMAPWorkers.size,
             setupDelay: CONNECTION_SETUP_DELAY
@@ -1293,7 +1293,7 @@ let licenseCheckHandler = async opts => {
                         let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
                         if (res === 2) {
                             // Grace period expired
-                            logger.info({ msg: 'License not valid', license: licenseInfo.details, data });
+                            logger.info({ msg: 'License validation failed', license: licenseInfo.details, data });
                             await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
                             licenseInfo.active = false;
                             licenseInfo.details = false;
@@ -1315,13 +1315,13 @@ let licenseCheckHandler = async opts => {
                     }
                 }
             } catch (err) {
-                logger.error({ msg: 'Failed to validate license', err });
+                logger.error({ msg: 'License validation error', err });
             }
         }
 
         // Check if license has expired
         if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
-            logger.info({ msg: 'License expired', license: licenseInfo.details });
+            logger.info({ msg: 'License has expired', license: licenseInfo.details });
 
             licenseInfo.active = false;
             licenseInfo.details = false;
@@ -1329,7 +1329,7 @@ let licenseCheckHandler = async opts => {
 
         // Handle no active license - suspend workers
         if (!licenseInfo.active && !suspendedWorkerTypes.size) {
-            logger.info({ msg: 'No active license, shutting down workers after 15 minutes of activity' });
+            logger.info({ msg: 'No active license. Workers will be suspended after 15 minutes of inactivity.' });
 
             // Suspend all worker types except API
             for (let type of ['imap', 'submit', 'smtp', 'webhooks', 'imapProxy']) {
@@ -1376,7 +1376,7 @@ let licenseCheckHandler = async opts => {
 function checkActiveLicense() {
     clearTimeout(licenseCheckTimer);
     licenseCheckHandler().catch(err => {
-        logger.error('Failed to process license checker', err);
+        logger.error('License check error', err);
     });
 }
 
@@ -1388,7 +1388,7 @@ let processCheckUpgrade = async () => {
     try {
         let updateInfo = await checkForUpgrade();
         if (updateInfo.canUpgrade) {
-            logger.info({ msg: 'Found an upgrade for EmailEngine', updateInfo });
+            logger.info({ msg: 'EmailEngine update available', updateInfo });
 
             updateInfo.checked = Date.now();
             await redis.hset(`${REDIS_PREFIX}settings`, 'upgrade', JSON.stringify(updateInfo));
@@ -1396,7 +1396,7 @@ let processCheckUpgrade = async () => {
             await redis.hdel(`${REDIS_PREFIX}settings`, 'upgrade');
         }
     } catch (err) {
-        logger.error({ msg: 'Failed to check updates', err });
+        logger.error({ msg: 'Update check failed', err });
     }
 };
 
@@ -1424,7 +1424,7 @@ let upgradeCheckHandler = async () => {
 function checkUpgrade() {
     clearTimeout(upgradeCheckTimer);
     upgradeCheckHandler().catch(err => {
-        logger.error('Failed to process upgrade check', err);
+        logger.error('Update check error', err);
     });
 }
 
@@ -1484,7 +1484,7 @@ const getCurrentRedisPing = async () => {
 
         return duration;
     } catch (err) {
-        logger.error({ msg: 'Failed to run Redis ping', err });
+        logger.error({ msg: 'Redis ping measurement failed', err });
     }
     return 0;
 };
@@ -1503,7 +1503,7 @@ const processRedisPing = async () => {
         }
         return duration;
     } catch (err) {
-        logger.error({ msg: 'Failed to run Redis ping', err });
+        logger.error({ msg: 'Redis ping processing failed', err });
     }
 };
 
@@ -1523,7 +1523,7 @@ const redisPingHandler = async () => {
 function checkRedisPing() {
     clearTimeout(redisPingTimer);
     redisPingHandler().catch(err => {
-        logger.error('Failed to process Redis Ping', err);
+        logger.error('Redis ping check error', err);
     });
 }
 
@@ -1579,7 +1579,7 @@ async function updateQueueCounters() {
             .exec();
         if (resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0]) {
             // Counting failed
-            logger.error({ msg: 'Failed to count queue length', queue, active: resActive, delayed: resDelayed, paused: resPaused, waiting: resWaiting });
+            logger.error({ msg: 'Queue length count failed', queue, active: resActive, delayed: resDelayed, paused: resPaused, waiting: resWaiting });
             return false;
         }
 
@@ -1643,7 +1643,7 @@ async function updateQueueCounters() {
         metrics.redisLastSaveTime.set(Number(redisInfo.rdb_last_save_time) || 0);
         metrics.redisOpsPerSec.set(Number(redisInfo.instantaneous_ops_per_sec) || 0);
     } catch (err) {
-        logger.error({ msg: 'Failed to update query counters', err });
+        logger.error({ msg: 'Metrics update failed', err });
     }
 }
 
@@ -1704,10 +1704,10 @@ async function onCommand(worker, message) {
 
                 let licenseData = await checkLicense(licenseFile);
                 if (!licenseData) {
-                    throw new Error('Failed to verify provided license');
+                    throw new Error('Invalid license provided');
                 }
 
-                logger.info({ msg: 'Loaded license', license: licenseData, source: 'API' });
+                logger.info({ msg: 'License updated', license: licenseData, source: 'API' });
 
                 await setLicense(licenseData, licenseFile);
 
@@ -1720,7 +1720,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'Failed to verify provided license', source: 'API', err });
+                logger.fatal({ msg: 'License update failed', source: 'API', err });
                 return false;
             }
         }
@@ -1736,7 +1736,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'Failed to remove existing license', err });
+                logger.fatal({ msg: 'License removal failed', err });
                 return false;
             }
         }
@@ -1747,7 +1747,7 @@ async function onCommand(worker, message) {
                 if (workerSet && workerSet.size) {
                     for (let worker of workerSet) {
                         if (worker.threadId === message.thread) {
-                            logger.info({ msg: 'Requested thread kill', thread: message.thread });
+                            logger.info({ msg: 'Thread termination requested', thread: message.thread });
                             return await worker.terminate();
                         }
                     }
@@ -1761,7 +1761,7 @@ async function onCommand(worker, message) {
             // Get heap snapshot for debugging
             if (message.thread === 0) {
                 // Main thread
-                logger.info({ msg: 'Requested snapshot for a thread', thread: message.thread });
+                logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
                 const stream = v8.getHeapSnapshot();
                 if (stream) {
                     return { _transfer: true, _response: await download(stream) };
@@ -1774,7 +1774,7 @@ async function onCommand(worker, message) {
                 if (workerSet && workerSet.size) {
                     for (let worker of workerSet) {
                         if (worker.threadId === message.thread) {
-                            logger.info({ msg: 'Requested snapshot for a thread', thread: message.thread });
+                            logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
 
                             const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
                             if (stream) {
@@ -1798,7 +1798,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiModel = message.data.openAiModel || (await settings.get('openAiModel'));
@@ -1851,7 +1851,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
@@ -1886,7 +1886,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
@@ -1955,7 +1955,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
@@ -1990,7 +1990,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
@@ -2013,7 +2013,7 @@ async function onCommand(worker, message) {
             let openAiAPIKey = message.data.openAiAPIKey || (await settings.get('openAiAPIKey'));
 
             if (!openAiAPIKey) {
-                throw new Error(`OpenAI API key is not set`);
+                throw new Error(`OpenAI API key is not configured`);
             }
 
             let openAiAPIUrl = message.data.openAiAPIUrl || (await settings.get('openAiAPIUrl'));
@@ -2042,16 +2042,12 @@ async function onCommand(worker, message) {
 
         case 'unsubscribe':
             // Handle list unsubscribe
-            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
-                logger.error({ msg: 'Failed to send an unsubscribe webhook', err })
-            );
+            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err => logger.error({ msg: 'Unsubscribe webhook failed', err }));
             return;
 
         case 'subscribe':
             // Handle list subscribe
-            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
-                logger.error({ msg: 'Failed to send an subscribe webhook', err })
-            );
+            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err => logger.error({ msg: 'Subscribe webhook failed', err }));
             return;
 
         case 'new':
@@ -2059,7 +2055,7 @@ async function onCommand(worker, message) {
             unassigned.add(message.account);
             assignAccounts()
                 .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-                .catch(err => logger.error({ msg: 'Failed to assign accounts', n: 3, err }));
+                .catch(err => logger.error({ msg: 'Account assignment failed', n: 3, err }));
             return;
 
         case 'delete':
@@ -2077,11 +2073,11 @@ async function onCommand(worker, message) {
 
                 // Notify worker to clean up
                 call(assignedWorker, message)
-                    .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error({ msg: 'Failed to clean an assigned worker', err }));
+                    .then(() => logger.debug('Account cleanup completed'))
+                    .catch(err => logger.error({ msg: 'Account cleanup failed', err }));
             }
             sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
-                logger.error({ msg: 'Failed to send a deletion webhook', err })
+                logger.error({ msg: 'Account deletion webhook failed', err })
             );
             return;
 
@@ -2098,8 +2094,8 @@ async function onCommand(worker, message) {
             if (assigned.has(message.account)) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
-                    .then(() => logger.debug('worker processed'))
-                    .catch(err => logger.error({ msg: 'Failed to call sync from a worker', err }));
+                    .then(() => logger.debug('Worker command completed'))
+                    .catch(err => logger.error({ msg: 'Worker command failed', err }));
             }
             return;
 
@@ -2193,7 +2189,7 @@ async function onCommand(worker, message) {
                 try {
                     await call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId });
                 } catch (err) {
-                    logger.error({ msg: 'Failed to notify worker about account changes', cmd: 'externalNotify', account, historyId: message.historyId, err });
+                    logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
                 }
             }
             return true;
@@ -2234,7 +2230,7 @@ async function collectMetrics() {
                     metricsResult[status] += Number(workerStats[status]) || 0;
                 });
             } catch (err) {
-                logger.error({ msg: 'Failed to count connections', err });
+                logger.error({ msg: 'Connection count failed', err });
             }
         }
     }
@@ -2293,7 +2289,7 @@ const closeQueues = cb => {
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
-    logger.info({ msg: 'Close signal received', signal: 'SIGTERM', isClosing });
+    logger.info({ msg: 'Shutdown signal received', signal: 'SIGTERM', isClosing });
     if (isClosing) {
         return;
     }
@@ -2304,7 +2300,7 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
-    logger.info({ msg: 'Close signal received', signal: 'SIGINT', isClosing });
+    logger.info({ msg: 'Shutdown signal received', signal: 'SIGINT', isClosing });
     if (isClosing) {
         return;
     }
@@ -2329,18 +2325,18 @@ const startApplication = async () => {
         try {
             let stat = await fs.stat(config.licensePath);
             if (!stat.isFile()) {
-                throw new Error(`Provided license key is not a regular file`);
+                throw new Error(`License file is not accessible`);
             }
             const licenseFile = await fs.readFile(config.licensePath, 'utf-8');
             let licenseData = await checkLicense(licenseFile);
             if (!licenseData) {
-                throw new Error('Failed to verify provided license key');
+                throw new Error('Invalid license key');
             }
-            logger.info({ msg: 'Loaded license key', license: licenseData, source: config.licensePath });
+            logger.info({ msg: 'License loaded', license: licenseData, source: config.licensePath });
 
             await setLicense(licenseData, licenseFile);
         } catch (err) {
-            logger.fatal({ msg: 'Failed to verify provided license key file', source: config.licensePath, err });
+            logger.fatal({ msg: 'License verification failed', source: config.licensePath, err });
             return logger.flush(() => process.exit(13));
         }
     }
@@ -2351,10 +2347,10 @@ const startApplication = async () => {
         try {
             let imported = await settings.importLicense(preparedLicenseString, checkLicense);
             if (imported) {
-                logger.info({ msg: 'Imported license key', source: 'import' });
+                logger.info({ msg: 'License imported', source: 'import' });
             }
         } catch (err) {
-            logger.fatal({ msg: 'Failed to verify provided license key data', source: 'import', err });
+            logger.fatal({ msg: 'License import failed', source: 'import', err });
             return logger.flush(() => process.exit(13));
         }
     }
@@ -2365,31 +2361,31 @@ const startApplication = async () => {
         try {
             let licenseData = await checkLicense(licenseFile);
             if (!licenseData) {
-                throw new Error('Failed to verify provided license key');
+                throw new Error('Invalid license key');
             }
             licenseInfo.active = true;
             licenseInfo.details = licenseData;
             licenseInfo.type = 'EmailEngine License';
             if (!config.licensePath) {
-                logger.info({ msg: 'Loaded license', license: licenseData, source: 'db' });
+                logger.info({ msg: 'License loaded', license: licenseData, source: 'db' });
             }
         } catch (err) {
-            logger.fatal({ msg: 'Failed to verify stored license key', content: licenseFile, err });
+            logger.fatal({ msg: 'Stored license verification failed', content: licenseFile, err });
         }
     }
 
     if (!licenseInfo.active) {
-        logger.fatal({ msg: 'No active license key provided. Running in limited mode.' });
+        logger.fatal({ msg: 'No active license. Running in limited mode.' });
     }
 
     // Check for updates
     processCheckUpgrade().catch(err => {
-        logger.error({ msg: 'Failed to process upgrade check', err });
+        logger.error({ msg: 'Update check failed', err });
     });
 
     // Apply prepared settings
     if (preparedSettings) {
-        logger.debug({ msg: 'Updating application settings', settings: preparedSettings });
+        logger.debug({ msg: 'Applying configuration', settings: preparedSettings });
 
         for (let key of Object.keys(preparedSettings)) {
             await settings.set(key, preparedSettings[key]);
@@ -2499,12 +2495,12 @@ const startApplication = async () => {
         try {
             let imported = await tokens.setRawData(preparedToken);
             if (imported) {
-                logger.debug({ msg: 'Imported prepared token', token: preparedToken.id });
+                logger.debug({ msg: 'Token imported', token: preparedToken.id });
             } else {
-                logger.debug({ msg: 'Skipped prepared token', token: preparedToken.id });
+                logger.debug({ msg: 'Token already exists', token: preparedToken.id });
             }
         } catch (err) {
-            logger.error({ msg: 'Failed to import token', token: preparedToken.id });
+            logger.error({ msg: 'Token import failed', token: preparedToken.id });
         }
     }
 
@@ -2519,9 +2515,9 @@ const startApplication = async () => {
             authData.passwordVersion = Date.now();
 
             await settings.set('authData', authData);
-            logger.debug({ msg: 'Imported hashed password', hash: preparedPassword });
+            logger.debug({ msg: 'Password imported', hash: preparedPassword });
         } catch (err) {
-            logger.error({ msg: 'Failed to import password', hash: preparedPassword });
+            logger.error({ msg: 'Password import failed', hash: preparedPassword });
         }
     }
 
@@ -2555,7 +2551,7 @@ const startApplication = async () => {
     try {
         await assignAccounts();
     } catch (err) {
-        logger.error({ msg: 'Failed to assign accounts', n: 4, err });
+        logger.error({ msg: 'Initial account assignment failed', n: 4, err });
     }
     imapInitialWorkersLoaded = true;
 
@@ -2588,7 +2584,7 @@ startApplication()
     .then(() => {
         // Start periodic metric collection
         setInterval(() => {
-            collectMetrics().catch(err => logger.error({ msg: 'Failed to collect metrics', err }));
+            collectMetrics().catch(err => logger.error({ msg: 'Metrics collection failed', err }));
         }, 1000).unref();
 
         // Schedule periodic checks
@@ -2607,6 +2603,6 @@ startApplication()
         queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
     })
     .catch(err => {
-        logger.fatal({ msg: 'Failed to start application', err });
+        logger.fatal({ msg: 'Application startup failed', err });
         logger.flush(() => process.exit(1));
     });
