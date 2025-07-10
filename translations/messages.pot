@@ -1,13 +1,17 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-07-07 10:46+0000\n"
+"POT-Creation-Date: 2025-07-10 08:45+0000\n"
 
 #: views/config/license.hbs:49
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
 
 #: views/unsubscribe.hbs:3
 #: views/unsubscribe.hbs:62
@@ -58,10 +62,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -83,6 +83,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -199,109 +207,101 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
-#: lib/routes-ui.js:530
+#: lib/routes-ui.js:529
 msgid "Delegated"
 msgstr ""
 
-#: lib/routes-ui.js:531
+#: lib/routes-ui.js:530
 msgid "Using credentials from \"%s\""
 msgstr ""
 
-#: lib/routes-ui.js:581
+#: lib/routes-ui.js:580
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/routes-ui.js:584
+#: lib/routes-ui.js:583
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/routes-ui.js:587
+#: lib/routes-ui.js:586
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/routes-ui.js:592
+#: lib/routes-ui.js:591
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/routes-ui.js:710
+#: lib/routes-ui.js:709
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:5067
-#: lib/routes-ui.js:7053
-#: lib/routes-ui.js:7064
+#: lib/routes-ui.js:5006
+#: lib/routes-ui.js:6957
+#: lib/routes-ui.js:6968
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5070
-#: lib/routes-ui.js:7056
-#: lib/routes-ui.js:7067
+#: lib/routes-ui.js:5009
+#: lib/routes-ui.js:6960
+#: lib/routes-ui.js:6971
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5074
-#: lib/routes-ui.js:7071
+#: lib/routes-ui.js:5013
+#: lib/routes-ui.js:6975
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6794
-#: lib/routes-ui.js:6829
-#: lib/routes-ui.js:6947
-#: lib/routes-ui.js:6994
-#: lib/routes-ui.js:7228
-#: lib/routes-ui.js:7264
-#: workers/api.js:2237
+#: lib/routes-ui.js:6704
+#: lib/routes-ui.js:6739
+#: lib/routes-ui.js:6854
+#: lib/routes-ui.js:6901
+#: lib/routes-ui.js:7130
+#: lib/routes-ui.js:7166
+#: workers/api.js:2319
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6854
-#: lib/routes-ui.js:6887
-#: lib/routes-ui.js:9767
+#: lib/routes-ui.js:6764
+#: lib/routes-ui.js:6797
+#: lib/routes-ui.js:9634
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6987
-#: lib/routes-ui.js:7257
+#: lib/routes-ui.js:6894
+#: lib/routes-ui.js:7159
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9730
+#: lib/routes-ui.js:9597
 #: lib/tools.js:788
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9740
-#: lib/routes-ui.js:9858
-#: lib/routes-ui.js:9875
-#: lib/routes-ui.js:9911
+#: lib/routes-ui.js:9607
+#: lib/routes-ui.js:9725
+#: lib/routes-ui.js:9742
+#: lib/routes-ui.js:9778
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9869
-#: lib/routes-ui.js:9904
+#: lib/routes-ui.js:9736
+#: lib/routes-ui.js:9771
 msgid "Failed to process request"
 msgstr ""
 
-#: workers/api.js:8887
-#: workers/api.js:9000
+#: workers/api.js:8969
+#: workers/api.js:9085
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:8888
+#: workers/api.js:8970
 msgid "Something went wrong"
 msgstr ""
 
@@ -314,7 +314,7 @@ msgstr ""
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:68
+#: lib/autodetect-imap-settings.js:80
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "

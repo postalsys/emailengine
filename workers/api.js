@@ -779,12 +779,11 @@ const init = async () => {
             const locale = request.app.locale || 'en';
 
             // Create new validation options for this request
-            const validationOptions = {
-                ...request.route.settings.validate.options,
+            const validationOptions = Object.assign({}, request.route.settings.validate.options, {
                 errors: {
                     language: locale
                 }
-            };
+            });
 
             // Apply to this request only
             request.route.settings.validate.options = validationOptions;
