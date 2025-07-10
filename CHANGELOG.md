@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.53.3](https://github.com/postalsys/emailengine/compare/v2.53.2...v2.53.3) (2025-07-10)
+
+
+### Bug Fixes
+
+* **search:** Prefer WITHIN extension and YOUNGER/OLDER for SINCE/BEFORE searches ([34d5889](https://github.com/postalsys/emailengine/commit/34d5889b84812537ca592089f58abde5d4005223))
+
 ## [2.53.2](https://github.com/postalsys/emailengine/compare/v2.53.1...v2.53.2) (2025-07-09)
 
 
