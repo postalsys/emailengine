@@ -136,3 +136,76 @@ For detailed security and data compliance information, refer to [this guide](htt
 ## Licensing
 
 EmailEngine is licensed under the commercial [EmailEngine License](./LICENSE_EMAILENGINE.txt).
+
+
+## Manual ECR Deployment
+
+This fork is configured to deploy to AWS ECR. Follow these steps to build and deploy:
+
+##### Prerequisites
+- AWS CLI configured with appropriate profiles
+- Docker installed and running
+- ECR repository created: `text/email-engine`
+
+##### Step-by-Step Deployment
+1. **Login to AWS**
+```bash
+# check what profile you have
+aws configure list-profiles
+
+#staging
+aws sso login --profile=dev
+
+#prod
+aws sso login --profile=prod
+```
+2. **Build Docker image**
+```bash
+docker build -t emailengine:latest .
+```
+
+3. **Tag image for ECR**
+```bash
+# staging
+docker tag emailengine:latest 908027377227.dkr.ecr.us-east-1.amazonaws.com/text/email-engine:latest
+
+# prod
+docker tag emailengine:latest 559050243724.dkr.ecr.us-east-1.amazonaws.com/text/email-engine:latest
+```
+
+4. **Login to ECR**
+```bash
+# staging
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 908027377227.dkr.ecr.us-east-1.amazonaws.com
+
+# prod
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 559050243724.dkr.ecr.us-east-1.amazonaws.com
+```
+
+4. **Push to ECR**
+```bash
+# staging
+docker push 908027377227.dkr.ecr.us-east-1.amazonaws.com/text/email-engine:latest
+
+# prod
+docker push 559050243724.dkr.ecr.us-east-1.amazonaws.com/text/email-engine:latest
+```
+
+##### Environment-Specific Deployment
+
+**For Staging:**
+```bash
+docker-compose --env-file .env.staging up
+```
+
+**For Production:**
+1. Update `.env.prod` with your production ECR registry URL
+2. Run:
+   ```bash
+   docker-compose --env-file .env.prod up
+   ```
+
+The `docker-compose.yml` file uses environment variables to support multiple deployment environments. The image is configured as:
+```yaml
+image: ${ECR_REGISTRY:-908027377227.dkr.ecr.us-east-1.amazonaws.com/text/email-engine}:${IMAGE_TAG:-latest}
+```

@@ -3,7 +3,7 @@ name: emailengine-bundle
 services:
     emailengine:
         restart: always
-        image: postalsys/emailengine:latest
+        image: ${ECR_REGISTRY:-908027377227.dkr.ecr.us-east-1.amazonaws.com/text/email-engine}:${IMAGE_TAG:-latest}
         ports:
             # API and web interface
             - '3000:3000'
