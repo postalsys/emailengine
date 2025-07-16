@@ -255,11 +255,9 @@ logger.info({
 });
 
 // Standard response for when no active worker is available
-const NO_ACTIVE_HANDLER_RESP = {
-    error: 'Service temporarily unavailable. Please try again in a moment.',
-    statusCode: 503,
-    code: 'WorkerNotAvailable'
-};
+const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
+NO_ACTIVE_HANDLER_RESP_ERR.statusCode = 503;
+NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
 
 // Update check intervals
 const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000; // 24 hours
@@ -2142,7 +2140,7 @@ async function onCommand(worker, message) {
         case 'getAttachment':
         case 'listSignatures': {
             if (!assigned.has(message.account)) {
-                return NO_ACTIVE_HANDLER_RESP;
+                throw NO_ACTIVE_HANDLER_RESP_ERR;
             }
 
             let assignedWorker = assigned.get(message.account);

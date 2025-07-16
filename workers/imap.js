@@ -68,9 +68,9 @@ const DEFAULT_STATES = {
     disconnected: 0
 };
 
-const NO_ACTIVE_HANDLER_RESP = new Error('No active handler for requested account. Try again later.');
-NO_ACTIVE_HANDLER_RESP.statusCode = 503;
-NO_ACTIVE_HANDLER_RESP.code = 'WorkerNotAvailable';
+const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
+NO_ACTIVE_HANDLER_RESP_ERR.statusCode = 503;
+NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
 
 class ConnectionHandler {
     constructor() {
@@ -357,12 +357,12 @@ class ConnectionHandler {
 
     async listMessages(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.listMessages(message);
@@ -370,12 +370,12 @@ class ConnectionHandler {
 
     async listSignatures(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.listSignatures(message.account);
@@ -383,12 +383,12 @@ class ConnectionHandler {
 
     async getText(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.getText(message.text, message.options);
@@ -396,12 +396,12 @@ class ConnectionHandler {
 
     async getMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.getMessage(message.message, message.options);
@@ -409,12 +409,12 @@ class ConnectionHandler {
 
     async updateMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.updateMessage(message.message, message.updates);
@@ -422,24 +422,24 @@ class ConnectionHandler {
 
     async updateMessages(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
         return await accountData.connection.updateMessages(message.path, message.search, message.updates);
     }
 
     async listMailboxes(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.listMailboxes(message.options);
@@ -447,12 +447,12 @@ class ConnectionHandler {
 
     async moveMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.moveMessage(message.message, message.target, message.options);
@@ -460,12 +460,12 @@ class ConnectionHandler {
 
     async moveMessages(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.moveMessages(message.source, message.search, message.target);
@@ -473,12 +473,12 @@ class ConnectionHandler {
 
     async deleteMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.deleteMessage(message.message, message.force);
@@ -486,12 +486,12 @@ class ConnectionHandler {
 
     async deleteMessages(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.deleteMessages(message.path, message.search, message.force);
@@ -499,12 +499,12 @@ class ConnectionHandler {
 
     async submitMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.submitMessage(message.data);
@@ -512,12 +512,12 @@ class ConnectionHandler {
 
     async queueMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         const accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.queueMessage(message.data, message.meta);
@@ -542,12 +542,12 @@ class ConnectionHandler {
 
     async uploadMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.uploadMessage(message.data);
@@ -555,12 +555,12 @@ class ConnectionHandler {
 
     async externalNotify(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.externalNotify(message);
@@ -568,12 +568,12 @@ class ConnectionHandler {
 
     async getQuota(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.getQuota();
@@ -581,12 +581,12 @@ class ConnectionHandler {
 
     async createMailbox(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.createMailbox(message.path);
@@ -594,12 +594,12 @@ class ConnectionHandler {
 
     async renameMailbox(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         return await accountData.connection.renameMailbox(message.path, message.newPath);
@@ -607,24 +607,24 @@ class ConnectionHandler {
 
     async deleteMailbox(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
         return await accountData.connection.deleteMailbox(message.path);
     }
 
     async getRawMessage(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
         let stream = new MessagePortWritable(message.port);
 
@@ -654,12 +654,12 @@ class ConnectionHandler {
 
     async getAttachment(message) {
         if (!this.accounts.has(message.account)) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let accountData = this.accounts.get(message.account);
         if (!accountData.connection) {
-            throw NO_ACTIVE_HANDLER_RESP;
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
         let stream = new MessagePortWritable(message.port);
