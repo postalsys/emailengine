@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.53.3](https://github.com/postalsys/emailengine/compare/v2.53.2...v2.53.3) (2025-07-17)
+
+
+### Bug Fixes
+
+* **delegated-oauth:** Handle delegated MS Graph account properly if created using delegated=true ([4cece01](https://github.com/postalsys/emailengine/commit/4cece016eac3033aae14422a31444c93c8375423))
+* **MS-Graph:** Fixed IMAP and SMTP hosts for Government Cloud accounts ([e78a9cb](https://github.com/postalsys/emailengine/commit/e78a9cb6c480c740c2c3abb9b50a8c7c7f6e7ee7))
+* **no-active-handler:** Fixed response code 200 for No Active Handler response ([067a37b](https://github.com/postalsys/emailengine/commit/067a37b4326d4ab0f4d2ae188220a0716921c0f0))
+* **search:** Prefer WITHIN extension and YOUNGER/OLDER for SINCE/BEFORE searches ([34d5889](https://github.com/postalsys/emailengine/commit/34d5889b84812537ca592089f58abde5d4005223))
+
 ## [2.53.2](https://github.com/postalsys/emailengine/compare/v2.53.1...v2.53.2) (2025-07-09)
 
 
