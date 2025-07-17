@@ -2285,6 +2285,7 @@ Include your token in requests using one of these methods:
                 secret: await getSecret(),
                 timeout: request.headers['x-ee-timeout']
             });
+
             let result = await accountObject.create(accountData);
 
             if (accountMeta.n) {

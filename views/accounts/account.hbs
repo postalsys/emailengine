@@ -243,7 +243,13 @@
 
             {{#if account.oauth2.auth.user}}
             <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            <dd class="col-sm-9">
+                {{account.oauth2.auth.user}}
+                {{#if account.oauth2.auth.delegatedUser}}
+                <em>as</em>
+                {{account.oauth2.auth.delegatedUser}}
+                {{/if}}
+            </dd>
             {{/if}}
 
             {{#if account.oauth2.scopes}}
@@ -434,7 +440,13 @@
 
             {{#if account.oauth2.auth.user}}
             <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            <dd class="col-sm-9">
+                {{account.oauth2.auth.user}}
+                {{#if account.oauth2.auth.delegatedUser}}
+                <em>as</em>
+                {{account.oauth2.auth.delegatedUser}}
+                {{/if}}
+            </dd>
             {{/if}}
 
             <dt class="col-sm-3">Authentication</dt>
@@ -634,7 +646,13 @@
 
             {{#if account.oauth2.auth.user}}
             <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.oauth2.auth.user}}</dd>
+            <dd class="col-sm-9">
+                {{account.oauth2.auth.user}}
+                {{#if account.oauth2.auth.delegatedUser}}
+                <em>as</em>
+                {{account.oauth2.auth.delegatedUser}}
+                {{/if}}
+            </dd>
             {{/if}}
 
             <dt class="col-sm-3">Authentication</dt>
