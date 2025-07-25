@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.53.4](https://github.com/postalsys/emailengine/compare/v2.53.3...v2.53.4) (2025-07-25)
+
+
+### Bug Fixes
+
+* normalize OAuth2 subscription keys ([a400e73](https://github.com/postalsys/emailengine/commit/a400e7397d509ef6bba1a47d7dd8535b019862c4))
+
 ## [2.53.3](https://github.com/postalsys/emailengine/compare/v2.53.2...v2.53.3) (2025-07-17)
 
 
