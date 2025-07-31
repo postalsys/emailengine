@@ -14,6 +14,8 @@ module.exports = {
         'eslint',
         'grunt-eslint',
 
+        'pino-pretty',
+
         // no support for Node 16
         'marked',
 
