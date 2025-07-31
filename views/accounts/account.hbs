@@ -83,6 +83,11 @@
                     data-placement="top" download>
                     <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
                 </a>
+
+                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/browse"
+                    title="Browse messages" data-toggle="tooltip" data-placement="top">
+                    <i class="fas fa-folder-open fa-fw"></i> Browse
+                </a>
             </div>
 
             {{#if account.oauth2.provider}}

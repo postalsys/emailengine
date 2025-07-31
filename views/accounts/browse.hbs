@@ -1,0 +1,23 @@
+{{> accounts_header}}
+
+<nav aria-label="breadcrumb" class="mt-4 mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
+        <li class="breadcrumb-item"><a href="/admin/accounts/{{account}}">{{account}}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Edit</li>
+    </ol>
+</nav>
+
+<div id="email-client"></div>
+
+<script type="module">
+    import { EmailEngineClient } from '/static/js/ee-client.js';
+
+    // Create client with UI container
+    const client = new EmailEngineClient({
+        apiUrl: window.location.origin,
+        account: '{{account}}',
+        accessToken: '{{sessionToken}}',
+        container: document.getElementById('email-client')
+    });
+</script>

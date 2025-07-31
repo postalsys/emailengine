@@ -22,6 +22,8 @@ cp node_modules/ace-builds/src-min/snippets/javascript.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/snippets/markdown.js static/js/ace/snippets
 cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.js
 
+cp node_modules/\@postalsys/ee-client/index.js static/js/ee-client.js
+
 wget https://developers.google.com/static/search/apis/ipranges/special-crawlers.json -O data/google-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 

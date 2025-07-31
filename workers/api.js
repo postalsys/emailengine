@@ -1056,6 +1056,18 @@ Include your token in requests using one of these methods:
                 }
             }
 
+            if (token.startsWith('sess_') && scope === 'api') {
+                // seems like a session token
+                let isValidSessionToken = await tokens.validateSessionToken(request.state && request.state.ee && request.state.ee.sid, token, 3600);
+                if (isValidSessionToken) {
+                    return {
+                        isValid: true,
+                        credentials: {},
+                        artifacts: {}
+                    };
+                }
+            }
+
             let tokenData;
             try {
                 tokenData = await tokens.get(token, false, { log: true, remoteAddress: request.app.ip });
