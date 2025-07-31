@@ -32,15 +32,21 @@
         const ACCESS_TOKEN_QUERY_PARAM_NAME = 'access_token';
         const accessToken = getUrlVars()[ACCESS_TOKEN_QUERY_PARAM_NAME];
 
-        fetch(url + (accessToken ? (url.indexOf('?') < 0 ? '?' : '&') + ACCESS_TOKEN_QUERY_PARAM_NAME + '=' + accessToken : ''))
+        fetch(url)
             .then(function (response) {
                 return response.json()
             })
             .then(function (json) {
-                json.schemes[0] = window.location.protocol.slice(0, -1)
-                json.host = window.location.host
+
+                if (json.openapi && json.openapi.startsWith('3.')) {
+                    json.servers = [{
+                        url: window.location.protocol + '//' + window.location.host,
+                        description: 'Current server'
+                    }];
+                }
 
                 const swaggerOptions = {
+
                     // url: url + (accessToken ? (url.indexOf('?') < 0 ? '?' : '&') + ACCESS_TOKEN_QUERY_PARAM_NAME + '=' + accessToken : ''),
                     spec: json,
                     validatorUrl: validatorUrl,
@@ -58,6 +64,8 @@
 
                     },
                     tryItOutEnabled: true,
+                    defaultModelsExpandDepth: 0,
+                    defaultModelExpandDepth: -1
                 }
 
                 const ui = SwaggerUIBundle(swaggerOptions);

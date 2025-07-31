@@ -857,7 +857,10 @@ const init = async () => {
 
     const swaggerOptions = {
         swaggerUI: true,
+        jsonPath: '/swagger.json',
         swaggerUIPath: '/admin/swagger/resources/',
+
+        OAS: 'v3.0',
 
         expanded: 'list',
         sortEndpoints: 'method',
@@ -868,8 +871,6 @@ const init = async () => {
         templates: Path.join(__dirname, '..', 'views', 'swagger', 'ui'),
 
         grouping: 'tags',
-
-        //auth: 'api-token',
 
         info: {
             title: 'EmailEngine API',
@@ -914,11 +915,10 @@ Include your token in requests using one of these methods:
 
         securityDefinitions: {
             bearerAuth: {
-                type: 'apiKey',
-                name: 'access_token',
-                in: 'query',
-                description:
-                    'Access token for API authentication. Can be provided as a query parameter (?access_token=TOKEN) or in the Authorization header (Bearer TOKEN).'
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'Enter your access token'
             }
         },
 
@@ -3474,7 +3474,7 @@ Include your token in requests using one of these methods:
                         .example('connected')
                         .description('Filter accounts by state')
                         .label('AccountState'),
-                    query: Joi.string().example('user@example').description('Filter accounts by string match').label('AccountQuery')
+                    query: Joi.string().example('user@example.com').description('Filter accounts by string match').label('AccountQuery')
                 }).label('AccountsFilter')
             },
 
