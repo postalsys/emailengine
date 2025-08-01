@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.54.0](https://github.com/postalsys/emailengine/compare/v2.53.3...v2.54.0) (2025-08-01)
+
+
+### Features
+
+* **ui:** Added message browser to account view ([a1e27d8](https://github.com/postalsys/emailengine/commit/a1e27d8004631d62849ba7f08451eec0cc731cca))
+
+
+### Bug Fixes
+
+* move from OAS v2 to OAS v3 ([49e7018](https://github.com/postalsys/emailengine/commit/49e7018d8003397bce7383c7aac6b39c1ff1e3d0))
+* normalize OAuth2 subscription keys ([a400e73](https://github.com/postalsys/emailengine/commit/a400e7397d509ef6bba1a47d7dd8535b019862c4))
+* Show the token description on the delete token confirmation modal ([495af4f](https://github.com/postalsys/emailengine/commit/495af4fb860e705b983674a5e8d708a09ef9de20))
+
 ## [2.53.3](https://github.com/postalsys/emailengine/compare/v2.53.2...v2.53.3) (2025-07-17)
 
 
