@@ -368,7 +368,8 @@
                 {{#if account.outlookSubscription.state.error}}
                 <div class="alert alert-danger">
                     {{account.outlookSubscription.state.error}}
-                    {{#if isodate account.outlookSubscription.state.time}}
+
+                    {{#if account.outlookSubscription.state.time}}
                     (<small class="local-date-time" data-time="{{isodate account.outlookSubscription.state.time}}"
                         title="{{isodate account.outlookSubscription.state.time}}"></small>)
                     {{/if}}
