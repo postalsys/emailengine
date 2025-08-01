@@ -1944,6 +1944,7 @@ Include your token in requests using one of these methods:
                                 msg: 'Subscription renewal failed',
                                 subscriptionId: outlookSubscription.id,
                                 account: request.query.account,
+                                requestUrl: `/subscriptions/${outlookSubscription.id}`,
                                 err
                             });
                             outlookSubscription.state = {
