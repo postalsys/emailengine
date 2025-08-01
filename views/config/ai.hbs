@@ -2,15 +2,12 @@
     <h1 class="h3 mb-0 text-gray-800">
 
         <small><i class="fas fa-robot fa-fw"></i></small>
-        LLM Integration
+        AI Processing
     </h1>
 </div>
 
-<p>Enhance your emails by integrating EmailEngine with OpenAI's API. Emails can be sent to the OpenAI API with a custom
-    prompt, and the returned JSON data is attached to the email object for further use. <a href="#" tabindex="-1"
-        role="button" data-toggle="popover" data-trigger="hover" style="display: inline-block;" data-title="PII Alert"
-        data-content="EmailEngine uploads the text content of incoming emails to OpenAI's API servers. While the uploaded content is not used for training purposes, you must verify that OpenAI's terms align with your data processing agreements with your users"><i
-            class="fas fa-info-circle"></i></a>
+<p>Process incoming emails with AI to extract insights and enrich your data. EmailEngine sends email content to OpenAI
+    and adds the AI response to your webhooks.
 </p>
 
 <form method="post" id="settings-form" action="/admin/config/ai">
@@ -19,7 +16,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">AI Configuration</h6>
         </div>
 
         {{#if openAiError}}
@@ -29,7 +26,8 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
 
-                <p><strong>NB!</strong> The last attempted OpenAI request failed with the following response:</p>
+                <p><strong>OpenAI Error</strong></p>
+                <p>The last API request failed:</p>
                 <hr>
                 <p class="mb-0">
                     <code>{{openAiError.message}}{{#if openAiError.code}} ({{openAiError.code}}){{/if}}</code>
@@ -47,12 +45,16 @@
                     <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
                         id="generateEmailSummary" name="generateEmailSummary" {{#if
                         values.generateEmailSummary}}checked{{/if}} />
-                    <label class="form-check-label" for="generateEmailSummary">Enable Email Processing with AI</label>
+                    <label class="form-check-label" for="generateEmailSummary">Enable AI Email Processing
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            style="display: inline-block;" data-title="Privacy Notice"
+                            data-content="Email text is sent to OpenAI's servers for processing. While OpenAI doesn't use this data for training, ensure this aligns with your privacy policies and user agreements."><i
+                                class="fas fa-info-circle"></i></a>
+                    </label>
                     {{#if errors.generateEmailSummary}}
                     <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">When enabled, EmailEngine will send new emails to the OpenAI API
-                        for processing. The response data will be used to enrich the email information in
+                    <small class="form-text text-muted">Process new emails with AI and include the results in
                         <code>messageNew</code> webhooks.</small>
                 </div>
 
@@ -77,15 +79,14 @@
                         target="_blank" rel="noopener noreferrer">openAiAPIKey</a>]
                 </div>
 
-                <label for="openAiAPIKey">OpenAI API Key</label>
+                <label for="openAiAPIKey">API Key</label>
                 <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
                     id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="API key is set but not shown&mldr;"
-                    {{/if}} />
+                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="Key is set (hidden for security)" {{/if}} />
                 {{#if errors.openAiAPIKey}}
                 <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enter your OpenAI API key.</small>
+                <small class="form-text text-muted">Your OpenAI API key for authentication.</small>
             </div>
 
             <div class="form-group">
@@ -95,11 +96,11 @@
                         target="_blank" rel="noopener noreferrer">openAiModel</a>]</div>
 
                 <div>
-                    <label for="settingsServiceOpenAiModel">OpenAI Model</label>
+                    <label for="settingsServiceOpenAiModel">AI Model</label>
 
                     <button class="btn btn-link" id="reload-btn">
                         <i class="fas fa-sync-alt fa-fw"></i>
-                        Reload Models List</button>
+                        Refresh Models</button>
                 </div>
 
                 <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
@@ -111,8 +112,8 @@
                 {{#if errors.openAiModel}}
                 <span class="invalid-feedback">{{errors.openAiModel}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Select the model for analysis. Ensure your account has access to the
-                    chosen model, or analysis requests may fail.</small>
+                <small class="form-text text-muted">Choose the AI model for processing. Ensure your API key has access
+                    to the selected model.</small>
             </div>
 
             <div class="form-group">
@@ -121,14 +122,13 @@
                         target="_blank" rel="noopener noreferrer">openAiAPIUrl</a>]
                 </div>
 
-                <label for="openAiAPIUrl">OpenAI API URL</label>
+                <label for="openAiAPIUrl">API Endpoint</label>
                 <input type="url" class="form-control {{#if errors.openAiAPIUrl}}is-invalid{{/if}}" id="openAiAPIUrl"
                     name="openAiAPIUrl" value="{{values.openAiAPIUrl}}" placeholder="https://api.openai.com" />
                 {{#if errors.openAiAPIUrl}}
                 <span class="invalid-feedback">{{errors.openAiAPIUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enter the OpenAI API URL. Leave blank to use the default
-                    URL.</small>
+                <small class="form-text text-muted">Custom API endpoint. Leave empty for default OpenAI servers.</small>
             </div>
 
         </div>
@@ -136,7 +136,7 @@
 
     <div class="card mb-4" id="openai_settings">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Pre-processing Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Email Filtering</h6>
         </div>
         <div class="card-body">
 
@@ -144,7 +144,7 @@
             <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
-                        aria-selected="true">Filter Function</a>
+                        aria-selected="true">Filter Rules</a>
                 </li>
 
                 <li class="nav-item" role="presentation">
@@ -167,25 +167,24 @@
                         </div>
                         <label for="editor-fn">Filter Function</label>
                         <div style="line-height: 1; margin-bottom: 10px;">
-                            <small>Provide JavaScript code to determine if an email should be processed by the LLM. If
-                                the code evaluates to <code>true</code>, the email is sent to the LLM for processing;
-                                otherwise, it is skipped. The script includes <code>payload</code> as a global variable
-                                containing the email data.</small>
+                            <small>JavaScript code to decide which emails to process. Return <code>true</code> to
+                                process the email, <code>false</code> to skip. The email data is available as
+                                <code>payload</code>.</small>
                         </div>
                         <div id="editor-fn" class="code-editor"></div>
                         <div class="editor-embed-block">
                             <div class="editor-embed-content editor-embed-content-left">
-                                Filter function
+                                Email filter
                             </div>
                             <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
                                 <a href="#" class="toggle-fullscreen" data-target="editor-fn">Toggle fullscreen</a>
                             </div>
                             <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                                <a href="#" id="test-payload-btn">Set test payload</a>
+                                <a href="#" id="test-payload-btn">Test with sample data</a>
                             </div>
 
                             <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
-                                Evaluation result:
+                                Result:
                                 <span id="filter-res" class="evalres text-info">no match</span>
                             </div>
 
@@ -203,8 +202,7 @@
                 <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
 
 
-                    <p>The following errors were thrown when executing the pre-processing function. Only the most
-                        recent errors are shown.</p>
+                    <p>Recent errors from the filter function execution:</p>
 
                     <table class="table">
 
@@ -212,7 +210,7 @@
                             <tr>
                                 <th>Time</th>
                                 <th width="40%">Error</th>
-                                <th width="40%">Payload</th>
+                                <th width="40%">Email Data</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -248,7 +246,7 @@
 
     <div id="prompt_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Prompt Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">AI Instructions</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -256,9 +254,9 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Prompt actions:</div>
+                    <div class="dropdown-header">Actions:</div>
                     <a class="dropdown-item" href="#" id="prompt-reset-btn">
-                        <i class="fas fa-arrow-circle-down fa-sm"></i> <span>Restore default prompt</span>
+                        <i class="fas fa-arrow-circle-down fa-sm"></i> <span>Reset to default</span>
                     </a>
                 </div>
             </div>
@@ -270,7 +268,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">openAiPrompt</a>]</div>
 
-                <label>Prompt for LLM Requests</label>
+                <label>AI Prompt</label>
 
                 <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
@@ -279,13 +277,13 @@
 
                 <div class="editor-embed-block">
                     <div class="editor-embed-content editor-embed-content-left">
-                        LLM prompt
+                        System prompt
                     </div>
                     <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
                         <a href="#" class="toggle-fullscreen" data-target="editor-prompt">Toggle fullscreen</a>
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
-                        <a href="#" id="prompt-try-btn">Test this prompt</a>
+                        <a href="#" id="prompt-try-btn">Test with email file</a>
                     </div>
                 </div>
 
@@ -293,9 +291,8 @@
                 <span class="invalid-feedback">{{errors.openAiPrompt}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Edit the prompt sent to the LLM for each email. Since EmailEngine
-                    requests the response in JSON format, your prompt must specify the JSON properties to return.
-                </small>
+                <small class="form-text text-muted">Instructions for the AI. Must specify which JSON properties to
+                    return in the response.</small>
             </div>
 
             <div class="form-group">
@@ -309,27 +306,25 @@
                 {{#if errors.openAiTemperature}}
                 <span class="invalid-feedback">{{errors.openAiTemperature}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specify the <a
-                        href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">temperature</a> value (range: 0 to 2).
-                    Leave empty to use the default value.</small>
+                <small class="form-text text-muted">Controls randomness (0-2). Lower = more focused, higher = more
+                    creative. <a href="https://platform.openai.com/docs/api-reference/chat/create#temperature"
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">openAiTopP</a>]
                 </div>
-                <label for="settingsOpenAiTopP">Top-p Sampling</label>
+                <label for="settingsOpenAiTopP">Top-p</label>
                 <input type="number" class="form-control text-list {{#if errors.openAiTopP}}is-invalid{{/if}}"
                     id="settingsOpenAiTopP" step="0.001" min="0" max="1" name="openAiTopP"
                     value="{{values.openAiTopP}}" />
                 {{#if errors.openAiTopP}}
                 <span class="invalid-feedback">{{errors.openAiTopP}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specify the <a
-                        href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Top_p</a> value (range: 0 to 1). Leave
-                    empty to use the default value.</small>
+                <small class="form-text text-muted">Alternative to temperature (0-1). Controls diversity of word
+                    choices. <a href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
             </div>
 
         </div>
@@ -340,7 +335,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update Settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 
@@ -350,14 +345,14 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="testPromptModalLabel">LLM Prompt Tester</h5>
+                <h5 class="modal-title" id="testPromptModalLabel">Test AI Processing</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <p>
-                    Select an EML-formatted email file from the disk to send to the OpenAI API for inspection.
+                    Upload an email file (.eml) to test your AI configuration.
                 </p>
 
                 <div id="testPromptError" class="d-none">
@@ -377,7 +372,7 @@
                     <span class="icon text-white-50">
                         <i class="fas fa-flask"></i>
                     </span>
-                    <span class="text">Select and Analyze email&#x2026;</span>
+                    <span class="text">Choose File and Test</span>
 
                 </button>
 
@@ -390,23 +385,23 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="setPayloadModalLabel">Set test payload</h5>
+                <h5 class="modal-title" id="setPayloadModalLabel">Test Filter</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
 
-                <div>JSON payload</div>
+                <div>Sample email data (JSON)</div>
                 <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
-                <small id="inputToHelp" class="form-text text-muted">Enter the JSON structure that will be
-                    used as the <code>payload</code> value for test evaluation.</small>
+                <small id="inputToHelp" class="form-text text-muted">Edit the test data to see if your filter
+                    matches.</small>
 
             </div>
             <div class="modal-footer" style="justify-content: space-between">
                 <div>
                     <select class="custom-select custom-select-sm" id="select-predefined-payload">
-                        <option> -- Select predefined payload -- </option>
+                        <option>Load example...</option>
                     </select>
                 </div>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -503,20 +498,20 @@
             if (err) {
                 resultElm.classList.remove('text-warning', 'text-success');
                 resultElm.classList.add('text-danger');
-                resultElm.textContent = `validation failed (${err.message})`
+                resultElm.textContent = `error: ${err.message}`
                 return;
             }
 
             if (result) {
                 resultElm.classList.remove('text-warning', 'text-danger');
                 resultElm.classList.add('text-success');
-                resultElm.textContent = `filter matches`
+                resultElm.textContent = `match - will process`
             } else {
                 resultElm.classList.remove('text-success', 'text-danger');
                 resultElm.classList.add('text-warning');
 
                 let truthyWarning = opts && opts.truthyWarning;
-                resultElm.textContent = `no match${truthyWarning ? ` (function must return \`true\`, but returned a ${typeof truthyWarning} value)` : ''} `
+                resultElm.textContent = `no match - will skip${truthyWarning ? ` (must return true, got ${typeof truthyWarning})` : ''} `
             }
         }
 

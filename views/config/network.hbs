@@ -6,18 +6,17 @@
     </h1>
 </div>
 
-<p class="mb-4">Manage connection routing for EmailEngine.</p>
+<p class="mb-4">Control how EmailEngine connects to email servers and routes traffic.</p>
 
 <form method="post" action="/admin/config/network">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Proxy Configuration</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Proxy Settings</h6>
         </div>
         <div class="card-body">
-            <p>Configure a default proxy for EmailEngine to use with all email server connections. Supported proxy types
-                include HTTP CONNECT and SOCKS (versions 4 and 5).</p>
+            <p>Route all email server connections through a proxy. Supports HTTP CONNECT, SOCKS4, and SOCKS5.</p>
 
             <div class="form-group form-check">
 
@@ -27,12 +26,12 @@
                 <input type="checkbox"
                     class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
                     id="proxy_enabled" name="proxyEnabled" {{#if values.proxyEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="proxy_enabled">Enable Proxy for All Accounts</label>
+                <label class="form-check-label" for="proxy_enabled">Enable Global Proxy</label>
                 {{#if errors.proxyEnabled}}
                 <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enable this option to apply the proxy settings to all accounts.
-                    Individual accounts can still be configured with specific proxy settings if needed.</small>
+                <small class="form-text text-muted">Routes all connections through the proxy below. Individual accounts
+                    can override this setting.</small>
 
             </div>
 
@@ -43,15 +42,14 @@
 
                 <label for="proxyUrl">Proxy URL</label>
                 <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
-                    id="proxyUrl"
-                    placeholder="Enter the proxy connection URL (e.g., &quot;socks://localhost:1080&quot;)"
-                    value="{{values.proxyUrl}}" name="proxyUrl" data-target="proxy-status">
+                    id="proxyUrl" placeholder="socks://localhost:1080" value="{{values.proxyUrl}}" name="proxyUrl"
+                    data-target="proxy-status">
                 {{#if errors.proxyUrl}}
                 <span class="invalid-feedback">{{errors.proxyUrl}}</span>
                 {{/if}}
-                <small id="proxyUrlBlock" class="form-text text-muted">Enter the proxy connection URL (e.g.,
-                    "socks://localhost:1080"). The URL must start with <code>http://</code>, <code>https://</code>,
-                    <code>socks://</code>, <code>socks4://</code>, or <code>socks5://</code>.</small>
+                <small id="proxyUrlBlock" class="form-text text-muted">Format: <code>http://</code>,
+                    <code>https://</code>, <code>socks://</code>, <code>socks4://</code>, or <code>socks5://</code>
+                    followed by host:port</small>
             </div>
 
             <div class="form-group">
@@ -59,35 +57,29 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">smtpEhloName</a>]</div>
 
-                <label for="smtpEhloName">SMTP Greeting Hostname</label>
+                <label for="smtpEhloName">SMTP Greeting Name</label>
                 <input type="text" class="form-control {{#if errors.smtpEhloName}}is-invalid{{/if}}" id="smtpEhloName"
-                    placeholder="Specify the hostname for the SMTP EHLO/HELO greeting (e.g., &quot;my.proxy.tld&quot;)"
-                    value="{{values.smtpEhloName}}" name="smtpEhloName">
+                    placeholder="mail.example.com" value="{{values.smtpEhloName}}" name="smtpEhloName">
                 {{#if errors.smtpEhloName}}
                 <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
                 {{/if}}
-                <small id="smtpEhloNameBlock" class="form-text text-muted">Specify the hostname to be used in the SMTP
-                    EHLO/HELO greeting (e.g., "my.proxy.tld"). If left blank, <code>{{defaultSmtpEhloName}}</code> is
-                    used by default. For dedicated IP addresses, using the associated hostname of the IP is
-                    recommended.</small>
+                <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname used in SMTP EHLO/HELO greetings.
+                    Defaults to <code>{{defaultSmtpEhloName}}</code>. For dedicated IPs, use the IP's reverse DNS
+                    hostname.</small>
             </div>
         </div>
     </div>
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">IP Address Selection Strategy</h6>
+            <h6 class="m-0 font-weight-bold text-primary">IP Address Strategy</h6>
         </div>
         <div class="card-body">
-            <p>If your server has access to multiple IP addresses, you can define how EmailEngine selects an IP for
-                email server connections:</p>
+            <p>Choose how EmailEngine selects IP addresses when your server has multiple IPs:</p>
             <ul>
-                <li><strong>Dedicated</strong>: Assigns the same IP address from the pool to a specific account
-                    consistently.</li>
-                <li><strong>Random</strong>: Allocates a different, random IP address from the pool for each connection.
-                </li>
-                <li><strong>Server Default</strong>: EmailEngine will not specify a local IP address and will use the
-                    server's default network settings.</li>
+                <li><strong>Dedicated</strong> – Each account always uses the same IP from your pool</li>
+                <li><strong>Random</strong> – Each connection uses a randomly selected IP</li>
+                <li><strong>Server Default</strong> – Uses your server's default network configuration</li>
             </ul>
         </div>
 
@@ -95,7 +87,7 @@
             <thead>
                 <tr>
                     <th>Protocol</th>
-                    <th>Strategy</th>
+                    <th>Selection Method</th>
                 </tr>
             </thead>
             <tbody>
@@ -148,18 +140,17 @@
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3 d-flex justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary align-self-center">Configurable IP Addresses</h6>
+            <h6 class="m-0 font-weight-bold text-primary align-self-center">Available IP Addresses</h6>
             <div class="align-self-center"><button class="btn btn-primary" id="reload-btn">
                     <i class="fa fa-sync-alt fa-fw"></i>
-                    Scan addresses</button></div>
+                    Scan for IPs</button></div>
         </div>
 
         <div class="card-body">
             <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                     target="_blank" rel="noopener noreferrer">localAddresses</a>]</div>
-            Specify the IP addresses that EmailEngine can use under the <em>Dedicated</em> or <em>Random</em>
-            selection strategies. If the selected IPs are unavailable, EmailEngine will default to the server's standard
-            network settings.
+            Select which IP addresses EmailEngine can use with the Dedicated or Random strategies. If selected IPs
+            become unavailable, EmailEngine falls back to server defaults.
         </div>
         <table class="table table-hover">
             <thead>
@@ -170,13 +161,13 @@
                         </div>
                     </th>
                     <th>
-                        Local address
+                        Local IP
                     </th>
                     <th>
-                        Public address
+                        Public IP
                     </th>
                     <th colspan="2">
-                        Name
+                        Hostname
                     </th>
                 </tr>
             </thead>
@@ -193,7 +184,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update Settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 
@@ -205,21 +196,20 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteAddressLabel">Delete address</h5>
+                <h5 class="modal-title" id="deleteAddressLabel">Remove IP Address</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete this local address? When you later rescan addresses and the address is
-                found it gets re-added to the list.
+                Remove this IP from the list? It will be re-added if found during the next scan.
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/config/network/delete">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" name="localAddress" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Remove</button>
                 </form>
             </div>
 
@@ -337,7 +327,7 @@
             // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
             // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
             var modal = $(this)
-            modal.find('.modal-title').text(`Delete ${address}?`)
+            modal.find('.modal-title').text(`Remove ${address}?`)
             modal.find('.modal-footer input[name=localAddress]').val(address)
         })
     });

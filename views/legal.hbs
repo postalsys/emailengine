@@ -1,7 +1,7 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
         <small><i class="fas fa-gavel fa-fw"></i></small>
-        Legal
+        Legal Information
     </h1>
 </div>
 
@@ -9,17 +9,15 @@
 <div class="card mt-4 mb-4">
     <div class="card-body">
 
-        <p>EmailEngine is a software developed by Postal Systems OÜ and licensed under the EmailEngine License
-            Agreement.</p>
+        <p>EmailEngine is developed by Postal Systems OÜ and distributed under the EmailEngine License Agreement.</p>
 
         <address>
             <strong>Postal Systems OÜ</strong><br>
             Veskiposti tn 2-1002<br>
-            10138, Harjumaa, Tallinn<br>
-            Estonia<br>
+            10138 Tallinn, Estonia<br>
             VAT: EE102255902<br>
             <a href="mailto:info@postalsys.com">info@postalsys.com</a><br>
-            <a href="https://postalsys.com/">https://postalsys.com</a>
+            <a href="https://postalsys.com/">postalsys.com</a>
         </address>
 
 
@@ -34,17 +32,17 @@
             <strong>
                 {{#if licenseInfo.details.key}}
                 {{#if licenseInfo.details.trial}}
-                This copy of EmailEngine is running on a trial license
+                Trial License
                 {{else}}
-                This copy of EmailEngine is licensed to <em>{{licenseInfo.details.licensedTo}}</em>
+                Licensed to {{licenseInfo.details.licensedTo}}
                 {{/if}}
                 {{else}}
-                License key not set for this copy of EmailEngine
+                No license key configured
                 {{/if}}
 
 
             </strong>
-            &mdash; <a class="" href="/admin/config/license">details</a>.
+            &mdash; <a class="" href="/admin/config/license">View license details</a>
         </li>
 
         <li class="list-group-item">
@@ -57,28 +55,28 @@
         <li class="list-group-item">
             <a href="/licenses.html" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-arrow-right fa-fw"></i>
-                <strong>3rd party software used in EmailEngine</strong>
+                <strong>Third-Party Software Licenses</strong>
             </a>
         </li>
 
         <li class="list-group-item">
             <a href="https://postalsys.com/contact" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-arrow-right fa-fw"></i>
-                <strong>Company information</strong>
+                <strong>Company Details</strong>
             </a>
         </li>
 
         <li class="list-group-item">
             <a href="https://postalsys.com/tos" target="_blank" rel="noopener noreferrer">
                 <i class="fas fa-arrow-right fa-fw"></i>
-                <strong>Postal Systems's Terms of Service</strong>
+                <strong>Terms of Service</strong>
             </a>
         </li>
 
         <li class="list-group-item">
             <a href="/sbom.json" download="sbom.json">
                 <i class="fas fa-cloud-download-alt fa-fw"></i>
-                <strong>Software Bill of Materials (JSON)</strong>
+                <strong>Software Bill of Materials (SBOM)</strong>
             </a>
         </li>
     </ul>

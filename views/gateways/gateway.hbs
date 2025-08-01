@@ -14,12 +14,12 @@
             <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
 
                 <a type="button" class="btn btn-light" href="/admin/gateways/edit/{{gateway.gateway}}"
-                    title="Edit gateway configuration" data-toggle="tooltip" data-placement="top">
+                    title="Modify gateway settings" data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-user-edit fa-fw"></i> Edit
                 </a>
 
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
-                    title="Delete this gateway" id="delete-btn" data-placement="top">
+                    title="Remove this gateway" id="delete-btn" data-placement="top">
                     <i class="fas fa-trash-alt fa-fw"></i> Delete
                 </button>
 
@@ -31,11 +31,11 @@
 
         {{#if gateway.lastError}}
         <dl class="row">
-            <dt class="col-sm-3">Error</dt>
+            <dt class="col-sm-3">Connection Error</dt>
             <dd class="col-sm-9">{{gateway.lastError.description}}</dd>
 
             {{#if gateway.lastError.response}}
-            <dt class="col-sm-3">SMTP response</dt>
+            <dt class="col-sm-3">Server Response</dt>
             <dd class="col-sm-9"><code>{{gateway.lastError.response}}</code></dd>
             {{/if}}
         </dl>
@@ -45,7 +45,7 @@
 
         <dl class="row">
             {{#if gateway.gateway}}
-            <dt class="col-sm-3">ID</dt>
+            <dt class="col-sm-3">Gateway ID</dt>
             <dd class="col-sm-9">
                 <strong>{{gateway.gateway}}</strong>
 
@@ -57,7 +57,7 @@
             {{/if}}
 
             {{#if gateway.deliveries}}
-            <dt class="col-sm-3">Deliveries</dt>
+            <dt class="col-sm-3">Emails Sent</dt>
             <dd class="col-sm-9">{{gateway.deliveries}}</dd>
             {{/if}}
 
@@ -68,11 +68,11 @@
 
             {{#if gateway.pass}}
             <dt class="col-sm-3">Password</dt>
-            <dd class="col-sm-9">*******</dd>
+            <dd class="col-sm-9">••••••••</dd>
             {{/if}}
 
             {{#if gateway.host}}
-            <dt class="col-sm-3">Hostname</dt>
+            <dt class="col-sm-3">Server</dt>
             <dd class="col-sm-9">{{gateway.host}}</dd>
             {{/if}}
 
@@ -81,8 +81,8 @@
             <dd class="col-sm-9">{{gateway.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">TLS</dt>
-            <dd class="col-sm-9">{{#if gateway.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            <dt class="col-sm-3">Encryption</dt>
+            <dd class="col-sm-9">{{#if gateway.secure}}TLS/SSL{{else}}STARTTLS (when available){{/if}}
             </dd>
         </dl>
 
@@ -93,20 +93,19 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete gateway</h5>
+                <h5 class="modal-title" id="deleteModalLabel">Delete Gateway</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the gateway "{{gateway.name}}"? This action is not
-                    recoverable.</p>
+                <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/gateways/delete/{{gateway.gateway}}">
                     <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Gateway</button>
                 </form>
             </div>
         </div>

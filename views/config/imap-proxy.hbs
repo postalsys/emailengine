@@ -2,7 +2,7 @@
     <h1 class="h3 mb-0 text-gray-800">
 
         <small><i class="fas fa-server fa-fw"></i></small>
-        IMAP Proxy Interface
+        IMAP Proxy
         <span class="badge badge-{{serverState.label.type}} state-info" data-type="imapProxy">
             {{#if serverState.label.spinner}}
             <i class="fas fa-spinner fa-spin fa-fw"></i>
@@ -12,19 +12,23 @@
     </h1>
 </div>
 
-<p>IMAP proxy allows you to log in to any IMAP account managed by EmailEngine using a regular IMAP client. In this case,
-    EmailEngine would log in to the upstream IMAP server using account credentials and proxy the authenticated
-    connection back to the client. Your IMAP client would not need to know the actual account credentials or OAuth2 as
-    it would authenticate itself with an access token as the password.</p>
+<p>Access any EmailEngine-managed account through standard IMAP clients. The proxy handles authentication with the real
+    email server, so your IMAP client only needs an access token—no actual credentials or OAuth2 setup required.</p>
 
-<p class="mb-4">On this page, you can configure the settings for the IMAP proxy interface.</p>
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle"></i> <strong>Compatibility Note:</strong> IMAP proxy only works with accounts that
+    connect via IMAP protocol. This includes Gmail and Microsoft 365 accounts using OAuth2 authentication with IMAP
+    access. Accounts using MS Graph API or Gmail API as their mail backend are not supported through the proxy.
+</div>
+
+<p class="mb-4">Configure your IMAP proxy server below.</p>
 
 <form method="post" action="/admin/config/imap-proxy">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Server Configuration</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -35,7 +39,7 @@
                 <input type="checkbox" class="form-check-input {{#if errors.imapProxyServerEnabled}}is-invalid{{/if}}"
                     id="imapProxyServerEnabled" name="imapProxyServerEnabled" {{#if
                     values.imapProxyServerEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="imapProxyServerEnabled">Enable IMAP Proxy Interface</label>
+                <label class="form-check-label" for="imapProxyServerEnabled">Enable IMAP Proxy</label>
                 {{#if errors.imapProxyServerEnabled}}
                 <span class="invalid-feedback">{{errors.imapProxyServerEnabled}}</span>
                 {{/if}}
@@ -46,7 +50,7 @@
                         target="_blank" rel="noopener noreferrer">imapProxyServerPort</a>]
                 </div>
 
-                <label for="imapProxyServerPort">IMAP proxy port</label>
+                <label for="imapProxyServerPort">Port</label>
 
                 <input type="number"
                     class="form-control trigger-example-render {{#if errors.imapProxyServerPort}}is-invalid{{/if}}"
@@ -55,8 +59,8 @@
                 {{#if errors.imapProxyServerPort}}
                 <span class="invalid-feedback">{{errors.imapProxyServerPort}}</span>
                 {{/if}}
-                <small class="form-text text-muted">The port number to bound to. Port numbers lower than 1024 might not
-                    be allowed.</small>
+                <small class="form-text text-muted">TCP port for IMAP connections. Ports below 1024 may require elevated
+                    privileges.</small>
             </div>
 
             <div class="form-group">
@@ -64,7 +68,7 @@
                         target="_blank" rel="noopener noreferrer">imapProxyServerHost</a>]
                 </div>
 
-                <label for="imapProxyServerHost">IMAP proxy host</label>
+                <label for="imapProxyServerHost">Listen Address</label>
 
                 <input type="text"
                     class="form-control basicAutoComplete trigger-example-render {{#if errors.imapProxyServerHost}}is-invalid{{/if}}"
@@ -74,8 +78,8 @@
                 {{#if errors.imapProxyServerHost}}
                 <span class="invalid-feedback">{{errors.imapProxyServerHost}}</span>
                 {{/if}}
-                <small class="form-text text-muted">IP address to bind to. Set to empty or use "0.0.0.0" to listen on
-                    all interfaces.</small>
+                <small class="form-text text-muted">IP address to bind to. Use "0.0.0.0" or leave empty to accept
+                    connections from anywhere.</small>
             </div>
 
             <div class="form-group form-check">
@@ -86,19 +90,18 @@
                 <input type="checkbox" class="form-check-input {{#if errors.imapProxyServerProxy}}is-invalid{{/if}}"
                     id="imapProxyServerProxy" name="imapProxyServerProxy" {{#if
                     values.imapProxyServerProxy}}checked{{/if}} />
-                <label class="form-check-label" for="imapProxyServerProxy">Enable PROXY protocol</label>
+                <label class="form-check-label" for="imapProxyServerProxy">Enable PROXY Protocol</label>
                 {{#if errors.imapProxyServerProxy}}
                 <span class="invalid-feedback">{{errors.imapProxyServerProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Use this if the IMAP proxy interface is proxied by HAProxy using the
-                    <code>send-proxy</code> option.</small>
+                <small class="form-text text-muted">Required when using HAProxy with <code>send-proxy</code>.</small>
             </div>
         </div>
     </div>
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Authentication settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Authentication</h6>
         </div>
         <div class="card-body">
 
@@ -107,13 +110,13 @@
                         target="_blank" rel="noopener noreferrer">imapProxyServerPassword</a>]
                 </div>
 
-                <label for="imapProxyServerPassword">IMAP proxy password</label>
+                <label for="imapProxyServerPassword">Global Password</label>
                 <div class="input-group">
                     <input type="password"
                         class="form-control trigger-example-render {{#if errors.imapProxyServerPassword}}is-invalid{{/if}}"
                         id="imapProxyServerPassword" name="imapProxyServerPassword"
                         value="{{values.imapProxyServerPassword}}" {{#unless
-                        values.imapProxyServerPassword}}placeholder="Shared IMAP proxy password is not set" {{/unless}}
+                        values.imapProxyServerPassword}}placeholder="No global password set" {{/unless}}
                         data-lpignore="true" autocomplete="off" />
 
                     <div class="input-group-append">
@@ -125,8 +128,8 @@
                 {{#if errors.imapProxyServerPassword}}
                 <span class="invalid-feedback">{{errors.imapProxyServerPassword}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Shared password for all accounts. Leave this value empty to disable
-                    global shared password.</small>
+                <small class="form-text text-muted">Optional shared password for all accounts. Leave empty to use only
+                    access tokens.</small>
             </div>
         </div>
 
@@ -134,8 +137,8 @@
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
 
-                Use the account ID as the IMAP username. For IMAP passwords, either set the shared IMAP password above
-                or use <a href="/admin/tokens">access tokens</a> with the <em>IMAP Proxy</em> scope.
+                <strong>How to connect:</strong> Use account IDs as usernames. For passwords, use either the global
+                password above or <a href="/admin/tokens">access tokens</a> with IMAP Proxy scope.
             </small>
         </div>
 
@@ -143,7 +146,7 @@
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">TLS settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Security (TLS)</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -158,7 +161,7 @@
                     data-domain="{{serviceDomain}}" name="imapProxyServerTLSEnabled" {{#if
                     values.imapProxyServerTLSEnabled}}checked{{/if}} />
 
-                <label class="form-check-label" for="imapProxyServerTLSEnabled">Enable TLS
+                <label class="form-check-label" for="imapProxyServerTLSEnabled">Enable TLS Encryption
 
                     {{#if certificateData.label}}
                     <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
@@ -176,15 +179,13 @@
                 <small class="form-text text-muted">
                     {{#if serviceDomain}}
 
-                    TLS certificates are provisioned for <em>{{serviceDomain}}</em>. You can change this by setting
-                    another domain name for the <a href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> configuration option.
+                    Certificates will be provisioned for <em>{{serviceDomain}}</em>. Change the domain in <a
+                        href="/admin/config/service#settingsServiceUrl">Service URL settings</a>.
 
                     {{else}}
 
-                    You need to set a valid domain name for the <a
-                        href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> in order to provision TLS certificates.
+                    Set a domain name in <a href="/admin/config/service#settingsServiceUrl">Service URL settings</a> to
+                    enable automatic TLS certificates.
 
                     {{/if}}
 
@@ -197,10 +198,9 @@
         <div class="card-footer">
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
-                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}" target="_blank"
-                        rel="noopener noreferrer">{{serviceUrl}}</a></em> to provision a valid TLS certificate.
-                Otherwise,
-                EmailEngine will use a self-signed certificate.
+                EmailEngine must be publicly accessible at <em><a href="{{serviceUrl}}" target="_blank"
+                        rel="noopener noreferrer">{{serviceUrl}}</a></em> for automatic certificates. Otherwise, a
+                self-signed certificate will be used.
             </small>
         </div>
         {{/if}}
@@ -210,21 +210,21 @@
     <div class="card mt-4 mb-4">
         <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
             aria-expanded="true" aria-controls="showHelp">
-            <h6 class="m-0 font-weight-bold text-primary">Authentication instructions</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Client Configuration Examples</h6>
         </a>
         <div class="collapse" id="showHelp">
             <div class="card-body">
-                <p>IMAP username is the account ID you want to authenticate as.</p>
+                <p>Connect to the proxy using the account ID as your IMAP username.</p>
 
                 <ul class="nav nav-tabs mb-3" id="code-examples" role="tablist">
                     <li class="nav-item" role="presentation">
                         <a class="nav-link active" id="example-node-imap-tab" data-toggle="tab"
                             href="#example-node-imap" role="tab" aria-controls="example-node-imap"
-                            aria-selected="true">node-imap</a>
+                            aria-selected="true">Node.js (node-imap)</a>
                     </li>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="example-php-imap-tab" data-toggle="tab" href="#example-php-imap"
-                            role="tab" aria-controls="example-php-imap">PHP-IMAP</a>
+                            role="tab" aria-controls="example-php-imap">PHP (php-imap)</a>
                     </li>
                 </ul>
 
@@ -248,7 +248,7 @@
                     <div class="form-group form-check">
                         <input type="checkbox" class="form-check-input trigger-example-render"
                             id="exampleShowPassword" />
-                        <label class="form-check-label" for="exampleShowPassword">Show password</label>
+                        <label class="form-check-label" for="exampleShowPassword">Show password in examples</label>
                     </div>
                 </div>
 
@@ -261,7 +261,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 
@@ -272,19 +272,20 @@
         <div class="modal-content">
             <div class="modal-header">
 
-                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
+                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Provisioning Certificate <i
                         class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
-                <h5 class="modal-title modal-show-error">Certificate request failed</h5>
+                <h5 class="modal-title modal-show-error">Certificate Request Failed</h5>
 
                 <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body modal-show-default">
-                Please wait, provisioning a TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>.
+                Setting up TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>. This may take a
+                moment...
             </div>
             <div class="modal-body modal-show-error d-none">
-                <p>The server responded with the following error message:</p>
+                <p>Unable to provision certificate:</p>
 
                 <div class="text-monospace error-content alert alert-danger"></div>
             </div>
@@ -465,7 +466,7 @@ $client = $cm->make([
         function checkLoadCerts() {
             if (document.getElementById('imapProxyServerTLSEnabled').checked &&
                 !loadingCertData && !loadedCertData &&
-                !document.getElementById('imapProxyServerTLSEnabled').dataset.certificate &&
+                //!document.getElementById('imapProxyServerTLSEnabled').dataset.certificate &&
                 document.getElementById('imapProxyServerTLSEnabled').dataset.domain) {
 
                 loadCertData();

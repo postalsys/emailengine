@@ -6,9 +6,8 @@
 </div>
 
 <p class="mb-4">
-    Enable logging of IMAP, SMTP, Gmail API, or MS Graph API requests (depending on the account type), excluding user
-    credentials and message content, for selected accounts. You can download these logs for inspection. Logging is
-    disabled by default.
+    Track API requests for debugging and monitoring. EmailEngine can log IMAP, SMTP, Gmail API, and MS Graph API
+    activity (credentials and message content are never logged). Download logs anytime for troubleshooting.
 </p>
 
 <form method="post" action="/admin/config/logging">
@@ -23,31 +22,28 @@
 
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.all}}is-invalid{{/if}}"
                     data-target="log-list" id="settingsLogsAll" name="all" {{#if values.all}}checked{{/if}} />
-                <label class="form-check-label" for="settingsLogsAll">Store Logs for All Accounts</label>
+                <label class="form-check-label" for="settingsLogsAll">Enable Logging for All Accounts</label>
                 {{#if errors.all}}
                 <span class="invalid-feedback">{{errors.all}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enabling this option stores logs for all accounts. This is not
-                    recommended if EmailEngine is tracking a large number of accounts due to potential performance
-                    impacts.<br>
-                    <strong>Restart required!</strong> You need to restart EmailEngine for the change of this option to
-                    apply</small>
+                <small class="form-text text-muted">Turn on logging for every connected account. Use with caution—this
+                    can impact performance with many accounts.<br>
+                    <strong>Restart required</strong> after changing this setting.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">logs.maxLogLines</a>]</div>
 
-                <label for="settingsLogsMaxLogLines">Maximum Lines of Logs to Store Per Account</label>
+                <label for="settingsLogsMaxLogLines">Log Storage Limit (per account)</label>
                 <input type="number" class="form-control {{#if errors.maxLogLines}}is-invalid{{/if}}"
                     id="settingsLogsMaxLogLines" min="0" max="10000000" name="maxLogLines"
                     value="{{values.maxLogLines}}" />
                 {{#if errors.maxLogLines}}
                 <span class="invalid-feedback">{{errors.maxLogLines}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specify the maximum number of log lines to store per account. Logs
-                    are stored in Redis (i.e., in RAM), so be cautious about storing excessive data to avoid memory
-                    issues.
+                <small class="form-text text-muted">Maximum log entries to keep per account. Logs are stored in memory
+                    (Redis), so choose wisely to avoid running out of RAM.
                 </small>
             </div>
         </div>
@@ -58,7 +54,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update Settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 

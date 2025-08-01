@@ -3,10 +3,10 @@
 
         <small><i class="fas fa-cog fa-fw"></i></small>
 
-        License key
+        License
 
         {{#if licenseInfo.details.trial}}
-        <span class="badge badge-warning">in trial</span>
+        <span class="badge badge-warning">trial</span>
         {{else}}
 
         {{#if licenseInfo.active}}
@@ -15,7 +15,7 @@
 
         {{else}}
 
-        <span class="badge badge-danger">not provided</span>
+        <span class="badge badge-danger">not activated</span>
 
         {{/if}}
         {{/if}}
@@ -23,10 +23,8 @@
 </div>
 
 <p class="mb-4">
-    EmailEngine is licensed under the commercial
-    <a href="/license.html" target="_blank" rel="noopener noreferrer">EmailEngine License</a>. Using the EmailEngine
-    license after the
-    free trial period requires a valid license key.
+    EmailEngine requires a valid license key after the free trial period. Licensed under the <a href="/license.html"
+        target="_blank" rel="noopener noreferrer">EmailEngine License</a>.
 </p>
 
 {{#if subexp}}
@@ -36,18 +34,16 @@
             <div class="col mr-2">
 
                 <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                    Invalid license key</div>
+                    License Issue</div>
 
                 <p>
-                    Your EmailEngine instance has a registered license key, but the account that
-                    generated the key seems to be missing an active subscription from Postal Systems, or the key has
+                    Your license key is registered but the associated subscription appears to be inactive or the key has
                     been invalidated.
                 </p>
 
                 <p>
-                    EmailEngine will use the current license key for the next
-                    <strong>{{ngettext '%d day' '%d days' expiresDays}}</strong>.
-                    If you haven't renewed your subscription by that time, you would need to provide a new license key.
+                    You can continue using EmailEngine for <strong>{{ngettext '%d day' '%d days' expiresDays}}</strong>.
+                    After that, you'll need a new license key.
                 </p>
 
                 <div>
@@ -56,7 +52,7 @@
                         <span class="icon text-white-50">
                             <i class="fas fa-arrow-right"></i>
                         </span>
-                        <span class="text">Subscribe here</span>
+                        <span class="text">Renew Subscription</span>
                     </a>
                 </div>
 
@@ -79,15 +75,13 @@
                 <span class="icon text-white-50">
                     <i class="fas fa-arrow-right"></i>
                 </span>
-                <span class="text">Provision a license</span>
+                <span class="text">Get a License</span>
             </a>
         </div>
         <p class="mb-4">
-            License keys for EmailEngine can be provisioned from the Postal Systems' <a
-                href="https://postalsys.com/licenses" target="_blank" rel="noopener noreferrer"
-                referrerpolicy="no-referrer">license
-                central</a>
-            (requires a paid subscription).
+            Purchase and manage license keys at <a href="https://postalsys.com/licenses" target="_blank"
+                rel="noopener noreferrer" referrerpolicy="no-referrer">Postal Systems License Central</a> (subscription
+            required).
         </p>
 
     </div>
@@ -99,17 +93,17 @@
 <div class="card mb-4">
     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
         <h6 class="m-0 font-weight-bold text-primary">
-            Active license key</h6>
+            Current License</h6>
         <div class="dropdown no-arrow">
             <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                 aria-haspopup="true" aria-expanded="false">
                 <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
             </a>
             <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                <div class="dropdown-header">License actions:</div>
+                <div class="dropdown-header">Actions:</div>
                 <a class="dropdown-item" href="#" id="unregister-license-link">
                     <i class="fas fa-trash-alt fa-sm"></i>
-                    <span>Unregister current license</span>
+                    <span>Remove License</span>
                 </a>
             </div>
         </div>
@@ -118,23 +112,23 @@
 
         <dl class="row">
 
-            <dt class="col-sm-3">Key</dt>
+            <dt class="col-sm-3">License Key</dt>
             <dd class="col-sm-9">{{licenseInfo.details.key}} ({{licenseInfo.type}})</dd>
 
-            <dt class="col-sm-3">Licensed to</dt>
+            <dt class="col-sm-3">Licensed To</dt>
             <dd class="col-sm-9">{{licenseInfo.details.licensedTo}}</dd>
 
             <dt class="col-sm-3">Environment</dt>
             <dd class="col-sm-9">{{licenseInfo.details.hostname}}</dd>
 
             {{#if licenseDetails.expires}}
-            <dt class="col-sm-3">License expires</dt>
-            <dd class="col-sm-9">in {{licenseDetails.expiresDays}} days</dd>
+            <dt class="col-sm-3">Expires</dt>
+            <dd class="col-sm-9">In {{licenseDetails.expiresDays}} days</dd>
             {{/if}}
 
             {{#if licenseDetails.lt}}
-            <dt class="col-sm-3">License expires</dt>
-            <dd class="col-sm-9">This license does not expire</dd>
+            <dt class="col-sm-3">Expiration</dt>
+            <dd class="col-sm-9">Never expires</dd>
             {{/if}}
 
         </dl>
@@ -149,15 +143,14 @@
 <div class="card mb-4">
     <a href="#setupKey" class="d-block card-header py-3 {{#unless showLicenseText}} collapsed{{/unless}}"
         data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupKey">
-        <h6 class="m-0 font-weight-bold text-primary">Register a license key</h6>
+        <h6 class="m-0 font-weight-bold text-primary">Add License Key</h6>
     </a>
     <div class="collapse {{#if showLicenseText}} show{{/if}}" id="setupKey">
         <div class="card-body">
 
-            {{#if licenseInfo.active}}<p>You can replace an existing license key with a new one. Provision a new license
-                key from the Postal Systems' <a href="https://postalsys.com/licenses" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer">license
-                    central</a> (requires a paid subscription).</p>{{/if}}
+            {{#if licenseInfo.active}}<p>Replace your existing license with a new one. Get license keys from <a
+                    href="https://postalsys.com/licenses" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">Postal Systems License Central</a>.</p>{{/if}}
 
             <form method="post" id="licenseForm" action="/admin/config/license">
                 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
@@ -167,7 +160,7 @@
                         <span class="icon text-white-50">
                             <i class="fas fa-file-import"></i>
                         </span>
-                        <span class="text">Select license key from file&#x2026;</span>
+                        <span class="text">Upload License File</span>
                     </button>
                 </div>
 
@@ -176,16 +169,15 @@
                             target="_blank" rel="noopener noreferrer">license</a>]
                     </div>
 
-                    <label for="licenseTextElement">Or paste license key contents to this text box</label>
+                    <label for="licenseTextElement">Or paste license key here</label>
 
                     <textarea class="form-control droptxt autoselect {{#if errors.license}}is-invalid{{/if}}"
                         id="licenseTextElement" name="license" rows="9" data-enable-grammarly="false" spellcheck="false"
-                        placeholder="Starts with &quot;-----BEGIN LICENSE-----&quot;&mldr;"
-                        required>{{values.license}}</textarea>
+                        placeholder="-----BEGIN LICENSE-----" required>{{values.license}}</textarea>
                     {{#if errors.license}}
                     <span class="invalid-feedback">{{errors.license}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">Paste or drag a license key file to this text box</small>
+                    <small class="form-text text-muted">Drag and drop or paste your license key</small>
                 </div>
 
                 <div class="mb-4">
@@ -193,7 +185,7 @@
                         <span class="icon text-white-50">
                             <i class="fas fa-key"></i>
                         </span>
-                        <span class="text">Register</span>
+                        <span class="text">Activate License</span>
                     </button>
                 </div>
 
@@ -207,44 +199,22 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteLicenseLabel">Unregister license</h5>
+                <h5 class="modal-title" id="deleteLicenseLabel">Remove License</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to unregister current license key?
+                Remove the current license key from this EmailEngine instance?
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/config/license/delete">
                     <input type="hidden" name="crumb" value="{{crumb}}">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Unregister</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Remove License</button>
                 </form>
             </div>
 
-        </div>
-    </div>
-</div>
-
-
-<div class="modal fade" id="deleteLicense" tabindex="-1" aria-labelledby="deleteLicenseLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteLicenseLabel">Unregister license</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">Are you sure you want to unregister current license key?</div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/config/license/delete">
-                    <input type="hidden" name="crumb" value="{{ crumb }}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Unregister</button>
-                </form>
-            </div>
         </div>
     </div>
 </div>

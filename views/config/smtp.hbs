@@ -12,19 +12,18 @@
     </h1>
 </div>
 
-<p>To queue an email for delivery with EmailEngine, you can use the Simple Mail Transfer Protocol (SMTP)
-    interface or the <a href="https://api.emailengine.app/#tag/submit" target="_blank"
-        referrerpolicy="no-referrer">message submission API</a>. The
-    preferred way to send emails would be the message submission API. EmailEngine provides the SMTP interface for legacy
-    applications that can only send emails using the SMTP protocol.</p>
-<p class="mb-4">On this page, you can configure the settings for the SMTP interface.</p>
+<p>Send emails through EmailEngine using SMTP protocol. While the <a
+        href="/admin/swagger#/Submit/postV1AccountAccountSubmit" target="_blank" referrerpolicy="no-referrer">submission
+        API</a> is recommended for modern applications, the SMTP
+    interface supports legacy systems that require traditional email sending.</p>
+<p class="mb-4">Configure your SMTP server settings below.</p>
 
 <form method="post" action="/admin/config/smtp">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Server Configuration</h6>
         </div>
 
         <ul class="list-group list-group-flush mb-3">
@@ -36,12 +35,11 @@
                     <input type="checkbox" class="form-check-input {{#if errors.smtpServerEnabled}}is-invalid{{/if}}"
                         id="smtpServerEnabled" name="smtpServerEnabled" {{#if
                         values.smtpServerEnabled}}checked{{/if}} />
-                    <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Interface</label>
+                    <label class="form-check-label" for="smtpServerEnabled">Enable SMTP Server</label>
                     {{#if errors.smtpServerEnabled}}
                     <span class="invalid-feedback">{{errors.smtpServerEnabled}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">Once enabled, EmailEngine will start an SMTP server, ready to
-                        receive email submissions via the SMTP port.</small>
+                    <small class="form-text text-muted">Start the SMTP server to accept email submissions.</small>
                 </div>
 
                 <div class="text-right">
@@ -60,7 +58,7 @@
                         target="_blank" rel="noopener noreferrer">smtpServerPort</a>]
                 </div>
 
-                <label for="smtpServerPort">SMTP port</label>
+                <label for="smtpServerPort">Port</label>
 
                 <input type="number"
                     class="form-control trigger-example-render {{#if errors.smtpServerPort}}is-invalid{{/if}}"
@@ -69,8 +67,8 @@
                 {{#if errors.smtpServerPort}}
                 <span class="invalid-feedback">{{errors.smtpServerPort}}</span>
                 {{/if}}
-                <small class="form-text text-muted">The port number to bound to. Port numbers lower than 1024 might not
-                    be allowed.</small>
+                <small class="form-text text-muted">TCP port for SMTP connections. Ports below 1024 may require elevated
+                    privileges.</small>
             </div>
 
             <div class="form-group">
@@ -78,7 +76,7 @@
                         target="_blank" rel="noopener noreferrer">smtpServerHost</a>]
                 </div>
 
-                <label for="smtpServerHost">SMTP host</label>
+                <label for="smtpServerHost">Listen Address</label>
 
                 <input type="text"
                     class="form-control basicAutoComplete trigger-example-render {{#if errors.smtpServerHost}}is-invalid{{/if}}"
@@ -88,8 +86,8 @@
                 {{#if errors.smtpServerHost}}
                 <span class="invalid-feedback">{{errors.smtpServerHost}}</span>
                 {{/if}}
-                <small class="form-text text-muted">IP address to bind to. Set to empty or use "0.0.0.0" to listen on
-                    all interfaces.</small>
+                <small class="form-text text-muted">IP address to bind to. Use "0.0.0.0" or leave empty to accept
+                    connections from anywhere.</small>
             </div>
 
             <div class="form-group form-check">
@@ -99,19 +97,18 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.smtpServerProxy}}is-invalid{{/if}}"
                     id="smtpServerProxy" name="smtpServerProxy" {{#if values.smtpServerProxy}}checked{{/if}} />
-                <label class="form-check-label" for="smtpServerProxy">Enable PROXY protocol</label>
+                <label class="form-check-label" for="smtpServerProxy">Enable PROXY Protocol</label>
                 {{#if errors.smtpServerProxy}}
                 <span class="invalid-feedback">{{errors.smtpServerProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Use this if the SMTP interface is proxied by HAProxy using the
-                    <code>send-proxy</code> option.</small>
+                <small class="form-text text-muted">Required when using HAProxy with <code>send-proxy</code>.</small>
             </div>
         </div>
     </div>
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Authentication settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Authentication</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -123,7 +120,7 @@
                     class="form-check-input trigger-example-render {{#if errors.smtpServerAuthEnabled}}is-invalid{{/if}}"
                     id="smtpServerAuthEnabled" name="smtpServerAuthEnabled" {{#if
                     values.smtpServerAuthEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="smtpServerAuthEnabled">Enable authentication</label>
+                <label class="form-check-label" for="smtpServerAuthEnabled">Require Authentication</label>
                 {{#if errors.smtpServerAuthEnabled}}
                 <span class="invalid-feedback">{{errors.smtpServerAuthEnabled}}</span>
                 {{/if}}
@@ -134,12 +131,12 @@
                         target="_blank" rel="noopener noreferrer">smtpServerPassword</a>]
                 </div>
 
-                <label for="smtpServerPassword">SMTP password</label>
+                <label for="smtpServerPassword">Global Password</label>
                 <div class="input-group">
                     <input type="password"
                         class="form-control trigger-example-render {{#if errors.smtpServerPassword}}is-invalid{{/if}}"
                         id="smtpServerPassword" name="smtpServerPassword" value="{{values.smtpServerPassword}}"
-                        {{#unless values.smtpServerPassword}}placeholder="Shared SMTP password is not set" {{/unless}}
+                        {{#unless values.smtpServerPassword}}placeholder="No global password set" {{/unless}}
                         data-lpignore="true" autocomplete="off" />
 
                     <div class="input-group-append">
@@ -151,8 +148,8 @@
                 {{#if errors.smtpServerPassword}}
                 <span class="invalid-feedback">{{errors.smtpServerPassword}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Shared password for all accounts. Leave this value empty to disable
-                    global shared password.</small>
+                <small class="form-text text-muted">Optional shared password for all accounts. Leave empty to use only
+                    access tokens.</small>
             </div>
         </div>
 
@@ -160,8 +157,8 @@
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
 
-                Use the account ID as the SMTP username. For SMTP passwords, either set the shared SMTP password above
-                or use <a href="/admin/tokens">access tokens</a> with the <em>SMTP</em> scope.
+                <strong>How to authenticate:</strong> Use account IDs as usernames. For passwords, use either the global
+                password above or <a href="/admin/tokens">access tokens</a> with SMTP scope.
             </small>
         </div>
 
@@ -169,7 +166,7 @@
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">TLS settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Security (TLS)</h6>
         </div>
         <div class="card-body">
             <div class="form-group form-check">
@@ -183,7 +180,7 @@
                     {{/if}} data-domain="{{serviceDomain}}" name="smtpServerTLSEnabled" {{#if
                     values.smtpServerTLSEnabled}}checked{{/if}} />
 
-                <label class="form-check-label" for="smtpServerTLSEnabled">Enable TLS
+                <label class="form-check-label" for="smtpServerTLSEnabled">Enable TLS Encryption
 
                     {{#if certificateData.label}}
                     <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
@@ -201,15 +198,13 @@
                 <small class="form-text text-muted">
                     {{#if serviceDomain}}
 
-                    TLS certificates are provisioned for <em>{{serviceDomain}}</em>. You can change this by setting
-                    another domain name for the <a href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> configuration option.
+                    Certificates will be provisioned for <em>{{serviceDomain}}</em>. Change the domain in <a
+                        href="/admin/config/service#settingsServiceUrl">Service URL settings</a>.
 
                     {{else}}
 
-                    You need to set a valid domain name for the <a
-                        href="/admin/config/service#settingsServiceUrl">service
-                        URL</a> in order to provision TLS certificates.
+                    Set a domain name in <a href="/admin/config/service#settingsServiceUrl">Service URL settings</a> to
+                    enable automatic TLS certificates.
 
                     {{/if}}
 
@@ -222,10 +217,9 @@
         <div class="card-footer">
             <small class="text-muted">
                 <i class="fas fa-info-circle text-gray-300"></i>
-                EmailEngine must be publicly accessible from <em><a href="{{serviceUrl}}" target="_blank"
-                        rel="noopener noreferrer">{{serviceUrl}}</a></em> to provision a valid TLS certificate.
-                Otherwise,
-                EmailEngine will use a self-signed certificate.
+                EmailEngine must be publicly accessible at <em><a href="{{serviceUrl}}" target="_blank"
+                        rel="noopener noreferrer">{{serviceUrl}}</a></em> for automatic certificates. Otherwise, a
+                self-signed certificate will be used.
             </small>
         </div>
         {{/if}}
@@ -235,26 +229,25 @@
     <div class="card mt-4 mb-4">
         <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
             aria-expanded="true" aria-controls="showHelp">
-            <h6 class="m-0 font-weight-bold text-primary">Authentication instructions</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Integration Examples</h6>
         </a>
         <div class="collapse" id="showHelp">
             <div class="card-body">
-                <p>If authentication is <strong>enabled</strong> then SMTP username is the account ID you want to send
-                    mail as.</p>
+                <p><strong>With authentication enabled:</strong> Use the account ID as username and password for SMTP
+                    login.</p>
 
-                <p>If authentication is <strong>disabled</strong>, then the all messages must include a special header
-                    <code>X-EE-Account</code> that identifies the account to be used for sending.
-                </p>
+                <p><strong>With authentication disabled:</strong> Include the <code>X-EE-Account</code> header with the
+                    account ID in your messages.</p>
 
                 <ul class="nav nav-tabs mb-3" id="code-examples" role="tablist">
                     <li class="nav-item" role="presentation">
                         <a class="nav-link active" id="example-nodemailer-tab" data-toggle="tab"
                             href="#example-nodemailer" role="tab" aria-controls="example-nodemailer"
-                            aria-selected="true">Nodemailer</a>
+                            aria-selected="true">Node.js (Nodemailer)</a>
                     </li>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="example-phpmailer-tab" data-toggle="tab" href="#example-phpmailer"
-                            role="tab" aria-controls="example-phpmailer" aria-selected="false">PHPMailer</a>
+                            role="tab" aria-controls="example-phpmailer" aria-selected="false">PHP (PHPMailer)</a>
                     </li>
                 </ul>
 
@@ -279,7 +272,7 @@
                     <div class="form-group form-check">
                         <input type="checkbox" class="form-check-input trigger-example-render"
                             id="exampleShowPassword" />
-                        <label class="form-check-label" for="exampleShowPassword">Show password</label>
+                        <label class="form-check-label" for="exampleShowPassword">Show password in examples</label>
                     </div>
                 </div>
 
@@ -292,7 +285,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 
@@ -303,19 +296,20 @@
         <div class="modal-content">
             <div class="modal-header">
 
-                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Loading <i
+                <h5 class="modal-title modal-show-default" id="tlsModalLabel">Provisioning Certificate <i
                         class="fas fa-spinner fa-spin fa-fw modal-show-default"></i></h5>
-                <h5 class="modal-title modal-show-error">Certificate request failed</h5>
+                <h5 class="modal-title modal-show-error">Certificate Request Failed</h5>
 
                 <button type="button" class="close modal-show-error d-none" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body modal-show-default">
-                Please wait, provisioning a TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>.
+                Setting up TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>. This may take a
+                moment...
             </div>
             <div class="modal-body modal-show-error d-none">
-                <p>The server responded with the following error message:</p>
+                <p>Unable to provision certificate:</p>
 
                 <div class="text-monospace error-content alert alert-danger"></div>
             </div>
@@ -518,7 +512,7 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
         function checkLoadCerts() {
             if (document.getElementById('smtpServerTLSEnabled').checked &&
                 !loadingCertData && !loadedCertData &&
-                !document.getElementById('smtpServerTLSEnabled').dataset.certificate &&
+                //!document.getElementById('smtpServerTLSEnabled').dataset.certificate &&
                 document.getElementById('smtpServerTLSEnabled').dataset.domain) {
 
                 loadCertData();

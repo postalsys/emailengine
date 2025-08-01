@@ -2,18 +2,18 @@
     <h1 class="h3 mb-0 text-gray-800">
 
         <small><i class="fas fa-cog fa-fw"></i></small>
-        Service
+        General Settings
     </h1>
 </div>
 
-<p class="mb-4">General settings for EmailEngine.</p>
+<p class="mb-4">Configure core settings for your EmailEngine instance.</p>
 
 <form method="post" id="settings-form" action="/admin/config/service">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
 
     <div class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">General Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">System Configuration</h6>
         </div>
         <div class="card-body">
 
@@ -28,7 +28,7 @@
                 {{#if errors.serviceUrl}}
                 <span class="invalid-feedback">{{errors.serviceUrl}}</span>
                 {{/if}}
-                <small class="form-text text-muted">The base URL for EmailEngine, excluding any path components.</small>
+                <small class="form-text text-muted">Base URL where EmailEngine is accessible (without any path).</small>
             </div>
 
             <div class="form-group form-check">
@@ -37,13 +37,12 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
                     id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
-                <label class="form-check-label" for="enableApiProxy">Reverse Proxy Support</label>
+                <label class="form-check-label" for="enableApiProxy">Behind Reverse Proxy</label>
                 {{#if errors.enableApiProxy}}
                 <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enable this option if EmailEngine is behind a reverse proxy (e.g.,
-                    Nginx or Caddy) to correctly identify the client IP address using the <code>X-Forwarded-For</code>
-                    header. Disable this if EmailEngine handles web requests directly without a reverse proxy.</small>
+                <small class="form-text text-muted">Enable if using Nginx, Caddy, or similar. Uses
+                    <code>X-Forwarded-For</code> headers to identify client IPs.</small>
             </div>
 
 
@@ -51,7 +50,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">timezone</a>]</div>
 
-                <label for="settingsServiceTimezone">Default Timezone</label>
+                <label for="settingsServiceTimezone">Timezone</label>
                 <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
                     errors.timezone}}is-invalid{{/if}}>
                     {{#each timezones}}
@@ -67,7 +66,7 @@
 
     <div class="card mb-4" id="language">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Language settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Language</h6>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -85,31 +84,30 @@
                 <span class="invalid-feedback">{{errors.locale}}</span>
                 {{/if}}
                 <small class="form-text text-muted">
-                    Sets the default language for EmailEngine when no specific language preference is provided.
+                    Default language for UI and API responses.
                     <a href="#languageDetails" data-toggle="collapse" aria-expanded="false"
                         aria-controls="languageDetails">
-                        Learn more about language selection <i class="fas fa-chevron-down fa-sm"></i>
+                        How to override <i class="fas fa-chevron-down fa-sm"></i>
                     </a>
                 </small>
             </div>
 
             <div class="collapse" id="languageDetails">
                 <div class="alert alert-info">
-                    <h6 class="alert-heading font-weight-bold">How Language Selection Works</h6>
-                    <p>EmailEngine determines the display language for both API responses and public pages using the
-                        following priority:</p>
+                    <h6 class="alert-heading font-weight-bold">Override Language Settings</h6>
+                    <p>Set language per request (highest to lowest priority):</p>
                     <ol class="mb-3">
-                        <li><strong>Query parameter:</strong> <code>?locale=xx</code> (highest priority)</li>
-                        <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API requests only)</li>
-                        <li><strong>Standard HTTP header:</strong> <code>Accept-Language</code></li>
-                        <li><strong>Default language:</strong> The language selected above</li>
+                        <li><strong>URL parameter:</strong> <code>?locale=xx</code></li>
+                        <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API only)</li>
+                        <li><strong>Browser preference:</strong> <code>Accept-Language</code> header</li>
+                        <li><strong>Default:</strong> Language selected above</li>
                     </ol>
 
                     <strong>Examples:</strong>
                     <ul class="mb-0">
-                        <li>Public page: <code>/accounts/new?locale=et</code></li>
-                        <li>API request: <code>GET /v1/accounts?locale=nl</code></li>
-                        <li>API with header: <code>X-EE-Locale: de</code></li>
+                        <li>Web: <code>/accounts/new?locale=et</code></li>
+                        <li>API: <code>GET /v1/accounts?locale=nl</code></li>
+                        <li>Header: <code>X-EE-Locale: de</code></li>
                     </ul>
                 </div>
             </div>
@@ -117,7 +115,7 @@
             <p class="mb-0">
                 <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md" target="_blank"
                     rel="noopener noreferrer" referrerpolicy="no-referrer">
-                    <i class="fas fa-external-link-alt fa-sm"></i> Translation documentation
+                    <i class="fas fa-external-link-alt fa-sm"></i> Help us translate EmailEngine
                 </a>
             </p>
         </div>
@@ -125,7 +123,7 @@
 
     <div class="card mb-4" id="security">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Security settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Security</h6>
         </div>
         <div class="card-body">
 
@@ -149,8 +147,8 @@
                 {{#if errors.serviceSecret}}
                 <span class="invalid-feedback">{{errors.serviceSecret}}</span>
                 {{/if}}
-                <small class="form-text text-muted">HMAC secret used for signing public requests. Changing this value
-                    will invalidate all tracking links in emails sent with tracking enabled.</small>
+                <small class="form-text text-muted">HMAC key for signing public requests. Changing this invalidates all
+                    existing tracking links.</small>
             </div>
 
             <div class="form-group form-check">
@@ -159,7 +157,7 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableTokens}}is-invalid{{/if}}"
                     id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
-                <label class="form-check-label" for="enableTokens">Require Access Tokens
+                <label class="form-check-label" for="enableTokens">Require API Authentication
 
                     <span class="badge badge-{{#if values.enableTokens}}success{{else}}danger{{/if}}">{{#if
                         values.enableTokens}}enabled{{else}}disabled{{/if}}</span>
@@ -167,9 +165,8 @@
                 {{#if errors.enableTokens}}
                 <span class="invalid-feedback">{{errors.enableTokens}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Disable this option during development to simplify running API
-                    requests from the command line. However, it is recommended to always enable access tokens in
-                    production to ensure secure API request authorization.</small>
+                <small class="form-text text-muted">Disable for development only. Always enable in production for secure
+                    API access.</small>
             </div>
 
             <div class="form-group form-check">
@@ -180,17 +177,15 @@
 
                 <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
                     disabled />
-                <label class="form-check-label" for="encryption">Field-Level Encryption
+                <label class="form-check-label" for="encryption">Data Encryption
 
                     <span class="badge badge-{{#if encryption}}success{{else}}danger{{/if}}">{{#if
                         encryption}}enabled{{else}}disabled{{/if}}</span>
 
                 </label>
-                <small class="form-text text-muted">Encryption settings cannot be changed at runtime. To enable
-                    encryption, set the <code>EENGINE_SECRET</code> environment variable when starting EmailEngine. For
-                    more information, refer to the <a href="https://docs.emailengine.app/enabling-secret-encryption/"
-                        target="_blank" rel="noopener noreferrer"
-                        referrerpolicy="no-referrer">documentation</a>.</small>
+                <small class="form-text text-muted">Set <code>EENGINE_SECRET</code> environment variable at startup to
+                    enable. <a href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
             </div>
 
 
@@ -200,16 +195,14 @@
 
                 <input type="checkbox" class="form-check-input" id="adminAccessLimit" {{#if
                     adminAccessLimit}}checked{{/if}} disabled />
-                <label class="form-check-label" for="adminAccessLimit">Limit Access to Admin Interface
+                <label class="form-check-label" for="adminAccessLimit">Admin IP Restrictions
 
                     <span class="badge badge-{{#if adminAccessLimit}}success{{else}}danger{{/if}}">{{#if
                         adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
 
                 </label>
-                <small class="form-text text-muted">Access to the Admin interface cannot be modified at runtime. To
-                    restrict access to EmailEngine's Admin interface while keeping other parts of the app open, set the
-                    <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> environment variable when starting EmailEngine. Provide
-                    a comma-separated list of IP addresses that are permitted to access the Admin interface.</small>
+                <small class="form-text text-muted">Set <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> at startup with
+                    comma-separated IP addresses or CIDR ranges (e.g., "192.168.1.1,10.0.0.0/24").</small>
             </div>
 
 
@@ -218,16 +211,14 @@
                 <input type="checkbox" class="form-check-input {{#if errors.enableOAuthTokensApi}}is-invalid{{/if}}"
                     id="enableOAuthTokensApi" name="enableOAuthTokensApi" {{#if
                     values.enableOAuthTokensApi}}checked{{/if}} />
-                <label class="form-check-label" for="enableOAuthTokensApi">Allow API Endpoint for Fetching OAuth2 Access
-                    Tokens</label>
+                <label class="form-check-label" for="enableOAuthTokensApi">Allow OAuth2 Token Access via API</label>
                 {{#if errors.enableOAuthTokensApi}}
                 <span class="invalid-feedback">{{errors.enableOAuthTokensApi}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enable this option if you need to reuse OAuth2 access tokens managed
-                    by EmailEngine in other parts of your application. Note that <a
+                <small class="form-text text-muted">Enable <a
                         href="/admin/swagger#/Account/getV1AccountAccountOauthtoken" target="_blank"
-                        rel="noopener noreferrer">access to OAuth2 tokens</a> is disabled by default due to the
-                    potential security risks of leaking these tokens.</small>
+                        rel="noopener noreferrer">API endpoint</a> to retrieve OAuth2 tokens. Use with caution—tokens
+                    grant full email access.</small>
             </div>
 
 
@@ -238,7 +229,7 @@
                 <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
                     id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
                     values.ignoreMailCertErrors}}checked{{/if}} />
-                <label class="form-check-label" for="ignoreMailCertErrors">Allow Insecure Certificates for IMAP/SMTP
+                <label class="form-check-label" for="ignoreMailCertErrors">Allow Insecure Email Certificates
 
                     <span class="badge badge-{{#if values.ignoreMailCertErrors}}danger{{else}}success{{/if}}">{{#if
                         values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
@@ -247,9 +238,8 @@
                 {{#if errors.ignoreMailCertErrors}}
                 <span class="invalid-feedback">{{errors.ignoreMailCertErrors}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enabling this option allows EmailEngine to bypass security warnings
-                    related to self-signed or expired TLS certificates during IMAP and SMTP operations. Use with
-                    caution.</small>
+                <small class="form-text text-muted">Accept self-signed or expired certificates for IMAP/SMTP
+                    connections. Not recommended.</small>
             </div>
 
         </div>
@@ -257,7 +247,7 @@
 
     <div id="queue_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Queue settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Queue Management</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -265,9 +255,9 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Queue actions:</div>
+                    <div class="dropdown-header">Actions:</div>
                     <a class="dropdown-item" href="#" id="clean-queues-btn">
-                        <i class="fas fa-trash-alt fa-sm clean-icon"></i> <span>Clear completed queue entries</span>
+                        <i class="fas fa-trash-alt fa-sm clean-icon"></i> <span>Clear completed jobs</span>
                     </a>
                 </div>
             </div>
@@ -279,17 +269,16 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">queueKeep</a>]</div>
 
-                <label for="settingsQueueKeep">How many completed/failed queue entries to keep</label>
+                <label for="settingsQueueKeep">Job History Limit</label>
                 <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
                     id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
                     autocomplete="off" />
                 {{#if errors.queueKeep}}
                 <span class="invalid-feedback">{{errors.queueKeep}}</span>
                 {{/if}}
-                <small class="form-text text-muted">By default, all queued job entries are deleted after processed, so
-                    "Failed" and "Completed" lists are empty in <a href="/admin/bull-board" target="_blank"
-                        rel="noopener noreferrer">Bull Board</a>.
-                    Set this value if you want to keep a fixed number of the latest entries in the list.</small>
+                <small class="form-text text-muted">Number of completed/failed jobs to keep in <a
+                        href="/admin/bull-board" target="_blank" rel="noopener noreferrer">Bull Board</a>. Set to 0 to
+                    disable history.</small>
             </div>
 
         </div>
@@ -297,7 +286,7 @@
 
     <div id="submission_settings" class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Email submission settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Email Delivery</h6>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -305,15 +294,14 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">deliveryAttempts</a>]</div>
 
-                <label for="settingsDeliveryAttempts">How many times to retry a failed email sending</label>
+                <label for="settingsDeliveryAttempts">Retry Attempts</label>
                 <input type="number" min="0" class="form-control {{#if errors.deliveryAttempts}}is-invalid{{/if}}"
                     id="settingsDeliveryAttempts" name="deliveryAttempts" value="{{values.deliveryAttempts}}"
                     data-lpignore="true" autocomplete="off" />
                 {{#if errors.deliveryAttempts}}
                 <span class="invalid-feedback">{{errors.deliveryAttempts}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If EmailEngine cannot deliver an email to an SMTP server, it will
-                    attempt to retry the action for the specified number of attempts.</small>
+                <small class="form-text text-muted">How many times to retry failed email deliveries.</small>
             </div>
 
         </div>
@@ -321,7 +309,7 @@
 
     <div id="submission_settings" class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">IMAP processing settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">IMAP Processing</h6>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -329,7 +317,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">imapIndexer</a>]</div>
 
-                <label for="settingsImapIndexer">Indexing Method for IMAP Accounts</label>
+                <label for="settingsImapIndexer">Indexing Method</label>
 
 
                 <select id="settingsImapIndexer" class="custom-select custom-select-sm" name="imapIndexer" {{#if
@@ -343,13 +331,10 @@
                 {{#if errors.imapIndexer}}
                 <span class="invalid-feedback">{{errors.imapIndexer}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specifies the default indexing method for IMAP accounts. Select
-                    <em>"full"</em> to build a comprehensive index that tracks deleted and updated emails, or
-                    <em>"fast"</em> to detect only newly received emails. You can also customize this setting in each
-                    account's settings to use different indexing methods for different accounts.<br>
-                    <em>Note:</em> Changing this setting applies only to new accounts. To change the indexer for
-                    existing accounts, you must perform an <a
-                        href="/admin/swagger#/Account/putV1AccountAccountFlush">account flush</a>.</small>
+                <small class="form-text text-muted"><strong>Full:</strong> Track all changes (new, deleted, updated
+                    emails). <strong>Fast:</strong> Track only new emails. Applies to new accounts only. To change
+                    existing accounts, perform an <a href="/admin/swagger#/Account/putV1AccountAccountFlush">account
+                        flush</a>.</small>
             </div>
 
         </div>
@@ -357,7 +342,7 @@
 
     <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Public website templates</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Public Page Customization</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -365,7 +350,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Template actions:</div>
+                    <div class="dropdown-header">Actions:</div>
                     <a class="dropdown-item" href="#" id="preview-header-btn">
                         <i class="fas fa-eye fa-sm"></i> <span>Preview</span>
                     </a>
@@ -374,22 +359,20 @@
         </div>
         <div class="card-body">
 
-            <p>These settings apply to all publicly accessible pages, such as 404 error pages, the hosted authentication
-                form, and the virtual mailing list unsubscribe page.</p>
+            <p>Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">pageBrandName</a>]</div>
 
-                <label for="settingsPageBrandName">Brand name</label>
+                <label for="settingsPageBrandName">Brand Name</label>
                 <input type="text" class="form-control {{#if errors.pageBrandName}}is-invalid{{/if}}"
                     id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
-                    data-lpignore="true" autocomplete="off" placeholder="Brand name like &quot;EmailEngine&quot;" />
+                    data-lpignore="true" autocomplete="off" placeholder="EmailEngine" />
                 {{#if errors.pageBrandName}}
                 <span class="invalid-feedback">{{errors.pageBrandName}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Brand name to use in the HTML title element (defaults to
-                    <em>"EmailEngine"</em>)</small>
+                <small class="form-text text-muted">Appears in browser title bar</small>
             </div>
 
             <div class="form-group">
@@ -397,7 +380,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
 
-                <label>Header HTML for Public Pages</label>
+                <label>Page Header HTML</label>
 
                 <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
                     name="templateHeader" value="{{values.templateHeader}}">
@@ -405,7 +388,7 @@
                 <div id="editor-html" class="code-editor"></div>
                 <div class="editor-embed-block">
                     <div class="editor-embed-content editor-embed-content-left">
-                        HTML content
+                        Header template
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
                         <a href="#" class="toggle-fullscreen" data-target="editor-html">Toggle fullscreen</a>
@@ -416,10 +399,10 @@
                 <span class="invalid-feedback">{{errors.templateHeader}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Enter the HTML code you want to display at the <u
-                        data-toggle="popover" data-trigger="hover" data-html="true"
+                <small class="form-text text-muted">HTML shown at the <u data-toggle="popover" data-trigger="hover"
+                        data-html="true"
                         data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
-                        style="cursor: default;">top of public pages</u> (e.g., the hosted authentication form).</small>
+                        style="cursor: default;">top of public pages</u></small>
             </div>
 
             <div class="form-group">
@@ -427,7 +410,7 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">templateHtmlHead</a>]</div>
 
-                <label>HTML Code for the &lt;head&gt; Section of Public Pages</label>
+                <label>Custom &lt;head&gt; HTML</label>
 
                 <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
                     id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
@@ -435,7 +418,7 @@
                 <div id="editor-html-head" class="code-editor"></div>
                 <div class="editor-embed-block">
                     <div class="editor-embed-content editor-embed-content-left">
-                        HTML content
+                        Head content
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
                         <a href="#" class="toggle-fullscreen" data-target="editor-html-head">Toggle fullscreen</a>
@@ -446,8 +429,7 @@
                 <span class="invalid-feedback">{{errors.templateHtmlHead}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Enter the HTML code you want to include within the &lt;head&gt;
-                    section of public pages (e.g., the hosted authentication form).</small>
+                <small class="form-text text-muted">Add custom CSS, fonts, or analytics scripts</small>
             </div>
 
         </div>
@@ -455,20 +437,19 @@
 
     <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Pre-processing scripts</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Webhook Scripts</h6>
         </div>
         <div class="card-body">
 
 
-            <p>The following options apply for pre-processing scripts like the <em>filter</em> and <em>map</em> function
-                of the <a href="/admin/webhooks">webhook routes</a>.</p>
+            <p>Global settings for filter and map functions in <a href="/admin/webhooks">webhook routes</a>.</p>
 
             <div class="form-group">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
 
-                <label>Environment variable (JSON object)</label>
+                <label>Environment Variables (JSON)</label>
 
                 <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
                     name="scriptEnv" value="{{values.scriptEnv}}">
@@ -476,7 +457,7 @@
                 <div id="editor-env" class="code-editor"></div>
                 <div class="editor-embed-block">
                     <div class="editor-embed-content editor-embed-content-left">
-                        JSON content
+                        Global variables
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
                         <a href="#" class="toggle-fullscreen" data-target="editor-env">Toggle fullscreen</a>
@@ -487,8 +468,8 @@
                 <span class="invalid-feedback">{{errors.scriptEnv}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">You can set here a JSON object that is used as the value of
-                    <code>env</code> variable in all pre-processing scripts.</small>
+                <small class="form-text text-muted">JSON object available as <code>env</code> variable in all webhook
+                    scripts.</small>
             </div>
 
         </div>
@@ -498,7 +479,7 @@
 
     <div class="card mb-4" id="tracking">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Sent Email Tracking</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Email Tracking</h6>
         </div>
         <div class="card-body">
 
@@ -508,12 +489,11 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.trackClicks}}is-invalid{{/if}}"
                     id="trackClicks" name="trackClicks" {{#if values.trackClicks}}checked{{/if}} />
-                <label class="form-check-label" for="trackClicks">Track Clicks</label>
+                <label class="form-check-label" for="trackClicks">Track Link Clicks</label>
                 {{#if errors.trackClicks}}
                 <span class="invalid-feedback">{{errors.trackClicks}}</span>
                 {{/if}}
-                <small class="form-text text-muted">When enabled, EmailEngine rewrites HTML links in emails sent through
-                    the service to monitor and track user clicks.</small>
+                <small class="form-text text-muted">Rewrite links to track when recipients click them.</small>
             </div>
 
             <div class="form-group form-check">
@@ -522,30 +502,26 @@
 
                 <input type="checkbox" class="form-check-input {{#if errors.trackOpens}}is-invalid{{/if}}"
                     id="trackOpens" name="trackOpens" {{#if values.trackOpens}}checked{{/if}} />
-                <label class="form-check-label" for="trackOpens">Track Opens</label>
+                <label class="form-check-label" for="trackOpens">Track Email Opens</label>
                 {{#if errors.trackOpens}}
                 <span class="invalid-feedback">{{errors.trackOpens}}</span>
                 {{/if}}
-                <small class="form-text text-muted">When enabled, EmailEngine inserts an open beacon in HTML messages
-                    sent through the service to track email opens.</small>
+                <small class="form-text text-muted">Add a tracking pixel to detect when emails are opened.</small>
             </div>
         </div>
 
         <div class="card-footer">
-            <strong>NB!</strong> <a href="{{values.serviceUrl}}" target="_blank"
-                rel="noopener noreferrer">{{values.serviceUrl}}</a> must
-            be publicly accessible for clicks and opens tracking to work. You can also set tracking options in the
-            message level to
-            override the defaults. See the <a href="https://emailengine.app/sending-emails#tracking" target="_blank"
-                rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a> for
-            details.</small>
+            <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank"
+                rel="noopener noreferrer">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
+            See <a href="https://emailengine.app/sending-emails#tracking" target="_blank" rel="noopener noreferrer"
+                referrerpolicy="no-referrer">documentation</a> for per-message overrides.
 
         </div>
     </div>
 
     <div class="card mb-4" id="gmail">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Gmail-Specific Options</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Gmail Features</h6>
         </div>
         <div class="card-body">
 
@@ -556,18 +532,13 @@
                 <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
                     id="resolveGmailCategories" name="resolveGmailCategories" {{#if
                     values.resolveGmailCategories}}checked{{/if}} />
-                <label class="form-check-label" for="resolveGmailCategories">Resolve Gmail Categories for IMAP
-                    Accounts</label>
+                <label class="form-check-label" for="resolveGmailCategories">Detect Gmail Categories (IMAP)</label>
                 {{#if errors.resolveGmailCategories}}
                 <span class="invalid-feedback">{{errors.resolveGmailCategories}}</span>
                 {{/if}}
-                <small class="form-text text-muted">When enabled, EmailEngine determines the inbox category
-                    (also known as the Gmail tab) for incoming emails when using Gmail IMAP. For accounts using
-                    the Gmail API, category labels are resolved by default. The possible category values
-                    include: <em>social</em>,
-                    <em>promotions</em>, <em>updates</em>, <em>forums</em>, and <em>primary</em>. The resolved
-                    category can be found in the <em>category</em> property of the <em>messageNew</em> webhook
-                    payload.</small>
+                <small class="form-text text-muted">Identify which Gmail tab (Primary, Social, Promotions, Updates,
+                    Forums) new emails belong to. Available in <code>messageNew</code> webhook as <code>category</code>
+                    property. Gmail API accounts get this automatically.</small>
             </div>
 
         </div>
@@ -578,7 +549,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 

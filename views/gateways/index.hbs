@@ -3,14 +3,14 @@
         <span class="icon text-white-50">
             <i class="fas fa-plus"></i>
         </span>
-        <span class="text">Create new</span>
+        <span class="text">Add Gateway</span>
     </a>
 </div>
 
 {{> gateways_header}}
 
 <p>
-    You can use an SMTP gateway as the SMTP server for any email account when sending out emails.
+    Route outgoing emails through SMTP gateways instead of users' email servers.
 </p>
 
 <div class="card border-left-info shadow mb-4">
@@ -18,16 +18,13 @@
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
 
-                <p>SMTP Gateways are SMTP smarthosts that are not bound to a specific email account. You can use an SMTP
-                    server hosted on your local infrastructure or some paid service like Amazon SES, SendGrid, Mailgun,
-                    or others.</p>
-                <p>When sending an email with the <a
+                <p>SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
+                    third-party services like SendGrid, Amazon SES, Mailgun, and others.</p>
+                <p><strong>How to use:</strong><br>
+                    • API: Add <code>gateway: "gateway-id"</code> to your <a
                         href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Submit API call</a>,
-                    provide the <code>gateway</code> property
-                    so that EmailEngine would know to route that email not through the user's SMTP server but the
-                    specified gateway. For messages sent through the SMTP interface, use the
-                    <code>X-EE-Gateway: gateway</code> header.
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">submit request</a><br>
+                    • SMTP: Include header <code>X-EE-Gateway: gateway-id</code>
                 </p>
             </div>
 
@@ -47,16 +44,16 @@
             <thead class="">
                 <tr>
                     <th class="p-0">
-                        <div class="p-2">ID</div>
+                        <div class="p-2">Gateway ID</div>
                     </th>
                     <th class="p-0">
                         <div class="p-2">Name</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Deliveries</div>
+                        <div class="p-2">Emails Sent</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Last used</div>
+                        <div class="p-2">Last Activity</div>
                     </th>
                     <th class="p-0">
                         <div class="p-2">Status</div>
@@ -91,7 +88,7 @@
                             {{#if timeStr}}
                             <span class="relative-time" data-time="{{timeStr}}"></span>
                             {{else}}
-                            <small><em>Never</em></small>
+                            <small><em>Never used</em></small>
                             {{/if}}
                         </div>
                     </td>
@@ -146,9 +143,9 @@
 <div class="list-group mt-4 mb-4">
     <div class="list-group-item">
         {{#if firstPage}}
-        No gateways have been registered yet. Add one <a href="/admin/gateways/new">here</a>.
+        No gateways configured yet. <a href="/admin/gateways/new">Add your first gateway</a>.
         {{else}}
-        Nothing to show here.
+        No gateways to display.
         {{/if}}
     </div>
 </div>

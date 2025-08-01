@@ -18,7 +18,8 @@
     </h1>
 </div>
 
-<p class="mb-4">Webhooks allow EmailEngine to notify you about changes on registered email accounts.</p>
+<p class="mb-4">Get real-time notifications when email events occur. Webhooks send HTTP POST requests to your server
+    whenever something happens in connected accounts.</p>
 
 {{#if values.webhooksEnabled}}
 {{#if webhookErrorFlag}}
@@ -27,7 +28,8 @@
         <span aria-hidden="true">&times;</span>
     </button>
 
-    <p><strong>NB!</strong> The last attempted webhook failed with the following response:</p>
+    <p><strong>Webhook Error</strong></p>
+    <p>The last webhook attempt failed with:</p>
     <hr>
     <p class="mb-0">
         <code>
@@ -57,15 +59,14 @@
                 {{#if errors.webhooksEnabled}}
                 <span class="invalid-feedback">{{errors.webhooksEnabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">When enabled, EmailEngine sends POST requests with a JSON payload to
-                    all matching webhook targets.</small>
+                <small class="form-text text-muted">Turn on webhook notifications for email events.</small>
             </div>
         </div>
     </div>
 
     <div class="card mt-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Default Webhook Settings</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Default Webhook</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -73,7 +74,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Webhook actions:</div>
+                    <div class="dropdown-header">Actions:</div>
                     <a class="dropdown-item webhooks-status" href="#" id="test-payload-btn">
                         <i class="fas fa-cloud-upload-alt fa-sm"></i> <span>Send test webhook</span>
                     </a>
@@ -91,20 +92,18 @@
 
                 <input type="url" class="form-control or-else-all {{#if errors.webhooks}}is-invalid{{/if}}"
                     data-target="webhooks-status" id="settingsWebhooks" name="webhooks"
-                    placeholder="URL like &quot;https://myservice.com/imap/webhooks&quot;"
-                    value="{{values.webhooks}}" />
+                    placeholder="https://example.com/webhooks/emailengine" value="{{values.webhooks}}" />
 
                 {{#if errors.webhooks}}
                 <span class="invalid-feedback">{{errors.webhooks}}</span>
                 {{/if}}
-                <small class="form-text text-muted">This is the default webhook target that applies to all selected
-                    events below. If an account has its own specific webhook URL set, the default webhook URL is ignored
-                    for that account. Leave this field empty to disable the default webhook.</small>
+                <small class="form-text text-muted">The default destination for all webhook events. Individual accounts
+                    can override this with their own webhook URLs.</small>
             </div>
 
-            <p>Select the event types you want to receive webhook notifications for:<br>
-                <small>Avoid selecting all events if you have many registered accounts, as this could fill the event
-                    queue in memory.</small>
+            <p><strong>Event Types</strong><br>
+                <small>Choose which events trigger webhooks. Be selective with many accounts to avoid memory
+                    issues.</small>
             </p>
 
             <div class="form-group form-check">
@@ -114,8 +113,7 @@
 
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyAll}}is-invalid{{/if}}"
                     data-target="event-type" id="notifyAll" name="notifyAll" {{#if values.notifyAll}}checked{{/if}} />
-                <label class="form-check-label" for="notifyAll">All
-                    events</label>
+                <label class="form-check-label" for="notifyAll">All events</label>
                 {{#if errors.notifyAll}}
                 <span class="invalid-feedback">{{errors.notifyAll}}</span>
                 {{/if}}
@@ -142,8 +140,8 @@
                     </div>
                     <input type="checkbox" class="form-check-input {{#if error}}is-invalid{{/if}}" id="inboxNewOnly"
                         name="inboxNewOnly" {{#if ../values.inboxNewOnly}}checked{{/if}}>
-                    <label class="form-check-label" for="inboxNewOnly">Send "New Email" notifications for incoming
-                        emails only</label>
+                    <label class="form-check-label" for="inboxNewOnly">Only trigger for incoming emails (skip
+                        sent/drafts)</label>
                     {{#if ../errors.inboxNewOnly}}
                     <span class="invalid-feedback">{{../errors.inboxNewOnly}}</span>
                     {{/if}}
@@ -160,30 +158,31 @@
             class="d-block card-header py-3 {{#unless values.customHeaders}} collapsed{{/unless}}"
             data-toggle="collapse" role="button" aria-expanded="true" aria-controls="customHeadersBlock">
 
-            <h6 class="m-0 font-weight-bold text-primary">Custom Request Headers <small class="text-muted"> &mdash;
-                    Applies to Default Webhooks Only</small></h6>
+            <h6 class="m-0 font-weight-bold text-primary">Custom Headers <small class="text-muted">(Default webhook
+                    only)</small></h6>
 
         </a>
         <div class="collapse {{#if values.customHeaders}} show{{/if}}" id="customHeadersBlock">
             <div class="card-body">
 
-                <p>Add any additional request headers to be included with each webhook request.</p>
+                <p>Add authentication tokens or other headers to webhook requests.</p>
 
                 <div class="form-group">
                     <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                             target="_blank" rel="noopener noreferrer">webhooksCustomHeaders</a>]
                     </div>
 
-                    <label for="customHeaders">List of Custom Headers</label>
+                    <label for="customHeaders">HTTP Headers</label>
 
                     <textarea class="form-control text-monospace {{#if errors.customHeaders}}is-invalid{{/if}}"
                         id="customHeaders" name="customHeaders" rows="5" spellcheck="false"
                         data-enable-grammarly="false"
-                        placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
+                        placeholder="Authorization: Bearer your-secret-token&#10;X-Custom-Header: value">{{values.customHeaders}}</textarea>
                     {{#if errors.customHeaders}}
                     <span class="invalid-feedback">{{errors.customHeaders}}</span>
                     {{/if}}
-                    <small class="form-text text-muted">Enter one header per line.</small>
+                    <small class="form-text text-muted">One header per line. Format:
+                        <code>Header-Name: value</code></small>
                 </div>
 
             </div>
@@ -192,16 +191,14 @@
 
     <div class="card mt-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Email Headers to Include in the Payload
-                <small class="text-muted"> &mdash; Applies to All Webhooks, Including <a href="/admin/webhooks">Routed
-                        Webhooks</a></small>
+            <h6 class="m-0 font-weight-bold text-primary">Email Headers
+                <small class="text-muted">(All webhooks)</small>
             </h6>
         </div>
         <div class="card-body">
 
-            <p>By default, EmailEngine includes envelope-specific data like sender and recipient addresses or Message-ID
-                values in the webhook payload. You can also configure EmailEngine to include the contents of other email
-                header keys.</p>
+            <p>Include specific email headers in webhook payloads. Basic headers (From, To, Message-ID) are always
+                included.</p>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
@@ -210,7 +207,7 @@
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.headersAll}}is-invalid{{/if}}"
                     data-target="header-list" id="headers_all" name="headersAll" {{#if
                     values.headersAll}}checked{{/if}} />
-                <label class="form-check-label" for="headers_all">All Headers</label>
+                <label class="form-check-label" for="headers_all">Include all headers</label>
                 {{#if errors.headersAll}}
                 <span class="invalid-feedback">{{errors.headersAll}}</span>
                 {{/if}}
@@ -220,32 +217,28 @@
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">notifyHeaders</a>]
                 </div>
-                <label for="settingsNotifyHeaders">Selected Headers</label>
+                <label for="settingsNotifyHeaders">Specific Headers</label>
                 <textarea class="form-control header-list {{#if errors.notifyHeaders}}is-invalid{{/if}}"
                     id="settingsNotifyHeaders" name="notifyHeaders" rows="3" data-enable-grammarly="false"
                     spellcheck="false"
-                    placeholder="For example: &quot;MIME-Version&quot;">{{values.notifyHeaders}}</textarea>
+                    placeholder="X-Priority&#10;Reply-To&#10;List-Unsubscribe">{{values.notifyHeaders}}</textarea>
                 {{#if errors.notifyHeaders}}
                 <span class="invalid-feedback">{{errors.notifyHeaders}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Enter one header key per line. Leave empty to exclude headers from
-                    the webhook.</small>
+                <small class="form-text text-muted">One header name per line.</small>
             </div>
         </div>
     </div>
 
     <div class="card mt-4 mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Text Content<small class="text-muted"> &mdash; Applies to All
-                    Webhooks, Including <a href="/admin/webhooks">Routed
-                        Webhooks</a></small>
+            <h6 class="m-0 font-weight-bold text-primary">Email Content <small class="text-muted">(All webhooks)</small>
             </h6>
 
         </div>
         <div class="card-body">
 
-            <p>By default, only email metadata is included in the webhook payload for new emails. You can configure
-                EmailEngine to include the plaintext and HTML content as well.</p>
+            <p>Include email body content in webhook payloads.</p>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
@@ -254,8 +247,7 @@
                 <input type="checkbox" class="form-check-input or-else-all {{#if errors.notifyText}}is-invalid{{/if}}"
                     data-target="text-list" data-reverse="true" id="settingsNotifyText" name="notifyText" {{#if
                     values.notifyText}}checked{{/if}} />
-                <label class="form-check-label" for="settingsNotifyText">Include Text Content in New Email
-                    Webhooks</label>
+                <label class="form-check-label" for="settingsNotifyText">Include email text and HTML</label>
                 {{#if errors.notifyText}}
                 <span class="invalid-feedback">{{errors.notifyText}}</span>
                 {{/if}}
@@ -269,30 +261,27 @@
                     class="form-check-input text-list {{#if errors.notifyWebSafeHtml}}is-invalid{{/if}}"
                     id="settingsNotifyWebSafeHtml" name="notifyWebSafeHtml" {{#if
                     values.notifyWebSafeHtml}}checked{{/if}} />
-                <label class="form-check-label" for="settingsNotifyWebSafeHtml">Pre-process HTML to Make It
-                    Web-Safe</label>
+                <label class="form-check-label" for="settingsNotifyWebSafeHtml">Sanitize HTML for web display</label>
                 {{#if errors.notifyWebSafeHtml}}
                 <span class="invalid-feedback">{{errors.notifyWebSafeHtml}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, EmailEngine will apply the <code>webSafeHtml</code>
-                    pre-processing to the HTML content, making it safe for inline inclusion on web pages. If the email
-                    lacks HTML content, EmailEngine will generate HTML from the plaintext.</small>
+                <small class="form-text text-muted">Makes HTML safe to display directly on web pages. Converts plain
+                    text emails to HTML if needed.</small>
             </div>
 
             <div class="form-group">
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">notifyTextSize</a>]
                 </div>
-                <label for="settingsNotifyTextSize">Maximum Text Size</label>
+                <label for="settingsNotifyTextSize">Content Size Limit</label>
                 <input type="text" class="form-control text-list {{#if errors.notifyTextSize}}is-invalid{{/if}}"
                     id="settingsNotifyTextSize" min="0" name="notifyTextSize" value="{{values.notifyTextSize}}"
-                    placeholder="For example: &quot;1MB&quot;" />
+                    placeholder="1MB" />
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Specify a maximum text size to keep the webhook payload size
-                    manageable. Text longer than this limit will be cropped. The limit is applied per text type
-                    (plaintext and HTML), so if the limit is 1000 bytes, you will get up to 1000 bytes of each.</small>
+                <small class="form-text text-muted">Maximum size per content type (text and HTML). Larger content is
+                    truncated.</small>
             </div>
 
             <div class="form-group form-check">
@@ -302,15 +291,12 @@
                 <input type="checkbox" class="form-check-input {{#if errors.notifyCalendarEvents}}is-invalid{{/if}}"
                     data-target="text-list" id="settingsnotifyCalendarEvents" name="notifyCalendarEvents" {{#if
                     values.notifyCalendarEvents}}checked{{/if}} />
-                <label class="form-check-label" for="settingsnotifyCalendarEvents">Include Calendar Events in New Email
-                    Webhooks</label>
+                <label class="form-check-label" for="settingsnotifyCalendarEvents">Extract calendar invites</label>
                 {{#if errors.notifyCalendarEvents}}
                 <span class="invalid-feedback">{{errors.notifyCalendarEvents}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, EmailEngine will scan incoming emails for calendar
-                    attachments. If such an attachment is found, the basic details and the calendar file (in base64
-                    encoding) will be included in the <code>calendarEvents</code> array in the <code>messageNew</code>
-                    webhook payload.</small>
+                <small class="form-text text-muted">Detects and includes calendar event data (ICS files) in webhook
+                    payloads.</small>
             </div>
 
         </div>
@@ -320,14 +306,11 @@
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">
                 Attachments
-                <small class="text-muted">
-                    &mdash; Applies to all webhooks, including
-                    <a href="/admin/webhooks">routed webhooks</a>
-                </small>
+                <small class="text-muted">(All webhooks)</small>
             </h6>
         </div>
         <div class="card-body">
-            <p>By default, attachments are not included in new email webhook payloads.</p>
+            <p>Include file attachments in webhook payloads.</p>
 
             <div class="form-group form-check">
                 <div class="text-muted float-right code-link">
@@ -339,7 +322,7 @@
                     data-target="attachment-list" data-reverse="true" id="settingsNotifyAttachments"
                     name="notifyAttachments" {{#if values.notifyAttachments}}checked{{/if}} />
                 <label class="form-check-label" for="settingsNotifyAttachments">
-                    Include attachments in new email webhooks. The attachment content is base64-encoded.
+                    Include attachments (base64-encoded)
                 </label>
                 {{#if errors.notifyAttachments}}
                 <span class="invalid-feedback">{{errors.notifyAttachments}}</span>
@@ -351,20 +334,17 @@
                     [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank"
                         rel="noopener noreferrer">notifyAttachmentSize</a>]
                 </div>
-                <label for="settingsNotifyAttachmentSize">Maximum Attachment Size</label>
+                <label for="settingsNotifyAttachmentSize">Attachment Size Limit</label>
                 <input type="text"
                     class="form-control attachment-list {{#if errors.notifyAttachmentSize}}is-invalid{{/if}}"
                     id="settingsNotifyAttachmentSize" min="0" name="notifyAttachmentSize"
-                    value="{{values.notifyAttachmentSize}}" placeholder="Example: &quot;2MB&quot;" />
+                    value="{{values.notifyAttachmentSize}}" placeholder="2MB" />
                 {{#if errors.notifyAttachmentSize}}
                 <span class="invalid-feedback">{{errors.notifyAttachmentSize}}</span>
                 {{/if}}
                 <small class="form-text text-muted">
-                    Specify the maximum file size for attachments to keep the webhook payload manageable.
-                    Attachments larger than this limit are skipped and not included in the webhook payload.
-                    <br>
-                    <strong>Warning:</strong> EmailEngine stores unposted webhook payloads in Redis. If many
-                    large attachments are processed, these cached payloads can quickly fill up the Redis DB.
+                    Skip attachments larger than this. Large attachments in webhook queues can fill Redis memory
+                    quickly.
                 </small>
             </div>
         </div>
@@ -376,7 +356,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-cog"></i>
             </span>
-            <span class="text">Update Settings</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 

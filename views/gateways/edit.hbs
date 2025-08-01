@@ -2,7 +2,7 @@
 
 <nav aria-label="breadcrumb" class="mt-4 mb-4">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/gateways">SMTP Gateways</a></li>
+        <li class="breadcrumb-item"><a href="/admin/gateways">Gateways</a></li>
         <li class="breadcrumb-item"><a
                 href="/admin/gateways/gateway/{{gatewayData.gateway}}">{{gatewayData.gateway}}</a></li>
         <li class="breadcrumb-item active" aria-current="page">Edit</li>
@@ -16,7 +16,7 @@
     <div class="card mb-4">
 
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">SMTP Gateway</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Gateway Configuration</h6>
             <div class="dropdown no-arrow">
                 <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">
@@ -24,9 +24,9 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                     aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Gateway actions:</div>
+                    <div class="dropdown-header">Actions:</div>
                     <a class="dropdown-item test-connection" href="#" id="test-verify-btn">
-                        <i class="fas fa-paper-plane fa-sm"></i> <span>Test settings</span>
+                        <i class="fas fa-paper-plane fa-sm"></i> <span>Test Connection</span>
                     </a>
                 </div>
             </div>
@@ -44,7 +44,7 @@
             <span class="icon text-white-50">
                 <i class="fas fa-paper-plane"></i>
             </span>
-            <span class="text">Update Gateway</span>
+            <span class="text">Save Changes</span>
         </button>
     </div>
 </form>

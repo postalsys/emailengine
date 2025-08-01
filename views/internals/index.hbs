@@ -1,7 +1,7 @@
 <div class="d-sm-flex align-items-center justify-content-between mb-1">
     <h1 class="h3 mb-0 text-gray-800">
         <small><i class="fas fa-cog fa-fw"></i></small>
-        EmailEngine Internals
+        System Threads
     </h1>
 </div>
 
@@ -12,13 +12,13 @@
 
             <thead>
                 <tr>
-                    <th>Thread type</th>
-                    <th class="text-right">Thread ID</th>
-                    <th>Started</th>
-                    <th class="text-right">Heap size</th>
+                    <th>Thread Type</th>
+                    <th class="text-right">ID</th>
+                    <th>Uptime</th>
+                    <th class="text-right">Memory</th>
                     <th class="text-right">Accounts</th>
-                    <th class="text-right">IPC to</th>
-                    <th class="text-right">IPC from</th>
+                    <th class="text-right">Sent</th>
+                    <th class="text-right">Received</th>
                     <th>&nbsp;</th>
                 </tr>
             </thead>
@@ -43,7 +43,7 @@
                         {{heapUsed}}
 
                         <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            data-title="Heap usage" data-content="{{heapRelative}} of maximum allowed {{heapMax}}"><i
+                            data-title="Memory Usage" data-content="Using {{heapRelative}} of {{heapMax}} maximum"><i
                                 class="fas fa-info-circle"></i></a>
                     </td>
                     <td class="text-right">{{formatInteger accounts userLocale}}</td>
@@ -53,7 +53,7 @@
 
                         <button type="button" class="btn btn-info btn-circle btn-sm snapshot-thread-btn"
                             data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
-                            title="Generate memory snapshot"><i class="fas fa-cloud-download-alt"></i></button>
+                            title="Download memory snapshot"><i class="fas fa-cloud-download-alt"></i></button>
 
                         {{#if isMain}}
                         <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
@@ -63,7 +63,7 @@
                         {{else}}
                         <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
                             data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
-                            title="Kill this thread"><i class="fas fa-trash-alt"></i></button>
+                            title="Restart thread"><i class="fas fa-trash-alt"></i></button>
                         {{/if}}
                     </td>
                 </tr>
@@ -80,20 +80,20 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="killThreadLabel">Kill thread</h5>
+                <h5 class="modal-title" id="killThreadLabel">Restart Thread</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to kill this thread? This action might interrupt pending processes.
+                Restart this thread? Any ongoing operations will be interrupted.
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/internals/kill">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" id="kill-thread" name="thread" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Kill thread</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Restart Thread</button>
                 </form>
             </div>
 
@@ -106,22 +106,21 @@
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="snapshotThreadLabel">Memory snapshot</h5>
+                <h5 class="modal-title" id="snapshotThreadLabel">Memory Snapshot</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                Are you sure you want to generate a memory snapshot of this thread? This action might interfere with
-                pending processing.
+                Generate a memory snapshot for debugging? This may briefly affect thread performance.
             </div>
             <div class="modal-footer">
                 <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank"
                     rel="noopener noreferrer">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" id="snapshot-thread" name="thread" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-info">Generate snapshot</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info">Download Snapshot</button>
                 </form>
             </div>
 

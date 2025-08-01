@@ -1,12 +1,11 @@
 <div class="form-group">
-    <label for="name">Gateway Name</label>
+    <label for="name">Display Name</label>
     <input type="text" class="form-control basicAutoComplete {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
-        value="{{values.name}}" placeholder="For example &quot;Transactional Sendgun Account&quot;" data-lpignore="true"
-        autocomplete="off" required />
+        value="{{values.name}}" placeholder="SendGrid Transactional" data-lpignore="true" autocomplete="off" required />
     {{#if errors.name}}
     <span class="invalid-feedback">{{errors.name}}</span>
     {{/if}}
-    <small class="form-text text-muted">Name of the gateway</small>
+    <small class="form-text text-muted">Friendly name to identify this gateway</small>
 </div>
 
 <div class="form-group">
@@ -16,49 +15,49 @@
     {{#if errors.user}}
     <span class="invalid-feedback">{{errors.user}}</span>
     {{/if}}
-    <small class="form-text text-muted">Authentication username for this gateway</small>
+    <small class="form-text text-muted">SMTP authentication username (if required)</small>
 </div>
 
 <div class="form-group">
     <label for="pass">Password</label>
     <input type="password" class="form-control {{#if errors.pass}}is-invalid{{/if}}" id="pass" name="pass"
         value="{{values.pass}}" data-lpignore="true" autocomplete="off" {{#if hasSMTPPass}}
-        placeholder="Password is set but not shown&mldr;" {{/if}} />
+        placeholder="Password saved (hidden for security)" {{/if}} />
     {{#if errors.pass}}
     <span class="invalid-feedback">{{errors.pass}}</span>
     {{/if}}
-    <small class="form-text text-muted">Authentication password for this gateway.{{#if gatewayData}} Only set if you
-        want to change current IMAP password.{{/if}}</small>
+    <small class="form-text text-muted">SMTP authentication password{{#if gatewayData}}. Leave empty to keep current
+        password{{/if}}</small>
 </div>
 
 <div class="form-group">
-    <label for="host">Hostname</label>
+    <label for="host">Server Address</label>
     <input type="text" class="form-control {{#if errors.host}}is-invalid{{/if}}" data-lpignore="true" autocomplete="off"
-        id="host" name="host" value="{{values.host}}" required />
+        id="host" name="host" value="{{values.host}}" placeholder="smtp.sendgrid.net" required />
     {{#if errors.host}}
     <span class="invalid-feedback">{{errors.host}}</span>
     {{/if}}
-    <small class="form-text text-muted">SMTP gateway hostname</small>
+    <small class="form-text text-muted">SMTP server hostname or IP address</small>
 </div>
 
 <div class="form-group">
     <label for="port">Port</label>
     <input type="number" class="form-control {{#if errors.port}}is-invalid{{/if}}" data-lpignore="true"
-        autocomplete="off" id="port" name="port" value="{{values.port}}" required />
+        autocomplete="off" id="port" name="port" value="{{values.port}}" placeholder="587" required />
     {{#if errors.port}}
     <span class="invalid-feedback">{{errors.port}}</span>
     {{/if}}
-    <small class="form-text text-muted">SMTP server port</small>
+    <small class="form-text text-muted">Common ports: 25, 587 (STARTTLS), 465 (TLS/SSL)</small>
 </div>
 
 <div class="form-group form-check">
     <input type="checkbox" class="form-check-input {{#if errors.secure}}is-invalid{{/if}}" data-target="header-list"
         id="secure" name="secure" {{#if values.secure}}checked{{/if}} />
     <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
-        data-title="TLS for SMTP"
-        data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
+        data-title="Direct TLS Connection"
+        data-content="Enable for port 465 (direct TLS/SSL). For ports 25 and 587, EmailEngine automatically upgrades to encrypted connections using STARTTLS when available."><i
             class="fas fa-question-circle"></i></a>
-    <label class="form-check-label" for="secure">Use TLS
+    <label class="form-check-label" for="secure">Use direct TLS
     </label>
     {{#if errors.secure}}
     <span class="invalid-feedback">{{errors.secure}}</span>
