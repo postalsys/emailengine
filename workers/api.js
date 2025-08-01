@@ -1940,9 +1940,15 @@ Include your token in requests using one of these methods:
                                 time: Date.now()
                             };
                         } catch (err) {
+                            request.logger.error({
+                                msg: 'Subscription renewal failed',
+                                subscriptionId: outlookSubscription.id,
+                                account: request.query.account,
+                                err
+                            });
                             outlookSubscription.state = {
                                 state: 'error',
-                                error: `Renewal failed: ${
+                                error: `Subscription renewal failed: ${
                                     (err.oauthRequest &&
                                         err.oauthRequest.response &&
                                         err.oauthRequest.response.error &&
