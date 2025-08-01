@@ -365,6 +365,12 @@
                     title="{{account.outlookSubscription.subscriptionExpiresStr}}"></span>
                 {{/if}}
 
+                {{#if account.outlookSubscription.state.error}}
+                <div class="text-danger">
+                    {{account.outlookSubscription.state.error}}
+                </div>
+                {{/if}}
+
             </dd>
             {{/if}}
 
