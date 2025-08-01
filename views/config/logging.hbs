@@ -29,7 +29,9 @@
                 {{/if}}
                 <small class="form-text text-muted">Enabling this option stores logs for all accounts. This is not
                     recommended if EmailEngine is tracking a large number of accounts due to potential performance
-                    impacts..</small>
+                    impacts.<br>
+                    <strong>Restart required!</strong> You need to restart EmailEngine for the change of this option to
+                    apply</small>
             </div>
 
             <div class="form-group">
@@ -45,7 +47,8 @@
                 {{/if}}
                 <small class="form-text text-muted">Specify the maximum number of log lines to store per account. Logs
                     are stored in Redis (i.e., in RAM), so be cautious about storing excessive data to avoid memory
-                    issues.</small>
+                    issues.
+                </small>
             </div>
         </div>
     </div>
