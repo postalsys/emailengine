@@ -525,6 +525,8 @@ const init = async () => {
         return new handlebars.SafeString(translated);
     });
 
+    handlebars.registerHelper('isodate', time => new Date(Number(time)).toISOString());
+
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
 
     handlebars.registerHelper('featureFlag', function (flag, options) {
