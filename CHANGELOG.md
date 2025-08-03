@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.1](https://github.com/postalsys/emailengine/compare/v2.54.0...v2.54.1) (2025-08-03)
+
+
+### Bug Fixes
+
+* **oauth2:** Fixed issues with OAuth2 periodic renewals (subscriptions etc) ([046bd55](https://github.com/postalsys/emailengine/commit/046bd5585f24d8184a4cca7484afbb3fda93fbf4))
+
 ## [2.54.0](https://github.com/postalsys/emailengine/compare/v2.53.3...v2.54.0) (2025-08-01)
 
 
