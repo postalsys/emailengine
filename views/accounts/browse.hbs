@@ -10,6 +10,27 @@
 
 <div id="email-client"></div>
 
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Confirm</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-text"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" id="confirm-ok" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script type="module">
     import { EmailEngineClient } from '/static/js/ee-client.js';
 
@@ -18,6 +39,24 @@
         apiUrl: window.location.origin,
         account: '{{account}}',
         accessToken: '{{sessionToken}}',
-        container: document.getElementById('email-client')
+        container: document.getElementById('email-client'),
+        confirmMethod: message => {
+            return new Promise((resolve) => {
+                let result = false;
+
+                document.getElementById('confirm-text').textContent = message;
+
+                document.getElementById('confirm-ok').addEventListener('click', () => {
+                    result = true;
+                    $('#confirmModal').modal('hide');
+                });
+
+                $('#confirmModal').on('hidden.bs.modal', function (event) {
+                    resolve(result);
+                });
+
+                $('#confirmModal').modal('show');
+            });
+        }
     });
 </script>
