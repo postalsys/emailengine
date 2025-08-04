@@ -1,7 +1,7 @@
 [
     {
         "key": "messageNew",
-        "name": "messageNew – message received",
+        "name": "messageNew - message received",
         "content": {
             "serviceUrl": "https://emailengine.srv.dev",
             "account": "testaccount",
@@ -119,7 +119,7 @@
     },
     {
         "key": "messageUpdated",
-        "name": "messageUpdated – marked as Seen",
+        "name": "messageUpdated - marked as Seen",
         "content": {
             "serviceUrl": "https://emailengine.srv.dev",
             "account": "testaccount",
@@ -132,7 +132,7 @@
     },
     {
         "key": "messageDeleted",
-        "name": "messageDeleted – message was deleted",
+        "name": "messageDeleted - message was deleted",
         "content": {
             "serviceUrl": "https://emailengine.srv.dev",
             "account": "testaccount",
@@ -145,7 +145,7 @@
     },
     {
         "key": "messageSent",
-        "name": "messageSent – message was relayed to SMTP server",
+        "name": "messageSent - message was relayed to SMTP server",
         "content": {
             "serviceUrl": "https://emailengine.srv.dev",
             "account": "testaccount",
@@ -161,7 +161,7 @@
     },
     {
         "key": "messageBounce",
-        "name": "messageBounce –  a bounce email was received",
+        "name": "messageBounce -  a bounce email was received",
         "content": {
             "serviceUrl": "https://localdev.kreata.ee",
             "account": "testaccount",
@@ -196,7 +196,7 @@
     },
     {
         "key": "trackOpen",
-        "name": "trackOpen – tracking beacon was loaded",
+        "name": "trackOpen - tracking beacon was loaded",
         "content": {
             "account": "testaccount",
             "date": "2022-10-17T06:56:01.430Z",
@@ -210,7 +210,7 @@
     },
     {
         "key": "trackClick",
-        "name": "trackClick – click tracking beacon was loaded",
+        "name": "trackClick - click tracking beacon was loaded",
         "content": {
             "account": "testaccount",
             "date": "2022-10-17T06:56:27.882Z",
@@ -225,7 +225,7 @@
     },
     {
         "key": "authenticationSuccess",
-        "name": "authenticationSuccess – IMAP session was established",
+        "name": "authenticationSuccess - IMAP session was established",
         "content": {
             "serviceUrl": "https://emailengine.srv.dev",
             "account": "163",

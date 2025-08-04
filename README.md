@@ -36,7 +36,7 @@ $ emailengine license
 
 ## Requirements
 
--   **Redis** – Any version
+-   **Redis** - Any version
 
 > [!NOTE]
 > While Redis does not officially support Windows, alternatives like [Memurai](https://www.memurai.com/) are available.

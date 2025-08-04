@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-07-31 15:45+0000\n"
+"POT-Creation-Date: 2025-08-04 19:48+0000\n"
 
-#: views/config/license.hbs:49
+#: views/config/license.hbs:45
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:3
 #: views/unsubscribe.hbs:62
@@ -62,6 +58,10 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -83,14 +83,6 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -207,6 +199,14 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: lib/routes-ui.js:529
 msgid "Delegated"
 msgstr ""
@@ -264,13 +264,13 @@ msgstr ""
 #: lib/routes-ui.js:6902
 #: lib/routes-ui.js:7131
 #: lib/routes-ui.js:7167
-#: workers/api.js:2332
+#: workers/api.js:2341
 msgid "Email Account Setup"
 msgstr ""
 
 #: lib/routes-ui.js:6765
 #: lib/routes-ui.js:6798
-#: lib/routes-ui.js:9709
+#: lib/routes-ui.js:9717
 msgid "Failed to validate request arguments"
 msgstr ""
 
@@ -279,38 +279,38 @@ msgstr ""
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9672
-#: lib/tools.js:788
+#: lib/routes-ui.js:9680
+#: lib/tools.js:795
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9682
-#: lib/routes-ui.js:9800
-#: lib/routes-ui.js:9817
-#: lib/routes-ui.js:9853
+#: lib/routes-ui.js:9690
+#: lib/routes-ui.js:9808
+#: lib/routes-ui.js:9825
+#: lib/routes-ui.js:9861
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9811
-#: lib/routes-ui.js:9846
+#: lib/routes-ui.js:9819
+#: lib/routes-ui.js:9854
 msgid "Failed to process request"
 msgstr ""
 
-#: workers/api.js:8982
-#: workers/api.js:9098
+#: workers/api.js:8991
+#: workers/api.js:9107
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:8983
+#: workers/api.js:8992
 msgid "Something went wrong"
 msgstr ""
 
-#: lib/tools.js:1465
+#: lib/tools.js:1472
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1474
-#: lib/tools.js:1479
+#: lib/tools.js:1481
+#: lib/tools.js:1486
 msgid "Invalid or expired account setup URL"
 msgstr ""
 

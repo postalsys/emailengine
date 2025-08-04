@@ -1,6 +1,6 @@
 # IMAP Handler
 
-Server specific fork of [emailjs-imap-handler](https://github.com/emailjs/emailjs-imap-handler) for Node.js (v5+). Mostly differs from the upstream in the behavior for compiling – instead of compiling a command into long string, a Stream object is returned that can be piped directly to socket. Goal is to pass around large messages as streams instead of keeping these in memory.
+Server specific fork of [emailjs-imap-handler](https://github.com/emailjs/emailjs-imap-handler) for Node.js (v5+). Mostly differs from the upstream in the behavior for compiling - instead of compiling a command into long string, a Stream object is returned that can be piped directly to socket. Goal is to pass around large messages as streams instead of keeping these in memory.
 
 This is more suitable for servers than clients as it is currently not possible to pause the output stream to wait for '+' tagged server response for literal values.
 
@@ -18,7 +18,7 @@ To parse a command you need to have the command as one complete string (includin
 
 Where
 
-  * **imapCommand** is an IMAP string without the final line break
+-   **imapCommand** is an IMAP string without the final line break
 
 The function returns an object in the following form:
 
@@ -38,9 +38,9 @@ The function returns an object in the following form:
 
 Where
 
-  * **tag** is a string containing the tag
-  * **command** is the first element after tag
-  * **attributes** (if present) is an array of next elements
+-   **tag** is a string containing the tag
+-   **command** is the first element after tag
+-   **attributes** (if present) is an array of next elements
 
 If section or partial values are not specified in the command, the values are also missing from the ATOM element
 
@@ -50,9 +50,9 @@ If section or partial values are not specified in the command, the values are al
 For example
 
 ```javascript
-let imapHandler = require("imap-handler-1");
+let imapHandler = require('imap-handler-1');
 
-imapHandler.parser("A1 FETCH *:4 (BODY[HEADER.FIELDS ({4}\r\nDate Subject)]<12.45> UID)");
+imapHandler.parser('A1 FETCH *:4 (BODY[HEADER.FIELDS ({4}\r\nDate Subject)]<12.45> UID)');
 ```
 
 Results in the following value:
@@ -86,10 +86,7 @@ Results in the following value:
                         }
                     ]
                 ],
-                "partial": [
-                    12,
-                    45
-                ]
+                "partial": [12, 45]
             },
             {
                 "type": "ATOM",
@@ -108,16 +105,16 @@ You can "compile" parsed or self generated IMAP command objects to IMAP command 
 
 Where
 
-  * **commandObject** is an object parsed with `imapHandler.parser()` or self generated
-  * **isLogging** if set to true, do not include literals and long strings, useful when logging stuff and do not want to include message bodies etc. Additionally nodes with `sensitive: true` options are also not displayed (useful with logging passwords) if `logging` is used.
+-   **commandObject** is an object parsed with `imapHandler.parser()` or self generated
+-   **isLogging** if set to true, do not include literals and long strings, useful when logging stuff and do not want to include message bodies etc. Additionally nodes with `sensitive: true` options are also not displayed (useful with logging passwords) if `logging` is used.
 
 The function returns a Stream.
 
 The input object differs from the parsed object with the following aspects:
 
-  * **string**, **number** and **null** (null values are all non-number and non-string falsy values) are allowed to use directly - `{type: "STRING", value: "hello"}` can be replaced with `"hello"`
-  * Additional types are used: `SECTION` which is an alias for `ATOM` and `TEXT` which returns the input string as given with no modification (useful for server messages).
-  * **LITERAL** can takes streams as values. You do need to know the expected length beforehand though `{type:'LITERAL', expectedLength: 1024, value: stream}`. If the provided length does not match actual stream output length, then the output is either truncated or padded with space symbols to match the expected length.
+-   **string**, **number** and **null** (null values are all non-number and non-string falsy values) are allowed to use directly - `{type: "STRING", value: "hello"}` can be replaced with `"hello"`
+-   Additional types are used: `SECTION` which is an alias for `ATOM` and `TEXT` which returns the input string as given with no modification (useful for server messages).
+-   **LITERAL** can takes streams as values. You do need to know the expected length beforehand though `{type:'LITERAL', expectedLength: 1024, value: stream}`. If the provided length does not match actual stream output length, then the output is either truncated or padded with space symbols to match the expected length.
 
 ```javascript
 {
@@ -133,16 +130,14 @@ For example
 
 ```javascript
 let command = {
-    tag: "*",
-    command: "OK",
+    tag: '*',
+    command: 'OK',
     attributes: [
         {
-            type: "SECTION",
-            section: [
-                {type: "ATOM", value: "ALERT"}
-            ]
+            type: 'SECTION',
+            section: [{ type: 'ATOM', value: 'ALERT' }]
         },
-        {type:"TEXT", value: "NB! The server is shutting down"}
+        { type: 'TEXT', value: 'NB! The server is shutting down' }
     ]
 };
 

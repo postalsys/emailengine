@@ -4,6 +4,7 @@ export class EmailEngineClient {
         this.account = options.account;
         this.accessToken = options.accessToken;
         this.container = options.container;
+        this.confirmMethod = options.confirmMethod || (message => confirm(message));
 
         this.currentFolder = null;
         this.currentMessage = null;
@@ -13,8 +14,7 @@ export class EmailEngineClient {
         this.prevPageCursor = null;
 
         // Get page size from localStorage or options or default
-        const savedPageSize =
-            typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
+        const savedPageSize = typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
         this.pageSize = savedPageSize ? parseInt(savedPageSize) : options.pageSize || 20;
 
         if (this.container) {
@@ -45,9 +45,7 @@ export class EmailEngineClient {
                 const nodeFetch = await import('node-fetch');
                 fetchFn = nodeFetch.default;
             } catch (err) {
-                throw new Error(
-                    'fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch'
-                );
+                throw new Error('fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch');
             }
         }
 
@@ -363,11 +361,11 @@ export class EmailEngineClient {
                 background: #fff;
                 border: 1px solid #ddd;
             }
-            
+
             .ee-client * {
                 box-sizing: border-box;
             }
-            
+
             .ee-sidebar {
                 width: 200px;
                 background: #ffffff;
@@ -375,28 +373,28 @@ export class EmailEngineClient {
                 display: flex;
                 flex-direction: column;
             }
-            
+
             .ee-folder-list {
                 list-style: none;
                 margin: 0;
                 padding: 0;
             }
-            
+
             .ee-folder-item {
                 cursor: pointer;
                 border-bottom: 1px solid #e0e0e0;
                 position: relative;
             }
-            
+
             .ee-folder-item:hover {
                 background: #e8e8e8;
             }
-            
+
             .ee-folder-item.active {
                 background: #007bff;
                 color: white;
             }
-            
+
             .ee-folder-item.active::before {
                 content: '';
                 position: absolute;
@@ -406,48 +404,48 @@ export class EmailEngineClient {
                 width: 3px;
                 background: #0056b3;
             }
-            
+
             .ee-folder-content {
                 padding: 8px 16px 8px 0px;
                 display: flex;
                 align-items: center;
                 position: relative;
             }
-            
+
             .ee-folder-indent {
                 color: #999;
                 font-size: 12px;
                 margin-right: 4px;
                 font-family: monospace;
             }
-            
+
             .ee-folder-name {
                 font-weight: 500;
                 flex: 1;
             }
-            
+
             .ee-folder-name.has-children {
                 font-weight: 600;
             }
-            
+
             .ee-folder-item.active .ee-folder-indent {
                 color: rgba(255, 255, 255, 0.7);
             }
-            
+
             .ee-folder-count {
                 font-size: 12px;
                 opacity: 0.7;
                 margin-left: 8px;
                 flex-shrink: 0;
             }
-            
+
             .ee-main {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
             }
-            
+
             .ee-message-list {
                 width: 350px;
                 border-right: 1px solid #ddd;
@@ -455,51 +453,51 @@ export class EmailEngineClient {
                 display: flex;
                 flex-direction: column;
             }
-            
+
             .ee-message-item {
                 padding: 12px 16px;
                 border-bottom: 1px solid #e0e0e0;
                 cursor: pointer;
             }
-            
+
             .ee-message-item:hover {
                 background: #f8f8f8;
             }
-            
+
             .ee-message-item.active {
                 background: #e3f2fd;
             }
-            
+
             .ee-message-item.unread {
                 font-weight: 600;
             }
-            
+
             .ee-message-header {
                 display: flex;
                 justify-content: space-between;
                 margin-bottom: 4px;
             }
-            
+
             .ee-message-from {
                 flex: 1;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
-            
+
             .ee-message-date {
                 font-size: 12px;
                 color: #666;
                 flex-shrink: 0;
                 margin-left: 8px;
             }
-            
+
             .ee-message-subject {
                 display: flex;
                 align-items: center;
                 margin-bottom: 2px;
             }
-            
+
             .ee-message-subject-text {
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -507,7 +505,7 @@ export class EmailEngineClient {
                 flex: 1;
                 min-width: 0;
             }
-            
+
             .ee-message-preview {
                 font-size: 12px;
                 color: #666;
@@ -516,25 +514,25 @@ export class EmailEngineClient {
                 white-space: nowrap;
                 font-weight: normal;
             }
-            
+
             .ee-attachment-indicator {
                 display: inline-block;
                 font-size: 11px;
                 color: #666;
                 margin-left: 8px;
             }
-            
+
             .ee-attachment-indicator::before {
                 content: "📎 ";
             }
-            
+
             .ee-message-viewer {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
             }
-            
+
             .ee-message-actions {
                 padding: 10px 16px;
                 background: #e9ecef;
@@ -548,7 +546,7 @@ export class EmailEngineClient {
                 box-sizing: border-box;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-            
+
             .ee-button {
                 padding: 4px 10px;
                 border: 1px solid #ddd;
@@ -560,67 +558,67 @@ export class EmailEngineClient {
                 line-height: 1;
                 box-sizing: border-box;
             }
-            
+
             select.ee-button {
                 padding: 3px 10px;
                 height: 24px;
             }
-            
+
             .ee-button:hover:not(:disabled) {
                 background: #f0f0f0;
             }
-            
+
             .ee-button:disabled {
                 background: #e9ecef;
                 color: #6c757d;
                 cursor: not-allowed;
                 opacity: 0.6;
             }
-            
+
             .ee-message-content {
                 flex: 1;
                 padding: 16px;
                 overflow-y: auto;
             }
-            
+
             .ee-message-meta {
                 margin-bottom: 16px;
                 padding-bottom: 16px;
                 border-bottom: 1px solid #e0e0e0;
             }
-            
+
             .ee-message-meta-row {
                 margin-bottom: 4px;
             }
-            
+
             .ee-message-meta-label {
                 display: inline-block;
                 width: 60px;
                 color: #666;
                 font-weight: 500;
             }
-            
+
             .ee-message-body {
                 line-height: 1.6;
             }
-            
+
             .ee-message-body img {
                 max-width: 100%;
                 height: auto;
             }
-            
+
             .ee-attachments {
                 margin-top: 16px;
                 padding-top: 16px;
                 border-top: 1px solid #e0e0e0;
             }
-            
+
             .ee-attachments-title {
                 font-weight: 500;
                 margin-bottom: 8px;
                 color: #333;
             }
-            
+
             .ee-attachment-item {
                 display: flex;
                 align-items: center;
@@ -632,30 +630,30 @@ export class EmailEngineClient {
                 cursor: pointer;
                 transition: background 0.2s;
             }
-            
+
             .ee-attachment-item:hover {
                 background: #f0f0f0;
             }
-            
+
             .ee-attachment-icon {
                 margin-right: 8px;
                 font-size: 18px;
             }
-            
+
             .ee-attachment-info {
                 flex: 1;
             }
-            
+
             .ee-attachment-name {
                 font-weight: 500;
                 color: #333;
             }
-            
+
             .ee-attachment-size {
                 font-size: 12px;
                 color: #666;
             }
-            
+
             .ee-empty-state {
                 display: flex;
                 align-items: center;
@@ -663,7 +661,7 @@ export class EmailEngineClient {
                 height: 100%;
                 color: #999;
             }
-            
+
             .ee-loading {
                 display: flex;
                 align-items: center;
@@ -671,7 +669,7 @@ export class EmailEngineClient {
                 padding: 20px;
                 color: #666;
             }
-            
+
             .ee-error {
                 padding: 16px;
                 background: #fee;
@@ -680,7 +678,7 @@ export class EmailEngineClient {
                 border-radius: 4px;
                 margin: 16px;
             }
-            
+
             .ee-flag {
                 display: inline-block;
                 width: 8px;
@@ -689,11 +687,11 @@ export class EmailEngineClient {
                 background: #4CAF50;
                 margin-right: 4px;
             }
-            
+
             .ee-flag.unread {
                 background: #2196F3;
             }
-            
+
             .ee-pane-header {
                 padding: 10px 16px;
                 background: #e9ecef;
@@ -707,36 +705,36 @@ export class EmailEngineClient {
                 box-sizing: border-box;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-            
+
             .ee-pane-title {
                 font-weight: 500;
                 font-size: 14px;
                 color: #333;
             }
-            
+
             .ee-folder-tree {
                 flex: 1;
                 overflow-y: auto;
             }
-            
+
             .ee-pagination-controls {
                 display: flex;
                 gap: 8px;
                 align-items: center;
             }
-            
+
             .ee-page-size-selector {
                 display: flex;
                 gap: 4px;
                 align-items: center;
                 margin-left: auto;
             }
-            
+
             .ee-page-size-label {
                 font-size: 12px;
                 color: #666;
             }
-            
+
             .ee-page-size-select {
                 font-size: 11px;
                 padding: 2px 4px;
@@ -746,14 +744,14 @@ export class EmailEngineClient {
                 cursor: pointer;
                 height: 22px;
             }
-            
+
             .ee-pagination-btn {
                 font-size: 11px;
                 padding: 3px 8px;
                 height: 22px;
                 line-height: 1;
             }
-            
+
             .ee-message-items {
                 flex: 1;
                 overflow-y: auto;
@@ -851,8 +849,8 @@ export class EmailEngineClient {
                         const depth = this.calculateFolderDepth(folder);
                         const hasChildren = this.folders.some(f => f.parentPath === folder.path);
                         return `
-                        <li class="ee-folder-item ${folder.path === this.currentFolder ? 'active' : ''}" 
-                            data-path="${folder.path}" 
+                        <li class="ee-folder-item ${folder.path === this.currentFolder ? 'active' : ''}"
+                            data-path="${folder.path}"
                             data-depth="${depth}">
                             <div class="ee-folder-content" style="padding-left: ${8 + depth * 12}px;">
                                 ${depth > 0 ? '<span class="ee-folder-indent">└ </span>' : ''}
@@ -925,7 +923,9 @@ export class EmailEngineClient {
                 ${this.messages
                     .map(
                         msg => `
-                    <div class="ee-message-item ${msg.unseen ? 'unread' : ''} ${msg.id === (this.currentMessage && this.currentMessage.id) ? 'active' : ''}" data-id="${msg.id}">
+                    <div class="ee-message-item ${msg.unseen ? 'unread' : ''} ${
+                            msg.id === (this.currentMessage && this.currentMessage.id) ? 'active' : ''
+                        }" data-id="${msg.id}">
                         <div class="ee-message-header">
                             <span class="ee-message-from">${msg.from ? msg.from.name || msg.from.address : 'Unknown'}</span>
                             <span class="ee-message-date">${this.formatDate(msg.date)}</span>
@@ -1004,7 +1004,9 @@ export class EmailEngineClient {
                             const depth = this.calculateFolderDepth(folder);
                             const indent = '　'.repeat(depth);
                             const prefix = depth > 0 ? '└ ' : '';
-                            return `<option value="${folder.path}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${folder.name}</option>`;
+                            return `<option value="${folder.path}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${
+                                folder.name
+                            }</option>`;
                         })
                         .join('')}
                 </select>
@@ -1072,8 +1074,9 @@ export class EmailEngineClient {
             this.markAsRead(msg.id, currentlyUnseen);
         });
 
-        viewer.querySelector('[data-action="delete"]').addEventListener('click', () => {
-            if (confirm('Delete this message?')) {
+        viewer.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+            const result = await this.confirmMethod('Delete this message?');
+            if (result) {
                 this.deleteMessage(msg.id);
             }
         });
