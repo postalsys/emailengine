@@ -23,13 +23,31 @@
                 <p id="confirm-text"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" id="confirm-cancel" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" id="confirm-ok" class="btn btn-primary">OK</button>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertModalLabel">Notice</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="alert-text"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="alert-ok" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type="module">
     import { EmailEngineClient } from '/static/js/ee-client.js';
@@ -40,11 +58,15 @@
         account: '{{account}}',
         accessToken: '{{sessionToken}}',
         container: document.getElementById('email-client'),
-        confirmMethod: message => {
+        confirmMethod: (message, title = 'Confirm', cancelText = 'Cancel', okText = 'OK') => {
             return new Promise((resolve) => {
                 let result = false;
 
                 document.getElementById('confirm-text').textContent = message;
+                document.getElementById('confirmModalLabel').textContent = title;
+                document.getElementById('confirm-cancel').textContent = cancelText;
+                document.getElementById('confirm-ok').textContent = okText;
+
 
                 document.getElementById('confirm-ok').addEventListener('click', () => {
                     result = true;
@@ -56,6 +78,24 @@
                 });
 
                 $('#confirmModal').modal('show');
+            });
+        },
+
+        alertMethod: (message, title = 'Notice', cancelText = null, okText = 'OK') => {
+            return new Promise((resolve) => {
+                document.getElementById('alert-text').textContent = message;
+                document.getElementById('alertModalLabel').textContent = title;
+                document.getElementById('alert-ok').textContent = okText;
+
+                document.getElementById('alert-ok').addEventListener('click', () => {
+                    $('#alertModal').modal('hide');
+                });
+
+                $('#alertModal').on('hidden.bs.modal', function (event) {
+                    resolve(true);
+                });
+
+                $('#alertModal').modal('show');
             });
         }
     });
