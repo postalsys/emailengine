@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.54.2](https://github.com/postalsys/emailengine/compare/v2.54.1...v2.54.2) (2025-08-05)
+
+
+### Bug Fixes
+
+* dark mode support for message browser ([59d3c31](https://github.com/postalsys/emailengine/commit/59d3c31d58ea46d31b9908188b599c2169da87f7))
+* **delegated:** Fixed mailbox listing for delegated OAuth2 accounts ([9fc74fd](https://github.com/postalsys/emailengine/commit/9fc74fd41e00a92eb121a85efa134947497de608))
+* limit session token usage for the message browser ([41ead92](https://github.com/postalsys/emailengine/commit/41ead924917930f828f996b43c6a16a73c8c7bb9))
+* message browser uses theme based confirm instead of sync javascript confirm ([9409d2c](https://github.com/postalsys/emailengine/commit/9409d2c7e4a93fd9ab16876baf52294968511840))
+* **verify:** Slightly faster account data verification ([3e27d5e](https://github.com/postalsys/emailengine/commit/3e27d5e75f4a59e97aca7a3eff8a041c3d540935))
+
 ## [2.54.1](https://github.com/postalsys/emailengine/compare/v2.54.0...v2.54.1) (2025-08-03)
 
 
