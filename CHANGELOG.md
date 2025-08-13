@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.3](https://github.com/postalsys/emailengine/compare/v2.54.2...v2.54.3) (2025-08-13)
+
+
+### Bug Fixes
+
+* Bumped ImapFlow module for improved IMAP handling stability ([5f7ce73](https://github.com/postalsys/emailengine/commit/5f7ce73eb270f3f92fdd17398842ad003c628612))
+
 ## [2.54.2](https://github.com/postalsys/emailengine/compare/v2.54.1...v2.54.2) (2025-08-05)
 
 
