@@ -1,46 +1,116 @@
-name: emailengine-bundle
+name: emailengine
+
+# IMPORTANT: EmailEngine is resource-intensive
+# - Minimum: 8GB RAM, 4 CPU cores for production
+# - Recommended: 16GB+ RAM, 8+ CPU cores
+# - See DOCKER_DEPLOYMENT.md for deployment guidance
 
 services:
     emailengine:
-        restart: always
-        image: postalsys/emailengine:latest
+        restart: ${RESTART_POLICY:-unless-stopped}
+        image: postalsys/emailengine:${EMAILENGINE_VERSION:-latest}
         ports:
             # API and web interface
-            - '3000:3000'
+            - '${EMAILENGINE_API_BIND:-127.0.0.1}:${EMAILENGINE_API_PORT:-3000}:3000'
             # SMTP for message submission
-            - '2525:2525'
+            - '${EMAILENGINE_SMTP_BIND:-127.0.0.1}:${EMAILENGINE_SMTP_PORT:-2525}:2525'
             # IMAP proxy
-            - '9993:9993'
+            - '${EMAILENGINE_IMAP_BIND:-127.0.0.1}:${EMAILENGINE_IMAP_PORT:-9993}:9993'
         depends_on:
-            - redis
+            redis:
+                condition: ${REDIS_HEALTHCHECK:-service_healthy}
+        networks:
+            - emailengine-network
         environment:
-            # Configuration to EmailEngine can be passed via environment variables
+            # Configuration via environment variables
             # For full list see https://github.com/postalsys/emailengine#config-mapping
 
-            # Settings to write to v1/settings on startup (https://api.emailengine.app/#operation/postV1Settings)
-            # The following value is a YAML block scalar string, so make it sure it is properly indented
-            # This configuration enables SMTP server for local submission
-            EENGINE_SETTINGS: >
-                {
-                    "smtpServerEnabled": true,
-                    "smtpServerPort": 2525,
-                    "smtpServerHost": "0.0.0.0",
-                    "smtpServerAuthEnabled": true,
-                    "smtpServerPassword": "passw0rd"
-                }
+            # Settings to write to v1/settings on startup
+            EENGINE_SETTINGS: ${EENGINE_SETTINGS:-}
 
-            # Encryption secret
-            EENGINE_SECRET: 'secret'
+            # Encryption secret - REQUIRED for production
+            EENGINE_SECRET: ${EENGINE_SECRET:-default-dev-secret-change-in-production}
+
             # Database connection URL
-            EENGINE_REDIS: 'redis://redis:6379/2'
+            EENGINE_REDIS: ${EENGINE_REDIS:-redis://redis:6379/2}
+
+            # Additional settings
+            EENGINE_LOG_LEVEL: ${EENGINE_LOG_LEVEL:-info}
+            EENGINE_WORKERS: ${EENGINE_WORKERS:-4}
+
+        healthcheck:
+            test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3000/health']
+            interval: ${HEALTHCHECK_INTERVAL:-30s}
+            timeout: ${HEALTHCHECK_TIMEOUT:-10s}
+            retries: ${HEALTHCHECK_RETRIES:-3}
+            start_period: ${HEALTHCHECK_START_PERIOD:-40s}
         logging:
             driver: 'json-file'
             options:
-                max-size: '200m'
-                max-file: '5'
+                max-size: '${LOG_MAX_SIZE:-100m}'
+                max-file: '${LOG_MAX_FILE:-10}'
+                compress: '${LOG_COMPRESS:-true}'
 
     redis:
-        image: redis:alpine
-        restart: always
+        # IMPORTANT: Redis is used as a DATABASE, not a cache
+        # - No memory limits are set (uses available system memory)
+        # - Eviction policy is 'noeviction' to prevent data loss
+        # - Monitor memory usage: docker-compose exec redis redis-cli INFO memory
+        image: redis:${REDIS_VERSION:-7-alpine}
+        restart: ${RESTART_POLICY:-unless-stopped}
+        networks:
+            - emailengine-network
+        command: >
+            sh -c "
+            if [ -n \"$$REDIS_PASSWORD\" ]; then
+                exec redis-server \
+                    --requirepass \"$$REDIS_PASSWORD\" \
+                    --maxmemory-policy noeviction \
+                    --tcp-backlog 511 \
+                    --tcp-keepalive 300 \
+                    --timeout 0 \
+                    --databases 16 \
+                    --loglevel ${REDIS_LOG_LEVEL:-notice} \
+                    --save 900 1 \
+                    --save 300 10 \
+                    --save 60 10000 \
+                    --stop-writes-on-bgsave-error yes \
+                    --rdbcompression yes \
+                    --rdbchecksum yes
+            else
+                exec redis-server \
+                    --maxmemory-policy noeviction
+            fi
+            "
+        environment:
+            REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+            REDIS_LOG_LEVEL: ${REDIS_LOG_LEVEL:-notice}
         volumes:
-            - /data
+            - redis-data:/data
+        healthcheck:
+            test: >
+                sh -c "
+                if [ -n \"$$REDIS_PASSWORD\" ]; then
+                    redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping
+                else
+                    redis-cli ping
+                fi
+                "
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        logging:
+            driver: 'json-file'
+            options:
+                max-size: '50m'
+                max-file: '5'
+                compress: '${LOG_COMPRESS:-true}'
+
+networks:
+    emailengine-network:
+        driver: bridge
+
+volumes:
+    redis-data:
+        driver: local
