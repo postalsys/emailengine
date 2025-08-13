@@ -18,22 +18,21 @@
 </nav>
 {{/if}}
 
-<p>Email templating allows you to prepare and re-use email content.</p>
+<p>Email templating allows you to create and reuse email content efficiently.</p>
 
 <div class="card border-left-info shadow mt-4 mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
-                <p>When sending emails using the EmailEngine's <a
+                <p>When sending emails using the EmailEngine <a
                         href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
                         rel="noopener noreferrer" referrerpolicy="no-referrer">submission API
-                        endpoint</a>, you would not have to provide the full
+                        endpoint</a>, you don't need to provide the full
                     subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
                     EmailEngine
-                    would use the contents of that template to compile the final email.</p>
-                <p>For extra customization, you can use Handlebars syntax in the template and provide variables that
-                    would be
-                    used to fill up the blanks.</p>
+                    will use that template to compile the final email.</p>
+                <p>For additional customization, you can use Handlebars syntax in templates and provide variables
+                    to populate dynamic content.</p>
 
                 <div>
                     <a href="https://emailengine.app/email-templates" class="btn btn-info btn-sm" target="_blank"
@@ -57,7 +56,7 @@
     <div class="card-body">
         <div>
             Currently showing email templates for <strong><a
-                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>. These templates can not be
+                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>. These templates cannot be
             used by other accounts.
         </div>
     </div>
@@ -142,7 +141,7 @@
         {{#if account}}
         <div>
             Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
-                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These templates can not
+                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These templates cannot
             be used by other accounts.
         </div>
         <hr>
@@ -150,9 +149,9 @@
 
         <p>
             {{#if firstPage}}
-            No templates have been registered yet.
+            No templates have been created yet.
             {{else}}
-            Nothing to show here.
+            No templates found.
             {{/if}}
         </p>
     </div>

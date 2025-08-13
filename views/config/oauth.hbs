@@ -98,7 +98,7 @@
 
         <div class="card-body">
 
-            <p>Setting up OAuth2 credentials allows refreshing expired access tokens.</p>
+            <p>Setting up OAuth2 credentials enables automatic refreshing of expired access tokens.</p>
 
             {{#if activeGmailService}}
 
@@ -110,8 +110,7 @@
                     <span class="text">Select service key file&#x2026;</span>
                 </button>
                 <small class="form-text text-muted">Select the JSON file you received after generating a new service key
-                    to
-                    retrieve the service values.</small>
+                    to retrieve the service values.</small>
             </div>
 
             <div class="form-group">
@@ -161,8 +160,8 @@
                 {{#if errors.oauth2Enabled}}
                 <span class="invalid-feedback">{{errors.oauth2Enabled}}</span>
                 {{/if}}
-                <small class="form-text text-muted">If enabled, then <em>"{{providerName}}"</em> is shown as an account
-                    type option when adding an account using the hosted authentication form.</small>
+                <small class="form-text text-muted">If enabled, <em>"{{providerName}}"</em> will appear as an account
+                    type option when adding accounts through the hosted authentication form.</small>
             </div>
 
             <div class="form-group">
@@ -242,7 +241,7 @@
                 <span class="invalid-feedback">{{errors.redirectUrl}}</span>
                 {{/if}}
                 <small class="form-text text-muted">Redirect URL for OAuth2. If you are using EmailEngine's OAuth2 flow,
-                    then set it to <code>{{defaultRedirectUrl}}</code></small>
+                    set this to <code>{{defaultRedirectUrl}}</code></small>
             </div>
             {{/if}}
 

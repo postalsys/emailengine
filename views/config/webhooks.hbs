@@ -19,7 +19,7 @@
 </div>
 
 <p class="mb-4">Get real-time notifications when email events occur. Webhooks send HTTP POST requests to your server
-    whenever something happens in connected accounts.</p>
+    whenever events happen in connected accounts.</p>
 
 {{#if values.webhooksEnabled}}
 {{#if webhookErrorFlag}}
@@ -102,7 +102,7 @@
             </div>
 
             <p><strong>Event Types</strong><br>
-                <small>Choose which events trigger webhooks. Be selective with many accounts to avoid memory
+                <small>Choose which events trigger webhooks. Be selective when managing many accounts to avoid memory
                     issues.</small>
             </p>
 
@@ -265,8 +265,8 @@
                 {{#if errors.notifyWebSafeHtml}}
                 <span class="invalid-feedback">{{errors.notifyWebSafeHtml}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Makes HTML safe to display directly on web pages. Converts plain
-                    text emails to HTML if needed.</small>
+                <small class="form-text text-muted">Makes HTML safe for direct web page display. Converts plain
+                    text emails to HTML when needed.</small>
             </div>
 
             <div class="form-group">
@@ -280,7 +280,7 @@
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Maximum size per content type (text and HTML). Larger content is
+                <small class="form-text text-muted">Maximum size per content type (text and HTML). Larger content will be
                     truncated.</small>
             </div>
 
@@ -295,7 +295,7 @@
                 {{#if errors.notifyCalendarEvents}}
                 <span class="invalid-feedback">{{errors.notifyCalendarEvents}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Detects and includes calendar event data (ICS files) in webhook
+                <small class="form-text text-muted">Detects and includes calendar event data from ICS files in webhook
                     payloads.</small>
             </div>
 
@@ -343,7 +343,7 @@
                 <span class="invalid-feedback">{{errors.notifyAttachmentSize}}</span>
                 {{/if}}
                 <small class="form-text text-muted">
-                    Skip attachments larger than this. Large attachments in webhook queues can fill Redis memory
+                    Skip attachments larger than this size. Large attachments in webhook queues can consume Redis memory
                     quickly.
                 </small>
             </div>

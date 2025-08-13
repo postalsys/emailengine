@@ -51,7 +51,7 @@
                     <a target="_blank" rel="noopener noreferrer" class="float-right"
                         href="{{values.appPassword_instructions}}" tabindex="-1" data-toggle="popover"
                         data-trigger="hover" data-title="{{_ 'Application Password' templateLocale }}"
-                        data-content="{{_ '%s accounts require to use an application password for %s.' templateLocale values.appPassword_provider "
+                        data-content="{{_ '%s accounts require an application password for %s.' templateLocale values.appPassword_provider "
                         IMAP" }}">{{_ 'Instructions' templateLocale }}</a>
 
                     {{/if}}
@@ -142,7 +142,7 @@
                     <a target="_blank" rel="noopener noreferrer" class="float-right"
                         href="{{values.appPassword_instructions}}" tabindex="-1" data-toggle="popover"
                         data-trigger="hover" data-title="{{_ 'Application Password' templateLocale }}"
-                        data-content="{{_ '%s accounts require to use an application password for %s.' templateLocale values.appPassword_provider 'SMTP' }}">{{_
+                        data-content="{{_ '%s accounts require an application password for %s.' templateLocale values.appPassword_provider 'SMTP' }}">{{_
                         'Instructions' templateLocale }}</a>
 
                     {{/if}}
@@ -315,9 +315,9 @@
             errorsListElm.innerHTML = '';
 
             if (data.error && !data.fields) {
-                addErrorRow('{{_ "General error" templateLocale }}', data.error.message || data.error)
+                addErrorRow('{{_ "General Error" templateLocale }}', data.error.message || data.error)
             } else if (data.fields) {
-                addErrorRow('{{_ "Validation error" templateLocale }}', data.message);
+                addErrorRow('{{_ "Validation Error" templateLocale }}', data.message);
                 for (let field of data.fields) {
                     addErrorRow('-', field.message, 'aaaa', 'bbbbbb');
                 }

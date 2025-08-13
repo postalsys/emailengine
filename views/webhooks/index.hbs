@@ -11,21 +11,21 @@
 
 
 {{#unless webhooksEnabled}}
-<div class="alert alert-warning mt-3"><strong>NB!</strong> Webhook processing is currently disabled for EmailEngine.
+<div class="alert alert-warning mt-3"><strong>Note:</strong> Webhook processing is currently disabled for EmailEngine.
     Enable webhooks on the configuration page <a href="/admin/config/webhooks">here</a>.</div>
 {{/unless}}
 
-<p>Webhook Routing allows you to define custom conditions that trigger a webhook against a specific target.</p>
+<p>Webhook routing allows you to define custom conditions that trigger webhooks to specific targets.</p>
 
 <div class="card border-left-info shadow mt-4 mb-4">
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
                 <p>
-                    EmailEngine tests all occurring events against <em>filter functions</em> of webhook routes. If such
-                    a filter matches, EmailEngine will post a webhook against the target URL of the matching route. If
-                    the webhook target requires the payload in a specific format, you can define a <em>mapping
-                        function</em> that modifies the payload before posting.
+                    EmailEngine tests all events against <em>filter functions</em> of webhook routes. When
+                    a filter matches, EmailEngine sends a webhook to the target URL of that route. If
+                    the webhook target requires a specific payload format, you can define a <em>mapping
+                        function</em> to modify the payload before sending.
                 </p>
                 <p>Read more about using webhook routes <a href="https://docs.emailengine.app/low-code-integrations/"
                         target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.</p>
@@ -134,9 +134,9 @@
     <div class="list-group-item">
         <p>
             {{#if firstPage}}
-            No webhook routes have been registered yet.
+            No webhook routes have been created yet.
             {{else}}
-            Nothing to show here.
+            No webhook routes found.
             {{/if}}
         </p>
     </div>

@@ -1,5 +1,5 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">Authentication required</h1>
+    <h1 class="h4 text-gray-900 mb-4">Sign In to EmailEngine</h1>
 </div>
 <form class="user" method="post" action="/admin/login" style="min-height: 14rem;">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
@@ -7,7 +7,7 @@
 
     <div class="form-group">
         <input type="text" class="form-control form-control-user {{#if errors.username}}is-invalid{{/if}}"
-            id="exampleInputEmail" name="username" aria-describedby="emailHelp" placeholder="Username&mldr;"
+            id="exampleInputEmail" name="username" aria-describedby="emailHelp" placeholder="Enter your username"
             value="{{values.username}}">
         {{#if errors.username}}
         <span class="invalid-feedback">{{errors.username}}</span>
@@ -15,7 +15,7 @@
     </div>
     <div class="form-group">
         <input type="password" class="form-control form-control-user {{#if errors.password}}is-invalid{{/if}}"
-            id="exampleInputPassword" name="password" placeholder="Password&mldr;">
+            id="exampleInputPassword" name="password" placeholder="Enter your password">
         {{#if errors.password}}
         <span class="invalid-feedback">{{errors.password}}</span>
         {{/if}}
@@ -25,8 +25,7 @@
         <div class="custom-control custom-checkbox small">
             <input type="checkbox" class="custom-control-input {{#if errors.remember}}is-invalid{{/if}}"
                 id="customCheck" name="remember" {{#if values.remember}}checked{{/if}}>
-            <label class="custom-control-label" for="customCheck">Remember
-                Me</label>
+            <label class="custom-control-label" for="customCheck">Keep me signed in</label>
             {{#if errors.remember}}
             <span class="invalid-feedback">{{errors.remember}}</span>
             {{/if}}
@@ -34,7 +33,7 @@
     </div>
     <div>
         <button type="submit" class="btn btn-primary btn-user btn-block">
-            Login
+            Sign In
         </button>
     </div>
 
@@ -42,7 +41,7 @@
     <hr>
     <div>
         <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
-            Okta SSO login
+            Sign in with Okta SSO
         </a>
     </div>
     {{/if}}
@@ -51,6 +50,5 @@
 <hr>
 <div class="text-center">
     <a class="small" href="https://emailengine.app/reset-password" target="_blank" rel="noopener noreferrer"
-        referrerpolicy="no-referrer">Forgot
-        Password?</a>
+        referrerpolicy="no-referrer">Forgot your password?</a>
 </div>

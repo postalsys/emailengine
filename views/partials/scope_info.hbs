@@ -1,7 +1,7 @@
 {{#if activeGmail}}
 <div>Your <a href="https://console.cloud.google.com/auth/scopes?project={{app.googleProjectId}}">OAuth2 project</a>
     <strong>must</strong> have the following scopes enabled{{#if disabledScopes.Gmail_Modify}} and
-    also listed in the <em>Custom OAuth2 scopes</em> section{{/if}}:</div>
+    listed in the <em>Custom OAuth2 scopes</em> section{{/if}}:</div>
 <ul>
 
     {{#if baseScopesImap}}
@@ -113,7 +113,7 @@
     <li><code>"mail.imap"</code>
 </ul>
 
-<div class="alert alert-info"><strong>NB!</strong> The required "mail.imap" scope might not be available
+<div class="alert alert-info"><strong>Note:</strong> The required "mail.imap" scope might not be available
     for your <a href="https://oauth.mail.ru/app/" target="_blank" rel="noopener noreferrer"
         referrerpolicy="no-referrer">OAuth2
         apps</a> by

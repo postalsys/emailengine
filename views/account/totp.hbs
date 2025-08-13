@@ -1,5 +1,5 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">Two-factor authentication</h1>
+    <h1 class="h4 text-gray-900 mb-4">Two-Factor Authentication</h1>
 </div>
 <form class="user" method="post" action="/admin/totp" style="min-height: 14rem;">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
@@ -8,7 +8,7 @@
 
 
     <div class="form-group">
-        <label for="code">Enter the 6-digit TOTP code</label>
+        <label for="code">Enter your 6-digit verification code</label>
         <input type="text" pattern="[0-9]{6}"
             class="form-control form-control-user  {{#if errors.code}}is-invalid{{/if}}" id="code" name="code"
             required />
@@ -19,13 +19,12 @@
 
     <div>
         <button type="submit" class="btn btn-primary btn-user btn-block">
-            Verify login
+            Verify and Sign In
         </button>
     </div>
 </form>
 <hr>
 <div class="text-center">
     <a class="small" href="https://emailengine.app/reset-password" target="_blank" rel="noopener noreferrer"
-        referrerpolicy="no-referrer">Need to
-        reset 2FA?</a>
+        referrerpolicy="no-referrer">Lost access to your authenticator?</a>
 </div>

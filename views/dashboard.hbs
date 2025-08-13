@@ -14,7 +14,7 @@
                     </div>
                     <p>EmailEngine is incompatible with Amazon ElastiCache as the database backend.</p>
                     <p>Please switch to a standard Redis instance. Using ElastiCache with EmailEngine can result in data
-                        loss and several functionalities may not work.</p>
+                        loss and some features may not work correctly.</p>
                 </div>
                 <div class="col-auto">
                     <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
@@ -54,12 +54,12 @@
                     </div>
                     <p>To start using EmailEngine, add an email account to the <a href="/admin/accounts">account
                             registry</a>. Once registered, you can access this account to send
-                        and receive emails using the <a href="/admin/swagger">EmailEngine's API</a>.
+                        and receive emails using the <a href="/admin/swagger">EmailEngine API</a>.
                     </p>
                     <p>You can add email accounts by using the API endpoint for <a
                             href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
                             rel="noopener noreferrer" referrerpolicy="no-referrer">registering
-                            accounts</a> or the hosted authentication form.
+                            accounts</a> or through the hosted authentication form.
                     </p>
                     <div>
                         <button type="button" class="btn btn-primary btn-icon-split" data-toggle="modal"
@@ -153,7 +153,7 @@
             {{#if
             stats.queues.notify.isPaused}}
             <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
                 <span class="badge badge-warning">paused</span>
             </div>
             {{/if}}
@@ -185,7 +185,7 @@
             {{#if
             stats.queues.submit.isPaused}}
             <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
                 <span class="badge badge-warning">paused</span>
             </div>
             {{/if}}
@@ -194,7 +194,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="This queue processes emails to be sent to SMTP" data-toggle="tooltip"
+                                title="This queue processes emails to be sent via SMTP" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
                                 <a href="/admin/bull-board/queue/Submission%20Queue%20-%20submit">Submission queue</a>
                             </div>
@@ -202,7 +202,7 @@
                                 <span title="Queue entries total" data-toggle="tooltip"
                                     data-placement="top">{{formatInteger stats.queues.submit.total userLocale}}</span> /
                                 <span
-                                    title="Delayed queue entries. This includes emails that are scheduled to be sent in the future."
+                                    title="Delayed queue entries, including emails scheduled to be sent later"
                                     data-toggle="tooltip" data-placement="top">{{formatInteger
                                     stats.queues.submit.delayed userLocale}}</span>
                             </div>
@@ -220,7 +220,7 @@
             {{#if
             stats.queues.documents.isPaused}}
             <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries for this queue" data-toggle="tooltip" data-placement="top">
+                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
                 <span class="badge badge-warning">paused</span>
             </div>
             {{/if}}
@@ -229,7 +229,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="This queue indexes mailbox changes to ElasticSearch" data-toggle="tooltip"
+                                title="This queue indexes mailbox changes to Elasticsearch" data-toggle="tooltip"
                                 data-placement="top" style="cursor: default;">
                                 <a href="/admin/bull-board/queue/Document%20Queue%20-%20documents">Documents queue</a>
                             </div>

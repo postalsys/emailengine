@@ -76,7 +76,7 @@
                 {{#if errors.imap_auth_pass}}
                 <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Only set if you want to change current IMAP password</small>
+                <small class="form-text text-muted">Only set if you want to change the current IMAP password</small>
             </div>
 
             <div class="form-group">
@@ -126,7 +126,7 @@
                 <span class="invalid-feedback">{{errors.imap_sentMailPath}}</span>
                 {{/if}}
                 <small class="form-text text-muted">Copies of sent emails will be uploaded to this folder. Leave empty
-                    to use the default "Sent Mail" folder on the
+                    to use the default "Sent Mail" folder for this
                     account.</small>
             </div>
 
@@ -149,7 +149,7 @@
                     values.imap_disabled}}checked{{/if}} />
                 <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
                     data-title="Disable IMAP"
-                    data-content="Disable IMAP if you are using this email account to only send emails."><i
+                    data-content="Disable IMAP if you are using this email account only for sending emails."><i
                         class="fas fa-question-circle"></i></a>
                 <label class="form-check-label" for="imap_disabled">Disable IMAP
                 </label>
@@ -193,7 +193,7 @@
                 {{#if errors.smtp_auth_pass}}
                 <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Only set if you want to change current SMTP password</small>
+                <small class="form-text text-muted">Only set if you want to change the current SMTP password</small>
             </div>
 
             <div class="form-group">
@@ -268,8 +268,8 @@
                 <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
                 {{/if}}
                 <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname to use for the SMTP EHLO/HELO
-                    greeting. Leave empty to use the default <code>{{defaultSmtpEhloName}}</code> or if you are using a
-                    dedicated IP address, then the name of the IP is preferred over this value.</small>
+                    greeting. Leave empty to use the default <code>{{defaultSmtpEhloName}}</code>. If you are using a
+                    dedicated IP address, the hostname of that IP is preferred over this value.</small>
             </div>
 
             <div class="form-group">
@@ -280,10 +280,10 @@
                 {{#if errors.webhooks}}
                 <span class="invalid-feedback">{{errors.webhooks}}</span>
                 {{/if}}
-                <small id="webhooksHelpBlock" class="form-text text-muted">Account-specific webhook URL. If it is set
-                    and <a href="/admin/config/webhooks">webhooks</a> are enabled, EmailEngine makes webhook
-                    requests for events related to this account against this URL instead of the default webhook URL.
-                    Leave empty to clear it.</small>
+                <small id="webhooksHelpBlock" class="form-text text-muted">Account-specific webhook URL. If set
+                    and <a href="/admin/config/webhooks">webhooks</a> are enabled, EmailEngine will send webhook
+                    requests for events related to this account to this URL instead of the default webhook URL.
+                    Leave empty to clear.</small>
             </div>
 
             <div class="form-group">
