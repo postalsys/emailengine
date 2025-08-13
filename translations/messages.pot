@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-08-05 15:50+0000\n"
+"POT-Creation-Date: 2025-08-13 09:08+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -58,10 +58,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -83,6 +79,18 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
+msgstr ""
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -199,14 +207,6 @@ msgstr ""
 msgid "HTTP error!"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/routes-ui.js:529
 msgid "Delegated"
 msgstr ""
@@ -305,12 +305,12 @@ msgstr ""
 msgid "Something went wrong"
 msgstr ""
 
-#: lib/tools.js:1472
+#: lib/tools.js:1494
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1481
-#: lib/tools.js:1486
+#: lib/tools.js:1503
+#: lib/tools.js:1508
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
