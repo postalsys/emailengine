@@ -79,7 +79,7 @@ apt-get update
 apt-get install redis-server caddy wget openssl -q -y
 
 # Generate secure credentials
-REDIS_PASSWORD=$(openssl rand -base64 32)
+REDIS_PASSWORD=$(openssl rand -hex 32)
 EENGINE_SECRET=$(openssl rand -hex 32)
 
 # Configure Redis for production use
