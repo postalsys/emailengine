@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.54.4](https://github.com/postalsys/emailengine/compare/v2.54.3...v2.54.4) (2025-08-14)
+
+
+### Bug Fixes
+
+* **imap:** Fixed subconnection error handling ([5367c77](https://github.com/postalsys/emailengine/commit/5367c77f88690a3636049e0690d2f674e1528a30))
+* **install:** Fixed Redis password generation for the install script ([bf5853e](https://github.com/postalsys/emailengine/commit/bf5853e0c394a98d3bad079293dd5e73206d5183))
+
 ## [2.54.3](https://github.com/postalsys/emailengine/compare/v2.54.2...v2.54.3) (2025-08-13)
 
 
