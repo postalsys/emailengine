@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.54.5](https://github.com/postalsys/emailengine/compare/v2.54.4...v2.54.5) (2025-08-20)
+
+
+### Bug Fixes
+
+* **env:** Added EENGINE_DISABLE_MESSAGE_BROWSER, fixed EENGINE_ADMIN_ACCESS_ADDRESSES regression bug ([4d922ff](https://github.com/postalsys/emailengine/commit/4d922ff9c7eb7ca6839657430adc3df7013a7204))
+
 ## [2.54.4](https://github.com/postalsys/emailengine/compare/v2.54.3...v2.54.4) (2025-08-14)
 
 
