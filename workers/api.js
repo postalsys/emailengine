@@ -825,7 +825,7 @@ const init = async () => {
         request.flash = async message => await flash(redis, request, message);
 
         if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length) {
-            if (request.route.path.startsWith('/admin') && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
+            if (request.path.startsWith('/admin') && !matchIp(request.app.ip, ADMIN_ACCESS_ADDRESSES)) {
                 logger.info({
                     msg: 'Blocked access from unlisted IP address',
                     remoteAddress: request.app.ip,
