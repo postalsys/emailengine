@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.54.5](https://github.com/postalsys/emailengine/compare/v2.54.4...v2.54.5) (2025-08-26)
+
+
+### Bug Fixes
+
+* Bumped ImapFlow to decrease load on CPU ([227894d](https://github.com/postalsys/emailengine/commit/227894dbbc68f6b7d5cf5322d1010678940107c1))
+* **env:** Added EENGINE_DISABLE_MESSAGE_BROWSER, fixed EENGINE_ADMIN_ACCESS_ADDRESSES regression bug ([4d922ff](https://github.com/postalsys/emailengine/commit/4d922ff9c7eb7ca6839657430adc3df7013a7204))
+* Fixed checking nil against a number ([eee7294](https://github.com/postalsys/emailengine/commit/eee7294d1e4cd328ba1cff8aeb704d86a6fd767f))
+
 ## [2.54.4](https://github.com/postalsys/emailengine/compare/v2.54.3...v2.54.4) (2025-08-14)
 
 
