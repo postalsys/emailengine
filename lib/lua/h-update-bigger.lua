@@ -6,7 +6,14 @@ local uptatedVal = tonumber(ARGV[3]) or 0;
 
 if redis.call("HEXISTS", hashKey, hashField) == 1 then
     local existing = redis.call("HGET", hashKey, hashField);
-    if tonumber(existing) < lowerThanVal then
+    local existingNum = tonumber(existing);
+
+    -- Handle case where existing value is not a valid number
+    if existingNum == nil then
+        -- treat existing value as 0 if it is not a valid number
+        redis.call("HSET", hashKey, hashField, uptatedVal);
+        return 2;
+    elseif existingNum < lowerThanVal then
         redis.call("HSET", hashKey, hashField, uptatedVal);
         return 2;
     end;
