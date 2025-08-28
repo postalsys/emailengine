@@ -3,6 +3,7 @@
 require('dotenv').config({ quiet: true });
 
 const config = require('wild-config');
+const testConfig = require('./test-config');
 const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -19,6 +20,23 @@ let testAccount;
 const defaultAccountId = 'main-account';
 const gmailAccountId1 = 'gmail-account1';
 const gmailAccountId2 = 'gmail-account2';
+
+// Helper function for polling with timeout
+async function waitForCondition(checkFn, options = {}) {
+    const { interval = testConfig.POLL_INTERVAL, timeout = testConfig.DEFAULT_TIMEOUT, message = 'Condition not met within timeout' } = options;
+
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeout) {
+        const result = await checkFn();
+        if (result) {
+            return result;
+        }
+        await new Promise(r => setTimeout(r, interval));
+    }
+
+    throw new Error(`Timeout: ${message}`);
+}
 
 test('API tests', async t => {
     let message2;
@@ -108,21 +126,22 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until added account is available', async () => {
-        // wait until connected
-        let available = false;
-        while (!available) {
-            await new Promise(r => setTimeout(r, 1000));
-            const response = await server.get(`/v1/account/${defaultAccountId}`).expect(200);
-            switch (response.body.state) {
-                case 'authenticationError':
-                case 'connectError':
-                    throw new Error('Invalid account state ' + response.body.state);
-                case 'connected':
-                    available = true;
-                    break;
-            }
-        }
+    await t.test('wait until added account is available', { timeout: 60000 }, async () => {
+        // wait until connected with timeout
+        await waitForCondition(
+            async () => {
+                const response = await server.get(`/v1/account/${defaultAccountId}`).expect(200);
+                switch (response.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + response.body.state);
+                    case 'connected':
+                        return true;
+                }
+                return false;
+            },
+            { timeout: testConfig.CONNECTION_TIMEOUT, message: 'Account connection timeout' }
+        );
 
         // check if we have all expected webhooks
         let webhooks = webhooksServer.webhooks.get(defaultAccountId);
@@ -158,7 +177,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.total, 0);
     });
 
-    await t.test('upload email to Inbox and wait for a messageNew webhook', async () => {
+    await t.test('upload email to Inbox and wait for a messageNew webhook', { timeout: 60000 }, async () => {
         const response1 = await server
             .post(`/v1/account/${defaultAccountId}/message`)
             .send({
@@ -215,18 +234,18 @@ test('API tests', async t => {
 
         assert.ok(response2.body.id);
 
-        let received = false;
-        let messageNewWebhook1 = false;
-        let messageNewWebhook2 = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-            messageNewWebhook1 = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test1@example.com>');
-            messageNewWebhook2 = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test2@example.com>');
-            if (messageNewWebhook1 && messageNewWebhook2) {
-                received = true;
-            }
-        }
+        const { messageNewWebhook1, messageNewWebhook2 } = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+                const webhook1 = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test1@example.com>');
+                const webhook2 = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test2@example.com>');
+                if (webhook1 && webhook2) {
+                    return { messageNewWebhook1: webhook1, messageNewWebhook2: webhook2 };
+                }
+                return false;
+            },
+            { timeout: testConfig.WEBHOOK_TIMEOUT, message: 'Webhook notification timeout' }
+        );
 
         message2 = messageNewWebhook2.data;
 
@@ -312,7 +331,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.messages[0].messageId, '<test2@example.com>');
     });
 
-    await t.test('mark message as seen', async () => {
+    await t.test('mark message as seen', { timeout: 60000 }, async () => {
         const response = await server
             .put(`/v1/account/${defaultAccountId}/message/${message2.id}`)
             .send({
@@ -324,21 +343,18 @@ test('API tests', async t => {
 
         assert.ok(response.body.flags.add);
 
-        let received = false;
-        let messageUpdatedWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-            messageUpdatedWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageUpdated' && wh.data.id === message2.id);
-            if (messageUpdatedWebhook) {
-                received = true;
-            }
-        }
+        const messageUpdatedWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+                return webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageUpdated' && wh.data.id === message2.id);
+            },
+            { timeout: testConfig.WEBHOOK_TIMEOUT, message: 'Message update webhook timeout' }
+        );
 
         assert.deepEqual(messageUpdatedWebhook.data.changes.flags.added, ['\\Seen']);
     });
 
-    await t.test('upload by reference', async () => {
+    await t.test('upload by reference', { timeout: 60000 }, async () => {
         await server
             .post(`/v1/account/${defaultAccountId}/message`)
             .send({
@@ -388,23 +404,20 @@ test('API tests', async t => {
 
         assert.ok(response.body.id);
 
-        let received = false;
-        let messageNewWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-            messageNewWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test3@example.com>');
-            if (messageNewWebhook) {
-                received = true;
-            }
-        }
+        const messageNewWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+                return webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test3@example.com>');
+            },
+            { timeout: testConfig.WEBHOOK_TIMEOUT, message: 'Message upload webhook timeout' }
+        );
 
         assert.ok(/Begin forwarded message/.test(messageNewWebhook.data.text.plain));
         assert.strictEqual(messageNewWebhook.data.attachments[0].filename, 'transparent.gif');
         assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
     });
 
-    await t.test('submit by reference', async () => {
+    await t.test('submit by reference', { timeout: 60000 }, async () => {
         const response = await server
             .post(`/v1/account/${defaultAccountId}/submit`)
             .send({
@@ -430,23 +443,20 @@ test('API tests', async t => {
         assert.ok(response.body.messageId);
         assert.ok(response.body.queueId);
 
-        let received = false;
-        let messageNewWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-            messageNewWebhook = webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test4@example.com>');
-            if (messageNewWebhook) {
-                received = true;
-            }
-        }
+        const messageNewWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+                return webhooks.find(wh => wh.path === 'INBOX' && wh.event === 'messageNew' && wh.data.messageId === '<test4@example.com>');
+            },
+            { timeout: testConfig.WEBHOOK_TIMEOUT, message: 'Submit webhook timeout' }
+        );
 
         assert.ok(/Begin forwarded message/.test(messageNewWebhook.data.text.plain));
         assert.strictEqual(messageNewWebhook.data.attachments[0].filename, 'transparent.gif');
         assert.strictEqual(messageNewWebhook.data.subject, 'Fwd: Test message 🤣');
     });
 
-    await t.test('create a mailbox', async () => {
+    await t.test('create a mailbox', { timeout: 60000 }, async () => {
         const response = await server
             .post(`/v1/account/${defaultAccountId}/mailbox`)
             .send({
@@ -457,21 +467,18 @@ test('API tests', async t => {
         assert.strictEqual(response.body.path, 'My Target Folder 😇');
         assert.ok(response.body.created);
 
-        let received = false;
-        let mailboxNewWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-            mailboxNewWebhook = webhooks.find(wh => wh.path === 'My Target Folder 😇' && wh.event === 'mailboxNew');
-            if (mailboxNewWebhook) {
-                received = true;
-            }
-        }
+        const mailboxNewWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+                return webhooks.find(wh => wh.path === 'My Target Folder 😇' && wh.event === 'mailboxNew');
+            },
+            { timeout: testConfig.WEBHOOK_TIMEOUT, message: 'Mailbox creation webhook timeout' }
+        );
 
         assert.ok(mailboxNewWebhook);
     });
 
-    await t.test('move message to another folder', async () => {
+    await t.test('move message to another folder', { timeout: 60000 }, async () => {
         const response = await server
             .put(`/v1/account/${defaultAccountId}/message/${message2.id}/move`)
             .send({
@@ -496,7 +503,7 @@ test('API tests', async t => {
         assert.strictEqual(responseSearchTarget.body.messages[0].messageId, '<test2@example.com>');
     });
 
-    await t.test('Create Gmail API OAuth2 service project', async () => {
+    await t.test('Create Gmail API OAuth2 service project', { timeout: 30000 }, async () => {
         let gmailServiceData = {
             name: 'Gmail API Pub/Sub',
             provider: 'gmailService',
@@ -513,7 +520,7 @@ test('API tests', async t => {
         assert.ok(oauth2PubsubId);
     });
 
-    await t.test('Create Gmail API OAuth2 client project', async () => {
+    await t.test('Create Gmail API OAuth2 client project', { timeout: 30000 }, async () => {
         let gmailClientData = {
             name: 'Gmail API Client',
             provider: 'gmail',
@@ -531,7 +538,7 @@ test('API tests', async t => {
         assert.ok(oauth2AppId);
     });
 
-    await t.test('Register Gmail account 1', async () => {
+    await t.test('Register Gmail account 1', { timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -551,7 +558,7 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('Register Gmail account 2', async () => {
+    await t.test('Register Gmail account 2', { timeout: 30000 }, async () => {
         const response = await server
             .post(`/v1/account`)
             .send({
@@ -571,22 +578,23 @@ test('API tests', async t => {
         assert.strictEqual(response.body.state, 'new');
     });
 
-    await t.test('wait until Gmail accounts are available', async () => {
+    await t.test('wait until Gmail accounts are available', { timeout: 120000 }, async () => {
         for (let account of [gmailAccountId1, gmailAccountId2]) {
-            // wait until connected
-            let available = false;
-            while (!available) {
-                await new Promise(r => setTimeout(r, 1000));
-                const response = await server.get(`/v1/account/${account}`).expect(200);
-                switch (response.body.state) {
-                    case 'authenticationError':
-                    case 'connectError':
-                        throw new Error('Invalid account state ' + response.body.state);
-                    case 'connected':
-                        available = true;
-                        break;
-                }
-            }
+            // wait until connected with longer timeout for Gmail
+            await waitForCondition(
+                async () => {
+                    const response = await server.get(`/v1/account/${account}`).expect(200);
+                    switch (response.body.state) {
+                        case 'authenticationError':
+                        case 'connectError':
+                            throw new Error('Invalid account state ' + response.body.state);
+                        case 'connected':
+                            return true;
+                    }
+                    return false;
+                },
+                { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail account ${account} connection timeout` }
+            );
 
             // check if we have all expected webhooks
             let webhooks = webhooksServer.webhooks.get(account);
@@ -596,19 +604,19 @@ test('API tests', async t => {
         }
     });
 
-    await t.test('list mailboxes for Gmail account 1', async () => {
+    await t.test('list mailboxes for Gmail account 1', { timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/mailboxes`).expect(200);
 
         assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
     });
 
-    await t.test('list inbox messages for Gmail account 1 (greeting emails)', async () => {
+    await t.test('list inbox messages for Gmail account 1 (greeting emails)', { timeout: 30000 }, async () => {
         const response = await server.get(`/v1/account/${gmailAccountId1}/messages?path=INBOX`).expect(200);
 
         assert.ok(response.body.total > 0);
     });
 
-    await t.test('submit by API', async () => {
+    await t.test('submit by API', { timeout: 120000 }, async () => {
         let messageId = `<test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -630,28 +638,23 @@ test('API tests', async t => {
         assert.ok(response.body.messageId);
         assert.ok(response.body.queueId);
 
-        let sent = false;
-        let messageSentWebhook = false;
-        while (!sent) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
-            messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
-            if (messageSentWebhook) {
-                gmailReceivedMessageId = messageSentWebhook.data.messageId;
-                sent = true;
-            }
-        }
+        const messageSentWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
+                return webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: 'Gmail message sent webhook timeout' }
+        );
 
-        let received = false;
-        let messageNewWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
-            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === gmailReceivedMessageId);
-            if (messageNewWebhook) {
-                received = true;
-            }
-        }
+        gmailReceivedMessageId = messageSentWebhook.data.messageId;
+
+        const messageNewWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
+                return webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === gmailReceivedMessageId);
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: 'Gmail message receive webhook timeout' }
+        );
 
         // * is added by gmail
         assert.strictEqual(messageNewWebhook.data.text.plain.trim(), '*Hallo hallo! 🙃*');
@@ -662,7 +665,7 @@ test('API tests', async t => {
         assert.ok(gmailReceivedEmailId);
     });
 
-    await t.test('reply by reference by API', async () => {
+    await t.test('reply by reference by API', { timeout: 120000 }, async () => {
         let messageId = `<test-${Date.now()}@example.com>`;
 
         const response = await server
@@ -684,28 +687,23 @@ test('API tests', async t => {
 
         let finalMessageId;
 
-        let sent = false;
-        let messageSentWebhook = false;
-        while (!sent) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
-            messageSentWebhook = webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
-            if (messageSentWebhook) {
-                finalMessageId = messageSentWebhook.data.messageId;
-                sent = true;
-            }
-        }
+        const messageSentWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(gmailAccountId1);
+                return webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: 'Gmail reply sent webhook timeout' }
+        );
 
-        let received = false;
-        let messageNewWebhook = false;
-        while (!received) {
-            await new Promise(r => setTimeout(r, 1000));
-            let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
-            messageNewWebhook = webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === finalMessageId);
-            if (messageNewWebhook) {
-                received = true;
-            }
-        }
+        finalMessageId = messageSentWebhook.data.messageId;
+
+        const messageNewWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(gmailAccountId2);
+                return webhooks.find(wh => wh.event === 'messageNew' && wh.data.messageId === finalMessageId);
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: 'Gmail reply receive webhook timeout' }
+        );
 
         assert.strictEqual(messageNewWebhook.data.subject.trim(), 'Re: Hallo hallo 🤣');
         assert.strictEqual(messageNewWebhook.data.inReplyTo, gmailReceivedMessageId);

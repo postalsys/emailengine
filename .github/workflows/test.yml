@@ -60,6 +60,7 @@ jobs:
 
     test:
         name: Test Suite
+        timeout-minutes: 15  # Increased timeout for Gmail API tests
         strategy:
             matrix:
                 node: [20.x]

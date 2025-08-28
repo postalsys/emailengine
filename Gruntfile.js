@@ -5,19 +5,21 @@ const config = require('wild-config');
 module.exports = function (grunt) {
     // Project configuration.
     grunt.initConfig({
-        eslint: {
-            all: ['lib/**/*.js', 'server.js', 'worker.js', 'Gruntfile.js']
-        },
-
         wait: {
             server: {
                 options: {
-                    delay: 12 * 1000
+                    delay: 20 * 1000 // Increased from 12s to 20s for Gmail API operations
                 }
             }
         },
 
         shell: {
+            eslint: {
+                command: 'npx eslint lib/**/*.js workers/**/*.js server.js Gruntfile.js',
+                options: {
+                    async: false
+                }
+            },
             server: {
                 command: 'node server.js',
                 options: {
@@ -31,7 +33,7 @@ module.exports = function (grunt) {
                 }
             },
             test: {
-                command: 'node --test test/',
+                command: 'node --test --test-timeout=120000 test/*.js', // Added 2-minute timeout for tests
                 options: {
                     async: false
                 }
@@ -45,12 +47,11 @@ module.exports = function (grunt) {
     });
 
     // Load the plugin(s)
-    grunt.loadNpmTasks('grunt-eslint');
     grunt.loadNpmTasks('grunt-shell-spawn');
     grunt.loadNpmTasks('grunt-wait');
 
     // Tasks
     grunt.registerTask('test', ['shell:flush', 'shell:server', 'wait:server', 'shell:test', 'shell:server:kill']);
 
-    grunt.registerTask('default', ['eslint', 'test']);
+    grunt.registerTask('default', ['shell:eslint', 'test']);
 };

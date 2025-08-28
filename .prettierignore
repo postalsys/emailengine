@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+ee-dist/
+dist/
+build/
+
+# Static assets and vendor files
+static/
+
+# Test fixtures
+test/fixtures/
+
+# IMAP core library (external dependency)
+lib/imapproxy/imap-core/
+
+# Generated files
+*.min.js
+*-min.js
+*.bundle.js
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+docs/

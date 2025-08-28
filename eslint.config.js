@@ -1,6 +1,9 @@
 const js = require('@eslint/js');
 
 module.exports = [
+    {
+        ignores: ['node_modules/**', 'ee-dist/**', 'static/**']
+    },
     js.configs.recommended,
     {
         languageOptions: {
@@ -37,10 +40,9 @@ module.exports = [
             }
         },
         files: ['**/*.js'],
-        ignores: ['node_modules/**', 'ee-dist/**', 'static/**/*.js'],
         rules: {
             // Disable rules that conflict with the project's style
-            'no-unused-vars': ['error', { 'args': 'none', 'caughtErrors': 'none' }],
+            'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
             'no-prototype-builtins': 'off',
             // Disable all formatting rules (handled by Prettier)
             'array-bracket-spacing': 'off',
@@ -59,7 +61,7 @@ module.exports = [
             'function-paren-newline': 'off',
             'generator-star-spacing': 'off',
             'implicit-arrow-linebreak': 'off',
-            'indent': 'off',
+            indent: 'off',
             'jsx-quotes': 'off',
             'key-spacing': 'off',
             'keyword-spacing': 'off',
@@ -86,9 +88,9 @@ module.exports = [
             'padded-blocks': 'off',
             'padding-line-between-statements': 'off',
             'quote-props': 'off',
-            'quotes': 'off',
+            quotes: 'off',
             'rest-spread-spacing': 'off',
-            'semi': 'off',
+            semi: 'off',
             'semi-spacing': 'off',
             'semi-style': 'off',
             'space-before-blocks': 'off',

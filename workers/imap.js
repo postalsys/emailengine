@@ -78,7 +78,7 @@ class ConnectionHandler {
         this.mids = 0;
 
         this.accounts = new Map();
-        
+
         // Reconnection metrics tracking
         this.reconnectMetrics = new Map(); // Track metrics per account
         this.metricsWindow = 60000; // 1-minute window
@@ -666,13 +666,14 @@ class ConnectionHandler {
             attempts: [],
             warnings: 0
         };
-        
+
         // Clean old attempts outside window
         metrics.attempts = metrics.attempts.filter(t => now - t < this.metricsWindow);
         metrics.attempts.push(now);
-        
+
         // Log warning if excessive reconnections
-        if (metrics.attempts.length > 20) { // More than 20 per minute
+        if (metrics.attempts.length > 20) {
+            // More than 20 per minute
             metrics.warnings++;
             logger.warn({
                 msg: 'Excessive reconnection rate detected',
@@ -680,7 +681,7 @@ class ConnectionHandler {
                 rate: `${metrics.attempts.length}/min`,
                 totalWarnings: metrics.warnings
             });
-            
+
             // Emit metrics for monitoring/alerting
             try {
                 parentPort.postMessage({
@@ -694,7 +695,7 @@ class ConnectionHandler {
                 logger.error({ msg: 'Failed to send metrics', err });
             }
         }
-        
+
         this.reconnectMetrics.set(account, metrics);
     }
 

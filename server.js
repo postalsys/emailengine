@@ -16,7 +16,7 @@
 
 // Load environment variables if not already loaded
 if (!process.env.EE_ENV_LOADED) {
-    require('dotenv').config({ quiet: true });  
+    require('dotenv').config({ quiet: true });
     process.env.EE_ENV_LOADED = 'true';
 }
 
