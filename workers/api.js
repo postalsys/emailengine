@@ -9180,6 +9180,15 @@ init()
         });
 
         parentPort.postMessage({ cmd: 'ready' });
+        
+        // Start sending heartbeats to main thread
+        setInterval(() => {
+            try {
+                parentPort.postMessage({ cmd: 'heartbeat' });
+            } catch (err) {
+                // Ignore errors, parent might be shutting down
+            }
+        }, 10 * 1000).unref();
     })
     .catch(err => {
         logger.error({ msg: 'Failed to initialize API', err });

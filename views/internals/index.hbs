@@ -42,6 +42,8 @@
                             data-title="Error" data-content="{{errorMessage}}"><i
                                 class="fas fa-exclamation-triangle"></i></a>
                         {{/if}}
+                        {{else if healthBadge}}
+                        <span class="badge badge-{{healthBadgeType}}">{{healthBadge}}</span>
                         {{/if}}
 
                     </td>

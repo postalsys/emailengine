@@ -577,6 +577,13 @@ let workers = new Map(); // Map of type -> Set of workers
 let workersMeta = new WeakMap(); // Worker metadata
 let availableIMAPWorkers = new Set(); // IMAP workers ready to accept accounts
 
+// Worker health monitoring
+let workerHeartbeats = new WeakMap(); // Map of worker -> last heartbeat timestamp
+let workerHealthStatus = new WeakMap(); // Map of worker -> health status
+const HEARTBEAT_INTERVAL = 10 * 1000; // 10 seconds
+const HEARTBEAT_TIMEOUT = 30 * 1000; // 30 seconds before marking unhealthy
+const HEARTBEAT_RESTART_TIMEOUT = 60 * 1000; // 60 seconds before auto-restart
+
 // Suspended worker types (when no license is active)
 let suspendedWorkerTypes = new Set();
 
@@ -705,6 +712,14 @@ async function getThreadsInfo() {
         if (workerAssigned.has(worker)) {
             threadData.accounts = workerAssigned.get(worker).size;
         }
+        
+        // Add health status
+        threadData.healthStatus = workerHealthStatus.get(worker) || 'unknown';
+        const lastHeartbeat = workerHeartbeats.get(worker);
+        if (lastHeartbeat) {
+            threadData.lastHeartbeat = lastHeartbeat;
+            threadData.timeSinceHeartbeat = Date.now() - lastHeartbeat;
+        }
 
         // Add worker metadata
         let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
@@ -724,6 +739,94 @@ async function getThreadsInfo() {
     });
 
     return threadsInfo;
+}
+
+/**
+ * Handle heartbeat from worker thread
+ * @param {Worker} worker - The worker thread
+ */
+function handleWorkerHeartbeat(worker) {
+    const now = Date.now();
+    workerHeartbeats.set(worker, now);
+    
+    // Mark as healthy if it was previously unhealthy
+    const previousStatus = workerHealthStatus.get(worker);
+    if (previousStatus === 'unhealthy' || previousStatus === 'critical') {
+        logger.info({ 
+            msg: 'Worker recovered', 
+            threadId: worker.threadId,
+            type: workersMeta.get(worker)?.type
+        });
+    }
+    workerHealthStatus.set(worker, 'healthy');
+}
+
+/**
+ * Check health of all worker threads
+ * @returns {Promise<void>}
+ */
+async function checkWorkerHealth() {
+    const now = Date.now();
+    
+    for (let [type, workerSet] of workers) {
+        for (let worker of workerSet) {
+            const lastHeartbeat = workerHeartbeats.get(worker);
+            const currentStatus = workerHealthStatus.get(worker) || 'unknown';
+            
+            if (!lastHeartbeat) {
+                // No heartbeat recorded yet, skip
+                continue;
+            }
+            
+            const timeSinceHeartbeat = now - lastHeartbeat;
+            
+            if (timeSinceHeartbeat > HEARTBEAT_RESTART_TIMEOUT && currentStatus !== 'restarting') {
+                // Worker is critically unresponsive, restart it
+                logger.error({
+                    msg: 'Worker critically unresponsive, restarting',
+                    threadId: worker.threadId,
+                    type,
+                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
+                });
+                
+                workerHealthStatus.set(worker, 'restarting');
+                
+                // Terminate the worker (this will trigger automatic restart)
+                try {
+                    await worker.terminate();
+                } catch (err) {
+                    logger.error({
+                        msg: 'Failed to terminate unresponsive worker',
+                        threadId: worker.threadId,
+                        type,
+                        err
+                    });
+                }
+            } else if (timeSinceHeartbeat > HEARTBEAT_TIMEOUT && currentStatus === 'healthy') {
+                // Worker is unhealthy but not critical yet
+                logger.warn({
+                    msg: 'Worker unhealthy - no heartbeat',
+                    threadId: worker.threadId,
+                    type,
+                    timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
+                });
+                
+                workerHealthStatus.set(worker, 'unhealthy');
+            }
+        }
+    }
+}
+
+/**
+ * Start worker health monitoring
+ */
+function startHealthMonitoring() {
+    // Check worker health every 5 seconds
+    setInterval(() => {
+        checkWorkerHealth().catch(err => {
+            logger.error({ msg: 'Worker health check failed', err });
+        });
+    }, 5000);
 }
 
 /**
@@ -922,6 +1025,12 @@ let spawnWorker = async type => {
             workersMeta.set(worker, workerMeta);
 
             if (!message) {
+                return;
+            }
+
+            // Handle heartbeat from worker
+            if (message.cmd === 'heartbeat') {
+                handleWorkerHeartbeat(worker);
                 return;
             }
 
@@ -1135,6 +1244,11 @@ let spawnWorker = async type => {
                         // IMAP worker is ready to accept accounts
                         availableIMAPWorkers.add(worker);
                         isOnline = true;
+                        
+                        // Initialize heartbeat tracking
+                        workerHeartbeats.set(worker, Date.now());
+                        workerHealthStatus.set(worker, 'healthy');
+                        
                         resolve(worker.threadId);
 
                         if (imapInitialWorkersLoaded && reassignmentPending) {
@@ -1173,6 +1287,24 @@ let spawnWorker = async type => {
                     if (message.cmd === 'ready') {
                         // API worker is ready
                         isOnline = true;
+                        
+                        // Initialize heartbeat tracking
+                        workerHeartbeats.set(worker, Date.now());
+                        workerHealthStatus.set(worker, 'healthy');
+                        
+                        resolve(worker.threadId);
+                    }
+                    break;
+                    
+                default:
+                    // For all other worker types
+                    if (message.cmd === 'ready') {
+                        isOnline = true;
+                        
+                        // Initialize heartbeat tracking
+                        workerHeartbeats.set(worker, Date.now());
+                        workerHealthStatus.set(worker, 'healthy');
+                        
                         resolve(worker.threadId);
                     }
                     break;
@@ -2742,6 +2874,9 @@ startApplication()
 
         redisPingTimer = setTimeout(checkRedisPing, REDIS_PING_TIMEOUT);
         redisPingTimer.unref();
+        
+        // Start worker health monitoring
+        startHealthMonitoring();
 
         // Initialize queue event listeners
         queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
