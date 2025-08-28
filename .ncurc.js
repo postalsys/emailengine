@@ -10,10 +10,6 @@ module.exports = {
         'ical.js',
         '@elastic/elasticsearch',
 
-        // api changes, check and fix
-        'eslint',
-        'grunt-eslint',
-
         'pino-pretty',
 
         // no support for Node 16

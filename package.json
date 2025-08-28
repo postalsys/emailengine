@@ -111,14 +111,12 @@
         "xml2js": "0.6.2"
     },
     "devDependencies": {
+        "@eslint/js": "9.34.0",
         "chai": "4.3.10",
         "eerawlog": "1.5.1",
-        "eslint": "8.57.0",
-        "eslint-config-nodemailer": "1.2.0",
-        "eslint-config-prettier": "10.1.8",
+        "eslint": "9.34.0",
         "grunt": "1.6.1",
         "grunt-cli": "1.5.0",
-        "grunt-eslint": "24.3.0",
         "grunt-shell-spawn": "0.5.0",
         "grunt-wait": "0.3.0",
         "jsxgettext": "0.11.0",
