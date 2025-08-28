@@ -568,6 +568,8 @@ let unassigned = false; // Set of unassigned accounts
 let assigned = new Map(); // Map of account -> worker
 let workerAssigned = new WeakMap(); // Map of worker -> Set of accounts
 let onlineWorkers = new WeakSet(); // Set of workers that are online
+let reassignmentTimer = null; // Timer for failsafe reassignment
+let reassignmentPending = false; // Flag to track if reassignment is pending
 
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
@@ -818,7 +820,34 @@ let spawnWorker = async type => {
                         unassigned.add(account);
                     }
 
-                    assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts', n: 1, err }));
+                    // Don't reassign immediately - wait for the worker to restart
+                    reassignmentPending = true;
+                    
+                    // Clear any existing timer
+                    if (reassignmentTimer) {
+                        clearTimeout(reassignmentTimer);
+                    }
+                    
+                    // Set a failsafe timer - if worker doesn't restart in 10 seconds, reassign anyway
+                    reassignmentTimer = setTimeout(() => {
+                        if (reassignmentPending && unassigned && unassigned.size > 0) {
+                            logger.warn({
+                                msg: 'Failsafe reassignment triggered - worker restart timeout',
+                                unassignedAccounts: unassigned.size,
+                                currentWorkers: availableIMAPWorkers.size,
+                                expectedWorkers: config.workers.imap
+                            });
+                            reassignmentPending = false;
+                            assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts (failsafe)', err }));
+                        }
+                    }, 10000); // 10 second timeout
+                    
+                    logger.info({ 
+                        msg: 'Worker crashed, waiting for restart before reassignment',
+                        accounts: accountList.size,
+                        expectedWorkers: config.workers.imap,
+                        currentWorkers: availableIMAPWorkers.size
+                    });
                 }
             }
 
@@ -1078,9 +1107,34 @@ let spawnWorker = async type => {
                         isOnline = true;
                         resolve(worker.threadId);
 
-                        if (imapInitialWorkersLoaded) {
-                            // Assign accounts if all workers are loaded
-                            assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', n: 2, err }));
+                        if (imapInitialWorkersLoaded && reassignmentPending) {
+                            // Check if we now have the expected number of workers
+                            // This handles the case where a worker crashed and restarted
+                            if (availableIMAPWorkers.size === config.workers.imap) {
+                                // All workers are back - clear timer and reassign
+                                if (reassignmentTimer) {
+                                    clearTimeout(reassignmentTimer);
+                                    reassignmentTimer = null;
+                                }
+                                reassignmentPending = false;
+                                
+                                if (unassigned && unassigned.size > 0) {
+                                    logger.info({
+                                        msg: 'All expected workers ready, reassigning unassigned accounts',
+                                        workers: availableIMAPWorkers.size,
+                                        unassigned: unassigned.size
+                                    });
+                                    assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', n: 2, err }));
+                                }
+                            } else if (unassigned && unassigned.size > 0) {
+                                // Still waiting for more workers to restart
+                                logger.info({
+                                    msg: 'Worker ready, waiting for all workers before reassignment',
+                                    currentWorkers: availableIMAPWorkers.size,
+                                    expectedWorkers: config.workers.imap,
+                                    unassignedAccounts: unassigned.size
+                                });
+                            }
                         }
                     }
                     break;
@@ -1148,7 +1202,8 @@ async function call(worker, message, transferList) {
 
 /**
  * Assign unassigned accounts to available IMAP workers
- * Uses rendezvous hashing for consistent assignment
+ * Uses load-aware distribution with round-robin for initial assignment
+ * and rendezvous hashing for reassignments after worker failures
  * @returns {Promise<boolean>} Success status
  */
 async function assignAccounts() {
@@ -1177,6 +1232,22 @@ async function assignAccounts() {
             setupDelay: CONNECTION_SETUP_DELAY
         });
 
+        // Create a sorted list of workers by current load (number of assigned accounts)
+        let workerLoadMap = new Map();
+        for (let worker of availableIMAPWorkers) {
+            let accountCount = workerAssigned.has(worker) ? workerAssigned.get(worker).size : 0;
+            workerLoadMap.set(worker, accountCount);
+        }
+
+        // Sort workers by load (ascending) for even distribution
+        let sortedWorkers = Array.from(workerLoadMap.entries())
+            .sort((a, b) => a[1] - b[1])
+            .map(entry => entry[0]);
+
+        // Calculate target accounts per worker for even distribution
+        let totalAccounts = assigned.size + unassigned.size;
+        let targetPerWorker = Math.ceil(totalAccounts / availableIMAPWorkers.size);
+
         // Assign each unassigned account
         for (let account of unassigned) {
             if (!availableIMAPWorkers.size) {
@@ -1184,8 +1255,37 @@ async function assignAccounts() {
                 break;
             }
 
-            // Use rendezvous hashing for consistent assignment
-            let worker = selectRendezvousNode(account, Array.from(availableIMAPWorkers));
+            let worker;
+
+            // Check if this is a reassignment after worker failure
+            // This happens when we have fewer available workers than configured
+            // or when reassignmentPending flag is set
+            let isReassignment = reassignmentPending || 
+                                (assigned.size > 0 && availableIMAPWorkers.size < config.workers.imap);
+
+            if (isReassignment) {
+                // Use rendezvous hashing for consistent reassignment after failures
+                worker = selectRendezvousNode(account, Array.from(availableIMAPWorkers));
+            } else {
+                // Use load-aware round-robin for initial assignment
+                // Find the least loaded worker that hasn't reached the target
+                worker = sortedWorkers.find(w => {
+                    let currentLoad = workerLoadMap.get(w) || 0;
+                    return currentLoad < targetPerWorker;
+                });
+
+                // If all workers reached target, use the least loaded one
+                if (!worker) {
+                    worker = sortedWorkers[0];
+                }
+
+                // Update the load map for next iteration
+                workerLoadMap.set(worker, (workerLoadMap.get(worker) || 0) + 1);
+                // Re-sort workers by updated load
+                sortedWorkers = Array.from(workerLoadMap.entries())
+                    .sort((a, b) => a[1] - b[1])
+                    .map(entry => entry[0]);
+            }
 
             // Track assignment
             if (!workerAssigned.has(worker)) {
@@ -1208,6 +1308,18 @@ async function assignAccounts() {
                 await new Promise(r => setTimeout(r, CONNECTION_SETUP_DELAY));
             }
         }
+
+        // Log final distribution for monitoring
+        let distribution = [];
+        for (let worker of availableIMAPWorkers) {
+            let count = workerAssigned.has(worker) ? workerAssigned.get(worker).size : 0;
+            distribution.push({ threadId: worker.threadId, accounts: count });
+        }
+        logger.info({
+            msg: 'Account assignment completed',
+            distribution,
+            totalAssigned: assigned.size
+        });
     } finally {
         assigning = false;
     }
@@ -2545,13 +2657,19 @@ const startApplication = async () => {
     let threadIds = await Promise.all(workerPromises);
     logger.info({ msg: 'IMAP workers started', workers: config.workers.imap, threadIds });
 
-    // Assign accounts to workers
+    // Mark that initial workers are loaded BEFORE assignment
+    // This prevents race conditions where late-ready workers trigger redundant assignments
+    imapInitialWorkersLoaded = true;
+
+    // Wait a brief moment to ensure all workers have sent their 'ready' messages
+    await new Promise(r => setTimeout(r, 100));
+
+    // Assign accounts to workers after all are ready
     try {
         await assignAccounts();
     } catch (err) {
         logger.error({ msg: 'Initial account assignment failed', n: 4, err });
     }
-    imapInitialWorkersLoaded = true;
 
     // Start webhook workers
     for (let i = 0; i < config.workers.webhooks; i++) {
