@@ -9180,7 +9180,7 @@ init()
         });
 
         parentPort.postMessage({ cmd: 'ready' });
-        
+
         // Start sending heartbeats to main thread
         setInterval(() => {
             try {

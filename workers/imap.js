@@ -87,11 +87,11 @@ class ConnectionHandler {
     async init() {
         // indicate that we are ready to process connections
         parentPort.postMessage({ cmd: 'ready' });
-        
+
         // Start sending heartbeats to main thread
         this.startHeartbeat();
     }
-    
+
     startHeartbeat() {
         // Send heartbeat every 10 seconds
         setInterval(() => {

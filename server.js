@@ -677,9 +677,9 @@ async function getThreadsInfo() {
                 workerMetadata.push({ type, worker });
 
                 // Use built-in timeout parameter of call function
-                const workerPromise = call(worker, { 
+                const workerPromise = call(worker, {
                     cmd: 'resource-usage',
-                    timeout: WORKER_STATS_TIMEOUT 
+                    timeout: WORKER_STATS_TIMEOUT
                 }).catch(err => ({
                     // Return error info instead of throwing
                     resourceUsageError: {
@@ -700,25 +700,31 @@ async function getThreadsInfo() {
     // Process results
     results.forEach((result, index) => {
         const { type, worker } = workerMetadata[index];
-        const resourceUsage = result.status === 'fulfilled' ? result.value : {
-            resourceUsageError: {
-                error: result.reason?.message || 'Unknown error',
-                code: 'PROMISE_REJECTED',
-                unresponsive: true
-            }
-        };
+        const resourceUsage =
+            result.status === 'fulfilled'
+                ? result.value
+                : {
+                      resourceUsageError: {
+                          error: result.reason?.message || 'Unknown error',
+                          code: 'PROMISE_REJECTED',
+                          unresponsive: true
+                      }
+                  };
 
-        let threadData = Object.assign({ 
-            type, 
-            threadId: worker.threadId, 
-            resourceLimits: worker.resourceLimits 
-        }, resourceUsage);
+        let threadData = Object.assign(
+            {
+                type,
+                threadId: worker.threadId,
+                resourceLimits: worker.resourceLimits
+            },
+            resourceUsage
+        );
 
         // Add account count for IMAP workers
         if (workerAssigned.has(worker)) {
             threadData.accounts = workerAssigned.get(worker).size;
         }
-        
+
         // Add health status
         threadData.healthStatus = workerHealthStatus.get(worker) || 'unknown';
         const lastHeartbeat = workerHeartbeats.get(worker);
@@ -726,7 +732,7 @@ async function getThreadsInfo() {
             threadData.lastHeartbeat = lastHeartbeat;
             threadData.timeSinceHeartbeat = Date.now() - lastHeartbeat;
         }
-        
+
         // Add circuit breaker status
         const circuit = getCircuitBreaker(worker);
         threadData.circuitState = circuit.state;
@@ -759,12 +765,12 @@ async function getThreadsInfo() {
 function handleWorkerHeartbeat(worker) {
     const now = Date.now();
     workerHeartbeats.set(worker, now);
-    
+
     // Mark as healthy if it was previously unhealthy
     const previousStatus = workerHealthStatus.get(worker);
     if (previousStatus === 'unhealthy' || previousStatus === 'critical') {
-        logger.info({ 
-            msg: 'Worker recovered', 
+        logger.info({
+            msg: 'Worker recovered',
             threadId: worker.threadId,
             type: workersMeta.get(worker)?.type
         });
@@ -778,19 +784,19 @@ function handleWorkerHeartbeat(worker) {
  */
 async function checkWorkerHealth() {
     const now = Date.now();
-    
+
     for (let [type, workerSet] of workers) {
         for (let worker of workerSet) {
             const lastHeartbeat = workerHeartbeats.get(worker);
             const currentStatus = workerHealthStatus.get(worker) || 'unknown';
-            
+
             if (!lastHeartbeat) {
                 // No heartbeat recorded yet, skip
                 continue;
             }
-            
+
             const timeSinceHeartbeat = now - lastHeartbeat;
-            
+
             if (timeSinceHeartbeat > HEARTBEAT_RESTART_TIMEOUT && currentStatus !== 'restarting') {
                 // Worker is critically unresponsive, restart it
                 logger.error({
@@ -799,9 +805,9 @@ async function checkWorkerHealth() {
                     type,
                     timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
                 });
-                
+
                 workerHealthStatus.set(worker, 'restarting');
-                
+
                 // Terminate the worker (this will trigger automatic restart)
                 try {
                     await worker.terminate();
@@ -821,7 +827,7 @@ async function checkWorkerHealth() {
                     type,
                     timeSinceHeartbeat: Math.round(timeSinceHeartbeat / 1000) + 's'
                 });
-                
+
                 workerHealthStatus.set(worker, 'unhealthy');
             }
         }
@@ -864,7 +870,7 @@ function getCircuitBreaker(worker) {
  */
 function recordCircuitSuccess(worker) {
     const circuit = getCircuitBreaker(worker);
-    
+
     if (circuit.state === 'half-open') {
         // Successful call in half-open state, close the circuit
         logger.info({
@@ -873,7 +879,7 @@ function recordCircuitSuccess(worker) {
             type: workersMeta.get(worker)?.type
         });
     }
-    
+
     // Reset circuit to closed state
     circuit.state = 'closed';
     circuit.failures = 0;
@@ -888,10 +894,10 @@ function recordCircuitSuccess(worker) {
 function recordCircuitFailure(worker) {
     const circuit = getCircuitBreaker(worker);
     const now = Date.now();
-    
+
     circuit.failures++;
     circuit.lastFailureTime = now;
-    
+
     if (circuit.state === 'half-open') {
         // Failed in half-open state, reopen the circuit
         circuit.state = 'open';
@@ -921,11 +927,11 @@ function recordCircuitFailure(worker) {
 function isCircuitOpen(worker) {
     const circuit = getCircuitBreaker(worker);
     const now = Date.now();
-    
+
     if (circuit.state === 'closed') {
         return false; // Circuit is closed, allow calls
     }
-    
+
     if (circuit.state === 'open') {
         // Check if enough time has passed to try half-open
         if (now - circuit.lastFailureTime > CIRCUIT_RESET_TIMEOUT) {
@@ -940,7 +946,7 @@ function isCircuitOpen(worker) {
         }
         return true; // Circuit is open, block calls
     }
-    
+
     if (circuit.state === 'half-open') {
         // Allow limited attempts in half-open state
         if (circuit.halfOpenAttempts < CIRCUIT_HALF_OPEN_ATTEMPTS) {
@@ -949,7 +955,7 @@ function isCircuitOpen(worker) {
         }
         return true; // Block additional calls until test succeeds
     }
-    
+
     return false;
 }
 
@@ -1079,12 +1085,12 @@ let spawnWorker = async type => {
 
                     // Don't reassign immediately - wait for the worker to restart
                     reassignmentPending = true;
-                    
+
                     // Clear any existing timer
                     if (reassignmentTimer) {
                         clearTimeout(reassignmentTimer);
                     }
-                    
+
                     // Set a failsafe timer - if worker doesn't restart in 10 seconds, reassign anyway
                     reassignmentTimer = setTimeout(() => {
                         if (reassignmentPending && unassigned && unassigned.size > 0) {
@@ -1098,8 +1104,8 @@ let spawnWorker = async type => {
                             assignAccounts().catch(err => logger.error({ msg: 'Unable to reassign accounts (failsafe)', err }));
                         }
                     }, 10000); // 10 second timeout
-                    
-                    logger.info({ 
+
+                    logger.info({
                         msg: 'Worker crashed, waiting for restart before reassignment',
                         accounts: accountList.size,
                         expectedWorkers: config.workers.imap,
@@ -1368,11 +1374,11 @@ let spawnWorker = async type => {
                         // IMAP worker is ready to accept accounts
                         availableIMAPWorkers.add(worker);
                         isOnline = true;
-                        
+
                         // Initialize heartbeat tracking
                         workerHeartbeats.set(worker, Date.now());
                         workerHealthStatus.set(worker, 'healthy');
-                        
+
                         resolve(worker.threadId);
 
                         if (imapInitialWorkersLoaded && reassignmentPending) {
@@ -1385,7 +1391,7 @@ let spawnWorker = async type => {
                                     reassignmentTimer = null;
                                 }
                                 reassignmentPending = false;
-                                
+
                                 if (unassigned && unassigned.size > 0) {
                                     logger.info({
                                         msg: 'All expected workers ready, reassigning unassigned accounts',
@@ -1411,24 +1417,24 @@ let spawnWorker = async type => {
                     if (message.cmd === 'ready') {
                         // API worker is ready
                         isOnline = true;
-                        
+
                         // Initialize heartbeat tracking
                         workerHeartbeats.set(worker, Date.now());
                         workerHealthStatus.set(worker, 'healthy');
-                        
+
                         resolve(worker.threadId);
                     }
                     break;
-                    
+
                 default:
                     // For all other worker types
                     if (message.cmd === 'ready') {
                         isOnline = true;
-                        
+
                         // Initialize heartbeat tracking
                         workerHeartbeats.set(worker, Date.now());
                         workerHealthStatus.set(worker, 'healthy');
-                        
+
                         resolve(worker.threadId);
                     }
                     break;
@@ -1452,7 +1458,7 @@ async function call(worker, message, transferList) {
         err.statusCode = 503;
         err.code = 'CircuitOpen';
         err.threadId = worker.threadId;
-        
+
         // For resource-usage calls, return error info instead of throwing
         if (message.cmd === 'resource-usage') {
             return {
@@ -1463,16 +1469,16 @@ async function call(worker, message, transferList) {
                 }
             };
         }
-        
+
         throw err;
     }
-    
+
     return new Promise((resolve, reject) => {
         // Generate unique message ID
         let mid = `${Date.now()}:${++mids}`;
 
         // Calculate timeout - use explicit timeout if provided, otherwise fall back to EENGINE_TIMEOUT
-        let ttl = (typeof message.timeout === 'number' && message.timeout > 0) ? message.timeout : (EENGINE_TIMEOUT || 0);
+        let ttl = typeof message.timeout === 'number' && message.timeout > 0 ? message.timeout : EENGINE_TIMEOUT || 0;
 
         // Set timeout handler
         let timer = setTimeout(() => {
@@ -1481,27 +1487,27 @@ async function call(worker, message, transferList) {
             err.code = 'Timeout';
             err.ttl = ttl;
             err.command = message;
-            
+
             // Record circuit breaker failure
             recordCircuitFailure(worker);
             callQueue.delete(mid);
-            
+
             reject(err);
         }, ttl);
 
         // Store callback info with circuit breaker tracking
-        callQueue.set(mid, { 
-            resolve: (result) => {
+        callQueue.set(mid, {
+            resolve: result => {
                 clearTimeout(timer);
                 recordCircuitSuccess(worker);
                 resolve(result);
             },
-            reject: (err) => {
+            reject: err => {
                 clearTimeout(timer);
                 recordCircuitFailure(worker);
                 reject(err);
             },
-            timer 
+            timer
         });
 
         try {
@@ -1584,8 +1590,7 @@ async function assignAccounts() {
             // Check if this is a reassignment after worker failure
             // This happens when we have fewer available workers than configured
             // or when reassignmentPending flag is set
-            let isReassignment = reassignmentPending || 
-                                (assigned.size > 0 && availableIMAPWorkers.size < config.workers.imap);
+            let isReassignment = reassignmentPending || (assigned.size > 0 && availableIMAPWorkers.size < config.workers.imap);
 
             if (isReassignment) {
                 // Use rendezvous hashing for consistent reassignment after failures
@@ -3036,7 +3041,7 @@ startApplication()
 
         redisPingTimer = setTimeout(checkRedisPing, REDIS_PING_TIMEOUT);
         redisPingTimer.unref();
-        
+
         // Start worker health monitoring
         startHealthMonitoring();
 

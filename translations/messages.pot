@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-08-28 07:42+0000\n"
+"POT-Creation-Date: 2025-08-28 13:25+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -242,57 +242,57 @@ msgid "Invalid API key for OpenAI"
 msgstr ""
 
 #: lib/routes-ui.js:5008
-#: lib/routes-ui.js:6960
-#: lib/routes-ui.js:6971
+#: lib/routes-ui.js:6963
+#: lib/routes-ui.js:6974
 msgid "Server hostname was not found"
 msgstr ""
 
 #: lib/routes-ui.js:5011
-#: lib/routes-ui.js:6963
-#: lib/routes-ui.js:6974
+#: lib/routes-ui.js:6966
+#: lib/routes-ui.js:6977
 msgid "Invalid username or password"
 msgstr ""
 
 #: lib/routes-ui.js:5015
-#: lib/routes-ui.js:6978
+#: lib/routes-ui.js:6981
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6707
-#: lib/routes-ui.js:6742
-#: lib/routes-ui.js:6857
-#: lib/routes-ui.js:6904
-#: lib/routes-ui.js:7133
-#: lib/routes-ui.js:7169
+#: lib/routes-ui.js:6710
+#: lib/routes-ui.js:6745
+#: lib/routes-ui.js:6860
+#: lib/routes-ui.js:6907
+#: lib/routes-ui.js:7136
+#: lib/routes-ui.js:7172
 #: workers/api.js:2346
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6767
-#: lib/routes-ui.js:6800
-#: lib/routes-ui.js:9719
+#: lib/routes-ui.js:6770
+#: lib/routes-ui.js:6803
+#: lib/routes-ui.js:9722
 msgid "Failed to validate request arguments"
 msgstr ""
 
-#: lib/routes-ui.js:6897
-#: lib/routes-ui.js:7162
+#: lib/routes-ui.js:6900
+#: lib/routes-ui.js:7165
 msgid "Failed to process account"
 msgstr ""
 
-#: lib/routes-ui.js:9682
+#: lib/routes-ui.js:9685
 #: lib/tools.js:795
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9692
-#: lib/routes-ui.js:9810
-#: lib/routes-ui.js:9827
-#: lib/routes-ui.js:9863
+#: lib/routes-ui.js:9695
+#: lib/routes-ui.js:9813
+#: lib/routes-ui.js:9830
+#: lib/routes-ui.js:9866
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/routes-ui.js:9821
-#: lib/routes-ui.js:9856
+#: lib/routes-ui.js:9824
+#: lib/routes-ui.js:9859
 msgid "Failed to process request"
 msgstr ""
 
