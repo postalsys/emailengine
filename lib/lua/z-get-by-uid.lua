@@ -26,7 +26,7 @@ if redis.call("EXISTS", listKey) == 1 then
     -- Check if list has results before accessing elements
     if #list >= 2 then
         local entry = list[1];
-        local actualUid = tonumber(list[2]) or 0;  -- Fixed: renamed to avoid shadowing parameter 'uid'
+        local actualUid = tonumber(list[2]) or 0;
 
         if entry ~= nil and entry ~= "" and actualUid > 0 then 
             -- Calculate sequence number based on UID position

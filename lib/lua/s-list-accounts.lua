@@ -62,7 +62,6 @@ for index, account in ipairs(list) do
     local strmatch = true
 
     if strsearch and strsearch  ~= '' then
-        -- Fixed: renamed variable to avoid shadowing loop variable 'account'
         local accountData = redis.call("HGET", prefix .. "iad:" .. account, "account") or ""; 
         local name = redis.call("HGET", prefix .. "iad:" .. account, "name") or ""; 
         local email = redis.call("HGET", prefix .. "iad:" .. account, "email") or "";

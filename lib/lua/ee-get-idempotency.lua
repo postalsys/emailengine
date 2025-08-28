@@ -34,7 +34,7 @@ local lastBucket = nil;
 for bucket in string.gmatch(buckets, "([^,]+)") do
     local bucketKey = bucketKeyPrefix .. bucket;
     if redis.call("HEXISTS", bucketKey, idempotencyKey) == 1 then
-        local existingValue = redis.call("HGET", bucketKey, idempotencyKey);  -- Fixed: use bucketKey instead of reconstructing
+        local existingValue = redis.call("HGET", bucketKey, idempotencyKey);
 
         local parsedValue = cjson.decode(existingValue);
         local existingStatus = parsedValue["status"];
