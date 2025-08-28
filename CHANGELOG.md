@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.55.0](https://github.com/postalsys/emailengine/compare/v2.54.5...v2.55.0) (2025-08-28)
+
+
+### Features
+
+* **health:** Add worker health monitoring with heartbeat system ([34724e8](https://github.com/postalsys/emailengine/commit/34724e876a021d6de30bffff54856bb9a2c6ef76))
+* **internals:** Add CPU monitoring for worker threads ([8aa9be5](https://github.com/postalsys/emailengine/commit/8aa9be5ab7a09c7d12745d2ddc3632da868d0bcb))
+* **resilience:** Add circuit breaker pattern for worker communication ([79ea27a](https://github.com/postalsys/emailengine/commit/79ea27aed0ae7c5c856746809d43f53bacf3ed2b))
+
+
+### Bug Fixes
+
+* **flush:** Allow flushing non-connected accounts ([07eebc5](https://github.com/postalsys/emailengine/commit/07eebc55ba2d4341d92fb7a1d9078449750b2a7c))
+* **imap:** Fix uneven IMAP worker thread distribution ([339f0e0](https://github.com/postalsys/emailengine/commit/339f0e0b8f7a382a42c29460526a9ddfac91a0fe))
+* **imap:** Prevent 100% CPU usage from reconnection loops ([4d1bf7d](https://github.com/postalsys/emailengine/commit/4d1bf7da53d299f0b203eb09b4ec790848c6cf09))
+* **internals:** Handle unresponsive workers gracefully in admin internals page ([2a2d94b](https://github.com/postalsys/emailengine/commit/2a2d94b916e32b7a5f8a2741dbd8fbb265b98605))
+* **lint:** Remove unused HEARTBEAT_INTERVAL constant and add npm lint script ([19209ab](https://github.com/postalsys/emailengine/commit/19209ab254bfa1262fa5e34f994db51ebca61f5a))
+* **lua:** Fix bugs and add documentation to Redis Lua scripts ([1c4889f](https://github.com/postalsys/emailengine/commit/1c4889f9e055e3c9b16b11513583abc494c92a15))
+
 ## [2.54.5](https://github.com/postalsys/emailengine/compare/v2.54.4...v2.54.5) (2025-08-26)
 
 
