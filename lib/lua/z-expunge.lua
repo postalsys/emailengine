@@ -1,3 +1,25 @@
+--[[
+Script: z-expunge.lua
+Purpose: Removes a message from a mailbox sorted set and updates message count
+
+KEYS:
+  [1] listKey - Sorted set key containing messages (score = UID)
+  [2] mailboxKey - Hash key containing mailbox metadata
+
+ARGV:
+  [1] seq - Message sequence number (1-based index, 0 to ignore)
+  [2] uid - Message UID (0 to ignore)
+
+Returns:
+  Array with [uid, entry] if message was removed
+  nil if message not found or invalid input
+  
+Notes:
+  - Either seq or uid must be provided (>0)
+  - If both are provided, they must match the same message
+  - Decrements the 'messages' count in mailboxKey upon successful removal
+--]]
+
 local listKey = KEYS[1];
 local mailboxKey = KEYS[2];
 

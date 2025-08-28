@@ -1,5 +1,25 @@
--- NB!
--- This script is not compatible with Redis clustering if using account id as the hash slot key
+--[[
+Script: s-list-accounts.lua
+Purpose: Lists and filters accounts from a Redis set with pagination and search
+
+KEYS:
+  [1] listKey - Set key containing account IDs
+
+ARGV:
+  [1] filterState - Account state to filter by ('*' for all states)
+  [2] skip - Number of matching entries to skip (pagination offset)
+  [3] count - Maximum number of entries to return
+  [4] prefix - Key prefix for account data hashes (e.g., "ee:")
+  [5] strsearch - Case-insensitive substring to search in account, name, or email fields
+
+Returns:
+  Array with:
+    [1] Total number of matching entries
+    [2] Skip value used
+    [3] Array of account data (HGETALL results for each matching account)
+
+NOTE: This script is not compatible with Redis clustering if using account id as the hash slot key
+--]]
 
 local listKey = KEYS[1];
 
@@ -9,10 +29,11 @@ local count = tonumber(ARGV[3]) or 0;
 local prefix = ARGV[4];
 local strsearch = ARGV[5];
 
-local total = redis.call("SCARD", listKey);
+local total = redis.call("SCARD", listKey);  -- Get total account count
 
-local list = redis.call("SMEMBERS", listKey);
+local list = redis.call("SMEMBERS", listKey);  -- Load all account IDs
 
+-- Early return if offset exceeds total
 if skip >= total then
 	return {total,skip, {}}
 end
@@ -21,58 +42,60 @@ local shouldSkip = skip;
 local matching = 0;
 local result = {}
 
--- sort list by account IDs
+-- Sort list by account IDs for consistent ordering
 table.sort(list);
 
 local listAll = false;
 if strsearch and strsearch  ~= '' then
-    listAll = true;
+    listAll = true;  -- Need to check all accounts when searching
 end
 
 for index, account in ipairs(list) do
 
     local state;
     if filterState ~= '*' then
-        -- load only if we actually need to compare account state value
+        -- Load state only if filtering by state
         state = redis.call("HGET", prefix .. "iad:" .. account, "state"); 
     end
 
-    -- string search match defaults to true
+    -- String search match defaults to true
     local strmatch = true
 
     if strsearch and strsearch  ~= '' then
-        local account = redis.call("HGET", prefix .. "iad:" .. account, "account") or ""; 
+        -- Fixed: renamed variable to avoid shadowing loop variable 'account'
+        local accountData = redis.call("HGET", prefix .. "iad:" .. account, "account") or ""; 
         local name = redis.call("HGET", prefix .. "iad:" .. account, "name") or ""; 
         local email = redis.call("HGET", prefix .. "iad:" .. account, "email") or "";
 
-        if string.find(string.lower(account), strsearch, 0, true) or string.find(string.lower(name), strsearch, 0, true) or string.find(string.lower(email), strsearch, 0, true) then
+        -- Search for substring in account, name, or email fields
+        if string.find(string.lower(accountData), strsearch, 0, true) or string.find(string.lower(name), strsearch, 0, true) or string.find(string.lower(email), strsearch, 0, true) then
             strmatch = true
         else
             strmatch = false
         end
     end
 
-    if (filterState == '*' or filterState == state) and strmatch then
-        -- state matches, can use this entry for listing        
+    -- Check if account matches filter criteria
+    if (filterState == '*' or filterState == state) and strmatch then      
 
         if shouldSkip == 0 then
-            -- enough entries skipped, can use
+            -- Pagination offset reached, can include this entry
             if #result < count then
-                -- now we can actually use this record
+                -- Add account data to result
                 result[#result + 1] = redis.call("HGETALL", prefix .. "iad:" .. account);
             else
-                -- max number entries in result buffer
+                -- Result buffer full
                 if filterState == '*' and listAll == false then
-                    -- no point looking further, we already know the total count
+                    -- Optimization: skip remaining when not searching
                     matching = total;
                     break;
                 end
             end
         else
-            shouldSkip = shouldSkip - 1;
+            shouldSkip = shouldSkip - 1;  -- Decrement skip counter
         end
 
-        matching = matching + 1;
+        matching = matching + 1;  -- Count matching entries
     end    
 end
 
