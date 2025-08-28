@@ -15,6 +15,7 @@
                     <th>Thread Type</th>
                     <th class="text-right">ID</th>
                     <th>Uptime</th>
+                    <th class="text-right">CPU</th>
                     <th class="text-right">Memory</th>
                     <th class="text-right">Accounts</th>
                     <th class="text-right">Sent</th>
@@ -25,7 +26,7 @@
 
             <tbody>
                 {{#each threads}}
-                <tr{{#if isUnresponsive}} class="table-danger"{{/if}}>
+                <tr{{#if isUnresponsive}} class="table-danger"{{else if isHighCpu}} class="table-warning"{{/if}}>
                     <td>{{description}}
 
                         {{#if config}}
@@ -47,6 +48,15 @@
                     <td class="text-right">{{formatInteger threadId userLocale}}</td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
+                    </td>
+                    <td class="text-right">
+                        {{#if isUnresponsive}}
+                        <span class="text-muted">—</span>
+                        {{else if cpuPercent}}
+                        <span class="{{#if isHighCpu}}text-danger font-weight-bold{{/if}}">{{cpuPercent}}%</span>
+                        {{else}}
+                        <span class="text-muted">—</span>
+                        {{/if}}
                     </td>
                     <td class="text-right">
                         {{#if isUnresponsive}}
