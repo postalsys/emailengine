@@ -4,25 +4,25 @@ This guide covers everything from local development to production deployment of 
 
 ## Table of Contents
 
--   [Quick Start](#quick-start)
--   [Configuration](#configuration)
--   [Production Deployment](#production-deployment)
--   [Operations & Maintenance](#operations--maintenance)
--   [Troubleshooting](#troubleshooting)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Production Deployment](#production-deployment)
+- [Operations & Maintenance](#operations--maintenance)
+- [Troubleshooting](#troubleshooting)
 
 ## Quick Start
 
 ### Prerequisites
 
--   Docker Engine 20.10.0+ and Docker Compose 2.0.0+
--   **System Requirements**:
-    -   Development: 4GB RAM minimum
-    -   Production: 8GB RAM minimum, 16GB+ recommended
--   **Critical Notes**:
-    -   No Docker resource limits are imposed
-    -   Redis has NO memory limit and uses 'noeviction' policy (database mode)
-    -   **MUST monitor memory usage** to prevent system OOM
--   **Monitoring**: Use `docker stats` and Redis INFO memory regularly
+- Docker Engine 20.10.0+ and Docker Compose 2.0.0+
+- **System Requirements**:
+    - Development: 4GB RAM minimum
+    - Production: 8GB RAM minimum, 16GB+ recommended
+- **Critical Notes**:
+    - No Docker resource limits are imposed
+    - Redis has NO memory limit and uses 'noeviction' policy (database mode)
+    - **MUST monitor memory usage** to prevent system OOM
+- **Monitoring**: Use `docker stats` and Redis INFO memory regularly
 
 ### Development Setup
 
@@ -40,10 +40,10 @@ docker-compose up
 
 Development mode features:
 
--   No authentication required
--   Services accessible from any network
--   Debug logging enabled
--   Minimal resource requirements
+- No authentication required
+- Services accessible from any network
+- Debug logging enabled
+- Minimal resource requirements
 
 ### Production Setup (5 minutes)
 
@@ -59,10 +59,10 @@ docker-compose up -d
 
 Production mode features:
 
--   Redis authentication required
--   Services bound to localhost only
--   Optimized logging and persistence
--   Health checks and resource limits
+- Redis authentication required
+- Services bound to localhost only
+- Optimized logging and persistence
+- Health checks and resource limits
 
 ## Configuration
 
@@ -226,11 +226,11 @@ docker-compose logs --tail=100 emailengine | grep ERROR
 
 #### Key Metrics to Monitor
 
--   CPU usage < 80%
--   Memory usage < 90%
--   Redis memory usage < max configured
--   API response times
--   Queue lengths
+- CPU usage < 80%
+- Memory usage < 90%
+- Redis memory usage < max configured
+- API response times
+- Queue lengths
 
 ### Backup Strategy
 
@@ -271,7 +271,7 @@ Add to crontab:
 
 ### Updates
 
-#### Zero-Downtime Update
+#### Update
 
 ```bash
 # Pull latest version
@@ -298,12 +298,12 @@ docker-compose up -d --no-deps emailengine
 
 #### System Requirements by Deployment Size
 
-| Deployment Size | Accounts | Min RAM | Recommended RAM | CPU Cores | Workers |
-| --------------- | -------- | ------- | --------------- | --------- | ------- |
-| Small           | < 100    | 8GB     | 16GB            | 4         | 4       |
-| Medium          | 100-500  | 16GB    | 32GB            | 8         | 8       |
-| Large           | 500-2000 | 32GB    | 64GB            | 16        | 16      |
-| Enterprise      | 2000+    | 64GB    | 128GB+          | 24+       | 24      |
+| Accounts | Min RAM | Recommended RAM | CPU Cores | Workers |
+| -------- | ------- | --------------- | --------- | ------- |
+| < 100    | 8GB     | 16GB            | 4         | 4       |
+| 100-500  | 16GB    | 32GB            | 8         | 8       |
+| 500-2000 | 32GB    | 64GB            | 16        | 16      |
+| 2000+    | 64GB    | 128GB+          | 24+       | 24      |
 
 #### Configuration Guidelines
 
@@ -322,10 +322,10 @@ EENGINE_WORKERS=8
 
 #### Performance Notes
 
--   EmailEngine will automatically use available CPU and RAM
--   No artificial limits are imposed by default
--   **Redis operates as a database** with no memory limits and no eviction
--   Workers should match CPU cores (minimum 4, maximum 24)
+- EmailEngine will automatically use available CPU and RAM
+- No artificial limits are imposed by default
+- **Redis operates as a database** with no memory limits and no eviction
+- Workers should match CPU cores (minimum 4, maximum 24)
 
 #### Monitoring Recommendations
 
@@ -421,24 +421,24 @@ docker-compose up -d
 
 ### Before Production
 
--   [ ] Strong EENGINE_SECRET (32+ characters)
--   [ ] Strong REDIS_PASSWORD (32+ characters)
--   [ ] Services bound to localhost only
--   [ ] Reverse proxy with TLS configured
--   [ ] Firewall enabled (ports 80/443 only)
--   [ ] Backup automation configured
--   [ ] **Memory monitoring in place** (critical - Redis has no limits)
--   [ ] Log rotation enabled
--   [ ] Sufficient system RAM for Redis growth
--   [ ] Swap space configured as safety measure
+- [ ] Strong EENGINE_SECRET (32+ characters)
+- [ ] Strong REDIS_PASSWORD (32+ characters)
+- [ ] Services bound to localhost only
+- [ ] Reverse proxy with TLS configured
+- [ ] Firewall enabled (ports 80/443 only)
+- [ ] Backup automation configured
+- [ ] **Memory monitoring in place** (critical - Redis has no limits)
+- [ ] Log rotation enabled
+- [ ] Sufficient system RAM for Redis growth
+- [ ] Swap space configured as safety measure
 
 ### Ongoing Security
 
--   Rotate API keys quarterly
--   Update Docker images monthly
--   Review access logs weekly
--   Test backup restoration monthly
--   Security scan quarterly
+- Rotate API keys quarterly
+- Update Docker images monthly
+- Review access logs weekly
+- Test backup restoration monthly
+- Security scan quarterly
 
 ## Quick Reference
 
@@ -470,10 +470,10 @@ docker-compose exec redis redis-cli -a "$REDIS_PASSWORD" BGSAVE
 
 ### File Locations
 
--   Configuration: `/opt/emailengine/.env`
--   Compose file: `/opt/emailengine/docker-compose.yml`
--   Redis data: Docker volume `emailengine_redis-data`
--   Logs: `docker-compose logs`
+- Configuration: `/opt/emailengine/.env`
+- Compose file: `/opt/emailengine/docker-compose.yml`
+- Redis data: Docker volume `emailengine_redis-data`
+- Logs: `docker-compose logs`
 
 ### Environment Switching
 
@@ -490,6 +490,6 @@ docker-compose restart
 
 ## Support
 
--   Documentation: https://emailengine.app/
--   API Reference: https://api.emailengine.app/
--   Issues: https://github.com/postalsys/emailengine/issues
+- Documentation: https://emailengine.app/
+- API Reference: https://api.emailengine.app/
+- Issues: https://github.com/postalsys/emailengine/issues
