@@ -25,7 +25,7 @@
 
             <tbody>
                 {{#each threads}}
-                <tr>
+                <tr{{#if isUnresponsive}} class="table-danger"{{/if}}>
                     <td>{{description}}
 
                         {{#if config}}
@@ -34,17 +34,30 @@
                                 class="fas fa-info-circle"></i></a>
                         {{/if}}
 
+                        {{#if isUnresponsive}}
+                        <span class="badge badge-danger">Unresponsive</span>
+                        {{#if errorMessage}}
+                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
+                            data-title="Error" data-content="{{errorMessage}}"><i
+                                class="fas fa-exclamation-triangle"></i></a>
+                        {{/if}}
+                        {{/if}}
+
                     </td>
                     <td class="text-right">{{formatInteger threadId userLocale}}</td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                     </td>
                     <td class="text-right">
+                        {{#if isUnresponsive}}
+                        <span class="text-danger font-weight-bold">{{heapUsed}}</span>
+                        {{else}}
                         {{heapUsed}}
 
                         <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
                             data-title="Memory Usage" data-content="Using {{heapRelative}} of {{heapMax}} maximum"><i
                                 class="fas fa-info-circle"></i></a>
+                        {{/if}}
                     </td>
                     <td class="text-right">{{formatInteger accounts userLocale}}</td>
                     <td class="text-right">{{formatInteger called userLocale}}</td>

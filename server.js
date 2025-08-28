@@ -650,40 +650,70 @@ async function getThreadsInfo() {
     // Start with main thread info
     let threadsInfo = [Object.assign({ type: 'main', isMain: true, threadId: 0, online: NOW }, threadStats.usage())];
 
-    // Collect info from all worker threads
+    // Define a short timeout for unresponsive workers (500ms)
+    const WORKER_STATS_TIMEOUT = 500;
+
+    // Collect info from all worker threads with timeout handling
+    const workerPromises = [];
+    const workerMetadata = [];
+
     for (let [type, workerSet] of workers) {
         if (workerSet && workerSet.size) {
             for (let worker of workerSet) {
-                let resourceUsage;
-                try {
-                    // Request resource usage from worker
-                    resourceUsage = await call(worker, { cmd: 'resource-usage' });
-                } catch (err) {
-                    resourceUsage = {
-                        resourceUsageError: {
-                            error: err.message,
-                            code: err.code
-                        }
-                    };
-                }
+                // Store metadata for later processing
+                workerMetadata.push({ type, worker });
 
-                let threadData = Object.assign({ type, threadId: worker.threadId, resourceLimits: worker.resourceLimits }, resourceUsage);
+                // Use built-in timeout parameter of call function
+                const workerPromise = call(worker, { 
+                    cmd: 'resource-usage',
+                    timeout: WORKER_STATS_TIMEOUT 
+                }).catch(err => ({
+                    // Return error info instead of throwing
+                    resourceUsageError: {
+                        error: err.message,
+                        code: err.code || 'TIMEOUT',
+                        unresponsive: err.code === 'Timeout'
+                    }
+                }));
 
-                // Add account count for IMAP workers
-                if (workerAssigned.has(worker)) {
-                    threadData.accounts = workerAssigned.get(worker).size;
-                }
-
-                // Add worker metadata
-                let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
-                for (let key of Object.keys(workerMeta)) {
-                    threadData[key] = workerMeta[key];
-                }
-
-                threadsInfo.push(threadData);
+                workerPromises.push(workerPromise);
             }
         }
     }
+
+    // Wait for all workers to respond or timeout using allSettled
+    const results = await Promise.allSettled(workerPromises);
+
+    // Process results
+    results.forEach((result, index) => {
+        const { type, worker } = workerMetadata[index];
+        const resourceUsage = result.status === 'fulfilled' ? result.value : {
+            resourceUsageError: {
+                error: result.reason?.message || 'Unknown error',
+                code: 'PROMISE_REJECTED',
+                unresponsive: true
+            }
+        };
+
+        let threadData = Object.assign({ 
+            type, 
+            threadId: worker.threadId, 
+            resourceLimits: worker.resourceLimits 
+        }, resourceUsage);
+
+        // Add account count for IMAP workers
+        if (workerAssigned.has(worker)) {
+            threadData.accounts = workerAssigned.get(worker).size;
+        }
+
+        // Add worker metadata
+        let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+        for (let key of Object.keys(workerMeta)) {
+            threadData[key] = workerMeta[key];
+        }
+
+        threadsInfo.push(threadData);
+    });
 
     // Add human-readable descriptions and configuration info
     threadsInfo.forEach(threadInfo => {
@@ -1164,8 +1194,8 @@ async function call(worker, message, transferList) {
         // Generate unique message ID
         let mid = `${Date.now()}:${++mids}`;
 
-        // Calculate timeout
-        let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
+        // Calculate timeout - use explicit timeout if provided, otherwise fall back to EENGINE_TIMEOUT
+        let ttl = (typeof message.timeout === 'number' && message.timeout > 0) ? message.timeout : (EENGINE_TIMEOUT || 0);
 
         // Set timeout handler
         let timer = setTimeout(() => {
