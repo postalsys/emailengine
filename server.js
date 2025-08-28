@@ -580,7 +580,6 @@ let availableIMAPWorkers = new Set(); // IMAP workers ready to accept accounts
 // Worker health monitoring
 let workerHeartbeats = new WeakMap(); // Map of worker -> last heartbeat timestamp
 let workerHealthStatus = new WeakMap(); // Map of worker -> health status
-const HEARTBEAT_INTERVAL = 10 * 1000; // 10 seconds
 const HEARTBEAT_TIMEOUT = 30 * 1000; // 30 seconds before marking unhealthy
 const HEARTBEAT_RESTART_TIMEOUT = 60 * 1000; // 60 seconds before auto-restart
 

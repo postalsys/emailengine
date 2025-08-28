@@ -11,6 +11,7 @@
         "single": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_SECRET=your-encryption-key EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:9999/10' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.single.txt | pino-pretty",
         "gmail": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_SECRET=your-encryption-key EENGINE_WORKERS=2 EENGINE_CORS_ORIGIN='*' node --inspect server --dbs.redis='redis://127.0.0.1:6379/11' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.gmail.txt | pino-pretty",
         "test": "NODE_ENV=test grunt",
+        "lint": "npx eslint lib/**/*.js workers/**/*.js server.js Gruntfile.js",
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
