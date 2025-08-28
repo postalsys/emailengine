@@ -78,6 +78,10 @@ class ConnectionHandler {
         this.mids = 0;
 
         this.accounts = new Map();
+        
+        // Reconnection metrics tracking
+        this.reconnectMetrics = new Map(); // Track metrics per account
+        this.metricsWindow = 60000; // 1-minute window
     }
 
     async init() {
@@ -650,6 +654,48 @@ class ConnectionHandler {
             },
             contentType: 'message/rfc822'
         };
+    }
+
+    /**
+     * Track reconnection attempts for monitoring (without blocking)
+     * @param {string} account - Account identifier
+     */
+    trackReconnection(account) {
+        const now = Date.now();
+        const metrics = this.reconnectMetrics.get(account) || {
+            attempts: [],
+            warnings: 0
+        };
+        
+        // Clean old attempts outside window
+        metrics.attempts = metrics.attempts.filter(t => now - t < this.metricsWindow);
+        metrics.attempts.push(now);
+        
+        // Log warning if excessive reconnections
+        if (metrics.attempts.length > 20) { // More than 20 per minute
+            metrics.warnings++;
+            logger.warn({
+                msg: 'Excessive reconnection rate detected',
+                account,
+                rate: `${metrics.attempts.length}/min`,
+                totalWarnings: metrics.warnings
+            });
+            
+            // Emit metrics for monitoring/alerting
+            try {
+                parentPort.postMessage({
+                    cmd: 'metrics',
+                    key: 'imap.reconnect.excessive',
+                    method: 'inc',
+                    args: [1],
+                    meta: { account }
+                });
+            } catch (err) {
+                logger.error({ msg: 'Failed to send metrics', err });
+            }
+        }
+        
+        this.reconnectMetrics.set(account, metrics);
     }
 
     async getAttachment(message) {
