@@ -584,6 +584,12 @@ const HEARTBEAT_INTERVAL = 10 * 1000; // 10 seconds
 const HEARTBEAT_TIMEOUT = 30 * 1000; // 30 seconds before marking unhealthy
 const HEARTBEAT_RESTART_TIMEOUT = 60 * 1000; // 60 seconds before auto-restart
 
+// Circuit breaker for worker communication
+let workerCircuitBreakers = new WeakMap(); // Map of worker -> circuit breaker state
+const CIRCUIT_FAILURE_THRESHOLD = 3; // Open circuit after 3 failures
+const CIRCUIT_RESET_TIMEOUT = 30 * 1000; // Try to close circuit after 30s
+const CIRCUIT_HALF_OPEN_ATTEMPTS = 1; // Number of test requests in half-open state
+
 // Suspended worker types (when no license is active)
 let suspendedWorkerTypes = new Set();
 
@@ -720,6 +726,11 @@ async function getThreadsInfo() {
             threadData.lastHeartbeat = lastHeartbeat;
             threadData.timeSinceHeartbeat = Date.now() - lastHeartbeat;
         }
+        
+        // Add circuit breaker status
+        const circuit = getCircuitBreaker(worker);
+        threadData.circuitState = circuit.state;
+        threadData.circuitFailures = circuit.failures;
 
         // Add worker metadata
         let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
@@ -827,6 +838,119 @@ function startHealthMonitoring() {
             logger.error({ msg: 'Worker health check failed', err });
         });
     }, 5000);
+}
+
+/**
+ * Get or initialize circuit breaker state for a worker
+ * @param {Worker} worker - The worker thread
+ * @returns {Object} Circuit breaker state
+ */
+function getCircuitBreaker(worker) {
+    if (!workerCircuitBreakers.has(worker)) {
+        workerCircuitBreakers.set(worker, {
+            state: 'closed', // closed, open, half-open
+            failures: 0,
+            lastFailureTime: null,
+            lastAttemptTime: null,
+            halfOpenAttempts: 0
+        });
+    }
+    return workerCircuitBreakers.get(worker);
+}
+
+/**
+ * Record a successful call to a worker
+ * @param {Worker} worker - The worker thread
+ */
+function recordCircuitSuccess(worker) {
+    const circuit = getCircuitBreaker(worker);
+    
+    if (circuit.state === 'half-open') {
+        // Successful call in half-open state, close the circuit
+        logger.info({
+            msg: 'Circuit breaker closed after successful test',
+            threadId: worker.threadId,
+            type: workersMeta.get(worker)?.type
+        });
+    }
+    
+    // Reset circuit to closed state
+    circuit.state = 'closed';
+    circuit.failures = 0;
+    circuit.lastFailureTime = null;
+    circuit.halfOpenAttempts = 0;
+}
+
+/**
+ * Record a failed call to a worker
+ * @param {Worker} worker - The worker thread
+ */
+function recordCircuitFailure(worker) {
+    const circuit = getCircuitBreaker(worker);
+    const now = Date.now();
+    
+    circuit.failures++;
+    circuit.lastFailureTime = now;
+    
+    if (circuit.state === 'half-open') {
+        // Failed in half-open state, reopen the circuit
+        circuit.state = 'open';
+        circuit.halfOpenAttempts = 0;
+        logger.warn({
+            msg: 'Circuit breaker reopened after failed test',
+            threadId: worker.threadId,
+            type: workersMeta.get(worker)?.type
+        });
+    } else if (circuit.failures >= CIRCUIT_FAILURE_THRESHOLD && circuit.state === 'closed') {
+        // Threshold reached, open the circuit
+        circuit.state = 'open';
+        logger.warn({
+            msg: 'Circuit breaker opened due to failures',
+            threadId: worker.threadId,
+            type: workersMeta.get(worker)?.type,
+            failures: circuit.failures
+        });
+    }
+}
+
+/**
+ * Check if circuit breaker allows a call to the worker
+ * @param {Worker} worker - The worker thread
+ * @returns {boolean} Whether the call is allowed
+ */
+function isCircuitOpen(worker) {
+    const circuit = getCircuitBreaker(worker);
+    const now = Date.now();
+    
+    if (circuit.state === 'closed') {
+        return false; // Circuit is closed, allow calls
+    }
+    
+    if (circuit.state === 'open') {
+        // Check if enough time has passed to try half-open
+        if (now - circuit.lastFailureTime > CIRCUIT_RESET_TIMEOUT) {
+            circuit.state = 'half-open';
+            circuit.halfOpenAttempts = 0;
+            logger.info({
+                msg: 'Circuit breaker entering half-open state',
+                threadId: worker.threadId,
+                type: workersMeta.get(worker)?.type
+            });
+            return false; // Allow one test call
+        }
+        return true; // Circuit is open, block calls
+    }
+    
+    if (circuit.state === 'half-open') {
+        // Allow limited attempts in half-open state
+        if (circuit.halfOpenAttempts < CIRCUIT_HALF_OPEN_ATTEMPTS) {
+            circuit.halfOpenAttempts++;
+            return false; // Allow test call
+        }
+        return true; // Block additional calls until test succeeds
+    }
+    
+    return false;
 }
 
 /**
@@ -1322,6 +1446,27 @@ let spawnWorker = async type => {
  * @throws {Error} Timeout or communication error
  */
 async function call(worker, message, transferList) {
+    // Check circuit breaker first
+    if (isCircuitOpen(worker)) {
+        const err = new Error('Circuit breaker is open - worker is unresponsive');
+        err.statusCode = 503;
+        err.code = 'CircuitOpen';
+        err.threadId = worker.threadId;
+        
+        // For resource-usage calls, return error info instead of throwing
+        if (message.cmd === 'resource-usage') {
+            return {
+                resourceUsageError: {
+                    error: err.message,
+                    code: err.code,
+                    circuitOpen: true
+                }
+            };
+        }
+        
+        throw err;
+    }
+    
     return new Promise((resolve, reject) => {
         // Generate unique message ID
         let mid = `${Date.now()}:${++mids}`;
@@ -1336,11 +1481,28 @@ async function call(worker, message, transferList) {
             err.code = 'Timeout';
             err.ttl = ttl;
             err.command = message;
+            
+            // Record circuit breaker failure
+            recordCircuitFailure(worker);
+            callQueue.delete(mid);
+            
             reject(err);
         }, ttl);
 
-        // Store callback info
-        callQueue.set(mid, { resolve, reject, timer });
+        // Store callback info with circuit breaker tracking
+        callQueue.set(mid, { 
+            resolve: (result) => {
+                clearTimeout(timer);
+                recordCircuitSuccess(worker);
+                resolve(result);
+            },
+            reject: (err) => {
+                clearTimeout(timer);
+                recordCircuitFailure(worker);
+                reject(err);
+            },
+            timer 
+        });
 
         try {
             postMessage(
