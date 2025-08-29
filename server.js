@@ -70,6 +70,7 @@ const {
     threadStats,
     retryAgent
 } = require('./lib/tools');
+const MetricsCollector = require('./lib/metrics-collector');
 
 // Import constants
 const {
@@ -187,6 +188,9 @@ config['imap-proxy'] = config['imap-proxy'] || {
 
 // Application start timestamp
 const NOW = Date.now();
+
+// Initialize metrics collector (will be configured and started later)
+let metricsCollector = null;
 
 // Timeout configuration
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
@@ -659,6 +663,14 @@ let updateServerState = async (type, state, payload) => {
  * @returns {Promise<Array>} Array of thread information objects
  */
 async function getThreadsInfo() {
+    // Use metrics collector if available
+    if (metricsCollector) {
+        return await metricsCollector.getThreadsInfo();
+    }
+    
+    // Fallback to original implementation if collector not initialized
+    // This should only happen during startup or if collector fails
+    
     // Start with main thread info
     let threadsInfo = [Object.assign({ type: 'main', isMain: true, threadId: 0, online: NOW }, threadStats.usage())];
 
@@ -3021,6 +3033,53 @@ const startApplication = async () => {
     if (await settings.get('imapProxyServerEnabled')) {
         await spawnWorker('imapProxy');
     }
+    
+    // Initialize and start the metrics collector after all workers are ready
+    metricsCollector = new MetricsCollector({
+        logger,
+        cacheInterval: 10 * 1000, // 10 seconds
+        workerTimeout: 500, // 500ms timeout per worker
+        delayBetweenWorkers: 50, // 50ms delay between worker queries
+        startTime: NOW,
+        
+        // Provide callbacks to access server state
+        getWorkers: () => workers,
+        callWorker: (worker, message) => call(worker, message),
+        getWorkerMetadata: (worker) => {
+            const metadata = {};
+            
+            // Add account count for IMAP workers
+            if (workerAssigned.has(worker)) {
+                metadata.accounts = workerAssigned.get(worker).size;
+            }
+            
+            // Add health status
+            metadata.healthStatus = workerHealthStatus.get(worker) || 'unknown';
+            const lastHeartbeat = workerHeartbeats.get(worker);
+            if (lastHeartbeat) {
+                metadata.lastHeartbeat = lastHeartbeat;
+                metadata.timeSinceHeartbeat = Date.now() - lastHeartbeat;
+            }
+            
+            // Add circuit breaker status
+            const circuit = getCircuitBreaker(worker);
+            metadata.circuitState = circuit.state;
+            metadata.circuitFailures = circuit.failures;
+            
+            // Add worker metadata
+            let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
+            for (let key of Object.keys(workerMeta)) {
+                metadata[key] = workerMeta[key];
+            }
+            
+            return metadata;
+        }
+    });
+    
+    // Start the background collection
+    metricsCollector.start();
+    
+    logger.info({ msg: 'Background metrics collector initialized and started' });
 };
 
 // Start the application
