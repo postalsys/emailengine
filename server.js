@@ -126,7 +126,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf } = require('./lib/db');
+const { redis, queueConf, setReconnectionHandler } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -1539,6 +1539,79 @@ async function call(worker, message, transferList) {
             return reject(err);
         }
     });
+}
+
+/**
+ * Reassign disconnected accounts after Redis recovery
+ * Identifies accounts in disconnected state and triggers reassignment
+ */
+async function reassignDisconnectedAccounts() {
+    try {
+        logger.info({ msg: 'Starting disconnected account reassignment after Redis recovery' });
+        
+        if (!availableIMAPWorkers.size) {
+            logger.warn({ msg: 'No IMAP workers available for reassignment' });
+            return;
+        }
+        
+        // Get all accounts
+        let allAccounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
+        if (!allAccounts || !allAccounts.length) {
+            return;
+        }
+        
+        // Find disconnected accounts
+        let disconnectedAccounts = [];
+        for (let account of allAccounts) {
+            let accountKey = `${REDIS_PREFIX}iad:${account}`;
+            let state = await redis.hget(accountKey, 'state');
+            
+            if (state === 'disconnected' || state === 'connecting' || !state) {
+                disconnectedAccounts.push(account);
+            }
+        }
+        
+        if (disconnectedAccounts.length === 0) {
+            logger.info({ msg: 'No disconnected accounts found after Redis recovery' });
+            return;
+        }
+        
+        logger.info({ 
+            msg: 'Found disconnected accounts to reassign', 
+            count: disconnectedAccounts.length,
+            accounts: disconnectedAccounts.slice(0, 10) // Log first 10 for debugging
+        });
+        
+        // Add disconnected accounts to unassigned set
+        if (!unassigned) {
+            unassigned = new Set();
+        }
+        
+        for (let account of disconnectedAccounts) {
+            // Remove from assigned if present
+            if (assigned.has(account)) {
+                let currentWorker = assigned.get(account);
+                if (workerAssigned.has(currentWorker)) {
+                    workerAssigned.get(currentWorker).delete(account);
+                }
+                assigned.delete(account);
+            }
+            
+            // Add to unassigned
+            unassigned.add(account);
+        }
+        
+        // Trigger reassignment
+        await assignAccounts();
+        
+        logger.info({ 
+            msg: 'Completed disconnected account reassignment',
+            reassigned: disconnectedAccounts.length 
+        });
+        
+    } catch (err) {
+        logger.error({ msg: 'Failed to reassign disconnected accounts after Redis recovery', err });
+    }
 }
 
 /**
@@ -2980,6 +3053,17 @@ const startApplication = async () => {
         cookiePassword = crypto.randomBytes(32).toString('base64');
         await settings.set('cookiePassword', cookiePassword);
     }
+
+    // Set up Redis reconnection handler
+    setReconnectionHandler(() => {
+        logger.info({ msg: 'Redis reconnection detected, triggering account recovery' });
+        // Delay slightly to ensure all workers are ready
+        setTimeout(() => {
+            reassignDisconnectedAccounts().catch(err => {
+                logger.error({ msg: 'Failed to trigger account reassignment on Redis recovery', err });
+            });
+        }, 2000);
+    });
 
     // -- START WORKER THREADS
 
