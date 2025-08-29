@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.55.1](https://github.com/postalsys/emailengine/compare/v2.55.0...v2.55.1) (2025-08-29)
+
+
+### Bug Fixes
+
+* **memory:** Add LRU-based cleanup for SMTP connection pools ([fba58e8](https://github.com/postalsys/emailengine/commit/fba58e8069d74a0738cebab478188eee31749678))
+* **metrics:** Implement background metrics collection to prevent CPU spikes ([b0a200a](https://github.com/postalsys/emailengine/commit/b0a200a8e491bddcf1a3896e12253523036ad339))
+* **redis:** Add recovery mechanism for disconnected accounts after Redis reconnection ([ac9737a](https://github.com/postalsys/emailengine/commit/ac9737a98bdb50220278e809de408582f789cf05))
+* **redis:** Improve Redis reconnection handling for IMAP workers ([de7327e](https://github.com/postalsys/emailengine/commit/de7327e08ca676607433890060f045bbc851a3a7))
+
 ## [2.55.0](https://github.com/postalsys/emailengine/compare/v2.54.5...v2.55.0) (2025-08-28)
 
 
