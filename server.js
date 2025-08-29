@@ -126,7 +126,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf, setReconnectionHandler } = require('./lib/db');
+const { redis, queueConf } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -665,7 +665,17 @@ let updateServerState = async (type, state, payload) => {
 async function getThreadsInfo() {
     // Use metrics collector if available
     if (metricsCollector) {
-        return await metricsCollector.getThreadsInfo();
+        let threadsInfo = await metricsCollector.getThreadsInfo();
+        
+        // Add human-readable descriptions and configuration info
+        threadsInfo.forEach(threadInfo => {
+            threadInfo.description = THREAD_NAMES[threadInfo.type];
+            if (THREAD_CONFIG_VALUES[threadInfo.type]) {
+                threadInfo.config = THREAD_CONFIG_VALUES[threadInfo.type];
+            }
+        });
+        
+        return threadsInfo;
     }
     
     // Fallback to original implementation if collector not initialized
@@ -1094,7 +1104,48 @@ let spawnWorker = async type => {
                         unassigned.add(account);
                     }
 
-                    // Don't reassign immediately - wait for the worker to restart
+                    logger.info({
+                        msg: 'Worker exited, moving accounts to unassigned',
+                        accounts: accountList.size,
+                        exitCode
+                    });
+                } else if (exitCode === 0) {
+                    // Worker exited cleanly (likely Redis reconnection) but we lost track of its accounts
+                    // This can happen when Redis disconnects and reconnects
+                    logger.warn({
+                        msg: 'Worker exited cleanly but had no tracked accounts, checking for orphaned accounts',
+                        exitCode,
+                        availableWorkers: availableIMAPWorkers.size
+                    });
+                    
+                    // Check if all workers have exited (Redis reconnection scenario)
+                    if (availableIMAPWorkers.size === 0) {
+                        logger.info({
+                            msg: 'All IMAP workers exited, reloading accounts from Redis for reassignment'
+                        });
+                        
+                        // Reload all accounts from Redis since we lost track
+                        try {
+                            let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
+                            unassigned = new Set(accounts);
+                            assigned.clear();
+                            workerAssigned = new WeakMap();
+                            
+                            logger.info({
+                                msg: 'Reloaded accounts from Redis',
+                                accountCount: accounts.length
+                            });
+                        } catch (err) {
+                            logger.error({
+                                msg: 'Failed to reload accounts from Redis',
+                                err
+                            });
+                        }
+                    }
+                }
+
+                // Don't reassign immediately - wait for the worker to restart
+                if (unassigned && unassigned.size > 0) {
                     reassignmentPending = true;
 
                     // Clear any existing timer
@@ -1118,7 +1169,7 @@ let spawnWorker = async type => {
 
                     logger.info({
                         msg: 'Worker crashed, waiting for restart before reassignment',
-                        accounts: accountList.size,
+                        accounts: unassigned.size,
                         expectedWorkers: config.workers.imap,
                         currentWorkers: availableIMAPWorkers.size
                     });
@@ -1391,6 +1442,17 @@ let spawnWorker = async type => {
                         workerHealthStatus.set(worker, 'healthy');
 
                         resolve(worker.threadId);
+                        
+                        logger.info({
+                            msg: 'IMAP worker ready',
+                            threadId: worker.threadId,
+                            currentWorkers: availableIMAPWorkers.size,
+                            expectedWorkers: config.workers.imap,
+                            unassignedCount: unassigned ? unassigned.size : 0,
+                            assignedCount: assigned.size,
+                            imapInitialWorkersLoaded,
+                            reassignmentPending
+                        });
 
                         if (imapInitialWorkersLoaded && reassignmentPending) {
                             // Check if we now have the expected number of workers
@@ -1410,6 +1472,11 @@ let spawnWorker = async type => {
                                         unassigned: unassigned.size
                                     });
                                     assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', n: 2, err }));
+                                } else {
+                                    logger.warn({
+                                        msg: 'All workers ready but no unassigned accounts found',
+                                        workers: availableIMAPWorkers.size
+                                    });
                                 }
                             } else if (unassigned && unassigned.size > 0) {
                                 // Still waiting for more workers to restart
@@ -1541,78 +1608,6 @@ async function call(worker, message, transferList) {
     });
 }
 
-/**
- * Reassign disconnected accounts after Redis recovery
- * Identifies accounts in disconnected state and triggers reassignment
- */
-async function reassignDisconnectedAccounts() {
-    try {
-        logger.info({ msg: 'Starting disconnected account reassignment after Redis recovery' });
-        
-        if (!availableIMAPWorkers.size) {
-            logger.warn({ msg: 'No IMAP workers available for reassignment' });
-            return;
-        }
-        
-        // Get all accounts
-        let allAccounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
-        if (!allAccounts || !allAccounts.length) {
-            return;
-        }
-        
-        // Find disconnected accounts
-        let disconnectedAccounts = [];
-        for (let account of allAccounts) {
-            let accountKey = `${REDIS_PREFIX}iad:${account}`;
-            let state = await redis.hget(accountKey, 'state');
-            
-            if (state === 'disconnected' || state === 'connecting' || !state) {
-                disconnectedAccounts.push(account);
-            }
-        }
-        
-        if (disconnectedAccounts.length === 0) {
-            logger.info({ msg: 'No disconnected accounts found after Redis recovery' });
-            return;
-        }
-        
-        logger.info({ 
-            msg: 'Found disconnected accounts to reassign', 
-            count: disconnectedAccounts.length,
-            accounts: disconnectedAccounts.slice(0, 10) // Log first 10 for debugging
-        });
-        
-        // Add disconnected accounts to unassigned set
-        if (!unassigned) {
-            unassigned = new Set();
-        }
-        
-        for (let account of disconnectedAccounts) {
-            // Remove from assigned if present
-            if (assigned.has(account)) {
-                let currentWorker = assigned.get(account);
-                if (workerAssigned.has(currentWorker)) {
-                    workerAssigned.get(currentWorker).delete(account);
-                }
-                assigned.delete(account);
-            }
-            
-            // Add to unassigned
-            unassigned.add(account);
-        }
-        
-        // Trigger reassignment
-        await assignAccounts();
-        
-        logger.info({ 
-            msg: 'Completed disconnected account reassignment',
-            reassigned: disconnectedAccounts.length 
-        });
-        
-    } catch (err) {
-        logger.error({ msg: 'Failed to reassign disconnected accounts after Redis recovery', err });
-    }
-}
 
 /**
  * Assign unassigned accounts to available IMAP workers
@@ -3054,16 +3049,9 @@ const startApplication = async () => {
         await settings.set('cookiePassword', cookiePassword);
     }
 
-    // Set up Redis reconnection handler
-    setReconnectionHandler(() => {
-        logger.info({ msg: 'Redis reconnection detected, triggering account recovery' });
-        // Delay slightly to ensure all workers are ready
-        setTimeout(() => {
-            reassignDisconnectedAccounts().catch(err => {
-                logger.error({ msg: 'Failed to trigger account reassignment on Redis recovery', err });
-            });
-        }, 2000);
-    });
+    // Redis reconnection is now handled by workers themselves
+    // Workers will exit when Redis reconnects after disconnection,
+    // and the server will automatically restart them
 
     // -- START WORKER THREADS
 

@@ -85,6 +85,33 @@ class ConnectionHandler {
     }
 
     async init() {
+        // Track Redis connection state for reconnection detection
+        let hasSeenStableConnection = false;
+        let redisWasDisconnected = false;
+
+        // Check initial Redis state
+        if (redis.status === 'ready') {
+            hasSeenStableConnection = true;
+        }
+
+        redis.on('ready', () => {
+            if (redisWasDisconnected && hasSeenStableConnection) {
+                // Redis reconnected after being disconnected during our lifetime
+                logger.info({ msg: 'Redis reconnected after disconnection, exiting worker for clean restart', worker: 'imap' });
+                // Exit gracefully - the main process will restart this worker
+                process.exit(0);
+            }
+            // Mark that we've seen a stable connection
+            hasSeenStableConnection = true;
+        });
+
+        redis.on('end', () => {
+            if (hasSeenStableConnection) {
+                logger.warn({ msg: 'Redis connection lost', worker: 'imap' });
+                redisWasDisconnected = true;
+            }
+        });
+
         // indicate that we are ready to process connections
         parentPort.postMessage({ cmd: 'ready' });
 
