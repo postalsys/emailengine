@@ -531,16 +531,16 @@ const init = async () => {
 
     handlebars.registerHelper('featureFlag', function (flag, options) {
         if (featureFlags.enabled(flag)) {
-            return options.fn(this);  
+            return options.fn(this);
         }
-        return options.inverse(this);  
+        return options.inverse(this);
     });
 
     handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
         if (baseVal === compareVal) {
-            return options.fn(this);  
+            return options.fn(this);
         }
-        return options.inverse(this);  
+        return options.inverse(this);
     });
 
     handlebars.registerHelper('inc', (nr, inc) => Number(nr) + Number(inc));

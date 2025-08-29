@@ -666,7 +666,7 @@ async function getThreadsInfo() {
     // Use metrics collector if available
     if (metricsCollector) {
         let threadsInfo = await metricsCollector.getThreadsInfo();
-        
+
         // Add human-readable descriptions and configuration info
         threadsInfo.forEach(threadInfo => {
             threadInfo.description = THREAD_NAMES[threadInfo.type];
@@ -674,13 +674,13 @@ async function getThreadsInfo() {
                 threadInfo.config = THREAD_CONFIG_VALUES[threadInfo.type];
             }
         });
-        
+
         return threadsInfo;
     }
-    
+
     // Fallback to original implementation if collector not initialized
     // This should only happen during startup or if collector fails
-    
+
     // Start with main thread info
     let threadsInfo = [Object.assign({ type: 'main', isMain: true, threadId: 0, online: NOW }, threadStats.usage())];
 
@@ -1117,20 +1117,20 @@ let spawnWorker = async type => {
                         exitCode,
                         availableWorkers: availableIMAPWorkers.size
                     });
-                    
+
                     // Check if all workers have exited (Redis reconnection scenario)
                     if (availableIMAPWorkers.size === 0) {
                         logger.info({
                             msg: 'All IMAP workers exited, reloading accounts from Redis for reassignment'
                         });
-                        
+
                         // Reload all accounts from Redis since we lost track
                         try {
                             let accounts = await redis.smembers(`${REDIS_PREFIX}ia:accounts`);
                             unassigned = new Set(accounts);
                             assigned.clear();
                             workerAssigned = new WeakMap();
-                            
+
                             logger.info({
                                 msg: 'Reloaded accounts from Redis',
                                 accountCount: accounts.length
@@ -1442,7 +1442,7 @@ let spawnWorker = async type => {
                         workerHealthStatus.set(worker, 'healthy');
 
                         resolve(worker.threadId);
-                        
+
                         logger.info({
                             msg: 'IMAP worker ready',
                             threadId: worker.threadId,
@@ -1607,7 +1607,6 @@ async function call(worker, message, transferList) {
         }
     });
 }
-
 
 /**
  * Assign unassigned accounts to available IMAP workers
@@ -3105,7 +3104,7 @@ const startApplication = async () => {
     if (await settings.get('imapProxyServerEnabled')) {
         await spawnWorker('imapProxy');
     }
-    
+
     // Initialize and start the metrics collector after all workers are ready
     metricsCollector = new MetricsCollector({
         logger,
@@ -3113,18 +3112,18 @@ const startApplication = async () => {
         workerTimeout: 500, // 500ms timeout per worker
         delayBetweenWorkers: 50, // 50ms delay between worker queries
         startTime: NOW,
-        
+
         // Provide callbacks to access server state
         getWorkers: () => workers,
         callWorker: (worker, message) => call(worker, message),
-        getWorkerMetadata: (worker) => {
+        getWorkerMetadata: worker => {
             const metadata = {};
-            
+
             // Add account count for IMAP workers
             if (workerAssigned.has(worker)) {
                 metadata.accounts = workerAssigned.get(worker).size;
             }
-            
+
             // Add health status
             metadata.healthStatus = workerHealthStatus.get(worker) || 'unknown';
             const lastHeartbeat = workerHeartbeats.get(worker);
@@ -3132,25 +3131,25 @@ const startApplication = async () => {
                 metadata.lastHeartbeat = lastHeartbeat;
                 metadata.timeSinceHeartbeat = Date.now() - lastHeartbeat;
             }
-            
+
             // Add circuit breaker status
             const circuit = getCircuitBreaker(worker);
             metadata.circuitState = circuit.state;
             metadata.circuitFailures = circuit.failures;
-            
+
             // Add worker metadata
             let workerMeta = workersMeta.has(worker) ? workersMeta.get(worker) : {};
             for (let key of Object.keys(workerMeta)) {
                 metadata[key] = workerMeta[key];
             }
-            
+
             return metadata;
         }
     });
-    
+
     // Start the background collection
     metricsCollector.start();
-    
+
     logger.info({ msg: 'Background metrics collector initialized and started' });
 };
 
