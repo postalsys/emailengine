@@ -387,6 +387,9 @@ const notifyWorker = new Worker(
         }
         let body = Buffer.from(JSON.stringify(webhookPayload));
 
+        // Explicitly set Content-Length to prevent undici mismatch errors
+        headers['Content-Length'] = body.length.toString();
+
         const serviceSecret = await getServiceSecret();
         let hmac = createHmac('sha256', serviceSecret);
         hmac.update(body);
