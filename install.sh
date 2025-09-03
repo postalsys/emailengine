@@ -88,26 +88,36 @@ if ! [ -x $(command -v curl) ]; then
 fi
 
 if [[ -z $DOMAIN_NAME ]]; then
-
-    echo "Enter the domain name for your new EmailEngine installation."
-    echo "(ex. example.com or test.example.com)"
-    echo "Leave empty to autogenerate a domain name."
-
-    while [ -z "$DOMAIN_NAME" ]
-    do
-        #echo -en "\n"
-        read -p "Domain/Subdomain name: " DOMAIN_NAME
-
-        if [ -z "$DOMAIN_NAME" ]
-        then
-            DOMAIN_NAME=$(curl --silent --fail -XPOST "https://api.nodemailer.com/autoassign" -H "Content-Type: application/json" -d '{
-                "prefix": "engine",
-                "version": "1",
-                "requestor": "install"
-            }')
+    # For upgrades, try to extract existing domain from Caddyfile
+    if [ "$IS_UPGRADE" = true ] && [ -f /etc/caddy/Caddyfile ]; then
+        EXISTING_DOMAIN=$(grep -E '^[a-zA-Z0-9][a-zA-Z0-9.-]+[a-zA-Z0-9] \{' /etc/caddy/Caddyfile 2>/dev/null | head -1 | cut -d' ' -f1 || echo "")
+        if [ -n "$EXISTING_DOMAIN" ]; then
+            DOMAIN_NAME="$EXISTING_DOMAIN"
+            echo "Using existing domain: $DOMAIN_NAME"
         fi
-    done
+    fi
+    
+    # Only prompt for domain if not found (new installation or upgrade without existing domain)
+    if [ -z "$DOMAIN_NAME" ]; then
+        echo "Enter the domain name for your new EmailEngine installation."
+        echo "(ex. example.com or test.example.com)"
+        echo "Leave empty to autogenerate a domain name."
 
+        while [ -z "$DOMAIN_NAME" ]
+        do
+            #echo -en "\n"
+            read -p "Domain/Subdomain name: " DOMAIN_NAME
+
+            if [ -z "$DOMAIN_NAME" ]
+            then
+                DOMAIN_NAME=$(curl --silent --fail -XPOST "https://api.nodemailer.com/autoassign" -H "Content-Type: application/json" -d '{
+                    "prefix": "engine",
+                    "version": "1",
+                    "requestor": "install"
+                }')
+            fi
+        done
+    fi
 fi
 
 echo "Using the domain name \"${DOMAIN_NAME}\" for this installation."
@@ -243,8 +253,22 @@ systemctl restart emailengine || { echo "Failed to start EmailEngine service"; e
 # Log installation details
 echo "$(date): EmailEngine ${VERSION:-latest} installed/upgraded for $DOMAIN_NAME" >> /var/log/emailengine-install.log
 
-# Create Caddyfile with security headers (skip if upgrading and file exists)
-if [ "$IS_UPGRADE" = false ] || [ ! -f /etc/caddy/Caddyfile ]; then
+# Check if domain exists in Caddyfile
+DOMAIN_EXISTS_IN_CADDY=false
+if [ -f /etc/caddy/Caddyfile ]; then
+    if grep -q "^${DOMAIN_NAME} {" /etc/caddy/Caddyfile 2>/dev/null; then
+        DOMAIN_EXISTS_IN_CADDY=true
+    fi
+fi
+
+# Create or update Caddyfile only if needed
+if [ "$IS_UPGRADE" = false ] || [ ! -f /etc/caddy/Caddyfile ] || [ "$DOMAIN_EXISTS_IN_CADDY" = false ]; then
+    if [ "$DOMAIN_EXISTS_IN_CADDY" = false ] && [ -f /etc/caddy/Caddyfile ]; then
+        echo "Domain ${DOMAIN_NAME} not found in Caddy configuration, adding it..."
+        # Backup existing Caddyfile
+        cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.backup.$(date +%Y%m%d%H%M%S)
+    fi
+    
     echo "
 :80 {
   redir https://${DOMAIN_NAME}{uri}
@@ -253,8 +277,6 @@ if [ "$IS_UPGRADE" = false ] || [ ! -f /etc/caddy/Caddyfile ]; then
 ${DOMAIN_NAME} {
   reverse_proxy localhost:3000 {
     header_up X-Real-IP {remote_host}
-    header_up X-Forwarded-For {remote_host}
-    header_up X-Forwarded-Proto {scheme}
   }
   
   header {
@@ -275,7 +297,7 @@ ${DOMAIN_NAME} {
     caddy validate --config /etc/caddy/Caddyfile || { echo "Invalid Caddy configuration"; exit 1; }
     echo "Caddy configuration validated successfully"
 else
-    echo "Using existing Caddy configuration"
+    echo "Domain ${DOMAIN_NAME} already configured in Caddy, keeping existing configuration"
 fi
 
 # Create upgrade script
