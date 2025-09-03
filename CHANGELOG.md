@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.55.2](https://github.com/postalsys/emailengine/compare/v2.55.1...v2.55.2) (2025-09-03)
+
+
+### Bug Fixes
+
+* **oauth:** Update Redis hash mapping when OAuth email changes ([82c1d89](https://github.com/postalsys/emailengine/commit/82c1d89dcf81edc198bcdf3dcc266506cb534da2))
+* **webhooks:** Explicitly set Content-Length to prevent undici mismatch errors ([40cb42d](https://github.com/postalsys/emailengine/commit/40cb42dfefdbc55eb2eca5c61c15565de5e85d8e))
+
 ## [2.55.1](https://github.com/postalsys/emailengine/compare/v2.55.0...v2.55.1) (2025-08-29)
 
 
