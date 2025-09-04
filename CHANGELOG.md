@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.3](https://github.com/postalsys/emailengine/compare/v2.55.2...v2.55.3) (2025-09-04)
+
+
+### Bug Fixes
+
+* **webhooks:** Show more informational messages when webhooks fail ([0712f0a](https://github.com/postalsys/emailengine/commit/0712f0a0d547b61ba95be34346523ee8fe32210f))
+
 ## [2.55.2](https://github.com/postalsys/emailengine/compare/v2.55.1...v2.55.2) (2025-09-03)
 
 
