@@ -33,7 +33,12 @@
     <hr>
     <p class="mb-0">
         <code>
-            {{webhookErrorFlag.message}}
+
+{{#if webhookErrorFlag.statusCode}}HTTP response: {{ webhookErrorFlag.statusCode}}{{/if}}
+{{#if webhookErrorFlag.code}}[{{ webhookErrorFlag.code}}]{{/if}}
+<br>
+{{webhookErrorFlag.message}}
+
         </code>
     </p>
 </div>
@@ -280,7 +285,8 @@
                 {{#if errors.notifyTextSize}}
                 <span class="invalid-feedback">{{errors.notifyTextSize}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Maximum size per content type (text and HTML). Larger content will be
+                <small class="form-text text-muted">Maximum size per content type (text and HTML). Larger content will
+                    be
                     truncated.</small>
             </div>
 

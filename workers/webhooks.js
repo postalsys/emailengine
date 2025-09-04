@@ -407,12 +407,12 @@ const notifyWorker = new Worker(
                 duration = Date.now() - start;
             } catch (err) {
                 duration = Date.now() - start;
-                throw err;
+                throw err.cause || err;
             }
 
             if (!res.ok) {
-                let err = new Error(`Invalid response: ${res.status} ${res.statusText}`);
-                err.status = res.status;
+                let err = new Error(res.statusText || `Invalid response: ${res.status} ${res.statusText}`);
+                err.statusCode = res.status;
                 throw err;
             }
 
@@ -494,7 +494,9 @@ route: customRoute && customRoute.id,
                             event: job.name,
                             message: err.message,
                             time: Date.now(),
-                            url: customRoute.targetUrl
+                            url: customRoute.targetUrl,
+                            code: err.code,
+                            statusCode: err.statusCode
                         })
                     );
                 } else if (accountWebhooks) {
@@ -505,7 +507,9 @@ route: customRoute && customRoute.id,
                             event: job.name,
                             message: err.message,
                             time: Date.now(),
-                            url: webhooks
+                            url: webhooks,
+                            code: err.code,
+                            statusCode: err.statusCode
                         })
                     );
                 } else {
@@ -513,7 +517,9 @@ route: customRoute && customRoute.id,
                         event: job.name,
                         message: err.message,
                         time: Date.now(),
-                        url: webhooks
+                        url: webhooks,
+                        code: err.code,
+                        statusCode: err.statusCode
                     });
                 }
             } catch (err) {
