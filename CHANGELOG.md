@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.55.3](https://github.com/postalsys/emailengine/compare/v2.55.2...v2.55.3) (2025-09-11)
+
+
+### Bug Fixes
+
+* Remove CPU metrics collection to prevent potential native code issues ([350afc2](https://github.com/postalsys/emailengine/commit/350afc2a74e2935f74ad0b00110cd6e67eafc5b0))
+* **webhooks:** Show more informational messages when webhooks fail ([0712f0a](https://github.com/postalsys/emailengine/commit/0712f0a0d547b61ba95be34346523ee8fe32210f))
+
 ## [2.55.2](https://github.com/postalsys/emailengine/compare/v2.55.1...v2.55.2) (2025-09-03)
 
 
