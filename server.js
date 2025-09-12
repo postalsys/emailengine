@@ -2277,25 +2277,33 @@ async function onCommand(worker, message) {
         case 'snapshot-thread': {
             // Get heap snapshot for debugging
             if (message.thread === 0) {
-                // Main thread
-                logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
-                const stream = v8.getHeapSnapshot();
-                if (stream) {
-                    return { _transfer: true, _response: await download(stream) };
+                // Main thread only - V8 operations should be done in main thread
+                try {
+                    logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
+                    const stream = v8.getHeapSnapshot();
+                    if (stream) {
+                        return { _transfer: true, _response: await download(stream) };
+                    }
+                } catch (err) {
+                    logger.error({ msg: 'Failed to generate heap snapshot', thread: message.thread, err });
                 }
                 return false;
             }
 
-            // Worker thread
+            // Worker thread - use worker's built-in method which is safer
             for (let [, workerSet] of workers) {
                 if (workerSet && workerSet.size) {
                     for (let worker of workerSet) {
                         if (worker.threadId === message.thread) {
-                            logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
-
-                            const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
-                            if (stream) {
-                                return { _transfer: true, _response: await download(stream) };
+                            try {
+                                logger.info({ msg: 'Heap snapshot requested', thread: message.thread });
+                                // Use worker's built-in getHeapSnapshot method instead of V8 API
+                                const stream = await worker.getHeapSnapshot({ exposeInternals: true, exposeNumericValues: true });
+                                if (stream) {
+                                    return { _transfer: true, _response: await download(stream) };
+                                }
+                            } catch (err) {
+                                logger.error({ msg: 'Failed to generate heap snapshot for worker', thread: message.thread, err });
                             }
                             return false;
                         }
