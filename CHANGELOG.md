@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.55.4](https://github.com/postalsys/emailengine/compare/v2.55.3...v2.55.4) (2025-09-14)
+
+
+### Bug Fixes
+
+* Replace v8.getHeapStatistics with process.memoryUsage to prevent SEGV errors ([918dba7](https://github.com/postalsys/emailengine/commit/918dba7682a6e50f6aec8c91fe1e35a3f0eb2928))
+* Simplify memory display in internals page ([8dc284b](https://github.com/postalsys/emailengine/commit/8dc284b90360f747dd0c7d98115b5352544a028b))
+* Update internals page to handle new memory usage format ([cf0de82](https://github.com/postalsys/emailengine/commit/cf0de827b17b13e9234d347f5f6686de29bfb7d2))
+
 ## [2.55.3](https://github.com/postalsys/emailengine/compare/v2.55.2...v2.55.3) (2025-09-11)
 
 
