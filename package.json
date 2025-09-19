@@ -65,7 +65,7 @@
         "@postalsys/templates": "2.0.0",
         "ace-builds": "1.43.3",
         "base32.js": "0.1.0",
-        "bullmq": "5.58.5",
+        "bullmq": "5.58.7",
         "compare-versions": "6.1.1",
         "dotenv": "17.2.2",
         "encoding-japanese": "2.2.0",
@@ -114,10 +114,10 @@
         "xml2js": "0.6.2"
     },
     "devDependencies": {
-        "@eslint/js": "9.35.0",
+        "@eslint/js": "9.36.0",
         "chai": "4.3.10",
         "eerawlog": "1.5.1",
-        "eslint": "9.35.0",
+        "eslint": "9.36.0",
         "grunt": "1.6.1",
         "grunt-cli": "1.5.0",
         "grunt-shell-spawn": "0.5.0",
