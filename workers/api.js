@@ -123,8 +123,7 @@ const {
     DEFAULT_EENGINE_TIMEOUT,
     DEFAULT_MAX_ATTACHMENT_SIZE,
     MAX_FORM_TTL,
-    NONCE_BYTES,
-    OUTLOOK_EXPIRATION_TIME
+    NONCE_BYTES
 } = consts;
 
 const { fetch: fetchCmd } = require('undici');
@@ -1924,49 +1923,62 @@ Include your token in requests using one of these methods:
 
                 switch (entry.lifecycleEvent) {
                     case 'reauthorizationRequired': {
-                        // Extend subscription lifetime
+                        // Microsoft is requesting reauthorization - force renewal immediately
+                        request.logger.info({
+                            msg: 'Received reauthorizationRequired lifecycle event',
+                            subscriptionId: outlookSubscription.id,
+                            account: request.query.account
+                        });
 
-                        outlookSubscription.state = {
-                            state: 'renewing',
-                            time: Date.now()
-                        };
-                        await accountObject.update({ outlookSubscription });
+                        // Use the unified renewal method from OutlookClient
+                        // We need to create a client instance to call the renewal method
+                        const { OutlookClient } = require('../lib/email-client/outlook-client');
+                        const client = new OutlookClient(accountData, {
+                            redis,
+                            secret: await getSecret(),
+                            logger: request.logger
+                        });
 
-                        let subscriptionPayload = {
-                            expirationDateTime: new Date(Date.now() + OUTLOOK_EXPIRATION_TIME).toISOString()
-                        };
-
-                        let subscriptionRes;
                         try {
-                            subscriptionRes = await accountObject.oauth2Request(`/v1.0/subscriptions/${outlookSubscription.id}`, 'PATCH', subscriptionPayload);
-                            if (subscriptionRes && subscriptionRes.expirationDateTime) {
-                                outlookSubscription.expirationDateTime = subscriptionRes.expirationDateTime;
+                            // Force renewal when we get reauthorizationRequired
+                            const renewalResult = await client.renewSubscription(true);
+
+                            if (renewalResult.success) {
+                                request.logger.info({
+                                    msg: 'Successfully renewed subscription from lifecycle event',
+                                    subscriptionId: outlookSubscription.id,
+                                    account: request.query.account,
+                                    newExpirationDateTime: renewalResult.expirationDateTime
+                                });
+                            } else {
+                                request.logger.error({
+                                    msg: 'Failed to renew subscription from lifecycle event',
+                                    subscriptionId: outlookSubscription.id,
+                                    account: request.query.account,
+                                    reason: renewalResult.reason,
+                                    error: renewalResult.error
+                                });
                             }
-                            outlookSubscription.state = {
-                                state: 'created',
-                                time: Date.now()
-                            };
                         } catch (err) {
                             request.logger.error({
-                                msg: 'Subscription renewal failed',
+                                msg: 'Exception while renewing subscription from lifecycle event',
                                 subscriptionId: outlookSubscription.id,
                                 account: request.query.account,
-                                requestUrl: `/subscriptions/${outlookSubscription.id}`,
                                 err
                             });
-                            outlookSubscription.state = {
-                                state: 'error',
-                                error: `Subscription renewal failed: ${
-                                    (err.oauthRequest &&
-                                        err.oauthRequest.response &&
-                                        err.oauthRequest.response.error &&
-                                        err.oauthRequest.response.error.message) ||
-                                    err.message
-                                }`,
-                                time: Date.now()
-                            };
                         } finally {
-                            await accountObject.update({ outlookSubscription });
+                            // Clean up client instance
+                            if (client && typeof client.close === 'function') {
+                                try {
+                                    await client.close();
+                                } catch (cleanupErr) {
+                                    request.logger.debug({
+                                        msg: 'Error closing client after lifecycle renewal',
+                                        account: request.query.account,
+                                        err: cleanupErr
+                                    });
+                                }
+                            }
                         }
 
                         break;
