@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.5](https://github.com/postalsys/emailengine/compare/v2.55.4...v2.55.5) (2025-09-19)
+
+
+### Bug Fixes
+
+* **outlook:** Fix MS Graph webhook subscription expiration issues ([1153313](https://github.com/postalsys/emailengine/commit/1153313868fae506cee9c13805628fddf6101e17))
+
 ## [2.55.4](https://github.com/postalsys/emailengine/compare/v2.55.3...v2.55.4) (2025-09-14)
 
 
