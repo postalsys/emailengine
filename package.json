@@ -43,7 +43,7 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bugsnag/js": "8.4.0",
+        "@bugsnag/js": "8.6.0",
         "@bull-board/api": "6.13.0",
         "@bull-board/hapi": "6.13.0",
         "@elastic/elasticsearch": "8.15.3",
@@ -65,7 +65,7 @@
         "@postalsys/templates": "2.0.0",
         "ace-builds": "1.43.3",
         "base32.js": "0.1.0",
-        "bullmq": "5.58.7",
+        "bullmq": "5.58.9",
         "compare-versions": "6.1.1",
         "dotenv": "17.2.2",
         "encoding-japanese": "2.2.0",
