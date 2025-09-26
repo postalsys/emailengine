@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.6](https://github.com/postalsys/emailengine/compare/v2.55.5...v2.55.6) (2025-09-26)
+
+
+### Bug Fixes
+
+* race condition in runFullSync and add diagnostic logging ([#549](https://github.com/postalsys/emailengine/issues/549)) ([cdb3fe1](https://github.com/postalsys/emailengine/commit/cdb3fe18b2494cc02f1e50e98ffddf0003329dd2))
+
 ## [2.55.5](https://github.com/postalsys/emailengine/compare/v2.55.4...v2.55.5) (2025-09-19)
 
 
