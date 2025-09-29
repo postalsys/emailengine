@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.55.7](https://github.com/postalsys/emailengine/compare/v2.55.6...v2.55.7) (2025-09-29)
+
+
+### Bug Fixes
+
+* Bumped email-text-tools to fix webSafe processing ([ae6f2f1](https://github.com/postalsys/emailengine/commit/ae6f2f149ab675faaa9de5490809400b5c24996d))
+
 ## [2.55.6](https://github.com/postalsys/emailengine/compare/v2.55.5...v2.55.6) (2025-09-26)
 
 
