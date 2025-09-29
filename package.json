@@ -145,6 +145,7 @@
             "node_modules/swagger-ui-dist/**/*",
             "translations/**/*",
             "node_modules/@postalsys/joi-messages/translations/*",
+            "node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css",
             "LICENSE_EMAILENGINE.txt",
             "help.txt",
             "version-info.json",
