@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-09-29 18:38+0000\n"
+"POT-Creation-Date: 2025-10-02 11:33+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -62,14 +62,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -91,6 +83,14 @@ msgstr ""
 #: views/accounts/register/imap.hbs:51
 #: views/accounts/register/imap-server.hbs:218
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -296,12 +296,12 @@ msgstr ""
 msgid "Failed to process request"
 msgstr ""
 
-#: workers/api.js:9008
-#: workers/api.js:9124
+#: workers/api.js:9015
+#: workers/api.js:9131
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:9009
+#: workers/api.js:9016
 msgid "Something went wrong"
 msgstr ""
 
