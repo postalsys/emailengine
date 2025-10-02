@@ -478,20 +478,71 @@ test('API tests', async t => {
         assert.ok(mailboxNewWebhook);
     });
 
-    await t.test('move message to another folder', { timeout: 60000 }, async () => {
+    await t.test('modify mailbox - rename only', { timeout: 60000 }, async () => {
         const response = await server
-            .put(`/v1/account/${defaultAccountId}/message/${message2.id}/move`)
+            .put(`/v1/account/${defaultAccountId}/mailbox`)
             .send({
-                path: 'My Target Folder 😇'
+                path: 'My Target Folder 😇',
+                newPath: 'My Renamed Folder'
             })
             .expect(200);
 
         assert.strictEqual(response.body.path, 'My Target Folder 😇');
+        assert.strictEqual(response.body.newPath, 'My Renamed Folder');
+        assert.strictEqual(response.body.renamed, true);
+
+        const mailboxListResponse = await server.get(`/v1/account/${defaultAccountId}/mailboxes`).expect(200);
+        const renamedMailbox = mailboxListResponse.body.mailboxes.find(mb => mb.path === 'My Renamed Folder');
+        assert.ok(renamedMailbox, 'Renamed mailbox should exist');
+    });
+
+    await t.test('modify mailbox - subscription only', { timeout: 60000 }, async () => {
+        const response = await server
+            .put(`/v1/account/${defaultAccountId}/mailbox`)
+            .send({
+                path: 'My Renamed Folder',
+                subscribed: false
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Renamed Folder');
+        assert.strictEqual(response.body.subscribed, false);
+    });
+
+    await t.test('modify mailbox - both rename and subscription', { timeout: 60000 }, async () => {
+        const response = await server
+            .put(`/v1/account/${defaultAccountId}/mailbox`)
+            .send({
+                path: 'My Renamed Folder',
+                newPath: 'My Final Folder',
+                subscribed: true
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Renamed Folder');
+        assert.strictEqual(response.body.newPath, 'My Final Folder');
+        assert.strictEqual(response.body.renamed, true);
+        assert.strictEqual(response.body.subscribed, true);
+
+        const mailboxListResponse = await server.get(`/v1/account/${defaultAccountId}/mailboxes`).expect(200);
+        const finalMailbox = mailboxListResponse.body.mailboxes.find(mb => mb.path === 'My Final Folder');
+        assert.ok(finalMailbox, 'Final mailbox should exist');
+    });
+
+    await t.test('move message to another folder', { timeout: 60000 }, async () => {
+        const response = await server
+            .put(`/v1/account/${defaultAccountId}/message/${message2.id}/move`)
+            .send({
+                path: 'My Final Folder'
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.path, 'My Final Folder');
 
         assert.strictEqual(response.body.uid, 1);
 
         const responseSearchTarget = await server
-            .post(`/v1/account/${defaultAccountId}/search?path=${encodeURIComponent('My Target Folder 😇')}`)
+            .post(`/v1/account/${defaultAccountId}/search?path=${encodeURIComponent('My Final Folder')}`)
             .send({
                 search: {
                     uid: '1'

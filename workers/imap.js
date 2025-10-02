@@ -637,7 +637,7 @@ class ConnectionHandler {
         return await accountData.connection.createMailbox(message.path);
     }
 
-    async renameMailbox(message) {
+    async modifyMailbox(message) {
         if (!this.accounts.has(message.account)) {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
@@ -647,7 +647,7 @@ class ConnectionHandler {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
-        return await accountData.connection.renameMailbox(message.path, message.newPath);
+        return await accountData.connection.modifyMailbox(message.path, message.newPath, message.subscribed);
     }
 
     async deleteMailbox(message) {
@@ -851,7 +851,7 @@ class ConnectionHandler {
             case 'getRawMessage':
             case 'getQuota':
             case 'createMailbox':
-            case 'renameMailbox':
+            case 'modifyMailbox':
             case 'deleteMailbox':
             case 'getAttachment':
             case 'submitMessage':

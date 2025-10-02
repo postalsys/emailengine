@@ -937,7 +937,7 @@ Include your token in requests using one of these methods:
             },
             {
                 name: 'Mailbox',
-                description: 'List, create, rename, and manage mailbox folders. Retrieve folder statistics and special-use designations'
+                description: 'List, create, modify, and manage mailbox folders. Retrieve folder statistics and special-use designations'
             },
             {
                 name: 'Message',
@@ -3993,7 +3993,7 @@ Include your token in requests using one of these methods:
             });
 
             try {
-                return await accountObject.renameMailbox(request.payload.path, request.payload.newPath);
+                return await accountObject.modifyMailbox(request.payload.path, request.payload.newPath, request.payload.subscribed);
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
@@ -4011,8 +4011,8 @@ Include your token in requests using one of these methods:
         },
 
         options: {
-            description: 'Rename mailbox',
-            notes: 'Rename an existing mailbox folder',
+            description: 'Modify mailbox',
+            notes: 'Modify an existing mailbox folder (rename or change subscription status)',
             tags: ['api', 'Mailbox'],
 
             plugins: {},
@@ -4036,22 +4036,29 @@ Include your token in requests using one of these methods:
                 }),
 
                 payload: Joi.object({
-                    path: Joi.string().required().example('Previous Folder Name').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
+                    path: Joi.string().required().example('Folder Name').description('Mailbox folder path to modify').label('ExistingMailboxPath'),
                     newPath: Joi.array()
                         .items(Joi.string().max(256))
                         .single()
                         .example(['Parent folder', 'Subfolder'])
-                        .description('New mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default.')
-                        .label('TargetMailboxPath')
-                }).label('RenameMailbox')
+                        .description('New mailbox path as an array or a string. If account is namespaced then namespace prefix is added by default. Optional.')
+                        .label('TargetMailboxPath'),
+                    subscribed: Joi.boolean()
+                        .example(true)
+                        .description('Change mailbox subscription status. Only applies to IMAP accounts, ignored for Gmail and Outlook.')
+                        .label('SubscriptionStatus')
+                })
+                    .or('newPath', 'subscribed')
+                    .label('ModifyMailbox')
             },
 
             response: {
                 schema: Joi.object({
-                    path: Joi.string().required().example('Previous Mail').description('Mailbox folder path to rename').label('ExistingMailboxPath'),
-                    newPath: Joi.string().required().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox').label('NewMailboxPath'),
-                    renamed: Joi.boolean().example(true).description('Was the mailbox renamed')
-                }).label('RenameMailboxResponse'),
+                    path: Joi.string().required().example('Mail').description('Mailbox folder path').label('ExistingMailboxPath'),
+                    newPath: Joi.string().example('Kalender/S&APw-nnip&AOQ-evad').description('Full path to mailbox if renamed').label('NewMailboxPath'),
+                    renamed: Joi.boolean().example(true).description('Was the mailbox renamed'),
+                    subscribed: Joi.boolean().example(true).description('Subscription status after modification')
+                }).label('ModifyMailboxResponse'),
                 failAction: 'log'
             }
         }

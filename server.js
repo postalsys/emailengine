@@ -2659,7 +2659,7 @@ async function onCommand(worker, message) {
         case 'deleteMessages':
         case 'getQuota':
         case 'createMailbox':
-        case 'renameMailbox':
+        case 'modifyMailbox':
         case 'deleteMailbox':
         case 'submitMessage':
         case 'queueMessage':
