@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.56.0](https://github.com/postalsys/emailengine/compare/v2.55.8...v2.56.0) (2025-10-05)
+
+
+### Features
+
+* **api:** Add mailbox subscription management to modify endpoint ([4578c8a](https://github.com/postalsys/emailengine/commit/4578c8a89f56725ec02a3d9e2418c141acea4db1))
+
 ## [2.55.8](https://github.com/postalsys/emailengine/compare/v2.55.7...v2.55.8) (2025-09-29)
 
 
