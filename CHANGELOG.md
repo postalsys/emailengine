@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.57.0](https://github.com/postalsys/emailengine/compare/v2.56.0...v2.57.0) (2025-10-09)
+
+
+### Features
+
+* Add support for Gmail send-only accounts ([#554](https://github.com/postalsys/emailengine/issues/554)) ([47fb593](https://github.com/postalsys/emailengine/commit/47fb593cfe390f066bd99ff84257abb036782d64))
+* Add support for Outlook send-only accounts ([6b63ee4](https://github.com/postalsys/emailengine/commit/6b63ee4dff1feff087ab65e6233317cae8a4aad7))
+
 ## [2.56.0](https://github.com/postalsys/emailengine/compare/v2.55.8...v2.56.0) (2025-10-05)
 
 
