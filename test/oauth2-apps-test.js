@@ -10,7 +10,7 @@ const { Account } = require('../lib/account');
 
 test('formatExtraScopes', async t => {
     t.after(async () => {
-        // force close because we loaded ../lib/oauth2-apps that spwans the db connection and queues
+        // force close because we loaded ../lib/oauth2-apps that spawns the db connection and queues
         setTimeout(() => process.exit(), 5000).unref();
     });
 
@@ -286,11 +286,7 @@ test('checkAccountScopes - Outlook', async t => {
     });
 
     await t.test('should handle mixed cloud scopes', async () => {
-        const scopes = [
-            'https://graph.microsoft.com/Mail.Send',
-            'https://graph.microsoft.us/Mail.ReadWrite',
-            'offline_access'
-        ];
+        const scopes = ['https://graph.microsoft.com/Mail.Send', 'https://graph.microsoft.us/Mail.ReadWrite', 'offline_access'];
         const result = account.checkAccountScopes('outlook', scopes);
 
         assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });

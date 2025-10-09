@@ -563,11 +563,14 @@
         </p>
 
         <p>
-            <strong>Note:</strong> This is optional but recommended. Without a configured Pub/Sub service account, EmailEngine will not
-            detect or send webhooks for new, updated, or deleted emails, and will not detect bounces. Send-only accounts don't require this.
+            <strong>Note:</strong> This is optional but recommended. Without a configured Pub/Sub service account,
+            EmailEngine will not
+            detect or send webhooks for new, updated, or deleted emails, and will not detect bounces. Send-only accounts
+            don't require this.
         </p>
 
-        <label for="pubSubApp">Select service account to manage webhooks (optional). The service account must be for the same
+        <label for="pubSubApp">Select service account to manage webhooks (optional). The service account must be for the
+            same
             Google Cloud Project.</label>
         <select class="custom-select custom-select-sm {{#if
             errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" {{#unless
@@ -699,6 +702,95 @@
 
 {{/if}}
 
+{{#if activeGmail}}
+<div class="card mb-4 {{#unless baseScopesApi}}d-none{{/unless}}" id="account-type-card-gmail">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Account Type Helper</h6>
+    </div>
+    <div class="card-body">
+        <p>Click a button to automatically populate the scope fields with preset configurations:</p>
+
+        <div class="btn-group btn-group-sm mb-3" role="group">
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="normal"
+                data-provider="gmail">
+                Normal (Full Access)
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="readonly"
+                data-provider="gmail">
+                Read-Only
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="readonlysend"
+                data-provider="gmail">
+                Read-Only + Send
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="sendonly"
+                data-provider="gmail">
+                Send-Only
+            </button>
+        </div>
+
+        <div class="mt-2">
+            <small class="text-muted">
+                <strong>Normal:</strong> Default Gmail API scopes for full mailbox access<br>
+                <strong>Read-Only:</strong> Uses <code>gmail.readonly</code> scope for read-only access (no send)<br>
+                <strong>Read-Only + Send:</strong> Uses <code>gmail.readonly</code> and <code>gmail.send</code>
+                scopes<br>
+                <strong>Send-Only:</strong> Uses <code>gmail.send</code> scope only. Does not require privileged scope
+                approval from Google.
+            </small>
+        </div>
+
+        <div class="alert alert-info mt-3 mb-0">
+            <p class="mb-2"><strong>Tip:</strong> Send-only accounts are useful when you only need to send emails and don't want to
+            request privileged scopes that require Google verification.</p>
+            <p class="mb-0"><strong>Important limitation:</strong> Messages sent through send-only accounts cannot be tracked by EmailEngine.
+            The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
+            EmailEngine cannot resolve the new Message-ID assigned by Gmail. This means delivery status and bounce
+            notifications may not be accurately associated with the sent message.</p>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+{{#if activeOutlook}}
+<div class="card mb-4 {{#unless baseScopesApi}}d-none{{/unless}}" id="account-type-card-outlook">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Account Type Helper</h6>
+    </div>
+    <div class="card-body">
+        <p>Click a button to automatically populate the scope fields with preset configurations:</p>
+
+        <div class="btn-group btn-group-sm mb-3" role="group">
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="normal"
+                data-provider="outlook">
+                Normal (Full Access)
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="readonly"
+                data-provider="outlook">
+                Read-Only
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="readonlysend"
+                data-provider="outlook">
+                Read-Only + Send
+            </button>
+            <button type="button" class="btn btn-outline-primary account-type-btn" data-type="sendonly"
+                data-provider="outlook">
+                Send-Only
+            </button>
+        </div>
+
+        <div class="mt-2">
+            <small class="text-muted">
+                <strong>Normal:</strong> Default MS Graph API scopes for full mailbox access<br>
+                <strong>Read-Only:</strong> Uses <code>Mail.Read</code> scope for read-only access (no send)<br>
+                <strong>Read-Only + Send:</strong> Uses <code>Mail.Read</code> with <code>Mail.Send</code> enabled<br>
+                <strong>Send-Only:</strong> Uses <code>Mail.Send</code> scope only (disables
+                <code>Mail.ReadWrite</code>)
+            </small>
+        </div>
+    </div>
+</div>
+{{/if}}
 
 <div class="card mb-4">
     <a href="#setupScopes" class="d-block card-header py-3 {{#unless values.extraScopes}} collapsed{{/unless}}"
@@ -715,14 +807,10 @@
             {{#if activeGmail}}
             <div class="alert alert-info">
                 <p>When adding new scopes, ensure that related APIs are
-                enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
-                    href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer">Google Cloud Console</a>)
-                before registering accounts with these permissions. Otherwise, token generations will fail.</p>
-
-                <p><strong>For send-only accounts:</strong> Add <code>https://www.googleapis.com/auth/gmail.send</code> here
-                and disable <code>gmail.modify</code> in the Disabled scopes section below. This creates a send-only account
-                that doesn't require privileged scope approval from Google.</p>
+                    enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
+                        href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">Google Cloud Console</a>)
+                    before registering accounts with these permissions. Otherwise, token generations will fail.</p>
             </div>
             {{/if}}
 
@@ -783,22 +871,6 @@
                 <code>"https://www.googleapis.com/auth/gmail.modify"</code> in Gmail.
             </p>
 
-            {{#if activeGmail}}
-            <div class="alert alert-warning">
-                <strong>Send-only Gmail accounts:</strong> If you disable <code>gmail.modify</code> and only enable
-                <code>gmail.send</code> in the Additional scopes section, EmailEngine will treat the account as send-only.
-                Read operations (listing messages, fetching emails, etc.) will be blocked. This allows you to use
-                non-privileged scopes for sending emails without requiring special Google approval.
-
-                <hr>
-
-                <p class="mb-0"><strong>Important limitation:</strong> Messages sent through send-only accounts cannot be tracked by EmailEngine.
-                The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
-                EmailEngine cannot resolve the new Message-ID assigned by Gmail. This means delivery status and bounce
-                notifications may not be accurately associated with the sent message.</p>
-            </div>
-            {{/if}}
-
             <div class="form-group">
                 <label for="skipScopes">List of disabled OAuth2 scopes</label>
 
@@ -822,21 +894,25 @@
         const projectIdElm = document.getElementById('googleProjectId');
         const pubSubAppElm = document.getElementById('pubSubApp');
 
+        /**
+         * Checks and updates the visibility of scope-related UI elements based on selected base scopes radio button.
+         * Handles both API and Pub/Sub scope selections, showing/hiding relevant configuration sections.
+         */
         function checkScopesRadio() {
             let baseScopesAPIElm = document.getElementById('baseScopesAPI');
             let baseScopesPubsubElm = document.getElementById('baseScopesPubsub');
             let selectPubsubAppElm = document.getElementById('select-pubsub-app');
+            let accountTypeCardGmail = document.getElementById('account-type-card-gmail');
+            let accountTypeCardOutlook = document.getElementById('account-type-card-outlook');
 
             if (baseScopesAPIElm && selectPubsubAppElm) {
                 if (baseScopesAPIElm.checked) {
                     selectPubsubAppElm.classList.remove('d-none');
-                    console.log('SHOW', selectPubsubAppElm)
                     if (pubSubAppElm) {
                         pubSubAppElm.disabled = false;
                     }
                 } else {
                     selectPubsubAppElm.classList.add('d-none');
-                    console.log('HIDE', selectPubsubAppElm)
                     if (pubSubAppElm) {
                         pubSubAppElm.disabled = true;
                     }
@@ -851,6 +927,25 @@
                 }
             }
 
+            // Show/hide account type card based on API mode selection
+            if (baseScopesAPIElm) {
+                if (baseScopesAPIElm.checked) {
+                    if (accountTypeCardGmail) {
+                        accountTypeCardGmail.classList.remove('d-none');
+                    }
+                    if (accountTypeCardOutlook) {
+                        accountTypeCardOutlook.classList.remove('d-none');
+                    }
+                } else {
+                    if (accountTypeCardGmail) {
+                        accountTypeCardGmail.classList.add('d-none');
+                    }
+                    if (accountTypeCardOutlook) {
+                        accountTypeCardOutlook.classList.add('d-none');
+                    }
+                }
+            }
+
         }
 
         document.querySelectorAll('.base-scopes-radio').forEach(radioElm => {
@@ -860,6 +955,10 @@
 
         checkScopesRadio();
 
+        /**
+         * Filters available Pub/Sub service accounts to only show those matching the selected Google Cloud Project ID.
+         * Auto-selects the first matching option if none is currently selected.
+         */
         let filterPubSubApps = () => {
             if (!projectIdElm || !pubSubAppElm) {
                 return
@@ -959,6 +1058,145 @@
         }
 
         checkAuthorityState();
+
+        // Account type helper for API mode
+        const accountTypeButtons = document.querySelectorAll('.account-type-btn');
+        const extraScopesElm = document.querySelector('textarea#extraScopes');
+        const skipScopesElm = document.querySelector('textarea[name="skipScopes"]');
+        const setupScopesCard = document.getElementById('setupScopes');
+        const skipScopesCard = document.getElementById('skipScopes');
+
+        // Scope configurations
+        const scopeConfigs = {
+            gmail: {
+                normal: {
+                    extraScopes: [],
+                    skipScopes: []
+                },
+                readonly: {
+                    extraScopes: [
+                        'https://www.googleapis.com/auth/gmail.readonly',
+                        'https://www.googleapis.com/auth/gmail.labels'
+                    ],
+                    skipScopes: ['https://www.googleapis.com/auth/gmail.modify']
+                },
+                readonlysend: {
+                    extraScopes: [
+                        'https://www.googleapis.com/auth/gmail.readonly',
+                        'https://www.googleapis.com/auth/gmail.send',
+                        'https://www.googleapis.com/auth/gmail.labels'
+                    ],
+                    skipScopes: ['https://www.googleapis.com/auth/gmail.modify']
+                },
+                sendonly: {
+                    extraScopes: ['https://www.googleapis.com/auth/gmail.send'],
+                    skipScopes: ['https://www.googleapis.com/auth/gmail.modify']
+                }
+            },
+            outlook: {
+                normal: {
+                    extraScopes: [],
+                    skipScopes: []
+                },
+                readonly: {
+                    extraScopes: ['Mail.Read'],
+                    skipScopes: ['Mail.ReadWrite', 'Mail.Send']
+                },
+                readonlysend: {
+                    extraScopes: ['Mail.Read'],
+                    skipScopes: ['Mail.ReadWrite']
+                },
+                sendonly: {
+                    extraScopes: [],
+                    skipScopes: ['Mail.ReadWrite']
+                }
+            }
+        };
+
+        /**
+         * Updates the extra and skip scopes textareas based on the selected account type preset.
+         * Preserves any third-party scopes that are not managed by the preset configurations.
+         *
+         * @param {string} provider - The OAuth provider ('gmail' or 'outlook')
+         * @param {string} type - The account type ('normal', 'readonly', 'readonlysend', 'sendonly')
+         */
+        function updateScopesFromAccountType(provider, type) {
+            if (!extraScopesElm || !skipScopesElm) {
+                return;
+            }
+
+            // Get the appropriate config
+            let config = scopeConfigs[provider] && scopeConfigs[provider][type];
+
+            if (!config) {
+                return;
+            }
+
+            // Get current scopes and filter out managed ones
+            let currentExtraScopes = extraScopesElm.value.split('\n').map(s => s.trim()).filter(s => s);
+            let currentSkipScopes = skipScopesElm.value.split('\n').map(s => s.trim()).filter(s => s);
+
+            // Filter out managed scopes to preserve third-party scopes
+            let unmanagedExtraScopes = currentExtraScopes.filter(scope =>
+                !managedScopes[provider].extra.includes(scope)
+            );
+            let unmanagedSkipScopes = currentSkipScopes.filter(scope =>
+                !managedScopes[provider].skip.includes(scope)
+            );
+
+            // Combine unmanaged scopes with new configuration
+            let newExtraScopes = [...config.extraScopes, ...unmanagedExtraScopes];
+            let newSkipScopes = [...config.skipScopes, ...unmanagedSkipScopes];
+
+            // Update textarea values
+            extraScopesElm.value = newExtraScopes.join('\n');
+            skipScopesElm.value = newSkipScopes.join('\n');
+
+            // Expand/collapse sections based on content
+            if (newExtraScopes.length > 0) {
+                setupScopesCard.classList.add('show');
+            } else {
+                setupScopesCard.classList.remove('show');
+            }
+
+            if (newSkipScopes.length > 0) {
+                skipScopesCard.classList.add('show');
+            } else {
+                skipScopesCard.classList.remove('show');
+            }
+        }
+
+        // Define which scopes are managed by the helper buttons
+        const managedScopes = {
+            gmail: {
+                extra: [
+                    'https://www.googleapis.com/auth/gmail.readonly',
+                    'https://www.googleapis.com/auth/gmail.send',
+                    'https://www.googleapis.com/auth/gmail.labels'
+                ],
+                skip: [
+                    'https://www.googleapis.com/auth/gmail.modify'
+                ]
+            },
+            outlook: {
+                extra: [
+                    'Mail.Read'
+                ],
+                skip: [
+                    'Mail.ReadWrite',
+                    'Mail.Send'
+                ]
+            }
+        };
+
+        // Attach event listeners to buttons
+        for (let btn of accountTypeButtons) {
+            btn.addEventListener('click', function () {
+                const provider = this.getAttribute('data-provider');
+                const type = this.getAttribute('data-type');
+                updateScopesFromAccountType(provider, type);
+            });
+        }
 
     });
 
