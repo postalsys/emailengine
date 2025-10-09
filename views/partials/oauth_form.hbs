@@ -562,10 +562,15 @@
             Account below to configure this.
         </p>
 
-        <label for="pubSubApp">Select service account to manage webhooks. The service account must be for the same
+        <p>
+            <strong>Note:</strong> This is optional but recommended. Without a configured Pub/Sub service account, EmailEngine will not
+            detect or send webhooks for new, updated, or deleted emails, and will not detect bounces. Send-only accounts don't require this.
+        </p>
+
+        <label for="pubSubApp">Select service account to manage webhooks (optional). The service account must be for the same
             Google Cloud Project.</label>
         <select class="custom-select custom-select-sm {{#if
-            errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" required {{#unless
+            errors.pubSubApp}}is-invalid{{/if}}" id="pubSubApp" name="pubSubApp" {{#unless
             baseScopesApi}}disabled{{/unless}}>
 
             <option value=""> &mdash; Select the service account for your project &mdash; </option>
@@ -708,11 +713,16 @@
                 application.</p>
 
             {{#if activeGmail}}
-            <div class="alert alert-info">When adding new scopes, ensure that related APIs are
+            <div class="alert alert-info">
+                <p>When adding new scopes, ensure that related APIs are
                 enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
                     href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
                     referrerpolicy="no-referrer">Google Cloud Console</a>)
-                before registering accounts with these permissions. Otherwise, token generations will fail.
+                before registering accounts with these permissions. Otherwise, token generations will fail.</p>
+
+                <p><strong>For send-only accounts:</strong> Add <code>https://www.googleapis.com/auth/gmail.send</code> here
+                and disable <code>gmail.modify</code> in the Disabled scopes section below. This creates a send-only account
+                that doesn't require privileged scope approval from Google.</p>
             </div>
             {{/if}}
 
@@ -772,6 +782,22 @@
                 when you want to disable some default scopes like <code>"SMTP.Send"</code> in Outlook or
                 <code>"https://www.googleapis.com/auth/gmail.modify"</code> in Gmail.
             </p>
+
+            {{#if activeGmail}}
+            <div class="alert alert-warning">
+                <strong>Send-only Gmail accounts:</strong> If you disable <code>gmail.modify</code> and only enable
+                <code>gmail.send</code> in the Additional scopes section, EmailEngine will treat the account as send-only.
+                Read operations (listing messages, fetching emails, etc.) will be blocked. This allows you to use
+                non-privileged scopes for sending emails without requiring special Google approval.
+
+                <hr>
+
+                <p class="mb-0"><strong>Important limitation:</strong> Messages sent through send-only accounts cannot be tracked by EmailEngine.
+                The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
+                EmailEngine cannot resolve the new Message-ID assigned by Gmail. This means delivery status and bounce
+                notifications may not be accurately associated with the sent message.</p>
+            </div>
+            {{/if}}
 
             <div class="form-group">
                 <label for="skipScopes">List of disabled OAuth2 scopes</label>

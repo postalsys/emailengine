@@ -33,7 +33,7 @@ module.exports = function (grunt) {
                 }
             },
             test: {
-                command: 'node --test --test-timeout=120000 test/*.js', // Added 2-minute timeout for tests
+                command: 'node --test --test-concurrency=1 --test-timeout=120000 test/*.js', // Added 2-minute timeout for tests
                 options: {
                     async: false
                 }

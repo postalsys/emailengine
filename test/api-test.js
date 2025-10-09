@@ -20,6 +20,7 @@ let testAccount;
 const defaultAccountId = 'main-account';
 const gmailAccountId1 = 'gmail-account1';
 const gmailAccountId2 = 'gmail-account2';
+const gmailSendOnlyAccountId = 'gmail-sendonly-account';
 
 // Helper function for polling with timeout
 async function waitForCondition(checkFn, options = {}) {
@@ -45,6 +46,8 @@ test('API tests', async t => {
 
     let gmailReceivedEmailId;
     let gmailReceivedMessageId;
+
+    let oauth2SendOnlyAppId;
 
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
@@ -128,6 +131,7 @@ test('API tests', async t => {
 
     await t.test('wait until added account is available', { timeout: 60000 }, async () => {
         // wait until connected with timeout
+
         await waitForCondition(
             async () => {
                 const response = await server.get(`/v1/account/${defaultAccountId}`).expect(200);
@@ -145,6 +149,7 @@ test('API tests', async t => {
 
         // check if we have all expected webhooks
         let webhooks = webhooksServer.webhooks.get(defaultAccountId);
+
         for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
             assert.ok(webhooks.some(wh => wh.event === event));
         }
@@ -760,5 +765,135 @@ test('API tests', async t => {
         assert.strictEqual(messageNewWebhook.data.inReplyTo, gmailReceivedMessageId);
 
         assert.ok(messageNewWebhook);
+    });
+
+    await t.test('Create Gmail send-only OAuth2 client project', { timeout: 30000 }, async () => {
+        let gmailSendOnlyClientData = {
+            name: 'Gmail API Send-Only Client',
+            provider: 'gmail',
+            baseScopes: 'api',
+            googleProjectId: process.env.GMAIL_SENDONLY_PROJECT_ID,
+            clientId: process.env.GMAIL_SENDONLY_CLIENT_ID,
+            clientSecret: process.env.GMAIL_SENDONLY_CLIENT_SECRET,
+            extraScopes: ['gmail.send'],
+            skipScopes: ['gmail.modify'],
+            redirectUrl: 'http://127.0.0.1:3000/oauth'
+        };
+
+        const response = await server.post(`/v1/oauth2`).send(gmailSendOnlyClientData).expect(200);
+
+        oauth2SendOnlyAppId = response.body.id;
+        assert.ok(oauth2SendOnlyAppId);
+    });
+
+    await t.test('Register Gmail send-only account', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: gmailSendOnlyAccountId,
+                name: 'Gmail Send-Only User',
+                email: process.env.GMAIL_SENDONLY_ACCOUNT_EMAIL,
+                oauth2: {
+                    provider: oauth2SendOnlyAppId,
+                    auth: {
+                        user: process.env.GMAIL_SENDONLY_ACCOUNT_EMAIL
+                    },
+                    refreshToken: process.env.GMAIL_SENDONLY_ACCOUNT_REFRESH
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('wait until Gmail send-only account is available', { timeout: 180000 }, async () => {
+        // wait until connected with longer timeout for Gmail
+        await waitForCondition(
+            async () => {
+                const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}`).expect(200);
+                switch (response.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + response.body.state);
+                    case 'connected':
+                        return true;
+                }
+                return false;
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail send-only account connection timeout` }
+        );
+
+        // check account type
+        const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}`).expect(200);
+        assert.strictEqual(response.body.sendOnly, true, 'Account should be detected as send-only');
+
+        // check if we have expected webhooks
+        let webhooks = webhooksServer.webhooks.get(gmailSendOnlyAccountId);
+        for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
+            assert.ok(webhooks.some(wh => wh.event === event));
+        }
+    });
+
+    await t.test('send-only account - list mailboxes should fail', { timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}/mailboxes`).expect(403);
+
+        // Gmail API will reject the request due to insufficient scopes
+        assert.ok(response.body.error);
+    });
+
+    await t.test('send-only account - list messages should fail', { timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}/messages?path=INBOX`).expect(403);
+
+        // Gmail API will reject the request due to insufficient scopes
+        assert.ok(response.body.error);
+    });
+
+    await t.test('send-only account - get message should fail', { timeout: 30000 }, async () => {
+        // Use a message ID from gmailAccountId2 to try to access it
+        if (!gmailReceivedEmailId) {
+            throw new Error('No message ID available for testing');
+        }
+
+        const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}/message/${gmailReceivedEmailId}`).expect(403);
+
+        // Gmail API will reject the request due to insufficient scopes
+        assert.ok(response.body.error);
+    });
+
+    await t.test('send-only account - submit email successfully', { timeout: 180000 }, async () => {
+        let messageId = `<sendonly-test-${Date.now()}@example.com>`;
+
+        const response = await server
+            .post(`/v1/account/${gmailSendOnlyAccountId}/submit`)
+            .send({
+                to: [
+                    {
+                        name: 'Test Account 2',
+                        address: process.env.GMAIL_API_ACCOUNT_EMAIL_2
+                    }
+                ],
+                subject: 'Send-only test message',
+                text: 'This message was sent from a send-only account',
+                html: '<p>This message was sent from a <strong>send-only</strong> account</p>',
+                messageId
+            })
+            .expect(200);
+
+        assert.ok(response.body.messageId);
+        assert.ok(response.body.queueId);
+
+        // Wait for messageSent webhook on send-only account
+        const messageSentWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(gmailSendOnlyAccountId);
+                return webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: 'Gmail send-only message sent webhook timeout' }
+        );
+        assert.ok(messageSentWebhook);
+
+        // Cannot verify the final Gmail-assigned message ID because send-only accounts
+        // lack read permissions for the Sent Mail folder. Gmail assigns a new message ID
+        // that differs from the original messageId sent in the request.
     });
 });

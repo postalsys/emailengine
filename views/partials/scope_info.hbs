@@ -13,8 +13,12 @@
     {{#unless disabledScopes.Gmail_Modify}}
     <li><code>"https://www.googleapis.com/auth/gmail.modify"</code></li>
     {{else}}
+    {{#if isSendOnlyGmail}}
+    <li><code>"https://www.googleapis.com/auth/gmail.send"</code></li>
+    {{else}}
     <li><code>"https://www.googleapis.com/auth/gmail.readonly"</code></li>
     <li><code>"https://www.googleapis.com/auth/gmail.labels"</code></li>
+    {{/if}}
     {{/unless}}
 
     {{/if}}
@@ -24,6 +28,15 @@
     {{/if}}
 
 </ul>
+
+{{#if isSendOnlyGmail}}
+<div class="alert alert-warning mt-3">
+    <strong>Send-only account limitation:</strong> Messages sent through this app cannot be tracked by EmailEngine.
+    The Gmail API modifies the Message-ID header when sending emails, and without read permissions,
+    EmailEngine cannot resolve the new Message-ID assigned by Gmail. Delivery status and bounce
+    notifications may not be accurately associated with the sent message.
+</div>
+{{/if}}
 
 <div>Read about setting up the OAuth2 project in Google Cloud from
 
