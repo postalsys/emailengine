@@ -1582,7 +1582,17 @@ async function call(worker, message, transferList) {
             },
             reject: err => {
                 clearTimeout(timer);
-                recordCircuitFailure(worker);
+
+                // Only record circuit breaker failures for actual worker/infrastructure issues
+                // Do NOT count application-level errors that indicate the worker is functioning correctly
+                // Application errors have statusCode in the 4xx range (client errors)
+                // Infrastructure errors have statusCode in the 5xx range (server errors) or are timeouts
+                const isInfrastructureFailure = !err.statusCode || err.statusCode >= 500 || err.code === 'Timeout';
+
+                if (isInfrastructureFailure) {
+                    recordCircuitFailure(worker);
+                }
+
                 reject(err);
             },
             timer

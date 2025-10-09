@@ -45,6 +45,7 @@ process.stdin.on('end', () => {
 
         for (let license of [].concat(data.licenses || [])) {
             license = license.replace(/MIT\*/, 'MIT');
+            license = license.replace(/BSD\*/, 'BSD-3-Clause');
 
             let _satisfies;
             try {

@@ -213,7 +213,7 @@ class ConnectionHandler {
                 oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
             }
 
-            if (oauth2App.baseScopes === 'api') {
+            if (oauth2App && oauth2App.baseScopes === 'api') {
                 // Use API instead of IMAP
 
                 switch (oauth2App.provider) {
