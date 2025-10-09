@@ -3720,7 +3720,7 @@ Include your token in requests using one of these methods:
                     result.counters = accountData.counters;
                 }
 
-                if (request.query.quota) {
+                if (request.query.quota && !result.sendOnly) {
                     result.quota = await accountObject.getQuota();
                 }
 

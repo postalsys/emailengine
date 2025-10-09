@@ -6,6 +6,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { formatExtraScopes } = require('../lib/oauth2-apps');
+const { Account } = require('../lib/account');
 
 test('formatExtraScopes', async t => {
     t.after(async () => {
@@ -132,5 +133,173 @@ test('formatExtraScopes', async t => {
         const result = formatExtraScopes(['scope1', 'scope3'], null, defaultScopes, [], 'prefix');
 
         assert.deepStrictEqual(result, ['scope3', 'prefix/scope1', 'prefix/scope2']);
+    });
+});
+
+test('checkAccountScopes - Outlook', async t => {
+    let account;
+
+    t.beforeEach(() => {
+        // Create a mock account instance with minimal required properties
+        account = new Account({
+            redis: {},
+            account: 'test-account',
+            secret: 'test-secret',
+            logger: {
+                warn: () => {},
+                error: () => {},
+                info: () => {},
+                debug: () => {}
+            }
+        });
+    });
+
+    await t.test('should detect send-only Outlook account (global cloud)', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should detect full-access Outlook account (global cloud)', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.ReadWrite', 'https://graph.microsoft.com/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });
+    });
+
+    await t.test('should detect send-only Outlook account (GCC-High cloud)', async () => {
+        const scopes = ['https://graph.microsoft.us/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should detect full-access Outlook account (GCC-High cloud)', async () => {
+        const scopes = ['https://graph.microsoft.us/Mail.ReadWrite', 'https://graph.microsoft.us/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });
+    });
+
+    await t.test('should detect send-only Outlook account (DoD cloud)', async () => {
+        const scopes = ['https://dod-graph.microsoft.us/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should detect full-access Outlook account (DoD cloud)', async () => {
+        const scopes = ['https://dod-graph.microsoft.us/Mail.ReadWrite', 'https://dod-graph.microsoft.us/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });
+    });
+
+    await t.test('should detect send-only Outlook account (China cloud)', async () => {
+        const scopes = ['https://microsoftgraph.chinacloudapi.cn/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should detect full-access Outlook account (China cloud)', async () => {
+        const scopes = ['https://microsoftgraph.chinacloudapi.cn/Mail.ReadWrite', 'https://microsoftgraph.chinacloudapi.cn/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });
+    });
+
+    await t.test('should detect read-only Outlook account with Mail.Read', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.Read', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: true });
+    });
+
+    await t.test('should handle scopes with trailing slashes', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.Send/', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should handle scopes with query parameters', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.Send?foo=bar', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should handle scopes with fragments', async () => {
+        const scopes = ['https://graph.microsoft.com/Mail.Send#section', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: false });
+    });
+
+    await t.test('should handle plain scope names', async () => {
+        const scopes = ['offline_access', 'openid', 'profile'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle invalid protocol (http instead of https)', async () => {
+        const scopes = ['http://graph.microsoft.com/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle non-Microsoft Graph domains', async () => {
+        const scopes = ['https://evil.com/Mail.Send', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle malformed URLs', async () => {
+        const scopes = ['not-a-url', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle empty scopes array', async () => {
+        const scopes = [];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle null scopes', async () => {
+        const result = account.checkAccountScopes('outlook', null);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle undefined scopes', async () => {
+        const result = account.checkAccountScopes('outlook', undefined);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
+    });
+
+    await t.test('should handle mixed cloud scopes', async () => {
+        const scopes = [
+            'https://graph.microsoft.com/Mail.Send',
+            'https://graph.microsoft.us/Mail.ReadWrite',
+            'offline_access'
+        ];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: true, hasReadScope: true });
+    });
+
+    await t.test('should handle User.Read scope (not mail-related)', async () => {
+        const scopes = ['https://graph.microsoft.com/User.Read', 'offline_access'];
+        const result = account.checkAccountScopes('outlook', scopes);
+
+        assert.deepStrictEqual(result, { hasSendScope: false, hasReadScope: false });
     });
 });

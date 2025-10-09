@@ -243,7 +243,7 @@
             <dd class="col-sm-9">
                 {{#if account.isApi}}
                 {{#if account.sendOnly}}
-                API <span class="badge badge-info">Send-only</span>
+                API <span class="badge badge-info" style="cursor:default;" data-toggle="popover" data-trigger="hover" data-content="This account can only send emails. It does not have read access to the mailbox.">Send-only</span>
                 {{else}}
                 API
                 {{/if}}
