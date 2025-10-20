@@ -20,6 +20,7 @@ RUN addgroup -S emailenginegroup && adduser -S emailengineuser -G emailenginegro
 WORKDIR /emailengine
 
 # Copy app folders
+COPY bin bin
 COPY config config
 COPY data data
 COPY lib lib

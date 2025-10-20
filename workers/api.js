@@ -4652,14 +4652,14 @@ Include your token in requests using one of these methods:
             response: {
                 schema: Joi.object({
                     flags: Joi.object({
-                        add: Joi.boolean().example(true),
-                        delete: Joi.boolean().example(false),
-                        set: Joi.boolean().example(false)
+                        add: Joi.array().items(Joi.string()).example(['\\Seen', '\\Flagged']),
+                        delete: Joi.array().items(Joi.string()).example(['\\Draft']),
+                        set: Joi.array().items(Joi.string()).example(['\\Seen'])
                     }).label('FlagResponse'),
                     labels: Joi.object({
-                        add: Joi.boolean().example(true),
-                        delete: Joi.boolean().example(false),
-                        set: Joi.boolean().example(false)
+                        add: Joi.array().items(Joi.string()).example(['Label1', 'Label2']),
+                        delete: Joi.array().items(Joi.string()).example(['Label3']),
+                        set: Joi.array().items(Joi.string()).example(['Label1'])
                     }).label('FlagResponse')
                 }).label('MessageUpdateResponse'),
                 failAction: 'log'
@@ -4731,14 +4731,14 @@ Include your token in requests using one of these methods:
             response: {
                 schema: Joi.object({
                     flags: Joi.object({
-                        add: Joi.boolean().example(true),
-                        delete: Joi.boolean().example(false),
-                        set: Joi.boolean().example(false)
+                        add: Joi.array().items(Joi.string()).example(['\\Seen', '\\Flagged']),
+                        delete: Joi.array().items(Joi.string()).example(['\\Draft']),
+                        set: Joi.array().items(Joi.string()).example(['\\Seen'])
                     }).label('FlagResponse'),
                     labels: Joi.object({
-                        add: Joi.boolean().example(true),
-                        delete: Joi.boolean().example(false),
-                        set: Joi.boolean().example(false)
+                        add: Joi.array().items(Joi.string()).example(['Label1', 'Label2']),
+                        delete: Joi.array().items(Joi.string()).example(['Label3']),
+                        set: Joi.array().items(Joi.string()).example(['Label1'])
                     }).label('FlagResponse')
                 }).label('MessageUpdateResponse'),
                 failAction: 'log'
