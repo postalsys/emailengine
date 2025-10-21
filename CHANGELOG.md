@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.57.1](https://github.com/postalsys/emailengine/compare/v2.57.0...v2.57.1) (2025-10-20)
+
+
+### Bug Fixes
+
+* Add retry logic for transient errors when fetching referenced messages ([9312f4b](https://github.com/postalsys/emailengine/commit/9312f4bcc95b2423e4bd98e3eeef1230aa02fcb9))
+* Correct OpenAPI response schema and add Docker CLI support ([38d39d6](https://github.com/postalsys/emailengine/commit/38d39d615d7e268261f4d8b49a7e79a943d9c553))
+* Ensure mailbox ID persistence during flush ([bb26992](https://github.com/postalsys/emailengine/commit/bb26992f110e640fa0f98f64dd714a20ac35c085))
+
 ## [2.57.0](https://github.com/postalsys/emailengine/compare/v2.56.0...v2.57.0) (2025-10-09)
 
 
