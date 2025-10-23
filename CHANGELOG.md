@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.57.3](https://github.com/postalsys/emailengine/compare/v2.57.2...v2.57.3) (2025-10-23)
+
+
+### Bug Fixes
+
+* **attachments:** Bumped Nodemailer for fix issue with large data-uri images in emails ([64a498c](https://github.com/postalsys/emailengine/commit/64a498cccc8123958761c99e33164849378f2d07))
+
 ## [2.57.2](https://github.com/postalsys/emailengine/compare/v2.57.1...v2.57.2) (2025-10-23)
 
 
