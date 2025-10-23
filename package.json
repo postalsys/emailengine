@@ -1,6 +1,6 @@
 {
     "name": "emailengine-app",
-    "version": "2.57.1",
+    "version": "2.57.2",
     "private": true,
     "productTitle": "EmailEngine",
     "description": "Email Sync Engine",
