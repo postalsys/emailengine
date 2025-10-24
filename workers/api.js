@@ -5542,7 +5542,8 @@ Include your token in requests using one of these methods:
             try {
                 return await accountObject.queueMessage(request.payload, {
                     source: 'api',
-                    idempotencyKey: request.headers['idempotency-key']
+                    idempotencyKey: request.headers['idempotency-key'],
+                    useStructuredFormat: request.query.useStructuredFormat
                 });
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
@@ -5588,6 +5589,21 @@ Include your token in requests using one of these methods:
                 params: Joi.object({
                     account: accountIdSchema.required()
                 }),
+
+                query: Joi.object({
+                    documentStore: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description('If enabled then fetch email used as a reference template from the Document Store'),
+                    useStructuredFormat: Joi.boolean()
+                        .truthy('Y', 'true', '1')
+                        .falsy('N', 'false', 0)
+                        .default(false)
+                        .description(
+                            'For MS Graph accounts: If true, uses structured JSON format (respects from field for shared mailboxes, breaks calendar invites and special MIME types). If false, sends as raw MIME (preserves calendar invites, ignores from field). Default is false (raw MIME).'
+                        )
+                }).label('SubmitQuery'),
 
                 headers: Joi.object({
                     'x-ee-timeout': headerTimeoutSchema,
