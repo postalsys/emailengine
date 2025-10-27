@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-10-23 08:17+0000\n"
+"POT-Creation-Date: 2025-10-27 07:40+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -264,7 +264,7 @@ msgstr ""
 #: lib/routes-ui.js:6925
 #: lib/routes-ui.js:7154
 #: lib/routes-ui.js:7190
-#: workers/api.js:2401
+#: workers/api.js:2407
 msgid "Email Account Setup"
 msgstr ""
 
@@ -296,12 +296,12 @@ msgstr ""
 msgid "Failed to process request"
 msgstr ""
 
-#: workers/api.js:9064
-#: workers/api.js:9180
+#: workers/api.js:9086
+#: workers/api.js:9202
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:9065
+#: workers/api.js:9087
 msgid "Something went wrong"
 msgstr ""
 
