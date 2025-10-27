@@ -2272,11 +2272,17 @@ Include your token in requests using one of these methods:
                     }
 
                     if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
+                        // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
                         authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
+                        // Ensure email is set to the delegated user if not already provided
+                        if (!accountData.email) {
+                            accountData.email = accountData.oauth2.auth.delegatedUser;
+                        }
                     } else if (accountData.delegated && accountData.email && accountData.email !== userInfo.email) {
-                        // Shared mailbox
+                        // Legacy: Shared mailbox specified via delegated flag
                         authData.delegatedUser = accountData.email;
                     } else {
+                        // Not a delegated account, use the authenticated user's email
                         accountData.email = userInfo.email;
                     }
 
