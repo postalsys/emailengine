@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.58.1](https://github.com/postalsys/emailengine/compare/v2.58.0...v2.58.1) (2025-10-29)
+
+
+### Bug Fixes
+
+* **outlook:** Request specific body content type from MS Graph API ([9428852](https://github.com/postalsys/emailengine/commit/9428852c6f79721c9422698de25edc8ba9cfec8d))
+* **smtp-interface:** Add configurable SMTP message size limit ([c3692b9](https://github.com/postalsys/emailengine/commit/c3692b929fded1f48f1054da1777a19378908b0f))
+
 ## [2.58.0](https://github.com/postalsys/emailengine/compare/v2.57.3...v2.58.0) (2025-10-27)
 
 
