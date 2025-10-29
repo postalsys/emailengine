@@ -27,6 +27,7 @@ port = 2525
 host = "127.0.0.1"
 secret = ""        # client password, if not set allows any password
 proxy = false      # Set to true if using HAProxy with send-proxy option
+#maxMessageSize = "25M" # maximum message size accepted by SMTP server (default: 25MB)
 
 [dbs]
 # redis connection

@@ -41,11 +41,14 @@ Options:
   --queues.submit           Submit concurrency count        [number] [default: 1]
 
   Submission SMTP server:
-  --smtp.enabled     Is SMTP submission server enabled [boolean] [default: false]
-  --smtp.secret      SMTP password for all accounts                      [string]
-  --smtp.host        Host to bind to              [string] [default: "127.0.0.1"]
-  --smtp.port        Port to bind to                     [number] [default: 2525]
-  --smtp.proxy       Is the SMTP server hehind HAProxy [boolean] [default: false]
+  --smtp.enabled         Is SMTP submission server enabled
+                                                   [boolean] [default: false]
+  --smtp.secret          SMTP password for all accounts                  [string]
+  --smtp.host            Host to bind to          [string] [default: "127.0.0.1"]
+  --smtp.port            Port to bind to                 [number] [default: 2525]
+  --smtp.proxy           Is the SMTP server hehind HAProxy
+                                                   [boolean] [default: false]
+  --smtp.maxMessageSize  Max message size        [number/string] [default: "25M"]
 
 "emailengine encrypt" additional options:
   --decrypt  Old secret for decrypting (can be issued multiple times)    [string]
