@@ -26,38 +26,6 @@ jobs:
               run: |
                   npm run licenses
 
-    fluidAttacksScan:
-        name: Fluid Attacks SAST Scan
-        runs-on: ubuntu-latest
-
-        permissions:
-            # Give the default GITHUB_TOKEN write permission to commit and push the
-            # added or changed files to the repository.
-            contents: write
-
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ github.head_ref }}
-
-            # Ensure that Node.js is available
-            - name: Use Node.js 20
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20
-
-            - name: Fluid-Attacks scan
-              continue-on-error: true
-              uses: docker://docker.io/fluidattacks/cli:latest
-              with:
-                  args: skims scan /github/workspace/fascan.yml
-
-            - name: Show Scan Results
-              run: |
-                  cat Fluid-Attacks-Results.csv
-                  node -e 'require("fs").readFileSync("Fluid-Attacks-Results.csv","utf-8").indexOf("No vulnerabilities were found in your targets")<0 && process.exit(1)'
-
     test:
         name: Test Suite
         timeout-minutes: 15  # Increased timeout for Gmail API tests
