@@ -4,7 +4,20 @@ const he = require('he');
 const packageData = require('./package.json');
 const satisfies = require('spdx-satisfies');
 
-const ALLOWED_LICENSES = ['ISC', 'MIT', 'Apache-1.0+', 'CC-BY-3.0', 'BSD-2-Clause', 'BSD-3-Clause', '0BSD', 'CC0-1.0', 'MIT-0', 'MPL-2.0', 'Python-2.0', 'BlueOak-1.0.0'];
+const ALLOWED_LICENSES = [
+    'ISC',
+    'MIT',
+    'Apache-1.0+',
+    'CC-BY-3.0',
+    'BSD-2-Clause',
+    'BSD-3-Clause',
+    '0BSD',
+    'CC0-1.0',
+    'MIT-0',
+    'MPL-2.0',
+    'Python-2.0',
+    'BlueOak-1.0.0'
+];
 
 let chunks = [];
 process.stdin.on('readable', () => {
