@@ -91,7 +91,7 @@
         "libqp": "2.1.1",
         "license-checker": "25.0.1",
         "mailparser": "3.9.0",
-        "mailsplit": "5.4.6",
+        "@zone-eu/mailsplit": "5.4.7",
         "marked": "9.1.6",
         "minimist": "1.2.8",
         "msgpack5": "6.0.2",
