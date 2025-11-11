@@ -44,13 +44,6 @@
                         {{else if healthBadge}}
                         <span class="badge badge-{{healthBadgeType}}">{{healthBadge}}</span>
                         {{/if}}
-                        
-                        {{#if circuitBadge}}
-                        <span class="badge badge-{{circuitBadgeType}}">{{circuitBadge}}</span>
-                        {{#if circuitInfo}}
-                        <small class="text-muted">({{circuitInfo}})</small>
-                        {{/if}}
-                        {{/if}}
 
                     </td>
                     <td class="text-right">{{formatInteger threadId userLocale}}</td>
