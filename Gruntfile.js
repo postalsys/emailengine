@@ -1,6 +1,6 @@
 'use strict';
 
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 
 module.exports = function (grunt) {
     // Project configuration.

@@ -2,7 +2,7 @@
 
 require('dotenv').config({ quiet: true });
 
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const testConfig = require('./test-config');
 const supertest = require('supertest');
 const test = require('node:test');

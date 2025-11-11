@@ -12,7 +12,7 @@ try {
 }
 
 const { redis } = require('./lib/db');
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
 const getSecret = require('./lib/get-secret');

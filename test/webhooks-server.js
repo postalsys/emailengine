@@ -1,6 +1,6 @@
 'use strict';
 
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const Hapi = require('@hapi/hapi');
 
 const webhooks = new Map();

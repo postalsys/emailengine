@@ -5,7 +5,7 @@
 const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');

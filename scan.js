@@ -2,7 +2,7 @@
 
 'use strict';
 
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const Redis = require('ioredis');
 const redisUrl = require('./lib/redis-url');
 //const packageData = require('./package.json');

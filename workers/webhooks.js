@@ -3,7 +3,7 @@
 const { parentPort } = require('worker_threads');
 
 const packageData = require('../package.json');
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const { createHmac } = require('crypto');
 const logger = require('../lib/logger');
 const { webhooks: Webhooks } = require('../lib/webhooks');

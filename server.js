@@ -10,7 +10,7 @@
  * @module server
  * @requires dotenv
  * @requires worker_threads
- * @requires wild-config
+ * @requires @zone-eu/wild-config
  * @see {@link https://emailengine.app}
  */
 
@@ -45,12 +45,12 @@ const os = require('os');
 process.env.UV_THREADPOOL_SIZE =
     process.env.UV_THREADPOOL_SIZE && !isNaN(process.env.UV_THREADPOOL_SIZE) ? Number(process.env.UV_THREADPOOL_SIZE) : Math.max(os.cpus().length, 4);
 
-// Cache command line arguments before wild-config processes them
+// Cache command line arguments before @zone-eu/wild-config processes them
 const argv = process.argv.slice(2);
 
 const { Worker: WorkerThread, SHARE_ENV } = require('worker_threads');
 const packageData = require('./package.json');
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 const logger = require('./lib/logger');
 
 // Import utility functions

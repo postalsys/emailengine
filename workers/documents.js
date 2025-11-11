@@ -52,7 +52,7 @@ const {
     REDIS_PREFIX
 } = require('../lib/consts');
 
-const config = require('wild-config');
+const config = require('@zone-eu/wild-config');
 config.service = config.service || {};
 
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
