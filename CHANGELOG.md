@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.58.1](https://github.com/postalsys/emailengine/compare/v2.58.0...v2.58.1) (2025-11-14)
+
+
+### Bug Fixes
+
+* Add EENGINE_ENABLE_OAUTH_TOKENS_API environment variable support ([be74bf9](https://github.com/postalsys/emailengine/commit/be74bf9b92ea20b9f0cbb7cf336036e4c2e5cf7b))
+* **outlook:** Request specific body content type from MS Graph API ([9428852](https://github.com/postalsys/emailengine/commit/9428852c6f79721c9422698de25edc8ba9cfec8d))
+* **smtp-interface:** Add configurable SMTP message size limit ([c3692b9](https://github.com/postalsys/emailengine/commit/c3692b929fded1f48f1054da1777a19378908b0f))
+
 ## [2.58.0](https://github.com/postalsys/emailengine/compare/v2.57.3...v2.58.0) (2025-10-27)
 
 
