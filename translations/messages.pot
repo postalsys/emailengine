@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-11-11 15:55+0000\n"
+"POT-Creation-Date: 2025-11-14 11:34+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
