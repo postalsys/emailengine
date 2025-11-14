@@ -207,7 +207,7 @@
 
 
             <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
+                <div class="text-muted float-right code-link">[EENGINE_ENABLE_OAUTH_TOKENS_API]</div>
                 <input type="checkbox" class="form-check-input {{#if errors.enableOAuthTokensApi}}is-invalid{{/if}}"
                     id="enableOAuthTokensApi" name="enableOAuthTokensApi" {{#if
                     values.enableOAuthTokensApi}}checked{{/if}} />
@@ -217,8 +217,9 @@
                 {{/if}}
                 <small class="form-text text-muted">Enable <a
                         href="/admin/swagger#/Account/getV1AccountAccountOauthtoken" target="_blank"
-                        rel="noopener noreferrer">API endpoint</a> to retrieve OAuth2 tokens. Use with caution-tokens
-                    grant full email access.</small>
+                        rel="noopener noreferrer">API endpoint</a> to retrieve OAuth2 tokens. Set
+                    <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
+                    by default.</small>
             </div>
 
 

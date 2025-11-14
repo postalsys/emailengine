@@ -247,6 +247,11 @@ const METRIC_RECENT = 10 * 60 * 1000; // 10min
 const HAS_API_PROXY_SET = hasEnvValue('EENGINE_API_PROXY') || typeof config.api.proxy !== 'undefined';
 const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
+// OAuth2 token access configuration
+const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')
+    ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API'))
+    : null;
+
 // Log startup information
 logger.info({
     msg: 'EmailEngine starting up',
@@ -2864,6 +2869,12 @@ const startApplication = async () => {
     let existingScriptEnv = await settings.get('scriptEnv');
     if (existingScriptEnv === null) {
         await settings.set('scriptEnv', {}); // empty object
+    }
+
+    // OAuth2 token access settings
+    let existingEnableOAuthTokensApi = await settings.get('enableOAuthTokensApi');
+    if (existingEnableOAuthTokensApi === null && ENABLE_OAUTH_TOKENS_API !== null) {
+        await settings.set('enableOAuthTokensApi', ENABLE_OAUTH_TOKENS_API);
     }
 
     // Import prepared token
