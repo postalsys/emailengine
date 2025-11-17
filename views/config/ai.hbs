@@ -327,6 +327,22 @@
                         rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
             </div>
 
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">openAiMaxTokens</a>]
+                </div>
+                <label for="settingsOpenAiMaxTokens">Max Tokens</label>
+                <input type="number" class="form-control text-list {{#if errors.openAiMaxTokens}}is-invalid{{/if}}"
+                    id="settingsOpenAiMaxTokens" step="1" min="0" name="openAiMaxTokens"
+                    value="{{values.openAiMaxTokens}}" />
+                {{#if errors.openAiMaxTokens}}
+                <span class="invalid-feedback">{{errors.openAiMaxTokens}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Maximum tokens limit for OpenAI API requests. Defaults: GPT-4: 6500,
+                    GPT-3.5: 3000. <a href="https://platform.openai.com/docs/guides/text-generation" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
+            </div>
+
         </div>
     </div>
 

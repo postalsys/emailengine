@@ -248,9 +248,7 @@ const HAS_API_PROXY_SET = hasEnvValue('EENGINE_API_PROXY') || typeof config.api.
 const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
 // OAuth2 token access configuration
-const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')
-    ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API'))
-    : null;
+const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API') ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')) : null;
 
 // Log startup information
 logger.info({
@@ -2202,16 +2200,21 @@ async function onCommand(worker, message) {
                 requestOpts.topP = openAiTopP;
             }
 
-            // Set max tokens based on model
-            switch (openAiModel) {
-                case 'gpt-4':
-                    requestOpts.maxTokens = 6500;
-                    break;
-                case 'gpt-3.5-turbo':
-                case 'gpt-3.5-turbo-instruct':
-                default:
-                    requestOpts.maxTokens = 3000;
-                    break;
+            let openAiMaxTokens = message.data.openAiMaxTokens || (await settings.get('openAiMaxTokens'));
+            if (openAiMaxTokens) {
+                requestOpts.maxTokens = openAiMaxTokens;
+            } else {
+                // Set max tokens based on model
+                switch (openAiModel) {
+                    case 'gpt-4':
+                        requestOpts.maxTokens = 6500;
+                        break;
+                    case 'gpt-3.5-turbo':
+                    case 'gpt-3.5-turbo-instruct':
+                    default:
+                        requestOpts.maxTokens = 3000;
+                        break;
+                }
             }
 
             requestOpts.user = message.data.account;
