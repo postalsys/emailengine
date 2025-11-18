@@ -338,7 +338,11 @@
                 {{#if errors.openAiMaxTokens}}
                 <span class="invalid-feedback">{{errors.openAiMaxTokens}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Maximum tokens limit for OpenAI API requests. Defaults: GPT-4: 6500,
+                <small class="form-text text-muted">Maximum tokens limit for OpenAI API requests. EmailEngine composes
+                    the
+                    full prompt from: the user prompt text (above), system prompt describing the AI role, JSON schema
+                    definition, and the structured email data. If the combined prompt exceeds this limit, EmailEngine
+                    automatically shortens the email content until it fits. Defaults: GPT-5: 18000, GPT-4: 6500,
                     GPT-3.5: 3000.</small>
             </div>
 

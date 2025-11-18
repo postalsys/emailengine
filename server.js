@@ -2205,14 +2205,16 @@ async function onCommand(worker, message) {
                 requestOpts.maxTokens = openAiMaxTokens;
             } else {
                 // Set max tokens based on model
-                switch (openAiModel) {
+                switch (openAiModel.substring(0, 5)) {
+                    case 'gpt-3':
+                        requestOpts.maxTokens = 3000;
+                        break;
                     case 'gpt-4':
                         requestOpts.maxTokens = 6500;
                         break;
-                    case 'gpt-3.5-turbo':
-                    case 'gpt-3.5-turbo-instruct':
+                    case 'gpt-5':
                     default:
-                        requestOpts.maxTokens = 3000;
+                        requestOpts.maxTokens = 18000;
                         break;
                 }
             }
@@ -2284,14 +2286,16 @@ async function onCommand(worker, message) {
             }
 
             // Set max tokens based on model
-            switch (openAiModel) {
+            switch (openAiModel.substring(0, 5)) {
+                case 'gpt-3':
+                    requestOpts.maxTokens = 3000;
+                    break;
                 case 'gpt-4':
                     requestOpts.maxTokens = 6500;
                     break;
-                case 'gpt-3.5-turbo':
-                case 'gpt-3.5-turbo-instruct':
+                case 'gpt-5':
                 default:
-                    requestOpts.maxTokens = 3000;
+                    requestOpts.maxTokens = 18000;
                     break;
             }
 
