@@ -7,6 +7,7 @@ Helper script to refresh OAuth2 tokens for Gmail test accounts.
 ### Usage
 
 ```bash
+npm install googleapis
 node scripts/refresh-test-tokens.js
 ```
 
@@ -25,18 +26,20 @@ node scripts/refresh-test-tokens.js
 - `.env` file with the following variables:
 
 **Full access accounts (gmail.modify scope):**
-  - `GMAIL_API_CLIENT_ID`
-  - `GMAIL_API_CLIENT_SECRET`
-  - `GMAIL_API_ACCOUNT_EMAIL_1`
-  - `GMAIL_API_ACCOUNT_REFRESH_1`
-  - `GMAIL_API_ACCOUNT_EMAIL_2`
-  - `GMAIL_API_ACCOUNT_REFRESH_2`
+
+- `GMAIL_API_CLIENT_ID`
+- `GMAIL_API_CLIENT_SECRET`
+- `GMAIL_API_ACCOUNT_EMAIL_1`
+- `GMAIL_API_ACCOUNT_REFRESH_1`
+- `GMAIL_API_ACCOUNT_EMAIL_2`
+- `GMAIL_API_ACCOUNT_REFRESH_2`
 
 **Send-only account (gmail.send scope only):**
-  - `GMAIL_SENDONLY_CLIENT_ID`
-  - `GMAIL_SENDONLY_CLIENT_SECRET`
-  - `GMAIL_SENDONLY_ACCOUNT_EMAIL`
-  - `GMAIL_SENDONLY_ACCOUNT_REFRESH`
+
+- `GMAIL_SENDONLY_CLIENT_ID`
+- `GMAIL_SENDONLY_CLIENT_SECRET`
+- `GMAIL_SENDONLY_ACCOUNT_EMAIL`
+- `GMAIL_SENDONLY_ACCOUNT_REFRESH`
 
 ### Notes
 

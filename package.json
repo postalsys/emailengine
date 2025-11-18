@@ -21,7 +21,6 @@
         "prepare-docker": "echo \"EE_DOCKER_LEGACY=$EE_DOCKER_LEGACY\" >> system.env && cat system.env",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install && ./copy-static-files.sh && npm run licenses && npm run gettext",
         "test-gmail-api": "node lib/email-client/gmail-client.js --dbs.redis=redis://127.0.0.1/11",
-        "refresh-tokens": "node scripts/refresh-test-tokens.js",
         "format": "prettier --write 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' '*.js'",
         "format:check": "prettier --check 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' '*.js'"
     },
@@ -119,7 +118,6 @@
         "chai": "4.3.10",
         "eerawlog": "1.5.1",
         "eslint": "9.39.1",
-        "googleapis": "166.0.0",
         "grunt": "1.6.1",
         "grunt-cli": "1.5.0",
         "grunt-shell-spawn": "0.5.0",
