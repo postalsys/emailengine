@@ -247,6 +247,9 @@ const METRIC_RECENT = 10 * 60 * 1000; // 10min
 const HAS_API_PROXY_SET = hasEnvValue('EENGINE_API_PROXY') || typeof config.api.proxy !== 'undefined';
 const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EENGINE_API_PROXY')) : getBoolean(config.api.proxy);
 
+// API authentication requirement configuration (default: true)
+const REQUIRE_API_AUTH = hasEnvValue('EENGINE_REQUIRE_API_AUTH') ? getBoolean(readEnvValue('EENGINE_REQUIRE_API_AUTH')) : null;
+
 // OAuth2 token access configuration
 const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API') ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')) : null;
 
@@ -2882,6 +2885,13 @@ const startApplication = async () => {
     let existingEnableOAuthTokensApi = await settings.get('enableOAuthTokensApi');
     if (existingEnableOAuthTokensApi === null && ENABLE_OAUTH_TOKENS_API !== null) {
         await settings.set('enableOAuthTokensApi', ENABLE_OAUTH_TOKENS_API);
+    }
+
+    // API authentication requirement settings
+    let existingDisableTokens = await settings.get('disableTokens');
+    if (existingDisableTokens === null && REQUIRE_API_AUTH !== null) {
+        // disableTokens is the inverse of REQUIRE_API_AUTH
+        await settings.set('disableTokens', !REQUIRE_API_AUTH);
     }
 
     // Import prepared token

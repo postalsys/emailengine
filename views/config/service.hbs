@@ -153,7 +153,7 @@
 
             <div class="form-group form-check">
 
-                <div class="text-muted float-right code-link">[<em>Web UI only</em>]</div>
+                <div class="text-muted float-right code-link">[EENGINE_REQUIRE_API_AUTH]</div>
 
                 <input type="checkbox" class="form-check-input {{#if errors.enableTokens}}is-invalid{{/if}}"
                     id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
@@ -166,7 +166,7 @@
                 <span class="invalid-feedback">{{errors.enableTokens}}</span>
                 {{/if}}
                 <small class="form-text text-muted">Disable for development only. Always enable in production for secure
-                    API access.</small>
+                    API access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not recommended).</small>
             </div>
 
             <div class="form-group form-check">
