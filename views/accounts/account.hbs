@@ -243,7 +243,8 @@
             <dd class="col-sm-9">
                 {{#if account.isApi}}
                 {{#if account.sendOnly}}
-                API <span class="badge badge-info" style="cursor:default;" data-toggle="popover" data-trigger="hover" data-content="This account can only send emails. It does not have read access to the mailbox.">Send-only</span>
+                API <span class="badge badge-info" style="cursor:default;" data-toggle="popover" data-trigger="hover"
+                    data-content="This account can only send emails. It does not have read access to the mailbox.">Send-only</span>
                 {{else}}
                 API
                 {{/if}}
@@ -404,11 +405,12 @@
     <div class="card-body">
 
         {{#if account.lastErrorState}}
+        {{#if account.lastErrorState.description}}
+        <div class="alert alert-danger">{{account.lastErrorState.description}}</div>
+        {{/if}}
         <dl class="row">
-            {{#if account.lastErrorState.description}}
-            <dt class="col-sm-3">Error</dt>
-            <dd class="col-sm-9">{{account.lastErrorState.description}}</dd>
-            {{/if}}
+
+
 
             {{#if account.lastErrorState.response}}
             <dt class="col-sm-3">IMAP response</dt>
