@@ -454,6 +454,16 @@ const metrics = {
         labelNames: ['type', 'recent']
     }),
 
+    unresponsiveWorkers: new promClient.Gauge({
+        name: 'unresponsive_workers',
+        help: 'Number of unresponsive worker threads'
+    }),
+
+    licenseDaysRemaining: new promClient.Gauge({
+        name: 'license_days_remaining',
+        help: 'Days until license expires (-1 for lifetime, 0 for no license)'
+    }),
+
     emailengineConfig: new promClient.Gauge({
         name: 'emailengine_config',
         help: 'Configuration values',
@@ -1913,12 +1923,32 @@ async function updateQueueCounters() {
     metrics.emailengineConfig.set({ config: 'workersWebhooks' }, config.workers.webhooks);
     metrics.emailengineConfig.set({ config: 'workersSubmission' }, config.workers.submit);
 
+    // Update license days remaining metric
+    if (licenseInfo.active && licenseInfo.details) {
+        if (licenseInfo.details.lt) {
+            // Lifetime license
+            metrics.licenseDaysRemaining.set(-1);
+        } else if (licenseInfo.details.expires) {
+            // Time-limited license
+            let expiresAt = new Date(licenseInfo.details.expires).getTime();
+            let daysRemaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / (24 * 60 * 60 * 1000)));
+            metrics.licenseDaysRemaining.set(daysRemaining);
+        } else {
+            // Subscription license (no fixed expiry)
+            metrics.licenseDaysRemaining.set(-1);
+        }
+    } else {
+        // No active license
+        metrics.licenseDaysRemaining.set(0);
+    }
+
     // Update thread metrics
     let threadsInfo = await getThreadsInfo();
 
     let now = Date.now();
 
     let threadCounts = new Map();
+    let unresponsiveCount = 0;
     for (let workerThreadInfo of threadsInfo || []) {
         let key = workerThreadInfo.type;
         let metricKey = `${key}_total`;
@@ -1934,6 +1964,11 @@ async function updateQueueCounters() {
         } else {
             threadCounts.set(metricKey, threadCounts.get(metricKey) + 1);
         }
+
+        // Count unresponsive workers
+        if (workerThreadInfo.resourceUsageError && workerThreadInfo.resourceUsageError.unresponsive) {
+            unresponsiveCount++;
+        }
     }
 
     // Set thread count metrics
@@ -1941,6 +1976,9 @@ async function updateQueueCounters() {
         let [type, age] = key.split('_');
         metrics.threads.set({ type, recent: age === 'recent' ? 'yes' : 'no' }, value || 0);
     }
+
+    // Set unresponsive workers metric
+    metrics.unresponsiveWorkers.set(unresponsiveCount);
 
     // Update queue metrics
     for (let queue of ['notify', 'submit', 'documents']) {
