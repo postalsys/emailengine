@@ -8008,8 +8008,20 @@ Include your token in requests using one of these methods:
             });
 
             try {
-                return await accountObject.getActiveAccessTokenData();
+                const tokenData = await accountObject.getActiveAccessTokenData();
+
+                // Record metric if token was actually refreshed (not cached)
+                if (!tokenData.cached) {
+                    const provider = tokenData.provider || 'unknown';
+                    metrics(request.logger, 'oauth2TokenRefresh', 'inc', { status: 'success', provider, statusCode: '200' });
+                }
+
+                return tokenData;
             } catch (err) {
+                // Record failed token refresh
+                const statusCode = String(err.statusCode || 0);
+                metrics(request.logger, 'oauth2TokenRefresh', 'inc', { status: 'failure', provider: 'unknown', statusCode });
+
                 request.logger.error({ msg: 'API request failed', err });
                 if (Boom.isBoom(err)) {
                     throw err;
