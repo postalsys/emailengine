@@ -418,6 +418,18 @@ const metrics = {
         help: 'IMAP bytes received'
     }),
 
+    oauth2TokenRefresh: new promClient.Counter({
+        name: 'oauth2_token_refresh',
+        help: 'OAuth2 access token refresh attempts',
+        labelNames: ['status', 'provider', 'statusCode']
+    }),
+
+    oauth2ApiRequest: new promClient.Counter({
+        name: 'oauth2_api_request',
+        help: 'OAuth2 API requests (MS Graph, Gmail API)',
+        labelNames: ['status', 'provider', 'statusCode']
+    }),
+
     webhooks: new promClient.Counter({
         name: 'webhooks',
         help: 'Webhooks sent',
