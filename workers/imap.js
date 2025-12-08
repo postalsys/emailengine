@@ -864,6 +864,7 @@ class ConnectionHandler {
 
             case 'countConnections': {
                 let results = Object.assign({}, DEFAULT_STATES);
+                let subscriptions = { valid: 0, expired: 0, unset: 0, failed: 0, pending: 0 };
 
                 for (let accountObject of this.accounts.values()) {
                     let state;
@@ -872,6 +873,14 @@ class ConnectionHandler {
                         state = 'unassigned';
                     } else {
                         state = await accountObject.connection.currentState();
+
+                        // Collect MS Graph subscription states for Outlook accounts
+                        if (accountObject.connection instanceof OutlookClient) {
+                            let subState = accountObject.connection.subscriptionState || 'unset';
+                            if (subscriptions[subState] !== undefined) {
+                                subscriptions[subState]++;
+                            }
+                        }
                     }
 
                     if (!results[state]) {
@@ -880,7 +889,7 @@ class ConnectionHandler {
                     results[state] += 1;
                 }
 
-                return results;
+                return { connections: results, subscriptions };
             }
 
             default:

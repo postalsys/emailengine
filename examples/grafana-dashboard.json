@@ -1619,9 +1619,77 @@
       "type": "timeseries"
     },
     {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "description": "MS Graph webhook subscription states. 'valid' = active subscription, 'expired' = subscription expired, 'unset' = no subscription configured, 'failed' = subscription error, 'pending' = creating/renewing.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "valid" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "expired" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "failed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "unset" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 93 },
+      "id": 554,
+      "options": {
+        "legend": { "calcs": ["last"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "editorMode": "code",
+          "expr": "outlook_subscriptions{instance=~\"$host\"}",
+          "legendFormat": "{{status}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "MS Graph Subscriptions",
+      "type": "timeseries"
+    },
+    {
       "collapsed": false,
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 93 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 101 },
       "id": 600,
       "panels": [],
       "title": "Redis",
@@ -1639,7 +1707,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 0, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 0, "y": 102 },
       "id": 601,
       "options": {
         "colorMode": "none",
@@ -1677,7 +1745,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 3, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 3, "y": 102 },
       "id": 602,
       "options": {
         "colorMode": "none",
@@ -1714,7 +1782,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 6, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 6, "y": 102 },
       "id": 603,
       "options": {
         "colorMode": "none",
@@ -1752,7 +1820,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 9, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 9, "y": 102 },
       "id": 604,
       "options": {
         "colorMode": "none",
@@ -1797,7 +1865,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 12, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 12, "y": 102 },
       "id": 605,
       "options": {
         "colorMode": "background",
@@ -1841,7 +1909,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 15, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 15, "y": 102 },
       "id": 606,
       "options": {
         "colorMode": "background",
@@ -1879,7 +1947,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 18, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 18, "y": 102 },
       "id": 607,
       "options": {
         "colorMode": "none",
@@ -1917,7 +1985,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 3, "x": 21, "y": 94 },
+      "gridPos": { "h": 3, "w": 3, "x": 21, "y": 102 },
       "id": 608,
       "options": {
         "colorMode": "none",
@@ -1978,7 +2046,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 97 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 105 },
       "id": 609,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -2032,7 +2100,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 97 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 105 },
       "id": 610,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -2086,7 +2154,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 103 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 111 },
       "id": 611,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -2139,7 +2207,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 103 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 111 },
       "id": 612,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -2191,7 +2259,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 109 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 117 },
       "id": 613,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -2243,7 +2311,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 109 },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 117 },
       "id": 614,
       "options": {
         "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },

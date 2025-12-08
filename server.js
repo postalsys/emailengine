@@ -430,6 +430,12 @@ const metrics = {
         labelNames: ['status', 'provider', 'statusCode']
     }),
 
+    outlookSubscriptions: new promClient.Gauge({
+        name: 'outlook_subscriptions',
+        help: 'MS Graph webhook subscription states',
+        labelNames: ['status']
+    }),
+
     webhooks: new promClient.Counter({
         name: 'webhooks',
         help: 'Webhooks sent',
@@ -2653,6 +2659,9 @@ async function collectMetrics() {
         metricsResult[key] = 0;
     });
 
+    // Subscription state counters
+    let subscriptionResults = { valid: 0, expired: 0, unset: 0, failed: 0, pending: 0 };
+
     // Collect from each IMAP worker
     if (workers.has('imap')) {
         let imapWorkers = workers.get('imap');
@@ -2664,12 +2673,24 @@ async function collectMetrics() {
 
             try {
                 let workerStats = await call(imapWorker, { cmd: 'countConnections' });
-                Object.keys(workerStats || {}).forEach(status => {
+
+                // Handle connection states
+                let connectionStats = workerStats?.connections || workerStats || {};
+                Object.keys(connectionStats).forEach(status => {
                     if (!metricsResult[status]) {
                         metricsResult[status] = 0;
                     }
-                    metricsResult[status] += Number(workerStats[status]) || 0;
+                    metricsResult[status] += Number(connectionStats[status]) || 0;
                 });
+
+                // Handle subscription states (MS Graph)
+                if (workerStats?.subscriptions) {
+                    Object.keys(workerStats.subscriptions).forEach(status => {
+                        if (subscriptionResults[status] !== undefined) {
+                            subscriptionResults[status] += Number(workerStats.subscriptions[status]) || 0;
+                        }
+                    });
+                }
             } catch (err) {
                 logger.error({ msg: 'Connection count failed', err });
             }
@@ -2679,9 +2700,14 @@ async function collectMetrics() {
     // Add unassigned accounts to disconnected count
     metricsResult.disconnected = (Number(metricsResult.disconnected) || 0) + (unassigned ? unassigned.size : 0);
 
-    // Update Prometheus metrics
+    // Update Prometheus metrics for connections
     Object.keys(metricsResult).forEach(status => {
         metrics.imapConnections.set({ status }, metricsResult[status]);
+    });
+
+    // Update Prometheus metrics for MS Graph subscriptions
+    Object.keys(subscriptionResults).forEach(status => {
+        metrics.outlookSubscriptions.set({ status }, subscriptionResults[status]);
     });
 }
 
