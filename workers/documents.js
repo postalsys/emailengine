@@ -46,7 +46,7 @@ const {
     MESSAGE_NEW_NOTIFY,
     MESSAGE_DELETED_NOTIFY,
     MESSAGE_UPDATED_NOTIFY,
-    ACCOUNT_DELETED,
+    ACCOUNT_DELETED_NOTIFY,
     EMAIL_BOUNCE_NOTIFY,
     MAILBOX_DELETED_NOTIFY,
     REDIS_PREFIX
@@ -178,7 +178,7 @@ const documentsWorker = new Worker(
         const tombstoneYdy = `${REDIS_PREFIX}tomb:${job.data.account}:${dateKeyYdy}`;
 
         switch (job.data.event) {
-            case ACCOUNT_DELETED:
+            case ACCOUNT_DELETED_NOTIFY:
                 {
                     const { index, client } = await getESClient(logger);
                     if (!client) {
