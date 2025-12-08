@@ -293,7 +293,7 @@ const licenseInfo = {
  */
 const THREAD_NAMES = {
     main: 'Main thread',
-    imap: 'IMAP worker',
+    imap: 'Email worker',
     webhooks: 'Webhook worker',
     api: 'HTTP and API server',
     submit: 'Email sending worker',
