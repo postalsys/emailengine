@@ -57,7 +57,13 @@
                         {{heapUsed}}
                         {{/if}}
                     </td>
-                    <td class="text-right">{{formatInteger accounts userLocale}}</td>
+                    <td class="text-right">
+                        {{#if accounts}}
+                        <a href="/admin/internals/thread/{{threadId}}">{{formatInteger accounts userLocale}}</a>
+                        {{else}}
+                        {{formatInteger accounts userLocale}}
+                        {{/if}}
+                    </td>
                     <td class="text-right">{{formatInteger called userLocale}}</td>
                     <td class="text-right">{{formatInteger messages userLocale}}</td>
                     <td class="text-right">

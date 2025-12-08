@@ -2483,6 +2483,37 @@ async function onCommand(worker, message) {
             return await getThreadsInfo();
         }
 
+        case 'worker-accounts': {
+            // Get accounts assigned to a specific worker thread
+            const { threadId, page = 1, pageSize = 20 } = message;
+            const accounts = [];
+
+            // Find worker by threadId and get its assigned accounts
+            for (const [account, worker] of assigned) {
+                if (worker.threadId === threadId) {
+                    accounts.push(account);
+                }
+            }
+
+            // Sort accounts for consistent ordering
+            accounts.sort((a, b) => a.localeCompare(b));
+
+            // Paginate
+            const totalAccounts = accounts.length;
+            const totalPages = Math.ceil(totalAccounts / pageSize) || 1;
+            const currentPage = Math.min(Math.max(1, page), totalPages);
+            const start = (currentPage - 1) * pageSize;
+            const pagedAccounts = accounts.slice(start, start + pageSize);
+
+            return {
+                accounts: pagedAccounts,
+                total: totalAccounts,
+                page: currentPage,
+                pageSize,
+                pages: totalPages
+            };
+        }
+
         case 'rate-limit': {
             return await checkRateLimit(message.key, message.count, message.allowed, message.windowSize);
         }
