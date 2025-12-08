@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.59.0](https://github.com/postalsys/emailengine/compare/v2.58.2...v2.59.0) (2025-12-08)
+
+
+### Features
+
+* Add dedicated page to view accounts assigned to IMAP worker threads ([6d7e69e](https://github.com/postalsys/emailengine/commit/6d7e69e35230a3a11076d65174ef1ed7e0ecc144))
+* Add MS Graph webhook subscription state metrics ([3e3ad18](https://github.com/postalsys/emailengine/commit/3e3ad184d013770d6defbe71f21072969fe105be))
+* Add OAuth2 API metrics for MS Graph and Gmail backends ([9a8182c](https://github.com/postalsys/emailengine/commit/9a8182cf82c1493e472573b97dded8660feaff7f))
+* Add OAuth2 token refresh metrics to all refresh paths ([4c23c90](https://github.com/postalsys/emailengine/commit/4c23c903edf916367ffc3bcd1b1abe97cf783bc6))
+* Add Prometheus metrics and Grafana dashboard ([e3d4088](https://github.com/postalsys/emailengine/commit/e3d4088751ab0d04ea86425bbcea02ca49afbc90))
+
+
+### Bug Fixes
+
+* Correct CPU usage chart unit from seconds to dimensionless ([88765bc](https://github.com/postalsys/emailengine/commit/88765bc137a6dedafdaee8c6677b5e4e8ef2eec6))
+* Correct y-positions of Redis panels in Grafana dashboard ([12fdeff](https://github.com/postalsys/emailengine/commit/12fdeff1c4f837e7c37ebdb6c5647b01fb49c467))
+* Fix OAuth2 token refresh metrics not being recorded ([a6bf696](https://github.com/postalsys/emailengine/commit/a6bf6964e5b412bde5b44630eb20a3af59d2e700))
+* Rename IMAP worker to Email worker in thread display ([95b39da](https://github.com/postalsys/emailengine/commit/95b39da07c7ee28ac0539f6599546bc49af8e0ac))
+
 ## [2.58.2](https://github.com/postalsys/emailengine/compare/v2.58.1...v2.58.2) (2025-11-24)
 
 
