@@ -2520,6 +2520,7 @@ Include your token in requests using one of these methods:
                         .single()
                         .default(['api'])
                         .required()
+                        .description('Token permission scopes: "api" for REST API access, "smtp" for SMTP submission, "imap-proxy" for IMAP proxy authentication')
                         .label('Scopes'),
 
                     metadata: Joi.string()
@@ -2600,7 +2601,7 @@ Include your token in requests using one of these methods:
 
             response: {
                 schema: Joi.object({
-                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the account deleted')
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the token deleted')
                 }).label('DeleteTokenRequestResponse'),
                 failAction: 'log'
             }
@@ -4384,7 +4385,7 @@ Include your token in requests using one of these methods:
                         .falsy('N', 'false', 0)
                         .default(false)
                         .description(
-                            'Shorthand option to fetch and preprocess HTML and inlined images. Overrides `textType`, `preProcessHtml`, and `preProcessHtml` options.'
+                            'Shorthand option to fetch and preprocess HTML and inline images. Overrides `textType`, `preProcessHtml`, and `embedAttachedImages` options.'
                         )
                         .label('WebSafeHtml'),
 
@@ -4576,7 +4577,7 @@ Include your token in requests using one of these methods:
                         .label('MessageAppendId'),
                     path: Joi.string().example('INBOX').description('Folder this message was uploaded to').label('MessageAppendPath'),
                     uid: Joi.number().integer().example(12345).description('UID of uploaded message'),
-                    uidValidity: Joi.string().example('12345').description('UIDVALIDTITY of the target folder. Numeric value cast as string.'),
+                    uidValidity: Joi.string().example('12345').description('UIDVALIDITY of the target folder. Numeric value cast as string.'),
                     seq: Joi.number().integer().example(12345).description('Sequence number of uploaded message'),
 
                     messageId: Joi.string().max(996).example('<test123@example.com>').description('Message ID'),
@@ -5887,7 +5888,7 @@ Include your token in requests using one of these methods:
                             .description('Referenced message ID'),
                         documentStore: Joi.boolean()
                             .example(true)
-                            .description('Was the message dat aloaded from the document store')
+                            .description('Was the message data loaded from the Document Store')
                             .label('ResponseDocumentStore')
                             .meta({ swaggerHidden: true }),
                         success: Joi.boolean().example(true).description('Was the referenced message processed successfully').label('ResponseReferenceSuccess'),
@@ -5923,7 +5924,7 @@ Include your token in requests using one of these methods:
                                         .description('Referenced message ID'),
                                     documentStore: Joi.boolean()
                                         .example(true)
-                                        .description('Was the message dat aloaded from the document store')
+                                        .description('Was the message data loaded from the Document Store')
                                         .label('ResponseDocumentStore')
                                         .meta({ swaggerHidden: true }),
                                     success: Joi.boolean()
@@ -7575,7 +7576,7 @@ Include your token in requests using one of these methods:
             response: {
                 schema: Joi.object({
                     id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
-                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the gateway deleted'),
+                    deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the OAuth2 application deleted'),
                     accounts: Joi.number()
                         .integer()
                         .example(12)
@@ -7732,8 +7733,8 @@ Include your token in requests using one of these methods:
                     deliveries: Joi.number().integer().empty('').example(100).description('Count of email deliveries using this gateway'),
                     lastUse: Joi.date().iso().example('2021-02-17T13:43:18.860Z').description('Last delivery time'),
 
-                    user: Joi.string().empty('').trim().max(1024).label('UserName'),
-                    pass: Joi.string().empty('').max(1024).label('Password'),
+                    user: Joi.string().empty('').trim().max(1024).description('SMTP authentication username').label('UserName'),
+                    pass: Joi.string().empty('').max(1024).description('SMTP authentication password').label('Password'),
 
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
@@ -7808,8 +7809,8 @@ Include your token in requests using one of these methods:
 
                     name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name').required(),
 
-                    user: Joi.string().empty('').trim().default(null).max(1024).label('UserName'),
-                    pass: Joi.string().empty('').max(1024).default(null).label('Password'),
+                    user: Joi.string().empty('').trim().default(null).max(1024).description('SMTP authentication username').label('UserName'),
+                    pass: Joi.string().empty('').max(1024).default(null).description('SMTP authentication password').label('Password'),
 
                     host: Joi.string().hostname().example('smtp.gmail.com').description('Hostname to connect to').label('Hostname').required(),
                     port: Joi.number()
@@ -7895,8 +7896,8 @@ Include your token in requests using one of these methods:
                 payload: Joi.object({
                     name: Joi.string().empty('').max(256).example('John Smith').description('Account Name').label('Gateway Name'),
 
-                    user: Joi.string().empty('').trim().max(1024).allow(null).label('UserName'),
-                    pass: Joi.string().empty('').max(1024).allow(null).label('Password'),
+                    user: Joi.string().empty('').trim().max(1024).allow(null).description('SMTP authentication username').label('UserName'),
+                    pass: Joi.string().empty('').max(1024).allow(null).description('SMTP authentication password').label('Password'),
 
                     host: Joi.string().hostname().empty('').example('smtp.gmail.com').description('Hostname to connect to').label('Hostname'),
                     port: Joi.number()
