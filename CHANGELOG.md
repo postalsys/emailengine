@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.59.2](https://github.com/postalsys/emailengine/compare/v2.59.1...v2.59.2) (2025-12-11)
+
+
+### Bug Fixes
+
+* Bumped dependencies to get rid of security warnings ([54b13c4](https://github.com/postalsys/emailengine/commit/54b13c4c4a42c7af886c63a97b6cdbb4dc8696b1))
+
 ## [2.59.1](https://github.com/postalsys/emailengine/compare/v2.59.0...v2.59.1) (2025-12-10)
 
 
