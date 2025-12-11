@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.59.1](https://github.com/postalsys/emailengine/compare/v2.59.0...v2.59.1) (2025-12-10)
+
+
+### Bug Fixes
+
+* Correct API schema documentation and descriptions ([8a51465](https://github.com/postalsys/emailengine/commit/8a514650c8422b666244164aa71fe1d7b6f0ec2b))
+* Improve auth-server example with proper error handling and documentation ([cef5b47](https://github.com/postalsys/emailengine/commit/cef5b47378bdb18a1ff136fd29e8c63dd566cb86))
+* Increase openAiPrompt max size from 6KB to 1MB ([29d673d](https://github.com/postalsys/emailengine/commit/29d673d6bf35f78c3ef53ec1b690c49deecd889c))
+
 ## [2.59.0](https://github.com/postalsys/emailengine/compare/v2.58.2...v2.59.0) (2025-12-08)
 
 
