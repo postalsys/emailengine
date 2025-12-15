@@ -13,7 +13,7 @@
         "test": "NODE_ENV=test grunt",
         "lint": "npx eslint lib/**/*.js workers/**/*.js test/**/*.js server.js Gruntfile.js",
         "swagger": "./getswagger.sh",
-        "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && ./update-info.sh",
+        "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && rm -rf node_modules/ace-builds node_modules/@postalsys/ee-client && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "pkg --debug package.json && npm install && node winconf.js",
         "licenses": "license-checker --excludePackages 'emailengine-app' --json | node list-generate.js > static/licenses.html",
@@ -56,6 +56,7 @@
         "@hapi/inert": "7.1.0",
         "@hapi/vision": "7.0.3",
         "@phc/pbkdf2": "1.1.14",
+        "@postalsys/bounce-classifier": "^2.0.0",
         "@postalsys/certs": "1.0.12",
         "@postalsys/ee-client": "1.3.0",
         "@postalsys/email-ai-tools": "1.11.1",
@@ -63,6 +64,8 @@
         "@postalsys/gettext": "4.1.0",
         "@postalsys/joi-messages": "1.0.5",
         "@postalsys/templates": "2.0.0",
+        "@zone-eu/mailsplit": "5.4.8",
+        "@zone-eu/wild-config": "1.7.3",
         "ace-builds": "1.43.5",
         "base32.js": "0.1.0",
         "bullmq": "5.65.1",
@@ -90,7 +93,6 @@
         "libqp": "2.1.1",
         "license-checker": "25.0.1",
         "mailparser": "3.9.1",
-        "@zone-eu/mailsplit": "5.4.8",
         "marked": "9.1.6",
         "minimist": "1.2.8",
         "msgpack5": "6.0.2",
@@ -110,7 +112,6 @@
         "startbootstrap-sb-admin-2": "3.3.7",
         "timezones-list": "3.1.0",
         "undici": "7.16.0",
-        "@zone-eu/wild-config": "1.7.3",
         "xml2js": "0.6.2"
     },
     "devDependencies": {
@@ -145,6 +146,7 @@
             "node_modules/swagger-ui-dist/**/*",
             "translations/**/*",
             "node_modules/@postalsys/joi-messages/translations/*",
+            "node_modules/@postalsys/bounce-classifier/model/**/*",
             "node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css",
             "LICENSE_EMAILENGINE.txt",
             "help.txt",
@@ -152,10 +154,10 @@
             "sbom.json"
         ],
         "targets": [
-            "node20-linux-x64",
-            "node20-macos-x64",
-            "node20-macos-arm64",
-            "node20-win-x64"
+            "node22-linux-x64",
+            "node22-macos-x64",
+            "node22-macos-arm64",
+            "node22-win-x64"
         ],
         "outputPath": "ee-dist",
         "options": {
