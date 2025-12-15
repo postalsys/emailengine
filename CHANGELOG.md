@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.60.0](https://github.com/postalsys/emailengine/compare/v2.59.2...v2.60.0) (2025-12-15)
+
+
+### Features
+
+* Add bounce message classification using ML model ([e337ceb](https://github.com/postalsys/emailengine/commit/e337cebfb813192c385687c510c9e189d3eb0854))
+
+
+### Bug Fixes
+
+* Reduce production node_modules size by removing unused static-only deps ([af9d584](https://github.com/postalsys/emailengine/commit/af9d584d4ad806e8a0b9eb7e59e6d5c8c8ff8878))
+
 ## [2.59.2](https://github.com/postalsys/emailengine/compare/v2.59.1...v2.59.2) (2025-12-11)
 
 
