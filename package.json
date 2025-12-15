@@ -138,6 +138,10 @@
         "scripts": [
             "workers/**/*.js"
         ],
+        "ignore": [
+            "@postalsys/ee-client",
+            "ace-builds"
+        ],
         "assets": [
             "static/**/*",
             "views/**/*",
