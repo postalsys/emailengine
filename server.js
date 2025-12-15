@@ -45,6 +45,9 @@ const os = require('os');
 process.env.UV_THREADPOOL_SIZE =
     process.env.UV_THREADPOOL_SIZE && !isNaN(process.env.UV_THREADPOOL_SIZE) ? Number(process.env.UV_THREADPOOL_SIZE) : Math.max(os.cpus().length, 4);
 
+// Disable Tensorflow warnings
+process.env.TF_CPP_MIN_LOG_LEVEL = '2';
+
 // Cache command line arguments before @zone-eu/wild-config processes them
 const argv = process.argv.slice(2);
 
@@ -97,6 +100,8 @@ const {
     DEFAULT_USER_PROMPT: openAiDefaultPrompt
 } = require('@postalsys/email-ai-tools');
 const { fetch: fetchCmd } = require('undici');
+
+const bounceClassifier = require('@postalsys/bounce-classifier');
 
 const v8 = require('node:v8');
 
@@ -2227,6 +2232,20 @@ async function onCommand(worker, message) {
             return false;
         }
 
+        case 'bounceClassify':
+            // Classify bounce response message
+            try {
+                return await bounceClassifier.classify(message.data.message);
+            } catch (err) {
+                // ignore
+                logger.error({
+                    msg: 'Failed to classify bounce response',
+                    bounceResponse: message.data.message,
+                    err
+                });
+            }
+            return false;
+
         // OpenAI integration commands - run in main process to avoid memory overhead
         case 'generateSummary': {
             let requestOpts = {
@@ -3144,6 +3163,7 @@ const startApplication = async () => {
 
 // Start the application
 startApplication()
+    .then(bounceClassifier.initialize)
     .then(() => {
         // Start periodic metric collection
         setInterval(() => {
