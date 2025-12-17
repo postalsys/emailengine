@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.60.1](https://github.com/postalsys/emailengine/compare/v2.60.0...v2.60.1) (2025-12-17)
+
+
+### Bug Fixes
+
+* Enable NPM package publishing ([051f4d6](https://github.com/postalsys/emailengine/commit/051f4d638ccea94f22d08924e300fa8672b51d9d))
+* Exclude browser-only deps from pkg bundle ([994dd41](https://github.com/postalsys/emailengine/commit/994dd4169c5324d411feed804f277de119854916))
+* Wrap async close handler await calls in try-catch to prevent unhandled rejections ([c6df321](https://github.com/postalsys/emailengine/commit/c6df321c7a580c1cd10d2e1eac5681aa49e4c87a))
+
 ## [2.60.0](https://github.com/postalsys/emailengine/compare/v2.59.2...v2.60.0) (2025-12-15)
 
 
