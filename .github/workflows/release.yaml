@@ -35,11 +35,28 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: 20
-                  registry-url: 'https://registry.npmjs.org'
+                  registry-url: "https://registry.npmjs.org"
               if: ${{ steps.release.outputs.release_created }}
 
             - run: npm install
               if: ${{ steps.release.outputs.release_created }}
+
+    publish:
+        name: Publish NPM package
+        runs-on: ubuntu-latest
+        needs: release_please
+        if: ${{needs.release_please.outputs.release_created}}
+        permissions:
+            contents: read
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  registry-url: "https://registry.npmjs.org"
+            - run: npm ci
+            - run: npm publish --provenance --access public
 
     publish_docker:
         name: Publish Tagged Docker Image
@@ -54,7 +71,7 @@ jobs:
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
               with:
-                  platforms: 'arm64,arm'
+                  platforms: "arm64,arm"
 
             - name: Set up Docker Buildx
               id: buildx
