@@ -1,0 +1,23 @@
+Return-path: <nyaan@neko.example.org>
+Envelope-to: neko@libsisimai.org
+Delivery-date: Thu, 29 Apr 2005 23:34:45 +0900
+Received: from mta2.relay2.example.org ([192.0.2.222]:22222)
+	by nyaan.example.com with esmtps (TLSv1:DHE-RSA-AES256-SHA:256)
+	(Exim 4.81)
+	(envelope-from <nyaan@neko.example.org>)
+	id 2NEKOS-222222-22
+	for neko@libsisimai.org; Thu, 29 Apr 2005 23:34:45 +0900
+Received: from neko.example.org (neko.soto.example.org [192.0.2.22])
+	by mta2.relay2.example.org (8.12.8/8.12.8) with ESMTP id j3QNaaaa222222
+	for <neko@libsisimai.org>; Thu, 29 Apr 2005 23:34:45 +0900
+Date: Thu, 29 Apr 2005 23:34:45 +0900
+Message-Id: <200503142138.j3QNaaaa222222@neko.example.org>
+To: neko@libsisimai.org
+Auto-Submitted: auto-replied
+From: kijitora@example.net
+Subject: Away until May 5
+
+I am currently away returning to the office on May 5th. I will have limited access to email and will respond to you upon my return.
+
+Kijitora, Nyaan.
+

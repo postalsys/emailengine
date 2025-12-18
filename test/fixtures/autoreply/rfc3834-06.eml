@@ -1,0 +1,59 @@
+Return-Path: <>
+X-Original-To: system@errors.ef.example.org
+Delivered-To: system@errors.ef.example.org
+Received: from relaying1.ef.example.org (unknown [192.0.2.25])
+ by feed.ef.example.org (Postfix) with ESMTPS id 4yK3pM26yhzhbLwQ
+ for <system@errors.ef.example.org>; Mon,  6 Jan 2025 07:00:30 +0900 (JST)
+Authentication-Results: feed.ef.example.org;
+ dkim=pass (1024-bit key, unprotected) header.d=example.com header.i=@example.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=cCkHGzXN
+Received: from us-smtp-delivery-000.mimecast.com (ip-192-0-2-250.ap-northeast-1.compute.internal [192.0.2.250])
+ by relaying1.ef.example.org (Postfix) with ESMTPS id YS7PlVh11Bz0QdTL
+ for <nekochan@ef.example.org>; Mon,  6 Jan 2025 07:00:29 +0900 (JST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=example.com;
+ s=mimecast20190719; t=1779662812;
+ h=from:from:reply-to:reply-to:subject:subject:date:date:
+  message-id:message-id:to:to:cc:mime-version:mime-version:
+  content-type:content-type:in-reply-to:in-reply-to:  references:references;
+ bh=...;
+ b=...
+Received: from us-smtp-inbound-delivery-0.mimecast.com
+ (us-mta-000-route1.us.mimecast.lan [10.20.30.40]) by relay.mimecast.com
+ with ESMTP id us-mta-000-AAAAAAA-00000000000000-0; Sun, 05 Jan 2025
+ 18:03:23 -0400
+X-MC-Unique: ...
+X-Mimecast-MFC-AGG-ID: ...
+From: <noreply@example.com>
+To: <nekochan@ef.example.org>
+Reply-To: <kijitora@example.com>
+Message-Id: <000000000-0000000000000@us-mta-000.us.mimecast.lan>
+Subject: =?UTF-8?Q?AutoRespons?= :Nyaan?
+Date: Sun, 05 Jan 2025 18:03:23 -0400
+Auto-Submitted: auto-replied
+X-Auto-Response-Suppress: OOF, AutoReply, DR, NDR, RN, NRN
+Precedence: bulk
+X-MC-System: ...
+Mime-Version: 1.0
+X-Mimecast-Spam-Score: 0
+X-Mimecast-Originator: example.com
+Content-Type: multipart/alternative;
+ boundary="MCBoundary=_14445917231142800"
+
+--MCBoundary=_14445917231142800
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+This email inbox kijitora@example.com is no longer in use. Please contact so=
+meone else at Example or visit https://www.example.com/en/contact for assist=
+ance.
+
+--MCBoundary=_14445917231142800
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><head></head><body>This email inbox (<a href=3D"mailto:kijitora@example=
+.com">kijitora@example.com</a>) is no longer in use. Please contact someone e=
+lse at Example or visit https://www.example.com/en/contact for assistance.</b=
+ody></html>
+
+--MCBoundary=_14445917231142800--
+

@@ -1,0 +1,24 @@
+Return-path: <>
+Envelope-to: kijitora@example.com
+Delivery-date: Thu, 17 Jul 2013 23:34:45 -0500
+Received: from smtpd-02.example.com ([203.0.113.1]:2202)
+	by neko2.example.com with esmtp (Exim 4.80)
+	id 2Aeeee-00002R-AA
+	for kijitora@example.com; Thu, 17 Jul 2013 23:34:45 -0500
+Received: from neko.nyaan.example.net ([fe80::ffff:ffff:ffff:0000%22]) by
+ neko1.nyaan2.example.net ([fe80::0000:0000:0000:ffff%22]) with Microsoft
+ SMTP Server id 14.02.0318.004; Thu, 17 Jul 2013 23:34:45 -0400
+From: "Neko, Nyaan" <nekonyaan@example.org>
+To: Kijitora <kijitora@example.com>
+Subject: Automatic reply: Nyaan
+Date: Thu, 17 Jul 2013 23:34:45 +0000
+Message-ID: <fb1b2d9ea3df46d9839a6dcb99410ebb@neko.nyaan.example.net>
+X-Auto-Response-Suppress: All
+X-MS-Exchange-Inbox-Rules-Loop: nekonyaan@example.org
+X-MS-TNEF-Correlator:
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+I'm out of the office Friday. For pressing news matters, Nyaan.
+
