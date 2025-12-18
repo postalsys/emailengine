@@ -2520,7 +2520,9 @@ Include your token in requests using one of these methods:
                         .single()
                         .default(['api'])
                         .required()
-                        .description('Token permission scopes: "api" for REST API access, "smtp" for SMTP submission, "imap-proxy" for IMAP proxy authentication')
+                        .description(
+                            'Token permission scopes: "api" for REST API access, "smtp" for SMTP submission, "imap-proxy" for IMAP proxy authentication'
+                        )
                         .label('Scopes'),
 
                     metadata: Joi.string()
@@ -9046,9 +9048,7 @@ ${now}`,
             }
 
             // Check if setup warnings should be disabled (for documentation screenshots, CI, etc.)
-            const disableSetupWarnings = hasEnvValue('EENGINE_DISABLE_SETUP_WARNINGS')
-                ? getBoolean(readEnvValue('EENGINE_DISABLE_SETUP_WARNINGS'))
-                : false;
+            const disableSetupWarnings = hasEnvValue('EENGINE_DISABLE_SETUP_WARNINGS') ? getBoolean(readEnvValue('EENGINE_DISABLE_SETUP_WARNINGS')) : false;
 
             if (disableSetupWarnings) {
                 // Keep only critical (danger) alerts, suppress info/warning level
