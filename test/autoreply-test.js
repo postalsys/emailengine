@@ -17,7 +17,8 @@ const path = fname => Path.join(__dirname, 'fixtures', 'autoreply', fname);
 function isAutoreply(messageData) {
     // Check subject patterns - these are strong autoreply indicators
     // Note: "Automatic reply:" and "Auto reply:" (with space) are common variants
-    if (/^(auto(matic)?\s*(reply|response)|Out of Office|OOF:|OOO:)/i.test(messageData.subject)) {
+    // "Out of the Office" is also valid (with "the")
+    if (/^(auto(matic)?\s*(reply|response)|Out of(?: the)? Office|OOF:|OOO:)/i.test(messageData.subject)) {
         return true;
     }
 
@@ -146,6 +147,15 @@ test('isAutoreply heuristics', async t => {
     await t.test('Detects Out of Office subject', async () => {
         const messageData = {
             subject: 'Out of Office: I am away',
+            inReplyTo: null,
+            headers: {}
+        };
+        assert.strictEqual(isAutoreply(messageData), true);
+    });
+
+    await t.test('Detects Out of the Office subject (with "the")', async () => {
+        const messageData = {
+            subject: 'Out of the Office: Mailtrain Newsletter',
             inReplyTo: null,
             headers: {}
         };
