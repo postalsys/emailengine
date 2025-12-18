@@ -1,0 +1,40 @@
+From: <kijitora@example.com>
+Date: Thu, 9 Apr 2006 23:34:45 JST
+Subject: FW: Nyaaan
+To: <abuse@example.net>
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=feedback-report;
+ boundary="bx1111_00.ffffffffffff"
+
+--bx1111_00.ffffffffffff
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+
+This is an opt-out report for an email message received from IP
+192.0.2.89 on Thu, 9 Apr 2006 23:34:45 JST. For more information
+about this format please see http://www.example.org/arf/.
+
+--bx1111_00.ffffffffffff
+Content-Type: message/feedback-report
+
+Feedback-Type: opt-out
+User-Agent: ARF-Agent/1.0
+Version: 0.1
+Removal-Recipient: user@example.com
+
+--bx1111_00.ffffffffffff
+Content-Type: text/rfc822-header
+
+From: <shironeko@example.net>
+Received: from mx90.example.net (mx90.example.net [192.0.2.89]) 
+    by example.com with ESMTP id ffffffffffff00; Thu, 09 Apr 2006 23:34:45 +0900
+To: <Undisclosed Recipients>
+Subject: Nyaaan
+MIME-Version: 1.0
+Content-type: text/plain
+Message-ID: 0000000000000000000000000@example.net
+Date: Thu, 02 Sep 2006 23:34:45 +0900
+
+Nyaaaan
+--bx1111_00.ffffffffffff--
+

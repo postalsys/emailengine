@@ -1,0 +1,72 @@
+X-Apparently-To: root@example.jp; Thu, 29 Apr 2017 23:34:45 +0000
+Return-Path: <no-reply@amazonses.com>
+Received-SPF: pass (domain of amazonses.com designates 192.0.2.222 as permitted sender)
+X-YMailISG: ...
+X-Originating-IP: [192.0.2.222]
+Authentication-Results: mta2222.biz.mail.sg2.yahoo.com  from=email-abuse.amazonses.com; domainkeys=neutral (no sig);  from=arf.mail.yahoo.com; dkim=permerror (bad sig)
+Received: from 127.0.0.1  (EHLO a22-22.smtp-out.amazonses.com) (192.0.2.222)
+  by mta2222.biz.mail.sg2.yahoo.com with SMTPS; Thu, 29 Apr 2017 23:34:45 +0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=arf.mail.yahoo.com; s=arf; ...
+Date: Thu, 29 Apr 2017 23:34:45 +0000
+X-yahoo-newman-expires: 2222222222
+From: complaints@email-abuse.amazonses.com
+To: root@example.jp
+Message-ID: <222222222222eeee-22222222-2222-2222-2222-2222222222222222222@email.amazonses.com>
+Subject: Fw: Nyaan
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=feedback-report; 
+	boundary="----=_Part_22220022_2222222200.22222222222"
+X-Yahoo-Newman-Property:
+X-Yahoo-Newman-Id:
+X-SES-Outgoing: 2017.04.29-192.0.2.222
+Content-Length: 2022
+
+------=_Part_22220022_2222222200.22222222222
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+This is an email abuse report for an email message from amazonses.com on Thu, 29 Apr 2017 23:34:45 +0000
+
+------=_Part_22220022_2222222200.22222222222
+Content-Type: message/feedback-report
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+Feedback-Type: abuse
+User-Agent: Yahoo!-Mail-Feedback/2.0
+Version: 0.1
+Original-Mail-From: <2222222222222222-22222222-0000-eeee-ffff-222222222222-222222@amazonses.com>
+Original-Rcpt-To: kijitora@y.example.com
+Received-Date: Thu, 29 Apr 2017 23:34:45 +0000
+Reported-Domain: amazonses.com
+Authentication-Results: mta2222.mail.bf2.yahoo.com  from=example.jp; domainkeys=neutral (no sig);  from=amazonses.com; dkim=pass (ok)
+
+------=_Part_22220022_2222222200.22222222222
+Content-Type: message/rfc822
+Content-Disposition: inline
+
+X-Apparently-To: kijitora@yahoo.com; Thu, 29 Apr 2017 23:34:45 +0000
+Return-Path: <222222222222eeee-00000000-2222-ffff-1111-333333332222-ffffff@amazonses.com>
+Received-SPF: pass (domain of amazonses.com designates 192.0.2.22 as permitted sender)
+X-YMailISG: ...
+X-Originating-IP: [192.0.2.1]
+Authentication-Results: mta2222.mail.bf2.yahoo.com  from=example.jp; domainkeys=neutral (no sig);  from=amazonses.com; dkim=pass (ok)
+Received: from 127.0.0.1  (EHLO a2-22.smtp-out.amazonses.com) (192.0.2.2)
+  by mta2222.mail.bf2.yahoo.com with SMTPS; Thu, 29 Apr 2017 23:34:45 +0000
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; ...
+Content-Type: text/plain; charset=us-ascii
+MIME-Version: 1.0
+Date: Thu, 29 Apr 2017 23:34:45 +0000
+Content-Transfer-Encoding: quoted-printable
+Subject: Nyaan
+From: Kijitora <kijitora@example.jp>
+Message-ID: <2222222222222222-00000000-eeee-eeee-ffff-222222222222-111111@email.amazonses.com>
+To: kijitora@yahoo.com
+X-SES-Outgoing: 2017.04.29-192.0.2.2
+Feedback-ID: 2
+Content-Length: 22
+
+Nyaan
+
+------=_Part_22220022_2222222200.22222222222--

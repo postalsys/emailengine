@@ -1,0 +1,59 @@
+Received: from [127.0.0.1] ([localhost])
+	by neko.example.org (envelope-from <dmarc-noreply@example.com>)
+	(ecelerity 3.6.5.1 r(Core:3.6.5.0)) with UNKNOWN
+	id 22/22-00000-00000225; Thu, 29 Apr 2015 23:34:45 +0000
+Date: Thu, 29 Apr 2015 23:34:45 +0000
+Message-ID: <22.220000.0000.00000200@example.org>
+Subject: DMARC Forensic report for example.net Mail-From:sironeko@example.org IP:192.0.2.222
+To: dmarc-noreply@example.com
+From: dmarc-noreply@example.com
+Content-Type: multipart/report; report-type=feedback-report;
+    boundary="_----NekoNyaan/222nnn300===_22/00-22002-00000225"
+
+--_----NekoNyaan/222nnn300===_22/00-22002-00000225
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+
+This is an email abuse report for an email message received from IP 192.0.2.222 on Thu, 29 Apr 2015 23:34:45 +0000.
+The message below did not meet the sending domain's dmarc policy.
+For more information about this format please see http://tools.ietf.org/html/rfc6591 .
+
+--_----NekoNyaan/222nnn300===_22/00-22002-00000225
+Content-Type: message/feedback-report
+
+Feedback-Type: auth-failure
+User-Agent: Lua/1.0
+Version: 1.0
+Original-Mail-From: sironeko@example.org
+Original-Rcpt-To: kijitora@example.com
+Arrival-Date: Thu, 29 Apr 2015 23:34:45 +0000
+Message-ID: <000000000.2222222.1500000000222@example.net>
+Authentication-Results: dmarc=fail (p=none; dis=none) header.from=example.org
+Source-IP: 192.0.2.222
+Delivery-Result: delivered
+Auth-Failure: dmarc
+Reported-Domain: example.net
+
+--_----NekoNyaan/222nnn300===_22/00-22002-00000225
+Content-Type: message/rfc822
+Content-Disposition: inline
+
+Received: from [192.0.2.222] ([192.0.2.222:222] helo=mta-2.example.org)
+	by example.org (envelope-from <sironeko@example.org>)
+	(ecelerity 3.6.5.1 r(Core:3.6.5.0)) with ESMTPS (cipher=AES256-GCM-SHA384
+	id 22/00-00000-EEEEEEEE; Thu, 29 Apr 2015 23:34:45 +0000
+Received: from neko (localhost [127.0.0.1])
+	by mta-2.example.org (Postfix) with ESMTP id EEEEEEEEE22;
+	Thu, 29 Apr 2015 23:34:45 +0000 (UTC)
+Date: Thu, 29 Apr 2015 23:34:45 +0900 (JST)
+From: Sironeko <sironeko@example.org>
+To: kijitora@example.org
+Message-ID: <000000002.2222222.1500000000022@example.net>
+Subject: Nyaan
+MIME-Version: 1.0
+Content-Type: text/plain
+
+Nyaaaaaaaaaaaaaaaan
+
+--_----NekoNyaan/222nnn300===_22/00-22002-00000225--
+

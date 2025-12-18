@@ -1,0 +1,49 @@
+Delivered-To: abuse-report@example.com
+Received: by 192.0.2.25 with SMTP id fffffffff000000;
+    Thu, 29 Apr 2016 23:34:45 +0000 (UTC)
+X-Received: by 192.0.2.2 with SMTP id eeeeeeeee0000001.222.1500000000000;
+    Thu, 29 Apr 2016 23:34:45 +0000 (UTC)
+Return-Path: <neko@example.org>
+Received: from CAT000-NEKO2.example.com (cat000-neko2.example.com. [203.0.113.25])
+    by mx.example.com with ESMTPS id fffffffff11111.222.2016.04.29.23.34.45
+    for <abuse-report@example.com>
+    (version=TLSv1.2 cipher=ECDHE-RSA-AES128-SHA bits=128/128);
+    Thu, 29 Apr 2016 23:34:45 +0000 (UTC)
+Received: from CAT000-NEKO-022.r.example.org ([198.51.100.1]) by CAT004-R.example.com
+    with Microsoft SMTPSVC(7.5.7601.22751); Thu, 29 Apr 2016 23:34:45 +0000
+Date: Thu, 29 Apr 2016 23:34:45 +0000
+From: staff@hotmail.com
+Subject:  complaint about message from 192.0.2.222
+To: abuse-report@example.com
+MIME-Version: 1.0 
+Content-Type: multipart/mixed; boundary="F0000EEE2-0000-2111-AAB0-000000000000"
+Message-ID: <CAT0-NNE-000000000000000022@CAT0-RRR.example.org>
+X-OriginalArrivalTime: 29 Apr 2016 23:34:45.0000 (UTC) FILETIME=[FFFFFFFF:00000000]
+Return-Path: neko@example.org
+
+--F0000EEE2-0000-2111-AAB0-000000000000
+Content-Type: message/rfc822
+Content-Disposition: inline
+
+X-HmXmrOriginalRecipient: kijitora@example.com
+X-Reporter-IP: 192.0.2.22
+Authentication-Results: example.com; spf=pass (sender IP is 203.0.113.245; identity alignment result is pass and alignment mode is relaxed) smtp.mailfrom=sironeko@example.com; dkim=pass (identity alignment result is pass and alignment mode is relaxed) header.d=example.com; x-hmca=pass header.id=sironeko@example.com
+X-SID-PRA: sironeko@example.com
+X-AUTH-Result: PASS
+X-SID-Result: PASS
+Received: from smtp.example.com ([203.0.113.245]) by R7038-AA.example.com over TLS
+    secured channel with Microsoft SMTPSVC(7.5.7601.23008);
+    Thu, 29 Apr 2016 23:34:45 +0000
+Date: Thu, 29 Apr 2016 23:34:45 +0200
+To: kijitora@example.com
+From: Neko <sironeko@example.com>
+Subject: Nyaan
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Message-ID: <0000000000fffffffff0000000000000@example.com>
+X-OriginalArrivalTime: 29 Apr 2016 23:34:45.0000 (UTC) FILETIME=[00000000:FFFFFFFF]
+
+Nyaan
+
+--F0000EEE2-0000-2111-AAB0-000000000000--

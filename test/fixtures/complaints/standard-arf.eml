@@ -1,0 +1,68 @@
+Return-Path: <fbl@senderscore.example.net>
+Received: from fbl-02.r.returnpath.example.net (unknown [192.0.2.222])
+	by fbl-01.returnpath.example.net (Postfix) with ESMTP id 0000000000
+	for <fbl@example.com>; Thu, 29 Apr 2015 23:34:45 +0900 (JST)
+Received: by fbl-02.r.returnpath.example.net (Postfix, from userid 106706)
+	id EEEEEEEEEE; Thu, 29 Apr 2015 23:34:45 +0900 (JST)
+Content-Transfer-Encoding: binary
+Content-Type: multipart/report; boundary="_----------=_20000000000000000222";
+    report-type="feedback-report"
+MIME-Version: 1.0
+Date: Thu, 29 Apr 2015 23:34:45 +0900
+Subject: Abuse Report
+To: postmaster@example.jp
+From: feedbackloop@feedback.example.com
+Message-Id: <20150429233445.0000000000@fbl-02.r.returnpath.example.net>
+
+This is a multi-part message in MIME format.
+
+--_----------=_20000000000000000222
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+
+This is a Example email abuse report for an email message received from IP 192.0.2.1 on Thu, 29 Apr 2015 23:34:45 +0000
+
+
+--_----------=_20000000000000000222
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Type: message/feedback-report
+
+User-Agent: ReturnPathFBL/1.0
+Abuse-Type: complaint
+Arrival-Date: Thu, 29 Apr 2015 23:34:45 +0000
+Feedback-Type: abuse
+Version: 1
+Source-IP: 192.0.2.1
+Original-Rcpt-To: kijitora@example.com
+Original-Rcpt-To: sironeko@example.com
+Original-Rcpt-To: mikeneko@example.com
+Original-Rcpt-To: sabatora@example.com
+Original-Rcpt-To: sirokiji@example.org
+Original-Rcpt-To: kuroneko@example.com
+Original-Rcpt-To: sabineko@example.com
+Original-Mail-From: neko@example.jp
+Reported-Domain: example.com
+Reported-Domain: example.org
+
+--_----------=_20000000000000000222
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+Content-Type: message/rfc822
+
+Received: from mta-002.rr.example.com (mta-002.rr.example.com
+  [192.0.2.22]) by mxg.senderscore.example.net (Postfix) with ESMTP id FFFFFFFFFF0
+  for <fbl@senderscore.example.net>; Thu, 29 Apr 2015 23:34:45 +0900 (JST)
+Received: from mail.example.net ([192.0.1.3]) (authenticated bits=0)
+  by mail.example.net (8.13.1/8.13.1) with ESMTP id t3P00000000000
+  (version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-SHA bits=256 verify=NO); Thu, 29
+  Apr 2015 23:34:45 GMT
+Subject: Nyaan
+From: Neko <neko@example.jp>
+Message-Id: <ffffffffffffffffffffffff0000000@example.jp>
+Date: Sun, 29 Apr 2015 23:34:45 +0000
+Content-Transfer-Encoding: 7bit
+
+Nyaan
+

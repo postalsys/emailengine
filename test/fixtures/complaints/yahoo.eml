@@ -1,0 +1,68 @@
+Return-Path: abuse=example.com@returns.bulk.yahoo.com
+Received: from smtp-gw83.example.com (LHLO smtp-gw83.example.com)
+    (192.0.2.1) by smtp-gw83.example.com with LMTP; Thu, 29 Apr 2013 23:45:46 +0900 (JST)
+Received: from localhost (localhost.localdomain [127.0.0.1])
+	by smtp-gw83.example.com (Postfix) with ESMTP id 000000000000
+	for <abuse@example.com>; Thu, 29 Apr 2013 23:45:45 +0900 (JST)
+Delivered-To: kijitora@example.com
+Received: (qmail 00000 invoked by uid 910); 29 Apr 2013 04:00:00 -0000
+Message-ID: <00000000000000.00000.smtp@mx8.example.com>
+Delivered-To: abuse@example.com
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: multipart/report; 
+    boundary="_----------=F000000000000000000000"; 
+    report-type="feedback-report"
+Date: Thu, 29 Apr 2013 23:45:00 -0800
+From: Yahoo! Mail AntiSpam Feedback <feedback@arf.mail.yahoo.com>
+To: abuse@example.com
+Subject: Fw: Nyaaaaaaaan
+
+This is a multi-part message in MIME format.
+
+--_----------=F000000000000000000000
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+Date: Thu, 29 Apr 2013 23:45:00 -0800
+
+This is an email abuse report for an email message received from mx8.example.com  on Thu, 29 Apr 2013 23:45:00 PST
+
+--_----------=F000000000000000000000
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Type: message/feedback-report
+
+Feedback-Type: abuse
+User-Agent: Yahoo!-Mail-Feedback/1.0
+Version: 0.1
+Original-Mail-From: <shironeko@example.com>
+Original-Rcpt-To: this-local-part-does-not-exist-on-yahoo@yahoo.com
+Received-Date: Thu, 29 Apr 2013 23:45:50 PST
+Reported-Domain: example.com
+Authentication-Results: 
+
+--_----------=F000000000000000000000
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+Content-Type: message/rfc822
+
+X-Apparently-To: this-local-part-does-not-exist-on-yahoo@yahoo.com via 192.0.2.45; Thu, 29 Apr 2013 23:45:10 -0800
+Return-Path: <shironeko@example.com>
+X-Originating-IP: [192.0.2.8]
+Received: from 127.0.0.1  (EHLO mx8.example.com) (192.0.2.8)
+  by mta34.mail.g9.yahoo.com with SMTP; Thu, 29 Apr 2013 23:45:06 -0800
+Message-ID: <000000000000000000000000.smtp@example.com>
+Date: Thu, 29 Apr 2013 09:34:23 +0900 (JST)
+From: "Shironeko Nyanko" <shironeko@example.com>
+To: this-local-part-does-not-exist-on-yahoo@yahoo.com
+Subject: Nyaaaaaaaan
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Length: 5
+
+Nyaa
+
+--_----------=F000000000000000000000--
+
