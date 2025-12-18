@@ -17,6 +17,309 @@ const argv = require('minimist')(process.argv.slice(2));
 const msgpack = require('msgpack5')();
 const crypto = require('crypto');
 
+// Command definitions for dynamic help generation
+const COMMANDS = {
+    '': {
+        description: 'Start the EmailEngine server'
+    },
+    help: {
+        description: 'Show help for a command'
+    },
+    version: {
+        description: 'Show version number'
+    },
+    license: {
+        description: 'Show license information',
+        subcommands: {
+            export: { description: 'Export license key for backup' },
+            import: {
+                description: 'Import license key',
+                options: [{ name: '--license, -l', description: 'Encoded license key', type: 'string' }]
+            }
+        }
+    },
+    password: {
+        description: 'Set or reset admin password',
+        options: [
+            { name: '--password, -p', description: 'Password to set (auto-generated if not provided)', type: 'string' },
+            { name: '--hash, -r', description: 'Output password hash instead of plaintext', type: 'boolean' }
+        ]
+    },
+    scan: {
+        description: 'Scan Redis keyspace and output as CSV'
+    },
+    encrypt: {
+        description: 'Manage field-level encryption for stored credentials',
+        options: [{ name: '--decrypt', description: 'Previous secret for re-encryption (repeatable)', type: 'string' }]
+    },
+    tokens: {
+        description: 'Manage API access tokens',
+        subcommands: {
+            issue: {
+                description: 'Create a new access token',
+                options: [
+                    { name: '--description, -d', description: 'Token description', type: 'string' },
+                    { name: '--scope, -s', description: 'Access scope', type: 'string', default: '*' },
+                    { name: '--account, -a', description: 'Limit token to specific account', type: 'string' }
+                ]
+            },
+            export: {
+                description: 'Export token for backup',
+                options: [{ name: '--token, -t', description: 'Token to export', type: 'string' }]
+            },
+            import: {
+                description: 'Import previously exported token',
+                options: [{ name: '--token, -t', description: 'Exported token data', type: 'string' }]
+            }
+        }
+    },
+    export: {
+        description: 'Export account data including credentials',
+        options: [{ name: '--account, -a', description: 'Account ID to export', type: 'string' }]
+    },
+    'check-bounce': {
+        description: 'Analyze a bounce email and classify it',
+        options: [{ name: '--file, -f', description: 'Path to EML file', type: 'string' }],
+        example: 'emailengine check-bounce /path/to/bounce.eml'
+    }
+};
+
+const GLOBAL_OPTIONS = [
+    { name: '-h, --help', description: 'Show this help message' },
+    { name: '--dbs.redis', description: 'Redis connection URL', type: 'string', group: 'General' },
+    { name: '--workers.imap', description: 'Number of IMAP worker threads', type: 'number', default: 4, group: 'General' },
+    { name: '--settings', description: 'Pre-configured settings as JSON', type: 'json-string', group: 'General' },
+    { name: '--service.secret', description: 'Secret key for encrypting stored credentials', type: 'string', group: 'General' },
+    { name: '--service.commandTimeout', description: 'Maximum time for IMAP commands', type: 'number/string', default: '10s', group: 'General' },
+    { name: '--service.setupDelay', description: 'Delay between worker connection assignments', type: 'number/string', default: '0ms', group: 'General' },
+    { name: '--log.level', description: 'Logging level', type: 'string', default: 'trace', group: 'General' },
+    { name: '--log.raw', description: 'Log raw IMAP traffic', type: 'boolean', default: false, group: 'General' },
+    { name: '--workers.webhooks', description: 'Number of webhook worker threads', type: 'number', default: 1, group: 'General' },
+    { name: '--api.host', description: 'API server bind address', type: 'string', default: '127.0.0.1', group: 'API server' },
+    { name: '--api.port', description: 'API server port', type: 'number', default: 3000, group: 'API server' },
+    { name: '--api.maxSize', description: 'Maximum attachment size', type: 'number/string', default: '5M', group: 'API server' },
+    { name: '--queues.notify', description: 'Concurrent webhook deliveries', type: 'number', default: 1, group: 'Background tasks' },
+    { name: '--queues.submit', description: 'Concurrent email submissions', type: 'number', default: 1, group: 'Background tasks' },
+    { name: '--smtp.enabled', description: 'Enable SMTP submission server', type: 'boolean', default: false, group: 'SMTP server' },
+    { name: '--smtp.secret', description: 'Shared SMTP password for all accounts', type: 'string', group: 'SMTP server' },
+    { name: '--smtp.host', description: 'SMTP server bind address', type: 'string', default: '127.0.0.1', group: 'SMTP server' },
+    { name: '--smtp.port', description: 'SMTP server port', type: 'number', default: 2525, group: 'SMTP server' },
+    { name: '--smtp.proxy', description: 'Enable HAProxy PROXY protocol', type: 'boolean', default: false, group: 'SMTP server' },
+    { name: '--smtp.maxMessageSize', description: 'Maximum email size', type: 'number/string', default: '25M', group: 'SMTP server' }
+];
+
+// Help formatting functions
+function getTerminalWidth() {
+    // Check stderr first since help outputs there, fallback to stdout, then 80
+    return process.stderr.columns || process.stdout.columns || 80;
+}
+
+function wrapText(text, width, indent) {
+    if (width <= 0) {
+        return text;
+    }
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (const word of words) {
+        if (currentLine.length === 0) {
+            currentLine = word;
+        } else if (currentLine.length + 1 + word.length <= width) {
+            currentLine += ' ' + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+
+    return lines.join('\n' + ' '.repeat(indent));
+}
+
+function formatLine(name, description, type, defaultVal, width, nameWidth) {
+    const indent = 2;
+    const gap = 2;
+    let line = ' '.repeat(indent) + name.padEnd(nameWidth);
+
+    let descParts = [description];
+    if (type) {
+        descParts.push(`[${type}]`);
+    }
+    if (defaultVal !== undefined && defaultVal !== null) {
+        descParts.push(`[default: ${defaultVal}]`);
+    }
+
+    const descText = descParts.join(' ');
+    const descWidth = width - nameWidth - indent - gap;
+
+    if (descWidth > 20) {
+        line += ' '.repeat(gap) + wrapText(descText, descWidth, nameWidth + indent + gap);
+    } else {
+        line += ' '.repeat(gap) + descText;
+    }
+
+    return line;
+}
+
+// Calculate global name width for consistent alignment
+function calculateGlobalNameWidth() {
+    let maxWidth = 0;
+
+    // Commands
+    for (const cmd of Object.keys(COMMANDS)) {
+        const cmdName = cmd ? `emailengine ${cmd}` : 'emailengine';
+        maxWidth = Math.max(maxWidth, cmdName.length);
+        if (COMMANDS[cmd].subcommands) {
+            maxWidth = Math.max(maxWidth, `emailengine ${cmd} [command]`.length);
+            for (const subCmd of Object.keys(COMMANDS[cmd].subcommands)) {
+                maxWidth = Math.max(maxWidth, `emailengine ${cmd} ${subCmd}`.length);
+                const subDef = COMMANDS[cmd].subcommands[subCmd];
+                if (subDef.options) {
+                    for (const opt of subDef.options) {
+                        maxWidth = Math.max(maxWidth, opt.name.length);
+                    }
+                }
+            }
+        }
+        if (COMMANDS[cmd].options) {
+            for (const opt of COMMANDS[cmd].options) {
+                maxWidth = Math.max(maxWidth, opt.name.length);
+            }
+        }
+    }
+
+    // Global options
+    for (const opt of GLOBAL_OPTIONS) {
+        maxWidth = Math.max(maxWidth, opt.name.length);
+    }
+
+    return maxWidth;
+}
+
+function generateHelp() {
+    const width = getTerminalWidth();
+    const nameWidth = calculateGlobalNameWidth();
+    const lines = [];
+
+    lines.push('emailengine [command] [options]');
+    lines.push('');
+    lines.push(wrapText(
+        'EmailEngine is the self-hosted service that allows you to access any email account using an easy-to-use REST API.',
+        width,
+        0
+    ));
+    lines.push('');
+    lines.push('Commands:');
+
+    // Output commands
+    for (const [cmd, def] of Object.entries(COMMANDS)) {
+        const cmdName = cmd ? `emailengine ${cmd}` : 'emailengine';
+        lines.push(formatLine(cmdName, def.description, null, null, width, nameWidth));
+        if (def.subcommands) {
+            lines.push(formatLine(
+                `emailengine ${cmd} [command]`,
+                `${cmd.charAt(0).toUpperCase() + cmd.slice(1)} management`,
+                null,
+                null,
+                width,
+                nameWidth
+            ));
+        }
+    }
+
+    // Output global options by group
+    lines.push('');
+    lines.push('Options:');
+
+    let currentGroup = null;
+    for (const opt of GLOBAL_OPTIONS) {
+        if (opt.group && opt.group !== currentGroup) {
+            currentGroup = opt.group;
+            lines.push('');
+            lines.push('  ' + currentGroup + ':');
+        }
+        lines.push(formatLine(opt.name, opt.description, opt.type, opt.default, width, nameWidth));
+    }
+
+    // Output subcommand details
+    for (const [cmd, def] of Object.entries(COMMANDS)) {
+        if (def.subcommands) {
+            lines.push('');
+            lines.push(`${cmd.charAt(0).toUpperCase() + cmd.slice(1)} management commands:`);
+            for (const [subCmd, subDef] of Object.entries(def.subcommands)) {
+                lines.push(formatLine(`emailengine ${cmd} ${subCmd}`, subDef.description, null, null, width, nameWidth));
+                if (subDef.options) {
+                    for (const opt of subDef.options) {
+                        lines.push(formatLine(opt.name, opt.description, opt.type, opt.default, width, nameWidth));
+                    }
+                }
+            }
+        } else if (def.options) {
+            lines.push('');
+            lines.push(`${cmd.charAt(0).toUpperCase() + cmd.slice(1).replace(/-/g, ' ')} options:`);
+            lines.push(formatLine(`emailengine ${cmd}`, def.description, null, null, width, nameWidth));
+            for (const opt of def.options) {
+                lines.push(formatLine(opt.name, opt.description, opt.type, opt.default, width, nameWidth));
+            }
+            if (def.example) {
+                lines.push('');
+                lines.push('  Example: ' + def.example);
+            }
+        }
+    }
+
+    return lines.join('\n');
+}
+
+function generateCommandHelp(cmdName) {
+    const width = getTerminalWidth();
+    const nameWidth = calculateGlobalNameWidth();
+    const lines = [];
+
+    // Check if command exists
+    if (!COMMANDS[cmdName]) {
+        return null;
+    }
+
+    const def = COMMANDS[cmdName];
+
+    lines.push(`emailengine ${cmdName} [options]`);
+    lines.push('');
+    lines.push(wrapText(def.description, width, 0));
+
+    if (def.subcommands) {
+        lines.push('');
+        lines.push('Commands:');
+        for (const [subCmd, subDef] of Object.entries(def.subcommands)) {
+            lines.push(formatLine(`emailengine ${cmdName} ${subCmd}`, subDef.description, null, null, width, nameWidth));
+            if (subDef.options) {
+                lines.push('');
+                lines.push('  Options:');
+                for (const opt of subDef.options) {
+                    lines.push(formatLine(opt.name, opt.description, opt.type, opt.default, width, nameWidth));
+                }
+            }
+        }
+    } else if (def.options) {
+        lines.push('');
+        lines.push('Options:');
+        for (const opt of def.options) {
+            lines.push(formatLine(opt.name, opt.description, opt.type, opt.default, width, nameWidth));
+        }
+    }
+
+    if (def.example) {
+        lines.push('');
+        lines.push('Example:');
+        lines.push('  ' + def.example);
+    }
+
+    return lines.join('\n');
+}
+
 function run() {
     let cmd = ((argv._ && argv._[0]) || '').toLowerCase();
     if (!cmd) {
@@ -88,16 +391,24 @@ function run() {
             break;
 
         case 'help':
-            // Show version
-            fs.readFile(pathlib.join(__dirname, '..', 'help.txt'), (err, helpText) => {
-                if (err) {
-                    console.error('Failed to load help information');
-                    console.error(err);
-                    return process.exit(1);
+            {
+                // Show help for specific command or general help
+                let helpCmd = ((argv._ && argv._[1]) || '').toLowerCase();
+                if (helpCmd) {
+                    let cmdHelp = generateCommandHelp(helpCmd);
+                    if (cmdHelp) {
+                        console.error(cmdHelp);
+                    } else {
+                        console.error(`Unknown command: ${helpCmd}`);
+                        console.error('');
+                        console.error('Run "emailengine help" to see available commands.');
+                        process.exit(1);
+                    }
+                } else {
+                    console.error(generateHelp());
                 }
-                console.error(helpText.toString().trim());
                 process.exit();
-            });
+            }
             break;
 
         case 'version':

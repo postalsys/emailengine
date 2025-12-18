@@ -153,7 +153,6 @@
             "node_modules/@postalsys/bounce-classifier/model/**/*",
             "node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css",
             "LICENSE_EMAILENGINE.txt",
-            "help.txt",
             "version-info.json",
             "sbom.json"
         ],
