@@ -290,6 +290,75 @@ function run() {
             }
             break;
 
+        case 'check-bounce':
+            {
+                process.title = 'emailengine-check-bounce';
+                const { bounceDetect } = require('../lib/bounce-detect');
+                const bounceClassifier = require('@postalsys/bounce-classifier');
+
+                let emlPath = argv._[1] || argv.file || argv.f;
+
+                if (!emlPath) {
+                    console.error('Error: EML file path is required');
+                    console.error('Usage: emailengine check-bounce <path-to-eml-file>');
+                    console.error('       emailengine check-bounce --file <path-to-eml-file>');
+                    return process.exit(1);
+                }
+
+                // Resolve the path
+                emlPath = pathlib.resolve(emlPath);
+
+                // Check if file exists
+                if (!fs.existsSync(emlPath)) {
+                    console.error(`Error: File not found: ${emlPath}`);
+                    return process.exit(1);
+                }
+
+                const checkBounce = async () => {
+                    // Initialize the bounce classifier
+                    await bounceClassifier.initialize();
+
+                    // Read the EML file
+                    const emlStream = fs.createReadStream(emlPath);
+
+                    // Detect bounce information
+                    const bounce = await bounceDetect(emlStream);
+
+                    // Classify the bounce if we have a response message
+                    if (bounce?.response?.message) {
+                        const classification = await bounceClassifier.classify(bounce.response.message);
+
+                        if (classification?.label) {
+                            bounce.response.category = classification.label;
+                        }
+                        if (classification?.action) {
+                            bounce.response.recommendedAction = classification.action;
+                        }
+                        if (classification?.blocklist) {
+                            bounce.response.blocklist = classification.blocklist;
+                        }
+                        if (classification?.retryAfter) {
+                            bounce.response.retryAfter = classification.retryAfter;
+                        }
+                    }
+
+                    return bounce;
+                };
+
+                checkBounce()
+                    .then(result => {
+                        process.stdout.write(JSON.stringify(result, null, 2));
+                        process.stdout.write('\n');
+                        return process.exit(0);
+                    })
+                    .catch(err => {
+                        console.error('Failed to analyze bounce email');
+                        console.error(err);
+                        return process.exit(1);
+                    });
+            }
+            break;
+
         default:
             // run normally
             require('../server');
