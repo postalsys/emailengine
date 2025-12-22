@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.61.0](https://github.com/postalsys/emailengine/compare/v2.60.1...v2.61.0) (2025-12-22)
+
+
+### Features
+
+* Add check-bounce CLI command for analyzing bounce emails ([ae3a85d](https://github.com/postalsys/emailengine/commit/ae3a85dd5acdf9c893196284487e536ac3d6d9ec))
+* Add Exim-style bounce detection for diagnostic messages ([b82e588](https://github.com/postalsys/emailengine/commit/b82e588d3e699f3c757c6a01f3fb9933c94bbb4c))
+* Improve ARF complaint detection and add comprehensive tests ([5533552](https://github.com/postalsys/emailengine/commit/55335526a19c6948675d126d1dbb14db353253a0))
+* Improve autoreply detection and add comprehensive tests ([1cf179f](https://github.com/postalsys/emailengine/commit/1cf179f8289eb05e8add420fe02d6410f61718cc))
+* Improve bounce detection coverage for non-standard formats ([5393872](https://github.com/postalsys/emailengine/commit/53938724c699b32177ece83c3d88be9a5432c067))
+* Improve bounce detection for legacy formats ([90a0289](https://github.com/postalsys/emailengine/commit/90a0289f7999e23149e14ff6ea5d703de056d5b0))
+* Replace static help.txt with dynamic CLI help system ([4cd5fb0](https://github.com/postalsys/emailengine/commit/4cd5fb059c2bf7436c4262a7daee1e85f535c322))
+
+
+### Bug Fixes
+
+* Detect "Out of the Office" autoreply subject pattern ([7191c50](https://github.com/postalsys/emailengine/commit/7191c50ae62930a66bf6598cb55f94130e022cf9))
+* Harden bounce detection against edge cases and ReDoS attacks ([d6c72c2](https://github.com/postalsys/emailengine/commit/d6c72c29d4c2bc1a20025204cc0cf20f803b04a6))
+
 ## [2.60.1](https://github.com/postalsys/emailengine/compare/v2.60.0...v2.60.1) (2025-12-17)
 
 
