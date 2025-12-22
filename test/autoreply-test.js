@@ -7,7 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { simpleParser } = require('mailparser');
+const { parseEmail } = require('../lib/parse-helpers');
 const fs = require('fs');
 const Path = require('path');
 
@@ -61,7 +61,8 @@ function isAutoreply(messageData) {
 function convertHeaders(parsed) {
     const headers = {};
     if (parsed.headers) {
-        for (let [key, value] of parsed.headers) {
+        // postal-mime headers is an array of {key, value} objects
+        for (let { key, value } of parsed.headers) {
             let normalizedKey = key.toLowerCase();
             if (!headers[normalizedKey]) {
                 headers[normalizedKey] = [];
@@ -75,7 +76,7 @@ function convertHeaders(parsed) {
 // Helper to parse email and prepare messageData for isAutoreply
 async function parseForAutoreply(filePath) {
     const content = await fs.promises.readFile(filePath);
-    const parsed = await simpleParser(content);
+    const parsed = await parseEmail(content);
 
     return {
         subject: parsed.subject || '',

@@ -8,7 +8,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { arfDetect } = require('../lib/arf-detect');
-const { simpleParser } = require('mailparser');
+const { parseEmail } = require('../lib/parse-helpers');
 const fs = require('fs');
 
 const Path = require('path');
@@ -17,14 +17,19 @@ const path = fname => Path.join(__dirname, 'fixtures', 'complaints', fname);
 // Helper to parse email and prepare messageInfo for arfDetect
 async function parseForArfDetect(filePath) {
     const content = await fs.promises.readFile(filePath);
-    const parsed = await simpleParser(content, { keepDeliveryStatus: true });
+    const parsed = await parseEmail(content);
 
     return {
-        from: parsed.from?.value?.[0] || {},
+        // postal-mime already returns simplified address format (not wrapped in .value)
+        from: parsed.from || {},
         subject: parsed.subject || '',
         attachments: (parsed.attachments || []).map(att => ({
-            contentType: att.contentType,
-            content: att.content
+            // postal-mime uses mimeType instead of contentType
+            contentType: att.mimeType,
+            // postal-mime returns ArrayBuffer, but arfDetect expects Buffer for .toString()
+            content: att.content instanceof ArrayBuffer || att.content instanceof Uint8Array
+                ? Buffer.from(att.content)
+                : att.content
         }))
     };
 }
