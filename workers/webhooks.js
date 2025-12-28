@@ -411,6 +411,12 @@ const notifyWorker = new Worker(
             }
 
             if (!res.ok) {
+                // Drain response body to release connection back to pool
+                try {
+                    await res.text();
+                } catch {
+                    // ignore drain errors
+                }
                 let err = new Error(res.statusText || `Invalid response: ${res.status} ${res.statusText}`);
                 err.statusCode = res.status;
                 throw err;
