@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.61.1](https://github.com/postalsys/emailengine/compare/v2.61.0...v2.61.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* Memory leak fixes for IMAP client and webhooks worker ([b749f96](https://github.com/postalsys/emailengine/commit/b749f964f7e8de6828d23b8c3c5a3ca11e15898a))
+
 ## [2.61.0](https://github.com/postalsys/emailengine/compare/v2.60.1...v2.61.0) (2025-12-22)
 
 
