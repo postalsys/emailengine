@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-08-13 10:54+0000\n"
+"POT-Creation-Date: 2025-12-29 10:06+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,13 +10,17 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d päev"
 msgstr[1] "%d päeva"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
 
 #: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
 msgid "Unsubscribe"
@@ -65,9 +69,27 @@ msgstr "E-posti aadress"
 msgid "Enter your email address"
 msgstr "Sisestage oma e-posti aadress"
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "Sinu nimi"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "Sisestage oma täisnimi"
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr "Parool"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "Sisestage oma konto parool"
+
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr "Jätka"
 
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
@@ -85,12 +107,6 @@ msgstr "IMAP"
 #: views/accounts/register/imap-server.hbs:114
 msgid "Username"
 msgstr "Kasutajanimi"
-
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
-msgstr "Parool"
 
 #: views/accounts/register/imap-server.hbs:45
 #: views/accounts/register/imap-server.hbs:136
@@ -160,75 +176,59 @@ msgstr ""
 "krüpteerimist."
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
-msgstr "Kontrolli seadeid"
+msgid "Verify connection"
+msgstr "Kontrolli ühendust"
 
 #: views/accounts/register/imap-server.hbs:218
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr "Jätka"
+msgid "Save and continue"
+msgstr "Salvesta ja jätka"
 
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
-msgstr "Jätka ilma seadistusi kontrollimata"
+msgid "Skip verification"
+msgstr "Jäta kontroll vahele"
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
-msgstr "Test ebaõnnestus"
+msgid "Connection test failed"
+msgstr "Ühenduse kontroll ebaõnnestus"
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
-msgstr "Esitatud e-posti serveri seadete valideerimine ebaõnnestus."
+msgid "We couldn't connect with these settings. Check the errors below."
+msgstr "Nende seadetega ei õnnestunud ühendust luua. Kontrolli vigu allpool."
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
-msgstr "Üldine viga"
+msgid "Error"
+msgstr "Viga"
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
-msgstr "Valideerimisviga"
+msgid "Invalid settings"
+msgstr "Vigased seaded"
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
-msgstr "IMAP serveri seadete valideerimine ebaõnnestus"
+msgid "Couldn't connect to IMAP server"
+msgstr "IMAP serveriga ei õnnestunud ühendust luua"
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
-msgstr "IMAP server vastas järgmise teatega:"
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
+msgstr "Serveri vastus:"
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr "SMTP serveri seadete valideerimine ebaõnnestus"
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
-msgstr "SMTP server vastas järgmise teatega:"
+msgid "Couldn't connect to SMTP server"
+msgstr "SMTP serveriga ei õnnestunud ühendust luua"
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
-msgstr "HTTP viga!"
+msgid "Request failed."
+msgstr "Päring ebaõnnestus."
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr "Sinu nimi"
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr "Sisestage oma täisnimi"
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr "Sisestage oma konto parool"
-
-#: lib/routes-ui.js:529
+#: lib/routes-ui.js:532
 msgid "Delegated"
 msgstr "Delegeeritud"
 
-#: lib/routes-ui.js:530
+#: lib/routes-ui.js:533
 msgid "Using credentials from \"%s\""
 msgstr "Kasutades volitusi \"%s\""
 
-#: lib/routes-ui.js:580
+#: lib/routes-ui.js:583
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -236,11 +236,11 @@ msgstr ""
 "Ühendus on aegunud. See juhtub tavaliselt siis, kui olete tulemüüri taga või "
 "ühendute valesse porti."
 
-#: lib/routes-ui.js:583
+#: lib/routes-ui.js:586
 msgid "The server unexpectedly closed the connection."
 msgstr "Server sulges ootamatult ühenduse."
 
-#: lib/routes-ui.js:586
+#: lib/routes-ui.js:589
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -248,7 +248,7 @@ msgstr ""
 "Server sulges ootamatult ühenduse. See juhtub tavaliselt siis, kui "
 "üritatakse luua ühendust TLS-porti, ilma et TLS oleks lubatud."
 
-#: lib/routes-ui.js:591
+#: lib/routes-ui.js:594
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -256,62 +256,62 @@ msgstr ""
 "Server keeldus ühendusest. See juhtub tavaliselt siis, kui server ei tööta, "
 "on ülekoormatud või ühendute vale hostiga või porti."
 
-#: lib/routes-ui.js:709
+#: lib/routes-ui.js:712
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAI jaoks vale API võti"
 
-#: lib/routes-ui.js:5006 lib/routes-ui.js:6958 lib/routes-ui.js:6969
+#: lib/routes-ui.js:5031 lib/routes-ui.js:6986 lib/routes-ui.js:6997
 msgid "Server hostname was not found"
 msgstr "Serverit ei leitud"
 
-#: lib/routes-ui.js:5009 lib/routes-ui.js:6961 lib/routes-ui.js:6972
+#: lib/routes-ui.js:5034 lib/routes-ui.js:6989 lib/routes-ui.js:7000
 msgid "Invalid username or password"
 msgstr "Vigane kasutajanimi või parool"
 
-#: lib/routes-ui.js:5013 lib/routes-ui.js:6976
+#: lib/routes-ui.js:5038 lib/routes-ui.js:7004
 msgid "TLS protocol error"
 msgstr "TLS protokolli viga"
 
-#: lib/routes-ui.js:6705 lib/routes-ui.js:6740 lib/routes-ui.js:6855
-#: lib/routes-ui.js:6902 lib/routes-ui.js:7131 lib/routes-ui.js:7167
-#: workers/api.js:2346
+#: lib/routes-ui.js:6733 lib/routes-ui.js:6768 lib/routes-ui.js:6883
+#: lib/routes-ui.js:6930 lib/routes-ui.js:7159 lib/routes-ui.js:7195
+#: workers/api.js:2407
 msgid "Email Account Setup"
 msgstr "E-posti konto seadistamine"
 
-#: lib/routes-ui.js:6765 lib/routes-ui.js:6798 lib/routes-ui.js:9717
+#: lib/routes-ui.js:6793 lib/routes-ui.js:6826 lib/routes-ui.js:9745
 msgid "Failed to validate request arguments"
 msgstr "Päringu argumentide kontroll ebaõnnestus"
 
-#: lib/routes-ui.js:6895 lib/routes-ui.js:7160
+#: lib/routes-ui.js:6923 lib/routes-ui.js:7188
 msgid "Failed to process account"
 msgstr "Konto töötlemine ebaõnnestus"
 
-#: lib/routes-ui.js:9680 lib/tools.js:795
+#: lib/routes-ui.js:9708 lib/tools.js:794
 msgid "Invalid input"
 msgstr "Vale sisestus"
 
-#: lib/routes-ui.js:9690 lib/routes-ui.js:9808 lib/routes-ui.js:9825
-#: lib/routes-ui.js:9861
+#: lib/routes-ui.js:9718 lib/routes-ui.js:9836 lib/routes-ui.js:9853
+#: lib/routes-ui.js:9889
 msgid "Subscription Management"
 msgstr "Tellimuse haldamine"
 
-#: lib/routes-ui.js:9819 lib/routes-ui.js:9854
+#: lib/routes-ui.js:9847 lib/routes-ui.js:9882
 msgid "Failed to process request"
 msgstr "Päringu töötlemine ebaõnnestus"
 
-#: workers/api.js:8996 workers/api.js:9112
+#: workers/api.js:9113 workers/api.js:9229
 msgid "Requested page not found"
 msgstr "Soovitud lehekülge ei leitud"
 
-#: workers/api.js:8997
+#: workers/api.js:9114
 msgid "Something went wrong"
 msgstr "Miski läks valesti"
 
-#: lib/tools.js:1494
+#: lib/tools.js:1493
 msgid "Signature validation failed"
 msgstr "Päringu allkirja kontroll ebaõnnestus"
 
-#: lib/tools.js:1503 lib/tools.js:1508
+#: lib/tools.js:1502 lib/tools.js:1507
 msgid "Invalid or expired account setup URL"
 msgstr "Kehtetu või aegunud konto seadistamise URL"
 

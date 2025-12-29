@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -84,8 +84,7 @@ msgid "Username"
 msgstr "Nom d'utilisateur"
 
 #: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:128 views/accounts/register/imap.hbs:31
 msgid "Password"
 msgstr "Mot de passe"
 
@@ -128,12 +127,12 @@ msgstr "TLS pour IMAP"
 
 #: views/accounts/register/imap-server.hbs:100
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 993. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 993. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que lors "
+"de l'utilisation du port 993. Pour les autres ports, EmailEngine revient à "
+"l'utilisation du cryptage basé sur STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:102
 #: views/accounts/register/imap-server.hbs:193
@@ -150,62 +149,62 @@ msgstr "TLS pour SMTP"
 
 #: views/accounts/register/imap-server.hbs:191
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 465. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 465. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"TLS (également connu sous le nom de SSL) n'est généralement nécessaire que lors "
+"de l'utilisation du port 465. Pour les autres ports, EmailEngine revient à "
+"l'utilisation du cryptage basé sur STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
-msgstr "Tester"
+msgid "Verify connection"
+msgstr "Verifier la connexion"
 
-#: views/accounts/register/imap-server.hbs:218
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Continuer"
 
+#: views/accounts/register/imap-server.hbs:218
+msgid "Save and continue"
+msgstr "Enregistrer et continuer"
+
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
-msgstr "Continuer sans tester"
+msgid "Skip verification"
+msgstr "Ignorer la verification"
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
-msgstr "Test échoué"
+msgid "Connection test failed"
+msgstr "Le test de connexion a echoue"
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
+msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"Échec de la validation des paramètres de serveur de messagerie fournis."
+"Impossible de se connecter avec ces parametres. Verifiez les erreurs ci-dessous."
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
-msgstr "Erreur générale"
+msgid "Error"
+msgstr "Erreur"
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
-msgstr "Erreur de validation"
+msgid "Invalid settings"
+msgstr "Parametres invalides"
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
-msgstr "Impossible de valider les paramètres du serveur IMAP"
+msgid "Couldn't connect to IMAP server"
+msgstr "Impossible de se connecter au serveur IMAP"
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
-msgstr "Le serveur IMAP a répondu avec le message suivant :"
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
+msgstr "Reponse du serveur :"
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr "Impossible de valider les paramètres du serveur SMTP"
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
-msgstr "Le serveur SMTP a répondu avec le message suivant :"
+msgid "Couldn't connect to SMTP server"
+msgstr "Impossible de se connecter au serveur SMTP"
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
-msgstr "Erreur HTTP!"
+msgid "Request failed."
+msgstr "La requete a echoue."
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -250,12 +249,12 @@ msgstr ""
 
 #: lib/routes-ui.js:591
 msgid ""
-"The server refused the connection. This typically occurs if the server is "
-"not running, is overloaded, or you are connecting to the wrong host or port."
+"The server refused the connection. This typically occurs if the server is not "
+"running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
-"Le serveur a refusé la connexion. Cela se produit généralement si le serveur "
-"ne fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais "
-"hôte ou au mauvais port."
+"Le serveur a refusé la connexion. Cela se produit généralement si le serveur ne "
+"fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais hôte ou "
+"au mauvais port."
 
 #: lib/routes-ui.js:709
 msgid "Invalid API key for OpenAI"
@@ -319,15 +318,13 @@ msgstr "URL de configuration du compte invalide ou expirée"
 #: lib/autodetect-imap-settings.js:80
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
-"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
-"please use the \"Sign in with Microsoft\" button to securely connect your "
-"account."
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, please "
+"use the \"Sign in with Microsoft\" button to securely connect your account."
 msgstr ""
-"Microsoft a désactivé les connexions basées sur un mot de passe (y compris "
-"les mots de passe des applications) pour les comptes de messagerie "
-"Outlook.com, Hotmail.com et Microsoft 365. Pour continuer, veuillez utiliser "
-"le bouton \"Sign in with Microsoft\" pour connecter votre compte en toute "
-"sécurité."
+"Microsoft a désactivé les connexions basées sur un mot de passe (y compris les "
+"mots de passe des applications) pour les comptes de messagerie Outlook.com, "
+"Hotmail.com et Microsoft 365. Pour continuer, veuillez utiliser le bouton "
+"\"Sign in with Microsoft\" pour connecter votre compte en toute sécurité."
 
 #~ msgid "Unknown OAuth provider"
 #~ msgstr "Fournisseur OAuth inconnu"

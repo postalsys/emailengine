@@ -11,7 +11,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 "
 "|| n%100>14) ? 1 : 2);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -160,53 +160,53 @@ msgstr ""
 "szyfrowania opartego na STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
-msgstr "Sprawdź ustawienia"
+msgid "Verify connection"
+msgstr "Zweryfikuj polaczenie"
 
-#: views/accounts/register/imap-server.hbs:218
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Kontynuuj"
 
+#: views/accounts/register/imap-server.hbs:218
+msgid "Save and continue"
+msgstr "Zapisz i kontynuuj"
+
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
-msgstr "Kontynuuj bez testowania"
+msgid "Skip verification"
+msgstr "Pomin weryfikacje"
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
-msgstr "Test nie powiódł się"
+msgid "Connection test failed"
+msgstr "Test polaczenia nie powiodl sie"
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
-msgstr "Nie udało się zweryfikować podanych ustawień serwera poczty e-mail."
+msgid "We couldn't connect with these settings. Check the errors below."
+msgstr "Nie udalo sie polaczyc z tymi ustawieniami. Sprawdz bledy ponizej."
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
-msgstr "Błąd ogólny"
+msgid "Error"
+msgstr "Blad"
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
-msgstr "Błąd walidacji"
+msgid "Invalid settings"
+msgstr "Nieprawidlowe ustawienia"
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
-msgstr "Nie udało się zweryfikować ustawień serwera IMAP"
+msgid "Couldn't connect to IMAP server"
+msgstr "Nie udalo sie polaczyc z serwerem IMAP"
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
-msgstr "Serwer IMAP odpowiedział następującym komunikatem:"
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
+msgstr "Odpowiedz serwera:"
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr "Nie udało się zweryfikować ustawień serwera SMTP"
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
-msgstr "Serwer SMTP odpowiedział następującym komunikatem:"
+msgid "Couldn't connect to SMTP server"
+msgstr "Nie udalo sie polaczyc z serwerem SMTP"
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
-msgstr "Błąd HTTP!"
+msgid "Request failed."
+msgstr "Zadanie nie powiodlo sie."
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"

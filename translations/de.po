@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -28,8 +28,7 @@ msgstr "Ihre E-Mail Adresse wurde abgemeldet."
 
 #: views/unsubscribe.hbs:7
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-"War das ein Fehler? Klicken Sie <a%s>hier</a> um sich erneut anzumelden."
+msgstr "War das ein Fehler? Klicken Sie <a%s>hier</a> um sich erneut anzumelden."
 
 #: views/unsubscribe.hbs:15
 msgid "Re-subscribe"
@@ -87,8 +86,7 @@ msgid "Username"
 msgstr "Benutzername"
 
 #: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:128 views/accounts/register/imap.hbs:31
 msgid "Password"
 msgstr "Passwort *"
 
@@ -130,12 +128,12 @@ msgstr "TLS für IMAP"
 
 #: views/accounts/register/imap-server.hbs:100
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 993. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von "
-"Port 993 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-"
-"basierte Verschlüsselung zurück."
+"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von Port "
+"993 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-basierte "
+"Verschlüsselung zurück."
 
 #: views/accounts/register/imap-server.hbs:102
 #: views/accounts/register/imap-server.hbs:193
@@ -152,62 +150,62 @@ msgstr "TLS für SMTP"
 
 #: views/accounts/register/imap-server.hbs:191
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 465. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
-"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von "
-"Port 465 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-"
-"basierte Verschlüsselung zurück."
+"TLS (auch bekannt als SSL) wird normalerweise nur bei der Verwendung von Port "
+"465 benötigt. Bei anderen Ports greift EmailEngine auf die STARTTLS-basierte "
+"Verschlüsselung zurück."
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
-msgstr "Test-Einstellungen"
+msgid "Verify connection"
+msgstr "Verbindung pruefen"
 
-#: views/accounts/register/imap-server.hbs:218
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Weiter"
 
+#: views/accounts/register/imap-server.hbs:218
+msgid "Save and continue"
+msgstr "Speichern und weiter"
+
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
-msgstr "Ohne Prüfung fortfahren"
+msgid "Skip verification"
+msgstr "Pruefung ueberspringen"
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
-msgstr "Test fehlgeschlagen"
+msgid "Connection test failed"
+msgstr "Verbindungstest fehlgeschlagen"
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
+msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"Die angegebenen E-Mail-Server-Einstellungen konnten nicht validiert werden."
+"Verbindung mit diesen Einstellungen nicht moeglich. Pruefen Sie die Fehler unten."
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
-msgstr "Allgemeiner Fehler"
+msgid "Error"
+msgstr "Fehler"
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
-msgstr "Validierungsfehler"
+msgid "Invalid settings"
+msgstr "Ungueltige Einstellungen"
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
-msgstr "Validierung der IMAP-Servereinstellungen fehlgeschlagen"
+msgid "Couldn't connect to IMAP server"
+msgstr "Verbindung zum IMAP-Server nicht moeglich"
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
-msgstr "Der IMAP-Server antwortete mit der folgenden Meldung:"
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
+msgstr "Server-Antwort:"
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr "SMTP-Servereinstellungen konnten nicht validiert werden"
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
-msgstr "Der SMTP-Server antwortete mit der folgenden Meldung:"
+msgid "Couldn't connect to SMTP server"
+msgstr "Verbindung zum SMTP-Server nicht moeglich"
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
-msgstr "HTTP-Fehler!"
+msgid "Request failed."
+msgstr "Anfrage fehlgeschlagen."
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -248,17 +246,17 @@ msgid ""
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 "Der Server hat die Verbindung unerwartet geschlossen. Dies geschieht in der "
-"Regel, wenn versucht wird, eine Verbindung zu einem TLS-Port ohne "
-"aktiviertes TLS herzustellen."
+"Regel, wenn versucht wird, eine Verbindung zu einem TLS-Port ohne aktiviertes "
+"TLS herzustellen."
 
 #: lib/routes-ui.js:591
 msgid ""
-"The server refused the connection. This typically occurs if the server is "
-"not running, is overloaded, or you are connecting to the wrong host or port."
+"The server refused the connection. This typically occurs if the server is not "
+"running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
-"Der Server hat die Verbindung abgelehnt. Dies geschieht in der Regel, wenn "
-"der Server nicht läuft, überlastet ist oder Sie sich mit dem falschen Host "
-"oder Port verbinden."
+"Der Server hat die Verbindung abgelehnt. Dies geschieht in der Regel, wenn der "
+"Server nicht läuft, überlastet ist oder Sie sich mit dem falschen Host oder Port "
+"verbinden."
 
 #: lib/routes-ui.js:709
 msgid "Invalid API key for OpenAI"
@@ -322,9 +320,8 @@ msgstr "Ungültige oder abgelaufene URL für die Kontoeinrichtung"
 #: lib/autodetect-imap-settings.js:80
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
-"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, "
-"please use the \"Sign in with Microsoft\" button to securely connect your "
-"account."
+"Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To continue, please "
+"use the \"Sign in with Microsoft\" button to securely connect your account."
 msgstr ""
 "Microsoft hat die kennwortbasierte Anmeldung (einschließlich Kennwörter für "
 "Anwendungen) für Outlook.com-, Hotmail.com- und Microsoft 365-E-Mail-Konten "

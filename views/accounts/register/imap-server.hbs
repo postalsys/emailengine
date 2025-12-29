@@ -206,7 +206,7 @@
                     <span class="icon text-white-50">
                         <i class="fas fa-question-circle"></i>
                     </span>
-                    <span class="text">{{_ "Test settings" templateLocale }}</span>
+                    <span class="text">{{_ "Verify connection" templateLocale }}</span>
                 </button>
 
                 <div class="btn-group">
@@ -215,7 +215,7 @@
                         <span class="icon text-white-50">
                             <i class="fas fa-arrow-right"></i>
                         </span>
-                        <span class="text">{{_ "Continue" templateLocale }}</span>
+                        <span class="text">{{_ "Save and continue" templateLocale }}</span>
                     </button>
                     <button type="button" id="submit-settings-btn-down"
                         class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"
@@ -223,7 +223,7 @@
                         <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="#" id="submit-wo-testing">{{_ "Continue without testing"
+                        <a class="dropdown-item" href="#" id="submit-wo-testing">{{_ "Skip verification"
                             templateLocale }}</a>
                     </div>
                 </div>
@@ -238,13 +238,13 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="testResponseModalLabel">{{_ "Test failed" templateLocale }}</h5>
+                <h5 class="modal-title" id="testResponseModalLabel">{{_ "Connection test failed" templateLocale }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>{{_ "Failed to validate provided email server settings." templateLocale}}</p>
+                <p>{{_ "We couldn't connect with these settings. Check the errors below." templateLocale}}</p>
                 <dl class="row" id="test-errors-list"></dl>
             </div>
             <div class="modal-footer">
@@ -315,26 +315,26 @@
             errorsListElm.innerHTML = '';
 
             if (data.error && !data.fields) {
-                addErrorRow('{{_ "General Error" templateLocale }}', data.error.message || data.error)
+                addErrorRow('{{_ "Error" templateLocale }}', data.error.message || data.error)
             } else if (data.fields) {
-                addErrorRow('{{_ "Validation Error" templateLocale }}', data.message);
+                addErrorRow('{{_ "Invalid settings" templateLocale }}', data.message);
                 for (let field of data.fields) {
                     addErrorRow('-', field.message, 'aaaa', 'bbbbbb');
                 }
             } else {
                 if (!data.imap || !data.imap.success) {
-                    let error = data.imap && data.imap.error || '{{_ "Failed to validate IMAP server settings" templateLocale }}'
+                    let error = data.imap && data.imap.error || '{{_ "Couldn't connect to IMAP server" templateLocale }}'
                     if (data.imap && data.imap.responseText) {
-                        addErrorRow('IMAP', error, '{{_ "IMAP Server responded with the following message:" templateLocale }}', data.imap.responseText);
+                        addErrorRow('IMAP', error, '{{_ "Server response:" templateLocale }}', data.imap.responseText);
                     } else {
                         addErrorRow('IMAP', error);
                     }
                 }
 
                 if (!data.smtp || !data.smtp.success) {
-                    let error = data.smtp && data.smtp.error || '{{_ "Failed to validate SMTP server settings" templateLocale }}'
+                    let error = data.smtp && data.smtp.error || '{{_ "Couldn't connect to SMTP server" templateLocale }}'
                     if (data.smtp && data.smtp.responseText) {
-                        addErrorRow('SMTP', error, '{{_ "SMTP Server responded with the following message:" templateLocale }}', data.smtp.responseText);
+                        addErrorRow('SMTP', error, '{{_ "Server response:" templateLocale }}', data.smtp.responseText);
                     } else {
                         addErrorRow('SMTP', error);
                     }
@@ -392,7 +392,7 @@
                     console.error(err)
                 }
 
-                throw new Error(`{{_ "HTTP error!" templateLocale}} status: ${res.status}`);
+                throw new Error(`{{_ "Request failed." templateLocale}} status: ${res.status}`);
             }
 
             const data = await res.json();

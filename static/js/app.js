@@ -286,25 +286,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) {
                     switch (error.serverResponseCode) {
                         case 'ETIMEDOUT':
-                            errorMessage = 'Connection timed out. This usually happens when you are firewalled, for example are connecting to a wrong port.';
+                            errorMessage = 'Connection timed out. Check your firewall settings and verify the port number.';
                             break;
                         case 'ClosedAfterConnectTLS':
-                            errorMessage = 'Server unexpectedly closed the connection.';
+                            errorMessage = 'Server closed the connection unexpectedly. Try again or check server status.';
                             break;
                         case 'ClosedAfterConnectText':
                             errorMessage =
-                                'The server unexpectedly closed the connection. This usually happens when you try to connect to a TLS port without having TLS enabled.';
+                                'Server closed the connection. This often means TLS is required but not enabled.';
                             break;
                         case 'ECONNREFUSED':
                             errorMessage =
-                                'The server refused the connection. This usually happens when the server is not running, is overloaded, or you are connecting to a wrong host or port.';
+                                'Connection refused. Verify the server is running and check the hostname and port.';
                             break;
                     }
                 }
 
                 stateLabel = {
                     type: 'danger',
-                    name: 'Failed',
+                    name: 'Connection failed',
                     error: errorMessage
                 };
                 break;

@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -154,53 +154,53 @@ msgstr ""
 "のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
-msgstr "設定のテスト"
+msgid "Verify connection"
+msgstr "接続を確認"
 
-#: views/accounts/register/imap-server.hbs:218
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "続行"
 
+#: views/accounts/register/imap-server.hbs:218
+msgid "Save and continue"
+msgstr "保存して続行"
+
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
-msgstr "テストせずに続行"
+msgid "Skip verification"
+msgstr "確認をスキップ"
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
-msgstr "テスト失敗"
+msgid "Connection test failed"
+msgstr "接続テスト失敗"
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
-msgstr "提供されたメールサーバーの設定の検証に失敗しました。"
+msgid "We couldn't connect with these settings. Check the errors below."
+msgstr "これらの設定では接続できませんでした。以下のエラーを確認してください。"
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
-msgstr "一般的なエラー"
+msgid "Error"
+msgstr "エラー"
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
-msgstr "バリデーションエラー"
+msgid "Invalid settings"
+msgstr "無効な設定"
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
-msgstr "IMAPサーバー設定の検証に失敗しました"
+msgid "Couldn't connect to IMAP server"
+msgstr "IMAPサーバーに接続できませんでした"
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
-msgstr "IMAPサーバーは以下のメッセージで応答しました："
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
+msgstr "サーバーの応答："
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr "SMTPサーバー設定の検証に失敗しました"
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
-msgstr "SMTPサーバーは以下のメッセージで応答しました："
+msgid "Couldn't connect to SMTP server"
+msgstr "SMTPサーバーに接続できませんでした"
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
-msgstr "HTTPエラー！"
+msgid "Request failed."
+msgstr "リクエスト失敗。"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"

@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2025-08-13 10:54+0000\n"
-"PO-Revision-Date: 2025-08-13 13:56+0300\n"
+"PO-Revision-Date: 2025-12-29 12:07+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: en\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.6\n"
+"X-Generator: Poedit 3.7\n"
 "X-Poedit-Basepath: .\n"
 
 #: views/config/license.hbs:45
@@ -152,52 +152,52 @@ msgid ""
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:209
-msgid "Test settings"
+msgid "Verify connection"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:218
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr ""
 
+#: views/accounts/register/imap-server.hbs:218
+msgid "Save and continue"
+msgstr ""
+
 #: views/accounts/register/imap-server.hbs:226
-msgid "Continue without testing"
+msgid "Skip verification"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:241
-msgid "Test failed"
+msgid "Connection test failed"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:247
-msgid "Failed to validate provided email server settings."
+msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:318
-msgid "General Error"
+msgid "Error"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:320
-msgid "Validation Error"
+msgid "Invalid settings"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:326
-msgid "Failed to validate IMAP server settings"
+msgid "Couldn't connect to IMAP server"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:328
-msgid "IMAP Server responded with the following message:"
+#: views/accounts/register/imap-server.hbs:337
+msgid "Server response:"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:335
-msgid "Failed to validate SMTP server settings"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:337
-msgid "SMTP Server responded with the following message:"
+msgid "Couldn't connect to SMTP server"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:395
-msgid "HTTP error!"
+msgid "Request failed."
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11

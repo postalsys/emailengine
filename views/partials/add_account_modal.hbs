@@ -13,20 +13,17 @@
                     <div class="form-group">
                         <label for="account-name" class="col-form-label">Full name:</label>
                         <input type="text" class="form-control" id="account-name" name="name"
-                            placeholder="Name of the person, for example &quot;John Smith&quot;">
+                            placeholder="e.g., John Smith">
                     </div>
                     <div class="form-group">
-                        <label for="account-id" class="col-form-label">Account ID:</label>
+                        <label for="account-id" class="col-form-label">Account identifier (optional):</label>
                         <input type="text" class="form-control" id="account-id" name="account"
-                            placeholder="Optional account ID, for example &quot;account_123&quot;">
-                        <small class="form-text text-muted">If an account with the same ID
-                            already exists, EmailEngine will update its settings.</small>
+                            placeholder="e.g., account_123">
+                        <small class="form-text text-muted">Leave blank to auto-generate. Existing accounts with this ID will be updated.</small>
                     </div>
 
-                    <p><small>By clicking "Continue," EmailEngine will redirect you to the publicly hosted
-                            authentication form. You can also use that form from your own application. See the details
-                            <a href="https://emailengine.app/hosted-authentication" target="_blank"
-                                rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.</small>
+                    <p><small>You'll be redirected to a hosted authentication form. You can also <a href="https://emailengine.app/hosted-authentication" target="_blank"
+                                rel="noopener noreferrer" referrerpolicy="no-referrer">use this form in your own app</a>.</small>
                     </p>
                 </div>
                 <div class="modal-footer">
