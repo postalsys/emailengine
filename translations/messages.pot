@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-12-29 10:06+0000\n"
+"POT-Creation-Date: 2025-12-29 11:35+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -62,6 +62,14 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -82,14 +90,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -271,12 +271,7 @@ msgstr ""
 #: lib/routes-ui.js:6793
 #: lib/routes-ui.js:6826
 #: lib/routes-ui.js:9745
-msgid "Failed to validate request arguments"
-msgstr ""
-
-#: lib/routes-ui.js:6923
-#: lib/routes-ui.js:7188
-msgid "Failed to process account"
+msgid "Invalid request. Check your input and try again."
 msgstr ""
 
 #: lib/routes-ui.js:9708
@@ -289,11 +284,6 @@ msgstr ""
 #: lib/routes-ui.js:9853
 #: lib/routes-ui.js:9889
 msgid "Subscription Management"
-msgstr ""
-
-#: lib/routes-ui.js:9847
-#: lib/routes-ui.js:9882
-msgid "Failed to process request"
 msgstr ""
 
 #: workers/api.js:9113

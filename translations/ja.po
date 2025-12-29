@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-08-13 10:54+0000\n"
+"POT-Creation-Date: 2025-12-29 11:35+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,12 +10,16 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.7\n"
+"X-Generator: Poedit 3.8\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d日"
+
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "続けるには<a href=\"%s\">ここ</a>をクリックしてください。"
 
 #: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
 msgid "Unsubscribe"
@@ -61,10 +65,6 @@ msgstr "メールアドレス"
 msgid "Enter your email address"
 msgstr "メールアドレスを入力してください"
 
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "続けるには<a href=\"%s\">ここ</a>をクリックしてください。"
-
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr "メールアカウントプロバイダーを選択してください"
@@ -72,6 +72,28 @@ msgstr "メールアカウントプロバイダーを選択してください"
 #: views/accounts/register/index.hbs:15
 msgid "Standard IMAP"
 msgstr "標準IMAP"
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr "名前"
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr "フルネームを入力してください"
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr "パスワード"
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr "アカウントのパスワードを入力してください"
+
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr "続行"
 
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
@@ -81,12 +103,6 @@ msgstr "IMAP"
 #: views/accounts/register/imap-server.hbs:114
 msgid "Username"
 msgstr "ユーザー名"
-
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
-msgstr "パスワード"
 
 #: views/accounts/register/imap-server.hbs:45
 #: views/accounts/register/imap-server.hbs:136
@@ -157,10 +173,6 @@ msgstr ""
 msgid "Verify connection"
 msgstr "接続を確認"
 
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr "続行"
-
 #: views/accounts/register/imap-server.hbs:218
 msgid "Save and continue"
 msgstr "保存して続行"
@@ -202,27 +214,15 @@ msgstr "SMTPサーバーに接続できませんでした"
 msgid "Request failed."
 msgstr "リクエスト失敗。"
 
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr "名前"
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr "フルネームを入力してください"
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr "アカウントのパスワードを入力してください"
-
-#: lib/routes-ui.js:529
+#: lib/routes-ui.js:532
 msgid "Delegated"
 msgstr "委任された"
 
-#: lib/routes-ui.js:530
+#: lib/routes-ui.js:533
 msgid "Using credentials from \"%s\""
 msgstr "0]」の認証情報を使用"
 
-#: lib/routes-ui.js:580
+#: lib/routes-ui.js:583
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -230,11 +230,11 @@ msgstr ""
 "接続がタイムアウトしました。これは通常、ファイアウォールの内側にいるか、間"
 "違ったポートに接続している場合に発生します。"
 
-#: lib/routes-ui.js:583
+#: lib/routes-ui.js:586
 msgid "The server unexpectedly closed the connection."
 msgstr "サーバーが予期せず接続を閉じました。"
 
-#: lib/routes-ui.js:586
+#: lib/routes-ui.js:589
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -242,7 +242,7 @@ msgstr ""
 "サーバーが予期せず接続を切断しました。これは通常、TLSが有効になっていないTLS"
 "ポートに接続しようとしたときに発生する。"
 
-#: lib/routes-ui.js:591
+#: lib/routes-ui.js:594
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -250,62 +250,54 @@ msgstr ""
 "サーバーが接続を拒否しました。これは通常、サーバーが稼動していないか、過負荷"
 "になっているか、間違ったホストまたはポートに接続している場合に発生します。"
 
-#: lib/routes-ui.js:709
+#: lib/routes-ui.js:712
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAIの無効なAPIキー"
 
-#: lib/routes-ui.js:5006 lib/routes-ui.js:6958 lib/routes-ui.js:6969
+#: lib/routes-ui.js:5031 lib/routes-ui.js:6986 lib/routes-ui.js:6997
 msgid "Server hostname was not found"
 msgstr "サーバーホスト名が見つかりませんでした"
 
-#: lib/routes-ui.js:5009 lib/routes-ui.js:6961 lib/routes-ui.js:6972
+#: lib/routes-ui.js:5034 lib/routes-ui.js:6989 lib/routes-ui.js:7000
 msgid "Invalid username or password"
 msgstr "無効なユーザー名またはパスワード"
 
-#: lib/routes-ui.js:5013 lib/routes-ui.js:6976
+#: lib/routes-ui.js:5038 lib/routes-ui.js:7004
 msgid "TLS protocol error"
 msgstr "TLSプロトコルエラー"
 
-#: lib/routes-ui.js:6705 lib/routes-ui.js:6740 lib/routes-ui.js:6855
-#: lib/routes-ui.js:6902 lib/routes-ui.js:7131 lib/routes-ui.js:7167
-#: workers/api.js:2346
+#: lib/routes-ui.js:6733 lib/routes-ui.js:6768 lib/routes-ui.js:6883
+#: lib/routes-ui.js:6930 lib/routes-ui.js:7159 lib/routes-ui.js:7195
+#: workers/api.js:2407
 msgid "Email Account Setup"
 msgstr "メールアカウント設定"
 
-#: lib/routes-ui.js:6765 lib/routes-ui.js:6798 lib/routes-ui.js:9717
-msgid "Failed to validate request arguments"
-msgstr "リクエスト引数の検証に失敗しました"
+#: lib/routes-ui.js:6793 lib/routes-ui.js:6826 lib/routes-ui.js:9745
+msgid "Invalid request. Check your input and try again."
+msgstr "リクエスト引数の検証に失敗しました。"
 
-#: lib/routes-ui.js:6895 lib/routes-ui.js:7160
-msgid "Failed to process account"
-msgstr "アカウントの処理に失敗しました"
-
-#: lib/routes-ui.js:9680 lib/tools.js:795
+#: lib/routes-ui.js:9708 lib/tools.js:794
 msgid "Invalid input"
 msgstr "無効な入力"
 
-#: lib/routes-ui.js:9690 lib/routes-ui.js:9808 lib/routes-ui.js:9825
-#: lib/routes-ui.js:9861
+#: lib/routes-ui.js:9718 lib/routes-ui.js:9836 lib/routes-ui.js:9853
+#: lib/routes-ui.js:9889
 msgid "Subscription Management"
 msgstr "サブスクリプション管理"
 
-#: lib/routes-ui.js:9819 lib/routes-ui.js:9854
-msgid "Failed to process request"
-msgstr "リクエストの処理に失敗しました"
-
-#: workers/api.js:8996 workers/api.js:9112
+#: workers/api.js:9113 workers/api.js:9229
 msgid "Requested page not found"
 msgstr "リクエストされたページが見つかりません"
 
-#: workers/api.js:8997
+#: workers/api.js:9114
 msgid "Something went wrong"
 msgstr "問題がありました"
 
-#: lib/tools.js:1494
+#: lib/tools.js:1493
 msgid "Signature validation failed"
 msgstr "署名の検証に失敗しました"
 
-#: lib/tools.js:1503 lib/tools.js:1508
+#: lib/tools.js:1502 lib/tools.js:1507
 msgid "Invalid or expired account setup URL"
 msgstr "無効または期限切れのアカウント設定URL"
 
@@ -320,3 +312,13 @@ msgstr ""
 "トのパスワードベースのサインイン（アプリのパスワードを含む）を無効にしていま"
 "す。続行するには、「Microsoftでサインイン」ボタンを使用してアカウントを安全に"
 "接続してください。"
+
+#, fuzzy
+#~| msgid "Failed to process account"
+#~ msgid "Couldn't set up account. Try again."
+#~ msgstr "アカウントの処理に失敗しました"
+
+#, fuzzy
+#~| msgid "Failed to process request"
+#~ msgid "Couldn't process request. Try again."
+#~ msgstr "リクエストの処理に失敗しました"

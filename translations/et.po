@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-12-29 10:06+0000\n"
+"POT-Creation-Date: 2025-12-29 11:35+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.7\n"
+"X-Generator: Poedit 3.8\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -69,6 +69,14 @@ msgstr "E-posti aadress"
 msgid "Enter your email address"
 msgstr "Sisestage oma e-posti aadress"
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Valige oma e-posti konto pakkuja"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standardne IMAP"
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr "Sinu nimi"
@@ -90,14 +98,6 @@ msgstr "Sisestage oma konto parool"
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Jätka"
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Valige oma e-posti konto pakkuja"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "Standardne IMAP"
 
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
@@ -279,12 +279,8 @@ msgid "Email Account Setup"
 msgstr "E-posti konto seadistamine"
 
 #: lib/routes-ui.js:6793 lib/routes-ui.js:6826 lib/routes-ui.js:9745
-msgid "Failed to validate request arguments"
-msgstr "Päringu argumentide kontroll ebaõnnestus"
-
-#: lib/routes-ui.js:6923 lib/routes-ui.js:7188
-msgid "Failed to process account"
-msgstr "Konto töötlemine ebaõnnestus"
+msgid "Invalid request. Check your input and try again."
+msgstr "Päringu argumentide kontroll ebaõnnestus."
 
 #: lib/routes-ui.js:9708 lib/tools.js:794
 msgid "Invalid input"
@@ -294,10 +290,6 @@ msgstr "Vale sisestus"
 #: lib/routes-ui.js:9889
 msgid "Subscription Management"
 msgstr "Tellimuse haldamine"
-
-#: lib/routes-ui.js:9847 lib/routes-ui.js:9882
-msgid "Failed to process request"
-msgstr "Päringu töötlemine ebaõnnestus"
 
 #: workers/api.js:9113 workers/api.js:9229
 msgid "Requested page not found"
@@ -326,6 +318,16 @@ msgstr ""
 "paroolid) Outlook.com, Hotmail.com ja Microsoft 365 e-posti kontodele. "
 "Jätkamiseks kasutage oma konto turvaliseks ühendamiseks nuppu \"Sign in with "
 "Microsoft\"."
+
+#, fuzzy
+#~| msgid "Failed to process account"
+#~ msgid "Couldn't set up account. Try again."
+#~ msgstr "Konto töötlemine ebaõnnestus"
+
+#, fuzzy
+#~| msgid "Failed to process request"
+#~ msgid "Couldn't process request. Try again."
+#~ msgstr "Päringu töötlemine ebaõnnestus"
 
 #~ msgid "Unknown OAuth provider"
 #~ msgstr "Tundmatu OAuth teenus"

@@ -842,7 +842,7 @@ const init = async () => {
                         'error',
                         {
                             pageTitle: 'Access Denied',
-                            message: 'Access Denied'
+                            message: `You don't have permission to view this page`
                         },
                         {
                             layout: 'public'
@@ -5279,13 +5279,13 @@ Include your token in requests using one of these methods:
             if (request.query.documentStore) {
                 for (let key of ['seq', 'modseq']) {
                     if (request.payload.search && key in request.payload.search) {
-                        extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
+                        extraValidationErrors.push({ message: 'Not available when using Document Store', context: { key } });
                     }
                 }
             } else {
                 for (let key of ['documentQuery']) {
                     if (key in request.payload) {
-                        extraValidationErrors.push({ message: 'Not allowed without documentStore', context: { key } });
+                        extraValidationErrors.push({ message: 'Requires Document Store to be enabled', context: { key } });
                     }
                 }
             }
@@ -5442,7 +5442,7 @@ Include your token in requests using one of these methods:
 
             for (let key of ['seq', 'modseq']) {
                 if (request.payload.search && key in request.payload.search) {
-                    extraValidationErrors.push({ message: 'Not allowed with documentStore', context: { key } });
+                    extraValidationErrors.push({ message: 'Not available when using Document Store', context: { key } });
                 }
             }
 
@@ -8996,7 +8996,7 @@ ${now}`,
                     url: '/admin/config/webhooks',
                     level: 'danger',
                     icon: 'link',
-                    message: 'Webhooks are failing, please review'
+                    message: 'Webhook delivery is failing'
                 });
             }
 
@@ -9005,7 +9005,7 @@ ${now}`,
                     url: '/admin/config/license',
                     level: 'warning',
                     icon: 'key',
-                    message: 'License key is not registered'
+                    message: 'No license key registered'
                 });
             }
 
