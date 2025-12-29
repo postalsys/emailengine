@@ -3,7 +3,7 @@
         <span class="icon text-white-50">
             <i class="fas fa-plus"></i>
         </span>
-        <span class="text">Create new</span>
+        <span class="text">Create webhook route</span>
     </a>
 </div>
 
@@ -12,7 +12,7 @@
 
 {{#unless webhooksEnabled}}
 <div class="alert alert-warning mt-3"><strong>Note:</strong> Webhook processing is currently disabled for EmailEngine.
-    Enable webhooks on the configuration page <a href="/admin/config/webhooks">here</a>.</div>
+    <a href="/admin/config/webhooks">Enable webhooks in configuration settings</a>.</div>
 {{/unless}}
 
 <p>Webhook routing allows you to define custom conditions that trigger webhooks to specific targets.</p>
@@ -27,8 +27,8 @@
                     the webhook target requires a specific payload format, you can define a <em>mapping
                         function</em> to modify the payload before sending.
                 </p>
-                <p>Read more about using webhook routes <a href="https://docs.emailengine.app/low-code-integrations/"
-                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">here</a>.</p>
+                <p><a href="https://docs.emailengine.app/low-code-integrations/"
+                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more about webhook routes</a>.</p>
             </div>
             <div class="col-auto">
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>

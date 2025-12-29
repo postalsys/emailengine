@@ -15,12 +15,12 @@
 
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit"
                     title="Edit account configuration" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-user-edit fa-fw"></i> Edit
+                    <i class="fas fa-user-edit fa-fw"></i> Edit account
                 </a>
 
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
                     title="Delete this account and all associated data" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete account
                 </button>
 
                 <button type="button" class="btn btn-light" id="request-reconnect"
@@ -87,7 +87,7 @@
                 {{#if canReadMail}}
                 <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/browse"
                     title="Browse messages" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-folder-open fa-fw"></i> Browse
+                    <i class="fas fa-folder-open fa-fw"></i> Browse messages
                 </a>
                 {{/if}}
             </div>
@@ -98,7 +98,7 @@
                     title="Re-authenticate OAuth2 account" id="renew-grant-btn" data-placement="top">
                     {{#if account.type.icon}}
                     <i class="{{account.type.icon}} fa-fw"></i>
-                    {{/if}} Renew grant
+                    {{/if}} Re-authenticate
                 </button>
             </div>
             {{/if}}
@@ -181,7 +181,7 @@
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                         <a class="dropdown-item" href="#" id="toggle-logs">{{#if
                             account.logs}}Disable{{else}}Enable{{/if}}</a>
-                        <a class="dropdown-item" href="#" id="flush-logs">Flush stored logs</a>
+                        <a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a>
                     </div>
                 </div>
 
@@ -787,7 +787,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="renewGrantLabel">Renew grant</h5>
+                <h5 class="modal-title" id="renewGrantLabel">Re-authenticate account</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -805,11 +805,11 @@
                     <input type="hidden" name="type" value="{{account.oauth2.provider}}">
                     <input type="hidden" name="data" value="{{accountForm.data}}">
                     <input type="hidden" name="sig" value="{{accountForm.signature}}">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         {{#if account.type.icon}}
                         <i class="{{account.type.icon}} fa-fw"></i>
-                        {{/if}} Renew grant
+                        {{/if}} Re-authenticate
                     </button>
                 </form>
             </div>
@@ -821,20 +821,20 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete account</h5>
+                <h5 class="modal-title" id="deleteModalLabel">Delete Account</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete the account for {{account.name}}? This action is not
-                    recoverable.</p>
+                <p>Are you sure you want to delete the account for {{account.name}}? This action cannot be
+                    undone.</p>
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/accounts/{{account.account}}/delete">
                     <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete account</button>
                 </form>
             </div>
         </div>

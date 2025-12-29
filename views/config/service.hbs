@@ -445,12 +445,12 @@
 
             <p>Global settings for filter and map functions in <a href="/admin/webhooks">webhook routes</a>.</p>
 
-            <div class="form-group">
+            <div class="form-group" id="scriptEnv">
 
                 <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
                         target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
 
-                <label>Environment Variables (JSON)</label>
+                <label>Script Variables (JSON)</label>
 
                 <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
                     name="scriptEnv" value="{{values.scriptEnv}}">
@@ -469,8 +469,7 @@
                 <span class="invalid-feedback">{{errors.scriptEnv}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">JSON object available as <code>env</code> variable in all webhook
-                    scripts.</small>
+                <small class="form-text text-muted">JSON object available as <code>env</code> variable in all filter and map functions. Use for shared secrets like API keys, access tokens, or configuration values. For example, if set to <code>{"token":"secret123"}</code>, then <code>env.token</code> in your scripts returns <code>"secret123"</code>.</small>
             </div>
 
         </div>

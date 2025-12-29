@@ -15,12 +15,12 @@
 
                 <a type="button" class="btn btn-light" href="/admin/webhooks/webhook/{{webhook.id}}/edit"
                     title="Edit Webhook Route contents" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-file-signature fa-fw"></i> Edit
+                    <i class="fas fa-file-signature fa-fw"></i> Edit route
                 </a>
 
                 <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-target="#deleteModal"
                     title="Delete this Webhook Route" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete
+                    <i class="fas fa-trash-alt fa-fw"></i> Delete route
                 </button>
             </div>
         </div>
@@ -39,7 +39,7 @@
                 <span aria-hidden="true">&times;</span>
             </button>
 
-            <p><strong>NB!</strong> The last attempted webhook failed with the response below.</p>
+            <p><strong>Warning:</strong> The last attempted webhook failed with the response below.</p>
             <hr>
             <p class="mb-0">
                 <code>
@@ -184,15 +184,15 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action is not
-                    recoverable.</p>
+                <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be
+                    undone.</p>
             </div>
             <div class="modal-footer">
                 <form method="post" action="/admin/webhooks/delete">
                     <input type="hidden" name="crumb" value="{{crumb}}" />
                     <input type="hidden" name="webhook" value="{{webhook.id}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete route</button>
                 </form>
             </div>
         </div>

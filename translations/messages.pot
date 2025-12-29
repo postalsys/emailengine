@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2025-12-29 11:35+0000\n"
+"POT-Creation-Date: 2025-12-29 13:30+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -62,14 +62,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -90,6 +82,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -241,48 +241,48 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:5031
-#: lib/routes-ui.js:6986
-#: lib/routes-ui.js:6997
+#: lib/routes-ui.js:5033
+#: lib/routes-ui.js:6988
+#: lib/routes-ui.js:6999
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5034
-#: lib/routes-ui.js:6989
-#: lib/routes-ui.js:7000
+#: lib/routes-ui.js:5036
+#: lib/routes-ui.js:6991
+#: lib/routes-ui.js:7002
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5038
-#: lib/routes-ui.js:7004
+#: lib/routes-ui.js:5040
+#: lib/routes-ui.js:7006
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:6733
-#: lib/routes-ui.js:6768
-#: lib/routes-ui.js:6883
-#: lib/routes-ui.js:6930
-#: lib/routes-ui.js:7159
-#: lib/routes-ui.js:7195
+#: lib/routes-ui.js:6735
+#: lib/routes-ui.js:6770
+#: lib/routes-ui.js:6885
+#: lib/routes-ui.js:6932
+#: lib/routes-ui.js:7161
+#: lib/routes-ui.js:7197
 #: workers/api.js:2407
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:6793
-#: lib/routes-ui.js:6826
-#: lib/routes-ui.js:9745
+#: lib/routes-ui.js:6795
+#: lib/routes-ui.js:6828
+#: lib/routes-ui.js:9747
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:9708
+#: lib/routes-ui.js:9710
 #: lib/tools.js:794
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:9718
-#: lib/routes-ui.js:9836
-#: lib/routes-ui.js:9853
-#: lib/routes-ui.js:9889
+#: lib/routes-ui.js:9720
+#: lib/routes-ui.js:9838
+#: lib/routes-ui.js:9855
+#: lib/routes-ui.js:9891
 msgid "Subscription Management"
 msgstr ""
 

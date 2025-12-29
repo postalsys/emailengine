@@ -52,7 +52,8 @@
                 <div style="line-height: 1; margin-bottom: 10px;">
                     <small>JavaScript code to determine if the email should be stored. If the code evaluates to
                         <code>true</code> then the email is synced to the document store, otherwise it is skipped. The
-                        script includes <code>payload</code> as a global variable that contains the email data.</small>
+                        script includes <code>payload</code> as a global variable that contains the email data.
+                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
                 </div>
                 <div id="editor-fn" class="code-editor"></div>
                 <div class="editor-embed-block">
@@ -89,7 +90,8 @@
                 <div style="line-height: 1; margin-bottom: 10px;">
                     <small>JavaScript code to modify email payload structure. Protected fields <code>id</code>,
                         <code>account</code>, <code>path</code>, <code>uid</code>, <code>specialUse</code>, and
-                        <code>messageId</code> can not be modified.</small>
+                        <code>messageId</code> cannot be modified.
+                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
                 </div>
 
                 <div class="row">

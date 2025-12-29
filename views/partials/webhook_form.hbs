@@ -83,7 +83,7 @@
                 <small>JavaScript code to determine if the webhook should be sent. If the code evaluates to
                     <code>true</code> then the webhook is sent, otherwise it is skipped.
                     The script includes <code>payload</code> as a global variable that contains the webhook
-                    payload.</small>
+                    payload. Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
             </div>
             <div id="editor-fn" class="code-editor"></div>
             <div class="editor-embed-block">
@@ -112,7 +112,7 @@
             <div style="line-height: 1; margin-bottom: 10px;">
                 <small>JavaScript code to modify webhook payload output. Some services might expect incoming data using
                     a specific format. Whatever is returned by this function will be used as the webhook
-                    payload.</small>
+                    payload. Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
             </div>
 
             <div class="row">
