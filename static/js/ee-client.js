@@ -775,24 +775,6 @@ export class EmailEngineClient {
                 justify-content: center;
                 height: 100%;
                 color: #999;
-                text-align: center;
-                padding: 20px;
-            }
-
-            .ee-empty-state-content {
-                max-width: 280px;
-            }
-
-            .ee-empty-state-title {
-                font-size: 14px;
-                font-weight: 500;
-                color: #666;
-                margin-bottom: 4px;
-            }
-
-            .ee-empty-state-desc {
-                font-size: 12px;
-                color: #999;
             }
             
             .ee-loading {
@@ -1226,14 +1208,6 @@ export class EmailEngineClient {
                 color: #999;
             }
 
-            .ee-dark-mode .ee-empty-state-title {
-                color: #bbb;
-            }
-
-            .ee-dark-mode .ee-empty-state-desc {
-                color: #888;
-            }
-
             .ee-dark-mode .ee-pagination {
                 background: #252525;
                 border-color: #333;
@@ -1421,12 +1395,7 @@ export class EmailEngineClient {
                 <div class="ee-pane-header">
                     <span class="ee-pane-title">Messages</span>
                 </div>
-                <div class="ee-empty-state">
-                    <div class="ee-empty-state-content">
-                        <div class="ee-empty-state-title">No messages in this folder</div>
-                        <div class="ee-empty-state-desc">Messages you receive will appear here.</div>
-                    </div>
-                </div>
+                <div class="ee-empty-state">No messages</div>
             `;
             return;
         }
@@ -1522,12 +1491,7 @@ export class EmailEngineClient {
         }
 
         if (!this.currentMessage) {
-            viewer.innerHTML = `<div class="ee-empty-state">
-                <div class="ee-empty-state-content">
-                    <div class="ee-empty-state-title">No message selected</div>
-                    <div class="ee-empty-state-desc">Select a message from the list to view it here.</div>
-                </div>
-            </div>`;
+            viewer.innerHTML = '<div class="ee-empty-state">Select a message to view</div>';
             return;
         }
 
@@ -1670,20 +1634,10 @@ export class EmailEngineClient {
                     <div class="ee-pane-header">
                         <span class="ee-pane-title">Messages</span>
                     </div>
-                    <div class="ee-empty-state">
-                        <div class="ee-empty-state-content">
-                            <div class="ee-empty-state-title">Choose a folder</div>
-                            <div class="ee-empty-state-desc">Select a folder from the sidebar to view messages.</div>
-                        </div>
-                    </div>
+                    <div class="ee-empty-state">Select a folder</div>
                 </div>
                 <div class="ee-message-viewer">
-                    <div class="ee-empty-state">
-                        <div class="ee-empty-state-content">
-                            <div class="ee-empty-state-title">No message selected</div>
-                            <div class="ee-empty-state-desc">Select a message from the list to view it here.</div>
-                        </div>
-                    </div>
+                    <div class="ee-empty-state">Select a message to view</div>
                 </div>
             </div>
             <button class="ee-compose-button" title="Compose Email">✉</button>
