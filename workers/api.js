@@ -1803,18 +1803,17 @@ Include your token in requests using one of these methods:
             for (let entry of (request.payload && request.payload.value) || []) {
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
+                    // Security: Log webhook validation failures - could indicate spoofed notifications
                     request.logger.warn({
-                        msg: 'Invalid subscription details',
+                        msg: 'Webhook validation failed - potential security issue',
+                        securityEvent: 'webhook_validation_failure',
                         account: request.query.account,
-                        expected: {
-                            subscriptionId: outlookSubscription.id,
-                            clientState: outlookSubscription.clientState
-                        },
-                        actual: {
-                            subscriptionId: entry.subscriptionId,
-                            clientState: entry.clientState
-                        },
-                        entry
+                        subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
+                        clientStateMatch: entry.clientState === outlookSubscription.clientState,
+                        receivedSubscriptionId: entry.subscriptionId,
+                        expectedSubscriptionId: outlookSubscription.id,
+                        changeType: entry.changeType,
+                        resource: entry.resource
                     });
                     continue;
                 }
@@ -1905,18 +1904,16 @@ Include your token in requests using one of these methods:
 
                 // enumerate and queue all entries
                 if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
-                    request.logger.error({
-                        msg: 'Invalid subscription details',
+                    // Security: Log lifecycle webhook validation failures - could indicate spoofed notifications
+                    request.logger.warn({
+                        msg: 'Lifecycle webhook validation failed - potential security issue',
+                        securityEvent: 'lifecycle_webhook_validation_failure',
                         account: request.query.account,
-                        expected: {
-                            subscriptionId: outlookSubscription.id,
-                            clientState: outlookSubscription.clientState
-                        },
-                        actual: {
-                            subscriptionId: entry.subscriptionId,
-                            clientState: entry.clientState
-                        },
-                        entry
+                        subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
+                        clientStateMatch: entry.clientState === outlookSubscription.clientState,
+                        receivedSubscriptionId: entry.subscriptionId,
+                        expectedSubscriptionId: outlookSubscription.id,
+                        lifecycleEvent: entry.lifecycleEvent
                     });
                     continue;
                 }
