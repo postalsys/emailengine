@@ -1811,7 +1811,6 @@ Include your token in requests using one of these methods:
                         subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
                         clientStateMatch: entry.clientState === outlookSubscription.clientState,
                         receivedSubscriptionId: entry.subscriptionId,
-                        expectedSubscriptionId: outlookSubscription.id,
                         changeType: entry.changeType,
                         resource: entry.resource
                     });
@@ -1912,7 +1911,6 @@ Include your token in requests using one of these methods:
                         subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
                         clientStateMatch: entry.clientState === outlookSubscription.clientState,
                         receivedSubscriptionId: entry.subscriptionId,
-                        expectedSubscriptionId: outlookSubscription.id,
                         lifecycleEvent: entry.lifecycleEvent
                     });
                     continue;
