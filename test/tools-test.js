@@ -8,6 +8,11 @@ const crypto = require('crypto');
 const tools = require('../lib/tools');
 
 test('Tools utility tests', async t => {
+    t.after(() => {
+        // Force exit after tests to prevent hanging on Redis connections from loaded modules
+        setTimeout(() => process.exit(), 1000).unref();
+    });
+
     // getDuration tests
     await t.test('getDuration() parses seconds', async () => {
         assert.strictEqual(tools.getDuration('5s'), 5000);

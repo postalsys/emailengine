@@ -32,6 +32,9 @@ test('Token management tests', async t => {
         }
 
         redis.quit();
+
+        // Force exit after cleanup to prevent hanging on any remaining connections
+        setTimeout(() => process.exit(), 1000).unref();
     });
 
     // Session token tests
