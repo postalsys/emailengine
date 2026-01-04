@@ -2042,6 +2042,13 @@ Include your token in requests using one of these methods:
                 throw error;
             }
 
+            // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
+            const stateNonce = request.query.state.slice('account:add:'.length);
+            if (!/^[A-Za-z0-9_-]{21,22}$/.test(stateNonce)) {
+                let error = Boom.boomify(new Error(`Oauth failed: invalid state format`), { statusCode: 400 });
+                throw error;
+            }
+
             let [[, accountData]] = await redis.multi().get(`${REDIS_PREFIX}${request.query.state}`).del(`${REDIS_PREFIX}${request.query.state}`).exec();
             if (!accountData) {
                 let error = Boom.boomify(new Error(`Oauth failed: session expired`), { statusCode: 400 });
