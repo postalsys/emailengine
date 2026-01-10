@@ -3,7 +3,6 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const os = require('os');
-const crypto = require('crypto');
 
 const tools = require('../lib/tools');
 
@@ -224,35 +223,7 @@ test('Tools utility tests', async t => {
         assert.strictEqual(decoded.another, 123);
     });
 
-    // matchIp tests
-    await t.test('matchIp() matches exact IPv4 address', async () => {
-        assert.strictEqual(tools.matchIp('192.168.1.1', ['192.168.1.1']), true);
-        assert.strictEqual(tools.matchIp('192.168.1.2', ['192.168.1.1']), false);
-    });
-
-    await t.test('matchIp() matches IPv4 CIDR range', async () => {
-        assert.strictEqual(tools.matchIp('192.168.1.50', ['192.168.1.0/24']), true);
-        assert.strictEqual(tools.matchIp('192.168.2.50', ['192.168.1.0/24']), false);
-    });
-
-    await t.test('matchIp() matches against multiple addresses', async () => {
-        const addresses = ['10.0.0.1', '192.168.0.0/16', '172.16.0.0/12'];
-
-        assert.strictEqual(tools.matchIp('10.0.0.1', addresses), true);
-        assert.strictEqual(tools.matchIp('192.168.5.10', addresses), true);
-        assert.strictEqual(tools.matchIp('172.20.5.5', addresses), true);
-        assert.strictEqual(tools.matchIp('8.8.8.8', addresses), false);
-    });
-
-    await t.test('matchIp() matches IPv6 address', async () => {
-        assert.strictEqual(tools.matchIp('::1', ['::1']), true);
-        assert.strictEqual(tools.matchIp('::1', ['::2']), false);
-    });
-
-    await t.test('matchIp() matches IPv6 CIDR', async () => {
-        assert.strictEqual(tools.matchIp('2001:db8::1', ['2001:db8::/32']), true);
-        assert.strictEqual(tools.matchIp('2001:db9::1', ['2001:db8::/32']), false);
-    });
+    // NOTE: matchIp tests moved to test/network-utils-test.js
 
     // getBoolean tests
     await t.test('getBoolean() returns boolean as-is', async () => {

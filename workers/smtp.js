@@ -6,7 +6,8 @@ const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 
-const { getDuration, emitChangeEvent, readEnvValue, matchIp, threadStats, loadTlsConfig, getByteSize } = require('../lib/tools');
+const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, getByteSize } = require('../lib/tools');
+const { matchIp } = require('../lib/utils/network');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {

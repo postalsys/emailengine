@@ -5,11 +5,7 @@ const assert = require('node:assert').strict;
 const msgpack = require('msgpack5')();
 
 // Import constants and helpers directly
-const {
-    OUTLOOK_MAX_RETRY_ATTEMPTS,
-    OUTLOOK_RETRY_BASE_DELAY,
-    OUTLOOK_RETRY_MAX_DELAY
-} = require('../lib/consts');
+const { OUTLOOK_MAX_RETRY_ATTEMPTS, OUTLOOK_RETRY_BASE_DELAY, OUTLOOK_RETRY_MAX_DELAY } = require('../lib/consts');
 
 // Gmail constants (copied from gmail-client.js since they're not exported)
 const SKIP_LABELS = ['UNREAD', 'STARRED', 'IMPORTANT', 'CHAT', 'CATEGORY_PERSONAL'];

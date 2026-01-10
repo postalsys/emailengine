@@ -86,10 +86,7 @@ test('Encryption tests', async t => {
         const parts = encrypted.split('$');
         const tamperedHex = parts[6];
         // Flip some bits in the middle
-        const tamperedPart =
-            tamperedHex.substring(0, 10) +
-            (parseInt(tamperedHex[10], 16) ^ 0xf).toString(16) +
-            tamperedHex.substring(11);
+        const tamperedPart = tamperedHex.substring(0, 10) + (parseInt(tamperedHex[10], 16) ^ 0xf).toString(16) + tamperedHex.substring(11);
         parts[6] = tamperedPart;
         const tampered = parts.join('$');
 
@@ -109,8 +106,7 @@ test('Encryption tests', async t => {
         // Tamper with auth tag (4th part after $)
         const parts = encrypted.split('$');
         const authTag = parts[3];
-        const tamperedAuthTag =
-            authTag.substring(0, 5) + (parseInt(authTag[5], 16) ^ 0xf).toString(16) + authTag.substring(6);
+        const tamperedAuthTag = authTag.substring(0, 5) + (parseInt(authTag[5], 16) ^ 0xf).toString(16) + authTag.substring(6);
         parts[3] = tamperedAuthTag;
         const tampered = parts.join('$');
 

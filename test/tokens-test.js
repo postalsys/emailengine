@@ -178,18 +178,24 @@ test('Token management tests', async t => {
     });
 
     await t.test('get() throws for invalid token format', async () => {
-        await assert.rejects(async () => tokens.get('invalid'), err => {
-            assert.strictEqual(err.code, 'InvalidToken');
-            return true;
-        });
+        await assert.rejects(
+            async () => tokens.get('invalid'),
+            err => {
+                assert.strictEqual(err.code, 'InvalidToken');
+                return true;
+            }
+        );
     });
 
     await t.test('get() throws for unknown token', async () => {
         const fakeToken = 'a'.repeat(64);
-        await assert.rejects(async () => tokens.get(fakeToken), err => {
-            assert.strictEqual(err.code, 'UnknownToken');
-            return true;
-        });
+        await assert.rejects(
+            async () => tokens.get(fakeToken),
+            err => {
+                assert.strictEqual(err.code, 'UnknownToken');
+                return true;
+            }
+        );
     });
 
     await t.test('get() can retrieve using hashed token', async () => {
@@ -224,10 +230,13 @@ test('Token management tests', async t => {
         assert.strictEqual(deleted, true);
 
         // Verify gone
-        await assert.rejects(async () => tokens.get(token), err => {
-            assert.strictEqual(err.code, 'UnknownToken');
-            return true;
-        });
+        await assert.rejects(
+            async () => tokens.get(token),
+            err => {
+                assert.strictEqual(err.code, 'UnknownToken');
+                return true;
+            }
+        );
     });
 
     await t.test('delete() returns false for non-existent token', async () => {
@@ -237,10 +246,13 @@ test('Token management tests', async t => {
     });
 
     await t.test('delete() throws for invalid format', async () => {
-        await assert.rejects(async () => tokens.delete('short'), err => {
-            assert.strictEqual(err.code, 'InvalidToken');
-            return true;
-        });
+        await assert.rejects(
+            async () => tokens.delete('short'),
+            err => {
+                assert.strictEqual(err.code, 'InvalidToken');
+                return true;
+            }
+        );
     });
 
     await t.test('list() returns account tokens with pagination', async () => {
