@@ -34,15 +34,14 @@ const {
     runPrechecks,
     matcher,
     readEnvValue,
-    matchIp,
     getSignedFormData,
     threadStats,
-    detectAutomatedRequest,
     hasEnvValue,
     getBoolean,
     loadTlsConfig,
     retryAgent
 } = require('../lib/tools');
+const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
