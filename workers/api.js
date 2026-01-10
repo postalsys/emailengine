@@ -3226,7 +3226,6 @@ Include your token in requests using one of these methods:
         }
     });
 
-
     server.route({
         method: 'POST',
         path: '/v1/account/{account}/submit',

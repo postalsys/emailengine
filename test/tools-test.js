@@ -3,7 +3,6 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const os = require('os');
-const crypto = require('crypto');
 
 const tools = require('../lib/tools');
 

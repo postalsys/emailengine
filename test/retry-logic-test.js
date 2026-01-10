@@ -3,11 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const {
-    OUTLOOK_MAX_RETRY_ATTEMPTS,
-    OUTLOOK_RETRY_BASE_DELAY,
-    OUTLOOK_RETRY_MAX_DELAY
-} = require('../lib/consts');
+const { OUTLOOK_MAX_RETRY_ATTEMPTS, OUTLOOK_RETRY_BASE_DELAY, OUTLOOK_RETRY_MAX_DELAY } = require('../lib/consts');
 
 /**
  * Calculate exponential backoff delay (mirrors implementation in outlook-client.js)
@@ -243,7 +239,10 @@ test('Retry logic tests', async t => {
 
         // All delays should use the Retry-After value
         assert.strictEqual(delays.length, 3);
-        assert.ok(delays.every(d => d === 90), 'All delays should be 90s from Retry-After');
+        assert.ok(
+            delays.every(d => d === 90),
+            'All delays should be 90s from Retry-After'
+        );
     });
 
     await t.test('respects custom maxRetries option', async () => {
