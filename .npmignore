@@ -1,0 +1,27 @@
+# Development files
+.DS_Store
+.vscode
+.claude
+CLAUDE.md
+
+# Test files
+test/
+
+# Distribution builds
+dist/
+ee-dist/
+
+# Development configuration
+config/development*
+.okta.env
+system.env
+keylog.txt
+
+# Temporary files
+issue*
+patch*
+manual-test/
+
+# Build artifacts
+swagger.json
+yarn.lock
