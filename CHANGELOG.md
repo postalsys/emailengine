@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.61.2](https://github.com/postalsys/emailengine/compare/v2.61.1...v2.61.2) (2026-01-12)
+
+
+### Bug Fixes
+
+* add error logging for MS Graph subscription creation failures ([ba928e4](https://github.com/postalsys/emailengine/commit/ba928e495acb7fcc8c18e6cf34c917a2f4ad3337))
+* add forced exit to prevent test timeout in CI ([aeb7261](https://github.com/postalsys/emailengine/commit/aeb726169b26e7263acb55041112f5a97a818b8a))
+* handle empty or invalid JSON responses from OAuth APIs ([57d8886](https://github.com/postalsys/emailengine/commit/57d8886a0d29b20df4b575bac8210f6ed97f7fa3))
+
 ## [2.61.1](https://github.com/postalsys/emailengine/compare/v2.61.0...v2.61.1) (2025-12-28)
 
 
