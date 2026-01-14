@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.61.3](https://github.com/postalsys/emailengine/compare/v2.61.2...v2.61.3) (2026-01-14)
+
+
+### Bug Fixes
+
+* prevent 500 error when listing accounts with invalid delegation config ([8651bcc](https://github.com/postalsys/emailengine/commit/8651bcc3c18cd54ee5309b3392915773c355e6c4))
+* update gettext script to include refactored UI route files ([5b2e4a5](https://github.com/postalsys/emailengine/commit/5b2e4a55771f192fb14d030b5e5d08ba860c90ab))
+
 ## [2.61.2](https://github.com/postalsys/emailengine/compare/v2.61.1...v2.61.2) (2026-01-12)
 
 
