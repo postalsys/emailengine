@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.61.4](https://github.com/postalsys/emailengine/compare/v2.61.3...v2.61.4) (2026-01-14)
+
+
+### Bug Fixes
+
+* handle delegation errors in loadAccountData, isApiClient, and UI listing ([c306618](https://github.com/postalsys/emailengine/commit/c306618a37428bbf088ed1289bf832e778f14b9c))
+* show Failed status for accounts with IMAP disabled due to auth errors ([e6b687d](https://github.com/postalsys/emailengine/commit/e6b687d458cfd080795f7176f862109e2c299fff))
+
 ## [2.61.3](https://github.com/postalsys/emailengine/compare/v2.61.2...v2.61.3) (2026-01-14)
 
 
