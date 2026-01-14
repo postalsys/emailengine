@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2025-12-29 11:35+0000\n"
+"POT-Creation-Date: 2026-01-14 09:54+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -220,15 +220,15 @@ msgstr "Nie udalo sie polaczyc z serwerem SMTP"
 msgid "Request failed."
 msgstr "Zadanie nie powiodlo sie."
 
-#: lib/routes-ui.js:532
+#: lib/routes-ui.js:519 lib/ui-routes/account-routes.js:60
 msgid "Delegated"
 msgstr "Delegowany"
 
-#: lib/routes-ui.js:533
+#: lib/routes-ui.js:520 lib/ui-routes/account-routes.js:61
 msgid "Using credentials from \"%s\""
 msgstr "Używanie poświadczeń z \"%s\""
 
-#: lib/routes-ui.js:583
+#: lib/routes-ui.js:570 lib/ui-routes/account-routes.js:111
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -236,11 +236,11 @@ msgstr ""
 "Przekroczono limit czasu połączenia. Zwykle dzieje się tak, gdy użytkownik "
 "znajduje się za zaporą sieciową lub łączy się z niewłaściwym portem."
 
-#: lib/routes-ui.js:586
+#: lib/routes-ui.js:573 lib/ui-routes/account-routes.js:114
 msgid "The server unexpectedly closed the connection."
 msgstr "Serwer nieoczekiwanie zamknął połączenie."
 
-#: lib/routes-ui.js:589
+#: lib/routes-ui.js:576 lib/ui-routes/account-routes.js:117
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -248,7 +248,7 @@ msgstr ""
 "Serwer nieoczekiwanie zamknął połączenie. Zwykle dzieje się tak podczas "
 "próby połączenia z portem TLS bez włączonego protokołu TLS."
 
-#: lib/routes-ui.js:594
+#: lib/routes-ui.js:581 lib/ui-routes/account-routes.js:122
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -256,54 +256,63 @@ msgstr ""
 "Serwer odmówił połączenia. Zwykle dzieje się tak, gdy serwer nie działa, "
 "jest przeciążony lub łączysz się z niewłaściwym hostem lub portem."
 
-#: lib/routes-ui.js:712
+#: lib/routes-ui.js:699
 msgid "Invalid API key for OpenAI"
 msgstr "Nieprawidłowy klucz API dla OpenAI"
 
-#: lib/routes-ui.js:5031 lib/routes-ui.js:6986 lib/routes-ui.js:6997
-msgid "Server hostname was not found"
-msgstr "Nie znaleziono nazwy hosta serwera"
-
-#: lib/routes-ui.js:5034 lib/routes-ui.js:6989 lib/routes-ui.js:7000
-msgid "Invalid username or password"
-msgstr "Nieprawidłowa nazwa użytkownika lub hasło"
-
-#: lib/routes-ui.js:5038 lib/routes-ui.js:7004
-msgid "TLS protocol error"
-msgstr "Błąd protokołu TLS"
-
-#: lib/routes-ui.js:6733 lib/routes-ui.js:6768 lib/routes-ui.js:6883
-#: lib/routes-ui.js:6930 lib/routes-ui.js:7159 lib/routes-ui.js:7195
-#: workers/api.js:2407
+#: lib/routes-ui.js:4443 lib/routes-ui.js:4478 lib/routes-ui.js:4593
+#: lib/routes-ui.js:4640 lib/routes-ui.js:4869 lib/routes-ui.js:4905
+#: workers/api.js:2398 lib/ui-routes/account-routes.js:535
+#: lib/ui-routes/account-routes.js:571 lib/ui-routes/account-routes.js:688
+#: lib/ui-routes/account-routes.js:735 lib/ui-routes/account-routes.js:966
+#: lib/ui-routes/account-routes.js:1002
 msgid "Email Account Setup"
 msgstr "Konfiguracja konta e-mail"
 
-#: lib/routes-ui.js:6793 lib/routes-ui.js:6826 lib/routes-ui.js:9745
+#: lib/routes-ui.js:4503 lib/routes-ui.js:4536 lib/routes-ui.js:7455
+#: lib/ui-routes/account-routes.js:596 lib/ui-routes/account-routes.js:630
 msgid "Invalid request. Check your input and try again."
 msgstr "Nie udało się zweryfikować argumentów żądania."
 
-#: lib/routes-ui.js:9708 lib/tools.js:794
+#: lib/routes-ui.js:4696 lib/routes-ui.js:4707
+#: lib/ui-routes/account-routes.js:792 lib/ui-routes/account-routes.js:803
+#: lib/ui-routes/admin-entities-routes.js:2020
+msgid "Server hostname was not found"
+msgstr "Nie znaleziono nazwy hosta serwera"
+
+#: lib/routes-ui.js:4699 lib/routes-ui.js:4710
+#: lib/ui-routes/account-routes.js:795 lib/ui-routes/account-routes.js:806
+#: lib/ui-routes/admin-entities-routes.js:2023
+msgid "Invalid username or password"
+msgstr "Nieprawidłowa nazwa użytkownika lub hasło"
+
+#: lib/routes-ui.js:4714 lib/ui-routes/account-routes.js:810
+#: lib/ui-routes/admin-entities-routes.js:2027
+msgid "TLS protocol error"
+msgstr "Błąd protokołu TLS"
+
+#: lib/routes-ui.js:7418 lib/tools.js:778
 msgid "Invalid input"
 msgstr "Nieprawidłowe dane wejściowe"
 
-#: lib/routes-ui.js:9718 lib/routes-ui.js:9836 lib/routes-ui.js:9853
-#: lib/routes-ui.js:9889
+#: lib/routes-ui.js:7428 lib/routes-ui.js:7546 lib/routes-ui.js:7563
+#: lib/routes-ui.js:7599
 msgid "Subscription Management"
 msgstr "Zarządzanie subskrypcjami"
 
-#: workers/api.js:9113 workers/api.js:9229
+#: workers/api.js:6825 workers/api.js:6941
 msgid "Requested page not found"
 msgstr "Nie znaleziono żądanej strony"
 
-#: workers/api.js:9114
+#: workers/api.js:6826
 msgid "Something went wrong"
 msgstr "Ups... Coś poszlo nie tak"
 
-#: lib/tools.js:1493
+#: lib/tools.js:1477
 msgid "Signature validation failed"
 msgstr "Walidacja podpisu nie powiodła się"
 
-#: lib/tools.js:1502 lib/tools.js:1507
+#: lib/tools.js:1486 lib/tools.js:1491
 msgid "Invalid or expired account setup URL"
 msgstr "Nieprawidłowy lub wygasły adres URL konfiguracji konta"
 
@@ -319,10 +328,9 @@ msgstr ""
 "365. Aby kontynuować, użyj przycisku \"Zaloguj się za pomocą Microsoft\", "
 "aby bezpiecznie połączyć swoje konto."
 
-#, fuzzy
-#~| msgid "Failed to process account"
-#~ msgid "Couldn't set up account. Try again."
-#~ msgstr "Nie udało się przetworzyć konta"
+#: lib/ui-routes/account-routes.js:728 lib/ui-routes/account-routes.js:995
+msgid "Couldn't set up account. Try again."
+msgstr "Nie udało się założyć konta. Spróbuj ponownie."
 
 #, fuzzy
 #~| msgid "Failed to process request"
