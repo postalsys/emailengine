@@ -379,4 +379,50 @@ test('Tools utility tests', async t => {
     await t.test('readEnvValue() returns undefined for non-existent', async () => {
         assert.strictEqual(tools.readEnvValue('NON_EXISTENT_VAR_67890'), undefined);
     });
+
+    // prepareUrl tests
+    await t.test('prepareUrl() handles base URL at root without trailing slash', async () => {
+        const result = tools.prepareUrl('/oauth/msg/notification', 'https://example.com', { account: 'test' });
+        assert.strictEqual(result, 'https://example.com/oauth/msg/notification?account=test');
+    });
+
+    await t.test('prepareUrl() handles base URL at root with trailing slash', async () => {
+        const result = tools.prepareUrl('/oauth/msg/notification', 'https://example.com/', { account: 'test' });
+        assert.strictEqual(result, 'https://example.com/oauth/msg/notification?account=test');
+    });
+
+    await t.test('prepareUrl() handles base URL with path without trailing slash', async () => {
+        const result = tools.prepareUrl('/oauth/msg/notification', 'https://example.com/emailengine-api', { account: 'test' });
+        assert.strictEqual(result, 'https://example.com/emailengine-api/oauth/msg/notification?account=test');
+    });
+
+    await t.test('prepareUrl() handles base URL with path with trailing slash', async () => {
+        const result = tools.prepareUrl('/oauth/msg/notification', 'https://example.com/emailengine-api/', { account: 'test' });
+        assert.strictEqual(result, 'https://example.com/emailengine-api/oauth/msg/notification?account=test');
+    });
+
+    await t.test('prepareUrl() handles endpoint without leading slash', async () => {
+        const result = tools.prepareUrl('oauth/msg/notification', 'https://example.com/api/', { account: 'test' });
+        assert.strictEqual(result, 'https://example.com/api/oauth/msg/notification?account=test');
+    });
+
+    await t.test('prepareUrl() handles multiple query parameters', async () => {
+        const result = tools.prepareUrl('/path', 'https://example.com', { foo: 'bar', baz: 'qux' });
+        assert.strictEqual(result, 'https://example.com/path?foo=bar&baz=qux');
+    });
+
+    await t.test('prepareUrl() skips null and undefined query params', async () => {
+        const result = tools.prepareUrl('/path', 'https://example.com', { keep: 'value', skipNull: null, skipUndef: undefined });
+        assert.strictEqual(result, 'https://example.com/path?keep=value');
+    });
+
+    await t.test('prepareUrl() handles empty query params', async () => {
+        const result = tools.prepareUrl('/path', 'https://example.com', {});
+        assert.strictEqual(result, 'https://example.com/path');
+    });
+
+    await t.test('prepareUrl() handles no query params', async () => {
+        const result = tools.prepareUrl('/path', 'https://example.com');
+        assert.strictEqual(result, 'https://example.com/path');
+    });
 });
