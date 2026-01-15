@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-01-14 09:54+0000\n"
+"POT-Creation-Date: 2026-01-15 08:48+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -62,14 +62,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -90,6 +82,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -243,65 +243,65 @@ msgid ""
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/routes-ui.js:699
+#: lib/routes-ui.js:708
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4443
-#: lib/routes-ui.js:4478
-#: lib/routes-ui.js:4593
-#: lib/routes-ui.js:4640
-#: lib/routes-ui.js:4869
-#: lib/routes-ui.js:4905
+#: lib/routes-ui.js:4459
+#: lib/routes-ui.js:4494
+#: lib/routes-ui.js:4609
+#: lib/routes-ui.js:4656
+#: lib/routes-ui.js:4885
+#: lib/routes-ui.js:4921
 #: workers/api.js:2398
-#: lib/ui-routes/account-routes.js:535
-#: lib/ui-routes/account-routes.js:571
-#: lib/ui-routes/account-routes.js:688
-#: lib/ui-routes/account-routes.js:735
-#: lib/ui-routes/account-routes.js:966
-#: lib/ui-routes/account-routes.js:1002
+#: lib/ui-routes/account-routes.js:544
+#: lib/ui-routes/account-routes.js:580
+#: lib/ui-routes/account-routes.js:697
+#: lib/ui-routes/account-routes.js:744
+#: lib/ui-routes/account-routes.js:975
+#: lib/ui-routes/account-routes.js:1011
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:4503
-#: lib/routes-ui.js:4536
-#: lib/routes-ui.js:7455
-#: lib/ui-routes/account-routes.js:596
-#: lib/ui-routes/account-routes.js:630
+#: lib/routes-ui.js:4519
+#: lib/routes-ui.js:4552
+#: lib/routes-ui.js:7471
+#: lib/ui-routes/account-routes.js:605
+#: lib/ui-routes/account-routes.js:639
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:4696
-#: lib/routes-ui.js:4707
-#: lib/ui-routes/account-routes.js:792
-#: lib/ui-routes/account-routes.js:803
+#: lib/routes-ui.js:4712
+#: lib/routes-ui.js:4723
+#: lib/ui-routes/account-routes.js:801
+#: lib/ui-routes/account-routes.js:812
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4699
-#: lib/routes-ui.js:4710
-#: lib/ui-routes/account-routes.js:795
-#: lib/ui-routes/account-routes.js:806
+#: lib/routes-ui.js:4715
+#: lib/routes-ui.js:4726
+#: lib/ui-routes/account-routes.js:804
+#: lib/ui-routes/account-routes.js:815
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4714
-#: lib/ui-routes/account-routes.js:810
+#: lib/routes-ui.js:4730
+#: lib/ui-routes/account-routes.js:819
 #: lib/ui-routes/admin-entities-routes.js:2027
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:7418
+#: lib/routes-ui.js:7434
 #: lib/tools.js:778
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:7428
-#: lib/routes-ui.js:7546
-#: lib/routes-ui.js:7563
-#: lib/routes-ui.js:7599
+#: lib/routes-ui.js:7444
+#: lib/routes-ui.js:7562
+#: lib/routes-ui.js:7579
+#: lib/routes-ui.js:7615
 msgid "Subscription Management"
 msgstr ""
 
@@ -331,7 +331,7 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:728
-#: lib/ui-routes/account-routes.js:995
+#: lib/ui-routes/account-routes.js:737
+#: lib/ui-routes/account-routes.js:1004
 msgid "Couldn't set up account. Try again."
 msgstr ""
