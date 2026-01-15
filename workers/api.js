@@ -2774,7 +2774,7 @@ Include your token in requests using one of these methods:
                     delegated: request.payload.delegated,
                     path: request.payload.path && !request.payload.path.includes('*') ? request.payload.path : null,
                     // identify request
-                    n: crypto.randomBytes(NONCE_BYTES).toString('base64'),
+                    n: crypto.randomBytes(NONCE_BYTES).toString('base64url'),
                     t: Date.now()
                 });
 
