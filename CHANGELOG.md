@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.61.5](https://github.com/postalsys/emailengine/compare/v2.61.4...v2.61.5) (2026-01-15)
+
+
+### Bug Fixes
+
+* use base64url encoding for OAuth state nonce in /v1/authentication/form ([1f2cecf](https://github.com/postalsys/emailengine/commit/1f2cecf9efbee8a12c3a0d27c9879bfbbf7dfa39))
+* use base64url encoding for OAuth state nonce in /v1/authentication/form ([dead38c](https://github.com/postalsys/emailengine/commit/dead38c348f1c0204f2bfba09997090cb86c348b))
+* use base64url encoding for OAuth state nonce in remaining locations ([961b710](https://github.com/postalsys/emailengine/commit/961b710357d836782c9bbce329178aa96e08ee20))
+
 ## [2.61.4](https://github.com/postalsys/emailengine/compare/v2.61.3...v2.61.4) (2026-01-14)
 
 
