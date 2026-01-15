@@ -97,26 +97,26 @@ test('OAuth nonce encoding tests', async t => {
         assert.strictEqual(incorrectUsages.length, 0, `Found NONCE_BYTES with incorrect encoding:\n${incorrectUsages.join('\n')}`);
     });
 
-    await t.test('nonce validation pattern used where data.n is consumed', async () => {
-        // Verify that files using data.n validate the format before using it
-        // This prevents old cached URLs with base64 nonces from causing errors
-        const filesToCheck = [
-            { file: 'lib/routes-ui.js', pattern: /isValidNonce.*data\.n.*test\(data\.n\)/ },
-            { file: 'lib/ui-routes/account-routes.js', pattern: /isValidNonce.*data\.n.*test\(data\.n\)/ }
-        ];
+    await t.test('nonce validation with error for invalid format', async () => {
+        // Verify that files using data.n validate the format and throw error if invalid
+        // This rejects old cached URLs with standard base64 nonces
+        const filesToCheck = ['lib/routes-ui.js', 'lib/ui-routes/account-routes.js'];
+
+        // Pattern: validates nonce and throws Boom error for invalid format
+        const validationPattern = /if.*!.*test\(nonce\).*\{[\s\S]*?Boom\.boomify.*Invalid nonce format/;
 
         const missingValidation = [];
 
-        for (const { file, pattern } of filesToCheck) {
+        for (const file of filesToCheck) {
             const filePath = path.join(__dirname, '..', file);
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, 'utf8');
-                if (!pattern.test(content)) {
-                    missingValidation.push(`${file}: missing nonce validation pattern`);
+                if (!validationPattern.test(content)) {
+                    missingValidation.push(`${file}: missing nonce validation with error`);
                 }
             }
         }
 
-        assert.strictEqual(missingValidation.length, 0, `Files using data.n must validate nonce format:\n${missingValidation.join('\n')}`);
+        assert.strictEqual(missingValidation.length, 0, `Files using data.n must validate and reject invalid nonces:\n${missingValidation.join('\n')}`);
     });
 });
