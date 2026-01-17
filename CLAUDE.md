@@ -6,7 +6,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 
 ## Project Structure
 
-- `server.js` - Main entry point, manages worker threads and lifecycle
+- `server.js` - Main process orchestrator (see Main Process section)
 - `/bin` - CLI executable entry point
 - `/lib` - Core library modules (account, OAuth, email clients, API routes)
 - `/lib/email-client` - Email client implementations (IMAP, Gmail API, Outlook Graph)
@@ -61,6 +61,38 @@ npm run single    # Single-worker debug mode with Inspector
 - Tests located in `/test` directory
 - Uses Redis database 9 for test isolation
 - Run `npm test` for full test suite with linting
+
+## Main Process (server.js)
+
+The main process orchestrates all worker threads and manages system lifecycle:
+
+**Responsibilities:**
+- Spawns and monitors worker threads (health checks every 5s via heartbeats)
+- Assigns email accounts to IMAP workers using load-balanced round-robin
+- Routes inter-thread RPC calls with configurable timeout (`EENGINE_TIMEOUT`, default: 10s)
+- Manages Redis connection and monitors latency
+- Handles license validation (checks every 20 minutes, 28-day grace period)
+- Collects Prometheus metrics from all workers
+
+**Startup sequence:**
+1. Load license from file/environment/Redis
+2. Initialize settings (secrets, passwords, service ID)
+3. Start API worker (wait for ready)
+4. Start all IMAP workers (wait for ready)
+5. Assign accounts to IMAP workers
+6. Start webhooks, submit, documents workers
+7. Start optional SMTP/IMAP proxy servers if enabled
+
+**Account assignment:**
+- Initial: Round-robin with load awareness (accounts per worker = ceil(total/workers))
+- Reassignment after crashes: Rendezvous hashing for consistent routing
+- Failsafe: 10-second timeout ensures orphaned accounts get reassigned
+
+**Key functions:**
+- `spawnWorker(type)` - Create worker thread
+- `assignAccounts()` - Distribute accounts to IMAP workers
+- `call(worker, message)` - RPC with timeout
+- `checkWorkerHealth()` - Monitor heartbeats, auto-restart unresponsive workers
 
 ## Workers
 
@@ -183,6 +215,27 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - **Redis-backed**: Primary data store with Lua scripts for atomic operations
 - **Encrypted**: All credentials encrypted at rest (AES-256-GCM)
 - **State machine**: Account states (init, connecting, syncing, connected, authenticationError, connectError, unset)
+
+## Environment Variables
+
+**Core:**
+- `EENGINE_REDIS` / `REDIS_URL` - Redis connection URI (default: `redis://127.0.0.1:6379/8`)
+- `EENGINE_PORT` / `PORT` - API server port (default: 3000)
+- `EENGINE_HOST` - API server bind address (default: 127.0.0.1)
+- `EENGINE_TIMEOUT` - Command timeout in ms (default: 10000)
+- `EENGINE_LOG_LEVEL` - Logging level (default: trace)
+
+**Workers:**
+- `EENGINE_WORKERS` - IMAP worker count (default: 4)
+- `EENGINE_WORKERS_WEBHOOKS` - Webhook worker count (default: 1)
+- `EENGINE_WORKERS_SUBMIT` - Submit worker count (default: 1)
+- `EENGINE_NOTIFY_QC` - Webhook concurrency per worker (default: 1)
+
+**Prepared configuration** (applied on startup):
+- `EENGINE_SETTINGS` - JSON settings object
+- `EENGINE_PREPARED_TOKEN` - Base64url msgpack-encoded API token
+- `EENGINE_PREPARED_PASSWORD` - Base64url PBKDF2 password hash
+- `EENGINE_PREPARED_LICENSE` - License key
 
 ## Code Style Rules
 
