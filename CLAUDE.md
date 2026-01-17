@@ -103,7 +103,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | API | `api.js` | 1 | REST API server (Hapi.js), handles all HTTP requests |
 | IMAP | `imap.js` | 4* | Email sync engine, manages IMAP/Gmail/Outlook connections per account |
 | Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
-| Submit | `submit.js` | 1* | Processes queued emails for SMTP submission |
+| Submit | `submit.js` | 1* | Email delivery processor (see Submit Worker section below) |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
 | SMTP | `smtp.js` | 1 | Optional SMTP server (see SMTP Server section below) |
 | IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server (see IMAP Proxy section below) |
@@ -146,6 +146,44 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 - `workers/webhooks.js` - BullMQ worker processing webhook queue
 - `lib/webhooks.js` - WebhooksHandler class for CRUD and payload formatting
 - `lib/email-client/notification-handler.js` - Event emission to webhook queue
+
+### Submit Worker
+
+The submit worker (`workers/submit.js`) processes queued outbound emails via BullMQ and delivers them through SMTP or provider APIs (Gmail, Outlook). All email sending in EmailEngine is asynchronous.
+
+**How it works:**
+1. API/SMTP server queues message to Redis (content) + BullMQ (job metadata)
+2. Submit worker picks up job from queue
+3. Loads account and calls `submitMessage()` in base-client.js
+4. Sends via SMTP or OAuth2 API depending on account configuration
+5. Fires webhook events for success/failure
+
+**Retry logic:**
+- Default: 10 attempts (`deliveryAttempts` setting)
+- Backoff: Exponential starting at 5s (`5s, 10s, 20s, 40s...`)
+- Retries on transient errors (< 500 status code)
+- No retry on permanent 5xx errors (message rejected)
+
+**Webhook events:**
+- `messageSent` - Message accepted by SMTP server
+- `messageDeliveryError` - Retryable error occurred (includes `nextAttempt`)
+- `messageFailed` - All retries exhausted, delivery failed
+
+**Configuration:**
+- `EENGINE_SUBMIT_QC` - Concurrency per worker (default: 1)
+- `EENGINE_SUBMIT_DELAY` - Rate limiting (e.g., `1s` = 1 msg/sec)
+- `deliveryAttempts` setting - Default retry count (default: 10)
+
+**Post-delivery actions:**
+- Uploads to Sent folder (if IMAP account, not Gmail)
+- Sets `\Answered` flag on replied messages
+- Sets `$Forwarded` flag on forwarded messages
+- Updates gateway delivery stats (if using gateway)
+
+**Key files:**
+- `workers/submit.js` - BullMQ worker implementation
+- `lib/email-client/base-client.js` - `queueMessage()` and `submitMessage()` logic
+- `lib/outbox.js` - Queue inspection API
 
 ### SMTP Server
 
