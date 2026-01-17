@@ -14,6 +14,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - `/lib/ui-routes` - Web UI route handlers
 - `/lib/lua` - Redis Lua scripts for atomic operations
 - `/lib/oauth` - OAuth provider implementations
+- `/lib/imapproxy` - IMAP proxy server implementation
 - `/workers` - Worker thread modules (7 worker types, see Workers section)
 - `/test` - Unit and integration tests
 - `/config` - TOML configuration files
@@ -73,7 +74,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | Submit | `submit.js` | 1* | Processes queued emails for SMTP submission |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
 | SMTP | `smtp.js` | 1 | Optional SMTP server for local email submission (port 2525) |
-| IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server for local IMAP access (port 2993) |
+| IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server (see IMAP Proxy section below) |
 
 *Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`)
 
@@ -82,6 +83,34 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 - IMAP workers receive account assignments from main thread
 - Workers auto-restart on crash; accounts are reassigned to available workers
 - BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
+### IMAP Proxy
+
+The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEngine-managed accounts. It abstracts OAuth2 complexity, enabling legacy clients to connect to Gmail, Microsoft 365, and other OAuth2-only providers.
+
+**How it works:**
+1. Client connects and authenticates with account ID + password/token
+2. Proxy validates credentials and establishes connection to real mail server
+3. After auth, all IMAP commands pass through transparently to backend
+
+**Authentication methods:**
+- Global password: Configure `imapProxyServerPassword` setting
+- Access tokens: 64-character hex token with `imap-proxy` or `*` scope
+
+**Configuration** (settings or environment variables):
+- `imapProxyServerEnabled` / `EENGINE_IMAP_PROXY_ENABLED` - Enable the proxy
+- `imapProxyServerPort` / `EENGINE_IMAP_PROXY_PORT` - Listen port (default: 2993)
+- `imapProxyServerHost` / `EENGINE_IMAP_PROXY_HOST` - Bind address
+- `imapProxyServerTLSEnabled` - Enable TLS encryption
+- `imapProxyServerProxy` - Enable PROXY protocol (HAProxy)
+
+**Key files:**
+- `lib/imapproxy/imap-server.js` - Main proxy server and authentication logic
+- `lib/imapproxy/imap-core/` - IMAP protocol implementation (RFC 3501)
+
+**Limitations:**
+- Does not work with API-only accounts (e.g., Mail.ru API mode)
+- Requires IMAP support on the email provider
 
 ## Architecture Notes
 
