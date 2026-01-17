@@ -14,7 +14,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - `/lib/ui-routes` - Web UI route handlers
 - `/lib/lua` - Redis Lua scripts for atomic operations
 - `/lib/oauth` - OAuth provider implementations
-- `/workers` - Worker thread modules (API, IMAP, webhooks, submit)
+- `/workers` - Worker thread modules (7 worker types, see Workers section)
 - `/test` - Unit and integration tests
 - `/config` - TOML configuration files
 - `/views` - Handlebars templates for web UI
@@ -61,9 +61,31 @@ npm run single    # Single-worker debug mode with Inspector
 - Uses Redis database 9 for test isolation
 - Run `npm test` for full test suite with linting
 
+## Workers
+
+EmailEngine uses Node.js Worker Threads for isolated execution. Workers communicate via message passing with the main thread (`server.js`).
+
+| Worker | File | Count | Purpose |
+|--------|------|-------|---------|
+| API | `api.js` | 1 | REST API server (Hapi.js), handles all HTTP requests |
+| IMAP | `imap.js` | 4* | Email sync engine, manages IMAP/Gmail/Outlook connections per account |
+| Webhooks | `webhooks.js` | 1* | Delivers webhook notifications for email events |
+| Submit | `submit.js` | 1* | Processes queued emails for SMTP submission |
+| Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
+| SMTP | `smtp.js` | 1 | Optional SMTP server for local email submission (port 2525) |
+| IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server for local IMAP access (port 2993) |
+
+*Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`)
+
+**Worker Lifecycle:**
+- Main thread spawns workers at startup and monitors health via heartbeats (every 10s)
+- IMAP workers receive account assignments from main thread
+- Workers auto-restart on crash; accounts are reassigned to available workers
+- BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
 ## Architecture Notes
 
-- **Multi-threaded**: Separate workers for API, IMAP sync, webhooks, email submission
+- **Multi-threaded**: 7 worker types (API, IMAP, webhooks, submit, documents, SMTP server, IMAP proxy)
 - **Redis-backed**: Primary data store with Lua scripts for atomic operations
 - **Encrypted**: All credentials encrypted at rest (AES-256-GCM)
 - **State machine**: Account states (init, connecting, syncing, connected, authenticationError, connectError, unset)
