@@ -73,7 +73,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | Webhooks | `webhooks.js` | 1* | Delivers webhook notifications for email events |
 | Submit | `submit.js` | 1* | Processes queued emails for SMTP submission |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
-| SMTP | `smtp.js` | 1 | Optional SMTP server for local email submission (port 2525) |
+| SMTP | `smtp.js` | 1 | Optional SMTP server (see SMTP Server section below) |
 | IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server (see IMAP Proxy section below) |
 
 *Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`)
@@ -83,6 +83,40 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 - IMAP workers receive account assignments from main thread
 - Workers auto-restart on crash; accounts are reassigned to available workers
 - BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
+### SMTP Server
+
+The SMTP server (`workers/smtp.js`) is a built-in Message Submission Agent (MSA) that allows legacy applications to send emails through EmailEngine using standard SMTP protocol. Messages are queued for asynchronous delivery via the Submit worker.
+
+**How it works:**
+1. Client connects and optionally authenticates via SMTP AUTH
+2. Client sends message with MAIL FROM, RCPT TO, and DATA commands
+3. Server queues message for delivery through the associated EmailEngine account
+4. Returns queue ID and scheduled send time
+
+**Authentication methods:**
+- With auth enabled (`smtpServerAuthEnabled`):
+  - Username: Account ID
+  - Password: Global password (`smtpServerPassword`) or 64-char hex token with `smtp` scope
+- Without auth: Specify account via `X-EE-Account` header in message
+
+**Configuration** (settings or environment variables):
+- `smtpServerEnabled` / `EENGINE_SMTP_ENABLED` - Enable the server
+- `smtpServerPort` / `EENGINE_SMTP_PORT` - Listen port (default: 2525)
+- `smtpServerHost` / `EENGINE_SMTP_HOST` - Bind address (default: 127.0.0.1)
+- `smtpServerAuthEnabled` - Require SMTP authentication
+- `smtpServerPassword` / `EENGINE_SMTP_SECRET` - Global password (encrypted)
+- `smtpServerTLSEnabled` - Enable TLS encryption
+- `smtpServerProxy` / `EENGINE_SMTP_PROXY` - Enable PROXY protocol (HAProxy)
+
+**Special headers** (removed before sending):
+- `X-EE-Account` - Specify sending account (when auth disabled)
+- `X-EE-Idempotency-Key` - Prevent duplicate submissions
+
+**Limitations:**
+- Max message size: 25MB (configurable via `EENGINE_MAX_SMTP_MESSAGE_SIZE`)
+- Asynchronous delivery only (messages queued, not sent immediately)
+- Account must have valid SMTP or OAuth2 credentials configured
 
 ### IMAP Proxy
 
