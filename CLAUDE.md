@@ -70,7 +70,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 |--------|------|-------|---------|
 | API | `api.js` | 1 | REST API server (Hapi.js), handles all HTTP requests |
 | IMAP | `imap.js` | 4* | Email sync engine, manages IMAP/Gmail/Outlook connections per account |
-| Webhooks | `webhooks.js` | 1* | Delivers webhook notifications for email events |
+| Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
 | Submit | `submit.js` | 1* | Processes queued emails for SMTP submission |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
 | SMTP | `smtp.js` | 1 | Optional SMTP server (see SMTP Server section below) |
@@ -83,6 +83,37 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 - IMAP workers receive account assignments from main thread
 - Workers auto-restart on crash; accounts are reassigned to available workers
 - BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
+### Webhooks
+
+The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-time HTTP POST notifications when email events occur. Uses BullMQ queue for reliable delivery with retries.
+
+**Supported events:**
+- Message events: `messageNew`, `messageDeleted`, `messageUpdated`, `messageSent`, `messageDeliveryError`, `messageFailed`, `messageBounce`, `messageComplaint`
+- Mailbox events: `mailboxNew`, `mailboxDeleted`, `mailboxReset`
+- Account events: `accountAdded`, `accountInitialized`, `accountDeleted`, `authenticationError`, `authenticationSuccess`, `connectError`
+- Tracking events: `trackOpen`, `trackClick`, `listUnsubscribe`, `listSubscribe`
+
+**Configuration levels:**
+1. Global: `webhooksEnabled`, `webhooks` (URL), `webhookEvents` (whitelist)
+2. Per-account: `webhooks` URL overrides global
+3. Custom routes: Multiple URLs with JavaScript filter/transform functions
+
+**Delivery details:**
+- Retries: 10 attempts with exponential backoff (starting at 5s)
+- Authentication: Basic auth via URL credentials, custom headers, or HMAC-SHA256 signature
+- Signature header: `X-EE-Wh-Signature` (HMAC-SHA256 of body using service secret)
+- Concurrency: Configurable via `EENGINE_NOTIFY_QC` (default: 1)
+
+**Custom routes** (`lib/webhooks.js`):
+- `fn` - JavaScript filter function returning boolean (include/exclude event)
+- `map` - JavaScript transform function to modify payload before delivery
+- Functions run in sandboxed SubScript environment (30s timeout, 1MB max)
+
+**Key files:**
+- `workers/webhooks.js` - BullMQ worker processing webhook queue
+- `lib/webhooks.js` - WebhooksHandler class for CRUD and payload formatting
+- `lib/email-client/notification-handler.js` - Event emission to webhook queue
 
 ### SMTP Server
 
