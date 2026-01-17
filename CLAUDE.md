@@ -101,7 +101,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | Worker | File | Count | Purpose |
 |--------|------|-------|---------|
 | API | `api.js` | 1 | REST API server (Hapi.js), handles all HTTP requests |
-| IMAP | `imap.js` | 4* | Email sync engine, manages IMAP/Gmail/Outlook connections per account |
+| IMAP | `imap.js` | 4* | Email sync engine (see IMAP Worker section below) |
 | Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
 | Submit | `submit.js` | 1* | Email delivery processor (see Submit Worker section below) |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
@@ -115,6 +115,45 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 - IMAP workers receive account assignments from main thread
 - Workers auto-restart on crash; accounts are reassigned to available workers
 - BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
+### IMAP Worker
+
+The IMAP worker (`workers/imap.js`) manages all email account connections and synchronization. Each worker handles multiple accounts via the `ConnectionHandler` class.
+
+**Connection types:**
+- **IMAP**: Native IMAP via ImapFlow library with IDLE for real-time sync
+- **Gmail API**: OAuth2-based, uses Pub/Sub for notifications (10-min polling fallback)
+- **Outlook API**: Microsoft Graph with subscription webhooks (3-day auto-renewal)
+
+**Synchronization:**
+- IMAP: Persistent IDLE connection for real-time change detection
+- Full mailbox sync on connect, then 15-minute periodic resync
+- UID tracking with UIDValidity validation (full resync if changed)
+- Exponential backoff reconnection (2s initial, 30s max)
+
+**Operations supported:**
+- Message: `listMessages`, `getMessage`, `getText`, `getRawMessage`, `getAttachment`
+- Message actions: `updateMessage`, `moveMessage`, `deleteMessage`, `uploadMessage`
+- Mailbox: `listMailboxes`, `createMailbox`, `modifyMailbox`, `deleteMailbox`
+- Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
+
+**Error handling:**
+- Auth failures tracked; auto-disable after threshold (4-hour window)
+- Transient errors (timeout, DNS) trigger reconnection with backoff
+- Permanent errors (5xx) fail immediately
+- Excessive reconnection detection (>20/min triggers warning)
+
+**Key files:**
+- `workers/imap.js` - Worker thread with ConnectionHandler class
+- `lib/email-client/imap-client.js` - IMAP implementation
+- `lib/email-client/gmail-client.js` - Gmail API implementation
+- `lib/email-client/outlook-client.js` - Outlook/Graph implementation
+- `lib/email-client/base-client.js` - Shared client logic
+
+**Limitations:**
+- Gmail/Outlook: `getQuota` not supported
+- Gmail: No IDLE equivalent (polling fallback)
+- Outlook: `uploadMessage` only works for drafts
 
 ### Webhooks
 
