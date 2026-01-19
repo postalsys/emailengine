@@ -271,7 +271,8 @@ test('API tests', async t => {
 
     await t.test('retrieve message text', async () => {
         const response = await server.get(`/v1/account/${defaultAccountId}/text/${message2.text.id}?textType=*`).expect(200);
-        assert.deepEqual(response.body, { plain: 'Hello world! 🙃', html: '<b>Hello world! 🙃</b>', hasMore: false });
+        // Note: email-text-tools 2.3.5+ adds trailing newlines for better newline preservation
+        assert.deepEqual(response.body, { plain: 'Hello world! 🙃\n', html: '<b>Hello world! 🙃</b>\n', hasMore: false });
     });
 
     await t.test('download attachment', async () => {
@@ -293,8 +294,9 @@ test('API tests', async t => {
         assert.strictEqual(message.id, message2.id);
         assert.strictEqual(message.subject, 'Test message 🤣');
         assert.strictEqual(message.messageSpecialUse, '\\Inbox');
-        assert.strictEqual(message.text.plain, 'Hello world! 🙃');
-        assert.strictEqual(message.text.html, '<b>Hello world! 🙃</b>');
+        // Note: email-text-tools 2.3.5+ adds trailing newlines for better newline preservation
+        assert.strictEqual(message.text.plain, 'Hello world! 🙃\n');
+        assert.strictEqual(message.text.html, '<b>Hello world! 🙃</b>\n');
         assert.ok(!message.text.webSafe);
     });
 
@@ -306,7 +308,8 @@ test('API tests', async t => {
         assert.strictEqual(message.id, message2.id);
         assert.strictEqual(message.subject, 'Test message 🤣');
         assert.strictEqual(message.messageSpecialUse, '\\Inbox');
-        assert.strictEqual(message.text.plain, 'Hello world! 🙃');
+        // Note: email-text-tools 2.3.5+ adds trailing newlines for better newline preservation
+        assert.strictEqual(message.text.plain, 'Hello world! 🙃\n');
         assert.strictEqual(message.text.html, '<div style="overflow: auto;"><b>Hello world! 🙃</b></div>');
         assert.strictEqual(message.text.webSafe, true);
     });
