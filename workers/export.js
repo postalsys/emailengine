@@ -9,7 +9,7 @@ const fs = require('fs');
 const zlib = require('zlib');
 
 const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY, DEFAULT_EXPORT_MAX_MESSAGE_SIZE } = require('../lib/consts');
-const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats, download } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 const { Export } = require('../lib/export');
@@ -224,7 +224,40 @@ async function exportMessages(job, exportData) {
 
     const gzipStream = zlib.createGzip();
     const fileStream = fs.createWriteStream(filePath);
+
+    // Attach error handlers immediately to catch disk I/O errors during writes
+    let streamError = null;
+    const handleStreamError = err => {
+        if (!streamError) streamError = err;
+    };
+    gzipStream.on('error', handleStreamError);
+    fileStream.on('error', handleStreamError);
+
     gzipStream.pipe(fileStream);
+
+    // Helper function to handle backpressure when writing
+    const writeWithBackpressure = data => {
+        return new Promise((resolve, reject) => {
+            if (streamError) {
+                return reject(streamError);
+            }
+            const canContinue = gzipStream.write(data);
+            if (canContinue) {
+                resolve();
+            } else {
+                const onDrain = () => {
+                    gzipStream.removeListener('error', onError);
+                    resolve();
+                };
+                const onError = err => {
+                    gzipStream.removeListener('drain', onDrain);
+                    reject(err);
+                };
+                gzipStream.once('drain', onDrain);
+                gzipStream.once('error', onError);
+            }
+        });
+    };
 
     let lastScore = Number(exportData.lastProcessedScore) || 0;
     let processed = 0;
@@ -232,13 +265,19 @@ async function exportMessages(job, exportData) {
 
     try {
         while (true) {
+            // Check for stream errors before processing next batch
+            if (streamError) throw streamError;
+
             const batch = await Export.getNextBatch(account, exportId, lastScore, BATCH_SIZE);
             if (batch.length === 0) break;
 
             for (const entry of batch) {
+                // Check for stream errors before processing each message
+                if (streamError) throw streamError;
+
                 if (includeAttachments && entry.size > maxMessageSize) {
                     await Export.incrementSkipped(account, exportId);
-                    lastScore = entry.score + 0.001;
+                    lastScore = entry.score;
                     continue;
                 }
 
@@ -249,7 +288,8 @@ async function exportMessages(job, exportData) {
                     if (includeAttachments && message.attachments && message.attachments.length) {
                         for (const attachment of message.attachments) {
                             try {
-                                const content = await accountObject.getAttachment(attachment.id);
+                                const stream = await accountObject.getAttachment(attachment.id);
+                                const content = await download(stream);
                                 attachment.content = content.toString('base64');
                             } catch (attachErr) {
                                 attachment.contentError = attachErr.message;
@@ -258,7 +298,7 @@ async function exportMessages(job, exportData) {
                     }
 
                     const line = JSON.stringify(message) + '\n';
-                    gzipStream.write(line);
+                    await writeWithBackpressure(line);
                     totalBytesWritten += Buffer.byteLength(line);
 
                     await Export.incrementExported(account, exportId, Buffer.byteLength(line));
@@ -280,7 +320,7 @@ async function exportMessages(job, exportData) {
                     }
                 }
 
-                lastScore = entry.score + 0.001;
+                lastScore = entry.score;
             }
 
             await Export.updateLastProcessedScore(account, exportId, lastScore);
@@ -338,6 +378,11 @@ const exportWorker = new Worker(
             logger.error({ msg: 'Export job failed', account, exportId, err });
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
+
+            // Clean up partial file on failure
+            if (exportData.filePath) {
+                await fs.promises.unlink(exportData.filePath).catch(() => {});
+            }
 
             await Export.fail(account, exportId, err.message);
 
