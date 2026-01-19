@@ -100,7 +100,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 
 | Worker | File | Count | Purpose |
 |--------|------|-------|---------|
-| API | `api.js` | 1 | REST API server (Hapi.js), handles all HTTP requests |
+| API | `api.js` | 1 | HTTP server for REST API and admin UI (see API Worker section below) |
 | IMAP | `imap.js` | 4* | Email sync engine (see IMAP Worker section below) |
 | Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
 | Submit | `submit.js` | 1* | Email delivery processor (see Submit Worker section below) |
@@ -115,6 +115,44 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 - IMAP workers receive account assignments from main thread
 - Workers auto-restart on crash; accounts are reassigned to available workers
 - BullMQ queues distribute jobs to webhooks, submit, and documents workers
+
+### API Worker
+
+The API worker (`workers/api.js`) runs a Hapi.js HTTP server serving both the REST API (`/v1/*`) and admin web UI (`/admin/*`).
+
+**Server features:**
+- REST API with OpenAPI/Swagger documentation (`/admin/swagger`)
+- Admin dashboard with Handlebars templates
+- Server-Sent Events (SSE) for real-time account updates (`/admin/changes`)
+- Static file serving, CSRF protection, i18n support (7 languages)
+
+**Authentication:**
+- **API tokens**: Bearer token via `Authorization` header or `?access_token=` query param
+- **Sessions**: Cookie-based (`ee` cookie) for admin UI
+- **OAuth2**: Optional OKTA integration (`OKTA_OAUTH2_*` env vars)
+- **TOTP**: Optional two-factor authentication for admin login
+
+**Token scopes:** `api`, `metrics`, `smtp`, `imap-proxy`, `*` (all)
+
+**API route categories:**
+- `/v1/account/{account}/*` - Account and message operations
+- `/v1/token*` - API token management
+- `/v1/settings` - Global configuration
+- `/v1/oauth2*` - OAuth2 app management
+- `/v1/webhooks*`, `/v1/templates*`, `/v1/gateways*` - Resources
+
+**Configuration:**
+- `EENGINE_PORT` / `PORT` - Listen port (default: 3000)
+- `EENGINE_HOST` - Bind address (default: 127.0.0.1)
+- `EENGINE_MAX_BODY_SIZE` - Max POST body (default: 25MB)
+- `EENGINE_TIMEOUT` - Request timeout (default: 10s), override with `X-EE-Timeout` header
+- `EENGINE_API_PROXY` - Enable X-Forwarded-For parsing
+
+**Key files:**
+- `workers/api.js` - Hapi server setup and middleware
+- `lib/routes-ui.js` - Admin UI routes (88 routes)
+- `lib/api-routes/*.js` - REST API route modules
+- `lib/tokens.js` - Token validation and CRUD
 
 ### IMAP Worker
 
