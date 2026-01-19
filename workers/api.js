@@ -2027,8 +2027,9 @@ Include your token in requests using one of these methods:
             }
 
             // Validate nonce format: 16 bytes base64url encoded = 21-22 characters
+            // Also accept base64 encoding (+, /, =) for backward compatibility with old cached nonces
             const stateNonce = request.query.state.slice('account:add:'.length);
-            if (!/^[A-Za-z0-9_-]{21,22}$/.test(stateNonce)) {
+            if (!/^[A-Za-z0-9_\-+/]{21,22}={0,2}$/.test(stateNonce)) {
                 let error = Boom.boomify(new Error(`Oauth failed: invalid state format`), { statusCode: 400 });
                 throw error;
             }

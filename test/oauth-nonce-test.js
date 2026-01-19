@@ -9,7 +9,8 @@ const path = require('path');
 const { NONCE_BYTES } = require('../lib/consts');
 
 // Regex that validates OAuth state nonces (from workers/api.js security fix)
-const NONCE_VALIDATION_REGEX = /^[A-Za-z0-9_-]{21,22}$/;
+// Accepts both base64url and base64 encoding for backward compatibility
+const NONCE_VALIDATION_REGEX = /^[A-Za-z0-9_\-+/]{21,22}={0,2}$/;
 
 test('OAuth nonce encoding tests', async t => {
     await t.test('base64url encoded nonce matches validation regex', async () => {
@@ -20,40 +21,39 @@ test('OAuth nonce encoding tests', async t => {
         }
     });
 
-    await t.test('standard base64 encoded nonce fails validation regex', async () => {
-        // Standard base64 can contain +, /, and = which are not in the validation regex
-        let foundInvalidChar = false;
-        for (let i = 0; i < 1000 && !foundInvalidChar; i++) {
+    await t.test('standard base64 encoded nonce passes validation regex', async () => {
+        // Standard base64 can contain +, /, and = which are now accepted for backward compatibility
+        for (let i = 0; i < 100; i++) {
             const nonce = crypto.randomBytes(NONCE_BYTES).toString('base64');
-            if (!NONCE_VALIDATION_REGEX.test(nonce)) {
-                foundInvalidChar = true;
-            }
+            assert.ok(NONCE_VALIDATION_REGEX.test(nonce), `base64 nonce should match validation regex: ${nonce}`);
         }
-        assert.ok(foundInvalidChar, 'standard base64 should eventually produce characters that fail validation (+=/) ');
     });
 
-    await t.test('no NONCE_BYTES usage with plain base64 encoding in codebase', async () => {
-        // Static analysis: scan source files for incorrect nonce encoding
-        // This prevents regression of the base64 vs base64url bug
+    await t.test('new nonce generation uses base64url encoding in codebase', async () => {
+        // Static analysis: scan source files for nonce generation
+        // New nonces should use base64url, but validation accepts both for backward compatibility
         const sourceFiles = ['workers/api.js', 'lib/routes-ui.js', 'lib/ui-routes/account-routes.js', 'lib/api-routes/account-routes.js'];
 
-        const problematicPattern = /NONCE_BYTES\)\.toString\(['"]base64['"]\)/;
-        const violations = [];
+        const base64urlPattern = /NONCE_BYTES\)\.toString\(['"]base64url['"]\)/;
+        const base64Pattern = /NONCE_BYTES\)\.toString\(['"]base64['"]\)/;
+        const usesBase64url = [];
+        const usesBase64 = [];
 
         for (const file of sourceFiles) {
             const filePath = path.join(__dirname, '..', file);
             if (fs.existsSync(filePath)) {
                 const content = fs.readFileSync(filePath, 'utf8');
-                const lines = content.split('\n');
-                lines.forEach((line, index) => {
-                    if (problematicPattern.test(line)) {
-                        violations.push(`${file}:${index + 1}: ${line.trim()}`);
-                    }
-                });
+                if (base64urlPattern.test(content)) {
+                    usesBase64url.push(file);
+                }
+                if (base64Pattern.test(content)) {
+                    usesBase64.push(file);
+                }
             }
         }
 
-        assert.strictEqual(violations.length, 0, `Found NONCE_BYTES with plain base64 encoding (should use base64url):\n${violations.join('\n')}`);
+        // New nonce generation should use base64url (old base64 nonces are only accepted for backward compat)
+        assert.strictEqual(usesBase64.length, 0, `Found NONCE_BYTES with plain base64 encoding (new code should use base64url):\n${usesBase64.join('\n')}`);
     });
 
     await t.test('all NONCE_BYTES usages use base64url encoding', async () => {
@@ -97,12 +97,12 @@ test('OAuth nonce encoding tests', async t => {
         assert.strictEqual(incorrectUsages.length, 0, `Found NONCE_BYTES with incorrect encoding:\n${incorrectUsages.join('\n')}`);
     });
 
-    await t.test('nonce validation with error for invalid format', async () => {
-        // Verify that files using data.n validate the format and throw error if invalid
-        // This rejects old cached URLs with standard base64 nonces
+    await t.test('nonce validation accepts both base64 and base64url formats', async () => {
+        // Verify that files using data.n validate the format with backward-compatible regex
         const filesToCheck = ['lib/routes-ui.js', 'lib/ui-routes/account-routes.js'];
 
         // Pattern: validates nonce and throws Boom error for invalid format
+        // Now accepts both base64url and base64 encoding
         const validationPattern = /if.*!.*test\(nonce\).*\{[\s\S]*?Boom\.boomify.*Invalid nonce format/;
 
         const missingValidation = [];
@@ -118,5 +118,32 @@ test('OAuth nonce encoding tests', async t => {
         }
 
         assert.strictEqual(missingValidation.length, 0, `Files using data.n must validate and reject invalid nonces:\n${missingValidation.join('\n')}`);
+    });
+
+    await t.test('invalid nonces are rejected', async () => {
+        // Test that completely invalid nonces are still rejected
+        const invalidNonces = [
+            '', // empty
+            'short', // too short
+            'a'.repeat(30), // too long (no padding scenario)
+            '!@#$%^&*(){}[]|\\', // invalid characters
+            'valid123456789012345===', // too much padding
+            'valid12345678901234567890====' // way too long with padding
+        ];
+
+        for (const nonce of invalidNonces) {
+            assert.ok(!NONCE_VALIDATION_REGEX.test(nonce), `Invalid nonce should be rejected: ${nonce}`);
+        }
+    });
+
+    await t.test('edge cases for base64/base64url characters', async () => {
+        // Test specific edge cases for the character differences
+        const base64urlOnlyChars = 'AAAAAAAAAAAAAAAAAAA_-'; // 21 chars with _ and -
+        const base64OnlyChars = 'AAAAAAAAAAAAAAAAAAA+/=='; // 21 chars + padding with + and /
+        const mixedChars = 'AAAAAAAAAAAAAAAA_-+/'; // mixed characters (20 chars)
+
+        assert.ok(NONCE_VALIDATION_REGEX.test(base64urlOnlyChars), 'base64url-only chars should pass');
+        assert.ok(NONCE_VALIDATION_REGEX.test(base64OnlyChars), 'base64-only chars with padding should pass');
+        assert.ok(!NONCE_VALIDATION_REGEX.test(mixedChars), 'too short nonce should fail');
     });
 });
