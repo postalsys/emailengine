@@ -132,6 +132,7 @@ const chatRoutes = require('../lib/api-routes/chat-routes');
 const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
 const accountRoutes = require('../lib/api-routes/account-routes');
 const messageRoutes = require('../lib/api-routes/message-routes');
+const exportRoutes = require('../lib/api-routes/export-routes');
 
 const {
     settingsSchema,
@@ -4596,6 +4597,12 @@ Include your token in requests using one of these methods:
         MAX_ATTACHMENT_SIZE,
         MAX_BODY_SIZE,
         MAX_PAYLOAD_TIMEOUT
+    });
+
+    // setup export routes
+    await exportRoutes({
+        server,
+        CORS_CONFIG
     });
 
     server.route({

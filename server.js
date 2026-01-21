@@ -302,6 +302,7 @@ const THREAD_NAMES = {
     webhooks: 'Webhook worker',
     api: 'HTTP and API server',
     submit: 'Email sending worker',
+    export: 'Export worker',
     documents: 'Document store indexing worker',
     imapProxy: 'IMAP proxy server',
     smtp: 'SMTP proxy server'
@@ -314,7 +315,8 @@ const THREAD_NAMES = {
 const THREAD_CONFIG_VALUES = {
     imap: { key: 'EENGINE_WORKERS', value: config.workers.imap },
     submit: { key: 'EENGINE_WORKERS_SUBMIT', value: config.workers.submit },
-    webhooks: { key: 'EENGINE_WORKERS_WEBHOOKS', value: config.workers.webhooks }
+    webhooks: { key: 'EENGINE_WORKERS_WEBHOOKS', value: config.workers.webhooks },
+    export: { key: 'EENGINE_WORKERS_EXPORT', value: config.workers.export || 1 }
 };
 
 // Queue event handlers for different job queues
@@ -3103,6 +3105,12 @@ const startApplication = async () => {
     // Start submission workers
     for (let i = 0; i < config.workers.submit; i++) {
         await spawnWorker('submit');
+    }
+
+    // Start export workers
+    const exportWorkerCount = config.workers.export || 1;
+    for (let i = 0; i < exportWorkerCount; i++) {
+        await spawnWorker('export');
     }
 
     // Start document processing worker
