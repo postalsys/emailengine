@@ -9,24 +9,30 @@ const fs = require('fs');
 const zlib = require('zlib');
 
 const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY, DEFAULT_EXPORT_MAX_MESSAGE_SIZE } = require('../lib/consts');
-const { getDuration, readEnvValue, threadStats, download } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 const { Export } = require('../lib/export');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
-    const bugsnagLog =
-        level =>
-        (...args) => {
-            const logFn = level === 'warn' ? logger.warn : level === 'error' ? logger.error : logger.debug;
-            logFn({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
-        };
-
     Bugsnag.start({
         apiKey: readEnvValue('BUGSNAG_API_KEY'),
         appVersion: packageData.version,
-        logger: { debug: bugsnagLog('debug'), info: bugsnagLog('info'), warn: bugsnagLog('warn'), error: bugsnagLog('error') }
+        logger: {
+            debug(...args) {
+                logger.debug({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            info(...args) {
+                logger.debug({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            warn(...args) {
+                logger.warn({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
+            },
+            error(...args) {
+                logger.error({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
+            }
+        }
     });
     logger.notifyError = Bugsnag.notify.bind(Bugsnag);
 }
@@ -49,6 +55,8 @@ const EXPORT_QC = (readEnvValue('EENGINE_EXPORT_QC') && Number(readEnvValue('EEN
 
 const BATCH_SIZE = 100;
 const LIST_PAGE_SIZE = 1000;
+const FOLDER_INDEX_MAX_RETRIES = 3;
+const FOLDER_INDEX_RETRY_DELAY_MS = 1000;
 
 let callQueue = new Map();
 let mids = 0;
@@ -59,6 +67,7 @@ async function call(message, transferList) {
 
         let ttl = Math.max(message.timeout || 0, EENGINE_TIMEOUT || 0);
         let timer = setTimeout(() => {
+            callQueue.delete(mid);
             let err = new Error('Timeout waiting for command response [T6]');
             err.statusCode = 504;
             err.code = 'Timeout';
@@ -119,6 +128,15 @@ async function indexMessages(job, exportData) {
     const startDate = new Date(Number(exportData.startDate));
     const endDate = new Date(Number(exportData.endDate));
 
+    // Verify account exists before attempting to process
+    const accountData = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
+    if (!accountData || !accountData.account) {
+        const err = new Error('Account not found or has been deleted');
+        err.code = 'AccountNotFound';
+        err.statusCode = 404;
+        throw err;
+    }
+
     const accountObject = new Account({
         account,
         redis,
@@ -141,52 +159,55 @@ async function indexMessages(job, exportData) {
 
     for (let i = 0; i < foldersToProcess.length; i++) {
         const folderPath = foldersToProcess[i];
+        let retries = FOLDER_INDEX_MAX_RETRIES;
+        let lastError = null;
 
-        try {
-            let cursor = null;
+        while (retries > 0) {
+            try {
+                await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate);
 
-            while (true) {
-                const searchCriteria = { since: startDate };
-                if (endDate < new Date()) {
-                    searchCriteria.before = endDate;
-                }
+                await Export.update(account, exportId, { foldersScanned: i + 1 });
 
-                const listOptions = {
-                    path: folderPath,
-                    pageSize: LIST_PAGE_SIZE,
-                    search: searchCriteria,
-                    minimalFields: true,
-                    cursor
-                };
+                logger.trace({
+                    msg: 'Folder indexed',
+                    account,
+                    exportId,
+                    folder: folderPath,
+                    foldersScanned: i + 1,
+                    foldersTotal: foldersToProcess.length
+                });
 
-                const result = await accountObject.listMessages(listOptions);
-
-                for (const msg of result.messages || []) {
-                    await Export.queueMessage(account, exportId, {
+                lastError = null;
+                break;
+            } catch (err) {
+                lastError = err;
+                retries--;
+                if (retries > 0) {
+                    const attemptNumber = FOLDER_INDEX_MAX_RETRIES - retries;
+                    const delay = FOLDER_INDEX_RETRY_DELAY_MS * Math.pow(2, attemptNumber - 1);
+                    logger.warn({
+                        msg: 'Folder indexing failed, retrying',
+                        account,
+                        exportId,
                         folder: folderPath,
-                        messageId: msg.id || msg.emailId,
-                        uid: msg.uid,
-                        size: msg.size || 0,
-                        date: msg.date ? new Date(msg.date).getTime() : Date.now()
+                        retriesLeft: retries,
+                        delayMs: delay,
+                        err
                     });
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
-
-                cursor = result.nextPageCursor;
-                if (!cursor) break;
             }
+        }
 
-            await Export.update(account, exportId, { foldersScanned: i + 1 });
-
-            logger.trace({
-                msg: 'Folder indexed',
+        if (lastError) {
+            logger.warn({
+                msg: 'Failed to index folder after retries',
                 account,
                 exportId,
                 folder: folderPath,
-                foldersScanned: i + 1,
-                foldersTotal: foldersToProcess.length
+                maxRetries: FOLDER_INDEX_MAX_RETRIES,
+                err: lastError
             });
-        } catch (err) {
-            logger.warn({ msg: 'Failed to index folder', account, exportId, folder: folderPath, err });
         }
     }
 }
@@ -207,6 +228,42 @@ function resolveFolders(folders, mailboxes) {
         .filter(Boolean);
 }
 
+async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate) {
+    let cursor = null;
+
+    while (true) {
+        const searchCriteria = { since: startDate };
+        if (endDate < new Date()) {
+            searchCriteria.before = endDate;
+        }
+
+        const listOptions = {
+            path: folderPath,
+            pageSize: LIST_PAGE_SIZE,
+            search: searchCriteria,
+            minimalFields: true,
+            cursor
+        };
+
+        const result = await accountObject.listMessages(listOptions);
+
+        for (const msg of result.messages || []) {
+            await Export.queueMessage(account, exportId, {
+                folder: folderPath,
+                messageId: msg.id || msg.emailId,
+                uid: msg.uid,
+                size: msg.size || 0,
+                date: msg.date ? new Date(msg.date).getTime() : Date.now()
+            });
+        }
+
+        cursor = result.nextPageCursor;
+        if (!cursor) {
+            break;
+        }
+    }
+}
+
 async function exportMessages(job, exportData) {
     const { account, exportId } = job.data;
     const { filePath } = exportData;
@@ -214,6 +271,7 @@ async function exportMessages(job, exportData) {
     const textType = exportData.textType || '*';
     const maxBytes = Number(exportData.maxBytes) || 5 * 1024 * 1024;
     const maxMessageSize = (await settings.get('exportMaxMessageSize')) || DEFAULT_EXPORT_MAX_MESSAGE_SIZE;
+    const isEncrypted = exportData.isEncrypted === '1';
 
     const accountObject = new Account({
         account,
@@ -225,55 +283,74 @@ async function exportMessages(job, exportData) {
     const gzipStream = zlib.createGzip();
     const fileStream = fs.createWriteStream(filePath);
 
-    // Attach error handlers immediately to catch disk I/O errors during writes
+    // Capture stream errors immediately to catch disk I/O errors during writes
     let streamError = null;
-    const handleStreamError = err => {
-        if (!streamError) streamError = err;
-    };
+    function handleStreamError(err) {
+        if (!streamError) {
+            streamError = err;
+        }
+    }
     gzipStream.on('error', handleStreamError);
     fileStream.on('error', handleStreamError);
 
-    gzipStream.pipe(fileStream);
+    // Set up encryption if enabled and secret is available
+    const secret = isEncrypted ? await getSecret() : null;
+    if (secret) {
+        const { createEncryptStream } = require('../lib/stream-encrypt');
+        const encryptStream = createEncryptStream(secret);
+        encryptStream.on('error', handleStreamError);
+        gzipStream.pipe(encryptStream).pipe(fileStream);
+    } else {
+        gzipStream.pipe(fileStream);
+    }
 
-    // Helper function to handle backpressure when writing
-    const writeWithBackpressure = data => {
+    function writeWithBackpressure(data) {
+        if (streamError) {
+            return Promise.reject(streamError);
+        }
+
+        if (gzipStream.write(data)) {
+            return Promise.resolve();
+        }
+
         return new Promise((resolve, reject) => {
-            if (streamError) {
-                return reject(streamError);
-            }
-            const canContinue = gzipStream.write(data);
-            if (canContinue) {
+            const cleanup = () => {
+                gzipStream.removeListener('drain', onDrain);
+                gzipStream.removeListener('error', onError);
+            };
+            const onDrain = () => {
+                cleanup();
                 resolve();
-            } else {
-                const onDrain = () => {
-                    gzipStream.removeListener('error', onError);
-                    resolve();
-                };
-                const onError = err => {
-                    gzipStream.removeListener('drain', onDrain);
-                    reject(err);
-                };
-                gzipStream.once('drain', onDrain);
-                gzipStream.once('error', onError);
-            }
+            };
+            const onError = err => {
+                cleanup();
+                reject(err);
+            };
+            gzipStream.once('drain', onDrain);
+            gzipStream.once('error', onError);
         });
-    };
+    }
 
     let lastScore = Number(exportData.lastProcessedScore) || 0;
     let processed = 0;
     let totalBytesWritten = 0;
+    let processingError = null;
 
     try {
         while (true) {
-            // Check for stream errors before processing next batch
-            if (streamError) throw streamError;
+            if (streamError) {
+                throw streamError;
+            }
 
             const batch = await Export.getNextBatch(account, exportId, lastScore, BATCH_SIZE);
-            if (batch.length === 0) break;
+            if (batch.length === 0) {
+                break;
+            }
 
             for (const entry of batch) {
-                // Check for stream errors before processing each message
-                if (streamError) throw streamError;
+                if (streamError) {
+                    throw streamError;
+                }
 
                 if (includeAttachments && entry.size > maxMessageSize) {
                     await Export.incrementSkipped(account, exportId);
@@ -288,9 +365,32 @@ async function exportMessages(job, exportData) {
                     if (includeAttachments && message.attachments && message.attachments.length) {
                         for (const attachment of message.attachments) {
                             try {
+                                if (attachment.size && attachment.size > maxMessageSize) {
+                                    attachment.contentError = `Attachment too large (${attachment.size} bytes, limit ${maxMessageSize})`;
+                                    continue;
+                                }
+
                                 const stream = await accountObject.getAttachment(attachment.id);
-                                const content = await download(stream);
-                                attachment.content = content.toString('base64');
+                                const chunks = [];
+                                let totalSize = 0;
+
+                                for await (const chunk of stream) {
+                                    totalSize += chunk.length;
+                                    if (totalSize > maxMessageSize) {
+                                        if (typeof stream.destroy === 'function') {
+                                            stream.destroy();
+                                            await new Promise(resolve => {
+                                                const CLEANUP_TIMEOUT_MS = 1000;
+                                                stream.once('close', resolve);
+                                                setTimeout(resolve, CLEANUP_TIMEOUT_MS);
+                                            });
+                                        }
+                                        throw new Error(`Attachment exceeds size limit (>${maxMessageSize} bytes)`);
+                                    }
+                                    chunks.push(chunk);
+                                }
+
+                                attachment.content = Buffer.concat(chunks).toString('base64');
                             } catch (attachErr) {
                                 attachment.contentError = attachErr.message;
                             }
@@ -326,12 +426,23 @@ async function exportMessages(job, exportData) {
             await Export.updateLastProcessedScore(account, exportId, lastScore);
             logger.trace({ msg: 'Export batch processed', account, exportId, messagesExported: processed });
         }
-    } finally {
-        await new Promise((resolve, reject) => {
-            gzipStream.end();
-            fileStream.on('finish', resolve);
-            fileStream.on('error', reject);
-        });
+    } catch (err) {
+        processingError = err;
+    }
+
+    // Finalize streams regardless of processing outcome
+    await new Promise((resolve, reject) => {
+        gzipStream.end();
+        fileStream.once('finish', resolve);
+        fileStream.once('error', err => reject(streamError || err));
+    });
+
+    // Propagate errors: prefer processing error, then stream error
+    if (processingError) {
+        throw processingError;
+    }
+    if (streamError) {
+        throw streamError;
     }
 
     logger.info({ msg: 'Export messages completed', account, exportId, messagesExported: processed, bytesWritten: totalBytesWritten });
@@ -426,19 +537,26 @@ function onCommand(command) {
     return 999;
 }
 
-Export.markInterruptedAsFailed()
-    .then(() => logger.info({ msg: 'Checked for interrupted exports' }))
-    .catch(err => logger.error({ msg: 'Failed to check for interrupted exports', err }));
-
-setInterval(() => {
+// Startup sequence: clean up interrupted exports before accepting new jobs
+(async () => {
     try {
-        parentPort.postMessage({ cmd: 'heartbeat' });
-    } catch {
-        // Ignore errors, parent might be shutting down
+        await Export.markInterruptedAsFailed();
+        logger.info({ msg: 'Checked for interrupted exports' });
+    } catch (err) {
+        logger.error({ msg: 'Failed to check for interrupted exports', err });
     }
-}, 10 * 1000).unref();
 
-parentPort.postMessage({ cmd: 'ready' });
+    setInterval(() => {
+        try {
+            parentPort.postMessage({ cmd: 'heartbeat' });
+        } catch {
+            // Ignore errors, parent might be shutting down
+        }
+    }, 10 * 1000).unref();
+
+    // Only signal ready after cleanup is complete to prevent race conditions
+    parentPort.postMessage({ cmd: 'ready' });
+})();
 
 parentPort.on('message', message => {
     if (message && message.cmd === 'resp' && message.mid && callQueue.has(message.mid)) {
