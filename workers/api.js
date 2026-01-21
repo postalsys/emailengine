@@ -1009,6 +1009,11 @@ Include your token in requests using one of these methods:
             {
                 name: 'Multi Message Actions',
                 description: 'Perform bulk operations on multiple messages simultaneously, such as marking as read, moving, or deleting'
+            },
+            {
+                name: 'Export (Beta)',
+                description:
+                    'Bulk export messages from email accounts. This feature is in beta and the API may change in future releases. Export files are encrypted at rest when a service secret is configured.'
             }
         ],
 
