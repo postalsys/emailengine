@@ -51,6 +51,9 @@ config.service = config.service || {};
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
+const DEFAULT_EXPORT_TIMEOUT = 5 * 60 * 1000; // 5 minutes for export operations
+const EXPORT_TIMEOUT = getDuration(readEnvValue('EENGINE_EXPORT_TIMEOUT')) || DEFAULT_EXPORT_TIMEOUT;
+
 const EXPORT_QC = (readEnvValue('EENGINE_EXPORT_QC') && Number(readEnvValue('EENGINE_EXPORT_QC'))) || config.queues.export || 1;
 
 const BATCH_SIZE = 100;
@@ -141,7 +144,8 @@ async function indexMessages(job, exportData) {
         account,
         redis,
         call,
-        secret: await getSecret()
+        secret: await getSecret(),
+        timeout: EXPORT_TIMEOUT
     });
 
     let mailboxes;
@@ -213,19 +217,27 @@ async function indexMessages(job, exportData) {
 }
 
 function resolveFolders(folders, mailboxes) {
+    // Helper to resolve a folder alias (e.g., \Inbox, \All) to actual path
+    const resolveFolder = folder => {
+        if (folder.startsWith('\\')) {
+            const match = mailboxes.find(mb => mb.specialUse === folder);
+            return match ? match.path : null;
+        }
+        return folder;
+    };
+
     if (!folders || folders.length === 0) {
+        // For Gmail/Outlook API accounts with \All folder, default to just \All
+        // (All Mail already contains all messages except Junk and Trash)
+        const allMailFolder = mailboxes.find(mb => mb.specialUse === '\\All');
+        if (allMailFolder) {
+            return [allMailFolder.path];
+        }
+        // For regular IMAP accounts, export all folders except Junk and Trash
         return mailboxes.filter(mb => !['\\Junk', '\\Trash'].includes(mb.specialUse)).map(mb => mb.path);
     }
 
-    return folders
-        .map(folder => {
-            if (folder.startsWith('\\')) {
-                const match = mailboxes.find(mb => mb.specialUse === folder);
-                return match ? match.path : null;
-            }
-            return folder;
-        })
-        .filter(Boolean);
+    return folders.map(resolveFolder).filter(Boolean);
 }
 
 async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate) {
@@ -241,7 +253,9 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
             path: folderPath,
             pageSize: LIST_PAGE_SIZE,
             search: searchCriteria,
-            minimalFields: true,
+            // Use metadataOnly for faster indexing - skips fetching individual messages
+            // Gmail API list endpoint returns only IDs; metadataOnly avoids N+1 API calls
+            metadataOnly: true,
             cursor
         };
 
@@ -277,7 +291,8 @@ async function exportMessages(job, exportData) {
         account,
         redis,
         call,
-        secret: await getSecret()
+        secret: await getSecret(),
+        timeout: EXPORT_TIMEOUT
     });
 
     const gzipStream = zlib.createGzip();
@@ -336,6 +351,60 @@ async function exportMessages(job, exportData) {
     let totalBytesWritten = 0;
     let processingError = null;
 
+    // Check if this account uses API (Gmail/Outlook) which supports parallel fetching
+    const accountData = await accountObject.loadAccountData(account);
+    const isApiAccount = await accountObject.isApiClient(accountData);
+    const MESSAGE_FETCH_BATCH_SIZE = 10; // Batch size for parallel message fetching
+    const MAX_RATE_LIMIT_RETRIES = 5; // Max retries for rate-limited messages
+    const RATE_LIMIT_BASE_DELAY = 5000; // Base delay for rate limit backoff (5 seconds)
+
+    // Helper function to process a single message (attachments and writing)
+    async function processMessage(message, entry) {
+        message.path = entry.folder;
+
+        if (includeAttachments && message.attachments && message.attachments.length) {
+            for (const attachment of message.attachments) {
+                try {
+                    if (attachment.size && attachment.size > maxMessageSize) {
+                        attachment.contentError = `Attachment too large (${attachment.size} bytes, limit ${maxMessageSize})`;
+                        continue;
+                    }
+
+                    const stream = await accountObject.getAttachment(attachment.id);
+                    const chunks = [];
+                    let totalSize = 0;
+
+                    for await (const chunk of stream) {
+                        totalSize += chunk.length;
+                        if (totalSize > maxMessageSize) {
+                            if (typeof stream.destroy === 'function') {
+                                stream.destroy();
+                                await new Promise(resolve => {
+                                    const CLEANUP_TIMEOUT_MS = 1000;
+                                    stream.once('close', resolve);
+                                    setTimeout(resolve, CLEANUP_TIMEOUT_MS);
+                                });
+                            }
+                            throw new Error(`Attachment exceeds size limit (>${maxMessageSize} bytes)`);
+                        }
+                        chunks.push(chunk);
+                    }
+
+                    attachment.content = Buffer.concat(chunks).toString('base64');
+                } catch (attachErr) {
+                    attachment.contentError = attachErr.message;
+                }
+            }
+        }
+
+        const line = JSON.stringify(message) + '\n';
+        await writeWithBackpressure(line);
+        totalBytesWritten += Buffer.byteLength(line);
+
+        await Export.incrementExported(account, exportId, Buffer.byteLength(line));
+        processed++;
+    }
+
     try {
         while (true) {
             if (streamError) {
@@ -347,80 +416,147 @@ async function exportMessages(job, exportData) {
                 break;
             }
 
+            // Separate entries into fetchable and skippable
+            const entriesToFetch = [];
             for (const entry of batch) {
-                if (streamError) {
-                    throw streamError;
-                }
-
                 if (includeAttachments && entry.size > maxMessageSize) {
                     await Export.incrementSkipped(account, exportId);
                     lastScore = entry.score;
-                    continue;
+                } else {
+                    entriesToFetch.push(entry);
                 }
+            }
 
-                try {
-                    const message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
-                    message.path = entry.folder;
+            if (entriesToFetch.length === 0) {
+                await Export.updateLastProcessedScore(account, exportId, lastScore);
+                continue;
+            }
 
-                    if (includeAttachments && message.attachments && message.attachments.length) {
-                        for (const attachment of message.attachments) {
-                            try {
-                                if (attachment.size && attachment.size > maxMessageSize) {
-                                    attachment.contentError = `Attachment too large (${attachment.size} bytes, limit ${maxMessageSize})`;
-                                    continue;
+            // Process entries: batch fetch for API accounts, sequential for IMAP
+            if (isApiAccount && entriesToFetch.length > 1) {
+                // Process in smaller batches for API parallel fetching
+                for (let i = 0; i < entriesToFetch.length; i += MESSAGE_FETCH_BATCH_SIZE) {
+                    if (streamError) {
+                        throw streamError;
+                    }
+
+                    let fetchBatch = entriesToFetch.slice(i, i + MESSAGE_FETCH_BATCH_SIZE);
+                    let rateLimitRetry = 0;
+
+                    // Retry loop for rate-limited messages
+                    while (fetchBatch.length > 0) {
+                        const messageIds = fetchBatch.map(e => e.messageId);
+
+                        // Batch fetch messages in parallel
+                        const messageResults = await accountObject.getMessages(messageIds, { textType, maxBytes });
+
+                        // Create a map for quick lookup
+                        const resultMap = new Map();
+                        for (const result of messageResults) {
+                            resultMap.set(result.messageId, result);
+                        }
+
+                        // Track entries that need retry due to rate limiting
+                        const rateLimitedEntries = [];
+
+                        // Process results sequentially (for attachments and writing)
+                        for (const entry of fetchBatch) {
+                            const result = resultMap.get(entry.messageId);
+
+                            if (result && result.error) {
+                                const err = result.error;
+                                const isSkippable =
+                                    err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
+                                const isRateLimited = err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+
+                                if (isSkippable) {
+                                    logger.warn({
+                                        msg: 'Skipping message during export',
+                                        account,
+                                        exportId,
+                                        messageId: entry.messageId,
+                                        folder: entry.folder,
+                                        reason: err.message || err.code
+                                    });
+                                    await Export.incrementSkipped(account, exportId);
+                                    lastScore = entry.score;
+                                } else if (isRateLimited && rateLimitRetry < MAX_RATE_LIMIT_RETRIES) {
+                                    // Queue for retry
+                                    rateLimitedEntries.push(entry);
+                                } else {
+                                    const error = new Error(err.message);
+                                    error.code = err.code;
+                                    error.statusCode = err.statusCode;
+                                    throw error;
                                 }
-
-                                const stream = await accountObject.getAttachment(attachment.id);
-                                const chunks = [];
-                                let totalSize = 0;
-
-                                for await (const chunk of stream) {
-                                    totalSize += chunk.length;
-                                    if (totalSize > maxMessageSize) {
-                                        if (typeof stream.destroy === 'function') {
-                                            stream.destroy();
-                                            await new Promise(resolve => {
-                                                const CLEANUP_TIMEOUT_MS = 1000;
-                                                stream.once('close', resolve);
-                                                setTimeout(resolve, CLEANUP_TIMEOUT_MS);
-                                            });
-                                        }
-                                        throw new Error(`Attachment exceeds size limit (>${maxMessageSize} bytes)`);
-                                    }
-                                    chunks.push(chunk);
-                                }
-
-                                attachment.content = Buffer.concat(chunks).toString('base64');
-                            } catch (attachErr) {
-                                attachment.contentError = attachErr.message;
+                            } else if (result && result.data) {
+                                await processMessage(result.data, entry);
+                                lastScore = entry.score;
+                            } else {
+                                // No result found - skip as not found
+                                logger.warn({
+                                    msg: 'Skipping message during export',
+                                    account,
+                                    exportId,
+                                    messageId: entry.messageId,
+                                    folder: entry.folder,
+                                    reason: 'Message not found in batch results'
+                                });
+                                await Export.incrementSkipped(account, exportId);
+                                lastScore = entry.score;
                             }
+                        }
+
+                        // If we have rate-limited entries, wait and retry
+                        if (rateLimitedEntries.length > 0) {
+                            rateLimitRetry++;
+                            const delay = RATE_LIMIT_BASE_DELAY * Math.pow(2, rateLimitRetry - 1) + Math.random() * 1000;
+                            logger.warn({
+                                msg: 'Rate limited during export, retrying batch',
+                                account,
+                                exportId,
+                                rateLimitedCount: rateLimitedEntries.length,
+                                attempt: rateLimitRetry,
+                                maxAttempts: MAX_RATE_LIMIT_RETRIES,
+                                delayMs: Math.round(delay)
+                            });
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            fetchBatch = rateLimitedEntries;
+                        } else {
+                            // All messages in this batch processed successfully
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Sequential fetching for IMAP or single message
+                for (const entry of entriesToFetch) {
+                    if (streamError) {
+                        throw streamError;
+                    }
+
+                    try {
+                        const message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
+                        await processMessage(message, entry);
+                    } catch (err) {
+                        const isSkippable = err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
+                        if (isSkippable) {
+                            logger.warn({
+                                msg: 'Skipping message during export',
+                                account,
+                                exportId,
+                                messageId: entry.messageId,
+                                folder: entry.folder,
+                                reason: err.message || err.code
+                            });
+                            await Export.incrementSkipped(account, exportId);
+                        } else {
+                            throw err;
                         }
                     }
 
-                    const line = JSON.stringify(message) + '\n';
-                    await writeWithBackpressure(line);
-                    totalBytesWritten += Buffer.byteLength(line);
-
-                    await Export.incrementExported(account, exportId, Buffer.byteLength(line));
-                    processed++;
-                } catch (err) {
-                    const isSkippable = err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
-                    if (isSkippable) {
-                        logger.warn({
-                            msg: 'Skipping message during export',
-                            account,
-                            exportId,
-                            messageId: entry.messageId,
-                            folder: entry.folder,
-                            reason: err.message || err.code
-                        });
-                        await Export.incrementSkipped(account, exportId);
-                    } else {
-                        throw err;
-                    }
+                    lastScore = entry.score;
                 }
-
-                lastScore = entry.score;
             }
 
             await Export.updateLastProcessedScore(account, exportId, lastScore);

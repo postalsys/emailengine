@@ -2624,6 +2624,7 @@ async function onCommand(worker, message) {
         case 'getRawMessage':
         case 'getText':
         case 'getMessage':
+        case 'getMessages':
         case 'updateMessage':
         case 'updateMessages':
         case 'listMailboxes':

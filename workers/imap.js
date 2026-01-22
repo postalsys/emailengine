@@ -452,6 +452,34 @@ class ConnectionHandler {
         return await accountData.connection.getMessage(message.message, message.options);
     }
 
+    async getMessages(message) {
+        if (!this.accounts.has(message.account)) {
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
+        }
+
+        // Use batch method if available (Gmail/Outlook API clients)
+        if (typeof accountData.connection.getMessages === 'function') {
+            return await accountData.connection.getMessages(message.messageIds, message.options);
+        }
+
+        // Fallback to sequential fetching for IMAP
+        const results = [];
+        for (const messageId of message.messageIds) {
+            try {
+                const msg = await accountData.connection.getMessage(messageId, message.options);
+                results.push({ messageId, data: msg, error: null });
+            } catch (err) {
+                results.push({ messageId, data: null, error: { message: err.message, code: err.code } });
+            }
+        }
+        return results;
+    }
+
     async updateMessage(message) {
         if (!this.accounts.has(message.account)) {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
@@ -841,6 +869,7 @@ class ConnectionHandler {
             case 'listMessages':
             case 'getText':
             case 'getMessage':
+            case 'getMessages':
             case 'updateMessage':
             case 'updateMessages':
             case 'listMailboxes':
