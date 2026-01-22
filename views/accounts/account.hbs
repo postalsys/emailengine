@@ -32,6 +32,13 @@
                     data-toggle="tooltip" data-placement="top">
                     <i class="fas fa-redo fa-fw" id="sync-icon"></i> Run sync
                 </button>
+
+                {{#if canReadMail}}
+                <button type="button" class="btn btn-light" id="request-export"
+                    title="Export messages to file" data-toggle="modal" data-target="#exportModal">
+                    <i class="fas fa-file-export fa-fw"></i> Export
+                </button>
+                {{/if}}
             </div>
 
             <div class="btn-group mr-2 mb-1" role="group" aria-label="Third group">
@@ -935,6 +942,64 @@
     </div>
 </div>
 
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Messages</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="export-form-view">
+                    <div class="form-group">
+                        <label for="export-start-date">Start Date</label>
+                        <input type="date" class="form-control" id="export-start-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="export-end-date">End Date</label>
+                        <input type="date" class="form-control" id="export-end-date">
+                    </div>
+                    <small class="text-muted">Gmail accounts export from All Mail. Other accounts export all folders (excluding Junk and Trash).</small>
+                </div>
+
+                <div id="export-status-view" class="d-none">
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <span id="export-status-badge" class="badge badge-info">Queued</span>
+                        <span id="export-phase-badge" class="badge badge-secondary ml-1 d-none"></span>
+                    </div>
+                    <div id="export-progress-section">
+                        <div class="progress mb-2">
+                            <div id="export-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
+                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                        </div>
+                        <small id="export-progress-text" class="text-muted"></small>
+                    </div>
+                    <div id="export-error-section" class="d-none">
+                        <div class="alert alert-danger" id="export-error-message"></div>
+                    </div>
+                    <div id="export-download-section" class="d-none mt-3">
+                        <a href="#" id="export-download-link" class="btn btn-success btn-block">
+                            <i class="fas fa-download fa-fw"></i> Download Export
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger d-none" id="export-reset-btn">
+                    <i class="fas fa-trash fa-fw"></i> Reset
+                </button>
+                <button type="button" class="btn btn-primary" id="export-start-btn">
+                    <i class="fas fa-file-export fa-fw" id="export-start-icon"></i> Start Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <input type="hidden" id="account-id" value="{{account.account}}">
 <input type="hidden" id="crumb" value="{{crumb}}">
 
@@ -1121,6 +1186,241 @@
 
         $('#renew-grant-btn').tooltip();
         $('#renew-grant-btn').click(() => $('#renew-grant-btn').tooltip('hide'));
+
+        // Export modal functionality
+        let currentExportId = null;
+        let exportPollingInterval = null;
+
+        function showFormView() {
+            document.getElementById('export-form-view').classList.remove('d-none');
+            document.getElementById('export-status-view').classList.add('d-none');
+            document.getElementById('export-start-btn').classList.remove('d-none');
+            document.getElementById('export-reset-btn').classList.add('d-none');
+
+            // Set default dates (last 1 year)
+            const today = new Date();
+            const lastYear = new Date(today);
+            lastYear.setFullYear(lastYear.getFullYear() - 1);
+            document.getElementById('export-end-date').value = today.toISOString().split('T')[0];
+            document.getElementById('export-start-date').value = lastYear.toISOString().split('T')[0];
+        }
+
+        function showStatusView() {
+            document.getElementById('export-form-view').classList.add('d-none');
+            document.getElementById('export-status-view').classList.remove('d-none');
+            document.getElementById('export-start-btn').classList.add('d-none');
+            document.getElementById('export-reset-btn').classList.remove('d-none');
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'completed': return 'success';
+                case 'failed': return 'danger';
+                case 'processing': return 'info';
+                default: return 'secondary';
+            }
+        }
+
+        function startPolling() {
+            if (exportPollingInterval) return;
+            exportPollingInterval = setInterval(updateExportStatus, 3000);
+        }
+
+        function stopPolling() {
+            if (exportPollingInterval) {
+                clearInterval(exportPollingInterval);
+                exportPollingInterval = null;
+            }
+        }
+
+        async function updateExportStatus() {
+            if (!currentExportId) return;
+
+            const account = document.getElementById('account-id').value.trim();
+            try {
+                const res = await fetch(`/admin/accounts/${account}/export/${currentExportId}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+
+                // Update status badge
+                const badge = document.getElementById('export-status-badge');
+                badge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                badge.className = 'badge badge-' + getStatusBadgeClass(data.status);
+
+                // Update phase badge
+                const phaseBadge = document.getElementById('export-phase-badge');
+                if (data.phase && data.status === 'processing') {
+                    phaseBadge.textContent = data.phase.charAt(0).toUpperCase() + data.phase.slice(1);
+                    phaseBadge.classList.remove('d-none');
+                } else {
+                    phaseBadge.classList.add('d-none');
+                }
+
+                // Update progress bar
+                const progressBar = document.getElementById('export-progress-bar');
+                const progressText = document.getElementById('export-progress-text');
+
+                if (data.phase === 'indexing' && data.progress) {
+                    // During indexing, show folders scanned progress
+                    const pct = data.progress.foldersTotal > 0
+                        ? Math.round((data.progress.foldersScanned / data.progress.foldersTotal) * 100)
+                        : 0;
+                    progressBar.style.width = pct + '%';
+                    progressBar.setAttribute('aria-valuenow', pct);
+                    progressText.textContent = `Scanning folders: ${data.progress.foldersScanned || 0} / ${data.progress.foldersTotal || '?'}`;
+                } else if (data.progress) {
+                    // During exporting, show messages exported progress
+                    const pct = data.progress.messagesQueued > 0
+                        ? Math.round((data.progress.messagesExported / data.progress.messagesQueued) * 100)
+                        : 0;
+                    progressBar.style.width = pct + '%';
+                    progressBar.setAttribute('aria-valuenow', pct);
+                    progressText.textContent =
+                        `${data.progress.messagesExported} / ${data.progress.messagesQueued} messages exported`;
+                }
+
+                // Handle completion
+                if (data.status === 'completed') {
+                    stopPolling();
+                    document.getElementById('export-download-section').classList.remove('d-none');
+                    document.getElementById('export-download-link').href =
+                        `/admin/accounts/${account}/export/${currentExportId}/download`;
+                    progressBar.style.width = '100%';
+                    progressBar.setAttribute('aria-valuenow', 100);
+                    progressBar.classList.remove('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                    progressBar.classList.add('bg-success');
+                }
+
+                // Handle failure
+                if (data.status === 'failed') {
+                    stopPolling();
+                    document.getElementById('export-error-section').classList.remove('d-none');
+                    document.getElementById('export-error-message').textContent = data.error || 'Export failed';
+                    document.getElementById('export-progress-section').classList.add('d-none');
+                }
+            } catch (err) {
+                console.error('Failed to update export status', err);
+            }
+        }
+
+        async function checkExistingExport() {
+            const account = document.getElementById('account-id').value.trim();
+            try {
+                const res = await fetch(`/admin/accounts/${account}/exports?pageSize=1`);
+                if (!res.ok) {
+                    showFormView();
+                    return;
+                }
+                const data = await res.json();
+
+                if (data.exports && data.exports.length > 0) {
+                    const latest = data.exports[0];
+                    if (latest.status === 'queued' || latest.status === 'processing' || latest.status === 'completed') {
+                        currentExportId = latest.exportId;
+                        showStatusView();
+                        // Reset progress display state
+                        document.getElementById('export-progress-section').classList.remove('d-none');
+                        document.getElementById('export-error-section').classList.add('d-none');
+                        document.getElementById('export-download-section').classList.add('d-none');
+                        document.getElementById('export-phase-badge').classList.add('d-none');
+                        const progressBar = document.getElementById('export-progress-bar');
+                        progressBar.classList.remove('bg-success');
+                        progressBar.classList.add('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                        await updateExportStatus();
+                        if (latest.status !== 'completed' && latest.status !== 'failed') {
+                            startPolling();
+                        }
+                        return;
+                    }
+                }
+                showFormView();
+            } catch (err) {
+                console.error('Failed to check existing export', err);
+                showFormView();
+            }
+        }
+
+        $('#exportModal').on('show.bs.modal', async function () {
+            await checkExistingExport();
+        });
+
+        $('#exportModal').on('hidden.bs.modal', function () {
+            stopPolling();
+        });
+
+        document.getElementById('export-start-btn').addEventListener('click', async function () {
+            const account = document.getElementById('account-id').value.trim();
+            const startDate = document.getElementById('export-start-date').value;
+            const endDate = document.getElementById('export-end-date').value;
+
+            if (!startDate || !endDate) {
+                showToast('Please select date range', 'alert-triangle');
+                return;
+            }
+
+            document.getElementById('export-start-icon').classList.add('fa-spin');
+
+            try {
+                const res = await fetch(`/admin/accounts/${account}/export`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        startDate: startDate + 'T00:00:00Z',
+                        endDate: endDate + 'T23:59:59Z'
+                    })
+                });
+
+                const data = await res.json();
+                if (data.exportId) {
+                    currentExportId = data.exportId;
+                    showStatusView();
+                    // Reset progress display state
+                    document.getElementById('export-progress-section').classList.remove('d-none');
+                    document.getElementById('export-error-section').classList.add('d-none');
+                    document.getElementById('export-download-section').classList.add('d-none');
+                    document.getElementById('export-phase-badge').classList.add('d-none');
+                    const progressBar = document.getElementById('export-progress-bar');
+                    progressBar.classList.remove('bg-success');
+                    progressBar.classList.add('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                    document.getElementById('export-progress-text').textContent = '';
+                    await updateExportStatus();
+                    startPolling();
+                    showToast('Export started', 'check-circle');
+                } else {
+                    showToast(data.error || data.message || 'Failed to start export', 'alert-triangle');
+                }
+            } catch (err) {
+                showToast('Export failed: ' + err.message, 'alert-triangle');
+            } finally {
+                document.getElementById('export-start-icon').classList.remove('fa-spin');
+            }
+        });
+
+        document.getElementById('export-reset-btn').addEventListener('click', async function () {
+            if (!currentExportId) return;
+
+            const account = document.getElementById('account-id').value.trim();
+
+            try {
+                await fetch(`/admin/accounts/${account}/export/${currentExportId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ crumb: document.getElementById('crumb').value })
+                });
+
+                stopPolling();
+                currentExportId = null;
+                showFormView();
+                showToast('Export cleared', 'check-circle');
+            } catch (err) {
+                showToast('Failed to clear export: ' + err.message, 'alert-triangle');
+            }
+        });
     });
 </script>
 
