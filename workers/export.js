@@ -61,6 +61,35 @@ const LIST_PAGE_SIZE = 1000;
 const FOLDER_INDEX_MAX_RETRIES = 3;
 const FOLDER_INDEX_RETRY_DELAY_MS = 1000;
 
+// IMAP message fetch retry configuration
+const IMAP_MESSAGE_MAX_RETRIES = 3;
+const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
+
+// Account validation interval during export
+const ACCOUNT_CHECK_INTERVAL = 60000; // 60 seconds
+
+// Helper to identify transient errors that should be retried
+function isTransientError(err) {
+    // Network errors
+    if (['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH'].includes(err.code)) {
+        return true;
+    }
+    // Server errors (5xx)
+    if (err.statusCode >= 500 && err.statusCode < 600) {
+        return true;
+    }
+    // Timeout errors
+    if (err.code === 'Timeout' || err.message?.includes('timeout')) {
+        return true;
+    }
+    return false;
+}
+
+// Helper to identify skippable errors (message no longer exists)
+function isSkippableError(err) {
+    return err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
+}
+
 let callQueue = new Map();
 let mids = 0;
 
@@ -351,6 +380,9 @@ async function exportMessages(job, exportData) {
     let totalBytesWritten = 0;
     let processingError = null;
 
+    // Track last account validation time
+    let lastAccountCheck = Date.now();
+
     // Check if this account uses API (Gmail/Outlook) which supports parallel fetching
     const accountData = await accountObject.loadAccountData(account);
     const isApiAccount = await accountObject.isApiClient(accountData);
@@ -409,6 +441,17 @@ async function exportMessages(job, exportData) {
         while (true) {
             if (streamError) {
                 throw streamError;
+            }
+
+            // Periodically verify account still exists
+            if (Date.now() - lastAccountCheck > ACCOUNT_CHECK_INTERVAL) {
+                const accountCheck = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
+                if (!accountCheck || !accountCheck.account) {
+                    const err = new Error('Account was deleted during export');
+                    err.code = 'AccountDeleted';
+                    throw err;
+                }
+                lastAccountCheck = Date.now();
             }
 
             const batch = await Export.getNextBatch(account, exportId, lastScore, BATCH_SIZE);
@@ -535,24 +578,60 @@ async function exportMessages(job, exportData) {
                         throw streamError;
                     }
 
-                    try {
-                        const message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
-                        await processMessage(message, entry);
-                    } catch (err) {
-                        const isSkippable = err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
-                        if (isSkippable) {
-                            logger.warn({
-                                msg: 'Skipping message during export',
-                                account,
-                                exportId,
-                                messageId: entry.messageId,
-                                folder: entry.folder,
-                                reason: err.message || err.code
-                            });
-                            await Export.incrementSkipped(account, exportId);
-                        } else {
-                            throw err;
+                    let message = null;
+                    let fetchError = null;
+
+                    // Retry loop for transient errors
+                    for (let attempt = 1; attempt <= IMAP_MESSAGE_MAX_RETRIES; attempt++) {
+                        try {
+                            message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
+                            break; // Success - exit retry loop
+                        } catch (err) {
+                            // Skippable errors - don't retry
+                            if (isSkippableError(err)) {
+                                fetchError = err;
+                                break;
+                            }
+
+                            // Transient errors - retry with backoff
+                            if (isTransientError(err) && attempt < IMAP_MESSAGE_MAX_RETRIES) {
+                                const delay = IMAP_MESSAGE_RETRY_BASE_DELAY * Math.pow(2, attempt - 1);
+                                logger.warn({
+                                    msg: 'Message fetch failed, retrying',
+                                    account,
+                                    exportId,
+                                    messageId: entry.messageId,
+                                    folder: entry.folder,
+                                    attempt,
+                                    maxAttempts: IMAP_MESSAGE_MAX_RETRIES,
+                                    delayMs: delay,
+                                    errorCode: err.code,
+                                    errorMessage: err.message
+                                });
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                continue;
+                            }
+
+                            // Non-retryable error or max retries reached
+                            fetchError = err;
+                            break;
                         }
+                    }
+
+                    if (message) {
+                        await processMessage(message, entry);
+                    } else if (fetchError && isSkippableError(fetchError)) {
+                        logger.warn({
+                            msg: 'Skipping message during export',
+                            account,
+                            exportId,
+                            messageId: entry.messageId,
+                            folder: entry.folder,
+                            reason: fetchError.message || fetchError.code
+                        });
+                        await Export.incrementSkipped(account, exportId);
+                    } else if (fetchError) {
+                        throw fetchError;
                     }
 
                     lastScore = entry.score;
@@ -587,10 +666,10 @@ async function exportMessages(job, exportData) {
 const exportWorker = new Worker(
     'export',
     async job => {
-        const { account, exportId } = job.data;
+        const { account, exportId, isResumed } = job.data;
         const startTime = Date.now();
 
-        logger.info({ msg: 'Processing export job', account, exportId, job: job.id });
+        logger.info({ msg: 'Processing export job', account, exportId, job: job.id, isResumed: !!isResumed });
 
         try {
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
@@ -598,11 +677,27 @@ const exportWorker = new Worker(
                 throw new Error('Export not found');
             }
 
-            await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
-            await indexMessages(job, exportData);
+            if (isResumed) {
+                // Resumed export - skip indexing, go directly to exporting
+                logger.info({
+                    msg: 'Resuming export from checkpoint',
+                    account,
+                    exportId,
+                    lastProcessedScore: exportData.lastProcessedScore,
+                    messagesExported: exportData.messagesExported,
+                    messagesQueued: exportData.messagesQueued
+                });
+                await Export.update(account, exportId, { status: 'processing', phase: 'exporting', error: '' });
+            } else {
+                // New export - run indexing phase
+                await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
+                await indexMessages(job, exportData);
+                await Export.update(account, exportId, { phase: 'exporting' });
+            }
 
-            await Export.update(account, exportId, { phase: 'exporting' });
-            await exportMessages(job, exportData);
+            // Re-fetch export data after potential updates
+            const currentExportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
+            await exportMessages(job, currentExportData);
 
             await Export.complete(account, exportId);
 
@@ -626,21 +721,31 @@ const exportWorker = new Worker(
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
 
-            // Clean up partial file on failure
-            if (exportData.filePath) {
+            // Clean up partial file on failure (only for non-resumable scenarios)
+            // For resumable exports, we keep the file to allow continuation
+            const isResumable =
+                Number(exportData.lastProcessedScore) > 0 &&
+                Number(exportData.messagesQueued) > 0 &&
+                err.code !== 'AccountDeleted' &&
+                err.code !== 'AccountNotFound';
+
+            if (!isResumable && exportData.filePath) {
                 await fs.promises.unlink(exportData.filePath).catch(() => {});
             }
 
             await Export.fail(account, exportId, err.message);
 
-            await notify(account, EXPORT_FAILED_NOTIFY, {
-                exportId,
-                error: err.message,
-                errorCode: err.code,
-                phase: exportData.phase || 'unknown',
-                messagesExported: Number(exportData.messagesExported) || 0,
-                messagesQueued: Number(exportData.messagesQueued) || 0
-            });
+            // Skip webhook for AccountDeleted since there's no receiver
+            if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound') {
+                await notify(account, EXPORT_FAILED_NOTIFY, {
+                    exportId,
+                    error: err.message,
+                    errorCode: err.code,
+                    phase: exportData.phase || 'unknown',
+                    messagesExported: Number(exportData.messagesExported) || 0,
+                    messagesQueued: Number(exportData.messagesQueued) || 0
+                });
+            }
 
             throw err;
         }
