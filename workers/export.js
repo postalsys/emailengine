@@ -823,3 +823,12 @@ parentPort.on('message', message => {
 });
 
 logger.info({ msg: 'Started export worker thread', version: packageData.version });
+
+// Export helper functions for testing
+module.exports = {
+    isTransientError,
+    isSkippableError,
+    IMAP_MESSAGE_MAX_RETRIES,
+    IMAP_MESSAGE_RETRY_BASE_DELAY,
+    ACCOUNT_CHECK_INTERVAL
+};

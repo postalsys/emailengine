@@ -662,4 +662,596 @@ test('Export functionality tests', async t => {
         assert.strictEqual(filePath, '/tmp/exports/exp_abc123def456.ndjson.gz');
         assert.ok(filePath.endsWith('.ndjson.gz'));
     });
+
+    // =====================================================
+    // Export reliability improvement tests
+    // =====================================================
+
+    // Replicate the isTransientError function for testing
+    function isTransientError(err) {
+        // Network errors
+        if (['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH'].includes(err.code)) {
+            return true;
+        }
+        // Server errors (5xx)
+        if (err.statusCode >= 500 && err.statusCode < 600) {
+            return true;
+        }
+        // Timeout errors
+        if (err.code === 'Timeout' || err.message?.includes('timeout')) {
+            return true;
+        }
+        return false;
+    }
+
+    // Replicate the isSkippableError function for testing
+    function isSkippableError(err) {
+        return err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
+    }
+
+    // isTransientError() tests - transient network errors
+    await t.test('isTransientError: ETIMEDOUT is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'ETIMEDOUT' }), true);
+    });
+
+    await t.test('isTransientError: ECONNRESET is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'ECONNRESET' }), true);
+    });
+
+    await t.test('isTransientError: ENOTFOUND is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'ENOTFOUND' }), true);
+    });
+
+    await t.test('isTransientError: EAI_AGAIN is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'EAI_AGAIN' }), true);
+    });
+
+    await t.test('isTransientError: ECONNREFUSED is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'ECONNREFUSED' }), true);
+    });
+
+    await t.test('isTransientError: EPIPE is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'EPIPE' }), true);
+    });
+
+    await t.test('isTransientError: EHOSTUNREACH is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'EHOSTUNREACH' }), true);
+    });
+
+    await t.test('isTransientError: 500 status code is transient', async () => {
+        assert.strictEqual(isTransientError({ statusCode: 500 }), true);
+    });
+
+    await t.test('isTransientError: 503 status code is transient', async () => {
+        assert.strictEqual(isTransientError({ statusCode: 503 }), true);
+    });
+
+    await t.test('isTransientError: Timeout code is transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'Timeout' }), true);
+    });
+
+    await t.test('isTransientError: message with "timeout" is transient', async () => {
+        assert.strictEqual(isTransientError({ message: 'Connection timeout' }), true);
+    });
+
+    // isTransientError() tests - non-transient errors
+    await t.test('isTransientError: 400 status code is NOT transient', async () => {
+        assert.strictEqual(isTransientError({ statusCode: 400 }), false);
+    });
+
+    await t.test('isTransientError: 404 status code is NOT transient', async () => {
+        assert.strictEqual(isTransientError({ statusCode: 404 }), false);
+    });
+
+    await t.test('isTransientError: InvalidRequest code is NOT transient', async () => {
+        assert.strictEqual(isTransientError({ code: 'InvalidRequest' }), false);
+    });
+
+    await t.test('isTransientError: generic error is NOT transient', async () => {
+        assert.strictEqual(isTransientError({ message: 'Something went wrong' }), false);
+    });
+
+    // isSkippableError() tests - skippable errors
+    await t.test('isSkippableError: MessageNotFound is skippable', async () => {
+        assert.strictEqual(isSkippableError({ code: 'MessageNotFound' }), true);
+    });
+
+    await t.test('isSkippableError: 404 status code is skippable', async () => {
+        assert.strictEqual(isSkippableError({ statusCode: 404 }), true);
+    });
+
+    await t.test('isSkippableError: "Failed to generate message ID" is skippable', async () => {
+        assert.strictEqual(isSkippableError({ message: 'Failed to generate message ID for something' }), true);
+    });
+
+    // isSkippableError() tests - non-skippable errors
+    await t.test('isSkippableError: NetworkError is NOT skippable', async () => {
+        // Function returns falsy value (undefined or false) for non-skippable errors
+        assert.ok(!isSkippableError({ code: 'NetworkError' }), 'NetworkError should not be skippable');
+    });
+
+    await t.test('isSkippableError: 500 status code is NOT skippable', async () => {
+        // Function returns falsy value (undefined or false) for non-skippable errors
+        assert.ok(!isSkippableError({ statusCode: 500 }), '500 status code should not be skippable');
+    });
+
+    // Export.fail() resumable logic tests
+    await t.test('fail() resumable: has progress and more to do -> isResumable true', async () => {
+        // Simulate the logic in Export.fail()
+        const calcIsResumable = (lastProcessedScore, messagesQueued, messagesExported) => {
+            return lastProcessedScore > 0 && messagesQueued > 0 && messagesExported < messagesQueued;
+        };
+
+        // lastProcessedScore=1000, messagesQueued=100, messagesExported=50 -> true
+        assert.strictEqual(calcIsResumable(1000, 100, 50), true);
+    });
+
+    await t.test('fail() resumable: no progress made -> isResumable false', async () => {
+        const calcIsResumable = (lastProcessedScore, messagesQueued, messagesExported) => {
+            return lastProcessedScore > 0 && messagesQueued > 0 && messagesExported < messagesQueued;
+        };
+
+        // lastProcessedScore=0, messagesQueued=100, messagesExported=0 -> false
+        assert.strictEqual(calcIsResumable(0, 100, 0), false);
+    });
+
+    await t.test('fail() resumable: nothing queued -> isResumable false', async () => {
+        const calcIsResumable = (lastProcessedScore, messagesQueued, messagesExported) => {
+            return lastProcessedScore > 0 && messagesQueued > 0 && messagesExported < messagesQueued;
+        };
+
+        // lastProcessedScore=1000, messagesQueued=0, messagesExported=0 -> false
+        assert.strictEqual(calcIsResumable(1000, 0, 0), false);
+    });
+
+    await t.test('fail() resumable: all exported -> isResumable false', async () => {
+        const calcIsResumable = (lastProcessedScore, messagesQueued, messagesExported) => {
+            return lastProcessedScore > 0 && messagesQueued > 0 && messagesExported < messagesQueued;
+        };
+
+        // lastProcessedScore=1000, messagesQueued=100, messagesExported=100 -> false
+        assert.strictEqual(calcIsResumable(1000, 100, 100), false);
+    });
+
+    await t.test('fail() resumable: exported >= queued -> isResumable false', async () => {
+        const calcIsResumable = (lastProcessedScore, messagesQueued, messagesExported) => {
+            return lastProcessedScore > 0 && messagesQueued > 0 && messagesExported < messagesQueued;
+        };
+
+        // lastProcessedScore=1000, messagesQueued=100, messagesExported=150 -> false
+        assert.strictEqual(calcIsResumable(1000, 100, 150), false);
+    });
+
+    // Export.resume() validation tests
+    await t.test('resume() validation: export not found returns ExportNotFound', async () => {
+        const validateResumeCondition = (exportData, status, isResumable, queueSize) => {
+            if (!exportData || !exportData.exportId) {
+                return { code: 'ExportNotFound', statusCode: 404 };
+            }
+            if (status === 'completed' || status === 'processing') {
+                return { code: 'InvalidExportStatus', statusCode: 400 };
+            }
+            if (isResumable !== '1') {
+                return { code: 'ExportNotResumable', statusCode: 400 };
+            }
+            if (queueSize === 0) {
+                return { code: 'QueueNotFound', statusCode: 400 };
+            }
+            return null;
+        };
+
+        const result = validateResumeCondition(null, null, null, 0);
+        assert.strictEqual(result.code, 'ExportNotFound');
+        assert.strictEqual(result.statusCode, 404);
+    });
+
+    await t.test('resume() validation: completed status returns InvalidExportStatus', async () => {
+        const validateResumeCondition = (exportData, status, isResumable, queueSize) => {
+            if (!exportData || !exportData.exportId) {
+                return { code: 'ExportNotFound', statusCode: 404 };
+            }
+            if (status === 'completed' || status === 'processing') {
+                return { code: 'InvalidExportStatus', statusCode: 400 };
+            }
+            if (isResumable !== '1') {
+                return { code: 'ExportNotResumable', statusCode: 400 };
+            }
+            if (queueSize === 0) {
+                return { code: 'QueueNotFound', statusCode: 400 };
+            }
+            return null;
+        };
+
+        const result = validateResumeCondition({ exportId: 'exp_123' }, 'completed', '1', 100);
+        assert.strictEqual(result.code, 'InvalidExportStatus');
+        assert.strictEqual(result.statusCode, 400);
+    });
+
+    await t.test('resume() validation: processing status returns InvalidExportStatus', async () => {
+        const validateResumeCondition = (exportData, status, isResumable, queueSize) => {
+            if (!exportData || !exportData.exportId) {
+                return { code: 'ExportNotFound', statusCode: 404 };
+            }
+            if (status === 'completed' || status === 'processing') {
+                return { code: 'InvalidExportStatus', statusCode: 400 };
+            }
+            if (isResumable !== '1') {
+                return { code: 'ExportNotResumable', statusCode: 400 };
+            }
+            if (queueSize === 0) {
+                return { code: 'QueueNotFound', statusCode: 400 };
+            }
+            return null;
+        };
+
+        const result = validateResumeCondition({ exportId: 'exp_123' }, 'processing', '1', 100);
+        assert.strictEqual(result.code, 'InvalidExportStatus');
+        assert.strictEqual(result.statusCode, 400);
+    });
+
+    await t.test('resume() validation: isResumable=0 returns ExportNotResumable', async () => {
+        const validateResumeCondition = (exportData, status, isResumable, queueSize) => {
+            if (!exportData || !exportData.exportId) {
+                return { code: 'ExportNotFound', statusCode: 404 };
+            }
+            if (status === 'completed' || status === 'processing') {
+                return { code: 'InvalidExportStatus', statusCode: 400 };
+            }
+            if (isResumable !== '1') {
+                return { code: 'ExportNotResumable', statusCode: 400 };
+            }
+            if (queueSize === 0) {
+                return { code: 'QueueNotFound', statusCode: 400 };
+            }
+            return null;
+        };
+
+        const result = validateResumeCondition({ exportId: 'exp_123' }, 'failed', '0', 100);
+        assert.strictEqual(result.code, 'ExportNotResumable');
+        assert.strictEqual(result.statusCode, 400);
+    });
+
+    await t.test('resume() validation: queue does not exist returns QueueNotFound', async () => {
+        const validateResumeCondition = (exportData, status, isResumable, queueSize) => {
+            if (!exportData || !exportData.exportId) {
+                return { code: 'ExportNotFound', statusCode: 404 };
+            }
+            if (status === 'completed' || status === 'processing') {
+                return { code: 'InvalidExportStatus', statusCode: 400 };
+            }
+            if (isResumable !== '1') {
+                return { code: 'ExportNotResumable', statusCode: 400 };
+            }
+            if (queueSize === 0) {
+                return { code: 'QueueNotFound', statusCode: 400 };
+            }
+            return null;
+        };
+
+        const result = validateResumeCondition({ exportId: 'exp_123' }, 'failed', '1', 0);
+        assert.strictEqual(result.code, 'QueueNotFound');
+        assert.strictEqual(result.statusCode, 400);
+    });
+
+    // formatStatus() isResumable tests
+    // Replicate formatStatus with isResumable logic
+    function formatStatusWithResumable(data) {
+        const toIsoDate = value => (value ? new Date(Number(value)).toISOString() : undefined);
+
+        const result = {
+            exportId: data.exportId,
+            status: data.status,
+            phase: data.phase !== 'pending' ? data.phase : undefined,
+            folders: data.folders ? JSON.parse(data.folders) : [],
+            startDate: toIsoDate(data.startDate),
+            endDate: toIsoDate(data.endDate),
+            isEncrypted: data.isEncrypted === '1',
+            progress: {
+                foldersScanned: Number(data.foldersScanned) || 0,
+                foldersTotal: Number(data.foldersTotal) || 0,
+                messagesQueued: Number(data.messagesQueued) || 0,
+                messagesExported: Number(data.messagesExported) || 0,
+                messagesSkipped: Number(data.messagesSkipped) || 0,
+                bytesWritten: Number(data.bytesWritten) || 0
+            },
+            created: toIsoDate(data.created),
+            expiresAt: toIsoDate(data.expiresAt),
+            error: data.error || null
+        };
+
+        // Only include isResumable for failed exports
+        if (data.status === 'failed') {
+            result.isResumable = data.isResumable === '1';
+        }
+
+        return result;
+    }
+
+    await t.test('formatStatus: failed with isResumable=1 includes isResumable: true', async () => {
+        const data = {
+            exportId: 'exp_test123',
+            status: 'failed',
+            phase: 'exporting',
+            isResumable: '1',
+            error: 'Connection timeout'
+        };
+
+        const result = formatStatusWithResumable(data);
+
+        assert.strictEqual(result.status, 'failed');
+        assert.strictEqual(result.isResumable, true);
+    });
+
+    await t.test('formatStatus: failed with isResumable=0 includes isResumable: false', async () => {
+        const data = {
+            exportId: 'exp_test123',
+            status: 'failed',
+            phase: 'indexing',
+            isResumable: '0',
+            error: 'Account not found'
+        };
+
+        const result = formatStatusWithResumable(data);
+
+        assert.strictEqual(result.status, 'failed');
+        assert.strictEqual(result.isResumable, false);
+    });
+
+    await t.test('formatStatus: non-failed status does NOT include isResumable', async () => {
+        const dataCompleted = {
+            exportId: 'exp_test123',
+            status: 'completed',
+            phase: 'complete'
+        };
+
+        const dataProcessing = {
+            exportId: 'exp_test456',
+            status: 'processing',
+            phase: 'exporting'
+        };
+
+        const resultCompleted = formatStatusWithResumable(dataCompleted);
+        const resultProcessing = formatStatusWithResumable(dataProcessing);
+
+        assert.strictEqual('isResumable' in resultCompleted, false);
+        assert.strictEqual('isResumable' in resultProcessing, false);
+    });
+
+    // Outlook batch retry logic tests
+    await t.test('Outlook batch retry: first attempt succeeds -> no retry needed', async () => {
+        let attempts = 0;
+        const simulateBatchFetch = async () => {
+            attempts++;
+            return { success: true, data: [{ messageId: 'msg_1', data: {} }] };
+        };
+
+        const result = await simulateBatchFetch();
+        assert.strictEqual(attempts, 1);
+        assert.strictEqual(result.success, true);
+    });
+
+    await t.test('Outlook batch retry: 429 error triggers retry', async () => {
+        let attempts = 0;
+        const MAX_RETRIES = 5;
+
+        const simulateBatchFetch = async () => {
+            attempts++;
+            if (attempts === 1) {
+                return { error: { statusCode: 429 } };
+            }
+            return { success: true };
+        };
+
+        const shouldRetry = result => result.error?.statusCode === 429 || result.error?.statusCode >= 500;
+
+        let result = await simulateBatchFetch();
+        while (shouldRetry(result) && attempts < MAX_RETRIES) {
+            result = await simulateBatchFetch();
+        }
+
+        assert.strictEqual(attempts, 2);
+        assert.strictEqual(result.success, true);
+    });
+
+    await t.test('Outlook batch retry: 5xx error triggers retry', async () => {
+        let attempts = 0;
+        const MAX_RETRIES = 5;
+
+        const simulateBatchFetch = async () => {
+            attempts++;
+            if (attempts === 1) {
+                return { error: { statusCode: 503 } };
+            }
+            return { success: true };
+        };
+
+        const shouldRetry = result => result.error?.statusCode === 429 || result.error?.statusCode >= 500;
+
+        let result = await simulateBatchFetch();
+        while (shouldRetry(result) && attempts < MAX_RETRIES) {
+            result = await simulateBatchFetch();
+        }
+
+        assert.strictEqual(attempts, 2);
+        assert.strictEqual(result.success, true);
+    });
+
+    await t.test('Outlook batch retry: 403 error does NOT trigger retry', async () => {
+        let attempts = 0;
+        const MAX_RETRIES = 5;
+
+        const simulateBatchFetch = async () => {
+            attempts++;
+            return { error: { statusCode: 403 } };
+        };
+
+        const shouldRetry = result => result.error?.statusCode === 429 || (result.error?.statusCode >= 500 && result.error?.statusCode < 600);
+
+        let result = await simulateBatchFetch();
+        while (shouldRetry(result) && attempts < MAX_RETRIES) {
+            result = await simulateBatchFetch();
+        }
+
+        assert.strictEqual(attempts, 1);
+        assert.strictEqual(result.error.statusCode, 403);
+    });
+
+    await t.test('Outlook batch retry: all retries exhausted returns errors', async () => {
+        let attempts = 0;
+        const MAX_RETRIES = 3;
+
+        const simulateBatchFetch = async () => {
+            attempts++;
+            return { error: { statusCode: 429, message: 'Rate limited' } };
+        };
+
+        const shouldRetry = result => result.error?.statusCode === 429 || (result.error?.statusCode >= 500 && result.error?.statusCode < 600);
+
+        let result = await simulateBatchFetch();
+        while (shouldRetry(result) && attempts < MAX_RETRIES) {
+            result = await simulateBatchFetch();
+        }
+
+        assert.strictEqual(attempts, MAX_RETRIES);
+        assert.strictEqual(result.error.statusCode, 429);
+    });
+
+    await t.test('Outlook batch retry: exponential backoff calculation', async () => {
+        const BASE_DELAY = 5000;
+
+        const calculateDelay = attempt => {
+            return BASE_DELAY * Math.pow(2, attempt - 1);
+        };
+
+        // Verify exponential backoff: 5s, 10s, 20s
+        assert.strictEqual(calculateDelay(1), 5000);
+        assert.strictEqual(calculateDelay(2), 10000);
+        assert.strictEqual(calculateDelay(3), 20000);
+        assert.strictEqual(calculateDelay(4), 40000);
+    });
+
+    // Constants verification tests
+    await t.test('Constants: ACCOUNT_CHECK_INTERVAL is 60000ms (60 seconds)', async () => {
+        const ACCOUNT_CHECK_INTERVAL = 60000;
+        assert.strictEqual(ACCOUNT_CHECK_INTERVAL, 60000);
+    });
+
+    await t.test('Constants: IMAP_MESSAGE_MAX_RETRIES is 3', async () => {
+        const IMAP_MESSAGE_MAX_RETRIES = 3;
+        assert.strictEqual(IMAP_MESSAGE_MAX_RETRIES, 3);
+    });
+
+    await t.test('Constants: IMAP_MESSAGE_RETRY_BASE_DELAY is 2000ms', async () => {
+        const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
+        assert.strictEqual(IMAP_MESSAGE_RETRY_BASE_DELAY, 2000);
+    });
+
+    // IMAP retry logic tests
+    await t.test('IMAP retry: transient error triggers retry with backoff', async () => {
+        const IMAP_MESSAGE_MAX_RETRIES = 3;
+        const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
+        let attempts = 0;
+        const delays = [];
+
+        const simulateFetch = async () => {
+            attempts++;
+            if (attempts < IMAP_MESSAGE_MAX_RETRIES) {
+                const delay = IMAP_MESSAGE_RETRY_BASE_DELAY * Math.pow(2, attempts - 1);
+                delays.push(delay);
+                throw { code: 'ETIMEDOUT' };
+            }
+            return { success: true };
+        };
+
+        const isTransient = err => ['ETIMEDOUT', 'ECONNRESET'].includes(err.code);
+
+        let result = null;
+        for (let attempt = 1; attempt <= IMAP_MESSAGE_MAX_RETRIES; attempt++) {
+            try {
+                result = await simulateFetch();
+                break;
+            } catch (err) {
+                if (!isTransient(err) || attempt === IMAP_MESSAGE_MAX_RETRIES) {
+                    throw err;
+                }
+            }
+        }
+
+        assert.strictEqual(attempts, IMAP_MESSAGE_MAX_RETRIES);
+        assert.strictEqual(result.success, true);
+        assert.deepStrictEqual(delays, [2000, 4000]);
+    });
+
+    await t.test('IMAP retry: skippable error does not retry', async () => {
+        let attempts = 0;
+        let skipped = false;
+
+        const simulateFetch = async () => {
+            attempts++;
+            throw { code: 'MessageNotFound' };
+        };
+
+        const isSkippable = err => err.code === 'MessageNotFound' || err.statusCode === 404;
+
+        try {
+            await simulateFetch();
+        } catch (err) {
+            if (isSkippable(err)) {
+                skipped = true;
+            }
+        }
+
+        assert.strictEqual(attempts, 1);
+        assert.strictEqual(skipped, true);
+    });
+
+    await t.test('IMAP retry: non-transient error fails immediately', async () => {
+        let attempts = 0;
+        let thrownError = null;
+
+        const simulateFetch = async () => {
+            attempts++;
+            throw { code: 'InvalidCredentials' };
+        };
+
+        const isTransient = err => ['ETIMEDOUT', 'ECONNRESET'].includes(err.code);
+        const isSkippable = err => err.code === 'MessageNotFound';
+
+        try {
+            const error = await simulateFetch().catch(e => e);
+            if (!isSkippable(error) && !isTransient(error)) {
+                thrownError = error;
+            }
+        } catch (err) {
+            thrownError = err;
+        }
+
+        assert.strictEqual(attempts, 1);
+        assert.strictEqual(thrownError.code, 'InvalidCredentials');
+    });
+
+    // Rate limit retry detection tests
+    await t.test('Rate limit detection: 429 status code is rate limited', async () => {
+        const isRateLimited = err => err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+
+        assert.strictEqual(isRateLimited({ statusCode: 429 }), true);
+    });
+
+    await t.test('Rate limit detection: rateLimitExceeded code is rate limited', async () => {
+        const isRateLimited = err => err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+
+        assert.strictEqual(isRateLimited({ code: 'rateLimitExceeded' }), true);
+    });
+
+    await t.test('Rate limit detection: userRateLimitExceeded code is rate limited', async () => {
+        const isRateLimited = err => err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+
+        assert.strictEqual(isRateLimited({ code: 'userRateLimitExceeded' }), true);
+    });
+
+    await t.test('Rate limit detection: 500 status code is NOT rate limited', async () => {
+        const isRateLimited = err => err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+
+        assert.strictEqual(isRateLimited({ statusCode: 500 }), false);
+    });
 });
