@@ -15,7 +15,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - `/lib/lua` - Redis Lua scripts for atomic operations
 - `/lib/oauth` - OAuth provider implementations
 - `/lib/imapproxy` - IMAP proxy server implementation
-- `/workers` - Worker thread modules (7 worker types, see Workers section)
+- `/workers` - Worker thread modules (8 worker types, see Workers section)
 - `/test` - Unit and integration tests
 - `/config` - TOML configuration files
 - `/views` - Handlebars templates for web UI
@@ -30,6 +30,8 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - `lib/email-client/gmail-client.js` - Gmail API integration
 - `lib/email-client/outlook-client.js` - Microsoft Graph integration
 - `lib/oauth2-apps.js` - OAuth2 application configurations
+- `lib/export.js` - Export class for bulk email export operations
+- `lib/api-routes/export-routes.js` - Export REST API endpoints
 - `workers/api.js` - REST API worker with Hapi server
 - `lib/routes-ui.js` - Web UI routes for admin interface
 
@@ -104,11 +106,12 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | IMAP | `imap.js` | 4* | Email sync engine (see IMAP Worker section below) |
 | Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
 | Submit | `submit.js` | 1* | Email delivery processor (see Submit Worker section below) |
+| Export | `export.js` | 1* | Account data export processor (see Export Worker section below) |
 | Documents | `documents.js` | 1 | **Deprecated.** Indexes emails in Elasticsearch (legacy feature) |
 | SMTP | `smtp.js` | 1 | Optional SMTP server (see SMTP Server section below) |
 | IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server (see IMAP Proxy section below) |
 
-*Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`)
+*Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`, `EENGINE_EXPORT_QC`)
 
 **Worker Lifecycle:**
 - Main thread spawns workers at startup and monitors health via heartbeats (every 10s)
@@ -202,6 +205,7 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 - Mailbox events: `mailboxNew`, `mailboxDeleted`, `mailboxReset`
 - Account events: `accountAdded`, `accountInitialized`, `accountDeleted`, `authenticationError`, `authenticationSuccess`, `connectError`
 - Tracking events: `trackOpen`, `trackClick`, `listUnsubscribe`, `listSubscribe`
+- Export events: `exportCompleted`, `exportFailed`
 
 **Configuration levels:**
 1. Global: `webhooksEnabled`, `webhooks` (URL), `webhookEvents` (whitelist)
@@ -261,6 +265,66 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - `workers/submit.js` - BullMQ worker implementation
 - `lib/email-client/base-client.js` - `queueMessage()` and `submitMessage()` logic
 - `lib/outbox.js` - Queue inspection API
+
+### Export Worker
+
+The export worker (`workers/export.js`) processes bulk email export jobs via BullMQ. It extracts messages from accounts and writes them to compressed NDJSON files with optional encryption.
+
+**How it works:**
+1. API creates export job with date range and folder filters
+2. Worker indexes matching messages from specified folders
+3. Fetches message content in batches (parallel for API accounts, sequential for IMAP)
+4. Writes to gzip-compressed NDJSON file (optionally encrypted)
+5. Fires webhook events on completion or failure
+
+**Export phases:**
+- `pending` - Job queued, waiting for worker
+- `indexing` - Scanning folders for matching messages
+- `exporting` - Fetching and writing message content
+- `complete` - Export finished successfully
+
+**Error handling and recovery:**
+- **Transient errors** (network timeouts, 5xx responses): Retry with exponential backoff
+- **Skippable errors** (message not found, 404): Skip message, increment counter
+- **Account validation**: Checks every 60s if account still exists
+- **Resume capability**: Failed exports with progress can be resumed from checkpoint
+
+**Resumability:**
+An export is marked resumable when:
+- Export made progress (`lastProcessedScore > 0`)
+- Messages remain to process (`messagesExported < messagesQueued`)
+- Account was not deleted during export
+
+**Retry configuration:**
+- IMAP messages: 3 retries with 2s base delay (exponential backoff)
+- API batch requests: 5 retries for rate limits (429) with 5s base delay
+- Folder indexing: 3 retries with 1s base delay
+
+**Webhook events:**
+- `exportCompleted` - Export finished with stats (messages exported, skipped, bytes)
+- `exportFailed` - Export failed with error details and phase info
+
+**Configuration:**
+- `EENGINE_EXPORT_QC` - Concurrency per worker (default: 1)
+- `EENGINE_EXPORT_TIMEOUT` - Operation timeout (default: 5 minutes)
+- `EENGINE_EXPORT_PATH` - Export file directory (default: OS temp dir)
+- `exportMaxAge` setting - Export file retention (default: 7 days)
+- `exportMaxConcurrent` setting - Per-account concurrent limit (default: 3)
+- `exportMaxGlobalConcurrent` setting - Global concurrent limit (default: 10)
+- `exportMaxMessageSize` setting - Max attachment size (default: 25MB)
+
+**API endpoints:**
+- `POST /v1/account/{account}/export` - Create export job
+- `GET /v1/account/{account}/export/{exportId}` - Get export status
+- `GET /v1/account/{account}/export/{exportId}/download` - Download completed export
+- `POST /v1/account/{account}/export/{exportId}/resume` - Resume failed export
+- `DELETE /v1/account/{account}/export/{exportId}` - Cancel/delete export
+- `GET /v1/account/{account}/exports` - List exports with pagination
+
+**Key files:**
+- `workers/export.js` - BullMQ worker implementation
+- `lib/export.js` - Export class with CRUD and queue operations
+- `lib/api-routes/export-routes.js` - REST API endpoints
 
 ### SMTP Server
 
@@ -326,7 +390,7 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 
 ## Architecture Notes
 
-- **Multi-threaded**: 7 worker types (API, IMAP, webhooks, submit, documents, SMTP server, IMAP proxy)
+- **Multi-threaded**: 8 worker types (API, IMAP, webhooks, submit, export, documents, SMTP server, IMAP proxy)
 - **Redis-backed**: Primary data store with Lua scripts for atomic operations
 - **Encrypted**: All credentials encrypted at rest (AES-256-GCM)
 - **State machine**: Account states (init, connecting, syncing, connected, authenticationError, connectError, unset)
@@ -344,6 +408,8 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - `EENGINE_WORKERS` - IMAP worker count (default: 4)
 - `EENGINE_WORKERS_WEBHOOKS` - Webhook worker count (default: 1)
 - `EENGINE_WORKERS_SUBMIT` - Submit worker count (default: 1)
+- `EENGINE_EXPORT_QC` - Export concurrency per worker (default: 1)
+- `EENGINE_EXPORT_TIMEOUT` - Export operation timeout (default: 5 minutes)
 - `EENGINE_NOTIFY_QC` - Webhook concurrency per worker (default: 1)
 
 **Prepared configuration** (applied on startup):
