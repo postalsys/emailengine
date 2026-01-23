@@ -977,6 +977,10 @@
                         <span id="export-status-badge" class="badge badge-info">Queued</span>
                         <span id="export-phase-badge" class="badge badge-secondary ml-1 d-none"></span>
                     </div>
+                    <div class="mb-3">
+                        <strong>Expires:</strong>
+                        <span id="export-expires-at" class="text-muted"></span>
+                    </div>
                     <div id="export-progress-section">
                         <div class="progress mb-2">
                             <div id="export-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
@@ -1263,6 +1267,15 @@
                     phaseBadge.classList.remove('d-none');
                 } else {
                     phaseBadge.classList.add('d-none');
+                }
+
+                // Update expiration date
+                const expiresAtEl = document.getElementById('export-expires-at');
+                if (data.expiresAt) {
+                    const expiresDate = new Date(data.expiresAt);
+                    expiresAtEl.textContent = expiresDate.toLocaleString();
+                } else {
+                    expiresAtEl.textContent = 'Unknown';
                 }
 
                 // Update progress bar
