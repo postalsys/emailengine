@@ -961,6 +961,13 @@
                         <label for="export-end-date">End Date</label>
                         <input type="date" class="form-control" id="export-end-date">
                     </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="export-include-attachments">
+                            <label class="custom-control-label" for="export-include-attachments">Include attachments</label>
+                        </div>
+                        <small class="form-text text-muted">Download and include attachment file contents in the export. This increases export size and time.</small>
+                    </div>
                     <small class="text-muted">Gmail accounts export from All Mail. Other accounts export all folders (excluding Junk and Trash).</small>
                 </div>
 
@@ -1354,6 +1361,7 @@
             const account = document.getElementById('account-id').value.trim();
             const startDate = document.getElementById('export-start-date').value;
             const endDate = document.getElementById('export-end-date').value;
+            const includeAttachments = document.getElementById('export-include-attachments').checked;
 
             if (!startDate || !endDate) {
                 showToast('Please select date range', 'alert-triangle');
@@ -1369,7 +1377,8 @@
                     body: JSON.stringify({
                         crumb: document.getElementById('crumb').value,
                         startDate: startDate + 'T00:00:00Z',
-                        endDate: endDate + 'T23:59:59Z'
+                        endDate: endDate + 'T23:59:59Z',
+                        includeAttachments
                     })
                 });
 
