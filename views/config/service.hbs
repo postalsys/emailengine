@@ -341,6 +341,41 @@
         </div>
     </div>
 
+    <div id="export_settings" class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Export Settings</h6>
+        </div>
+        <div class="card-body">
+            <p>Configure batch sizes for bulk message export operations.</p>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">gmailExportBatchSize</a>]</div>
+                <label for="settingsGmailExportBatchSize">Gmail Export Batch Size</label>
+                <input type="number" min="1" max="50" class="form-control {{#if errors.gmailExportBatchSize}}is-invalid{{/if}}"
+                    id="settingsGmailExportBatchSize" name="gmailExportBatchSize" value="{{values.gmailExportBatchSize}}"
+                    data-lpignore="true" autocomplete="off" />
+                {{#if errors.gmailExportBatchSize}}
+                <span class="invalid-feedback">{{errors.gmailExportBatchSize}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Number of parallel requests when fetching Gmail messages for export (1-50, default: 10).</small>
+            </div>
+
+            <div class="form-group">
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">outlookExportBatchSize</a>]</div>
+                <label for="settingsOutlookExportBatchSize">Outlook Export Batch Size</label>
+                <input type="number" min="1" max="20" class="form-control {{#if errors.outlookExportBatchSize}}is-invalid{{/if}}"
+                    id="settingsOutlookExportBatchSize" name="outlookExportBatchSize" value="{{values.outlookExportBatchSize}}"
+                    data-lpignore="true" autocomplete="off" />
+                {{#if errors.outlookExportBatchSize}}
+                <span class="invalid-feedback">{{errors.outlookExportBatchSize}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Messages per batch request for Outlook exports (1-20, default: 20). Limited by Microsoft Graph API.</small>
+            </div>
+        </div>
+    </div>
+
     <div id="templates_settings" class="card mb-4">
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Public Page Customization</h6>
