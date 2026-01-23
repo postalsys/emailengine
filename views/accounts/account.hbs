@@ -37,6 +37,7 @@
                 <button type="button" class="btn btn-light" id="request-export"
                     title="Export messages to file" data-toggle="modal" data-target="#exportModal">
                     <i class="fas fa-file-export fa-fw"></i> Export
+                    <span id="export-status-indicator" class="badge badge-pill ml-1 d-none"></span>
                 </button>
                 {{/if}}
             </div>
@@ -952,6 +953,10 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-flask fa-fw"></i>
+                    <strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues, please contact <a href="mailto:support@postalsys.com">support@postalsys.com</a>.
+                </div>
                 <div id="export-form-view">
                     <div class="form-group">
                         <label for="export-start-date">Start Date</label>
@@ -1198,6 +1203,45 @@
         $('#renew-grant-btn').tooltip();
         $('#renew-grant-btn').click(() => $('#renew-grant-btn').tooltip('hide'));
 
+        // Export status indicator on page load
+        async function updateExportIndicator() {
+            const account = document.getElementById('account-id').value.trim();
+            const indicator = document.getElementById('export-status-indicator');
+            if (!indicator) return;
+
+            try {
+                const res = await fetch(`/admin/accounts/${account}/exports?pageSize=1`);
+                if (!res.ok) {
+                    indicator.classList.add('d-none');
+                    return;
+                }
+                const data = await res.json();
+
+                if (data.exports && data.exports.length > 0) {
+                    const latest = data.exports[0];
+                    if (latest.status === 'queued' || latest.status === 'processing') {
+                        indicator.textContent = latest.status === 'queued' ? 'Queued' : 'Exporting';
+                        indicator.className = 'badge badge-pill badge-info ml-1';
+                    } else if (latest.status === 'completed') {
+                        indicator.textContent = 'Ready';
+                        indicator.className = 'badge badge-pill badge-success ml-1';
+                    } else {
+                        indicator.classList.add('d-none');
+                        return;
+                    }
+                    indicator.classList.remove('d-none');
+                } else {
+                    indicator.classList.add('d-none');
+                }
+            } catch (err) {
+                console.error('Failed to check export status', err);
+                indicator.classList.add('d-none');
+            }
+        }
+
+        // Check export status on page load
+        updateExportIndicator();
+
         // Export modal functionality
         let currentExportId = null;
         let exportPollingInterval = null;
@@ -1368,6 +1412,7 @@
 
         $('#exportModal').on('hidden.bs.modal', function () {
             stopPolling();
+            updateExportIndicator();
         });
 
         document.getElementById('export-start-btn').addEventListener('click', async function () {
