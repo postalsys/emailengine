@@ -507,6 +507,127 @@ test('Export functionality tests', async t => {
         assert.strictEqual(result3, 1, 'Should allow when other accounts have exports');
     });
 
+    // Atomic check-and-add simulation tests (prevents TOCTOU race condition)
+    await t.test('Atomic check-and-add prevents race condition', async () => {
+        // Simulate the atomic Lua script that checks limits AND adds in one operation
+        // This prevents the TOCTOU (time-of-check-time-of-use) race condition
+        const activeSet = new Set();
+
+        const atomicCheckAndAdd = (maxConcurrent, maxGlobal, accountPrefix, activeEntry) => {
+            // Simulate atomic operation - in real implementation this is a Lua script
+            const members = Array.from(activeSet);
+            const globalCount = members.length;
+
+            // Check global limit
+            if (globalCount >= maxGlobal) {
+                return 0;
+            }
+
+            // Check per-account limit
+            let accountCount = 0;
+            for (const member of members) {
+                if (member.startsWith(accountPrefix)) {
+                    accountCount++;
+                }
+            }
+
+            if (accountCount >= maxConcurrent) {
+                return 0;
+            }
+
+            // Atomically add to set (within same Lua script execution)
+            activeSet.add(activeEntry);
+            return 1;
+        };
+
+        // Simulate two concurrent requests for the same account
+        // With atomic check-and-add, only one should succeed when limit is 1
+        const maxConcurrent = 1;
+        const maxGlobal = 10;
+        const accountPrefix = 'account1:';
+
+        const result1 = atomicCheckAndAdd(maxConcurrent, maxGlobal, accountPrefix, 'account1:exp_1');
+        const result2 = atomicCheckAndAdd(maxConcurrent, maxGlobal, accountPrefix, 'account1:exp_2');
+
+        assert.strictEqual(result1, 1, 'First request should succeed');
+        assert.strictEqual(result2, 0, 'Second request should be rejected (limit reached)');
+        assert.strictEqual(activeSet.size, 1, 'Only one entry should be in active set');
+        assert.ok(activeSet.has('account1:exp_1'), 'First entry should be in active set');
+    });
+
+    await t.test('Atomic check-and-add allows different accounts concurrently', async () => {
+        const activeSet = new Set();
+
+        const atomicCheckAndAdd = (maxConcurrent, maxGlobal, accountPrefix, activeEntry) => {
+            const members = Array.from(activeSet);
+            const globalCount = members.length;
+
+            if (globalCount >= maxGlobal) {
+                return 0;
+            }
+
+            let accountCount = 0;
+            for (const member of members) {
+                if (member.startsWith(accountPrefix)) {
+                    accountCount++;
+                }
+            }
+
+            if (accountCount >= maxConcurrent) {
+                return 0;
+            }
+
+            activeSet.add(activeEntry);
+            return 1;
+        };
+
+        // Different accounts should each be allowed their own export
+        const maxConcurrent = 1;
+        const maxGlobal = 10;
+
+        const result1 = atomicCheckAndAdd(maxConcurrent, maxGlobal, 'account1:', 'account1:exp_1');
+        const result2 = atomicCheckAndAdd(maxConcurrent, maxGlobal, 'account2:', 'account2:exp_1');
+        const result3 = atomicCheckAndAdd(maxConcurrent, maxGlobal, 'account3:', 'account3:exp_1');
+
+        assert.strictEqual(result1, 1, 'Account 1 should succeed');
+        assert.strictEqual(result2, 1, 'Account 2 should succeed');
+        assert.strictEqual(result3, 1, 'Account 3 should succeed');
+        assert.strictEqual(activeSet.size, 3, 'All three entries should be in active set');
+    });
+
+    await t.test('Atomic check-and-add respects global limit', async () => {
+        const activeSet = new Set(['a:exp_1', 'b:exp_1']);
+
+        const atomicCheckAndAdd = (maxConcurrent, maxGlobal, accountPrefix, activeEntry) => {
+            const members = Array.from(activeSet);
+            const globalCount = members.length;
+
+            if (globalCount >= maxGlobal) {
+                return 0;
+            }
+
+            let accountCount = 0;
+            for (const member of members) {
+                if (member.startsWith(accountPrefix)) {
+                    accountCount++;
+                }
+            }
+
+            if (accountCount >= maxConcurrent) {
+                return 0;
+            }
+
+            activeSet.add(activeEntry);
+            return 1;
+        };
+
+        // Global limit of 2, already have 2 exports from different accounts
+        const result = atomicCheckAndAdd(5, 2, 'account3:', 'account3:exp_1');
+
+        assert.strictEqual(result, 0, 'Should reject when global limit reached');
+        assert.strictEqual(activeSet.size, 2, 'Active set should not change');
+    });
+
     // Active set entry parsing tests (for markInterruptedAsFailed)
     await t.test('Active set entry parsing handles account IDs with colons', async () => {
         // The actual logic in lib/export.js
