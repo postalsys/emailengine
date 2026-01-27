@@ -55,25 +55,33 @@ const batchPayloadSchema = Joi.object({
     messages: Joi.array().items(batchMessageSchema).min(1).max(50).required()
 });
 
-// Simulate the batch handler logic
-async function simulateBatchHandler(messages, queueMessageFn) {
-    let results = await Promise.allSettled(
-        messages.map(async (msg, index) => {
-            let response = await queueMessageFn(msg, index);
-            return { index, response };
-        })
-    );
+// Simulate the batch handler logic (mirrors workers/api.js chunked processing)
+async function simulateBatchHandler(messages, queueMessageFn, batchConcurrency) {
+    let BATCH_CONCURRENCY = batchConcurrency || 10;
+    let allResults = [];
+
+    for (let offset = 0; offset < messages.length; offset += BATCH_CONCURRENCY) {
+        let chunk = messages.slice(offset, offset + BATCH_CONCURRENCY);
+        let chunkResults = await Promise.allSettled(
+            chunk.map(async (msg, chunkIndex) => {
+                let globalIndex = offset + chunkIndex;
+                let response = await queueMessageFn(msg, globalIndex);
+                return { index: globalIndex, response };
+            })
+        );
+        allResults.push(...chunkResults);
+    }
 
     let successCount = 0;
     let failureCount = 0;
     let entries = [];
 
-    for (let i = 0; i < results.length; i++) {
-        let result = results[i];
+    for (let i = 0; i < allResults.length; i++) {
+        let result = allResults[i];
         if (result.status === 'fulfilled') {
             successCount++;
             entries.push({
-                index: result.value.index,
+                index: i,
                 success: true,
                 queueId: result.value.response.queueId || null,
                 messageId: result.value.response.messageId || null,
@@ -294,5 +302,56 @@ test('Batch submit handler tests', async t => {
         assert.strictEqual(response.results[0].success, false);
         assert.strictEqual(response.results[0].error.message, 'Something went wrong');
         assert.strictEqual(response.results[0].error.code, null);
+    });
+
+    await t.test('chunked batch failure in second chunk reports correct index', async () => {
+        // Use batchConcurrency=3 so 7 messages produce 3 chunks: [0,1,2], [3,4,5], [6]
+        let messages = [];
+        for (let i = 0; i < 7; i++) {
+            messages.push({ to: [{ address: `user${i}@example.com` }], subject: `Msg ${i}`, text: `Body ${i}` });
+        }
+
+        // Fail messages at indices 4 (second chunk) and 6 (third chunk)
+        let response = await simulateBatchHandler(
+            messages,
+            async (msg, index) => {
+                if (index === 4 || index === 6) {
+                    let err = new Error(`Failed at index ${index}`);
+                    err.code = 'TestError';
+                    throw err;
+                }
+                return {
+                    queueId: `queue-${index}`,
+                    messageId: `<msg-${index}@example.com>`
+                };
+            },
+            3
+        );
+
+        assert.strictEqual(response.totalMessages, 7);
+        assert.strictEqual(response.successCount, 5);
+        assert.strictEqual(response.failureCount, 2);
+        assert.strictEqual(response.results.length, 7);
+
+        // Verify every result has the correct index
+        for (let i = 0; i < 7; i++) {
+            assert.strictEqual(response.results[i].index, i, `Result at position ${i} should have index ${i}`);
+        }
+
+        // Verify the failures are at the right positions
+        assert.strictEqual(response.results[4].success, false);
+        assert.strictEqual(response.results[4].error.message, 'Failed at index 4');
+        assert.strictEqual(response.results[4].error.code, 'TestError');
+
+        assert.strictEqual(response.results[6].success, false);
+        assert.strictEqual(response.results[6].error.message, 'Failed at index 6');
+
+        // Verify successes have correct queueIds
+        assert.strictEqual(response.results[0].success, true);
+        assert.strictEqual(response.results[0].queueId, 'queue-0');
+        assert.strictEqual(response.results[3].success, true);
+        assert.strictEqual(response.results[3].queueId, 'queue-3');
+        assert.strictEqual(response.results[5].success, true);
+        assert.strictEqual(response.results[5].queueId, 'queue-5');
     });
 });

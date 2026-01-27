@@ -3730,7 +3730,7 @@ Include your token in requests using one of these methods:
                 if (result.status === 'fulfilled') {
                     successCount++;
                     entries.push({
-                        index: result.value.index,
+                        index: i,
                         success: true,
                         queueId: result.value.response.queueId || null,
                         messageId: result.value.response.messageId || null,
