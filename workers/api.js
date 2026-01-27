@@ -921,6 +921,8 @@ Include your token in requests using one of these methods:
 
         security: [{ bearerAuth: [] }],
 
+        definitionPrefix: 'useLabel',
+
         cors: !!CORS_CONFIG,
         cache: {
             expiresIn: 7 * 24 * 60 * 60 * 1000
@@ -5771,7 +5773,7 @@ Include your token in requests using one of these methods:
                         .default(false)
                         .example(true)
                         .description('Should connection use TLS. Usually true for port 465')
-                        .label('TLS'),
+                        .label('GatewayTlsOptions'),
 
                     lastError: lastErrorSchema.allow(null)
                 }).label('GatewayResponse'),
@@ -5848,7 +5850,7 @@ Include your token in requests using one of these methods:
                         .default(false)
                         .example(true)
                         .description('Should connection use TLS. Usually true for port 465')
-                        .label('TLS')
+                        .label('GatewayCreateTlsOptions')
                 }).label('CreateGateway')
             },
 
@@ -5934,7 +5936,7 @@ Include your token in requests using one of these methods:
                         .falsy('N', 'false', 0, '')
                         .example(true)
                         .description('Should connection use TLS. Usually true for port 465')
-                        .label('TLS')
+                        .label('GatewayUpdateTlsOptions')
                 }).label('UpdateGateway')
             },
 
@@ -6002,7 +6004,7 @@ Include your token in requests using one of these methods:
                 schema: Joi.object({
                     gateway: Joi.string().max(256).required().example('example').description('Gateway ID'),
                     deleted: Joi.boolean().truthy('Y', 'true', '1').falsy('N', 'false', 0).default(true).description('Was the gateway deleted')
-                }).label('DeleteRequestResponse'),
+                }).label('DeleteGatewayResponse'),
                 failAction: 'log'
             }
         }
@@ -6154,7 +6156,7 @@ Include your token in requests using one of these methods:
                             }).label('SignatureResponseItem')
                         )
                         .label('SignatureEntries')
-                }).label('AccountTokenResponse'),
+                }).label('AccountSignaturesResponse'),
                 failAction: 'log'
             }
         }
