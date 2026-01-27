@@ -52,6 +52,34 @@ async function stopServer(server) {
     await new Promise(resolve => server.close(resolve));
 }
 
+/**
+ * Creates and starts a test HTTP server that captures the raw request body.
+ *
+ * @returns {Promise<{server: http.Server, baseUrl: string, getBody: () => Buffer}>}
+ */
+async function startBodyCapturingServer() {
+    let capturedBody = null;
+
+    const server = http.createServer((req, res) => {
+        const chunks = [];
+        req.on('data', chunk => chunks.push(chunk));
+        req.on('end', () => {
+            capturedBody = Buffer.concat(chunks);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true }));
+        });
+    });
+
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address();
+
+    return {
+        server,
+        baseUrl: `http://127.0.0.1:${port}`,
+        getBody: () => capturedBody
+    };
+}
+
 test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     t.after(() => {
         setTimeout(() => process.exit(), 1000).unref();
@@ -374,5 +402,47 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         const GMAIL_JSON_LIMIT = 5 * 1024 * 1024;
 
         assert.ok(totalJsonBody < GMAIL_JSON_LIMIT, `Max JSON body (${totalJsonBody} bytes) should be under Gmail 5MB limit (${GMAIL_JSON_LIMIT} bytes)`);
+    });
+
+    // ---------------------------------------------------------------
+    // Fix 3: Outlook sendMail base64 body must not be JSON-quoted.
+    //
+    // When outlook-client.js sends a base64-encoded MIME message via
+    // sendMail, the payload must arrive as a raw base64 string with
+    // Content-Type: text/plain. If the payload is passed as a JS string
+    // instead of a Buffer, the non-Buffer branch in outlook.js wraps it
+    // with JSON.stringify(), adding quotes around the base64 content.
+    // The fix wraps the base64 string in a Buffer so it takes the
+    // Buffer code path, which sends the body as-is.
+    // ---------------------------------------------------------------
+
+    await t.test('Outlook: Buffer payload with text/plain contentType is sent without JSON quoting', async () => {
+        const { server, baseUrl, getBody } = await startBodyCapturingServer();
+        try {
+            const outlook = new OutlookOauth({
+                clientId: 'test-id',
+                clientSecret: 'test-secret',
+                authority: 'common',
+                redirectUrl: 'http://localhost/callback',
+                setFlag: async () => {}
+            });
+
+            const base64Content = Buffer.from('From: a@b.com\r\nTo: c@d.com\r\nSubject: Test\r\n\r\nHello').toString('base64');
+            const payload = Buffer.from(base64Content);
+
+            await outlook.request('fake-token', `${baseUrl}/me/sendMail`, 'post', payload, {
+                contentType: 'text/plain',
+                returnText: true
+            });
+
+            const receivedBody = getBody().toString();
+
+            // The body must be the raw base64 string, not wrapped in JSON quotes
+            assert.strictEqual(receivedBody, base64Content, 'Body should be raw base64, not JSON-stringified');
+            assert.ok(!receivedBody.startsWith('"'), 'Body must not start with a JSON quote');
+            assert.ok(!receivedBody.endsWith('"'), 'Body must not end with a JSON quote');
+        } finally {
+            await stopServer(server);
+        }
     });
 });
