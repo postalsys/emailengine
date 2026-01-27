@@ -290,7 +290,7 @@ class ResponseStream extends Transform {
         this._finalized = false;
 
         // Ensure cleanup on all stream end scenarios
-        this.once('error', () => this.finalize());
+        this.on('error', () => this.finalize());
         this.once('close', () => this.finalize());
         this.once('end', () => this.finalize());
     }
@@ -298,6 +298,7 @@ class ResponseStream extends Transform {
     updateTimer() {
         clearTimeout(this.periodicKeepAliveTimer);
         this.periodicKeepAliveTimer = setTimeout(() => {
+            if (this._finalized || this.destroyed) return;
             this.write(': still here\n\n');
             if (this._compressor) {
                 this._compressor.flush();
@@ -312,6 +313,7 @@ class ResponseStream extends Transform {
     }
 
     sendMessage(payload) {
+        if (this._finalized || this.destroyed) return;
         let sendData = JSON.stringify(payload);
         this.write('event: message\ndata:' + sendData + '\n\n');
         if (this._compressor) {
@@ -326,6 +328,10 @@ class ResponseStream extends Transform {
 
         clearTimeout(this.periodicKeepAliveTimer);
         registeredPublishers.delete(this);
+
+        if (!this.destroyed) {
+            this.destroy();
+        }
     }
 
     _transform(data, encoding, done) {
