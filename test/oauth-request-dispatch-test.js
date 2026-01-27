@@ -234,7 +234,7 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
      * Mirrors the endpoint selection logic in gmail-client.js submitMessage().
      * @param {number} rawLength - Size of the raw RFC822 message in bytes
      * @param {string|null} threadId - Thread ID for threaded replies, or null
-     * @returns {{contentType: string, targetEndpoint: string, hasThreadId: boolean}}
+     * @returns {{contentType: string, targetEndpoint: string, hasThreadId: boolean, isMultipart: boolean}}
      */
     function selectGmailSendEndpoint(rawLength, threadId) {
         const JSON_SEND_LIMIT = 3.5 * 1024 * 1024;
@@ -247,13 +247,22 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
             return {
                 contentType: 'application/json',
                 targetEndpoint: '/gmail/v1/users/me/messages/send',
-                hasThreadId: !!payload.threadId
+                hasThreadId: !!payload.threadId,
+                isMultipart: false
+            };
+        } else if (threadId) {
+            return {
+                contentType: 'multipart/related',
+                targetEndpoint: '/upload/gmail/v1/users/me/messages/send?uploadType=multipart',
+                hasThreadId: true,
+                isMultipart: true
             };
         } else {
             return {
                 contentType: 'message/rfc822',
                 targetEndpoint: '/upload/gmail/v1/users/me/messages/send',
-                hasThreadId: false
+                hasThreadId: false,
+                isMultipart: false
             };
         }
     }
@@ -278,14 +287,14 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         assert.strictEqual(result.hasThreadId, true);
     });
 
-    await t.test('Gmail endpoint: large threaded reply uses upload endpoint (not forced to JSON)', async () => {
-        // This is the key regression test. Before the fix, a large threaded reply
-        // was forced to the JSON endpoint (risking >5MB body after base64url encoding).
-        // After the fix, it correctly uses the upload endpoint (35MB limit).
+    await t.test('Gmail endpoint: large threaded reply uses multipart upload with threadId', async () => {
+        // Large threaded replies use multipart/related upload to preserve explicit
+        // threadId via JSON metadata alongside the raw RFC822 message body.
         const result = selectGmailSendEndpoint(4 * 1024 * 1024, 'thread-456');
-        assert.strictEqual(result.targetEndpoint, '/upload/gmail/v1/users/me/messages/send');
-        assert.strictEqual(result.contentType, 'message/rfc822');
-        assert.strictEqual(result.hasThreadId, false, 'Upload endpoint relies on RFC822 headers for threading');
+        assert.strictEqual(result.targetEndpoint, '/upload/gmail/v1/users/me/messages/send?uploadType=multipart');
+        assert.strictEqual(result.contentType, 'multipart/related');
+        assert.strictEqual(result.hasThreadId, true);
+        assert.strictEqual(result.isMultipart, true);
     });
 
     await t.test('Gmail endpoint: message exactly at JSON_SEND_LIMIT uses JSON endpoint', async () => {
@@ -298,6 +307,60 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         const JSON_SEND_LIMIT = 3.5 * 1024 * 1024;
         const result = selectGmailSendEndpoint(JSON_SEND_LIMIT + 1, null);
         assert.strictEqual(result.targetEndpoint, '/upload/gmail/v1/users/me/messages/send');
+    });
+
+    await t.test('Gmail endpoint: large non-threaded message uses simple upload', async () => {
+        const result = selectGmailSendEndpoint(4 * 1024 * 1024, null);
+        assert.strictEqual(result.targetEndpoint, '/upload/gmail/v1/users/me/messages/send');
+        assert.strictEqual(result.contentType, 'message/rfc822');
+        assert.strictEqual(result.hasThreadId, false);
+        assert.strictEqual(result.isMultipart, false);
+    });
+
+    await t.test('Gmail multipart upload body contains valid structure', async () => {
+        const crypto = require('node:crypto');
+        const threadId = 'thread-abc123';
+        const rawMessage = Buffer.from('From: a@b.com\r\nTo: c@d.com\r\nSubject: Test\r\n\r\nBody');
+
+        const boundary = `ee_${crypto.randomBytes(16).toString('hex')}`;
+        const metadata = JSON.stringify({ threadId });
+        const preamble = Buffer.from(
+            `--${boundary}\r\n` +
+                `Content-Type: application/json; charset=UTF-8\r\n` +
+                `\r\n` +
+                `${metadata}\r\n` +
+                `--${boundary}\r\n` +
+                `Content-Type: message/rfc822\r\n` +
+                `\r\n`
+        );
+        const epilogue = Buffer.from(`\r\n--${boundary}--`);
+        const body = Buffer.concat([preamble, rawMessage, epilogue]);
+        const bodyStr = body.toString();
+
+        // Verify multipart structure
+        assert.ok(bodyStr.startsWith(`--${boundary}\r\n`), 'Should start with boundary');
+        assert.ok(bodyStr.includes('Content-Type: application/json'), 'Should contain JSON part');
+        assert.ok(bodyStr.includes(`"threadId":"${threadId}"`), 'Should contain threadId in metadata');
+        assert.ok(bodyStr.includes('Content-Type: message/rfc822'), 'Should contain RFC822 part');
+        assert.ok(bodyStr.includes('From: a@b.com'), 'Should contain the raw message');
+        assert.ok(bodyStr.endsWith(`\r\n--${boundary}--`), 'Should end with closing boundary');
+
+        // Verify boundary does not appear in the raw message content
+        assert.ok(!rawMessage.toString().includes(boundary), 'Boundary should not collide with message content');
+    });
+
+    await t.test('Gmail multipart body overhead stays well under 35MB upload limit', async () => {
+        // A message just under 35MB should produce a multipart body that
+        // still fits within the upload limit (overhead is ~200 bytes).
+        const nearLimit = 34 * 1024 * 1024;
+        const boundary = `ee_${'a'.repeat(32)}`;
+        const metadata = JSON.stringify({ threadId: 'thread-id' });
+        const preambleLen =
+            `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: message/rfc822\r\n\r\n`.length;
+        const epilogueLen = `\r\n--${boundary}--`.length;
+        const totalOverhead = preambleLen + epilogueLen;
+
+        assert.ok(nearLimit + totalOverhead < 35 * 1024 * 1024, `Multipart overhead (${totalOverhead} bytes) should not push payload over 35MB`);
     });
 
     await t.test('Gmail endpoint: base64url overhead keeps JSON payload under 5MB limit', async () => {
