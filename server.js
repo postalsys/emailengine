@@ -1501,6 +1501,39 @@ async function call(worker, message, transferList) {
 }
 
 /**
+ * Wait for an account to become assigned to an IMAP worker.
+ * Used by submitMessage/queueMessage to survive brief worker restarts
+ * instead of failing immediately with WorkerNotAvailable.
+ * @param {string} account - Account identifier
+ * @param {number} [timeout=12000] - Maximum wait time in ms
+ * @param {number} [interval=500] - Poll interval in ms
+ * @returns {Promise<boolean>} True if account became assigned, false if timed out
+ */
+function waitForAssignment(account, timeout = 12000, interval = 500) {
+    return new Promise(resolve => {
+        if (assigned.has(account)) {
+            return resolve(true);
+        }
+        if (isClosing) {
+            return resolve(false);
+        }
+
+        let elapsed = 0;
+        let timer = setInterval(() => {
+            elapsed += interval;
+            if (assigned.has(account)) {
+                clearInterval(timer);
+                return resolve(true);
+            }
+            if (isClosing || elapsed >= timeout) {
+                clearInterval(timer);
+                return resolve(false);
+            }
+        }, interval);
+    });
+}
+
+/**
  * Assign unassigned accounts to available IMAP workers
  * Uses load-aware distribution with round-robin for initial assignment
  * and rendezvous hashing for reassignments after worker failures
@@ -2619,6 +2652,26 @@ async function onCommand(worker, message) {
             }
             break;
 
+        // Submit/queue operations - wait for worker assignment before failing
+        case 'submitMessage':
+        case 'queueMessage': {
+            if (!assigned.has(message.account)) {
+                let wasAssigned = await waitForAssignment(message.account);
+                if (!wasAssigned) {
+                    throw NO_ACTIVE_HANDLER_RESP_ERR;
+                }
+            }
+
+            let assignedWorker = assigned.get(message.account);
+
+            let transferList = [];
+            if (typeof message.raw === 'object') {
+                transferList.push(message.raw);
+            }
+
+            return await call(assignedWorker, message, transferList);
+        }
+
         // IMAP operations - forward to assigned worker
         case 'listMessages':
         case 'getRawMessage':
@@ -2636,8 +2689,6 @@ async function onCommand(worker, message) {
         case 'createMailbox':
         case 'modifyMailbox':
         case 'deleteMailbox':
-        case 'submitMessage':
-        case 'queueMessage':
         case 'uploadMessage':
         case 'getAttachment':
         case 'listSignatures': {
@@ -2651,10 +2702,6 @@ async function onCommand(worker, message) {
             // Handle transferable objects
             if (['getRawMessage', 'getAttachment'].includes(message.cmd) && message.port) {
                 transferList.push(message.port);
-            }
-
-            if (['submitMessage', 'queueMessage'].includes(message.cmd) && typeof message.raw === 'object') {
-                transferList.push(message.raw);
             }
 
             return await call(assignedWorker, message, transferList);

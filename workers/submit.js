@@ -295,9 +295,9 @@ const submitWorker = new Worker(
                 // ignore
             }
 
-            if (err.statusCode >= 500 && job.attemptsMade < job.opts.attempts) {
+            if (err.statusCode >= 500 && err.statusCode !== 503 && job.attemptsMade < job.opts.attempts) {
                 try {
-                    // do not retry after 5xx error
+                    // do not retry after 5xx error (except 503 which is transient)
                     await job.discard();
                     logger.info({
                         msg: 'Job discarded',
@@ -305,9 +305,6 @@ const submitWorker = new Worker(
                         queueId: job.data.queueId
                     });
                 } catch (E) {
-                    // ignore
-                    logger.error({ msg: 'Failed to discard job', account: queueEntry.account, queueId: job.data.queueId, err: E });
-
                     logger.error({
                         msg: 'Failed to discard job',
                         action: 'submit',
