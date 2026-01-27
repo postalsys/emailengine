@@ -43,7 +43,7 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bugsnag/js": "8.8.0",
+        "@bugsnag/js": "8.8.1",
         "@bull-board/api": "6.16.4",
         "@bull-board/hapi": "6.16.4",
         "@elastic/elasticsearch": "8.15.3",
@@ -98,7 +98,7 @@
         "msgpack5": "6.0.2",
         "murmurhash": "2.0.1",
         "nanoid": "3.3.8",
-        "nodemailer": "7.0.12",
+        "nodemailer": "7.0.13",
         "pino": "10.3.0",
         "popper.js": "1.16.1",
         "prom-client": "15.1.3",
