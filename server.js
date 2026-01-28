@@ -131,7 +131,7 @@ if (readEnvValue('BUGSNAG_API_KEY')) {
 
 // Import additional dependencies
 const pathlib = require('path');
-const { redis, queueConf } = require('./lib/db');
+const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue } = require('./lib/db');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -3195,6 +3195,30 @@ startApplication()
         queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
         queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
         queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
+
+        // Periodic queue cleanup (every 6 hours)
+        const QUEUE_CLEANUP_INTERVAL = 6 * 60 * 60 * 1000;
+
+        async function cleanupQueues() {
+            const queues = [notifyQueue, submitQueue, documentsQueue, exportQueue];
+            for (const queue of queues) {
+                try {
+                    // Clean completed jobs older than 24 hours
+                    await queue.clean(24 * 60 * 60 * 1000, 10000, 'completed');
+                    // Clean failed jobs older than 7 days
+                    await queue.clean(7 * 24 * 60 * 60 * 1000, 10000, 'failed');
+                    logger.trace({ msg: 'Queue cleanup completed', queue: queue.name });
+                } catch (err) {
+                    logger.error({ msg: 'Queue cleanup failed', queue: queue.name, err });
+                }
+            }
+        }
+
+        const queueCleanupTimer = setInterval(cleanupQueues, QUEUE_CLEANUP_INTERVAL);
+        queueCleanupTimer.unref();
+
+        // Initial cleanup 5 minutes after startup
+        setTimeout(cleanupQueues, 5 * 60 * 1000).unref();
     })
     .catch(err => {
         logger.fatal({ msg: 'Application startup failed', err });
