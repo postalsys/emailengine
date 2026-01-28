@@ -3402,7 +3402,11 @@ Include your token in requests using one of these methods:
                     template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from'),
 
                     render: Joi.object({
-                        format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML ("html" or "markdown")').label('RenderFormat'),
+                        format: Joi.string()
+                            .valid('html', 'markdown')
+                            .default('html')
+                            .description('Markup language for HTML ("html" or "markdown")')
+                            .label('RenderFormat'),
                         params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
                     })
                         .allow(false)
@@ -3685,298 +3689,6 @@ Include your token in requests using one of these methods:
     });
 
     server.route({
-        method: 'POST',
-        path: '/v1/account/{account}/submit/batch',
-
-        async handler(request) {
-            let secret = await getSecret();
-
-            // Validate account exists before processing the batch.
-            // Fails fast with 404 instead of returning N identical per-message errors.
-            let preflightAccount = new Account({
-                redis,
-                account: request.params.account,
-                call,
-                secret,
-                timeout: request.headers['x-ee-timeout']
-            });
-            await preflightAccount.loadAccountData(request.params.account, false);
-
-            let messages = request.payload.messages;
-            let allResults = [];
-            let BATCH_CONCURRENCY = 10;
-
-            // Process in chunks to limit concurrent RPC calls against the main thread
-            for (let offset = 0; offset < messages.length; offset += BATCH_CONCURRENCY) {
-                let chunk = messages.slice(offset, offset + BATCH_CONCURRENCY);
-                let chunkResults = await Promise.allSettled(
-                    chunk.map(async (msg, chunkIndex) => {
-                        let accountObject = new Account({
-                            redis,
-                            account: request.params.account,
-                            call,
-                            secret,
-                            timeout: request.headers['x-ee-timeout']
-                        });
-
-                        let response = await accountObject.queueMessage(msg, {
-                            source: 'api'
-                        });
-
-                        return { index: offset + chunkIndex, response };
-                    })
-                );
-                allResults.push(...chunkResults);
-            }
-
-            let successCount = 0;
-            let failureCount = 0;
-            let entries = [];
-
-            for (let i = 0; i < allResults.length; i++) {
-                let result = allResults[i];
-                if (result.status === 'fulfilled') {
-                    successCount++;
-                    entries.push({
-                        index: i,
-                        success: true,
-                        queueId: result.value.response.queueId || null,
-                        messageId: result.value.response.messageId || null,
-                        sendAt: result.value.response.sendAt || null
-                    });
-                } else {
-                    failureCount++;
-                    let err = result.reason;
-                    entries.push({
-                        index: i,
-                        success: false,
-                        error: {
-                            message: err.message,
-                            code: err.code || null
-                        }
-                    });
-                }
-            }
-
-            return {
-                totalMessages: messages.length,
-                successCount,
-                failureCount,
-                results: entries
-            };
-        },
-        options: {
-            payload: {
-                maxBytes: MAX_BODY_SIZE,
-                timeout: MAX_PAYLOAD_TIMEOUT
-            },
-
-            description: 'Submit a batch of messages for delivery',
-            notes: 'Submit multiple independent messages for delivery in a single request. Each message is processed through the same queue as the regular submit endpoint. Returns per-message success/failure results.',
-            tags: ['api', 'Submit'],
-
-            plugins: {},
-
-            auth: {
-                strategy: 'api-token',
-                mode: 'required'
-            },
-            cors: CORS_CONFIG,
-
-            validate: {
-                options: {
-                    stripUnknown: false,
-                    abortEarly: false,
-                    convert: true
-                },
-                failAction,
-
-                params: Joi.object({
-                    account: accountIdSchema.required()
-                }),
-
-                headers: Joi.object({
-                    'x-ee-timeout': headerTimeoutSchema
-                }).unknown(),
-
-                payload: Joi.object({
-                    messages: Joi.array()
-                        .items(
-                            Joi.object({
-                                reference: messageReferenceSchema,
-
-                                envelope: Joi.object({
-                                    from: Joi.string().email().allow('').example('sender@example.com'),
-                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single().label('BatchSmtpEnvelopeTo')
-                                })
-                                    .description('Optional SMTP envelope')
-                                    .label('BatchSMTPEnvelope'),
-
-                                raw: Joi.string().base64().max(MAX_ATTACHMENT_SIZE).description('Base64-encoded RFC 822 message').label('BatchRFC822Raw'),
-
-                                from: fromAddressSchema,
-
-                                replyTo: Joi.array()
-                                    .items(addressSchema.label('ReplyToAddress'))
-                                    .single()
-                                    .description('List of Reply-To addresses')
-                                    .label('BatchReplyTo'),
-
-                                to: Joi.array()
-                                    .items(addressSchema.label('ToAddress'))
-                                    .single()
-                                    .description('List of recipient addresses')
-                                    .label('BatchToAddressList'),
-
-                                cc: Joi.array()
-                                    .items(addressSchema.label('CcAddress'))
-                                    .single()
-                                    .description('List of CC addresses')
-                                    .label('BatchCcAddressList'),
-
-                                bcc: Joi.array()
-                                    .items(addressSchema.label('BccAddress'))
-                                    .single()
-                                    .description('List of BCC addresses')
-                                    .label('BatchBccAddressList'),
-
-                                subject: templateSchemas.subject,
-                                text: templateSchemas.text,
-                                html: templateSchemas.html,
-                                previewText: templateSchemas.previewText,
-
-                                template: Joi.string().max(256).description('Stored template ID to load the email content from'),
-
-                                render: Joi.object({
-                                    format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML').label('BatchRenderFormat'),
-                                    params: Joi.object().label('BatchRenderValues').description('Template renderer variables')
-                                })
-                                    .allow(false)
-                                    .description('Template rendering options')
-                                    .label('BatchTemplateRender'),
-
-                                attachments: Joi.array()
-                                    .items(
-                                        Joi.object({
-                                            filename: Joi.string().max(256).example('transparent.gif'),
-                                            content: Joi.string()
-                                                .base64()
-                                                .max(MAX_ATTACHMENT_SIZE)
-                                                .description('Base64 formatted attachment file')
-                                                .when('reference', {
-                                                    is: Joi.exist().not(false, null),
-                                                    then: Joi.forbidden(),
-                                                    otherwise: Joi.required()
-                                                }),
-                                            contentType: Joi.string().lowercase().max(256).example('image/gif'),
-                                            contentDisposition: Joi.string().lowercase().valid('inline', 'attachment').label('BatchAttachmentContentDisposition'),
-                                            cid: Joi.string().max(256).description('Content-ID value for embedded images'),
-                                            encoding: Joi.string().valid('base64').default('base64').label('BatchAttachmentEncoding'),
-                                            reference: Joi.string()
-                                                .base64({ paddingRequired: false, urlSafe: true })
-                                                .max(256)
-                                                .allow(false, null)
-                                                .description('References an existing attachment by its ID')
-                                                .label('BatchAttachmentReference')
-                                        }).label('BatchUploadAttachment')
-                                    )
-                                    .description('List of attachments')
-                                    .label('BatchUploadAttachmentList'),
-
-                                messageId: Joi.string().max(996).description('Message ID'),
-                                headers: Joi.object().label('BatchCustomHeaders').description('Custom Headers').unknown(),
-
-                                trackOpens: Joi.boolean().description('Should EmailEngine track opens for this message'),
-                                trackClicks: Joi.boolean().description('Should EmailEngine track clicks for this message'),
-
-                                copy: Joi.boolean().allow(null).description('If set then either copies the message to the Sent Mail folder or not'),
-
-                                sentMailPath: Joi.string().empty('').max(1024).description('Upload sent message to this folder'),
-
-                                locale: Joi.string().empty('').max(100).description('Optional locale').label('BatchMessageLocale'),
-                                tz: Joi.string().empty('').max(100).description('Optional timezone'),
-
-                                sendAt: Joi.date().iso().description('Send message at specified time'),
-                                deliveryAttempts: Joi.number()
-                                    .integer()
-                                    .description('How many delivery attempts to make until message is considered as failed'),
-                                gateway: Joi.string().max(256).description('Optional SMTP gateway ID for message routing').label('BatchGateway'),
-
-                                dsn: Joi.object({
-                                    id: Joi.string().trim().empty('').max(256).description('Envelope identifier (ENVID)'),
-                                    return: Joi.string()
-                                        .trim()
-                                        .empty('')
-                                        .valid('headers', 'full')
-                                        .required()
-                                        .description('Include headers or full body in DSN response (RET)')
-                                        .label('BatchDsnReturn'),
-                                    notify: Joi.array()
-                                        .single()
-                                        .items(Joi.string().valid('never', 'success', 'failure', 'delay').label('BatchNotifyEntry'))
-                                        .description('Conditions for DSN response')
-                                        .label('BatchDsnNotify'),
-                                    recipient: Joi.string().trim().empty('').email().description('Email address for DSN (ORCPT)')
-                                })
-                                    .description('Request DSN notifications')
-                                    .label('BatchDSN'),
-
-                                baseUrl: Joi.string()
-                                    .trim()
-                                    .empty('')
-                                    .uri({ scheme: ['http', 'https'], allowRelative: false })
-                                    .description('Optional base URL for trackers'),
-
-                                proxy: settingsSchema.proxyUrl.description('Optional proxy URL for SMTP connection'),
-                                localAddress: ipSchema.description('Optional local IP address for SMTP connection')
-                            })
-                                .oxor('raw', 'html')
-                                .oxor('raw', 'text')
-                                .oxor('raw', 'attachments')
-                                .label('BatchSubmitMessageEntry')
-                        )
-                        .min(1)
-                        .max(50)
-                        .required()
-                        .description('Array of messages to submit (max 50)')
-                        .label('BatchMessageList')
-                }).label('BatchSubmitPayload')
-            },
-
-            response: {
-                schema: Joi.object({
-                    totalMessages: Joi.number().integer().required().example(3).description('Total number of messages in the batch'),
-                    successCount: Joi.number().integer().required().example(2).description('Number of successfully queued messages'),
-                    failureCount: Joi.number().integer().required().example(1).description('Number of failed messages'),
-                    results: Joi.array()
-                        .items(
-                            Joi.object({
-                                index: Joi.number().integer().required().example(0).description('Zero-based index of the message in the batch'),
-                                success: Joi.boolean().required().example(true).description('Whether the message was queued successfully'),
-                                queueId: Joi.string().allow(null).example('d41f0423195f271f').description('Queue identifier for scheduled email'),
-                                messageId: Joi.string()
-                                    .allow(null)
-                                    .example('<a2184d08-a470-fec6-a493-fa211a3756e9@example.com>')
-                                    .description('Message-ID header value'),
-                                sendAt: Joi.date().allow(null).example('2021-07-08T07:06:34.336Z').description('Scheduled send time'),
-                                error: Joi.object({
-                                    message: Joi.string().example('Validation error').description('Error message'),
-                                    code: Joi.string().allow(null).example('InputValidationError').description('Error code')
-                                })
-                                    .description('Error details if the message failed')
-                                    .label('BatchResultError')
-                            }).label('BatchResultEntry')
-                        )
-                        .required()
-                        .description('Per-message results')
-                        .label('BatchResultList')
-                }).label('BatchSubmitResponse'),
-                failAction: 'log'
-            }
-        }
-    });
-
-    server.route({
         method: 'GET',
         path: '/v1/settings',
 
@@ -4169,13 +3881,27 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 params: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueId')
+                    queue: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid('notify', 'submit', 'documents')
+                        .required()
+                        .example('notify')
+                        .description('Queue ID')
+                        .label('QueueId')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdResponse'),
+                    queue: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid('notify', 'submit', 'documents')
+                        .required()
+                        .example('notify')
+                        .description('Queue ID')
+                        .label('QueueIdResponse'),
                     jobs: Joi.object({
                         active: Joi.number().integer().example(123).description('Jobs that are currently being processed'),
                         delayed: Joi.number().integer().example(123).description('Jobs that are processed in the future'),
@@ -4259,7 +3985,14 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 params: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdParam')
+                    queue: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid('notify', 'submit', 'documents')
+                        .required()
+                        .example('notify')
+                        .description('Queue ID')
+                        .label('QueueIdParam')
                 }),
 
                 payload: Joi.object({
@@ -4269,7 +4002,14 @@ Include your token in requests using one of these methods:
 
             response: {
                 schema: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdPutResponse'),
+                    queue: Joi.string()
+                        .empty('')
+                        .trim()
+                        .valid('notify', 'submit', 'documents')
+                        .required()
+                        .example('notify')
+                        .description('Queue ID')
+                        .label('QueueIdPutResponse'),
                     paused: Joi.boolean().example(false).description('Is the queue paused or not')
                 }).label('SettingsPutQueueResponse'),
                 failAction: 'log'
