@@ -326,6 +326,17 @@ const submitWorker = new Worker(
         {
             concurrency: SUBMIT_QC,
 
+            // Lock duration must exceed SMTP socket timeout (2 min) to prevent
+            // jobs from being marked stalled during normal email delivery
+            lockDuration: 3 * 60 * 1000, // 3 minutes
+
+            // Check for stalled jobs every 60 seconds
+            stalledInterval: 60 * 1000,
+
+            // Allow jobs to recover from stalled state up to 3 times before failing
+            // This handles transient Redis latency or connection issues
+            maxStalledCount: 3,
+
             limiter: SUBMIT_DELAY
                 ? {
                       max: 1,

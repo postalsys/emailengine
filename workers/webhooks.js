@@ -546,7 +546,16 @@ route: customRoute && customRoute.id,
     },
     Object.assign(
         {
-            concurrency: Number(NOTIFY_QC) || 1
+            concurrency: Number(NOTIFY_QC) || 1,
+
+            // Webhook HTTP requests have 90s timeout, lock should exceed this
+            lockDuration: 3 * 60 * 1000, // 3 minutes
+
+            // Check for stalled jobs every 60 seconds
+            stalledInterval: 60 * 1000,
+
+            // Allow jobs to recover from stalled state up to 3 times
+            maxStalledCount: 3
         },
         queueConf || {}
     )

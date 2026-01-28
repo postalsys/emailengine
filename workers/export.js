@@ -750,7 +750,22 @@ const exportWorker = new Worker(
             throw err;
         }
     },
-    { concurrency: EXPORT_QC, ...queueConf }
+    {
+        concurrency: EXPORT_QC,
+
+        // Export jobs can run for extended periods processing many messages
+        // Lock duration should exceed the individual operation timeout
+        lockDuration: 10 * 60 * 1000, // 10 minutes
+
+        // Check for stalled jobs every 2 minutes
+        stalledInterval: 2 * 60 * 1000,
+
+        // Allow jobs to recover from stalled state up to 5 times
+        // Export jobs are long-running and may encounter transient issues
+        maxStalledCount: 5,
+
+        ...queueConf
+    }
 );
 
 exportWorker.on('completed', async job => {
