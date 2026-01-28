@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-01-27 14:40+0000\n"
+"POT-Creation-Date: 2026-01-28 18:37+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -62,6 +62,14 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -82,14 +90,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -253,7 +253,7 @@ msgstr ""
 #: lib/routes-ui.js:4893
 #: lib/routes-ui.js:5122
 #: lib/routes-ui.js:5158
-#: workers/api.js:2405
+#: workers/api.js:2414
 #: lib/ui-routes/account-routes.js:550
 #: lib/ui-routes/account-routes.js:586
 #: lib/ui-routes/account-routes.js:703
@@ -305,12 +305,12 @@ msgstr ""
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:6838
-#: workers/api.js:6954
+#: workers/api.js:6905
+#: workers/api.js:7021
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:6839
+#: workers/api.js:6906
 msgid "Something went wrong"
 msgstr ""
 
