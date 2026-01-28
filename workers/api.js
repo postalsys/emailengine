@@ -175,7 +175,8 @@ const AccountTypeSchema = Joi.string()
     .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
     .example('outlook')
     .description('Account type')
-    .required();
+    .required()
+    .label('AccountType');
 
 const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
@@ -3329,7 +3330,7 @@ Include your token in requests using one of these methods:
 
                     envelope: Joi.object({
                         from: Joi.string().email().allow('').example('sender@example.com'),
-                        to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
+                        to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single().label('SmtpEnvelopeTo')
                     })
                         .description(
                             "An optional object specifying the SMTP envelope used during email transmission. If not provided, the envelope is automatically derived from the email's message headers. This is useful when you need the envelope addresses to differ from those in the email headers."
@@ -3401,7 +3402,7 @@ Include your token in requests using one of these methods:
                     template: Joi.string().max(256).example('example').description('Stored template ID to load the email content from'),
 
                     render: Joi.object({
-                        format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML ("html" or "markdown")'),
+                        format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML ("html" or "markdown")').label('RenderFormat'),
                         params: Joi.object().label('RenderValues').description('An object of variables for the template renderer')
                     })
                         .allow(false)
@@ -3447,9 +3448,9 @@ Include your token in requests using one of these methods:
                                     }),
 
                                 contentType: Joi.string().lowercase().max(256).example('image/gif'),
-                                contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
+                                contentDisposition: Joi.string().lowercase().valid('inline', 'attachment').label('AttachmentContentDisposition'),
                                 cid: Joi.string().max(256).example('unique-image-id@localhost').description('Content-ID value for embedded images'),
-                                encoding: Joi.string().valid('base64').default('base64'),
+                                encoding: Joi.string().valid('base64').default('base64').label('AttachmentEncoding'),
 
                                 reference: Joi.string()
                                     .base64({ paddingRequired: false, urlSafe: true })
@@ -3459,6 +3460,7 @@ Include your token in requests using one of these methods:
                                     .description(
                                         'References an existing attachment by its ID instead of providing new attachment content. If this field is set, the `content` field must not be included. If not set, the `content` field is required.'
                                     )
+                                    .label('AttachmentReference')
                             }).label('UploadAttachment')
                         )
                         .description('List of attachments')
@@ -3490,7 +3492,7 @@ Include your token in requests using one of these methods:
                         .example('Sent Mail')
                         .description("Upload sent message to this folder. By default the account's Sent Mail folder is used."),
 
-                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale'),
+                    locale: Joi.string().empty('').max(100).example('fr').description('Optional locale').label('MessageLocale'),
                     tz: Joi.string().empty('').max(100).example('Europe/Tallinn').description('Optional timezone'),
 
                     sendAt: Joi.date().iso().example('2021-07-08T07:06:34.336Z').description('Send message at specified time'),
@@ -3498,7 +3500,7 @@ Include your token in requests using one of these methods:
                         .integer()
                         .example(10)
                         .description('How many delivery attempts to make until message is considered as failed'),
-                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing'),
+                    gateway: Joi.string().max(256).example('example').description('Optional SMTP gateway ID for message routing').label('MessageGateway'),
 
                     listId: Joi.string()
                         .hostname()
@@ -3520,11 +3522,13 @@ Include your token in requests using one of these methods:
                             .empty('')
                             .valid('headers', 'full')
                             .required()
-                            .description('Specifies if only headers or the entire body of the message should be included in the response (RET)'),
+                            .description('Specifies if only headers or the entire body of the message should be included in the response (RET)')
+                            .label('DsnReturn'),
                         notify: Joi.array()
                             .single()
                             .items(Joi.string().valid('never', 'success', 'failure', 'delay').label('NotifyEntry'))
-                            .description('Defines the conditions under which a DSN response should be sent'),
+                            .description('Defines the conditions under which a DSN response should be sent')
+                            .label('DsnNotify'),
                         recipient: Joi.string().trim().empty('').email().description('The email address the DSN should be sent (ORCPT)')
                     })
                         .description('Request DSN notifications')
@@ -3651,7 +3655,9 @@ Include your token in requests using one of these methods:
                                 skipped: Joi.object({
                                     reason: Joi.string().example('unsubscribe').description('Why this message was skipped'),
                                     listId: Joi.string().example('test-list')
-                                }).description('Info about skipped message. If this value is set, then the message was not sent')
+                                })
+                                    .description('Info about skipped message. If this value is set, then the message was not sent')
+                                    .label('SkippedMessageInfo')
                             })
                                 .label('BulkResponseEntry')
                                 .example({
@@ -3801,7 +3807,7 @@ Include your token in requests using one of these methods:
 
                                 envelope: Joi.object({
                                     from: Joi.string().email().allow('').example('sender@example.com'),
-                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single()
+                                    to: Joi.array().items(Joi.string().email().required().example('recipient@example.com')).single().label('BatchSmtpEnvelopeTo')
                                 })
                                     .description('Optional SMTP envelope')
                                     .label('BatchSMTPEnvelope'),
@@ -3842,7 +3848,7 @@ Include your token in requests using one of these methods:
                                 template: Joi.string().max(256).description('Stored template ID to load the email content from'),
 
                                 render: Joi.object({
-                                    format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML'),
+                                    format: Joi.string().valid('html', 'markdown').default('html').description('Markup language for HTML').label('BatchRenderFormat'),
                                     params: Joi.object().label('BatchRenderValues').description('Template renderer variables')
                                 })
                                     .allow(false)
@@ -3863,14 +3869,15 @@ Include your token in requests using one of these methods:
                                                     otherwise: Joi.required()
                                                 }),
                                             contentType: Joi.string().lowercase().max(256).example('image/gif'),
-                                            contentDisposition: Joi.string().lowercase().valid('inline', 'attachment'),
+                                            contentDisposition: Joi.string().lowercase().valid('inline', 'attachment').label('BatchAttachmentContentDisposition'),
                                             cid: Joi.string().max(256).description('Content-ID value for embedded images'),
-                                            encoding: Joi.string().valid('base64').default('base64'),
+                                            encoding: Joi.string().valid('base64').default('base64').label('BatchAttachmentEncoding'),
                                             reference: Joi.string()
                                                 .base64({ paddingRequired: false, urlSafe: true })
                                                 .max(256)
                                                 .allow(false, null)
                                                 .description('References an existing attachment by its ID')
+                                                .label('BatchAttachmentReference')
                                         }).label('BatchUploadAttachment')
                                     )
                                     .description('List of attachments')
@@ -3886,14 +3893,14 @@ Include your token in requests using one of these methods:
 
                                 sentMailPath: Joi.string().empty('').max(1024).description('Upload sent message to this folder'),
 
-                                locale: Joi.string().empty('').max(100).description('Optional locale'),
+                                locale: Joi.string().empty('').max(100).description('Optional locale').label('BatchMessageLocale'),
                                 tz: Joi.string().empty('').max(100).description('Optional timezone'),
 
                                 sendAt: Joi.date().iso().description('Send message at specified time'),
                                 deliveryAttempts: Joi.number()
                                     .integer()
                                     .description('How many delivery attempts to make until message is considered as failed'),
-                                gateway: Joi.string().max(256).description('Optional SMTP gateway ID for message routing'),
+                                gateway: Joi.string().max(256).description('Optional SMTP gateway ID for message routing').label('BatchGateway'),
 
                                 dsn: Joi.object({
                                     id: Joi.string().trim().empty('').max(256).description('Envelope identifier (ENVID)'),
@@ -3902,11 +3909,13 @@ Include your token in requests using one of these methods:
                                         .empty('')
                                         .valid('headers', 'full')
                                         .required()
-                                        .description('Include headers or full body in DSN response (RET)'),
+                                        .description('Include headers or full body in DSN response (RET)')
+                                        .label('BatchDsnReturn'),
                                     notify: Joi.array()
                                         .single()
                                         .items(Joi.string().valid('never', 'success', 'failure', 'delay').label('BatchNotifyEntry'))
-                                        .description('Conditions for DSN response'),
+                                        .description('Conditions for DSN response')
+                                        .label('BatchDsnNotify'),
                                     recipient: Joi.string().trim().empty('').email().description('Email address for DSN (ORCPT)')
                                 })
                                     .description('Request DSN notifications')
@@ -3953,7 +3962,9 @@ Include your token in requests using one of these methods:
                                 error: Joi.object({
                                     message: Joi.string().example('Validation error').description('Error message'),
                                     code: Joi.string().allow(null).example('InputValidationError').description('Error code')
-                                }).description('Error details if the message failed')
+                                })
+                                    .description('Error details if the message failed')
+                                    .label('BatchResultError')
                             }).label('BatchResultEntry')
                         )
                         .required()
@@ -4158,13 +4169,13 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 params: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueId')
                 })
             },
 
             response: {
                 schema: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdResponse'),
                     jobs: Joi.object({
                         active: Joi.number().integer().example(123).description('Jobs that are currently being processed'),
                         delayed: Joi.number().integer().example(123).description('Jobs that are processed in the future'),
@@ -4248,7 +4259,7 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 params: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID')
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdParam')
                 }),
 
                 payload: Joi.object({
@@ -4258,7 +4269,7 @@ Include your token in requests using one of these methods:
 
             response: {
                 schema: Joi.object({
-                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID'),
+                    queue: Joi.string().empty('').trim().valid('notify', 'submit', 'documents').required().example('notify').description('Queue ID').label('QueueIdPutResponse'),
                     paused: Joi.boolean().example(false).description('Is the queue paused or not')
                 }).label('SettingsPutQueueResponse'),
                 failAction: 'log'
@@ -4410,7 +4421,7 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 payload: Joi.object({
-                    mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false),
+                    mailboxes: Joi.boolean().example(false).description('Include mailbox listing in response').default(false).label('IncludeMailboxes'),
                     imap: Joi.object(imapSchema).allow(false).description('IMAP configuration').label('ImapConfiguration'),
                     smtp: Joi.object(smtpSchema).allow(false).description('SMTP configuration').label('SmtpConfiguration'),
                     proxy: settingsSchema.proxyUrl,
@@ -4429,7 +4440,7 @@ Include your token in requests using one of these methods:
                             .example('ERR_SSL_WRONG_VERSION_NUMBER')
                             .description('Error code. Only present if success=false')
                             .label('VerifyImapCode')
-                    }),
+                    }).label('VerifyImapResult'),
                     smtp: Joi.object({
                         success: Joi.boolean().example(true).description('Was SMTP account verified').label('VerifySmtpSuccess'),
                         error: Joi.string()
@@ -4440,7 +4451,7 @@ Include your token in requests using one of these methods:
                             .example('ERR_SSL_WRONG_VERSION_NUMBER')
                             .description('Error code. Only present if success=false')
                             .label('VerifySmtpCode')
-                    }),
+                    }).label('VerifySmtpResult'),
                     mailboxes: shortMailboxesSchema
                 }).label('VerifyAccountResponse'),
                 failAction: 'log'
@@ -5175,7 +5186,8 @@ Include your token in requests using one of these methods:
 
                                 clientId: Joi.string()
                                     .example('4f05f488-d858-4f2c-bd12-1039062612fe')
-                                    .description('Client or Application ID for 3-legged OAuth2 applications'),
+                                    .description('Client or Application ID for 3-legged OAuth2 applications')
+                                    .label('OAuth2AppListClientId'),
                                 clientSecret: Joi.string()
                                     .example('******')
                                     .description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
@@ -5186,9 +5198,13 @@ Include your token in requests using one of these methods:
                                         allowRelative: false
                                     })
                                     .example('https://myservice.com/oauth')
-                                    .description('Redirect URL for 3-legged OAuth2 applications'),
+                                    .description('Redirect URL for 3-legged OAuth2 applications')
+                                    .label('OAuth2AppListRedirectUrl'),
 
-                                serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+                                serviceClient: Joi.string()
+                                    .example('9103965568215821627203')
+                                    .description('Service client ID for 2-legged OAuth2 applications')
+                                    .label('OAuth2AppListServiceClient'),
 
                                 googleProjectId: googleProjectIdSchema,
                                 googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
@@ -5310,7 +5326,8 @@ Include your token in requests using one of these methods:
 
                     clientId: Joi.string()
                         .example('4f05f488-d858-4f2c-bd12-1039062612fe')
-                        .description('Client or Application ID for 3-legged OAuth2 applications'),
+                        .description('Client or Application ID for 3-legged OAuth2 applications')
+                        .label('OAuth2AppGetClientId'),
                     clientSecret: Joi.string().example('******').description('Client secret for 3-legged OAuth2 applications. Actual value is not revealed.'),
                     authority: Joi.string().example('common').description('Authorization tenant value for Outlook OAuth2 applications'),
                     redirectUrl: Joi.string()
@@ -5319,7 +5336,8 @@ Include your token in requests using one of these methods:
                             allowRelative: false
                         })
                         .example('https://myservice.com/oauth')
-                        .description('Redirect URL for 3-legged OAuth2 applications'),
+                        .description('Redirect URL for 3-legged OAuth2 applications')
+                        .label('OAuth2AppGetRedirectUrl'),
 
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
@@ -5331,7 +5349,10 @@ Include your token in requests using one of these methods:
                         .example('name@project-123.iam.gserviceaccount.com')
                         .description('Service Client Email for 2-legged OAuth2 applications'),
 
-                    serviceClient: Joi.string().example('9103965568215821627203').description('Service client ID for 2-legged OAuth2 applications'),
+                    serviceClient: Joi.string()
+                        .example('9103965568215821627203')
+                        .description('Service client ID for 2-legged OAuth2 applications')
+                        .label('OAuth2AppGetServiceClient'),
 
                     serviceKey: Joi.string()
                         .example('******')
@@ -5471,7 +5492,8 @@ Include your token in requests using one of these methods:
                         .allow('', null, false)
                         .max(256)
                         .example('52422112755-3uov8bjwlrullq122rdm6l8ui25ho7qf.apps.googleusercontent.com')
-                        .description('Client or Application ID for 3-legged OAuth2 applications'),
+                        .description('Client or Application ID for 3-legged OAuth2 applications')
+                        .label('UpdateOAuth2ClientId'),
 
                     clientSecret: Joi.string()
                         .trim()
@@ -5485,18 +5507,26 @@ Include your token in requests using one of these methods:
                         .base64({ paddingRequired: false, urlSafe: true })
                         .max(512)
                         .example('AAAAAQAACnA')
-                        .description('Cloud Pub/Sub app for Gmail API webhooks'),
+                        .description('Cloud Pub/Sub app for Gmail API webhooks')
+                        .label('UpdatePubSubAppId'),
 
-                    extraScopes: Joi.array().items(Joi.string().trim().max(255).example('User.Read')).description('OAuth2 Extra Scopes'),
+                    extraScopes: Joi.array()
+                        .items(Joi.string().trim().max(255).example('User.Read').label('UpdateExtraScopeEntry'))
+                        .description('OAuth2 Extra Scopes')
+                        .label('UpdateOAuth2ExtraScopes'),
 
-                    skipScopes: Joi.array().items(Joi.string().trim().max(255).example('SMTP.Send')).description('OAuth2 scopes to skip from the base set'),
+                    skipScopes: Joi.array()
+                        .items(Joi.string().trim().max(255).example('SMTP.Send').label('UpdateSkipScopeEntry'))
+                        .description('OAuth2 scopes to skip from the base set')
+                        .label('UpdateOAuth2SkipScopes'),
 
                     serviceClient: Joi.string()
                         .trim()
                         .allow('', null, false)
                         .max(256)
                         .example('7103296518315821565203')
-                        .description('Service client ID for 2-legged OAuth2 applications'),
+                        .description('Service client ID for 2-legged OAuth2 applications')
+                        .label('UpdateServiceClient'),
 
                     googleProjectId: googleProjectIdSchema,
                     googleWorkspaceAccounts: googleWorkspaceAccountsSchema,
@@ -5538,6 +5568,7 @@ Include your token in requests using one of these methods:
                         .uri({ scheme: ['http', 'https'], allowRelative: false })
                         .example('https://myservice.com/oauth')
                         .description('Redirect URL for 3-legged OAuth2 applications')
+                        .label('UpdateOAuth2RedirectUrl')
                 }).label('UpdateOAuthApp')
             },
 
@@ -6086,7 +6117,7 @@ Include your token in requests using one of these methods:
                 schema: Joi.object({
                     account: accountIdSchema.required(),
                     user: Joi.string().max(256).required().example('user@example.com').description('Username'),
-                    accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token'),
+                    accessToken: Joi.string().max(256).required().example('aGVsbG8gd29ybGQ=').description('Access Token').label('OAuthAccessToken'),
                     provider: OAuth2ProviderSchema
                 }).label('AccountTokenResponse'),
                 failAction: 'log'
@@ -6303,7 +6334,7 @@ ${now}`,
                 }),
 
                 payload: Joi.object({
-                    gateway: Joi.string().allow(false, null).empty('').max(256).example(false).description('Optional gateway ID')
+                    gateway: Joi.string().allow(false, null).empty('').max(256).example(false).description('Optional gateway ID').label('DeliveryTestGateway')
                 }).label('DeliveryStartRequest')
             },
 
@@ -6449,14 +6480,15 @@ ${now}`,
             response: {
                 schema: Joi.object({
                     success: Joi.boolean().example(true).description('Was the test completed').label('ResponseDeliveryCheckSuccess'),
-                    dkim: Joi.object().unknown().description('DKIM results'),
-                    spf: Joi.object().unknown().description('SPF results'),
-                    dmarc: Joi.object().unknown().description('DMARC results'),
-                    bimi: Joi.object().unknown().description('BIMI results'),
-                    arc: Joi.object().unknown().description('ARC results'),
+                    dkim: Joi.object().unknown().description('DKIM results').label('DkimResults'),
+                    spf: Joi.object().unknown().description('SPF results').label('SpfResults'),
+                    dmarc: Joi.object().unknown().description('DMARC results').label('DmarcResults'),
+                    bimi: Joi.object().unknown().description('BIMI results').label('BimiResults'),
+                    arc: Joi.object().unknown().description('ARC results').label('ArcResults'),
                     mainSig: Joi.object()
                         .unknown()
                         .description('Primary DKIM signature. `status.aligned` should be set, otherwise DKIM check should not be considered as passed.')
+                        .label('MainSignature')
                 }).label('DeliveryCheckResponse'),
                 failAction: 'log'
             }
