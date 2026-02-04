@@ -293,7 +293,7 @@ const notifyWorker = new Worker(
                     {
                         let filteredSubData = {};
                         let isPartial = false;
-                        for (let dataKey of Object.keys(job.data.data)) {
+                        for (let dataKey of Object.keys(job.data.data || {})) {
                             switch (dataKey) {
                                 case 'id':
                                 case 'uid':
