@@ -311,7 +311,7 @@ async function exportMessages(job, exportData) {
     });
 
     const gzipStream = zlib.createGzip();
-    const fileStream = fs.createWriteStream(filePath);
+    const fileStream = fs.createWriteStream(filePath, job.data.isResumed ? { flags: 'a' } : undefined);
 
     let streamError = null;
     function handleStreamError(err) {
@@ -605,10 +605,21 @@ async function exportMessages(job, exportData) {
         processingError = err;
     }
 
+    const FINALIZATION_TIMEOUT = 30000;
     await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            fileStream.destroy();
+            reject(streamError || new Error('Stream finalization timed out'));
+        }, FINALIZATION_TIMEOUT);
         gzipStream.end();
-        fileStream.once('finish', resolve);
-        fileStream.once('error', err => reject(streamError || err));
+        fileStream.once('finish', () => {
+            clearTimeout(timeout);
+            resolve();
+        });
+        fileStream.once('error', err => {
+            clearTimeout(timeout);
+            reject(streamError || err);
+        });
     });
 
     if (processingError) {

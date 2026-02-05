@@ -5,8 +5,9 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 const msgpack = require('msgpack5')();
 
-// Test pure functions and logic without loading the full export module
-// This avoids the Bugsnag/logger initialization issues
+// Test pure functions and logic without loading the full export module.
+// This avoids the Bugsnag/logger initialization issues.
+// Score calculation must match lib/export.js Export.queueMessage() exactly.
 
 const EXPORT_ID_PREFIX = 'exp_';
 
@@ -15,21 +16,19 @@ function generateExportId() {
     return EXPORT_ID_PREFIX + crypto.randomBytes(12).toString('hex');
 }
 
-// Replicate the score calculation logic
-// Uses messageId hash for tiebreaker instead of UID to avoid collisions with large UIDs
-// Using factor of 1000 to stay within JavaScript safe integer range (< 2^53)
-function calculateScore(timestamp, messageId) {
+// Replicate the score calculation logic from lib/export.js Export.queueMessage()
+// Uses SHA-256 hash of composite key (folder:messageId:uid) for tiebreaker
+// Using factor of 1000000 with baseSeconds to stay within JavaScript safe integer range (< 2^53)
+function calculateScore(timestamp, messageId, folder, uid) {
     const baseTimestamp = timestamp instanceof Date ? timestamp.getTime() : Number(timestamp) || Date.now();
+    const baseSeconds = Math.floor(baseTimestamp / 1000);
 
-    // Generate tiebreaker from messageId hash (0-999 range)
-    let tiebreaker = 0;
-    const id = messageId || '';
-    for (let i = 0; i < id.length; i++) {
-        tiebreaker = ((tiebreaker << 5) - tiebreaker + id.charCodeAt(i)) | 0;
-    }
-    tiebreaker = Math.abs(tiebreaker) % 1000;
+    // Generate tiebreaker from SHA-256 hash of composite key (0-999999 range)
+    const uniqueKey = `${folder || ''}:${messageId || ''}:${uid || ''}`;
+    const hash = crypto.createHash('sha256').update(uniqueKey).digest();
+    const tiebreaker = ((hash[0] << 16) | (hash[1] << 8) | hash[2]) % 1000000;
 
-    return baseTimestamp * 1000 + tiebreaker;
+    return baseSeconds * 1000000 + tiebreaker;
 }
 
 // Replicate the formatStatus function logic
@@ -96,13 +95,14 @@ test('Export functionality tests', async t => {
         assert.ok(/^[0-9a-f]+$/.test(hexPart), 'Hex part should only contain hex characters');
     });
 
-    // Score calculation tests - using messageId hash for tiebreaker
+    // Score calculation tests - using SHA-256 hash of composite key for tiebreaker
+    // Production algorithm: lib/export.js Export.queueMessage()
     await t.test('Score calculation: different messageIds with same timestamp produce different scores', async () => {
         const baseTimestamp = 1700000000000;
 
-        const score1 = calculateScore(baseTimestamp, 'msg_001');
-        const score2 = calculateScore(baseTimestamp, 'msg_002');
-        const score3 = calculateScore(baseTimestamp, 'msg_003');
+        const score1 = calculateScore(baseTimestamp, 'msg_001', 'INBOX', 1);
+        const score2 = calculateScore(baseTimestamp, 'msg_002', 'INBOX', 2);
+        const score3 = calculateScore(baseTimestamp, 'msg_003', 'INBOX', 3);
 
         assert.notStrictEqual(score1, score2);
         assert.notStrictEqual(score2, score3);
@@ -114,19 +114,19 @@ test('Export functionality tests', async t => {
         const laterTimestamp = 1700000001000;
 
         // Even with different messageIds, earlier timestamp should have lower score
-        const scoreEarlier = calculateScore(earlierTimestamp, 'msg_zzz');
-        const scoreLater = calculateScore(laterTimestamp, 'msg_aaa');
+        const scoreEarlier = calculateScore(earlierTimestamp, 'msg_zzz', 'INBOX', 1);
+        const scoreLater = calculateScore(laterTimestamp, 'msg_aaa', 'INBOX', 2);
 
         assert.ok(scoreEarlier < scoreLater, 'Earlier timestamp should produce lower score');
     });
 
-    await t.test('Score calculation: same messageId produces same tiebreaker', async () => {
+    await t.test('Score calculation: same inputs produce same score', async () => {
         const timestamp = 1700000000000;
 
-        const score1 = calculateScore(timestamp, 'consistent_id');
-        const score2 = calculateScore(timestamp, 'consistent_id');
+        const score1 = calculateScore(timestamp, 'consistent_id', 'INBOX', 100);
+        const score2 = calculateScore(timestamp, 'consistent_id', 'INBOX', 100);
 
-        assert.strictEqual(score1, score2, 'Same messageId should produce same score');
+        assert.strictEqual(score1, score2, 'Same inputs should produce same score');
     });
 
     await t.test('Score calculation: handles Date objects', async () => {
@@ -134,8 +134,8 @@ test('Export functionality tests', async t => {
         const timestamp = 1700000000000;
         const messageId = 'msg_test';
 
-        const scoreFromDate = calculateScore(date, messageId);
-        const scoreFromTimestamp = calculateScore(timestamp, messageId);
+        const scoreFromDate = calculateScore(date, messageId, 'INBOX', 1);
+        const scoreFromTimestamp = calculateScore(timestamp, messageId, 'INBOX', 1);
 
         assert.strictEqual(scoreFromDate, scoreFromTimestamp, 'Date object and timestamp should produce same score');
     });
@@ -143,12 +143,12 @@ test('Export functionality tests', async t => {
     await t.test('Score calculation: handles null/undefined/empty messageId', async () => {
         const timestamp = 1700000000000;
 
-        const scoreNull = calculateScore(timestamp, null);
-        const scoreUndefined = calculateScore(timestamp, undefined);
-        const scoreEmpty = calculateScore(timestamp, '');
+        const scoreNull = calculateScore(timestamp, null, null, null);
+        const scoreUndefined = calculateScore(timestamp, undefined, undefined, undefined);
+        const scoreEmpty = calculateScore(timestamp, '', '', '');
 
-        assert.strictEqual(scoreNull, scoreEmpty, 'null messageId should be treated as empty');
-        assert.strictEqual(scoreUndefined, scoreEmpty, 'undefined messageId should be treated as empty');
+        assert.strictEqual(scoreNull, scoreEmpty, 'null inputs should be treated as empty');
+        assert.strictEqual(scoreUndefined, scoreEmpty, 'undefined inputs should be treated as empty');
     });
 
     await t.test('Score calculation: long messageIds work correctly', async () => {
@@ -158,8 +158,8 @@ test('Export functionality tests', async t => {
         const outlookId = 'AAMkAGVmMDEzMTM4LTZmYWUtNDdkNC1hMDZiLTU1OGY5OTZhYmY4OABGAAAAAADUuTJK1K9sTpCdqXop_4NaBwCd9nJ-tVysQYj2Cekan9XRAAAAAAEMAAC';
         const gmailId = '18abc123def456789';
 
-        const outlookScore = calculateScore(timestamp, outlookId);
-        const gmailScore = calculateScore(timestamp, gmailId);
+        const outlookScore = calculateScore(timestamp, outlookId, 'INBOX', 1);
+        const gmailScore = calculateScore(timestamp, gmailId, 'INBOX', 2);
 
         assert.strictEqual(typeof outlookScore, 'number');
         assert.strictEqual(typeof gmailScore, 'number');
@@ -171,10 +171,10 @@ test('Export functionality tests', async t => {
         const timestamp = 1700000000000;
         const messageIds = ['msg_001', 'msg_002', 'msg_003', 'msg_004', 'msg_005', 'msg_100', 'msg_200', 'msg_300', 'msg_400', 'msg_500'];
 
-        const scores = messageIds.map(id => calculateScore(timestamp, id));
+        const scores = messageIds.map((id, i) => calculateScore(timestamp, id, 'INBOX', i + 1));
         const uniqueScores = new Set(scores);
 
-        assert.strictEqual(uniqueScores.size, messageIds.length, 'All messageIds should produce unique scores');
+        assert.strictEqual(uniqueScores.size, messageIds.length, 'All messages should produce unique scores');
     });
 
     // formatStatus tests
