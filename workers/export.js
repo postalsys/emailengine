@@ -7,6 +7,7 @@ const config = require('@zone-eu/wild-config');
 const logger = require('../lib/logger');
 const fs = require('fs');
 const zlib = require('zlib');
+const { pipeline } = require('stream');
 
 const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY, DEFAULT_EXPORT_MAX_MESSAGE_SIZE } = require('../lib/consts');
 const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
@@ -314,24 +315,24 @@ async function exportMessages(job, exportData) {
     const gzipStream = zlib.createGzip();
     const fileStream = fs.createWriteStream(filePath);
 
+    let encryptStream = null;
     let streamError = null;
-    function handleStreamError(err) {
-        if (!streamError) {
-            streamError = err;
-        }
-    }
-    gzipStream.on('error', handleStreamError);
-    fileStream.on('error', handleStreamError);
 
     const secret = isEncrypted ? await getSecret() : null;
+
+    const streams = [gzipStream];
     if (secret) {
         const { createEncryptStream } = require('../lib/stream-encrypt');
-        const encryptStream = await createEncryptStream(secret);
-        encryptStream.on('error', handleStreamError);
-        gzipStream.pipe(encryptStream).pipe(fileStream);
-    } else {
-        gzipStream.pipe(fileStream);
+        encryptStream = await createEncryptStream(secret);
+        streams.push(encryptStream);
     }
+    streams.push(fileStream);
+
+    pipeline(...streams, err => {
+        if (err && !streamError) {
+            streamError = err;
+        }
+    });
 
     function writeWithBackpressure(data) {
         if (streamError) {
@@ -609,6 +610,8 @@ async function exportMessages(job, exportData) {
     const FINALIZATION_TIMEOUT = 30000;
     await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
+            gzipStream.destroy();
+            if (encryptStream) encryptStream.destroy();
             fileStream.destroy();
             reject(streamError || new Error('Stream finalization timed out'));
         }, FINALIZATION_TIMEOUT);

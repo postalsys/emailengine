@@ -287,14 +287,6 @@ The export worker (`workers/export.js`) processes bulk email export jobs via Bul
 - **Transient errors** (network timeouts, 5xx responses): Retry with exponential backoff
 - **Skippable errors** (message not found, 404): Skip message, increment counter
 - **Account validation**: Checks every 60s if account still exists
-- **Resume capability**: Failed exports with progress can be resumed from checkpoint
-
-**Resumability:**
-An export is marked resumable when:
-- Export made progress (`lastProcessedScore > 0`)
-- Messages remain to process (`messagesExported < messagesQueued`)
-- Account was not deleted during export
-
 **Retry configuration:**
 - IMAP messages: 3 retries with 2s base delay (exponential backoff)
 - API batch requests: 5 retries for rate limits (429) with 5s base delay
@@ -317,7 +309,6 @@ An export is marked resumable when:
 - `POST /v1/account/{account}/export` - Create export job
 - `GET /v1/account/{account}/export/{exportId}` - Get export status
 - `GET /v1/account/{account}/export/{exportId}/download` - Download completed export
-- `POST /v1/account/{account}/export/{exportId}/resume` - Resume failed export
 - `DELETE /v1/account/{account}/export/{exportId}` - Cancel/delete export
 - `GET /v1/account/{account}/exports` - List exports with pagination
 
