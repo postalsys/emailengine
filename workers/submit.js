@@ -295,7 +295,19 @@ const submitWorker = new Worker(
                 // ignore
             }
 
-            if (err.statusCode >= 500 && err.statusCode !== 503 && job.attemptsMade < job.opts.attempts) {
+            const NON_RETRYABLE_CODES = new Set([
+                'EAUTH', // authentication failed
+                'ENOAUTH', // no credentials provided
+                'EOAUTH2', // OAuth2 token failure
+                'ETLS', // TLS handshake failed
+                'EENVELOPE', // invalid sender/recipients
+                'EMESSAGE', // message content error
+                'EPROTOCOL' // SMTP protocol mismatch
+            ]);
+
+            const isPermanentSmtp = err.statusCode >= 500 && err.statusCode !== 503;
+            const isPermanentCode = NON_RETRYABLE_CODES.has(err.code);
+            if ((isPermanentSmtp || isPermanentCode) && job.attemptsMade < job.opts.attempts) {
                 try {
                     // do not retry after 5xx error (except 503 which is transient)
                     await job.discard();
