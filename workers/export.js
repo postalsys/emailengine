@@ -72,6 +72,7 @@ const FOLDER_INDEX_RETRY_DELAY_MS = 1000;
 const IMAP_MESSAGE_MAX_RETRIES = 3;
 const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
 const ACCOUNT_CHECK_INTERVAL = 60 * 1000;
+const LOCK_EXTENSION_INTERVAL = 5 * 60 * 1000;
 
 function isTransientError(err) {
     if (['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH'].includes(err.code)) {
@@ -194,8 +195,22 @@ async function indexMessages(job, exportData) {
 
     let totalIndexed = 0;
     let truncated = false;
+    let lastLockExtension = Date.now();
 
     for (let i = 0; i < foldersToProcess.length; i++) {
+        if (Date.now() - lastLockExtension > LOCK_EXTENSION_INTERVAL) {
+            await job.extendLock(job.token, 10 * 60 * 1000).catch(err => {
+                logger.warn({ msg: 'Failed to extend job lock during indexing', account, exportId, err });
+            });
+            lastLockExtension = Date.now();
+        }
+
+        if (await Export.isCancelled(account, exportId)) {
+            const err = new Error('Export cancelled by user');
+            err.code = 'ExportCancelled';
+            throw err;
+        }
+
         const folderPath = foldersToProcess[i];
         let retries = FOLDER_INDEX_MAX_RETRIES;
         let lastError = null;
@@ -356,7 +371,7 @@ async function exportMessages(job, exportData) {
     });
 
     const gzipStream = zlib.createGzip();
-    const fileStream = fs.createWriteStream(filePath);
+    const fileStream = fs.createWriteStream(filePath, { mode: 0o600 });
 
     let encryptStream = null;
     let streamError = null;
@@ -411,6 +426,7 @@ async function exportMessages(job, exportData) {
     let sizeLimitReached = false;
 
     let lastAccountCheck = Date.now();
+    let lastLockExtension = Date.now();
 
     const accountData = await accountObject.loadAccountData(account);
     const isApiAccount = await accountObject.isApiClient(accountData);
@@ -472,6 +488,19 @@ async function exportMessages(job, exportData) {
 
             if (sizeLimitReached) {
                 break;
+            }
+
+            if (Date.now() - lastLockExtension > LOCK_EXTENSION_INTERVAL) {
+                await job.extendLock(job.token, 10 * 60 * 1000).catch(err => {
+                    logger.warn({ msg: 'Failed to extend job lock', account, exportId, err });
+                });
+                lastLockExtension = Date.now();
+            }
+
+            if (await Export.isCancelled(account, exportId)) {
+                const err = new Error('Export cancelled by user');
+                err.code = 'ExportCancelled';
+                throw err;
             }
 
             if (Date.now() - lastAccountCheck > ACCOUNT_CHECK_INTERVAL) {
@@ -761,7 +790,7 @@ const exportWorker = new Worker(
 
             await Export.fail(account, exportId, err.message);
 
-            if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound') {
+            if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound' && err.code !== 'ExportCancelled') {
                 await notify(account, EXPORT_FAILED_NOTIFY, {
                     exportId,
                     error: err.message,
@@ -833,6 +862,28 @@ function onCommand(command) {
             // Ignore errors, parent might be shutting down
         }
     }, 10 * 1000).unref();
+
+    setInterval(
+        async () => {
+            try {
+                const activeExports = await redis.smembers(`${REDIS_PREFIX}exp:active`);
+                for (const entry of activeExports) {
+                    const separatorIndex = entry.indexOf(':exp_');
+                    if (separatorIndex === -1) continue;
+                    const entryAccount = entry.substring(0, separatorIndex);
+                    const entryExportId = entry.substring(separatorIndex + 1);
+                    const exists = await redis.exists(`${REDIS_PREFIX}exp:${entryAccount}:${entryExportId}`);
+                    if (!exists) {
+                        await redis.srem(`${REDIS_PREFIX}exp:active`, entry);
+                        logger.info({ msg: 'Cleaned stale active set entry', account: entryAccount, exportId: entryExportId });
+                    }
+                }
+            } catch (err) {
+                logger.error({ msg: 'Failed to clean stale active set entries', err });
+            }
+        },
+        5 * 60 * 1000
+    ).unref();
 
     parentPort.postMessage({ cmd: 'ready' });
 })();

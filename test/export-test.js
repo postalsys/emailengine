@@ -5,56 +5,104 @@ const assert = require('node:assert').strict;
 const crypto = require('crypto');
 const msgpack = require('msgpack5')();
 
-// Test pure functions and logic without loading the full export module.
-// This avoids the Bugsnag/logger initialization issues.
-// Score calculation must match lib/export.js Export.queueMessage() exactly.
+// Mock the db module before any other imports to prevent real Redis/BullMQ
+// connections from being created.
+const mockQueue = {
+    add: async () => ({}),
+    close: async () => {},
+    on: () => {},
+    off: () => {},
+    getJob: async () => null
+};
 
-const EXPORT_ID_PREFIX = 'exp_';
+let mockRedisData = {};
 
-// Replicate the generateExportId function logic
-function generateExportId() {
-    return EXPORT_ID_PREFIX + crypto.randomBytes(12).toString('hex');
-}
-
-// Replicate the score calculation logic from lib/export.js Export.queueMessage()
-// Uses SHA-256 hash of composite key (folder:messageId:uid) for tiebreaker
-// Using factor of 1000000 with baseSeconds to stay within JavaScript safe integer range (< 2^53)
-function calculateScore(timestamp, messageId, folder, uid) {
-    const baseTimestamp = timestamp instanceof Date ? timestamp.getTime() : Number(timestamp) || Date.now();
-    const baseSeconds = Math.floor(baseTimestamp / 1000);
-
-    // Generate tiebreaker from SHA-256 hash of composite key (0-999999 range)
-    const uniqueKey = `${folder || ''}:${messageId || ''}:${uid || ''}`;
-    const hash = crypto.createHash('sha256').update(uniqueKey).digest();
-    const tiebreaker = (((hash[0] << 16) | (hash[1] << 8) | hash[2]) >>> 0) % 1000000;
-
-    return baseSeconds * 1000000 + tiebreaker;
-}
-
-// Replicate the formatStatus function logic
-function formatStatus(data) {
-    const toIsoDate = value => (value ? new Date(Number(value)).toISOString() : undefined);
-
+function createMockRedis() {
     return {
-        exportId: data.exportId,
-        status: data.status,
-        phase: data.phase !== 'pending' ? data.phase : undefined,
-        folders: data.folders ? JSON.parse(data.folders) : [],
-        startDate: toIsoDate(data.startDate),
-        endDate: toIsoDate(data.endDate),
-        progress: {
-            foldersScanned: Number(data.foldersScanned) || 0,
-            foldersTotal: Number(data.foldersTotal) || 0,
-            messagesQueued: Number(data.messagesQueued) || 0,
-            messagesExported: Number(data.messagesExported) || 0,
-            messagesSkipped: Number(data.messagesSkipped) || 0,
-            bytesWritten: Number(data.bytesWritten) || 0
+        status: 'ready',
+        hget: async (key, field) => (mockRedisData[key] && mockRedisData[key][field]) || null,
+        hset: async (key, field, value) => {
+            if (!mockRedisData[key]) mockRedisData[key] = {};
+            mockRedisData[key][field] = value;
         },
-        created: toIsoDate(data.created),
-        expiresAt: toIsoDate(data.expiresAt),
-        error: data.error || null
+        hgetall: async key => mockRedisData[key] || null,
+        hdel: async () => {},
+        hSetExists: async () => {},
+        hgetallBuffer: async () => ({}),
+        hmset: async (key, data) => {
+            if (!mockRedisData[key]) mockRedisData[key] = {};
+            Object.assign(mockRedisData[key], data);
+        },
+        multi: () => ({
+            exec: async () => [],
+            hmset: function () {
+                return this;
+            },
+            hset: function () {
+                return this;
+            },
+            hdel: function () {
+                return this;
+            },
+            del: function () {
+                return this;
+            },
+            expire: function () {
+                return this;
+            },
+            srem: function () {
+                return this;
+            },
+            zadd: function () {
+                return this;
+            },
+            hincrby: function () {
+                return this;
+            }
+        }),
+        ttl: async () => 3600,
+        eval: async () => 1,
+        smembers: async () => [],
+        srem: async () => {},
+        exists: async () => 0,
+        get: async () => null,
+        set: async () => 'OK',
+        scan: async () => ['0', []],
+        quit: async () => {},
+        disconnect: () => {},
+        subscribe: () => {},
+        on: () => {},
+        off: () => {},
+        defineCommand: () => {},
+        duplicate: function () {
+            return createMockRedis();
+        }
     };
 }
+const mockRedis = createMockRedis();
+
+const dbPath = require.resolve('../lib/db');
+require.cache[dbPath] = {
+    id: dbPath,
+    filename: dbPath,
+    loaded: true,
+    parent: null,
+    children: [],
+    exports: {
+        redis: mockRedis,
+        queueConf: { connection: {} },
+        notifyQueue: mockQueue,
+        submitQueue: mockQueue,
+        documentsQueue: mockQueue,
+        exportQueue: mockQueue,
+        getFlowProducer: () => ({}),
+        REDIS_CONF: {},
+        getRedisURL: () => 'redis://mock'
+    }
+};
+
+// Now safe to import production modules
+const { Export, generateExportId, calculateScore } = require('../lib/export');
 
 // Replicate the getNextBatch minScore calculation logic
 function calculateMinScore(lastScore) {
@@ -64,6 +112,11 @@ function calculateMinScore(lastScore) {
 test('Export functionality tests', async t => {
     t.after(() => {
         setTimeout(() => process.exit(), 1000).unref();
+    });
+
+    // Reset mock data before each test that needs it
+    t.beforeEach(() => {
+        mockRedisData = {};
     });
 
     // generateExportId tests
@@ -95,14 +148,13 @@ test('Export functionality tests', async t => {
         assert.ok(/^[0-9a-f]+$/.test(hexPart), 'Hex part should only contain hex characters');
     });
 
-    // Score calculation tests - using SHA-256 hash of composite key for tiebreaker
-    // Production algorithm: lib/export.js Export.queueMessage()
+    // Score calculation tests - using production calculateScore function
     await t.test('Score calculation: different messageIds with same timestamp produce different scores', async () => {
         const baseTimestamp = 1700000000000;
 
-        const score1 = calculateScore(baseTimestamp, 'msg_001', 'INBOX', 1);
-        const score2 = calculateScore(baseTimestamp, 'msg_002', 'INBOX', 2);
-        const score3 = calculateScore(baseTimestamp, 'msg_003', 'INBOX', 3);
+        const score1 = calculateScore(baseTimestamp, 'INBOX', 'msg_001', 1);
+        const score2 = calculateScore(baseTimestamp, 'INBOX', 'msg_002', 2);
+        const score3 = calculateScore(baseTimestamp, 'INBOX', 'msg_003', 3);
 
         assert.notStrictEqual(score1, score2);
         assert.notStrictEqual(score2, score3);
@@ -114,8 +166,8 @@ test('Export functionality tests', async t => {
         const laterTimestamp = 1700000001000;
 
         // Even with different messageIds, earlier timestamp should have lower score
-        const scoreEarlier = calculateScore(earlierTimestamp, 'msg_zzz', 'INBOX', 1);
-        const scoreLater = calculateScore(laterTimestamp, 'msg_aaa', 'INBOX', 2);
+        const scoreEarlier = calculateScore(earlierTimestamp, 'INBOX', 'msg_zzz', 1);
+        const scoreLater = calculateScore(laterTimestamp, 'INBOX', 'msg_aaa', 2);
 
         assert.ok(scoreEarlier < scoreLater, 'Earlier timestamp should produce lower score');
     });
@@ -123,8 +175,8 @@ test('Export functionality tests', async t => {
     await t.test('Score calculation: same inputs produce same score', async () => {
         const timestamp = 1700000000000;
 
-        const score1 = calculateScore(timestamp, 'consistent_id', 'INBOX', 100);
-        const score2 = calculateScore(timestamp, 'consistent_id', 'INBOX', 100);
+        const score1 = calculateScore(timestamp, 'INBOX', 'consistent_id', 100);
+        const score2 = calculateScore(timestamp, 'INBOX', 'consistent_id', 100);
 
         assert.strictEqual(score1, score2, 'Same inputs should produce same score');
     });
@@ -134,8 +186,8 @@ test('Export functionality tests', async t => {
         const timestamp = 1700000000000;
         const messageId = 'msg_test';
 
-        const scoreFromDate = calculateScore(date, messageId, 'INBOX', 1);
-        const scoreFromTimestamp = calculateScore(timestamp, messageId, 'INBOX', 1);
+        const scoreFromDate = calculateScore(date, 'INBOX', messageId, 1);
+        const scoreFromTimestamp = calculateScore(timestamp, 'INBOX', messageId, 1);
 
         assert.strictEqual(scoreFromDate, scoreFromTimestamp, 'Date object and timestamp should produce same score');
     });
@@ -158,8 +210,8 @@ test('Export functionality tests', async t => {
         const outlookId = 'AAMkAGVmMDEzMTM4LTZmYWUtNDdkNC1hMDZiLTU1OGY5OTZhYmY4OABGAAAAAADUuTJK1K9sTpCdqXop_4NaBwCd9nJ-tVysQYj2Cekan9XRAAAAAAEMAAC';
         const gmailId = '18abc123def456789';
 
-        const outlookScore = calculateScore(timestamp, outlookId, 'INBOX', 1);
-        const gmailScore = calculateScore(timestamp, gmailId, 'INBOX', 2);
+        const outlookScore = calculateScore(timestamp, 'INBOX', outlookId, 1);
+        const gmailScore = calculateScore(timestamp, 'INBOX', gmailId, 2);
 
         assert.strictEqual(typeof outlookScore, 'number');
         assert.strictEqual(typeof gmailScore, 'number');
@@ -171,13 +223,29 @@ test('Export functionality tests', async t => {
         const timestamp = 1700000000000;
         const messageIds = ['msg_001', 'msg_002', 'msg_003', 'msg_004', 'msg_005', 'msg_100', 'msg_200', 'msg_300', 'msg_400', 'msg_500'];
 
-        const scores = messageIds.map((id, i) => calculateScore(timestamp, id, 'INBOX', i + 1));
+        const scores = messageIds.map((id, i) => calculateScore(timestamp, 'INBOX', id, i + 1));
         const uniqueScores = new Set(scores);
 
         assert.strictEqual(uniqueScores.size, messageIds.length, 'All messages should produce unique scores');
     });
 
-    // formatStatus tests
+    await t.test('Score calculation uses 4-byte hash for tiebreaker', async () => {
+        // Verify the production function uses 4-byte hash by checking two values
+        // that differ only in the 4th byte of their SHA-256 hash
+        const timestamp = 1700000000000;
+        const score = calculateScore(timestamp, 'INBOX', 'test_msg', 1);
+
+        // Manually compute expected score with 4-byte hash
+        const uniqueKey = 'INBOX:test_msg:1';
+        const hash = crypto.createHash('sha256').update(uniqueKey).digest();
+        const tiebreaker = (((hash[0] << 24) | (hash[1] << 16) | (hash[2] << 8) | hash[3]) >>> 0) % 1000000;
+        const baseSeconds = Math.floor(timestamp / 1000);
+        const expectedScore = baseSeconds * 1000000 + tiebreaker;
+
+        assert.strictEqual(score, expectedScore, 'Production score should match 4-byte hash calculation');
+    });
+
+    // formatStatus tests - using production Export.formatStatus
     await t.test('formatStatus() correctly formats all status fields', async () => {
         const data = {
             exportId: 'exp_test123',
@@ -186,6 +254,7 @@ test('Export functionality tests', async t => {
             folders: '["INBOX","Sent"]',
             startDate: '1700000000000',
             endDate: '1700100000000',
+            isEncrypted: '1',
             foldersScanned: '5',
             foldersTotal: '10',
             messagesQueued: '100',
@@ -197,7 +266,7 @@ test('Export functionality tests', async t => {
             error: ''
         };
 
-        const result = formatStatus(data);
+        const result = Export.formatStatus(data);
 
         assert.strictEqual(result.exportId, 'exp_test123');
         assert.strictEqual(result.status, 'processing');
@@ -205,6 +274,7 @@ test('Export functionality tests', async t => {
         assert.deepStrictEqual(result.folders, ['INBOX', 'Sent']);
         assert.strictEqual(typeof result.startDate, 'string');
         assert.strictEqual(typeof result.endDate, 'string');
+        assert.strictEqual(result.isEncrypted, true);
         assert.strictEqual(result.progress.foldersScanned, 5);
         assert.strictEqual(result.progress.foldersTotal, 10);
         assert.strictEqual(result.progress.messagesQueued, 100);
@@ -214,6 +284,30 @@ test('Export functionality tests', async t => {
         assert.strictEqual(result.error, null);
     });
 
+    await t.test('formatStatus() includes isEncrypted field', async () => {
+        const dataEncrypted = {
+            exportId: 'exp_test1',
+            status: 'completed',
+            phase: 'complete',
+            isEncrypted: '1'
+        };
+
+        const dataNotEncrypted = {
+            exportId: 'exp_test2',
+            status: 'completed',
+            phase: 'complete',
+            isEncrypted: '0'
+        };
+
+        const resultEncrypted = Export.formatStatus(dataEncrypted);
+        const resultNotEncrypted = Export.formatStatus(dataNotEncrypted);
+
+        assert.strictEqual(resultEncrypted.isEncrypted, true);
+        assert.strictEqual(resultNotEncrypted.isEncrypted, false);
+        assert.ok('isEncrypted' in resultEncrypted, 'isEncrypted field should be present');
+        assert.ok('isEncrypted' in resultNotEncrypted, 'isEncrypted field should be present');
+    });
+
     await t.test('formatStatus() handles missing/null values', async () => {
         const data = {
             exportId: 'exp_test123',
@@ -221,7 +315,7 @@ test('Export functionality tests', async t => {
             phase: 'pending'
         };
 
-        const result = formatStatus(data);
+        const result = Export.formatStatus(data);
 
         assert.strictEqual(result.exportId, 'exp_test123');
         assert.strictEqual(result.status, 'queued');
@@ -240,7 +334,7 @@ test('Export functionality tests', async t => {
             expiresAt: '1700100000000'
         };
 
-        const result = formatStatus(data);
+        const result = Export.formatStatus(data);
 
         // Should be valid ISO date strings
         assert.ok(result.created.includes('T'), 'created should be ISO date');
@@ -259,7 +353,7 @@ test('Export functionality tests', async t => {
             error: 'Connection timeout'
         };
 
-        const result = formatStatus(data);
+        const result = Export.formatStatus(data);
 
         assert.strictEqual(result.error, 'Connection timeout');
     });
@@ -272,9 +366,106 @@ test('Export functionality tests', async t => {
             error: ''
         };
 
-        const result = formatStatus(data);
+        const result = Export.formatStatus(data);
 
         assert.strictEqual(result.error, null);
+    });
+
+    // Export.isCancelled() tests
+    await t.test('Export.isCancelled() returns true for cancelled status', async () => {
+        const account = 'test-account';
+        const exportId = 'exp_test123';
+        mockRedisData[`exp:${account}:${exportId}`] = { status: 'cancelled' };
+
+        const result = await Export.isCancelled(account, exportId);
+        assert.strictEqual(result, true);
+    });
+
+    await t.test('Export.isCancelled() returns true for missing export', async () => {
+        const result = await Export.isCancelled('nonexistent', 'exp_nonexistent');
+        assert.strictEqual(result, true);
+    });
+
+    await t.test('Export.isCancelled() returns false for processing export', async () => {
+        const account = 'test-account';
+        const exportId = 'exp_active';
+        mockRedisData[`exp:${account}:${exportId}`] = { status: 'processing' };
+
+        const result = await Export.isCancelled(account, exportId);
+        assert.strictEqual(result, false);
+    });
+
+    // Account validation in Export.create()
+    await t.test('Export.create() throws 404 for non-existent account', async () => {
+        // No account data in mock redis
+        mockRedisData = {};
+
+        await assert.rejects(
+            () =>
+                Export.create('nonexistent-account', {
+                    startDate: '2024-01-01T00:00:00Z',
+                    endDate: '2024-12-31T23:59:59Z'
+                }),
+            err => {
+                assert.strictEqual(err.code, 'AccountNotFound');
+                assert.strictEqual(err.statusCode, 404);
+                return true;
+            }
+        );
+    });
+
+    // DecryptStream._transform is not async
+    await t.test('DecryptStream._transform is not async', async () => {
+        const { createDecryptStream } = require('../lib/stream-encrypt');
+        const stream = await createDecryptStream('test-secret');
+        assert.notStrictEqual(stream._transform.constructor.name, 'AsyncFunction', '_transform should not be async');
+    });
+
+    // Schema validation tests
+    await t.test('exportRequestSchema rejects startDate >= endDate', async () => {
+        const schemasPath = require.resolve('../lib/schemas');
+        // Clear any cached version
+        delete require.cache[schemasPath];
+        const { exportRequestSchema } = require('../lib/schemas');
+
+        const result = exportRequestSchema.validate({
+            startDate: '2024-12-31T23:59:59Z',
+            endDate: '2024-01-01T00:00:00Z'
+        });
+
+        assert.ok(result.error, 'Should reject when startDate >= endDate');
+        assert.ok(result.error.message.includes('startDate must be before endDate'), `Expected date range error, got: ${result.error.message}`);
+    });
+
+    await t.test('exportRequestSchema accepts valid date range', async () => {
+        const { exportRequestSchema } = require('../lib/schemas');
+
+        const result = exportRequestSchema.validate({
+            startDate: '2024-01-01T00:00:00Z',
+            endDate: '2024-12-31T23:59:59Z'
+        });
+
+        assert.ok(!result.error, `Should accept valid date range, got error: ${result.error?.message}`);
+    });
+
+    await t.test('settingsSchema accepts exportMaxMessages', async () => {
+        const Joi = require('joi');
+        const { settingsSchema } = require('../lib/schemas');
+
+        const schema = Joi.object(settingsSchema);
+        const result = schema.validate({ exportMaxMessages: 500000 });
+
+        assert.ok(!result.error, `Should accept exportMaxMessages, got error: ${result.error?.message}`);
+    });
+
+    await t.test('settingsSchema accepts exportMaxSize', async () => {
+        const Joi = require('joi');
+        const { settingsSchema } = require('../lib/schemas');
+
+        const schema = Joi.object(settingsSchema);
+        const result = schema.validate({ exportMaxSize: 10737418240 });
+
+        assert.ok(!result.error, `Should accept exportMaxSize, got error: ${result.error?.message}`);
     });
 
     // Msgpack encoding tests
