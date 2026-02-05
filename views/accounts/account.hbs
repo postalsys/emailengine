@@ -1194,7 +1194,7 @@
                 flushingLogs = false;
                 showToast(data.error ? data.error : (data.success ? 'Stored logs were flushed' : 'Failed to flush logs'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
-                togglinflushingLogsgLogs = false;
+                flushingLogs = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
         });

@@ -181,7 +181,12 @@ async function indexMessages(job, exportData) {
 
     await Export.update(account, exportId, { foldersTotal: foldersToProcess.length });
 
-    logger.info({ msg: 'Starting export indexing', account, exportId, foldersToProcess: foldersToProcess.length });
+    const maxMessages = Number(await settings.get('exportMaxMessages')) || 0;
+
+    logger.info({ msg: 'Starting export indexing', account, exportId, foldersToProcess: foldersToProcess.length, maxMessages: maxMessages || 'unlimited' });
+
+    let totalIndexed = 0;
+    let truncated = false;
 
     for (let i = 0; i < foldersToProcess.length; i++) {
         const folderPath = foldersToProcess[i];
@@ -190,7 +195,9 @@ async function indexMessages(job, exportData) {
 
         while (retries > 0) {
             try {
-                await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime);
+                const remaining = maxMessages ? maxMessages - totalIndexed : 0;
+                const queued = await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime, remaining);
+                totalIndexed += queued;
 
                 await Export.update(account, exportId, { foldersScanned: i + 1 });
 
@@ -200,7 +207,8 @@ async function indexMessages(job, exportData) {
                     exportId,
                     folder: folderPath,
                     foldersScanned: i + 1,
-                    foldersTotal: foldersToProcess.length
+                    foldersTotal: foldersToProcess.length,
+                    totalIndexed
                 });
 
                 lastError = null;
@@ -235,6 +243,22 @@ async function indexMessages(job, exportData) {
                 err: lastError
             });
         }
+
+        if (maxMessages && totalIndexed >= maxMessages) {
+            truncated = true;
+            logger.warn({
+                msg: 'Export indexing truncated: message limit reached',
+                account,
+                exportId,
+                totalIndexed,
+                limit: maxMessages
+            });
+            break;
+        }
+    }
+
+    if (truncated) {
+        await Export.update(account, exportId, { truncated: '1' });
     }
 }
 
@@ -259,8 +283,9 @@ function resolveFolders(folders, mailboxes) {
     return folders.map(resolveFolder).filter(Boolean);
 }
 
-async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime) {
+async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime, maxMessages) {
     let cursor = null;
+    let queued = 0;
 
     while (true) {
         const searchCriteria = { since: startDate };
@@ -279,6 +304,9 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
         const result = await accountObject.listMessages(listOptions);
 
         for (const msg of result.messages || []) {
+            if (maxMessages && queued >= maxMessages) {
+                return queued;
+            }
             await Export.queueMessage(account, exportId, {
                 folder: folderPath,
                 messageId: msg.id || msg.emailId,
@@ -286,6 +314,11 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
                 size: msg.size || 0,
                 date: msg.date ? new Date(msg.date).getTime() : Date.now()
             });
+            queued++;
+        }
+
+        if (maxMessages && queued >= maxMessages) {
+            return queued;
         }
 
         cursor = result.nextPageCursor;
@@ -293,6 +326,8 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
             break;
         }
     }
+
+    return queued;
 }
 
 async function exportMessages(job, exportData) {
@@ -302,6 +337,7 @@ async function exportMessages(job, exportData) {
     const textType = exportData.textType || '*';
     const maxBytes = Number(exportData.maxBytes) || 5 * 1024 * 1024;
     const maxMessageSize = (await settings.get('exportMaxMessageSize')) || DEFAULT_EXPORT_MAX_MESSAGE_SIZE;
+    const maxExportSize = Number(await settings.get('exportMaxSize')) || 0;
     const isEncrypted = exportData.isEncrypted === '1';
 
     const accountObject = new Account({
@@ -365,6 +401,7 @@ async function exportMessages(job, exportData) {
     let processed = 0;
     let totalBytesWritten = 0;
     let processingError = null;
+    let sizeLimitReached = false;
 
     let lastAccountCheck = Date.now();
 
@@ -426,6 +463,10 @@ async function exportMessages(job, exportData) {
                 throw streamError;
             }
 
+            if (sizeLimitReached) {
+                break;
+            }
+
             if (Date.now() - lastAccountCheck > ACCOUNT_CHECK_INTERVAL) {
                 const accountCheck = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
                 if (!accountCheck || !accountCheck.account) {
@@ -460,6 +501,9 @@ async function exportMessages(job, exportData) {
                 for (let i = 0; i < entriesToFetch.length; i += MESSAGE_FETCH_BATCH_SIZE) {
                     if (streamError) {
                         throw streamError;
+                    }
+                    if (sizeLimitReached) {
+                        break;
                     }
 
                     let fetchBatch = entriesToFetch.slice(i, i + MESSAGE_FETCH_BATCH_SIZE);
@@ -505,6 +549,10 @@ async function exportMessages(job, exportData) {
                             } else if (result && result.data) {
                                 await processMessage(result.data, entry);
                                 lastScore = entry.score;
+                                if (maxExportSize && totalBytesWritten >= maxExportSize) {
+                                    sizeLimitReached = true;
+                                    break;
+                                }
                             } else {
                                 logger.warn({
                                     msg: 'Skipping message during export',
@@ -517,6 +565,10 @@ async function exportMessages(job, exportData) {
                                 await Export.incrementSkipped(account, exportId);
                                 lastScore = entry.score;
                             }
+                        }
+
+                        if (sizeLimitReached) {
+                            break;
                         }
 
                         if (rateLimitedEntries.length > 0) {
@@ -582,6 +634,11 @@ async function exportMessages(job, exportData) {
 
                     if (message) {
                         await processMessage(message, entry);
+                        if (maxExportSize && totalBytesWritten >= maxExportSize) {
+                            sizeLimitReached = true;
+                            lastScore = entry.score;
+                            break;
+                        }
                     } else if (fetchError && isSkippableError(fetchError)) {
                         logger.warn({
                             msg: 'Skipping message during export',
@@ -605,6 +662,18 @@ async function exportMessages(job, exportData) {
         }
     } catch (err) {
         processingError = err;
+    }
+
+    if (sizeLimitReached) {
+        logger.warn({
+            msg: 'Export truncated: size limit reached',
+            account,
+            exportId,
+            totalBytesWritten,
+            limit: maxExportSize,
+            messagesExported: processed
+        });
+        await Export.update(account, exportId, { truncated: '1' });
     }
 
     const FINALIZATION_TIMEOUT = 30000;

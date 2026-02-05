@@ -943,4 +943,133 @@ test('Export functionality tests', async t => {
     await t.test('Rate limit detection: non-rate-limited errors return false', async () => {
         assert.strictEqual(isRateLimited({ statusCode: 500 }), false);
     });
+
+    // Export limit enforcement tests
+    // These replicate the limit-checking logic from workers/export.js indexMessages and exportMessages.
+    // Limits are read from settings and are disabled (0) by default.
+
+    // Simulates the indexFolder inner loop: queues messages up to maxMessages (0 = unlimited)
+    function simulateIndexFolder(messageCount, maxMessages) {
+        let queued = 0;
+        for (let i = 0; i < messageCount; i++) {
+            if (maxMessages && queued >= maxMessages) {
+                return queued;
+            }
+            // simulate Export.queueMessage
+            queued++;
+        }
+        return queued;
+    }
+
+    // Simulates the indexMessages outer loop across folders
+    function simulateIndexMessages(folderMessageCounts, maxMessages) {
+        let totalIndexed = 0;
+        let truncated = false;
+
+        for (const messageCount of folderMessageCounts) {
+            const remaining = maxMessages ? maxMessages - totalIndexed : 0;
+            const queued = simulateIndexFolder(messageCount, remaining);
+            totalIndexed += queued;
+
+            if (maxMessages && totalIndexed >= maxMessages) {
+                truncated = true;
+                break;
+            }
+        }
+
+        return { totalIndexed, truncated };
+    }
+
+    // Simulates the exportMessages size-limit logic
+    function simulateExportMessages(messageSizes, maxExportSize) {
+        let totalBytesWritten = 0;
+        let processed = 0;
+        let sizeLimitReached = false;
+
+        for (const size of messageSizes) {
+            if (sizeLimitReached) {
+                break;
+            }
+            totalBytesWritten += size;
+            processed++;
+            if (maxExportSize && totalBytesWritten >= maxExportSize) {
+                sizeLimitReached = true;
+            }
+        }
+
+        return { totalBytesWritten, processed, sizeLimitReached };
+    }
+
+    await t.test('Export message limit: no limit set (0) indexes all messages', async () => {
+        const result = simulateIndexMessages([100, 200, 50], 0);
+        assert.strictEqual(result.totalIndexed, 350);
+        assert.strictEqual(result.truncated, false);
+    });
+
+    await t.test('Export message limit: limit enforced when set', async () => {
+        const result = simulateIndexMessages([100, 200, 50], 150);
+        assert.strictEqual(result.totalIndexed, 150);
+        assert.strictEqual(result.truncated, true);
+    });
+
+    await t.test('Export message limit: stops mid-folder when limit reached', async () => {
+        const result = simulateIndexMessages([500], 75);
+        assert.strictEqual(result.totalIndexed, 75);
+        assert.strictEqual(result.truncated, true);
+    });
+
+    await t.test('Export message limit: truncated when count equals limit exactly', async () => {
+        const result = simulateIndexMessages([100], 100);
+        assert.strictEqual(result.totalIndexed, 100);
+        assert.strictEqual(result.truncated, true);
+    });
+
+    await t.test('Export message limit: not truncated when under limit', async () => {
+        const result = simulateIndexMessages([50], 100);
+        assert.strictEqual(result.totalIndexed, 50);
+        assert.strictEqual(result.truncated, false);
+    });
+
+    await t.test('Export size limit: no limit set (0) exports all messages', async () => {
+        const sizes = [1000, 2000, 3000, 4000, 5000];
+        const result = simulateExportMessages(sizes, 0);
+        assert.strictEqual(result.processed, 5);
+        assert.strictEqual(result.totalBytesWritten, 15000);
+        assert.strictEqual(result.sizeLimitReached, false);
+    });
+
+    await t.test('Export size limit: limit enforced when set', async () => {
+        const sizes = [1000, 2000, 3000, 4000, 5000];
+        const result = simulateExportMessages(sizes, 5000);
+        assert.strictEqual(result.processed, 3);
+        assert.strictEqual(result.totalBytesWritten, 6000);
+        assert.strictEqual(result.sizeLimitReached, true);
+    });
+
+    await t.test('Export size limit: stops after first message exceeding limit', async () => {
+        const sizes = [10000];
+        const result = simulateExportMessages(sizes, 5000);
+        assert.strictEqual(result.processed, 1);
+        assert.strictEqual(result.totalBytesWritten, 10000);
+        assert.strictEqual(result.sizeLimitReached, true);
+    });
+
+    await t.test('Export size limit: not triggered when under limit', async () => {
+        const sizes = [100, 200, 300];
+        const result = simulateExportMessages(sizes, 5000);
+        assert.strictEqual(result.processed, 3);
+        assert.strictEqual(result.totalBytesWritten, 600);
+        assert.strictEqual(result.sizeLimitReached, false);
+    });
+
+    await t.test('Export limits: both limits disabled allows unlimited export', async () => {
+        const indexResult = simulateIndexMessages([1000000], 0);
+        assert.strictEqual(indexResult.totalIndexed, 1000000);
+        assert.strictEqual(indexResult.truncated, false);
+
+        const sizes = new Array(10000).fill(1024);
+        const exportResult = simulateExportMessages(sizes, 0);
+        assert.strictEqual(exportResult.processed, 10000);
+        assert.strictEqual(exportResult.sizeLimitReached, false);
+    });
 });

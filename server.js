@@ -2781,6 +2781,10 @@ const closeQueues = cb => {
         proms.push(queueEvents.documents.close());
     }
 
+    if (queueEvents.export) {
+        proms.push(queueEvents.export.close());
+    }
+
     if (!proms.length) {
         return setImmediate(() => cb());
     }
@@ -3194,6 +3198,7 @@ startApplication()
         queueEvents.notify = new QueueEvents('notify', Object.assign({}, queueConf));
         queueEvents.submit = new QueueEvents('submit', Object.assign({}, queueConf));
         queueEvents.documents = new QueueEvents('documents', Object.assign({}, queueConf));
+        queueEvents.export = new QueueEvents('export', Object.assign({}, queueConf));
 
         // Periodic queue cleanup (every 6 hours)
         const QUEUE_CLEANUP_INTERVAL = 6 * 60 * 60 * 1000;
