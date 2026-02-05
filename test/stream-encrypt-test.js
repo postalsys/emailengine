@@ -30,7 +30,7 @@ test('Stream encryption tests', async t => {
     const testSecret = 'test-secret-password-123';
 
     await t.test('createEncryptStream() requires a secret', async () => {
-        assert.throws(
+        await assert.rejects(
             () => createEncryptStream(null),
             err => {
                 assert.ok(err.message.includes('secret is required'));
@@ -38,7 +38,7 @@ test('Stream encryption tests', async t => {
             }
         );
 
-        assert.throws(
+        await assert.rejects(
             () => createEncryptStream(''),
             err => {
                 assert.ok(err.message.includes('secret is required'));
@@ -48,7 +48,7 @@ test('Stream encryption tests', async t => {
     });
 
     await t.test('createDecryptStream() requires a secret', async () => {
-        assert.throws(
+        await assert.rejects(
             () => createDecryptStream(null),
             err => {
                 assert.ok(err.message.includes('secret is required'));
@@ -56,7 +56,7 @@ test('Stream encryption tests', async t => {
             }
         );
 
-        assert.throws(
+        await assert.rejects(
             () => createDecryptStream(''),
             err => {
                 assert.ok(err.message.includes('secret is required'));
@@ -68,8 +68,8 @@ test('Stream encryption tests', async t => {
     await t.test('round-trip encryption/decryption with small data', async () => {
         const originalData = Buffer.from('Hello, World!');
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
@@ -81,8 +81,8 @@ test('Stream encryption tests', async t => {
     await t.test('round-trip encryption/decryption with empty data', async () => {
         const originalData = Buffer.alloc(0);
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
@@ -94,8 +94,8 @@ test('Stream encryption tests', async t => {
     await t.test('round-trip encryption/decryption with exactly one chunk', async () => {
         const originalData = crypto.randomBytes(CHUNK_SIZE);
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
@@ -108,8 +108,8 @@ test('Stream encryption tests', async t => {
         // Create data that spans multiple chunks (3 full chunks + partial)
         const originalData = crypto.randomBytes(CHUNK_SIZE * 3 + 1000);
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
@@ -121,8 +121,8 @@ test('Stream encryption tests', async t => {
     await t.test('round-trip encryption/decryption with large data (1MB)', async () => {
         const originalData = crypto.randomBytes(1024 * 1024);
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
@@ -134,7 +134,7 @@ test('Stream encryption tests', async t => {
     await t.test('encrypted data has correct header', async () => {
         const originalData = Buffer.from('Test data');
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
         const input = bufferToStream(originalData);
         const encrypted = await streamToBuffer(input.pipe(encryptStream));
 
@@ -154,8 +154,8 @@ test('Stream encryption tests', async t => {
     await t.test('different secrets produce different encrypted output', async () => {
         const originalData = Buffer.from('Same input data');
 
-        const encryptStream1 = createEncryptStream('secret1');
-        const encryptStream2 = createEncryptStream('secret2');
+        const encryptStream1 = await createEncryptStream('secret1');
+        const encryptStream2 = await createEncryptStream('secret2');
 
         const encrypted1 = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream1));
         const encrypted2 = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream2));
@@ -167,8 +167,8 @@ test('Stream encryption tests', async t => {
     await t.test('same secret produces different encrypted output (random IV/salt)', async () => {
         const originalData = Buffer.from('Same input data');
 
-        const encryptStream1 = createEncryptStream(testSecret);
-        const encryptStream2 = createEncryptStream(testSecret);
+        const encryptStream1 = await createEncryptStream(testSecret);
+        const encryptStream2 = await createEncryptStream(testSecret);
 
         const encrypted1 = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream1));
         const encrypted2 = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream2));
@@ -177,8 +177,8 @@ test('Stream encryption tests', async t => {
         assert.notDeepStrictEqual(encrypted1, encrypted2);
 
         // But both should decrypt to the same original data
-        const decrypted1 = await streamToBuffer(bufferToStream(encrypted1).pipe(createDecryptStream(testSecret)));
-        const decrypted2 = await streamToBuffer(bufferToStream(encrypted2).pipe(createDecryptStream(testSecret)));
+        const decrypted1 = await streamToBuffer(bufferToStream(encrypted1).pipe(await createDecryptStream(testSecret)));
+        const decrypted2 = await streamToBuffer(bufferToStream(encrypted2).pipe(await createDecryptStream(testSecret)));
 
         assert.deepStrictEqual(decrypted1, originalData);
         assert.deepStrictEqual(decrypted2, originalData);
@@ -187,8 +187,8 @@ test('Stream encryption tests', async t => {
     await t.test('decryption fails with wrong secret', async () => {
         const originalData = Buffer.from('Secret data');
 
-        const encryptStream = createEncryptStream('correct-password');
-        const decryptStream = createDecryptStream('wrong-password');
+        const encryptStream = await createEncryptStream('correct-password');
+        const decryptStream = await createDecryptStream('wrong-password');
 
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
 
@@ -201,7 +201,7 @@ test('Stream encryption tests', async t => {
     await t.test('decryption fails with tampered data', async () => {
         const originalData = Buffer.from('Original data');
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
 
         // Tamper with encrypted data (flip a bit in the middle)
@@ -211,7 +211,7 @@ test('Stream encryption tests', async t => {
             tampered[tamperedIndex] ^= 0xff;
         }
 
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         await assert.rejects(streamToBuffer(bufferToStream(tampered).pipe(decryptStream)), err => {
             assert.ok(err.message.includes('Decryption failed') || err.message.includes('invalid') || err.message.includes('corrupted'));
@@ -222,14 +222,14 @@ test('Stream encryption tests', async t => {
     await t.test('decryption fails with tampered header magic', async () => {
         const originalData = Buffer.from('Test data');
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
 
         // Tamper with magic bytes
         const tampered = Buffer.from(encrypted);
         tampered[0] = 0xff;
 
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         await assert.rejects(streamToBuffer(bufferToStream(tampered).pipe(decryptStream)), err => {
             assert.ok(err.message.includes('Invalid encrypted file format') || err.message.includes('bad magic'));
@@ -240,7 +240,7 @@ test('Stream encryption tests', async t => {
     await t.test('decryption fails with incomplete header', async () => {
         const incompleteHeader = Buffer.from('EE0'); // Incomplete magic
 
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         await assert.rejects(streamToBuffer(bufferToStream(incompleteHeader).pipe(decryptStream)), err => {
             assert.ok(err.message.includes('incomplete') || err.message.includes('Invalid'));
@@ -251,13 +251,13 @@ test('Stream encryption tests', async t => {
     await t.test('decryption fails with truncated chunk', async () => {
         const originalData = Buffer.from('Test data');
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
 
         // Truncate the encrypted data (remove last few bytes)
         const truncated = encrypted.slice(0, encrypted.length - 10);
 
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         await assert.rejects(streamToBuffer(bufferToStream(truncated).pipe(decryptStream)), err => {
             assert.ok(err.message.includes('incomplete') || err.message.includes('Decryption failed') || err.message.includes('corrupted'));
@@ -270,13 +270,13 @@ test('Stream encryption tests', async t => {
 
         // Compress then encrypt
         const gzipStream = zlib.createGzip();
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
 
         const compressed = await streamToBuffer(bufferToStream(originalData).pipe(gzipStream));
         const encrypted = await streamToBuffer(bufferToStream(compressed).pipe(encryptStream));
 
         // Decrypt then decompress
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
         const gunzipStream = zlib.createGunzip();
 
         const decrypted = await streamToBuffer(bufferToStream(encrypted).pipe(decryptStream));
@@ -294,7 +294,7 @@ test('Stream encryption tests', async t => {
         output.on('data', chunk => outputChunks.push(chunk));
 
         // Compress -> Encrypt
-        await pipeline(bufferToStream(originalData), zlib.createGzip(), createEncryptStream(testSecret), output);
+        await pipeline(bufferToStream(originalData), zlib.createGzip(), await createEncryptStream(testSecret), output);
 
         const encrypted = Buffer.concat(outputChunks);
 
@@ -303,7 +303,7 @@ test('Stream encryption tests', async t => {
         const decryptOutput = new PassThrough();
         decryptOutput.on('data', chunk => decryptedChunks.push(chunk));
 
-        await pipeline(bufferToStream(encrypted), createDecryptStream(testSecret), zlib.createGunzip(), decryptOutput);
+        await pipeline(bufferToStream(encrypted), await createDecryptStream(testSecret), zlib.createGunzip(), decryptOutput);
 
         const decrypted = Buffer.concat(decryptedChunks);
 
@@ -320,7 +320,7 @@ test('Stream encryption tests', async t => {
             }
         });
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
 
         // Start piping
         const encryptedPromise = streamToBuffer(smallChunkStream.pipe(encryptStream));
@@ -336,7 +336,7 @@ test('Stream encryption tests', async t => {
         smallChunkStream.push(null);
 
         const encrypted = await encryptedPromise;
-        const decrypted = await streamToBuffer(bufferToStream(encrypted).pipe(createDecryptStream(testSecret)));
+        const decrypted = await streamToBuffer(bufferToStream(encrypted).pipe(await createDecryptStream(testSecret)));
 
         assert.deepStrictEqual(decrypted, originalData);
     });
@@ -351,8 +351,8 @@ test('Stream encryption tests', async t => {
             originalData[i * 4 + 3] = (i + 192) % 256;
         }
 
-        const encryptStream = createEncryptStream(testSecret);
-        const decryptStream = createDecryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
 
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
         const decrypted = await streamToBuffer(bufferToStream(encrypted).pipe(decryptStream));
@@ -370,7 +370,7 @@ test('Stream encryption tests', async t => {
     await t.test('decryption handles streaming input in chunks', async () => {
         const originalData = crypto.randomBytes(CHUNK_SIZE * 2);
 
-        const encryptStream = createEncryptStream(testSecret);
+        const encryptStream = await createEncryptStream(testSecret);
         const encrypted = await streamToBuffer(bufferToStream(originalData).pipe(encryptStream));
 
         // Create a stream that emits encrypted data in small chunks
@@ -378,7 +378,7 @@ test('Stream encryption tests', async t => {
             read() {}
         });
 
-        const decryptStream = createDecryptStream(testSecret);
+        const decryptStream = await createDecryptStream(testSecret);
         const decryptedPromise = streamToBuffer(smallChunkStream.pipe(decryptStream));
 
         // Push encrypted data in small chunks (50 bytes at a time)

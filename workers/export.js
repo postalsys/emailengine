@@ -326,7 +326,7 @@ async function exportMessages(job, exportData) {
     const secret = isEncrypted ? await getSecret() : null;
     if (secret) {
         const { createEncryptStream } = require('../lib/stream-encrypt');
-        const encryptStream = createEncryptStream(secret);
+        const encryptStream = await createEncryptStream(secret);
         encryptStream.on('error', handleStreamError);
         gzipStream.pipe(encryptStream).pipe(fileStream);
     } else {
