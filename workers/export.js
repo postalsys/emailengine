@@ -9,7 +9,14 @@ const fs = require('fs');
 const zlib = require('zlib');
 const { pipeline } = require('stream');
 
-const { REDIS_PREFIX, EXPORT_COMPLETED_NOTIFY, EXPORT_FAILED_NOTIFY, DEFAULT_EXPORT_MAX_MESSAGE_SIZE } = require('../lib/consts');
+const {
+    REDIS_PREFIX,
+    EXPORT_COMPLETED_NOTIFY,
+    EXPORT_FAILED_NOTIFY,
+    DEFAULT_EXPORT_MAX_MESSAGE_SIZE,
+    DEFAULT_EXPORT_MAX_MESSAGES,
+    DEFAULT_EXPORT_MAX_SIZE
+} = require('../lib/consts');
 const { getDuration, readEnvValue, threadStats } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
@@ -181,7 +188,7 @@ async function indexMessages(job, exportData) {
 
     await Export.update(account, exportId, { foldersTotal: foldersToProcess.length });
 
-    const maxMessages = Number(await settings.get('exportMaxMessages')) || 0;
+    const maxMessages = Number(await settings.get('exportMaxMessages')) || DEFAULT_EXPORT_MAX_MESSAGES;
 
     logger.info({ msg: 'Starting export indexing', account, exportId, foldersToProcess: foldersToProcess.length, maxMessages: maxMessages || 'unlimited' });
 
@@ -337,7 +344,7 @@ async function exportMessages(job, exportData) {
     const textType = exportData.textType || '*';
     const maxBytes = Number(exportData.maxBytes) || 5 * 1024 * 1024;
     const maxMessageSize = (await settings.get('exportMaxMessageSize')) || DEFAULT_EXPORT_MAX_MESSAGE_SIZE;
-    const maxExportSize = Number(await settings.get('exportMaxSize')) || 0;
+    const maxExportSize = Number(await settings.get('exportMaxSize')) || DEFAULT_EXPORT_MAX_SIZE;
     const isEncrypted = exportData.isEncrypted === '1';
 
     const accountObject = new Account({
