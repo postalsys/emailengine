@@ -4,25 +4,14 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const http = require('node:http');
 
-/**
- * Creates and starts a test HTTP server.
- *
- * @param {'always-429'|'429-then-200'|'always-200'} behavior
- *   - 'always-429': every request returns 429
- *   - '429-then-200': first request per path returns 429, subsequent return 200
- *   - 'always-200': every request returns 200
- * @returns {Promise<{server: http.Server, baseUrl: string, requestCounts: Object}>}
- */
 async function startTestServer(behavior) {
     const requestCounts = {};
 
     const server = http.createServer((req, res) => {
-        // Strip query params for path-based counting (Mail.ru appends access_token)
         const path = req.url.split('?')[0];
         requestCounts[path] = (requestCounts[path] || 0) + 1;
         const count = requestCounts[path];
 
-        // Consume request body
         req.on('data', () => {});
         req.on('end', () => {
             if (behavior === 'always-429') {
@@ -52,11 +41,6 @@ async function stopServer(server) {
     await new Promise(resolve => server.close(resolve));
 }
 
-/**
- * Creates and starts a test HTTP server that captures the raw request body.
- *
- * @returns {Promise<{server: http.Server, baseUrl: string, getBody: () => Buffer}>}
- */
 async function startBodyCapturingServer() {
     let capturedBody = null;
 
@@ -89,27 +73,27 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     const { OutlookOauth } = require('../lib/oauth/outlook');
     const { MailRuOauth } = require('../lib/oauth/mail-ru');
 
-    // ---------------------------------------------------------------
-    // Fix 1: Empty Buffer payloads should use retryAgent (retry on 429),
-    //         non-empty Buffer payloads should use fetchAgent (no retry).
-    //
-    // Tested by calling the real request() method against a local HTTP
-    // server that returns 429 on the first request. If the dispatcher is
-    // retryAgent, undici retries and the request succeeds. If fetchAgent,
-    // no retry occurs and the request throws.
-    // ---------------------------------------------------------------
+    const baseOpts = { clientId: 'test-id', clientSecret: 'test-secret', redirectUrl: 'http://localhost/callback', setFlag: async () => {} };
+
+    function createGmail() {
+        return new GmailOauth(baseOpts);
+    }
+
+    function createOutlook() {
+        return new OutlookOauth({ ...baseOpts, authority: 'common' });
+    }
+
+    function createMailRu() {
+        return new MailRuOauth(baseOpts);
+    }
+
+    // Empty Buffer payloads should use retryAgent (retry on 429),
+    // non-empty Buffer payloads should use fetchAgent (no retry).
 
     await t.test('Gmail: empty Buffer payload retries on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
         try {
-            const gmail = new GmailOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
-            const result = await gmail.request('fake-token', `${baseUrl}/gmail-empty-buf`, 'post', Buffer.alloc(0));
+            const result = await createGmail().request('fake-token', `${baseUrl}/gmail-empty-buf`, 'post', Buffer.alloc(0));
             assert.deepStrictEqual(result, { ok: true, attempt: 2 });
             assert.ok(requestCounts['/gmail-empty-buf'] >= 2, 'Empty buffer POST should be retried on 429');
         } finally {
@@ -120,15 +104,8 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     await t.test('Gmail: non-empty Buffer payload does not retry on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('always-429');
         try {
-            const gmail = new GmailOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
             await assert.rejects(
-                () => gmail.request('fake-token', `${baseUrl}/gmail-nonempty-buf`, 'post', Buffer.from('binary-data')),
+                () => createGmail().request('fake-token', `${baseUrl}/gmail-nonempty-buf`, 'post', Buffer.from('binary-data')),
                 err => {
                     assert.strictEqual(err.oauthRequest.status, 429);
                     return true;
@@ -143,14 +120,7 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     await t.test('Gmail: JSON object payload retries on 429 (baseline)', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
         try {
-            const gmail = new GmailOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
-            const result = await gmail.request('fake-token', `${baseUrl}/gmail-json`, 'post', { key: 'value' });
+            const result = await createGmail().request('fake-token', `${baseUrl}/gmail-json`, 'post', { key: 'value' });
             assert.deepStrictEqual(result, { ok: true, attempt: 2 });
             assert.ok(requestCounts['/gmail-json'] >= 2, 'JSON payload should be retried on 429');
         } finally {
@@ -158,22 +128,10 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         }
     });
 
-    // Outlook: empty Buffer retry is critical because deleteMessage(force)
-    // and deleteMailbox() use Buffer.alloc(0) via plain request() with
-    // no app-level retry wrapper.
-
     await t.test('Outlook: empty Buffer payload retries on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
         try {
-            const outlook = new OutlookOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                authority: 'common',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
-            const result = await outlook.request('fake-token', `${baseUrl}/outlook-empty-buf`, 'delete', Buffer.alloc(0));
+            const result = await createOutlook().request('fake-token', `${baseUrl}/outlook-empty-buf`, 'delete', Buffer.alloc(0));
             assert.deepStrictEqual(result, { ok: true, attempt: 2 });
             assert.ok(requestCounts['/outlook-empty-buf'] >= 2, 'Empty buffer DELETE should be retried on 429');
         } finally {
@@ -184,16 +142,8 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     await t.test('Outlook: non-empty Buffer payload does not retry on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('always-429');
         try {
-            const outlook = new OutlookOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                authority: 'common',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
             await assert.rejects(
-                () => outlook.request('fake-token', `${baseUrl}/outlook-nonempty-buf`, 'post', Buffer.from('data')),
+                () => createOutlook().request('fake-token', `${baseUrl}/outlook-nonempty-buf`, 'post', Buffer.from('data')),
                 err => {
                     assert.strictEqual(err.oauthRequest.status, 429);
                     return true;
@@ -208,14 +158,7 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     await t.test('Mail.ru: empty Buffer payload retries on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('429-then-200');
         try {
-            const mailru = new MailRuOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
-            const result = await mailru.request('fake-token', `${baseUrl}/mailru-empty-buf`, 'post', Buffer.alloc(0));
+            const result = await createMailRu().request('fake-token', `${baseUrl}/mailru-empty-buf`, 'post', Buffer.alloc(0));
             assert.deepStrictEqual(result, { ok: true, attempt: 2 });
             assert.ok(requestCounts['/mailru-empty-buf'] >= 2, 'Empty buffer POST should be retried on 429');
         } finally {
@@ -226,15 +169,8 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
     await t.test('Mail.ru: non-empty Buffer payload does not retry on 429', async () => {
         const { server, baseUrl, requestCounts } = await startTestServer('always-429');
         try {
-            const mailru = new MailRuOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
             await assert.rejects(
-                () => mailru.request('fake-token', `${baseUrl}/mailru-nonempty-buf`, 'post', Buffer.from('data')),
+                () => createMailRu().request('fake-token', `${baseUrl}/mailru-nonempty-buf`, 'post', Buffer.from('data')),
                 err => {
                     assert.strictEqual(err.oauthRequest.status, 429);
                     return true;
@@ -246,36 +182,15 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         }
     });
 
-    // ---------------------------------------------------------------
-    // Fix 2: Gmail send endpoint selection.
-    //
-    // gmail-client.js submitMessage() selects between the JSON endpoint
-    // (5MB body limit) and the upload endpoint (35MB limit) based on
-    // raw message size. The fix ensures large threaded replies use the
-    // upload endpoint instead of being forced through JSON.
-    //
-    // This mirrors the endpoint selection logic from gmail-client.js
-    // (same pattern as retry-logic-test.js mirrors retry logic).
-    // ---------------------------------------------------------------
-
-    /**
-     * Mirrors the endpoint selection logic in gmail-client.js submitMessage().
-     * @param {number} rawLength - Size of the raw RFC822 message in bytes
-     * @param {string|null} threadId - Thread ID for threaded replies, or null
-     * @returns {{contentType: string, targetEndpoint: string, hasThreadId: boolean, isMultipart: boolean}}
-     */
+    // Gmail send endpoint selection logic (mirrors gmail-client.js submitMessage)
     function selectGmailSendEndpoint(rawLength, threadId) {
         const JSON_SEND_LIMIT = 3.5 * 1024 * 1024;
 
         if (rawLength <= JSON_SEND_LIMIT) {
-            let payload = { raw: '<base64url>' };
-            if (threadId) {
-                payload.threadId = threadId;
-            }
             return {
                 contentType: 'application/json',
                 targetEndpoint: '/gmail/v1/users/me/messages/send',
-                hasThreadId: !!payload.threadId,
+                hasThreadId: !!threadId,
                 isMultipart: false
             };
         } else if (threadId) {
@@ -404,29 +319,11 @@ test('Buffer payload dispatcher and Gmail endpoint selection', async t => {
         assert.ok(totalJsonBody < GMAIL_JSON_LIMIT, `Max JSON body (${totalJsonBody} bytes) should be under Gmail 5MB limit (${GMAIL_JSON_LIMIT} bytes)`);
     });
 
-    // ---------------------------------------------------------------
-    // Fix 3: Outlook sendMail base64 body must not be JSON-quoted.
-    //
-    // When outlook-client.js sends a base64-encoded MIME message via
-    // sendMail, the payload must arrive as a raw base64 string with
-    // Content-Type: text/plain. If the payload is passed as a JS string
-    // instead of a Buffer, the non-Buffer branch in outlook.js wraps it
-    // with JSON.stringify(), adding quotes around the base64 content.
-    // The fix wraps the base64 string in a Buffer so it takes the
-    // Buffer code path, which sends the body as-is.
-    // ---------------------------------------------------------------
-
+    // Outlook sendMail: Buffer payload with text/plain must not be JSON-quoted
     await t.test('Outlook: Buffer payload with text/plain contentType is sent without JSON quoting', async () => {
         const { server, baseUrl, getBody } = await startBodyCapturingServer();
         try {
-            const outlook = new OutlookOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                authority: 'common',
-                redirectUrl: 'http://localhost/callback',
-                setFlag: async () => {}
-            });
-
+            const outlook = createOutlook();
             const base64Content = Buffer.from('From: a@b.com\r\nTo: c@d.com\r\nSubject: Test\r\n\r\nHello').toString('base64');
             const payload = Buffer.from(base64Content);
 

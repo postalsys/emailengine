@@ -51,7 +51,7 @@ config.service = config.service || {};
 const DEFAULT_EENGINE_TIMEOUT = 10 * 1000;
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 
-const DEFAULT_EXPORT_TIMEOUT = 5 * 60 * 1000; // 5 minutes for export operations
+const DEFAULT_EXPORT_TIMEOUT = 5 * 60 * 1000;
 const EXPORT_TIMEOUT = getDuration(readEnvValue('EENGINE_EXPORT_TIMEOUT')) || DEFAULT_EXPORT_TIMEOUT;
 
 const EXPORT_QC = (readEnvValue('EENGINE_EXPORT_QC') && Number(readEnvValue('EENGINE_EXPORT_QC'))) || config.queues.export || 1;
@@ -61,31 +61,23 @@ const LIST_PAGE_SIZE = 1000;
 const FOLDER_INDEX_MAX_RETRIES = 3;
 const FOLDER_INDEX_RETRY_DELAY_MS = 1000;
 
-// IMAP message fetch retry configuration
 const IMAP_MESSAGE_MAX_RETRIES = 3;
 const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
+const ACCOUNT_CHECK_INTERVAL = 60 * 1000;
 
-// Account validation interval during export
-const ACCOUNT_CHECK_INTERVAL = 60000; // 60 seconds
-
-// Helper to identify transient errors that should be retried
 function isTransientError(err) {
-    // Network errors
     if (['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH'].includes(err.code)) {
         return true;
     }
-    // Server errors (5xx)
     if (err.statusCode >= 500 && err.statusCode < 600) {
         return true;
     }
-    // Timeout errors
     if (err.code === 'Timeout' || err.message?.includes('timeout')) {
         return true;
     }
     return false;
 }
 
-// Helper to identify skippable errors (message no longer exists)
 function isSkippableError(err) {
     return err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
 }
@@ -160,7 +152,6 @@ async function indexMessages(job, exportData) {
     const startDate = new Date(Number(exportData.startDate));
     const endDate = new Date(Number(exportData.endDate));
 
-    // Verify account exists before attempting to process
     const accountData = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
     if (!accountData || !accountData.account) {
         const err = new Error('Account not found or has been deleted');
@@ -246,7 +237,6 @@ async function indexMessages(job, exportData) {
 }
 
 function resolveFolders(folders, mailboxes) {
-    // Helper to resolve a folder alias (e.g., \Inbox, \All) to actual path
     const resolveFolder = folder => {
         if (folder.startsWith('\\')) {
             const match = mailboxes.find(mb => mb.specialUse === folder);
@@ -256,13 +246,11 @@ function resolveFolders(folders, mailboxes) {
     };
 
     if (!folders || folders.length === 0) {
-        // For Gmail/Outlook API accounts with \All folder, default to just \All
-        // (All Mail already contains all messages except Junk and Trash)
+        // If \All folder exists (Gmail/Outlook), use it; otherwise export all except Junk and Trash
         const allMailFolder = mailboxes.find(mb => mb.specialUse === '\\All');
         if (allMailFolder) {
             return [allMailFolder.path];
         }
-        // For regular IMAP accounts, export all folders except Junk and Trash
         return mailboxes.filter(mb => !['\\Junk', '\\Trash'].includes(mb.specialUse)).map(mb => mb.path);
     }
 
@@ -282,8 +270,6 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
             path: folderPath,
             pageSize: LIST_PAGE_SIZE,
             search: searchCriteria,
-            // Use metadataOnly for faster indexing - skips fetching individual messages
-            // Gmail API list endpoint returns only IDs; metadataOnly avoids N+1 API calls
             metadataOnly: true,
             cursor
         };
@@ -327,7 +313,6 @@ async function exportMessages(job, exportData) {
     const gzipStream = zlib.createGzip();
     const fileStream = fs.createWriteStream(filePath);
 
-    // Capture stream errors immediately to catch disk I/O errors during writes
     let streamError = null;
     function handleStreamError(err) {
         if (!streamError) {
@@ -337,7 +322,6 @@ async function exportMessages(job, exportData) {
     gzipStream.on('error', handleStreamError);
     fileStream.on('error', handleStreamError);
 
-    // Set up encryption if enabled and secret is available
     const secret = isEncrypted ? await getSecret() : null;
     if (secret) {
         const { createEncryptStream } = require('../lib/stream-encrypt');
@@ -380,17 +364,14 @@ async function exportMessages(job, exportData) {
     let totalBytesWritten = 0;
     let processingError = null;
 
-    // Track last account validation time
     let lastAccountCheck = Date.now();
 
-    // Check if this account uses API (Gmail/Outlook) which supports parallel fetching
     const accountData = await accountObject.loadAccountData(account);
     const isApiAccount = await accountObject.isApiClient(accountData);
     const MESSAGE_FETCH_BATCH_SIZE = 10; // Batch size for parallel message fetching
     const MAX_RATE_LIMIT_RETRIES = 5; // Max retries for rate-limited messages
     const RATE_LIMIT_BASE_DELAY = 5000; // Base delay for rate limit backoff (5 seconds)
 
-    // Helper function to process a single message (attachments and writing)
     async function processMessage(message, entry) {
         message.path = entry.folder;
 
@@ -443,7 +424,6 @@ async function exportMessages(job, exportData) {
                 throw streamError;
             }
 
-            // Periodically verify account still exists
             if (Date.now() - lastAccountCheck > ACCOUNT_CHECK_INTERVAL) {
                 const accountCheck = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
                 if (!accountCheck || !accountCheck.account) {
@@ -459,7 +439,6 @@ async function exportMessages(job, exportData) {
                 break;
             }
 
-            // Separate entries into fetchable and skippable
             const entriesToFetch = [];
             for (const entry of batch) {
                 if (includeAttachments && entry.size > maxMessageSize) {
@@ -475,9 +454,7 @@ async function exportMessages(job, exportData) {
                 continue;
             }
 
-            // Process entries: batch fetch for API accounts, sequential for IMAP
             if (isApiAccount && entriesToFetch.length > 1) {
-                // Process in smaller batches for API parallel fetching
                 for (let i = 0; i < entriesToFetch.length; i += MESSAGE_FETCH_BATCH_SIZE) {
                     if (streamError) {
                         throw streamError;
@@ -486,33 +463,25 @@ async function exportMessages(job, exportData) {
                     let fetchBatch = entriesToFetch.slice(i, i + MESSAGE_FETCH_BATCH_SIZE);
                     let rateLimitRetry = 0;
 
-                    // Retry loop for rate-limited messages
                     while (fetchBatch.length > 0) {
                         const messageIds = fetchBatch.map(e => e.messageId);
-
-                        // Batch fetch messages in parallel
                         const messageResults = await accountObject.getMessages(messageIds, { textType, maxBytes });
 
-                        // Create a map for quick lookup
                         const resultMap = new Map();
                         for (const result of messageResults) {
                             resultMap.set(result.messageId, result);
                         }
 
-                        // Track entries that need retry due to rate limiting
                         const rateLimitedEntries = [];
 
-                        // Process results sequentially (for attachments and writing)
                         for (const entry of fetchBatch) {
                             const result = resultMap.get(entry.messageId);
 
                             if (result && result.error) {
                                 const err = result.error;
-                                const isSkippable =
-                                    err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
                                 const isRateLimited = err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
 
-                                if (isSkippable) {
+                                if (isSkippableError(err)) {
                                     logger.warn({
                                         msg: 'Skipping message during export',
                                         account,
@@ -524,7 +493,6 @@ async function exportMessages(job, exportData) {
                                     await Export.incrementSkipped(account, exportId);
                                     lastScore = entry.score;
                                 } else if (isRateLimited && rateLimitRetry < MAX_RATE_LIMIT_RETRIES) {
-                                    // Queue for retry
                                     rateLimitedEntries.push(entry);
                                 } else {
                                     const error = new Error(err.message);
@@ -536,7 +504,6 @@ async function exportMessages(job, exportData) {
                                 await processMessage(result.data, entry);
                                 lastScore = entry.score;
                             } else {
-                                // No result found - skip as not found
                                 logger.warn({
                                     msg: 'Skipping message during export',
                                     account,
@@ -550,7 +517,6 @@ async function exportMessages(job, exportData) {
                             }
                         }
 
-                        // If we have rate-limited entries, wait and retry
                         if (rateLimitedEntries.length > 0) {
                             rateLimitRetry++;
                             const delay = RATE_LIMIT_BASE_DELAY * Math.pow(2, rateLimitRetry - 1) + Math.random() * 1000;
@@ -566,13 +532,11 @@ async function exportMessages(job, exportData) {
                             await new Promise(resolve => setTimeout(resolve, delay));
                             fetchBatch = rateLimitedEntries;
                         } else {
-                            // All messages in this batch processed successfully
                             break;
                         }
                     }
                 }
             } else {
-                // Sequential fetching for IMAP or single message
                 for (const entry of entriesToFetch) {
                     if (streamError) {
                         throw streamError;
@@ -581,19 +545,16 @@ async function exportMessages(job, exportData) {
                     let message = null;
                     let fetchError = null;
 
-                    // Retry loop for transient errors
                     for (let attempt = 1; attempt <= IMAP_MESSAGE_MAX_RETRIES; attempt++) {
                         try {
                             message = await accountObject.getMessage(entry.messageId, { textType, maxBytes });
                             break; // Success - exit retry loop
                         } catch (err) {
-                            // Skippable errors - don't retry
                             if (isSkippableError(err)) {
                                 fetchError = err;
                                 break;
                             }
 
-                            // Transient errors - retry with backoff
                             if (isTransientError(err) && attempt < IMAP_MESSAGE_MAX_RETRIES) {
                                 const delay = IMAP_MESSAGE_RETRY_BASE_DELAY * Math.pow(2, attempt - 1);
                                 logger.warn({
@@ -612,7 +573,6 @@ async function exportMessages(job, exportData) {
                                 continue;
                             }
 
-                            // Non-retryable error or max retries reached
                             fetchError = err;
                             break;
                         }
@@ -645,14 +605,12 @@ async function exportMessages(job, exportData) {
         processingError = err;
     }
 
-    // Finalize streams regardless of processing outcome
     await new Promise((resolve, reject) => {
         gzipStream.end();
         fileStream.once('finish', resolve);
         fileStream.once('error', err => reject(streamError || err));
     });
 
-    // Propagate errors: prefer processing error, then stream error
     if (processingError) {
         throw processingError;
     }
@@ -678,7 +636,6 @@ const exportWorker = new Worker(
             }
 
             if (isResumed) {
-                // Resumed export - skip indexing, go directly to exporting
                 logger.info({
                     msg: 'Resuming export from checkpoint',
                     account,
@@ -689,13 +646,11 @@ const exportWorker = new Worker(
                 });
                 await Export.update(account, exportId, { status: 'processing', phase: 'exporting', error: '' });
             } else {
-                // New export - run indexing phase
                 await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
                 await indexMessages(job, exportData);
                 await Export.update(account, exportId, { phase: 'exporting' });
             }
 
-            // Re-fetch export data after potential updates
             const currentExportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
             await exportMessages(job, currentExportData);
 
@@ -721,8 +676,6 @@ const exportWorker = new Worker(
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
 
-            // Clean up partial file on failure (only for non-resumable scenarios)
-            // For resumable exports, we keep the file to allow continuation
             const isResumable =
                 Number(exportData.lastProcessedScore) > 0 &&
                 Number(exportData.messagesQueued) > 0 &&
@@ -735,7 +688,6 @@ const exportWorker = new Worker(
 
             await Export.fail(account, exportId, err.message);
 
-            // Skip webhook for AccountDeleted since there's no receiver
             if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound') {
                 await notify(account, EXPORT_FAILED_NOTIFY, {
                     exportId,
@@ -752,18 +704,9 @@ const exportWorker = new Worker(
     },
     {
         concurrency: EXPORT_QC,
-
-        // Export jobs can run for extended periods processing many messages
-        // Lock duration should exceed the individual operation timeout
-        lockDuration: 10 * 60 * 1000, // 10 minutes
-
-        // Check for stalled jobs every 2 minutes
+        lockDuration: 10 * 60 * 1000,
         stalledInterval: 2 * 60 * 1000,
-
-        // Allow jobs to recover from stalled state up to 5 times
-        // Export jobs are long-running and may encounter transient issues
         maxStalledCount: 5,
-
         ...queueConf
     }
 );
@@ -793,7 +736,6 @@ function onCommand(command) {
     return 999;
 }
 
-// Startup sequence: clean up interrupted exports before accepting new jobs
 (async () => {
     try {
         await Export.markInterruptedAsFailed();
@@ -810,7 +752,6 @@ function onCommand(command) {
         }
     }, 10 * 1000).unref();
 
-    // Only signal ready after cleanup is complete to prevent race conditions
     parentPort.postMessage({ cmd: 'ready' });
 })();
 
@@ -839,7 +780,6 @@ parentPort.on('message', message => {
 
 logger.info({ msg: 'Started export worker thread', version: packageData.version });
 
-// Export helper functions for testing
 module.exports = {
     isTransientError,
     isSkippableError,

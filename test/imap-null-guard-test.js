@@ -76,10 +76,6 @@ require.cache[dbPath] = {
 // Now safe to import IMAPClient without opening real connections
 const { IMAPClient } = require('../lib/email-client/imap-client');
 
-/**
- * Creates a minimal mock logger that captures log calls.
- * @returns {{ logger: Object, calls: Array }}
- */
 function createMockLogger() {
     let calls = [];
     let logger = {};
@@ -91,11 +87,6 @@ function createMockLogger() {
     return { logger, calls };
 }
 
-/**
- * Creates a mock IMAP client object that simulates an ImapFlow connection.
- * @param {Object} overrides - Properties to override on the mock
- * @returns {Object}
- */
 function createMockImapClient(overrides) {
     return {
         usable: true,
@@ -109,12 +100,6 @@ function createMockImapClient(overrides) {
     };
 }
 
-/**
- * Creates a mock mailbox object with a controllable sync method.
- * @param {string} name - Mailbox path name
- * @param {Function} [syncFn] - Custom sync implementation
- * @returns {Object}
- */
 function createMockMailbox(name, syncFn) {
     return {
         path: name,
@@ -122,11 +107,26 @@ function createMockMailbox(name, syncFn) {
     };
 }
 
-test('IMAP null guard tests', async t => {
-    // ========================================================================
-    // syncMailboxes() -- null check inside mailbox sync loop
-    // ========================================================================
+function createBaseUploadCtx(overrides) {
+    return {
+        isClosing: false,
+        isClosed: false,
+        state: 'connected',
+        syncing: false,
+        checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
+        prepareRawMessage: async () => ({
+            raw: Buffer.from('test message'),
+            messageId: '<test@example.com>',
+            documentStoreUsed: false,
+            referencedMessage: null
+        }),
+        packUid: async () => 'encodedId',
+        onTaskCompleted: () => {},
+        ...overrides
+    };
+}
 
+test('IMAP null guard tests', async t => {
     await t.test('syncMailboxes() returns early when imapClient becomes null during loop', async () => {
         let { logger } = createMockLogger();
         let syncedMailboxes = [];
@@ -265,10 +265,6 @@ test('IMAP null guard tests', async t => {
         assert.strictEqual(ctx.state, 'connected', 'State should be connected after successful sync');
     });
 
-    // ========================================================================
-    // getCurrentListing() -- guard this.imapClient.close() when null
-    // ========================================================================
-
     await t.test('getCurrentListing() does not crash when imapClient is null and getImapConnection returns null', async () => {
         let { logger } = createMockLogger();
 
@@ -395,10 +391,6 @@ test('IMAP null guard tests', async t => {
         assert.ok(closeCalled, 'close() should have been called on existing imapClient');
     });
 
-    // ========================================================================
-    // uploadMessage() -- guard IDLE re-entry when imapClient becomes null
-    // ========================================================================
-
     await t.test('uploadMessage() does not crash when imapClient becomes null after append', async () => {
         let { logger } = createMockLogger();
         let idleCalled = false;
@@ -407,25 +399,12 @@ test('IMAP null guard tests', async t => {
             append: async () => ({ uid: 42, path: 'INBOX' })
         });
 
-        let ctx = {
+        let ctx = createBaseUploadCtx({
             logger,
-            imapClient: null, // null by the time IDLE re-entry check runs
-            isClosing: false,
-            isClosed: false,
-            state: 'connected',
-            syncing: false,
+            imapClient: null,
             isConnected: () => false,
-            checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
-            getImapConnection: async () => mockConnectionClient,
-            prepareRawMessage: async () => ({
-                raw: Buffer.from('test message'),
-                messageId: '<test@example.com>',
-                documentStoreUsed: false,
-                referencedMessage: null
-            }),
-            packUid: async () => 'encodedId',
-            onTaskCompleted: () => {}
-        };
+            getImapConnection: async () => mockConnectionClient
+        });
 
         let result = await IMAPClient.prototype.uploadMessage.call(ctx, { path: 'INBOX', flags: [], raw: Buffer.from('test') }, { allowSecondary: true });
 
@@ -447,26 +426,12 @@ test('IMAP null guard tests', async t => {
             mailbox: { path: 'INBOX' }
         });
 
-        let ctx = {
+        let ctx = createBaseUploadCtx({
             logger,
             imapClient: mockImapClient,
-            isClosing: false,
-            isClosed: false,
-            state: 'connected',
-            syncing: false,
             isConnected: () => true,
-            checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
-            // Return the same object as this.imapClient
-            getImapConnection: async () => mockImapClient,
-            prepareRawMessage: async () => ({
-                raw: Buffer.from('test message'),
-                messageId: '<test@example.com>',
-                documentStoreUsed: false,
-                referencedMessage: null
-            }),
-            packUid: async () => 'encodedId',
-            onTaskCompleted: () => {}
-        };
+            getImapConnection: async () => mockImapClient
+        });
 
         let result = await IMAPClient.prototype.uploadMessage.call(ctx, { path: 'INBOX', flags: [], raw: Buffer.from('test') }, { allowSecondary: true });
 
@@ -489,25 +454,12 @@ test('IMAP null guard tests', async t => {
             append: async () => ({ uid: 99, path: 'Sent' })
         });
 
-        let ctx = {
+        let ctx = createBaseUploadCtx({
             logger,
             imapClient: mockImapClient,
-            isClosing: false,
-            isClosed: false,
-            state: 'connected',
-            syncing: false,
             isConnected: () => true,
-            checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
-            getImapConnection: async () => differentConnectionClient,
-            prepareRawMessage: async () => ({
-                raw: Buffer.from('test message'),
-                messageId: '<test@example.com>',
-                documentStoreUsed: false,
-                referencedMessage: null
-            }),
-            packUid: async () => 'encodedId',
-            onTaskCompleted: () => {}
-        };
+            getImapConnection: async () => differentConnectionClient
+        });
 
         let result = await IMAPClient.prototype.uploadMessage.call(ctx, { path: 'Sent', flags: [], raw: Buffer.from('test') }, { allowSecondary: true });
 

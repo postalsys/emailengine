@@ -103,7 +103,7 @@ test('OAuth nonce encoding tests', async t => {
 
         // Pattern: validates nonce and throws Boom error for invalid format
         // Now accepts both base64url and base64 encoding
-        const validationPattern = /if.*!.*test\(nonce\).*\{[\s\S]*?Boom\.boomify.*Invalid nonce format/;
+        const validationPattern = /if.*!.*test\(nonce\).*\{[\s\S]*?Boom\.bad(?:Request|request).*Invalid nonce format/;
 
         const missingValidation = [];
 

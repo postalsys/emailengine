@@ -12,7 +12,12 @@ test('OAuth integration tests', async t => {
     const { OutlookOauth } = require('../lib/oauth/outlook');
     const { MailRuOauth } = require('../lib/oauth/mail-ru');
 
-    // Module loading
+    const baseOpts = {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        redirectUrl: 'http://localhost/callback',
+        setFlag: async () => {}
+    };
 
     await t.test('Gmail OAuth module exports expected members', async () => {
         const gmailModule = require('../lib/oauth/gmail');
@@ -31,15 +36,8 @@ test('OAuth integration tests', async t => {
         assert.ok(mailruModule.MailRuOauth);
     });
 
-    // Token request body serialization
-
     await t.test('GmailOauth.getTokenRequest returns URL-encoded string body', async () => {
-        const gmail = new GmailOauth({
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const gmail = new GmailOauth(baseOpts);
 
         const tokenRequest = gmail.getTokenRequest({ code: 'test-auth-code' });
 
@@ -53,13 +51,7 @@ test('OAuth integration tests', async t => {
     });
 
     await t.test('OutlookOauth.getTokenRequest returns URL-encoded string body', async () => {
-        const outlook = new OutlookOauth({
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            authority: 'common',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const outlook = new OutlookOauth({ ...baseOpts, authority: 'common' });
 
         const tokenRequest = outlook.getTokenRequest({ code: 'test-auth-code' });
 
@@ -72,12 +64,7 @@ test('OAuth integration tests', async t => {
     });
 
     await t.test('MailRuOauth.getTokenRequest returns URL-encoded string body', async () => {
-        const mailru = new MailRuOauth({
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const mailru = new MailRuOauth(baseOpts);
 
         const tokenRequest = mailru.getTokenRequest({ code: 'test-auth-code' });
 
@@ -90,10 +77,9 @@ test('OAuth integration tests', async t => {
 
     await t.test('Token request body properly encodes special characters', async () => {
         const gmail = new GmailOauth({
-            clientId: 'test-client-id',
+            ...baseOpts,
             clientSecret: 'test-secret-with-special-chars!@#',
-            redirectUrl: 'http://localhost/callback?param=value',
-            setFlag: async () => {}
+            redirectUrl: 'http://localhost/callback?param=value'
         });
 
         const tokenRequest = gmail.getTokenRequest({ code: 'test-code' });
@@ -104,8 +90,6 @@ test('OAuth integration tests', async t => {
         assert.strictEqual(params.get('client_secret'), 'test-secret-with-special-chars!@#');
         assert.strictEqual(params.get('redirect_uri'), 'http://localhost/callback?param=value');
     });
-
-    // Error handling with null/undefined responseJson
 
     await t.test('Error response falls back when responseJson is undefined or null', async () => {
         const buildErrorResponse = responseJson => {
@@ -130,15 +114,8 @@ test('OAuth integration tests', async t => {
         assert.ok(EXPOSE_PARTIAL_SECRET_KEY_REGEX.test({ error_description: 'Unauthorized access' }?.error_description));
     });
 
-    // Auth URL generation
-
     await t.test('GmailOauth generates valid auth URL', async () => {
-        const gmail = new GmailOauth({
-            clientId: 'test-client-id',
-            clientSecret: 'test-secret',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const gmail = new GmailOauth(baseOpts);
 
         const authUrl = gmail.generateAuthUrl({ state: 'test-state' });
 
@@ -148,13 +125,7 @@ test('OAuth integration tests', async t => {
     });
 
     await t.test('OutlookOauth generates valid auth URL', async () => {
-        const outlook = new OutlookOauth({
-            clientId: 'test-client-id',
-            clientSecret: 'test-secret',
-            authority: 'common',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const outlook = new OutlookOauth({ ...baseOpts, authority: 'common' });
 
         const authUrl = outlook.generateAuthUrl({ state: 'test-state' });
 
@@ -163,20 +134,11 @@ test('OAuth integration tests', async t => {
         assert.ok(authUrl.includes('state=test-state'));
     });
 
-    // Cloud configuration
-
     await t.test('OutlookOauth instantiates with different cloud configurations', async () => {
         const clouds = ['global', 'gcc-high', 'dod', 'china'];
 
         for (const cloud of clouds) {
-            const outlook = new OutlookOauth({
-                clientId: 'test-id',
-                clientSecret: 'test-secret',
-                authority: 'common',
-                redirectUrl: 'http://localhost/callback',
-                cloud,
-                setFlag: async () => {}
-            });
+            const outlook = new OutlookOauth({ ...baseOpts, authority: 'common', cloud });
 
             assert.strictEqual(outlook.cloud, cloud);
             assert.ok(outlook.entraEndpoint, `Should have entraEndpoint for ${cloud}`);
@@ -185,12 +147,7 @@ test('OAuth integration tests', async t => {
     });
 
     await t.test('GmailOauth has default scopes', async () => {
-        const gmail = new GmailOauth({
-            clientId: 'test-id',
-            clientSecret: 'test-secret',
-            redirectUrl: 'http://localhost/callback',
-            setFlag: async () => {}
-        });
+        const gmail = new GmailOauth(baseOpts);
 
         assert.ok(gmail.scopes.length > 0);
     });

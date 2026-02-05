@@ -62,37 +62,23 @@ function mightBeAComplaint(messageInfo) {
 
 test('ARF complaint detection tests', async t => {
     await t.test('handles missing attachments gracefully', async () => {
-        // Test with undefined attachments
-        const messageInfoUndefined = {
-            from: { address: 'test@example.com' },
-            subject: 'Test'
-        };
-        const reportUndefined = await arfDetect(messageInfoUndefined);
-        assert.ok(reportUndefined);
-        assert.deepStrictEqual(reportUndefined.arf, {});
-        assert.deepStrictEqual(reportUndefined.headers, {});
+        const cases = [
+            { label: 'undefined', attachments: undefined },
+            { label: 'null', attachments: null },
+            { label: 'empty array', attachments: [] }
+        ];
 
-        // Test with null attachments
-        const messageInfoNull = {
-            from: { address: 'test@example.com' },
-            subject: 'Test',
-            attachments: null
-        };
-        const reportNull = await arfDetect(messageInfoNull);
-        assert.ok(reportNull);
-        assert.deepStrictEqual(reportNull.arf, {});
-        assert.deepStrictEqual(reportNull.headers, {});
-
-        // Test with empty attachments array
-        const messageInfoEmpty = {
-            from: { address: 'test@example.com' },
-            subject: 'Test',
-            attachments: []
-        };
-        const reportEmpty = await arfDetect(messageInfoEmpty);
-        assert.ok(reportEmpty);
-        assert.deepStrictEqual(reportEmpty.arf, {});
-        assert.deepStrictEqual(reportEmpty.headers, {});
+        for (const { label, attachments } of cases) {
+            const messageInfo = {
+                from: { address: 'test@example.com' },
+                subject: 'Test',
+                attachments
+            };
+            const report = await arfDetect(messageInfo);
+            assert.ok(report, `should return report for ${label} attachments`);
+            assert.deepStrictEqual(report.arf, {}, `arf should be empty for ${label} attachments`);
+            assert.deepStrictEqual(report.headers, {}, `headers should be empty for ${label} attachments`);
+        }
     });
 
     await t.test('Yahoo ARF abuse report', async () => {

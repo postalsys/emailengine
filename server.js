@@ -3108,8 +3108,7 @@ const startApplication = async () => {
     }
 
     // Start export workers
-    const exportWorkerCount = config.workers.export || 1;
-    for (let i = 0; i < exportWorkerCount; i++) {
+    for (let i = 0; i < (config.workers.export || 1); i++) {
         await spawnWorker('export');
     }
 
