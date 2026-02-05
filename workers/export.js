@@ -818,8 +818,12 @@ exportWorker.on('completed', async job => {
     logger.info({ msg: 'Export queue entry completed', queue: job.queue.name, job: job.id, account: job.data.account, exportId: job.data.exportId });
 });
 
-exportWorker.on('failed', async job => {
+exportWorker.on('failed', async (job, err) => {
     metrics(logger, 'queuesProcessed', 'inc', { queue: 'export', status: 'failed' });
+    if (!job) {
+        logger.error({ msg: 'Export queue entry failed', err: err.message });
+        return;
+    }
     logger.error({
         msg: 'Export queue entry failed',
         queue: job.queue.name,
