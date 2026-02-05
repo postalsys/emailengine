@@ -26,7 +26,7 @@ function calculateScore(timestamp, messageId, folder, uid) {
     // Generate tiebreaker from SHA-256 hash of composite key (0-999999 range)
     const uniqueKey = `${folder || ''}:${messageId || ''}:${uid || ''}`;
     const hash = crypto.createHash('sha256').update(uniqueKey).digest();
-    const tiebreaker = ((hash[0] << 16) | (hash[1] << 8) | hash[2]) % 1000000;
+    const tiebreaker = (((hash[0] << 16) | (hash[1] << 8) | hash[2]) >>> 0) % 1000000;
 
     return baseSeconds * 1000000 + tiebreaker;
 }
