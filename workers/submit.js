@@ -62,6 +62,16 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
+const NON_RETRYABLE_CODES = new Set([
+    'EAUTH', // authentication failed
+    'ENOAUTH', // no credentials provided
+    'EOAUTH2', // OAuth2 token failure
+    'ETLS', // TLS handshake failed
+    'EENVELOPE', // invalid sender/recipients
+    'EMESSAGE', // message content error
+    'EPROTOCOL' // SMTP protocol mismatch
+]);
+
 let callQueue = new Map();
 let mids = 0;
 
@@ -294,16 +304,6 @@ const submitWorker = new Worker(
             } catch (err) {
                 // ignore
             }
-
-            const NON_RETRYABLE_CODES = new Set([
-                'EAUTH', // authentication failed
-                'ENOAUTH', // no credentials provided
-                'EOAUTH2', // OAuth2 token failure
-                'ETLS', // TLS handshake failed
-                'EENVELOPE', // invalid sender/recipients
-                'EMESSAGE', // message content error
-                'EPROTOCOL' // SMTP protocol mismatch
-            ]);
 
             const isPermanentSmtp = err.statusCode >= 500 && err.statusCode !== 503;
             const isPermanentCode = NON_RETRYABLE_CODES.has(err.code);

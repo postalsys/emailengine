@@ -151,6 +151,7 @@ async function indexMessages(job, exportData) {
     const folders = JSON.parse(exportData.folders || '[]');
     const startDate = new Date(Number(exportData.startDate));
     const endDate = new Date(Number(exportData.endDate));
+    const indexingStartTime = new Date();
 
     const accountData = await redis.hgetall(`${REDIS_PREFIX}iad:${account}`);
     if (!accountData || !accountData.account) {
@@ -188,7 +189,7 @@ async function indexMessages(job, exportData) {
 
         while (retries > 0) {
             try {
-                await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate);
+                await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime);
 
                 await Export.update(account, exportId, { foldersScanned: i + 1 });
 
@@ -257,12 +258,12 @@ function resolveFolders(folders, mailboxes) {
     return folders.map(resolveFolder).filter(Boolean);
 }
 
-async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate) {
+async function indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime) {
     let cursor = null;
 
     while (true) {
         const searchCriteria = { since: startDate };
-        if (endDate < new Date()) {
+        if (endDate < indexingStartTime) {
             searchCriteria.before = endDate;
         }
 
@@ -311,7 +312,7 @@ async function exportMessages(job, exportData) {
     });
 
     const gzipStream = zlib.createGzip();
-    const fileStream = fs.createWriteStream(filePath, job.data.isResumed ? { flags: 'a' } : undefined);
+    const fileStream = fs.createWriteStream(filePath);
 
     let streamError = null;
     function handleStreamError(err) {
@@ -635,10 +636,10 @@ async function exportMessages(job, exportData) {
 const exportWorker = new Worker(
     'export',
     async job => {
-        const { account, exportId, isResumed } = job.data;
+        const { account, exportId } = job.data;
         const startTime = Date.now();
 
-        logger.info({ msg: 'Processing export job', account, exportId, job: job.id, isResumed: !!isResumed });
+        logger.info({ msg: 'Processing export job', account, exportId, job: job.id });
 
         try {
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
@@ -646,21 +647,9 @@ const exportWorker = new Worker(
                 throw new Error('Export not found');
             }
 
-            if (isResumed) {
-                logger.info({
-                    msg: 'Resuming export from checkpoint',
-                    account,
-                    exportId,
-                    lastProcessedScore: exportData.lastProcessedScore,
-                    messagesExported: exportData.messagesExported,
-                    messagesQueued: exportData.messagesQueued
-                });
-                await Export.update(account, exportId, { status: 'processing', phase: 'exporting', error: '' });
-            } else {
-                await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
-                await indexMessages(job, exportData);
-                await Export.update(account, exportId, { phase: 'exporting' });
-            }
+            await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
+            await indexMessages(job, exportData);
+            await Export.update(account, exportId, { phase: 'exporting' });
 
             const currentExportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
             await exportMessages(job, currentExportData);
@@ -687,13 +676,7 @@ const exportWorker = new Worker(
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
 
-            const isResumable =
-                Number(exportData.lastProcessedScore) > 0 &&
-                Number(exportData.messagesQueued) > 0 &&
-                err.code !== 'AccountDeleted' &&
-                err.code !== 'AccountNotFound';
-
-            if (!isResumable && exportData.filePath) {
+            if (exportData.filePath) {
                 await fs.promises.unlink(exportData.filePath).catch(() => {});
             }
 
@@ -753,6 +736,15 @@ function onCommand(command) {
         logger.info({ msg: 'Checked for interrupted exports' });
     } catch (err) {
         logger.error({ msg: 'Failed to check for interrupted exports', err });
+    }
+
+    try {
+        const cleaned = await Export.cleanup();
+        if (cleaned > 0) {
+            logger.info({ msg: 'Cleaned up orphaned export files', count: cleaned });
+        }
+    } catch (err) {
+        logger.error({ msg: 'Failed to clean up export files', err });
     }
 
     setInterval(() => {
