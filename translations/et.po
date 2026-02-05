@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-01-14 09:54+0000\n"
+"POT-Creation-Date: 2026-02-05 09:12+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -69,14 +69,6 @@ msgstr "E-posti aadress"
 msgid "Enter your email address"
 msgstr "Sisestage oma e-posti aadress"
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Valige oma e-posti konto pakkuja"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "Standardne IMAP"
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr "Sinu nimi"
@@ -98,6 +90,14 @@ msgstr "Sisestage oma konto parool"
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Jätka"
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Valige oma e-posti konto pakkuja"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standardne IMAP"
 
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
@@ -220,15 +220,15 @@ msgstr "SMTP serveriga ei õnnestunud ühendust luua"
 msgid "Request failed."
 msgstr "Päring ebaõnnestus."
 
-#: lib/routes-ui.js:519 lib/ui-routes/account-routes.js:60
+#: lib/routes-ui.js:520 lib/ui-routes/account-routes.js:60
 msgid "Delegated"
 msgstr "Delegeeritud"
 
-#: lib/routes-ui.js:520 lib/ui-routes/account-routes.js:61
+#: lib/routes-ui.js:521 lib/ui-routes/account-routes.js:61
 msgid "Using credentials from \"%s\""
 msgstr "Kasutades volitusi \"%s\""
 
-#: lib/routes-ui.js:570 lib/ui-routes/account-routes.js:111
+#: lib/routes-ui.js:571 lib/ui-routes/account-routes.js:111
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -236,11 +236,11 @@ msgstr ""
 "Ühendus on aegunud. See juhtub tavaliselt siis, kui olete tulemüüri taga või "
 "ühendute valesse porti."
 
-#: lib/routes-ui.js:573 lib/ui-routes/account-routes.js:114
+#: lib/routes-ui.js:574 lib/ui-routes/account-routes.js:114
 msgid "The server unexpectedly closed the connection."
 msgstr "Server sulges ootamatult ühenduse."
 
-#: lib/routes-ui.js:576 lib/ui-routes/account-routes.js:117
+#: lib/routes-ui.js:577 lib/ui-routes/account-routes.js:117
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -248,7 +248,7 @@ msgstr ""
 "Server sulges ootamatult ühenduse. See juhtub tavaliselt siis, kui "
 "üritatakse luua ühendust TLS-porti, ilma et TLS oleks lubatud."
 
-#: lib/routes-ui.js:581 lib/ui-routes/account-routes.js:122
+#: lib/routes-ui.js:582 lib/ui-routes/account-routes.js:122
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -256,55 +256,82 @@ msgstr ""
 "Server keeldus ühendusest. See juhtub tavaliselt siis, kui server ei tööta, "
 "on ülekoormatud või ühendute vale hostiga või porti."
 
-#: lib/routes-ui.js:699
+#: lib/routes-ui.js:709
 msgid "Invalid API key for OpenAI"
 msgstr "OpenAI jaoks vale API võti"
 
-#: lib/routes-ui.js:4443 lib/routes-ui.js:4478 lib/routes-ui.js:4593
-#: lib/routes-ui.js:4640 lib/routes-ui.js:4869 lib/routes-ui.js:4905
-#: workers/api.js:2398 lib/ui-routes/account-routes.js:535
-#: lib/ui-routes/account-routes.js:571 lib/ui-routes/account-routes.js:688
-#: lib/ui-routes/account-routes.js:735 lib/ui-routes/account-routes.js:966
-#: lib/ui-routes/account-routes.js:1002
+#: lib/routes-ui.js:4671 lib/routes-ui.js:4706 lib/routes-ui.js:4821
+#: lib/routes-ui.js:4868 lib/routes-ui.js:5115 lib/routes-ui.js:5151
+#: workers/api.js:2413 lib/ui-routes/account-routes.js:549
+#: lib/ui-routes/account-routes.js:585 lib/ui-routes/account-routes.js:702
+#: lib/ui-routes/account-routes.js:749 lib/ui-routes/account-routes.js:998
+#: lib/ui-routes/account-routes.js:1034
 msgid "Email Account Setup"
 msgstr "E-posti konto seadistamine"
 
-#: lib/routes-ui.js:4503 lib/routes-ui.js:4536 lib/routes-ui.js:7455
-#: lib/ui-routes/account-routes.js:596 lib/ui-routes/account-routes.js:630
+#: lib/routes-ui.js:4731 lib/routes-ui.js:4764 lib/routes-ui.js:7701
+#: lib/ui-routes/account-routes.js:610 lib/ui-routes/account-routes.js:644
 msgid "Invalid request. Check your input and try again."
 msgstr "Päringu argumentide kontroll ebaõnnestus."
 
-#: lib/routes-ui.js:4696 lib/routes-ui.js:4707
-#: lib/ui-routes/account-routes.js:792 lib/ui-routes/account-routes.js:803
+#: lib/routes-ui.js:4924 lib/routes-ui.js:4935
+#: lib/ui-routes/account-routes.js:806 lib/ui-routes/account-routes.js:817
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr "Serverit ei leitud"
 
-#: lib/routes-ui.js:4699 lib/routes-ui.js:4710
-#: lib/ui-routes/account-routes.js:795 lib/ui-routes/account-routes.js:806
+#: lib/routes-ui.js:4927 lib/routes-ui.js:4938
+#: lib/ui-routes/account-routes.js:809 lib/ui-routes/account-routes.js:820
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr "Vigane kasutajanimi või parool"
 
-#: lib/routes-ui.js:4714 lib/ui-routes/account-routes.js:810
-#: lib/ui-routes/admin-entities-routes.js:2027
+#: lib/routes-ui.js:4941 lib/ui-routes/account-routes.js:823
+#: lib/ui-routes/admin-entities-routes.js:2026
+msgid "Authentication credentials were not provided"
+msgstr "Autentimise andmeid ei esitatud"
+
+#: lib/routes-ui.js:4944 lib/ui-routes/account-routes.js:826
+#: lib/ui-routes/admin-entities-routes.js:2029
+msgid "OAuth2 authentication failed"
+msgstr "OAuth2 autentimine ebaõnnestus"
+
+#: lib/routes-ui.js:4947 lib/routes-ui.js:4951
+#: lib/ui-routes/account-routes.js:829 lib/ui-routes/account-routes.js:833
+#: lib/ui-routes/admin-entities-routes.js:2032
+#: lib/ui-routes/admin-entities-routes.js:2036
 msgid "TLS protocol error"
 msgstr "TLS protokolli viga"
 
-#: lib/routes-ui.js:7418 lib/tools.js:778
+#: lib/routes-ui.js:4955 lib/ui-routes/account-routes.js:837
+#: lib/ui-routes/admin-entities-routes.js:2040
+msgid "Connection timed out"
+msgstr "Ühenduse aegumine"
+
+#: lib/routes-ui.js:4958 lib/ui-routes/account-routes.js:840
+#: lib/ui-routes/admin-entities-routes.js:2043
+msgid "Could not connect to server"
+msgstr "Ei õnnestunud ühenduda serveriga"
+
+#: lib/routes-ui.js:4961 lib/ui-routes/account-routes.js:843
+#: lib/ui-routes/admin-entities-routes.js:2046
+msgid "Unexpected server response"
+msgstr "Ootamatu serveri vastus"
+
+#: lib/routes-ui.js:7664 lib/tools.js:778
 msgid "Invalid input"
 msgstr "Vale sisestus"
 
-#: lib/routes-ui.js:7428 lib/routes-ui.js:7546 lib/routes-ui.js:7563
-#: lib/routes-ui.js:7599
+#: lib/routes-ui.js:7674 lib/routes-ui.js:7792 lib/routes-ui.js:7809
+#: lib/routes-ui.js:7845
 msgid "Subscription Management"
 msgstr "Tellimuse haldamine"
 
-#: workers/api.js:6825 workers/api.js:6941
+#: workers/api.js:6904 workers/api.js:7020
 msgid "Requested page not found"
 msgstr "Soovitud lehekülge ei leitud"
 
-#: workers/api.js:6826
+#: workers/api.js:6905
 msgid "Something went wrong"
 msgstr "Miski läks valesti"
 
@@ -328,7 +355,7 @@ msgstr ""
 "Jätkamiseks kasutage oma konto turvaliseks ühendamiseks nuppu \"Sign in with "
 "Microsoft\"."
 
-#: lib/ui-routes/account-routes.js:728 lib/ui-routes/account-routes.js:995
+#: lib/ui-routes/account-routes.js:742 lib/ui-routes/account-routes.js:1027
 msgid "Couldn't set up account. Try again."
 msgstr "Kontot ei õnnestunud luua. Proovi uuesti."
 

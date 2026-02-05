@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-01-28 20:41+0000\n"
+"POT-Creation-Date: 2026-02-05 09:12+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
@@ -247,70 +247,103 @@ msgstr ""
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
-#: lib/routes-ui.js:4696
-#: lib/routes-ui.js:4731
-#: lib/routes-ui.js:4846
-#: lib/routes-ui.js:4893
-#: lib/routes-ui.js:5122
-#: lib/routes-ui.js:5158
-#: workers/api.js:2414
-#: lib/ui-routes/account-routes.js:550
-#: lib/ui-routes/account-routes.js:586
-#: lib/ui-routes/account-routes.js:703
-#: lib/ui-routes/account-routes.js:750
-#: lib/ui-routes/account-routes.js:981
-#: lib/ui-routes/account-routes.js:1017
+#: lib/routes-ui.js:4671
+#: lib/routes-ui.js:4706
+#: lib/routes-ui.js:4821
+#: lib/routes-ui.js:4868
+#: lib/routes-ui.js:5115
+#: lib/routes-ui.js:5151
+#: workers/api.js:2413
+#: lib/ui-routes/account-routes.js:549
+#: lib/ui-routes/account-routes.js:585
+#: lib/ui-routes/account-routes.js:702
+#: lib/ui-routes/account-routes.js:749
+#: lib/ui-routes/account-routes.js:998
+#: lib/ui-routes/account-routes.js:1034
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:4756
-#: lib/routes-ui.js:4789
-#: lib/routes-ui.js:7708
-#: lib/ui-routes/account-routes.js:611
-#: lib/ui-routes/account-routes.js:645
+#: lib/routes-ui.js:4731
+#: lib/routes-ui.js:4764
+#: lib/routes-ui.js:7701
+#: lib/ui-routes/account-routes.js:610
+#: lib/ui-routes/account-routes.js:644
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:4949
-#: lib/routes-ui.js:4960
-#: lib/ui-routes/account-routes.js:807
-#: lib/ui-routes/account-routes.js:818
+#: lib/routes-ui.js:4924
+#: lib/routes-ui.js:4935
+#: lib/ui-routes/account-routes.js:806
+#: lib/ui-routes/account-routes.js:817
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:4952
-#: lib/routes-ui.js:4963
-#: lib/ui-routes/account-routes.js:810
-#: lib/ui-routes/account-routes.js:821
+#: lib/routes-ui.js:4927
+#: lib/routes-ui.js:4938
+#: lib/ui-routes/account-routes.js:809
+#: lib/ui-routes/account-routes.js:820
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:4967
-#: lib/ui-routes/account-routes.js:825
-#: lib/ui-routes/admin-entities-routes.js:2027
+#: lib/routes-ui.js:4941
+#: lib/ui-routes/account-routes.js:823
+#: lib/ui-routes/admin-entities-routes.js:2026
+msgid "Authentication credentials were not provided"
+msgstr ""
+
+#: lib/routes-ui.js:4944
+#: lib/ui-routes/account-routes.js:826
+#: lib/ui-routes/admin-entities-routes.js:2029
+msgid "OAuth2 authentication failed"
+msgstr ""
+
+#: lib/routes-ui.js:4947
+#: lib/routes-ui.js:4951
+#: lib/ui-routes/account-routes.js:829
+#: lib/ui-routes/account-routes.js:833
+#: lib/ui-routes/admin-entities-routes.js:2032
+#: lib/ui-routes/admin-entities-routes.js:2036
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:7671
+#: lib/routes-ui.js:4955
+#: lib/ui-routes/account-routes.js:837
+#: lib/ui-routes/admin-entities-routes.js:2040
+msgid "Connection timed out"
+msgstr ""
+
+#: lib/routes-ui.js:4958
+#: lib/ui-routes/account-routes.js:840
+#: lib/ui-routes/admin-entities-routes.js:2043
+msgid "Could not connect to server"
+msgstr ""
+
+#: lib/routes-ui.js:4961
+#: lib/ui-routes/account-routes.js:843
+#: lib/ui-routes/admin-entities-routes.js:2046
+msgid "Unexpected server response"
+msgstr ""
+
+#: lib/routes-ui.js:7664
 #: lib/tools.js:778
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:7681
-#: lib/routes-ui.js:7799
-#: lib/routes-ui.js:7816
-#: lib/routes-ui.js:7852
+#: lib/routes-ui.js:7674
+#: lib/routes-ui.js:7792
+#: lib/routes-ui.js:7809
+#: lib/routes-ui.js:7845
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:6905
-#: workers/api.js:7021
+#: workers/api.js:6904
+#: workers/api.js:7020
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:6906
+#: workers/api.js:6905
 msgid "Something went wrong"
 msgstr ""
 
@@ -331,7 +364,7 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/ui-routes/account-routes.js:743
-#: lib/ui-routes/account-routes.js:1010
+#: lib/ui-routes/account-routes.js:742
+#: lib/ui-routes/account-routes.js:1027
 msgid "Couldn't set up account. Try again."
 msgstr ""

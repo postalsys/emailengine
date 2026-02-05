@@ -34,8 +34,8 @@
                 </button>
 
                 {{#if canReadMail}}
-                <button type="button" class="btn btn-light" id="request-export"
-                    title="Export messages to file" data-toggle="modal" data-target="#exportModal">
+                <button type="button" class="btn btn-light" id="request-export" title="Export messages to file"
+                    data-toggle="modal" data-target="#exportModal">
                     <i class="fas fa-file-export fa-fw"></i> Export
                     <span id="export-status-indicator" class="badge badge-pill ml-1 d-none"></span>
                 </button>
@@ -72,7 +72,7 @@
                         {{#if canUseSmtp}}
                         <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal" data-keyboard="false"
                             data-backdrop="static" data-account="{{account.account}}" href="#">Account's
-                            SMTP server</a>
+                            Mail server</a>
                         {{#if gateways}}
                         <div class="dropdown-divider"></div>
                         {{/if}}
@@ -955,7 +955,8 @@
             <div class="modal-body">
                 <div class="alert alert-info mb-3">
                     <i class="fas fa-flask fa-fw"></i>
-                    <strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues, please contact <a href="mailto:support@postalsys.com">support@postalsys.com</a>.
+                    <strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues,
+                    please contact <a href="mailto:support@postalsys.com">support@postalsys.com</a>.
                 </div>
                 <div id="export-form-view">
                     <div class="form-group">
@@ -969,11 +970,14 @@
                     <div class="form-group">
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="export-include-attachments">
-                            <label class="custom-control-label" for="export-include-attachments">Include attachments</label>
+                            <label class="custom-control-label" for="export-include-attachments">Include
+                                attachments</label>
                         </div>
-                        <small class="form-text text-muted">Download and include attachment file contents in the export. This increases export size and time.</small>
+                        <small class="form-text text-muted">Download and include attachment file contents in the export.
+                            This increases export size and time.</small>
                     </div>
-                    <small class="text-muted">Gmail accounts export from All Mail. Other accounts export all folders (excluding Junk and Trash).</small>
+                    <small class="text-muted">Gmail accounts export from All Mail. Other accounts export all folders
+                        (excluding Junk and Trash).</small>
                 </div>
 
                 <div id="export-status-view" class="d-none">
@@ -988,8 +992,10 @@
                     </div>
                     <div id="export-progress-section">
                         <div class="progress mb-2">
-                            <div id="export-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
-                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                            <div id="export-progress-bar"
+                                class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                                role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                                style="width: 0%"></div>
                         </div>
                         <small id="export-progress-text" class="text-muted"></small>
                     </div>
