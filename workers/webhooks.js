@@ -10,7 +10,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, retryAgent, getServiceSecret } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, reloadHttpProxyAgent } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -175,6 +175,13 @@ parentPort.on('message', message => {
                     statusCode: err.statusCode
                 });
             });
+    }
+
+    if (message && message.cmd === 'settings') {
+        let d = message.data || {};
+        if ('httpProxyEnabled' in d || 'httpProxyUrl' in d) {
+            reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
+        }
     }
 });
 
@@ -402,7 +409,7 @@ const notifyWorker = new Worker(
                     method: 'post',
                     body,
                     headers,
-                    dispatcher: retryAgent
+                    dispatcher: httpAgent.retry
                 });
                 duration = Date.now() - start;
             } catch (err) {

@@ -72,6 +72,51 @@
 
     <div class="card mb-4 mt-4">
         <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">HTTP Proxy Settings</h6>
+        </div>
+        <div class="card-body">
+            <p>Route all outbound HTTP/HTTPS requests through a proxy. This applies to webhook delivery, OAuth token
+                exchange, and API calls to Gmail/Outlook. This is separate from the IMAP/SMTP proxy above.</p>
+
+            <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">httpProxyEnabled</a>]</div>
+
+                <input type="checkbox"
+                    class="form-check-input http-proxy-status {{#if errors.httpProxyEnabled}}is-invalid{{/if}}"
+                    id="http_proxy_enabled" name="httpProxyEnabled" {{#if
+                    values.httpProxyEnabled}}checked{{/if}} />
+                <label class="form-check-label" for="http_proxy_enabled">Enable HTTP Proxy</label>
+                {{#if errors.httpProxyEnabled}}
+                <span class="invalid-feedback">{{errors.httpProxyEnabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Routes all outbound HTTP/HTTPS requests through the proxy
+                    below.</small>
+
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">httpProxyUrl</a>]</div>
+
+                <label for="httpProxyUrl">HTTP Proxy URL</label>
+                <input type="text" class="form-control or-else-all  {{#if errors.httpProxyUrl}}is-invalid{{/if}}"
+                    id="httpProxyUrl" placeholder="http://proxy:8080" value="{{values.httpProxyUrl}}"
+                    name="httpProxyUrl" data-target="http-proxy-status">
+                {{#if errors.httpProxyUrl}}
+                <span class="invalid-feedback">{{errors.httpProxyUrl}}</span>
+                {{/if}}
+                <small id="httpProxyUrlBlock" class="form-text text-muted">Format: <code>http://</code>,
+                    <code>https://</code>, <code>socks4://</code>, or <code>socks5://</code>
+                    followed by host:port</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 mt-4">
+        <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">IP Address Strategy</h6>
         </div>
         <div class="card-body">

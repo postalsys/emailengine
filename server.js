@@ -71,7 +71,8 @@ const {
     setLicense,
     getRedisStats,
     threadStats,
-    retryAgent
+    httpAgent,
+    reloadHttpProxyAgent
 } = require('./lib/tools');
 const MetricsCollector = require('./lib/metrics-collector');
 
@@ -1312,6 +1313,11 @@ let spawnWorker = async type => {
                 }
 
                 case 'settings':
+                    // Reload HTTP proxy agent in the main thread
+                    if (message.data && ('httpProxyEnabled' in message.data || 'httpProxyUrl' in message.data)) {
+                        reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
+                    }
+
                     // Forward settings changes to all IMAP workers
                     availableIMAPWorkers.forEach(worker => {
                         try {
@@ -1320,6 +1326,20 @@ let spawnWorker = async type => {
                             logger.error({ msg: 'Unable to forward settings to worker', worker: worker.threadId, callPayload: message, err });
                         }
                     });
+
+                    // Forward settings changes to webhooks, submit, and export workers
+                    for (let type of ['webhooks', 'submit', 'export']) {
+                        let typeWorkers = workers.get(type);
+                        if (typeWorkers) {
+                            typeWorkers.forEach(worker => {
+                                try {
+                                    postMessage(worker, message);
+                                } catch (err) {
+                                    logger.error({ msg: 'Unable to forward settings to worker', type, worker: worker.threadId, err });
+                                }
+                            });
+                        }
+                    }
                     return;
 
                 case 'change':
@@ -1691,7 +1711,7 @@ let licenseCheckHandler = async opts => {
                         app: '@postalsys/emailengine-app',
                         instance: (await settings.get('serviceId')) || ''
                     }),
-                    dispatcher: retryAgent
+                    dispatcher: httpAgent.retry
                 });
 
                 let data = await res.json();
@@ -3070,6 +3090,9 @@ const startApplication = async () => {
     // Redis reconnection is now handled by workers themselves
     // Workers will exit when Redis reconnects after disconnection,
     // and the server will automatically restart them
+
+    // Initialize HTTP proxy agent from settings/env vars before spawning workers
+    await reloadHttpProxyAgent();
 
     // -- START WORKER THREADS
 

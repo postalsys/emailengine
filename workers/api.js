@@ -39,7 +39,8 @@ const {
     hasEnvValue,
     getBoolean,
     loadTlsConfig,
-    retryAgent
+    httpAgent,
+    reloadHttpProxyAgent
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -3776,6 +3777,9 @@ Include your token in requests using one of these methods:
             }
 
             notify('settings', request.payload);
+            if ('httpProxyEnabled' in request.payload || 'httpProxyUrl' in request.payload) {
+                reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
+            }
             return { updated };
         },
         options: {
@@ -5962,7 +5966,7 @@ Include your token in requests using one of these methods:
                         requestor: '@postalsys/emailengine-app'
                     }),
                     headers,
-                    dispatcher: retryAgent
+                    dispatcher: httpAgent.retry
                 });
 
                 if (!res.ok) {
@@ -6115,7 +6119,7 @@ ${now}`,
                 let res = await fetchCmd(`${SMTP_TEST_HOST}/test-address/${request.params.deliveryTest}`, {
                     method: 'get',
                     headers,
-                    dispatcher: retryAgent
+                    dispatcher: httpAgent.retry
                 });
 
                 if (!res.ok) {
