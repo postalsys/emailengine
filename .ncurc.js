@@ -19,6 +19,9 @@ module.exports = {
         'startbootstrap-sb-admin-2',
 
         // Keep joi at version 17.x for hapi-swagger compatibility
-        'joi'
+        'joi',
+
+        // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
+        '@asamuzakjp/css-color'
     ]
 };

@@ -131,6 +131,9 @@
         "supertest": "7.2.2",
         "xgettext-template": "5.0.0"
     },
+    "overrides": {
+        "@asamuzakjp/css-color": "4.1.1"
+    },
     "engines": {
         "node": ">=20.x"
     },
@@ -152,12 +155,6 @@
             "node_modules/@postalsys/joi-messages/translations/*",
             "node_modules/@postalsys/bounce-classifier/model/**/*",
             "node_modules/jsdom/lib/jsdom/browser/default-stylesheet.css",
-            "node_modules/@csstools/color-helpers/**/*",
-            "node_modules/@csstools/css-calc/**/*",
-            "node_modules/@csstools/css-color-parser/**/*",
-            "node_modules/@csstools/css-parser-algorithms/**/*",
-            "node_modules/@csstools/css-tokenizer/**/*",
-            "node_modules/@asamuzakjp/css-color/**/*",
             "LICENSE_EMAILENGINE.txt",
             "version-info.json",
             "sbom.json"
