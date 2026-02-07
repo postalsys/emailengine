@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.62.1](https://github.com/postalsys/emailengine/compare/v2.62.0...v2.62.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* replace BigInt literal with constructor for gettext parser compatibility ([119ba69](https://github.com/postalsys/emailengine/commit/119ba6919768ff6d22161e6c7884b8020fab37f5))
+* replace spread syntax with Object.assign in tools.js for gettext parser compatibility ([02ecc60](https://github.com/postalsys/emailengine/commit/02ecc60071c2a798eb6aae32ee6cdfe5a43933b2))
+* resolve ESLint 10 lint errors ([7d397f6](https://github.com/postalsys/emailengine/commit/7d397f6d87c87c4a8bb456a52c9db264c7c14243))
+* resolve HTTP proxy feature issues ([750619d](https://github.com/postalsys/emailengine/commit/750619d0145b60706dedec1d39ae94f9a2457ab7))
+
 ## [2.62.0](https://github.com/postalsys/emailengine/compare/v2.61.5...v2.62.0) (2026-02-06)
 
 
