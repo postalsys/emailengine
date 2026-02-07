@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.62.2](https://github.com/postalsys/emailengine/compare/v2.62.1...v2.62.2) (2026-02-07)
+
+
+### Bug Fixes
+
+* include ESM [@csstools](https://github.com/csstools) packages as pkg assets ([df9f6d2](https://github.com/postalsys/emailengine/commit/df9f6d286b0fc2819edf0bf2f179dc0d6d2ce0d5))
+* pin subdependency to avoid installing unsupported version ([045b8ce](https://github.com/postalsys/emailengine/commit/045b8ce1a28c9cf9eecb26723589c5dcb4a28c21))
+
 ## [2.62.1](https://github.com/postalsys/emailengine/compare/v2.62.0...v2.62.1) (2026-02-07)
 
 
