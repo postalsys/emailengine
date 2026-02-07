@@ -241,7 +241,7 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult = null;
+                    let deleteResult;
 
                     let filterQuery = {
                         bool: {
@@ -612,7 +612,7 @@ const documentsWorker = new Worker(
                         return;
                     }
 
-                    let deleteResult = null;
+                    let deleteResult;
 
                     try {
                         let messageIdHeader;

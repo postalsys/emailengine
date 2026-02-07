@@ -182,7 +182,7 @@ async function indexMessages(job, exportData) {
     try {
         mailboxes = await accountObject.listMailboxes();
     } catch (err) {
-        throw new Error(`Failed to list mailboxes: ${err.message}`);
+        throw new Error(`Failed to list mailboxes: ${err.message}`, { cause: err });
     }
 
     const foldersToProcess = resolveFolders(folders, mailboxes);
