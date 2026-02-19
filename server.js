@@ -974,6 +974,16 @@ let spawnWorker = async type => {
         let isOnline = false;
         let threadId = worker.threadId;
 
+        // Capture worker crash errors for logging
+        worker.on('error', err => {
+            logger.error({
+                msg: 'Worker thread error',
+                type,
+                threadId: worker.threadId,
+                err
+            });
+        });
+
         // Handle worker coming online
         worker.on('online', () => {
             if (['smtp', 'imapProxy'].includes(type)) {
@@ -1616,11 +1626,20 @@ async function assignAccounts() {
             unassigned.delete(account);
 
             // Notify worker of assignment
-            await call(worker, {
-                cmd: 'assign',
-                account,
-                runIndex
-            });
+            try {
+                await call(worker, {
+                    cmd: 'assign',
+                    account,
+                    runIndex
+                });
+            } catch (err) {
+                // Roll back -- account was never actually assigned
+                workerAssigned.get(worker).delete(account);
+                assigned.delete(account);
+                unassigned.add(account);
+                logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
+                continue;
+            }
 
             // Add delay between assignments to avoid overwhelming the system
             if (CONNECTION_SETUP_DELAY) {
@@ -1641,6 +1660,17 @@ async function assignAccounts() {
         });
     } finally {
         assigning = false;
+
+        // Safety net: if accounts remain unassigned, schedule a retry
+        if (unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
+            logger.warn({
+                msg: 'Accounts remain unassigned after assignment pass, scheduling retry',
+                remaining: unassigned.size
+            });
+            setTimeout(() => {
+                assignAccounts().catch(err => logger.error({ msg: 'Retry assignment failed', err }));
+            }, 5000);
+        }
     }
 }
 
