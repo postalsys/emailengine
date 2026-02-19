@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.63.0](https://github.com/postalsys/emailengine/compare/v2.62.2...v2.63.0) (2026-02-19)
+
+
+### Features
+
+* flag nested message/rfc822 attachments with encodedInMessage property ([7e51024](https://github.com/postalsys/emailengine/commit/7e51024c690235e36cbbf8297939f0a41002b05e))
+
+
+### Bug Fixes
+
+* prevent permanently lost accounts after worker crashes ([3deabb5](https://github.com/postalsys/emailengine/commit/3deabb55b195601bf0c14d248257cc8a4aac76d2))
+
 ## [2.62.2](https://github.com/postalsys/emailengine/compare/v2.62.1...v2.62.2) (2026-02-07)
 
 
