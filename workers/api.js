@@ -40,7 +40,8 @@ const {
     getBoolean,
     loadTlsConfig,
     httpAgent,
-    reloadHttpProxyAgent
+    reloadHttpProxyAgent,
+    resolveOAuthErrorStatus
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -2145,7 +2146,7 @@ Include your token in requests using one of these methods:
                                         message = response.error.message;
                                     }
 
-                                    let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
+                                    let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
                                     throw error;
                                 }
                                 throw err;
@@ -2239,7 +2240,7 @@ Include your token in requests using one of these methods:
                             let response = err.oauthRequest && err.oauthRequest.response;
                             if (response && response.error) {
                                 let message = response.error.message;
-                                let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
+                                let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
                                 throw error;
                             }
                             throw err;
@@ -2328,7 +2329,7 @@ Include your token in requests using one of these methods:
                         let response = err.oauthRequest && err.oauthRequest.response;
                         if (response && response.error) {
                             let message = response.error.message;
-                            let error = Boom.boomify(new Error(message), { statusCode: response.error.code });
+                            let error = Boom.boomify(new Error(message), { statusCode: resolveOAuthErrorStatus(response.error, err) });
                             throw error;
                         }
                         throw err;
