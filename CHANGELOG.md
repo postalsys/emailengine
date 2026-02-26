@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.63.1](https://github.com/postalsys/emailengine/compare/v2.63.0...v2.63.1) (2026-02-26)
+
+
+### Bug Fixes
+
+* handle non-numeric error codes from Microsoft Graph in OAuth callback ([#580](https://github.com/postalsys/emailengine/issues/580)) ([89fd9f7](https://github.com/postalsys/emailengine/commit/89fd9f74db0cb32d4980b57b6c623e5d98b426a8))
+* prevent EISDIR crash on /static directory requests ([5b9c2db](https://github.com/postalsys/emailengine/commit/5b9c2db2d3e8f46c55ef0dc7343b7fb730e52414))
+* remove dead redirectToSlash option from static directory handler ([f90339a](https://github.com/postalsys/emailengine/commit/f90339a663913f47a6d1878225633a4f7cb4ac7e))
+* validate fallback status codes in resolveOAuthErrorStatus ([d2b49e3](https://github.com/postalsys/emailengine/commit/d2b49e3ad0c78c17a8aee6f1679fa3597d85ca4b))
+
 ## [2.63.0](https://github.com/postalsys/emailengine/compare/v2.62.2...v2.63.0) (2026-02-19)
 
 
