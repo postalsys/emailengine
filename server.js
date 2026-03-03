@@ -616,6 +616,8 @@ let workerAssigned = new WeakMap(); // Map of worker -> Set of accounts
 let onlineWorkers = new WeakSet(); // Set of workers that are online
 let reassignmentTimer = null; // Timer for failsafe reassignment
 let reassignmentPending = false; // Flag to track if reassignment is pending
+let assignRetryCount = 0; // Counter for safety-net retries in assignAccounts
+const MAX_ASSIGN_RETRIES = 3; // Max consecutive safety-net retries before giving up
 
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
@@ -1578,6 +1580,11 @@ async function assignAccounts() {
         let totalAccounts = assigned.size + unassigned.size;
         let targetPerWorker = Math.ceil(totalAccounts / availableIMAPWorkers.size);
 
+        // Collect accounts that fail assignment so we do not re-insert into
+        // the Set we are iterating (re-insertion during for..of would cause
+        // the same account to be visited again in the same pass).
+        let failedAccounts = [];
+
         // Assign each unassigned account
         for (let account of unassigned) {
             if (!availableIMAPWorkers.size) {
@@ -1636,7 +1643,14 @@ async function assignAccounts() {
                 // Roll back -- account was never actually assigned
                 workerAssigned.get(worker).delete(account);
                 assigned.delete(account);
-                unassigned.add(account);
+                // Revert load map so subsequent iterations see accurate counts
+                if (!isReassignment) {
+                    workerLoadMap.set(worker, workerLoadMap.get(worker) - 1);
+                    sortedWorkers = Array.from(workerLoadMap.entries())
+                        .sort((a, b) => a[1] - b[1])
+                        .map(entry => entry[0]);
+                }
+                failedAccounts.push(account);
                 logger.error({ msg: 'Failed to assign account to worker', account, threadId: worker.threadId, err });
                 continue;
             }
@@ -1645,6 +1659,11 @@ async function assignAccounts() {
             if (CONNECTION_SETUP_DELAY) {
                 await new Promise(r => setTimeout(r, CONNECTION_SETUP_DELAY));
             }
+        }
+
+        // Re-add failed accounts after iteration completes
+        for (let account of failedAccounts) {
+            unassigned.add(account);
         }
 
         // Log final distribution for monitoring
@@ -1661,15 +1680,30 @@ async function assignAccounts() {
     } finally {
         assigning = false;
 
-        // Safety net: if accounts remain unassigned, schedule a retry
+        // Safety net: if accounts remain unassigned, schedule a retry with backoff
         if (unassigned && unassigned.size > 0 && availableIMAPWorkers.size > 0 && !isClosing) {
-            logger.warn({
-                msg: 'Accounts remain unassigned after assignment pass, scheduling retry',
-                remaining: unassigned.size
-            });
-            setTimeout(() => {
-                assignAccounts().catch(err => logger.error({ msg: 'Retry assignment failed', err }));
-            }, 5000);
+            assignRetryCount++;
+            if (assignRetryCount <= MAX_ASSIGN_RETRIES) {
+                let delay = 5000 * assignRetryCount;
+                logger.warn({
+                    msg: 'Accounts remain unassigned after assignment pass, scheduling retry',
+                    remaining: unassigned.size,
+                    retry: assignRetryCount,
+                    maxRetries: MAX_ASSIGN_RETRIES,
+                    delayMs: delay
+                });
+                setTimeout(() => {
+                    assignAccounts().catch(err => logger.error({ msg: 'Retry assignment failed', err }));
+                }, delay);
+            } else {
+                logger.error({
+                    msg: 'Max assignment retries reached, accounts remain unassigned',
+                    remaining: unassigned.size
+                });
+                assignRetryCount = 0;
+            }
+        } else {
+            assignRetryCount = 0;
         }
     }
 }
