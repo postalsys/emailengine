@@ -1503,7 +1503,35 @@ Include your token in requests using one of these methods:
         },
         options: {
             auth: false,
-            tags: ['static']
+            tags: ['static'],
+            // Prevent EISDIR crash in pkg snapshot environments.
+            // Inert calls fs.open() on directory paths which triggers an uncaught exception
+            // in pkg's patched fs, so we intercept directory requests before they reach Inert.
+            pre: [
+                {
+                    assign: 'staticCheck',
+                    method: async (request, h) => {
+                        const filePath = request.params.file;
+                        if (!filePath) {
+                            throw Boom.notFound();
+                        }
+
+                        try {
+                            const stat = await fs.promises.stat(pathlib.join(__dirname, '..', 'static', filePath));
+                            if (stat.isDirectory()) {
+                                throw Boom.notFound();
+                            }
+                        } catch (err) {
+                            if (err.isBoom) {
+                                throw err;
+                            }
+                            // stat failed (ENOENT etc.) - let Inert handle it
+                        }
+
+                        return null;
+                    }
+                }
+            ]
         }
     });
 
