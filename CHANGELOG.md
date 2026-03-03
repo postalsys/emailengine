@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.63.2](https://github.com/postalsys/emailengine/compare/v2.63.1...v2.63.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* harden static file route with path confinement and pkg-only guard ([19cd5f6](https://github.com/postalsys/emailengine/commit/19cd5f632baa7fb37f5d639f234c5374b371ab93))
+* prevent EISDIR crash on static subdirectory requests in pkg ([4d5ef81](https://github.com/postalsys/emailengine/commit/4d5ef81679e4fd7f5e8a55a260f2c29f99938ba4))
+* prevent infinite loop and add retry backoff in account assignment ([f8b9e53](https://github.com/postalsys/emailengine/commit/f8b9e533a821d1c34a869270fa489437ac80da93))
+
 ## [2.63.1](https://github.com/postalsys/emailengine/compare/v2.63.0...v2.63.1) (2026-02-26)
 
 
