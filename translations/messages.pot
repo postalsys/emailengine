@@ -1,17 +1,13 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-03 13:39+0000\n"
+"POT-Creation-Date: 2026-03-05 15:45+0000\n"
 
 #: views/config/license.hbs:45
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/unsubscribe.hbs:3
 #: views/unsubscribe.hbs:62
@@ -62,6 +58,10 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -82,14 +82,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -207,6 +199,14 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: lib/routes-ui.js:523
 #: lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -253,7 +253,7 @@ msgstr ""
 #: lib/routes-ui.js:4874
 #: lib/routes-ui.js:5121
 #: lib/routes-ui.js:5157
-#: workers/api.js:2416
+#: workers/api.js:2453
 #: lib/ui-routes/account-routes.js:549
 #: lib/ui-routes/account-routes.js:585
 #: lib/ui-routes/account-routes.js:702
@@ -338,12 +338,12 @@ msgstr ""
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:6910
-#: workers/api.js:7026
+#: workers/api.js:6947
+#: workers/api.js:7063
 msgid "Requested page not found"
 msgstr ""
 
-#: workers/api.js:6911
+#: workers/api.js:6948
 msgid "Something went wrong"
 msgstr ""
 
