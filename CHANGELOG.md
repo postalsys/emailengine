@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.63.3](https://github.com/postalsys/emailengine/compare/v2.63.2...v2.63.3) (2026-03-05)
+
+
+### Bug Fixes
+
+* handle undici HeadersTimeoutError as transient in Pub/Sub and OAuth2 paths ([8b3b698](https://github.com/postalsys/emailengine/commit/8b3b69880ab09119df4ca377d085db261eae2763))
+* prevent IMAP worker crash on ImapFlow unhandled rejection during IDLE recovery ([86ebb02](https://github.com/postalsys/emailengine/commit/86ebb02c321ffa758966af1957509c10e20a35fc))
+* prevent transient network errors during OAuth2 token refresh from being misclassified as auth failures ([38fa212](https://github.com/postalsys/emailengine/commit/38fa212092847b727ac1d02541103c032a983dc7))
+* retry transient network errors in Gmail and Outlook API request functions ([08ea0da](https://github.com/postalsys/emailengine/commit/08ea0daecaec73c58a91ac07df5d0f0ffc083a2f))
+* treat DNS errors as transient in Google Pub/Sub polling loop ([ec33673](https://github.com/postalsys/emailengine/commit/ec33673b47242fd7156b4641c9c4924a33eaf9e5))
+
 ## [2.63.2](https://github.com/postalsys/emailengine/compare/v2.63.1...v2.63.2) (2026-03-03)
 
 
