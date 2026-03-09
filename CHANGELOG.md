@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.63.4](https://github.com/postalsys/emailengine/compare/v2.63.3...v2.63.4) (2026-03-09)
+
+
+### Bug Fixes
+
+* guard null imapClient dereferences during async operations ([671bcee](https://github.com/postalsys/emailengine/commit/671bcee4e81c7c0d6421617c3e25ec6906cb1abb))
+* prevent null dereference crash in getImapConnection during connection drops ([6a356fd](https://github.com/postalsys/emailengine/commit/6a356fd20e1412a070c26c093108c4ea2a722a5c))
+* throw instead of silent return in select() null guard, revert redundant optional chaining ([cb7db50](https://github.com/postalsys/emailengine/commit/cb7db5024e0b00f8a773328dd5e0009067bed0b6))
+* update tests for getCurrentListing null guard changes ([a644f9c](https://github.com/postalsys/emailengine/commit/a644f9c1c3f3e4cbce388e43bfa319f11f4a469c))
+
 ## [2.63.3](https://github.com/postalsys/emailengine/compare/v2.63.2...v2.63.3) (2026-03-05)
 
 
