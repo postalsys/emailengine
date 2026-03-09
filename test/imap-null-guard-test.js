@@ -265,7 +265,7 @@ test('IMAP null guard tests', async t => {
         assert.strictEqual(ctx.state, 'connected', 'State should be connected after successful sync');
     });
 
-    await t.test('getCurrentListing() does not crash when imapClient is null and getImapConnection returns null', async () => {
+    await t.test('getCurrentListing() throws IMAPConnectionClosing when getImapConnection has null imapClient', async () => {
         let { logger } = createMockLogger();
 
         let ctx = {
@@ -275,7 +275,7 @@ test('IMAP null guard tests', async t => {
             isClosed: false,
             isConnected: () => false,
             checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
-            getImapConnection: async () => null
+            getImapConnection: IMAPClient.prototype.getImapConnection
         };
 
         await assert.rejects(
@@ -283,42 +283,12 @@ test('IMAP null guard tests', async t => {
                 await IMAPClient.prototype.getCurrentListing.call(ctx, {}, { allowSecondary: true });
             },
             err => {
-                assert.strictEqual(err.code, 'ConnectionError');
-                assert.strictEqual(err.message, 'Failed to get connection');
+                assert.strictEqual(err.code, 'IMAPConnectionClosing');
+                assert.strictEqual(err.statusCode, 503);
+                assert.strictEqual(err.message, 'IMAP connection not available');
                 return true;
             }
         );
-    });
-
-    await t.test('getCurrentListing() calls close() when imapClient exists and getImapConnection returns null', async () => {
-        let { logger } = createMockLogger();
-        let closeCalled = false;
-
-        let ctx = {
-            logger,
-            imapClient: createMockImapClient({
-                close: () => {
-                    closeCalled = true;
-                }
-            }),
-            isClosing: false,
-            isClosed: false,
-            isConnected: () => true,
-            checkIMAPConnection: IMAPClient.prototype.checkIMAPConnection,
-            getImapConnection: async () => null
-        };
-
-        await assert.rejects(
-            async () => {
-                await IMAPClient.prototype.getCurrentListing.call(ctx, {}, { allowSecondary: true });
-            },
-            err => {
-                assert.strictEqual(err.code, 'ConnectionError');
-                return true;
-            }
-        );
-
-        assert.ok(closeCalled, 'close() should have been called on the existing imapClient');
     });
 
     await t.test('getCurrentListing() does not crash when imapClient becomes null and listing is empty', async () => {
