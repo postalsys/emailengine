@@ -1578,48 +1578,98 @@ Include your token in requests using one of these methods:
                 throw error;
             }
 
-            let result = { success: true };
-
-            if (request.query.pubsub) {
-                let pubsubApps = await oauth2Apps.list(0, 100, { pubsub: true });
-                let pubsubStatus = [];
-                let hasErrors = false;
-
-                for (let app of pubsubApps.apps || []) {
-                    let entry = { id: app.id, name: app.name || null };
-                    if (app.meta && app.meta.pubSubFlag && app.meta.pubSubFlag.message) {
-                        entry.error = { message: app.meta.pubSubFlag.message, description: app.meta.pubSubFlag.description || null };
-                        hasErrors = true;
-                    } else {
-                        entry.error = null;
-                    }
-                    pubsubStatus.push(entry);
-                }
-
-                result.pubsub = pubsubStatus;
-
-                if (hasErrors) {
-                    let error = Boom.boomify(new Error('Pub/Sub subscription error detected'), { statusCode: 500 });
-                    error.output.payload.pubsub = pubsubStatus;
-                    throw error;
-                }
-            }
-
-            return result;
+            return { success: true };
         },
         options: {
             description: 'Health check',
             auth: false,
-            tags: ['static', 'health'],
+            tags: ['static', 'health']
+        }
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/v1/pubsub/status',
+
+        async handler(request) {
+            try {
+                let response = await oauth2Apps.list(request.query.page, request.query.pageSize, { pubsub: true });
+
+                let apps = response.apps.map(app => {
+                    flattenOAuthAppMeta(app);
+                    return { id: app.id, name: app.name || null, pubSubError: app.pubSubError || null };
+                });
+
+                return {
+                    total: response.total,
+                    page: response.page,
+                    pages: response.pages,
+                    apps
+                };
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+
+        options: {
+            description: 'List Pub/Sub status',
+            notes: 'Lists Pub/Sub enabled OAuth2 applications and their subscription status',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
 
             validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
                 query: Joi.object({
-                    pubsub: Joi.boolean()
-                        .truthy('true', '1', 'yes')
-                        .falsy('false', '0', 'no', '')
-                        .default(false)
-                        .description('Include Pub/Sub subscription status check')
-                }).options({ allowUnknown: true })
+                    page: Joi.number()
+                        .integer()
+                        .min(0)
+                        .max(1024 * 1024)
+                        .default(0)
+                        .example(0)
+                        .description('Page number (zero indexed, so use 0 for first page)')
+                        .label('PageNumber'),
+                    pageSize: Joi.number().integer().min(1).max(1000).default(20).example(20).description('How many entries per page').label('PageSize')
+                }).label('PubSubStatusFilter')
+            },
+
+            response: {
+                schema: Joi.object({
+                    total: Joi.number().integer().example(120).description('How many matching entries').label('TotalNumber'),
+                    page: Joi.number().integer().example(0).description('Current page (0-based index)').label('PageNumber'),
+                    pages: Joi.number().integer().example(24).description('Total page count').label('PagesNumber'),
+
+                    apps: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                                name: Joi.string().allow(null).max(256).example('My Gmail App').description('Display name for the app'),
+                                pubSubError: pubSubErrorSchema.allow(null)
+                            }).label('PubSubAppStatus')
+                        )
+                        .label('PubSubAppStatusList')
+                }).label('PubSubStatusResponse'),
+                failAction: 'log'
             }
         }
     });
