@@ -1,25 +1,11 @@
-<div class="float-right">
-    <div class="btn-group">
-        <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-plus fa-fw" id="test-smtp-icon"></i> Create OAuth2 app
-        </button>
-        <div class="dropdown-menu">
-            <a class="dropdown-item" href="{{newLink}}?provider=gmail">Gmail</a>
-            <a class="dropdown-item" href="{{newLink}}?provider=gmailService">Gmail Service Accounts</a>
-            <a class="dropdown-item" href="{{newLink}}?provider=outlook">Outlook</a>
-            <a class="dropdown-item" href="{{newLink}}?provider=mailRu">Mail.ru</a>
-        </div>
-    </div>
-</div>
-
 {{> oauth_config_header}}
 
 <ul class="nav nav-pills mb-4">
     <li class="nav-item">
-        <a class="nav-link active" href="/admin/config/oauth">Applications</a>
+        <a class="nav-link" href="/admin/config/oauth">Applications</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" href="/admin/config/oauth/subscriptions">Gmail Subscriptions</a>
+        <a class="nav-link active" href="/admin/config/oauth/subscriptions">Gmail Subscriptions</a>
     </li>
 </ul>
 
@@ -27,25 +13,19 @@
 <div class="card mt-4 mb-4">
     <div class="table-responsive">
         <table class="table table-hover">
-            <thead class="">
+            <thead>
                 <tr>
                     <th class="p-0">
                         <div class="p-2">Name</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Description</div>
+                        <div class="p-2">Project ID</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Type</div>
+                        <div class="p-2">Topic</div>
                     </th>
                     <th class="p-0">
-                        <div class="p-2">Base scopes</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Provider ID <a href="#" tabindex="-1" role="button" data-toggle="popover"
-                                data-trigger="hover" data-title="Provider ID"
-                                data-content="Use this value as the &quot;oauth2.provider&quot; property, when registering email accounts using the API."><i
-                                    class="fas fa-question-circle"></i></a></div>
+                        <div class="p-2">Subscription</div>
                     </th>
                     <th class="p-0">
                         <div class="p-2">Status</div>
@@ -65,41 +45,39 @@
 
                     <td class="p-0">
                         <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{description}}
-                        </div>
-                    </td>
-
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{providerData.comment}}
-                        </div>
-                    </td>
-
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{baseScopesText}}
+                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{googleProjectId}}
                         </div>
                     </td>
 
                     <td class="p-0">
                         <div class="position-relative p-2">
                             <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{id}}
-                        </div>
-                    </td>
-
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{#if enabled}}
-
-                            {{#if meta.authFlag}}
-                            <span class="badge badge-danger">Failing</span>
+                            {{#if pubSubTopic}}
+                            <span class="badge badge-success">Created</span>
                             {{else}}
-                            <span class="badge badge-success">Enabled</span>
+                            <span class="badge badge-secondary">Not set</span>
                             {{/if}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
+                            {{#if pubSubSubscription}}
+                            <span class="badge badge-success">Created</span>
                             {{else}}
-                            <span class="badge badge-warning">Disabled</span>
+                            <span class="badge badge-secondary">Not set</span>
+                            {{/if}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
+                            {{#if meta.pubSubFlag}}
+                            <span class="badge badge-danger" title="{{meta.pubSubFlag.message}}">Error</span>
+                            {{else}}
+                            <span class="badge badge-success">OK</span>
                             {{/if}}
                         </div>
                     </td>
@@ -142,18 +120,11 @@
     <div class="list-group-item">
         <p>
             {{#if firstPage}}
-            No OAuth2 apps have been registered yet.
+            No Gmail Pub/Sub apps have been registered yet.
             {{else}}
-            No OAuth2 apps found.
+            No Gmail Pub/Sub apps found.
             {{/if}}
         </p>
     </div>
 </div>
 {{/if}}
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        $('.tooltip-btn').tooltip();
-        $('.tooltip-btn').click(function () { this.tooltip('hide') });
-    })
-</script>
