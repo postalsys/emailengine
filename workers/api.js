@@ -7036,11 +7036,13 @@ ${now}`,
         // Replace error with friendly HTML
         const error = response;
         const ctx = {
+            statusCode: error.output.statusCode,
             message:
                 error.output.statusCode === 404
                     ? request.app.gt.gettext('Requested page not found')
                     : (error.output && error.output.payload && error.output.payload.message) || request.app.gt.gettext('Something went wrong'),
-            details: error.output && error.output.payload && error.output.payload.details
+            details: error.output && error.output.payload && error.output.payload.details,
+            templateLocale: request.app.locale
         };
 
         if (error.output && error.output.payload) {

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-02-05 09:12+0000\n"
+"POT-Creation-Date: 2026-03-10 13:39+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -12,15 +12,27 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.8\n"
 
+#: views/error.hbs:4 workers/api.js:7043
+msgid "Something went wrong"
+msgstr "Leider ist ein Fehler aufgetreten"
+
+#: views/error.hbs:6
+msgid "Error code: %s"
+msgstr "Fehlercode: %s"
+
+#: views/error.hbs:14
+msgid "Go back"
+msgstr "Zurueck"
+
+#: views/error.hbs:17
+msgid "Dashboard"
+msgstr "Dashboard"
+
 #: views/config/license.hbs:45
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d Tag"
 msgstr[1] "%d Tage"
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr "Klicken Sie <a href=\"%s\">hier</a>, um fortzufahren&mldr;"
 
 #: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
 msgid "Unsubscribe"
@@ -69,6 +81,10 @@ msgstr "E-Mail-Adresse"
 msgid "Enter your email address"
 msgstr "Geben Sie Ihre E-Mail-Adresse ein"
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr "Klicken Sie <a href=\"%s\">hier</a>, um fortzufahren&mldr;"
+
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr "Ihr Name"
@@ -90,14 +106,6 @@ msgstr "Passwort für Ihr Konto eingeben"
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr "Weiter"
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr "Wählen Sie Ihren E-Mail-Kontoanbieter"
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr "Standard IMAP"
 
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
@@ -222,15 +230,23 @@ msgstr "Verbindung zum SMTP-Server nicht moeglich"
 msgid "Request failed."
 msgstr "Anfrage fehlgeschlagen."
 
-#: lib/routes-ui.js:520 lib/ui-routes/account-routes.js:60
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr "Wählen Sie Ihren E-Mail-Kontoanbieter"
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr "Standard IMAP"
+
+#: lib/routes-ui.js:523 lib/ui-routes/account-routes.js:60
 msgid "Delegated"
 msgstr "Delegiert"
 
-#: lib/routes-ui.js:521 lib/ui-routes/account-routes.js:61
+#: lib/routes-ui.js:524 lib/ui-routes/account-routes.js:61
 msgid "Using credentials from \"%s\""
 msgstr "Verwendung von Anmeldeinformationen aus \"%s\""
 
-#: lib/routes-ui.js:571 lib/ui-routes/account-routes.js:111
+#: lib/routes-ui.js:574 lib/ui-routes/account-routes.js:111
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
@@ -239,11 +255,11 @@ msgstr ""
 "sich hinter einer Firewall befinden oder eine Verbindung zum falschen Port "
 "herstellen."
 
-#: lib/routes-ui.js:574 lib/ui-routes/account-routes.js:114
+#: lib/routes-ui.js:577 lib/ui-routes/account-routes.js:114
 msgid "The server unexpectedly closed the connection."
 msgstr "Der Server hat die Verbindung unerwartet geschlossen."
 
-#: lib/routes-ui.js:577 lib/ui-routes/account-routes.js:117
+#: lib/routes-ui.js:580 lib/ui-routes/account-routes.js:117
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
@@ -252,7 +268,7 @@ msgstr ""
 "Regel, wenn versucht wird, eine Verbindung zu einem TLS-Port ohne "
 "aktiviertes TLS herzustellen."
 
-#: lib/routes-ui.js:582 lib/ui-routes/account-routes.js:122
+#: lib/routes-ui.js:585 lib/ui-routes/account-routes.js:122
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -261,90 +277,86 @@ msgstr ""
 "der Server nicht läuft, überlastet ist oder Sie sich mit dem falschen Host "
 "oder Port verbinden."
 
-#: lib/routes-ui.js:709
+#: lib/routes-ui.js:712
 msgid "Invalid API key for OpenAI"
 msgstr "Ungültiger API-Schlüssel für OpenAI"
 
-#: lib/routes-ui.js:4671 lib/routes-ui.js:4706 lib/routes-ui.js:4821
-#: lib/routes-ui.js:4868 lib/routes-ui.js:5115 lib/routes-ui.js:5151
-#: workers/api.js:2413 lib/ui-routes/account-routes.js:549
+#: lib/routes-ui.js:4754 lib/routes-ui.js:4789 lib/routes-ui.js:4904
+#: lib/routes-ui.js:4951 lib/routes-ui.js:5198 lib/routes-ui.js:5234
+#: workers/api.js:2557 lib/ui-routes/account-routes.js:549
 #: lib/ui-routes/account-routes.js:585 lib/ui-routes/account-routes.js:702
 #: lib/ui-routes/account-routes.js:749 lib/ui-routes/account-routes.js:998
 #: lib/ui-routes/account-routes.js:1034
 msgid "Email Account Setup"
 msgstr "E-Mail-Konto einrichten"
 
-#: lib/routes-ui.js:4731 lib/routes-ui.js:4764 lib/routes-ui.js:7701
+#: lib/routes-ui.js:4814 lib/routes-ui.js:4847 lib/routes-ui.js:7807
 #: lib/ui-routes/account-routes.js:610 lib/ui-routes/account-routes.js:644
 msgid "Invalid request. Check your input and try again."
 msgstr "Validierung der Anforderungsargumente fehlgeschlagen."
 
-#: lib/routes-ui.js:4924 lib/routes-ui.js:4935
+#: lib/routes-ui.js:5007 lib/routes-ui.js:5018
 #: lib/ui-routes/account-routes.js:806 lib/ui-routes/account-routes.js:817
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr "Server-Hostname wurde nicht gefunden"
 
-#: lib/routes-ui.js:4927 lib/routes-ui.js:4938
+#: lib/routes-ui.js:5010 lib/routes-ui.js:5021
 #: lib/ui-routes/account-routes.js:809 lib/ui-routes/account-routes.js:820
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder Passwort"
 
-#: lib/routes-ui.js:4941 lib/ui-routes/account-routes.js:823
+#: lib/routes-ui.js:5024 lib/ui-routes/account-routes.js:823
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr "Es wurden keine Authentifizierungsdaten angegeben"
 
-#: lib/routes-ui.js:4944 lib/ui-routes/account-routes.js:826
+#: lib/routes-ui.js:5027 lib/ui-routes/account-routes.js:826
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr "OAuth2-Authentifizierung fehlgeschlagen"
 
-#: lib/routes-ui.js:4947 lib/routes-ui.js:4951
+#: lib/routes-ui.js:5030 lib/routes-ui.js:5034
 #: lib/ui-routes/account-routes.js:829 lib/ui-routes/account-routes.js:833
 #: lib/ui-routes/admin-entities-routes.js:2032
 #: lib/ui-routes/admin-entities-routes.js:2036
 msgid "TLS protocol error"
 msgstr "TLS-Protokollfehler"
 
-#: lib/routes-ui.js:4955 lib/ui-routes/account-routes.js:837
+#: lib/routes-ui.js:5038 lib/ui-routes/account-routes.js:837
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr "Verbindung abgelaufen"
 
-#: lib/routes-ui.js:4958 lib/ui-routes/account-routes.js:840
+#: lib/routes-ui.js:5041 lib/ui-routes/account-routes.js:840
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr "Es konnte keine Verbindung zum Server hergestellt werden"
 
-#: lib/routes-ui.js:4961 lib/ui-routes/account-routes.js:843
+#: lib/routes-ui.js:5044 lib/ui-routes/account-routes.js:843
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr "Unerwartete Serverantwort"
 
-#: lib/routes-ui.js:7664 lib/tools.js:778
+#: lib/routes-ui.js:7770 lib/tools.js:950
 msgid "Invalid input"
 msgstr "Ungültige Eingabe"
 
-#: lib/routes-ui.js:7674 lib/routes-ui.js:7792 lib/routes-ui.js:7809
-#: lib/routes-ui.js:7845
+#: lib/routes-ui.js:7780 lib/routes-ui.js:7898 lib/routes-ui.js:7915
+#: lib/routes-ui.js:7951
 msgid "Subscription Management"
 msgstr "Mitgliederverwaltung"
 
-#: workers/api.js:6904 workers/api.js:7020
+#: workers/api.js:7042 workers/api.js:7159
 msgid "Requested page not found"
 msgstr "Gewünschte Seite nicht gefunden"
 
-#: workers/api.js:6905
-msgid "Something went wrong"
-msgstr "Leider ist ein Fehler aufgetreten"
-
-#: lib/tools.js:1477
+#: lib/tools.js:1653
 msgid "Signature validation failed"
 msgstr "Signaturüberprüfung fehlgeschlagen"
 
-#: lib/tools.js:1486 lib/tools.js:1491
+#: lib/tools.js:1662 lib/tools.js:1667
 msgid "Invalid or expired account setup URL"
 msgstr "Ungültige oder abgelaufene URL für die Kontoeinrichtung"
 
