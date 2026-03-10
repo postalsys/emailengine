@@ -163,7 +163,8 @@ const {
     googleSubscriptionNameSchema,
     messageReferenceSchema,
     idempotencyKeySchema,
-    headerTimeoutSchema
+    headerTimeoutSchema,
+    pubSubErrorSchema
 } = require('../lib/schemas');
 
 const OAuth2ProviderSchema = Joi.string()
@@ -179,6 +180,21 @@ const AccountTypeSchema = Joi.string()
     .description('Account type')
     .required()
     .label('AccountType');
+
+function flattenOAuthAppMeta(app) {
+    if (!app.meta) {
+        return;
+    }
+    let authFlag = app.meta.authFlag;
+    let pubSubFlag = app.meta.pubSubFlag;
+    delete app.meta;
+    if (authFlag && authFlag.message) {
+        app.lastError = { response: authFlag.message };
+    }
+    if (pubSubFlag && pubSubFlag.message) {
+        app.pubSubError = { message: pubSubFlag.message, description: pubSubFlag.description || null };
+    }
+}
 
 const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
@@ -1557,16 +1573,54 @@ Include your token in requests using one of these methods:
             let checkKey = `${REDIS_PREFIX}test:${Date.now()}`;
             let expected = crypto.randomBytes(8).toString('hex');
             let res = await redis.multi().set(checkKey, expected).get(checkKey).del(checkKey).exec();
-            if (res[1] && res[1][1] === expected && res[2] && res[2][1] === 1) {
-                return { success: true };
+            if (!(res[1] && res[1][1] === expected && res[2] && res[2][1] === 1)) {
+                let error = Boom.boomify(new Error('Database check failed'), { statusCode: 500 });
+                throw error;
             }
-            let error = Boom.boomify(new Error('Database check failed'), { statusCode: 500 });
-            throw error;
+
+            let result = { success: true };
+
+            if (request.query.pubsub) {
+                let pubsubApps = await oauth2Apps.list(0, 100, { pubsub: true });
+                let pubsubStatus = [];
+                let hasErrors = false;
+
+                for (let app of pubsubApps.apps || []) {
+                    let entry = { id: app.id, name: app.name || null };
+                    if (app.meta && app.meta.pubSubFlag && app.meta.pubSubFlag.message) {
+                        entry.error = { message: app.meta.pubSubFlag.message, description: app.meta.pubSubFlag.description || null };
+                        hasErrors = true;
+                    } else {
+                        entry.error = null;
+                    }
+                    pubsubStatus.push(entry);
+                }
+
+                result.pubsub = pubsubStatus;
+
+                if (hasErrors) {
+                    let error = Boom.boomify(new Error('Pub/Sub subscription error detected'), { statusCode: 500 });
+                    error.output.payload.pubsub = pubsubStatus;
+                    throw error;
+                }
+            }
+
+            return result;
         },
         options: {
             description: 'Health check',
             auth: false,
-            tags: ['static', 'health']
+            tags: ['static', 'health'],
+
+            validate: {
+                query: Joi.object({
+                    pubsub: Joi.boolean()
+                        .truthy('true', '1', 'yes')
+                        .falsy('false', '0', 'no', '')
+                        .default(false)
+                        .description('Include Pub/Sub subscription status check')
+                }).options({ allowUnknown: true })
+            }
         }
     });
 
@@ -4876,13 +4930,7 @@ Include your token in requests using one of these methods:
                         delete app.app;
                     }
 
-                    if (app.meta) {
-                        let authFlag = app.meta.authFlag;
-                        delete app.meta;
-                        if (authFlag && authFlag.message) {
-                            app.lastError = { response: authFlag.message };
-                        }
-                    }
+                    flattenOAuthAppMeta(app);
                 }
 
                 return response;
@@ -5002,7 +5050,8 @@ Include your token in requests using one of these methods:
                                     .example('******')
                                     .description('PEM formatted service secret for 2-legged OAuth2 applications. Actual value is not revealed.'),
 
-                                lastError: lastErrorSchema.allow(null)
+                                lastError: lastErrorSchema.allow(null),
+                                pubSubError: pubSubErrorSchema.allow(null)
                             }).label('OAuth2ResponseItem')
                         )
                         .label('OAuth2Entries')
@@ -5035,13 +5084,7 @@ Include your token in requests using one of these methods:
                     delete app.app;
                 }
 
-                if (app.meta) {
-                    let authFlag = app.meta.authFlag;
-                    delete app.meta;
-                    if (authFlag && authFlag.message) {
-                        app.lastError = { response: authFlag.message };
-                    }
-                }
+                flattenOAuthAppMeta(app);
 
                 return app;
             } catch (err) {
@@ -5145,7 +5188,8 @@ Include your token in requests using one of these methods:
                         .example(12)
                         .description('The number of accounts registered with this application. Not available for legacy apps.'),
 
-                    lastError: lastErrorSchema.allow(null)
+                    lastError: lastErrorSchema.allow(null),
+                    pubSubError: pubSubErrorSchema.allow(null)
                 }).label('ApplicationResponse'),
                 failAction: 'log'
             }
