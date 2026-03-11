@@ -21,6 +21,9 @@
                         <div class="p-2">Subscription</div>
                     </th>
                     <th class="p-0">
+                        <div class="p-2">Expiration</div>
+                    </th>
+                    <th class="p-0">
                         <div class="p-2">Status</div>
                     </th>
                 </tr>
@@ -60,6 +63,17 @@
                             <span class="badge badge-success">Created</span>
                             {{else}}
                             <span class="badge badge-secondary">Not set</span>
+                            {{/if}}
+                        </div>
+                    </td>
+
+                    <td class="p-0">
+                        <div class="position-relative p-2">
+                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
+                            {{#if expirationLabel}}
+                            {{expirationLabel}}
+                            {{else}}
+                            <span class="text-muted">-</span>
                             {{/if}}
                         </div>
                     </td>
@@ -121,3 +135,35 @@
     </div>
 </div>
 {{/if}}
+
+<div class="card mt-4 mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Subscription Settings</h6>
+    </div>
+    <div class="card-body">
+        <form method="post" action="/admin/config/oauth/subscriptions">
+            <input type="hidden" name="crumb" value="{{crumb}}" />
+            <div class="form-group row">
+                <label for="gmailSubscriptionTtl" class="col-sm-3 col-form-label">Subscription TTL</label>
+                <div class="col-sm-9">
+                    <input type="number" class="form-control" id="gmailSubscriptionTtl"
+                        name="gmailSubscriptionTtl" value="{{values.gmailSubscriptionTtl}}"
+                        placeholder="31" min="0" max="365" />
+                    <small class="form-text text-muted">
+                        Inactivity expiration in days. Leave empty for Google's default (31 days). Set to 0 to disable expiration.
+                    </small>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Update</button>
+        </form>
+
+        <div class="alert alert-info mt-3 mb-0">
+            <strong>Note:</strong> Google automatically deletes Pub/Sub subscriptions that receive no activity
+            for a set period. This setting controls that period for both new and existing subscriptions.
+            Changes take effect the next time an OAuth app is created or updated.
+            If a subscription does expire, EmailEngine detects this and recreates it automatically.
+            No messages are lost during the gap because EmailEngine also polls the Gmail API every 10 minutes
+            and uses the History API to catch up on any missed changes.
+        </div>
+    </div>
+</div>
