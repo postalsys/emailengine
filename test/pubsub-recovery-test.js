@@ -265,8 +265,8 @@ test('Pub/Sub subscription recovery tests', async t => {
             async () => {
                 let instance = createTestInstance();
 
-                // First call: ensurePubsub fails, should throw the original 404 error
-                await assert.rejects(() => instance.run(), /Subscription not found/);
+                // First call: ensurePubsub fails, should throw the recovery error
+                await assert.rejects(() => instance.run(), /GCP permission error/);
                 assert.strictEqual(instance.recoveryAttempts, 1);
                 assert.strictEqual(ensurePubsubCalls.length, 1);
 

@@ -1597,7 +1597,7 @@ Include your token in requests using one of these methods:
 
                 let apps = response.apps.map(app => {
                     flattenOAuthAppMeta(app);
-                    return { id: app.id, name: app.name || null, pubSubError: app.pubSubError || null };
+                    return { id: app.id, name: app.name || null, lastError: app.lastError || null, pubSubError: app.pubSubError || null };
                 });
 
                 return {
@@ -1664,6 +1664,12 @@ Include your token in requests using one of these methods:
                             Joi.object({
                                 id: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
                                 name: Joi.string().allow(null).max(256).example('My Gmail App').description('Display name for the app'),
+                                lastError: Joi.object({
+                                    response: Joi.string().example('Enable the Cloud Pub/Sub API').description('Setup error message')
+                                })
+                                    .allow(null)
+                                    .description('Setup error from ensurePubsub, if any')
+                                    .label('PubSubSetupError'),
                                 pubSubError: pubSubErrorSchema.allow(null)
                             }).label('PubSubAppStatus')
                         )

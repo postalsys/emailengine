@@ -83,8 +83,12 @@
                             <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
                             {{#if meta.pubSubFlag}}
                             <span class="badge badge-danger" title="{{meta.pubSubFlag.message}}">Error</span>
-                            {{else}}
+                            {{else if meta.authFlag}}
+                            <span class="badge badge-warning" title="{{meta.authFlag.message}}">Setup Failed</span>
+                            {{else if pubSubSubscription}}
                             <span class="badge badge-success">OK</span>
+                            {{else}}
+                            <span class="badge badge-warning">Pending</span>
                             {{/if}}
                         </div>
                     </td>
