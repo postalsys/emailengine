@@ -2753,8 +2753,9 @@ async function onCommand(worker, message) {
             return await call(assignedWorker, message, []);
         }
 
-        case 'googlePubSub': {
-            // Notify all webhook workers about PubSub app
+        case 'googlePubSub':
+        case 'googlePubSubRemove': {
+            // Notify all webhook workers about PubSub app changes
             for (let worker of workers.get('webhooks')) {
                 await call(worker, message);
             }

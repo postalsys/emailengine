@@ -117,7 +117,11 @@ async function onCommand(command) {
         case 'googlePubSub':
             await googlePubSub.update(command.app);
             return true;
+        case 'googlePubSubRemove':
+            googlePubSub.remove(command.app);
+            return true;
         case 'close':
+            clearTimeout(startRetryTimer);
             googlePubSub.stopAll();
             return true;
         default:
@@ -137,6 +141,7 @@ setInterval(() => {
 
 // Clean up Pub/Sub instances when parent port closes
 parentPort.on('close', () => {
+    clearTimeout(startRetryTimer);
     googlePubSub.stopAll();
 });
 
@@ -614,13 +619,19 @@ notifyWorker.on('failed', async job => {
     });
 });
 
-googlePubSub
-    .start()
-    .then(() => {
-        logger.info({ msg: 'Started processing Google pub/sub' });
-    })
-    .catch(err => {
-        logger.error({ msg: 'Failed to start processing Google pub/sub', err });
-    });
+let startRetryTimer = null;
+
+(function startGooglePubSub(attempt) {
+    googlePubSub
+        .start()
+        .then(() => {
+            logger.info({ msg: 'Started processing Google pub/sub' });
+        })
+        .catch(err => {
+            let delay = Math.min(5000 * Math.pow(2, Math.min(attempt, 10)), 60000);
+            logger.error({ msg: 'Failed to start processing Google pub/sub', err, attempt: attempt + 1, retryMs: delay });
+            startRetryTimer = setTimeout(() => startGooglePubSub(attempt + 1), delay);
+        });
+})(0);
 
 logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });

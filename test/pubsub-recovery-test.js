@@ -914,4 +914,184 @@ test('Pub/Sub subscription recovery tests', async t => {
             })();
         });
     });
+
+    // --- remove() synchronous behavior tests ---
+
+    await t.test('remove() synchronous behavior tests', async t2 => {
+        await t2.test('remove() returns undefined, not a Promise', () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            let instance = Object.create(PubSubInstance.prototype);
+            Object.assign(instance, {
+                app: 'sync-test',
+                stopped: false,
+                _loopTimer: null,
+                _immediateHandle: null,
+                _abortController: null
+            });
+            pubsub.pubSubInstances.set('sync-test', instance);
+
+            let result = pubsub.remove('sync-test');
+            assert.strictEqual(result, undefined, 'remove() should return undefined, not a Promise');
+        });
+
+        await t2.test('remove() is a no-op for unknown app', () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            pubsub.remove('nonexistent');
+            assert.strictEqual(pubsub.pubSubInstances.size, 0, 'map should remain empty');
+        });
+
+        await t2.test('remove() aborts active AbortController', () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            let abortController = new AbortController();
+            let instance = Object.create(PubSubInstance.prototype);
+            Object.assign(instance, {
+                app: 'abort-test',
+                stopped: false,
+                _loopTimer: null,
+                _immediateHandle: null,
+                _abortController: abortController
+            });
+            pubsub.pubSubInstances.set('abort-test', instance);
+
+            pubsub.remove('abort-test');
+            assert.strictEqual(abortController.signal.aborted, true, 'AbortController should be aborted');
+        });
+    });
+
+    // --- setMeta isolation in run() ---
+
+    await t.test('setMeta failure after successful pull does not throw', async t2 => {
+        await t2.test('setMeta error is caught and _hadPubSubFlag stays true for retry', async () => {
+            let setMetaCallCount = 0;
+
+            await withMockedOauth2Apps(
+                {
+                    setMeta: async () => {
+                        setMetaCallCount++;
+                        throw new Error('Redis connection lost');
+                    },
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    let instance = createTestInstance({
+                        _hadPubSubFlag: true,
+                        client: {
+                            request: async () => ({ receivedMessages: [] })
+                        }
+                    });
+
+                    // Simulate app exists in subscriber set
+                    mockSets[`${REDIS_PREFIX}oapp:sub`] = new Set(['test-app']);
+
+                    // Should not throw despite setMeta failure
+                    await instance.run();
+                    assert.strictEqual(setMetaCallCount, 1, 'setMeta should have been called once');
+                    assert.strictEqual(instance._hadPubSubFlag, true, '_hadPubSubFlag should remain true for retry');
+                }
+            )();
+        });
+    });
+
+    // --- attemptRecovery stopped checks ---
+
+    await t.test('attemptRecovery respects stopped flag', async t2 => {
+        await t2.test('attemptRecovery returns early when stopped is set before start', async () => {
+            let ensurePubsubCalls = 0;
+
+            await withMockedOauth2Apps(
+                {
+                    ensurePubsub: async () => {
+                        ensurePubsubCalls++;
+                    },
+                    get: async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' })
+                },
+                async () => {
+                    let instance = createTestInstance({ recoveryAttempts: 0, lastRecoveryAttempt: 0 });
+                    instance.stopped = true;
+
+                    await instance.attemptRecovery('test reason');
+                    assert.strictEqual(ensurePubsubCalls, 0, 'ensurePubsub should not be called when stopped');
+                }
+            )();
+        });
+
+        await t2.test('attemptRecovery returns early when stopped during recovery', async () => {
+            let setMetaCalls = 0;
+
+            await withMockedOauth2Apps(
+                {
+                    ensurePubsub: async function () {
+                        // Simulate being stopped during recovery
+                        this._instance.stopped = true;
+                    },
+                    get: async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' }),
+                    getClient: async () => ({ request: async () => {} }),
+                    setMeta: async () => {
+                        setMetaCalls++;
+                    }
+                },
+                async () => {
+                    let instance = createTestInstance({ recoveryAttempts: 0, lastRecoveryAttempt: 0 });
+
+                    // Patch ensurePubsub to set stopped on the correct instance
+                    let origEnsurePubsub = oauth2Apps.ensurePubsub;
+                    oauth2Apps.ensurePubsub = async () => {
+                        instance.stopped = true;
+                    };
+
+                    await instance.attemptRecovery('test reason');
+                    assert.strictEqual(setMetaCalls, 0, 'setMeta should not be called after stopped during recovery');
+
+                    oauth2Apps.ensurePubsub = origEnsurePubsub;
+                }
+            )();
+        });
+    });
+
+    // --- per-batch access token test ---
+
+    await t.test('ACK reuses batch-level access token', async t2 => {
+        await t2.test('getServiceAccessToken is called once for pull, not per-message ACK', async () => {
+            let tokenCallCount = 0;
+
+            await withMockedOauth2Apps(
+                {
+                    getServiceAccessToken: async () => {
+                        tokenCallCount++;
+                        return 'mock-token';
+                    }
+                },
+                async () => {
+                    let ackCount = 0;
+                    let instance = createTestInstance({
+                        client: {
+                            request: async (token, url) => {
+                                if (url.includes(':pull')) {
+                                    return {
+                                        receivedMessages: [
+                                            { message: { messageId: 'msg-1', data: '' }, ackId: 'ack-1' },
+                                            { message: { messageId: 'msg-2', data: '' }, ackId: 'ack-2' },
+                                            { message: { messageId: 'msg-3', data: '' }, ackId: 'ack-3' }
+                                        ]
+                                    };
+                                }
+                                if (url.includes(':acknowledge')) {
+                                    ackCount++;
+                                    return '';
+                                }
+                            }
+                        }
+                    });
+
+                    mockSets[`${REDIS_PREFIX}oapp:sub`] = new Set(['test-app']);
+
+                    await instance.run();
+                    assert.strictEqual(ackCount, 3, 'should have ACKed all 3 messages');
+                    // getServiceAccessToken called once for getAccessToken() before pull,
+                    // plus once inside getClient(). Should NOT be called per-message.
+                    assert.ok(tokenCallCount <= 2, `getServiceAccessToken should be called at most twice, got ${tokenCallCount}`);
+                }
+            )();
+        });
+    });
 });
