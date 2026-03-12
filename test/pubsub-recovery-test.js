@@ -81,24 +81,35 @@ function createMockRedis() {
                     return this;
                 },
                 hset: function () {
+                    ops.push(() => 0);
                     return this;
                 },
                 hdel: function () {
+                    ops.push(() => 0);
                     return this;
                 },
                 del: function () {
+                    ops.push(() => 0);
                     return this;
                 },
                 expire: function () {
+                    ops.push(() => 0);
                     return this;
                 },
-                srem: function () {
+                srem: function (key, ...members) {
+                    ops.push(() => redis.srem(key, ...members));
+                    return this;
+                },
+                scard: function (key) {
+                    ops.push(() => redis.scard(key));
                     return this;
                 },
                 zadd: function () {
+                    ops.push(() => 0);
                     return this;
                 },
                 hincrby: function () {
+                    ops.push(() => 0);
                     return this;
                 }
             };
@@ -126,7 +137,14 @@ function createMockRedis() {
             if (!mockSets[key]) return 0;
             return mockSets[key].size;
         },
-        srem: async () => {},
+        srem: async (key, ...members) => {
+            if (!mockSets[key]) return 0;
+            let removed = 0;
+            for (let m of members) {
+                if (mockSets[key].delete(m)) removed++;
+            }
+            return removed;
+        },
         exists: async () => 0,
         get: async () => null,
         set: async () => 'OK',
@@ -706,6 +724,53 @@ test('Pub/Sub subscription recovery tests', async t => {
                     assert.ok(mockSets[subscribersKey] && mockSets[subscribersKey].has(appId), 'id should be in subscriber set');
                 }
             )();
+        });
+    });
+
+    // --- del() subscriber cleanup tests ---
+
+    await t.test('del() subscriber cleanup tests', async t2 => {
+        let subscribersKey = `${REDIS_PREFIX}oapp:sub`;
+        let indexKey = `${REDIS_PREFIX}oapp:i`;
+        let dataKey = `${REDIS_PREFIX}oapp:c`;
+
+        t2.beforeEach(() => {
+            mockRedisData = {};
+            mockSets = {};
+        });
+
+        await t2.test('del() removes app from subscriber set and pubsub app set', async () => {
+            let appId = 'del-test-app';
+            let pubSubAppId = 'parent-pubsub-app';
+            let pubsubAppKey = `${REDIS_PREFIX}oapp:pub:${pubSubAppId}`;
+            let appFields = { id: appId, baseScopes: 'pubsub', provider: 'gmailService', pubSubApp: pubSubAppId };
+
+            mockSets[indexKey] = new Set([appId]);
+            mockSets[subscribersKey] = new Set([appId]);
+            mockSets[pubsubAppKey] = new Set([appId]);
+            mockRedisData[dataKey] = { [`${appId}:data`]: msgpack.encode(appFields) };
+
+            await withMockedOauth2Apps({ get: async () => ({ ...appFields }) }, async () => {
+                let result = await oauth2Apps.del(appId);
+                assert.strictEqual(result.id, appId, 'should return correct id');
+                assert.ok(!mockSets[subscribersKey] || !mockSets[subscribersKey].has(appId), 'app should be removed from subscriber set');
+                assert.ok(!mockSets[pubsubAppKey] || !mockSets[pubsubAppKey].has(appId), 'app should be removed from pubsub app set');
+            })();
+        });
+
+        await t2.test('del() without pubSubApp skips pubsub app set removal', async () => {
+            let appId = 'del-no-pubsub-app';
+            let appFields = { id: appId, baseScopes: 'api', provider: 'gmail' };
+
+            mockSets[indexKey] = new Set([appId]);
+            mockSets[subscribersKey] = new Set([appId]);
+            mockRedisData[dataKey] = { [`${appId}:data`]: msgpack.encode(appFields) };
+
+            await withMockedOauth2Apps({ get: async () => ({ ...appFields }) }, async () => {
+                let result = await oauth2Apps.del(appId);
+                assert.strictEqual(result.id, appId, 'should return correct id');
+                assert.ok(!mockSets[subscribersKey] || !mockSets[subscribersKey].has(appId), 'app should be removed from subscriber set');
+            })();
         });
     });
 });
