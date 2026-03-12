@@ -620,7 +620,7 @@ googlePubSub
         logger.info({ msg: 'Started processing Google pub/sub' });
     })
     .catch(err => {
-        logger.fatal({ msg: 'Failed to start processing Google pub/sub', err });
+        logger.error({ msg: 'Failed to start processing Google pub/sub', err });
     });
 
 logger.info({ msg: 'Started Webhooks worker thread', version: packageData.version });

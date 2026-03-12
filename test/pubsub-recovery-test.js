@@ -88,8 +88,8 @@ function createMockRedis() {
                     ops.push(() => 0);
                     return this;
                 },
-                del: function () {
-                    ops.push(() => 0);
+                del: function (key) {
+                    ops.push(() => redis.del(key));
                     return this;
                 },
                 expire: function () {
@@ -144,6 +144,18 @@ function createMockRedis() {
                 if (mockSets[key].delete(m)) removed++;
             }
             return removed;
+        },
+        del: async key => {
+            let existed = 0;
+            if (mockSets[key]) {
+                delete mockSets[key];
+                existed = 1;
+            }
+            if (mockRedisData[key]) {
+                delete mockRedisData[key];
+                existed = 1;
+            }
+            return existed;
         },
         exists: async () => 0,
         get: async () => null,
@@ -790,6 +802,23 @@ test('Pub/Sub subscription recovery tests', async t => {
             assert.strictEqual(instance.stopped, true, 'instance should be stopped');
             assert.strictEqual(pubsub.pubSubInstances.size, 0, 'instance should be removed from map');
         });
+
+        await t2.test('update() replaces existing instance with a fresh one', async () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            await pubsub.update('refresh-test');
+            let firstInstance = pubsub.pubSubInstances.get('refresh-test');
+            assert.ok(firstInstance, 'instance should exist after first update');
+
+            await pubsub.update('refresh-test');
+            let secondInstance = pubsub.pubSubInstances.get('refresh-test');
+            assert.ok(secondInstance, 'instance should exist after second update');
+            assert.notStrictEqual(firstInstance, secondInstance, 'instance should be a new object');
+            assert.strictEqual(firstInstance.stopped, true, 'old instance should be stopped');
+            assert.strictEqual(secondInstance.stopped, false, 'new instance should not be stopped');
+            assert.strictEqual(pubsub.pubSubInstances.size, 1, 'map should still have exactly one entry');
+
+            pubsub.stopAll();
+        });
     });
 
     // --- _recoveryBackoffMs() tests ---
@@ -849,6 +878,24 @@ test('Pub/Sub subscription recovery tests', async t => {
                 assert.strictEqual(result.id, appId, 'should return correct id');
                 assert.ok(!mockSets[subscribersKey] || !mockSets[subscribersKey].has(appId), 'app should be removed from subscriber set');
                 assert.ok(!mockSets[pubsubAppKey] || !mockSets[pubsubAppKey].has(appId), 'app should be removed from pubsub app set');
+            })();
+        });
+
+        await t2.test('del() deletes oapp:pub:{id} set when app has baseScopes pubsub', async () => {
+            let appId = 'del-pubsub-provider';
+            let pubsubAppKey = `${REDIS_PREFIX}oapp:pub:${appId}`;
+            let appFields = { id: appId, baseScopes: 'pubsub', provider: 'gmailService' };
+
+            mockSets[indexKey] = new Set([appId]);
+            mockSets[subscribersKey] = new Set([appId]);
+            mockSets[pubsubAppKey] = new Set(['subscriber-1', 'subscriber-2']);
+            mockRedisData[dataKey] = { [`${appId}:data`]: msgpack.encode(appFields) };
+
+            await withMockedOauth2Apps({ get: async () => ({ ...appFields }) }, async () => {
+                let result = await oauth2Apps.del(appId);
+                assert.strictEqual(result.id, appId, 'should return correct id');
+                assert.ok(!mockSets[subscribersKey] || !mockSets[subscribersKey].has(appId), 'app should be removed from subscriber set');
+                assert.ok(!mockSets[pubsubAppKey], 'oapp:pub:{id} set should be deleted');
             })();
         });
 
