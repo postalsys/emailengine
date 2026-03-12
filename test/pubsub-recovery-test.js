@@ -394,16 +394,19 @@ test('Pub/Sub subscription recovery tests', async t => {
             async () => {
                 let instance = createTestInstance({ client: mockClient });
 
-                // First run: 404 -> recovery -> returns
+                // First run: 404 -> recovery clears pubSubFlag
                 await instance.run();
 
-                // Second run: successful pull
+                // Recovery should have cleared pubSubFlag
+                let clearCall = setMetaCalls.find(c => c.meta && c.meta.pubSubFlag === null);
+                assert.ok(clearCall, 'recovery should clear pubSubFlag');
+
+                // Second run: successful pull should NOT call setMeta (no-op optimization)
                 setMetaCalls = [];
                 await instance.run();
 
-                // setMeta should be called with pubSubFlag: null on successful pull
-                let clearCall = setMetaCalls.find(c => c.meta && c.meta.pubSubFlag === null);
-                assert.ok(clearCall, 'setMeta should clear pubSubFlag after successful pull');
+                let redundantClear = setMetaCalls.find(c => c.meta && c.meta.pubSubFlag === null);
+                assert.ok(!redundantClear, 'setMeta should not be called redundantly on successful pull when flag is already clear');
             }
         )();
     });
