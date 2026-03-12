@@ -1155,4 +1155,123 @@ test('Pub/Sub subscription recovery tests', async t => {
             )();
         });
     });
+
+    // --- _deletePubSubResource transient error retry tests ---
+
+    await t.test('_deletePubSubResource transient error retry tests', async t2 => {
+        let deleteAppData = {
+            id: 'test-app',
+            pubSubTopic: 'projects/test/topics/test-topic',
+            pubSubSubscription: 'projects/test/subscriptions/test-sub'
+        };
+
+        t2.beforeEach(() => {
+            mockRedisData = {};
+            mockSets = {};
+        });
+
+        await t2.test('retries once on transient error and succeeds', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getClient: async () => ({
+                        request: async () => {
+                            callCount++;
+                            if (callCount === 1) {
+                                let err = new Error('Connection timed out');
+                                err.code = 'ETIMEDOUT';
+                                throw err;
+                            }
+                            return '';
+                        }
+                    }),
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    await oauth2Apps.deleteTopic(deleteAppData);
+                    // First call fails with ETIMEDOUT, retry succeeds, then subscription delete succeeds
+                    assert.ok(callCount >= 3, `expected at least 3 requests (topic attempt, topic retry, subscription), got ${callCount}`);
+                }
+            )();
+        });
+
+        await t2.test('throws after retry also fails with transient error', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getClient: async () => ({
+                        request: async () => {
+                            callCount++;
+                            let err = new Error('Connection reset');
+                            err.code = 'ECONNRESET';
+                            throw err;
+                        }
+                    }),
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    await assert.rejects(
+                        async () => oauth2Apps.deleteTopic(deleteAppData),
+                        err => err.code === 'ECONNRESET'
+                    );
+                    // First attempt + retry = 2 calls for topic (fails before reaching subscription)
+                    assert.strictEqual(callCount, 2, 'should have made exactly 2 requests (topic attempt + retry)');
+                }
+            )();
+        });
+
+        await t2.test('treats 404 on retry as success', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getClient: async () => ({
+                        request: async () => {
+                            callCount++;
+                            if (callCount === 1) {
+                                let err = new Error('Connection timed out');
+                                err.code = 'ETIMEDOUT';
+                                throw err;
+                            }
+                            if (callCount === 2) {
+                                // Retry returns 404 (resource already gone)
+                                throw create404Error();
+                            }
+                            return '';
+                        }
+                    }),
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    await oauth2Apps.deleteTopic(deleteAppData);
+                    // Topic attempt (ETIMEDOUT) + retry (404, treated as success) + subscription attempt
+                    assert.ok(callCount >= 3, `expected at least 3 requests, got ${callCount}`);
+                }
+            )();
+        });
+    });
+
+    // --- processPulledMessage missing fields warning tests ---
+
+    await t.test('processPulledMessage logs warning for missing fields', async t2 => {
+        await t2.test('returns without throwing when emailAddress is missing', async () => {
+            let instance = createTestInstance();
+            // payload has historyId but no emailAddress
+            let data = JSON.stringify({ historyId: '12345' });
+            // Should return gracefully without throwing
+            await instance.processPulledMessage('msg-missing-email', data);
+        });
+
+        await t2.test('returns without throwing when historyId is missing', async () => {
+            let instance = createTestInstance();
+            // payload has emailAddress but no historyId
+            let data = JSON.stringify({ emailAddress: 'user@example.com' });
+            await instance.processPulledMessage('msg-missing-history', data);
+        });
+
+        await t2.test('returns without throwing when payload is empty object', async () => {
+            let instance = createTestInstance();
+            let data = JSON.stringify({});
+            await instance.processPulledMessage('msg-empty-payload', data);
+        });
+    });
 });
