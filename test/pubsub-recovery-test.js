@@ -238,6 +238,8 @@ function createTestInstance(overrides) {
             stopped: false,
             recoveryAttempts: 0,
             lastRecoveryAttempt: 0,
+            _hadPubSubFlag: true,
+            _lastLoopError: null,
             parent: { getSubscribersKey: () => 'ee:oapp:sub', remove: () => {} },
             appData: { id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' },
             client: {
