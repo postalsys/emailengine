@@ -117,6 +117,9 @@ async function onCommand(command) {
         case 'googlePubSub':
             await googlePubSub.update(command.app);
             return true;
+        case 'close':
+            googlePubSub.stopAll();
+            return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;
@@ -131,6 +134,11 @@ setInterval(() => {
         // Ignore errors, parent might be shutting down
     }
 }, 10 * 1000).unref();
+
+// Clean up Pub/Sub instances when parent port closes
+parentPort.on('close', () => {
+    googlePubSub.stopAll();
+});
 
 // Send initial ready signal
 parentPort.postMessage({ cmd: 'ready' });
