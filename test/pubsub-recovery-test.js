@@ -331,8 +331,16 @@ test('Pub/Sub subscription recovery tests', async t => {
                 assert.strictEqual(instance.recoveryAttempts, 1);
                 assert.strictEqual(ensurePubsubCalls.length, 1);
 
-                // Second call immediately: should skip recovery due to backoff and throw
-                await assert.rejects(() => instance.run(), /Subscription not found/);
+                // Second call immediately: should skip recovery due to backoff and throw with retryDelay
+                let backoffErr;
+                try {
+                    await instance.run();
+                } catch (err) {
+                    backoffErr = err;
+                }
+                assert.ok(backoffErr, 'should throw during backoff');
+                assert.match(backoffErr.message, /Subscription not found/);
+                assert.ok(typeof backoffErr.retryDelay === 'number' && backoffErr.retryDelay > 0, 'backoff error should include retryDelay');
                 // ensurePubsub should NOT be called again (backoff not elapsed)
                 assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should not be called during backoff');
             }
