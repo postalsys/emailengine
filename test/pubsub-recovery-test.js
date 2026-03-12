@@ -823,30 +823,35 @@ test('Pub/Sub subscription recovery tests', async t => {
 
     // --- _recoveryBackoffMs() tests ---
 
-    await t.test('_recoveryBackoffMs() returns expected values', async t2 => {
-        await t2.test('backoff at 0 attempts is 3000ms', () => {
+    await t.test('_recoveryBackoffMs() returns expected values with jitter', async t2 => {
+        await t2.test('backoff at 0 attempts is in range [1500, 3000)', () => {
             let instance = createTestInstance({ recoveryAttempts: 0 });
-            assert.strictEqual(instance._recoveryBackoffMs(), 3000);
+            let result = instance._recoveryBackoffMs();
+            assert.ok(result >= 1500 && result < 3000, `expected [1500, 3000) but got ${result}`);
         });
 
-        await t2.test('backoff at 1 attempt is 6000ms', () => {
+        await t2.test('backoff at 1 attempt is in range [3000, 6000)', () => {
             let instance = createTestInstance({ recoveryAttempts: 1 });
-            assert.strictEqual(instance._recoveryBackoffMs(), 6000);
+            let result = instance._recoveryBackoffMs();
+            assert.ok(result >= 3000 && result < 6000, `expected [3000, 6000) but got ${result}`);
         });
 
-        await t2.test('backoff at 5 attempts is 96000ms', () => {
+        await t2.test('backoff at 5 attempts is in range [48000, 96000)', () => {
             let instance = createTestInstance({ recoveryAttempts: 5 });
-            assert.strictEqual(instance._recoveryBackoffMs(), 96000);
+            let result = instance._recoveryBackoffMs();
+            assert.ok(result >= 48000 && result < 96000, `expected [48000, 96000) but got ${result}`);
         });
 
-        await t2.test('backoff caps at 300000ms (5 minutes)', () => {
+        await t2.test('backoff caps at 300000ms (5 minutes) with jitter in range [150000, 300000)', () => {
             let instance = createTestInstance({ recoveryAttempts: 20 });
-            assert.strictEqual(instance._recoveryBackoffMs(), 300000);
+            let result = instance._recoveryBackoffMs();
+            assert.ok(result >= 150000 && result < 300000, `expected [150000, 300000) but got ${result}`);
         });
 
-        await t2.test('backoff stays capped beyond 20 attempts', () => {
+        await t2.test('backoff stays capped beyond 20 attempts with jitter in range [150000, 300000)', () => {
             let instance = createTestInstance({ recoveryAttempts: 25 });
-            assert.strictEqual(instance._recoveryBackoffMs(), 300000);
+            let result = instance._recoveryBackoffMs();
+            assert.ok(result >= 150000 && result < 300000, `expected [150000, 300000) but got ${result}`);
         });
     });
 
