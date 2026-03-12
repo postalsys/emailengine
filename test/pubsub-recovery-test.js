@@ -913,6 +913,17 @@ test('Pub/Sub subscription recovery tests', async t => {
                 assert.ok(!mockSets[subscribersKey] || !mockSets[subscribersKey].has(appId), 'app should be removed from subscriber set');
             })();
         });
+
+        await t2.test('del() returns safely when app does not exist', async () => {
+            let appId = 'nonexistent-app';
+
+            await withMockedOauth2Apps({ get: async () => false }, async () => {
+                let result = await oauth2Apps.del(appId);
+                assert.strictEqual(result.id, appId, 'should return correct id');
+                assert.strictEqual(result.deleted, false, 'should indicate nothing was deleted');
+                assert.strictEqual(result.accounts, 0, 'should report zero accounts');
+            })();
+        });
     });
 
     // --- remove() synchronous behavior tests ---
@@ -955,6 +966,51 @@ test('Pub/Sub subscription recovery tests', async t => {
 
             pubsub.remove('abort-test');
             assert.strictEqual(abortController.signal.aborted, true, 'AbortController should be aborted');
+        });
+    });
+
+    // --- getApp() self-termination on deleted app ---
+
+    await t.test('getApp() self-terminates when app data is not found', async t2 => {
+        await t2.test('getApp() sets stopped, calls parent.remove, and throws', async () => {
+            let removeCalled = false;
+            let removedApp = null;
+
+            await withMockedOauth2Apps({ get: async () => false }, async () => {
+                let instance = createTestInstance();
+                instance.appData = null; // force refresh
+                let originalRemove = instance.parent.remove;
+                instance.parent.remove = function (app) {
+                    removeCalled = true;
+                    removedApp = app;
+                    originalRemove.call(this, app);
+                };
+
+                await assert.rejects(() => instance.getApp(true), { message: 'App no longer exists' });
+                assert.strictEqual(instance.stopped, true, 'instance should be stopped');
+                assert.strictEqual(removeCalled, true, 'parent.remove should have been called');
+                assert.strictEqual(removedApp, 'test-app', 'should remove the correct app');
+            })();
+        });
+
+        await t2.test('getApp() returns cached data without hitting oauth2Apps.get', async () => {
+            let getCalled = false;
+
+            await withMockedOauth2Apps(
+                {
+                    get: async () => {
+                        getCalled = true;
+                        return { id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' };
+                    }
+                },
+                async () => {
+                    let instance = createTestInstance();
+                    // appData is already set by createTestInstance
+                    let result = await instance.getApp(false);
+                    assert.strictEqual(getCalled, false, 'should use cached data');
+                    assert.strictEqual(result.id, 'test-app', 'should return cached appData');
+                }
+            )();
         });
     });
 

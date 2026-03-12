@@ -940,6 +940,7 @@ class ConnectionHandler {
                 err.statusCode = 504;
                 err.code = 'Timeout';
                 err.ttl = ttl;
+                this.callQueue.delete(mid);
                 reject(err);
             }, ttl);
 

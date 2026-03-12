@@ -2756,9 +2756,15 @@ async function onCommand(worker, message) {
         case 'googlePubSub':
         case 'googlePubSubRemove': {
             // Notify all webhook workers about PubSub app changes
+            let proms = [];
             for (let worker of workers.get('webhooks')) {
-                await call(worker, message);
+                proms.push(
+                    call(worker, message).catch(err => {
+                        logger.error({ msg: 'Failed to notify webhook worker about PubSub change', cmd: message.cmd, err });
+                    })
+                );
             }
+            await Promise.all(proms);
             return true;
         }
 

@@ -67,6 +67,7 @@ async function call(message, transferList) {
             err.statusCode = 504;
             err.code = 'Timeout';
             err.ttl = ttl;
+            callQueue.delete(mid);
             reject(err);
         }, ttl);
 
