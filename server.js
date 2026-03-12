@@ -2865,7 +2865,7 @@ const closeQueues = cb => {
     if (workers.has('webhooks')) {
         for (let worker of workers.get('webhooks')) {
             proms.push(
-                call(worker, { cmd: 'close' }).catch(err => {
+                call(worker, { cmd: 'close', timeout: 4000 }).catch(err => {
                     logger.error({ msg: 'Failed to signal webhooks worker to close', err });
                 })
             );

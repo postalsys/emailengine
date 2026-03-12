@@ -124,6 +124,7 @@ async function onCommand(command) {
         case 'close':
             clearTimeout(startRetryTimer);
             googlePubSub.stopAll();
+            await notifyWorker.close(true);
             return true;
         default:
             logger.debug({ msg: 'Unhandled command', command });
@@ -144,6 +145,7 @@ setInterval(() => {
 parentPort.on('close', () => {
     clearTimeout(startRetryTimer);
     googlePubSub.stopAll();
+    notifyWorker.close(true).catch(() => {});
 });
 
 // Send initial ready signal
