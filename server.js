@@ -2853,6 +2853,18 @@ async function collectMetrics() {
  */
 const closeQueues = cb => {
     let proms = [];
+
+    // Signal webhooks workers to stop Pub/Sub pull loops before exiting
+    if (workers.has('webhooks')) {
+        for (let worker of workers.get('webhooks')) {
+            proms.push(
+                call(worker, { cmd: 'close' }).catch(err => {
+                    logger.error({ msg: 'Failed to signal webhooks worker to close', err });
+                })
+            );
+        }
+    }
+
     if (queueEvents.notify) {
         proms.push(queueEvents.notify.close());
     }
@@ -2882,7 +2894,7 @@ const closeQueues = cb => {
         }
         returned = true;
         cb();
-    }, 2500);
+    }, 5000);
 
     Promise.allSettled(proms).then(() => {
         clearTimeout(closeTimeout);

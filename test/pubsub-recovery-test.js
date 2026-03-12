@@ -195,7 +195,7 @@ require.cache[getSecretPath] = {
 };
 
 // Now safe to import production modules
-const { PubSubInstance } = require('../lib/oauth/pubsub/google');
+const { PubSubInstance, GooglePubSub } = require('../lib/oauth/pubsub/google');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const msgpack = require('msgpack5')();
 const { REDIS_PREFIX } = require('../lib/consts');
@@ -726,6 +726,98 @@ test('Pub/Sub subscription recovery tests', async t => {
                     assert.ok(mockSets[subscribersKey] && mockSets[subscribersKey].has(appId), 'id should be in subscriber set');
                 }
             )();
+        });
+    });
+
+    // --- stopAll() and instance lifecycle tests ---
+
+    await t.test('stopAll() and instance lifecycle tests', async t2 => {
+        await t2.test('stopAll() clears all instances safely', async () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            // Manually add instances without triggering constructor side effects
+            for (let id of ['app-a', 'app-b', 'app-c']) {
+                let instance = Object.create(PubSubInstance.prototype);
+                Object.assign(instance, {
+                    app: id,
+                    stopped: false,
+                    _loopTimer: null,
+                    _immediateHandle: null,
+                    _abortController: null
+                });
+                pubsub.pubSubInstances.set(id, instance);
+            }
+
+            assert.strictEqual(pubsub.pubSubInstances.size, 3, 'should have 3 instances');
+            pubsub.stopAll();
+            assert.strictEqual(pubsub.pubSubInstances.size, 0, 'all instances should be removed');
+        });
+
+        await t2.test('stopAll() sets stopped flag on all instances', async () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            let instances = [];
+            for (let id of ['app-x', 'app-y']) {
+                let instance = Object.create(PubSubInstance.prototype);
+                Object.assign(instance, {
+                    app: id,
+                    stopped: false,
+                    _loopTimer: null,
+                    _immediateHandle: null,
+                    _abortController: null
+                });
+                pubsub.pubSubInstances.set(id, instance);
+                instances.push(instance);
+            }
+
+            pubsub.stopAll();
+            for (let inst of instances) {
+                assert.strictEqual(inst.stopped, true, 'instance should be stopped');
+            }
+        });
+
+        await t2.test('remove() clears immediate handle', async () => {
+            let pubsub = new GooglePubSub({ call: async () => {} });
+            let instance = Object.create(PubSubInstance.prototype);
+            Object.assign(instance, {
+                app: 'imm-test',
+                stopped: false,
+                _loopTimer: null,
+                _immediateHandle: setImmediate(() => {}),
+                _abortController: null
+            });
+            pubsub.pubSubInstances.set('imm-test', instance);
+
+            pubsub.remove('imm-test');
+            assert.strictEqual(instance.stopped, true, 'instance should be stopped');
+            assert.strictEqual(pubsub.pubSubInstances.size, 0, 'instance should be removed from map');
+        });
+    });
+
+    // --- _recoveryBackoffMs() tests ---
+
+    await t.test('_recoveryBackoffMs() returns expected values', async t2 => {
+        await t2.test('backoff at 0 attempts is 3000ms', () => {
+            let instance = createTestInstance({ recoveryAttempts: 0 });
+            assert.strictEqual(instance._recoveryBackoffMs(), 3000);
+        });
+
+        await t2.test('backoff at 1 attempt is 6000ms', () => {
+            let instance = createTestInstance({ recoveryAttempts: 1 });
+            assert.strictEqual(instance._recoveryBackoffMs(), 6000);
+        });
+
+        await t2.test('backoff at 5 attempts is 96000ms', () => {
+            let instance = createTestInstance({ recoveryAttempts: 5 });
+            assert.strictEqual(instance._recoveryBackoffMs(), 96000);
+        });
+
+        await t2.test('backoff caps at 300000ms (5 minutes)', () => {
+            let instance = createTestInstance({ recoveryAttempts: 20 });
+            assert.strictEqual(instance._recoveryBackoffMs(), 300000);
+        });
+
+        await t2.test('backoff stays capped beyond 20 attempts', () => {
+            let instance = createTestInstance({ recoveryAttempts: 25 });
+            assert.strictEqual(instance._recoveryBackoffMs(), 300000);
         });
     });
 
