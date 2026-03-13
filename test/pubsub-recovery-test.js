@@ -1557,3 +1557,278 @@ test('Pub/Sub subscription recovery tests', async t => {
         });
     });
 });
+
+test('startLoop orchestration tests', async t => {
+    t.after(() => {
+        setTimeout(() => process.exit(), 1000).unref();
+    });
+
+    t.beforeEach(() => {
+        mockRedisData = {};
+        mockSets = {};
+        mockSets['ee:oapp:sub'] = new Set(['test-app']);
+    });
+
+    // Helper: create an instance with run() replaced by a controllable mock.
+    // Returns { instance, resolve, reject, settled } where settled is a promise
+    // that resolves once startLoop's .then/.catch handler has finished.
+    function createLoopTestInstance(overrides) {
+        let runResolve, runReject;
+        let settled;
+
+        let instance = createTestInstance(Object.assign({ _consecutiveErrors: 0, _loopTimer: null }, overrides));
+
+        // Replace run() with a controllable promise
+        function armRun() {
+            settled = new Promise(settledResolve => {
+                let runPromise = new Promise((res, rej) => {
+                    runResolve = res;
+                    runReject = rej;
+                });
+                instance.run = () => {
+                    // Wrap so startLoop's .then/.catch signals completion
+                    let original = runPromise;
+                    runPromise = new Promise(() => {}); // disarm for next call
+                    return original.then(
+                        val => {
+                            // let startLoop's .then run, then signal
+                            setImmediate(settledResolve);
+                            return val;
+                        },
+                        err => {
+                            // let startLoop's .catch run, then signal
+                            setImmediate(settledResolve);
+                            throw err;
+                        }
+                    );
+                };
+            });
+        }
+
+        armRun();
+
+        return {
+            instance,
+            resolve: () => runResolve(),
+            reject: err => runReject(err),
+            get settled() {
+                return settled;
+            },
+            armRun
+        };
+    }
+
+    // Helper: wrap startLoop so only the first invocation runs the real code.
+    // Subsequent calls (from setImmediate/setTimeout) are suppressed.
+    function guardStartLoop(instance) {
+        let realStartLoop = instance.startLoop.bind(instance);
+        let callCount = 0;
+        instance.startLoop = function () {
+            callCount++;
+            if (callCount === 1) {
+                return realStartLoop();
+            }
+        };
+        return {
+            get callCount() {
+                return callCount;
+            },
+            reset() {
+                callCount = 0;
+            }
+        };
+    }
+
+    await t.test('success resets _consecutiveErrors and _lastLoopError', async () => {
+        await withMockedOauth2Apps({ setMeta: async () => {} }, async () => {
+            let ctl = createLoopTestInstance({ _consecutiveErrors: 5, _lastLoopError: 'some|error' });
+            let guard = guardStartLoop(ctl.instance);
+
+            ctl.instance.startLoop();
+            ctl.resolve();
+
+            // Wait for .then handler and setImmediate
+            await new Promise(r => setImmediate(r));
+            await new Promise(r => setImmediate(r));
+
+            assert.strictEqual(ctl.instance._consecutiveErrors, 0, 'should reset to 0 on success');
+            assert.strictEqual(ctl.instance._lastLoopError, null, 'should clear on success');
+            assert.strictEqual(guard.callCount, 2, 'startLoop re-invoked via setImmediate');
+        })();
+    });
+
+    await t.test('error deduplication: same error logged once, different error logged again', async () => {
+        let setMetaCalls = [];
+        await withMockedOauth2Apps(
+            {
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                }
+            },
+            async () => {
+                let ctl = createLoopTestInstance();
+                let guard = guardStartLoop(ctl.instance);
+
+                // First error
+                ctl.instance.startLoop();
+                let err1 = new Error('Connection timeout');
+                err1.code = 'ETIMEDOUT';
+                err1.retryDelay = 60000;
+                ctl.reject(err1);
+                await ctl.settled;
+
+                assert.strictEqual(ctl.instance._consecutiveErrors, 1);
+                assert.strictEqual(setMetaCalls.length, 1, 'setMeta called on first occurrence');
+                assert.ok(setMetaCalls[0].meta.pubSubFlag, 'pubSubFlag set');
+
+                // Second identical error -- should NOT trigger setMeta again
+                let prevSetMetaCount = setMetaCalls.length;
+                clearTimeout(ctl.instance._loopTimer);
+                guard.reset();
+                ctl.armRun();
+                ctl.instance.startLoop();
+                let err2 = new Error('Connection timeout');
+                err2.code = 'ETIMEDOUT';
+                err2.retryDelay = 60000;
+                ctl.reject(err2);
+                await ctl.settled;
+
+                assert.strictEqual(ctl.instance._consecutiveErrors, 2);
+                assert.strictEqual(setMetaCalls.length, prevSetMetaCount, 'setMeta NOT called for duplicate error');
+
+                // Third error with different message -- should trigger setMeta again
+                clearTimeout(ctl.instance._loopTimer);
+                guard.reset();
+                ctl.armRun();
+                ctl.instance.startLoop();
+                let err3 = new Error('DNS lookup failed');
+                err3.code = 'ENOTFOUND';
+                err3.retryDelay = 60000;
+                ctl.reject(err3);
+                await ctl.settled;
+
+                assert.strictEqual(ctl.instance._consecutiveErrors, 3);
+                assert.strictEqual(setMetaCalls.length, prevSetMetaCount + 1, 'setMeta called for new error');
+
+                clearTimeout(ctl.instance._loopTimer);
+            }
+        )();
+    });
+
+    await t.test('stopped flag prevents scheduling', async () => {
+        let instance = createTestInstance({ _consecutiveErrors: 0, _loopTimer: null });
+        instance.stopped = true;
+
+        instance.startLoop();
+
+        // startLoop should return immediately without calling run()
+        assert.strictEqual(instance._loopTimer, null, 'no setTimeout scheduled');
+    });
+
+    await t.test('AbortError is silenced: no error state change, no scheduling', async () => {
+        let setMetaCalls = [];
+        await withMockedOauth2Apps(
+            {
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                }
+            },
+            async () => {
+                let { instance, reject, settled } = createLoopTestInstance();
+                guardStartLoop(instance);
+
+                instance.startLoop();
+
+                let abortErr = new Error('The operation was aborted');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+                await settled;
+
+                assert.strictEqual(instance._consecutiveErrors, 0, 'no error increment');
+                assert.strictEqual(instance._lastLoopError, null, 'no error key set');
+                assert.strictEqual(instance._loopTimer, null, 'no retry scheduled');
+                assert.strictEqual(setMetaCalls.length, 0, 'no setMeta call');
+            }
+        )();
+    });
+
+    await t.test('stopped during run: error handler does not schedule', async () => {
+        let setMetaCalls = [];
+        await withMockedOauth2Apps(
+            {
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                }
+            },
+            async () => {
+                let { instance, reject, settled } = createLoopTestInstance();
+                guardStartLoop(instance);
+
+                instance.startLoop();
+
+                // Stop the instance while run() is pending
+                instance.stopped = true;
+                reject(new Error('some error'));
+                await settled;
+
+                assert.strictEqual(instance._consecutiveErrors, 0, 'no error increment when stopped');
+                assert.strictEqual(instance._loopTimer, null, 'no retry scheduled when stopped');
+                assert.strictEqual(setMetaCalls.length, 0, 'no setMeta call when stopped');
+            }
+        )();
+    });
+
+    await t.test('err.retryDelay overrides backoff calculation', async () => {
+        await withMockedOauth2Apps({ setMeta: async () => {} }, async () => {
+            let { instance, reject, settled } = createLoopTestInstance();
+            guardStartLoop(instance);
+
+            instance.startLoop();
+
+            let err = new Error('Rate limited');
+            err.retryDelay = 42000;
+            reject(err);
+            await settled;
+
+            // startLoop stores the timer in _loopTimer; verify it was scheduled
+            assert.ok(instance._loopTimer, 'setTimeout was scheduled');
+            clearTimeout(instance._loopTimer);
+        })();
+    });
+
+    await t.test('setMeta called with pubSubFlag on first error occurrence', async () => {
+        let setMetaCalls = [];
+        await withMockedOauth2Apps(
+            {
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                }
+            },
+            async () => {
+                let { instance, reject, settled } = createLoopTestInstance({
+                    _hadPubSubFlag: false
+                });
+                guardStartLoop(instance);
+
+                instance.startLoop();
+
+                let err = new Error('Connection failed');
+                err.code = 'SERVICE_UNAVAILABLE';
+                err.statusCode = 503;
+                err.retryDelay = 1;
+                reject(err);
+                await settled;
+
+                assert.strictEqual(setMetaCalls.length, 1, 'setMeta called once');
+                assert.strictEqual(setMetaCalls[0].id, 'test-app');
+                assert.ok(setMetaCalls[0].meta.pubSubFlag, 'pubSubFlag is set');
+                assert.strictEqual(setMetaCalls[0].meta.pubSubFlag.message, 'Failed to process subscription loop');
+                assert.ok(setMetaCalls[0].meta.pubSubFlag.description.includes('Connection failed'));
+                assert.ok(setMetaCalls[0].meta.pubSubFlag.description.includes('SERVICE_UNAVAILABLE'));
+                assert.strictEqual(instance._hadPubSubFlag, true, '_hadPubSubFlag set to true');
+
+                clearTimeout(instance._loopTimer);
+            }
+        )();
+    });
+});

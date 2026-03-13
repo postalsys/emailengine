@@ -5470,13 +5470,14 @@ Include your token in requests using one of these methods:
 
         async handler(request) {
             try {
+                let result = await oauth2Apps.del(request.params.app);
+
                 try {
                     await call({ cmd: 'googlePubSubRemove', app: request.params.app });
                 } catch (err) {
                     request.logger.error({ msg: 'Failed to notify workers about OAuth2 app deletion', err, app: request.params.app });
                 }
 
-                let result = await oauth2Apps.del(request.params.app);
                 return result;
             } catch (err) {
                 request.logger.error({ msg: 'API request failed', err });
