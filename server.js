@@ -2872,20 +2872,10 @@ const closeQueues = cb => {
         }
     }
 
-    if (queueEvents.notify) {
-        proms.push(queueEvents.notify.close());
-    }
-
-    if (queueEvents.submit) {
-        proms.push(queueEvents.submit.close());
-    }
-
-    if (queueEvents.documents) {
-        proms.push(queueEvents.documents.close());
-    }
-
-    if (queueEvents.export) {
-        proms.push(queueEvents.export.close());
+    for (let name of ['notify', 'submit', 'documents', 'export']) {
+        if (queueEvents[name]) {
+            proms.push(queueEvents[name].close());
+        }
     }
 
     if (!proms.length) {
@@ -2895,7 +2885,6 @@ const closeQueues = cb => {
     let returned;
 
     let closeTimeout = setTimeout(() => {
-        clearTimeout(closeTimeout);
         if (returned) {
             return;
         }

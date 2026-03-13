@@ -145,10 +145,11 @@ setInterval(() => {
 parentPort.on('close', () => {
     clearTimeout(startRetryTimer);
     googlePubSub.stopAll();
+    // notifyWorker.close() may throw synchronously if not yet initialized
     try {
         notifyWorker.close(true).catch(() => {});
-    } catch (err) {
-        // notifyWorker may not be initialized yet if port closes during startup
+    } catch {
+        // ignore
     }
 });
 

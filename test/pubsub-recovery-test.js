@@ -295,26 +295,27 @@ function create429Error(retryAfterSec) {
 }
 
 function createTestInstance(overrides) {
-    let instance = Object.create(PubSubInstance.prototype);
-    Object.assign(
-        instance,
-        {
-            app: 'test-app',
-            stopped: false,
-            recoveryAttempts: 0,
-            lastRecoveryAttempt: 0,
-            _hadPubSubFlag: true,
-            _lastLoopError: null,
-            parent: { getSubscribersKey: () => 'ee:oapp:sub', remove: () => {} },
-            appData: { id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' },
-            client: {
-                request: async () => {
-                    throw create404Error();
-                }
+    let defaults = {
+        app: 'test-app',
+        stopped: false,
+        recoveryAttempts: 0,
+        lastRecoveryAttempt: 0,
+        _hadPubSubFlag: true,
+        _lastLoopError: null,
+        _consecutiveErrors: 0,
+        _loopTimer: null,
+        _immediateHandle: null,
+        _abortController: null,
+        parent: { getSubscribersKey: () => 'ee:oapp:sub', remove: () => {} },
+        appData: { id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' },
+        client: {
+            request: async () => {
+                throw create404Error();
             }
-        },
-        overrides
-    );
+        }
+    };
+    let instance = Object.create(PubSubInstance.prototype);
+    Object.assign(instance, defaults, overrides);
     return instance;
 }
 
@@ -325,24 +326,23 @@ function withMockedOauth2Apps(mocks, fn) {
     for (let method of MOCKED_METHODS) {
         originals[method] = oauth2Apps[method];
     }
-    // Default mocks
-    oauth2Apps.setMeta = mocks.setMeta || (async () => {});
-    oauth2Apps.ensurePubsub = mocks.ensurePubsub || (async () => {});
-    oauth2Apps.get = mocks.get || (async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' }));
-    oauth2Apps.getClient =
-        mocks.getClient ||
-        (async () => ({
+
+    // Apply defaults, then override with any provided mocks
+    let defaults = {
+        setMeta: async () => {},
+        ensurePubsub: async () => {},
+        get: async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' }),
+        getClient: async () => ({
             request: async () => {
                 throw create404Error();
             }
-        }));
-    oauth2Apps.getServiceAccessToken = mocks.getServiceAccessToken || (async () => 'mock-token');
-    // Apply explicit overrides
-    for (let [key, val] of Object.entries(mocks)) {
-        if (MOCKED_METHODS.includes(key)) {
-            oauth2Apps[key] = val;
-        }
+        }),
+        getServiceAccessToken: async () => 'mock-token'
+    };
+    for (let method of MOCKED_METHODS) {
+        oauth2Apps[method] = mocks[method] || defaults[method];
     }
+
     return async () => {
         try {
             await fn();
@@ -799,17 +799,8 @@ test('Pub/Sub subscription recovery tests', async t => {
     await t.test('stopAll() and instance lifecycle tests', async t2 => {
         await t2.test('stopAll() clears all instances safely', async () => {
             let pubsub = new GooglePubSub({ call: async () => {} });
-            // Manually add instances without triggering constructor side effects
             for (let id of ['app-a', 'app-b', 'app-c']) {
-                let instance = Object.create(PubSubInstance.prototype);
-                Object.assign(instance, {
-                    app: id,
-                    stopped: false,
-                    _loopTimer: null,
-                    _immediateHandle: null,
-                    _abortController: null
-                });
-                pubsub.pubSubInstances.set(id, instance);
+                pubsub.pubSubInstances.set(id, createTestInstance({ app: id }));
             }
 
             assert.strictEqual(pubsub.pubSubInstances.size, 3, 'should have 3 instances');
@@ -821,14 +812,7 @@ test('Pub/Sub subscription recovery tests', async t => {
             let pubsub = new GooglePubSub({ call: async () => {} });
             let instances = [];
             for (let id of ['app-x', 'app-y']) {
-                let instance = Object.create(PubSubInstance.prototype);
-                Object.assign(instance, {
-                    app: id,
-                    stopped: false,
-                    _loopTimer: null,
-                    _immediateHandle: null,
-                    _abortController: null
-                });
+                let instance = createTestInstance({ app: id });
                 pubsub.pubSubInstances.set(id, instance);
                 instances.push(instance);
             }
@@ -841,14 +825,7 @@ test('Pub/Sub subscription recovery tests', async t => {
 
         await t2.test('remove() clears immediate handle', async () => {
             let pubsub = new GooglePubSub({ call: async () => {} });
-            let instance = Object.create(PubSubInstance.prototype);
-            Object.assign(instance, {
-                app: 'imm-test',
-                stopped: false,
-                _loopTimer: null,
-                _immediateHandle: setImmediate(() => {}),
-                _abortController: null
-            });
+            let instance = createTestInstance({ app: 'imm-test', _immediateHandle: setImmediate(() => {}) });
             pubsub.pubSubInstances.set('imm-test', instance);
 
             pubsub.remove('imm-test');
@@ -989,15 +966,7 @@ test('Pub/Sub subscription recovery tests', async t => {
     await t.test('remove() synchronous behavior tests', async t2 => {
         await t2.test('remove() returns undefined, not a Promise', () => {
             let pubsub = new GooglePubSub({ call: async () => {} });
-            let instance = Object.create(PubSubInstance.prototype);
-            Object.assign(instance, {
-                app: 'sync-test',
-                stopped: false,
-                _loopTimer: null,
-                _immediateHandle: null,
-                _abortController: null
-            });
-            pubsub.pubSubInstances.set('sync-test', instance);
+            pubsub.pubSubInstances.set('sync-test', createTestInstance({ app: 'sync-test' }));
 
             let result = pubsub.remove('sync-test');
             assert.strictEqual(result, undefined, 'remove() should return undefined, not a Promise');
@@ -1012,14 +981,7 @@ test('Pub/Sub subscription recovery tests', async t => {
         await t2.test('remove() aborts active AbortController', () => {
             let pubsub = new GooglePubSub({ call: async () => {} });
             let abortController = new AbortController();
-            let instance = Object.create(PubSubInstance.prototype);
-            Object.assign(instance, {
-                app: 'abort-test',
-                stopped: false,
-                _loopTimer: null,
-                _immediateHandle: null,
-                _abortController: abortController
-            });
+            let instance = createTestInstance({ app: 'abort-test', _abortController: abortController });
             pubsub.pubSubInstances.set('abort-test', instance);
 
             pubsub.remove('abort-test');
@@ -1576,7 +1538,7 @@ test('startLoop orchestration tests', async t => {
         let runResolve, runReject;
         let settled;
 
-        let instance = createTestInstance(Object.assign({ _consecutiveErrors: 0, _loopTimer: null }, overrides));
+        let instance = createTestInstance(overrides);
 
         // Replace run() with a controllable promise
         function armRun() {
