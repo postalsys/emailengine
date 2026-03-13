@@ -166,7 +166,42 @@ function createMockRedis() {
         subscribe: () => {},
         on: () => {},
         off: () => {},
-        defineCommand: () => {},
+        defineCommand: name => {
+            redis[name] = async () => [1, null, 0];
+        },
+        pipeline: () => {
+            let pipeOps = [];
+            let pipeChain = new Proxy(
+                {
+                    exec: async () => {
+                        let results = [];
+                        for (let op of pipeOps) {
+                            try {
+                                let result = await op();
+                                results.push([null, result]);
+                            } catch (err) {
+                                results.push([err, null]);
+                            }
+                        }
+                        return results;
+                    }
+                },
+                {
+                    get(target, prop) {
+                        if (prop in target) return target[prop];
+                        return function (...args) {
+                            if (typeof redis[prop] === 'function') {
+                                pipeOps.push(() => redis[prop](...args));
+                            } else {
+                                pipeOps.push(() => 0);
+                            }
+                            return pipeChain;
+                        };
+                    }
+                }
+            );
+            return pipeChain;
+        },
         duplicate: function () {
             return createMockRedis();
         }
