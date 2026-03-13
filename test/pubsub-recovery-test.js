@@ -1124,9 +1124,10 @@ test('Pub/Sub subscription recovery tests', async t => {
                 },
                 async () => {
                     let ackCount = 0;
+                    let batchedAckIds = [];
                     let instance = createTestInstance({
                         client: {
-                            request: async (token, url) => {
+                            request: async (token, url, method, payload) => {
                                 if (url.includes(':pull')) {
                                     return {
                                         receivedMessages: [
@@ -1138,6 +1139,7 @@ test('Pub/Sub subscription recovery tests', async t => {
                                 }
                                 if (url.includes(':acknowledge')) {
                                     ackCount++;
+                                    batchedAckIds = payload.ackIds || [];
                                     return '';
                                 }
                             }
@@ -1147,7 +1149,9 @@ test('Pub/Sub subscription recovery tests', async t => {
                     mockSets[`${REDIS_PREFIX}oapp:sub`] = new Set(['test-app']);
 
                     await instance.run();
-                    assert.strictEqual(ackCount, 3, 'should have ACKed all 3 messages');
+                    assert.strictEqual(ackCount, 1, 'should have sent a single batch ACK request');
+                    assert.strictEqual(batchedAckIds.length, 3, 'batch ACK should contain all 3 ackIds');
+                    assert.deepStrictEqual(batchedAckIds, ['ack-1', 'ack-2', 'ack-3']);
                     // getServiceAccessToken called once for getAccessToken() before pull,
                     // plus once inside getClient(). Should NOT be called per-message.
                     assert.ok(tokenCallCount <= 2, `getServiceAccessToken should be called at most twice, got ${tokenCallCount}`);
