@@ -639,16 +639,19 @@ test('Pub/Sub subscription recovery tests', async t => {
             let setMetaCalls = [];
             let clientRequestCalls = 0;
 
+            let subscriptionCreated = false;
             await withMockedOauth2Apps(
                 {
                     ensurePubsub: async appData => {
                         ensurePubsubCalls.push(appData);
+                        subscriptionCreated = true;
                     },
                     setMeta: async (id, meta) => {
                         setMetaCalls.push({ id, meta });
                     },
-                    // get() always returns app without pubSubSubscription
-                    get: async () => ({ id: 'test-app' })
+                    // After ensurePubsub succeeds, get() returns app with pubSubSubscription
+                    get: async () =>
+                        subscriptionCreated ? { id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/ee-sub-test-app' } : { id: 'test-app' }
                 },
                 async () => {
                     let instance = createTestInstance({
