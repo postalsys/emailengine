@@ -241,6 +241,24 @@ function create403Error() {
     return err;
 }
 
+function create429Error(retryAfterSec) {
+    let err = new Error('Rate limited');
+    err.statusCode = 429;
+    err.oauthRequest = {
+        response: {
+            error: {
+                code: 429,
+                message: 'Rate limited'
+            }
+        }
+    };
+    if (retryAfterSec != null) {
+        err.retryAfter = retryAfterSec;
+        err.oauthRequest.retryAfter = retryAfterSec;
+    }
+    return err;
+}
+
 function createTestInstance(overrides) {
     let instance = Object.create(PubSubInstance.prototype);
     Object.assign(
@@ -1276,6 +1294,231 @@ test('Pub/Sub subscription recovery tests', async t => {
             let instance = createTestInstance();
             let data = JSON.stringify({});
             await instance.processPulledMessage('msg-empty-payload', data);
+        });
+    });
+
+    // --- 429 rate limiting in pull loop ---
+
+    await t.test('429 rate limiting in pull loop', async t2 => {
+        await t2.test('sets retryDelay from retryAfter header', async () => {
+            await withMockedOauth2Apps(
+                {
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    let instance = createTestInstance({
+                        client: {
+                            request: async () => {
+                                throw create429Error(10);
+                            }
+                        }
+                    });
+
+                    let thrownErr;
+                    try {
+                        await instance.run();
+                    } catch (err) {
+                        thrownErr = err;
+                    }
+                    assert.ok(thrownErr, 'should throw on 429');
+                    assert.strictEqual(thrownErr.statusCode, 429);
+                    assert.strictEqual(thrownErr.retryDelay, 10000, 'retryDelay should be retryAfter * 1000');
+                }
+            )();
+        });
+
+        await t2.test('defaults to 30s retryDelay when retryAfter is missing', async () => {
+            await withMockedOauth2Apps(
+                {
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    let instance = createTestInstance({
+                        client: {
+                            request: async () => {
+                                throw create429Error(null);
+                            }
+                        }
+                    });
+
+                    let thrownErr;
+                    try {
+                        await instance.run();
+                    } catch (err) {
+                        thrownErr = err;
+                    }
+                    assert.ok(thrownErr, 'should throw on 429');
+                    assert.strictEqual(thrownErr.retryDelay, 30000, 'retryDelay should default to 30000ms');
+                }
+            )();
+        });
+    });
+
+    // --- batch ACK failure ---
+
+    await t.test('batch ACK failure does not crash the loop', async t2 => {
+        await t2.test('logs error and continues when ACK request fails', async () => {
+            await withMockedOauth2Apps(
+                {
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    let ackCalled = false;
+                    let instance = createTestInstance({
+                        client: {
+                            request: async (token, url) => {
+                                if (url.includes(':pull')) {
+                                    return {
+                                        receivedMessages: [
+                                            { message: { messageId: 'msg-1', data: '' }, ackId: 'ack-1' },
+                                            { message: { messageId: 'msg-2', data: '' }, ackId: 'ack-2' }
+                                        ]
+                                    };
+                                }
+                                if (url.includes(':acknowledge')) {
+                                    ackCalled = true;
+                                    throw new Error('Network error during ACK');
+                                }
+                            }
+                        }
+                    });
+
+                    // run() should complete without throwing despite ACK failure
+                    await instance.run();
+                    assert.ok(ackCalled, 'ACK request should have been attempted');
+                }
+            )();
+        });
+    });
+
+    // --- processPulledMessage throw skips ACK for that message ---
+
+    await t.test('processPulledMessage failure excludes message from batch ACK', async t2 => {
+        await t2.test('only successfully processed messages are ACKed', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    let batchedAckIds = [];
+                    let instance = createTestInstance({
+                        client: {
+                            request: async (token, url, method, payload) => {
+                                if (url.includes(':pull')) {
+                                    return {
+                                        receivedMessages: [
+                                            {
+                                                message: {
+                                                    messageId: 'msg-ok',
+                                                    data: Buffer.from(JSON.stringify({ emailAddress: 'user@example.com', historyId: '100' })).toString('base64')
+                                                },
+                                                ackId: 'ack-ok'
+                                            },
+                                            {
+                                                message: {
+                                                    messageId: 'msg-fail',
+                                                    data: Buffer.from(JSON.stringify({ emailAddress: 'user2@example.com', historyId: '200' })).toString(
+                                                        'base64'
+                                                    )
+                                                },
+                                                ackId: 'ack-fail'
+                                            }
+                                        ]
+                                    };
+                                }
+                                if (url.includes(':acknowledge')) {
+                                    batchedAckIds = payload.ackIds || [];
+                                    return '';
+                                }
+                            }
+                        },
+                        parent: {
+                            getSubscribersKey: () => 'ee:oapp:sub',
+                            remove: () => {},
+                            call: async msg => {
+                                callCount++;
+                                // Fail on the second call (msg-fail)
+                                if (callCount === 2) {
+                                    throw new Error('Worker RPC timeout');
+                                }
+                            }
+                        }
+                    });
+
+                    // Set up subscriber app with account mapping
+                    mockSets[`${REDIS_PREFIX}oapp:pub:test-app`] = new Set(['sub-app']);
+                    mockRedisData[`${REDIS_PREFIX}oapp:h:sub-app`] = {
+                        'user@example.com': 'account-1',
+                        'user2@example.com': 'account-2'
+                    };
+
+                    await instance.run();
+                    assert.strictEqual(batchedAckIds.length, 1, 'only the successful message should be ACKed');
+                    assert.deepStrictEqual(batchedAckIds, ['ack-ok'], 'failed message ackId should be excluded');
+                }
+            )();
+        });
+    });
+
+    // --- _deletePubSubResource 429 rate limit retry ---
+
+    await t.test('_deletePubSubResource 429 rate limit retry tests', async t2 => {
+        let deleteAppData = {
+            id: 'test-app',
+            pubSubTopic: 'projects/test/topics/test-topic',
+            pubSubSubscription: 'projects/test/subscriptions/test-sub'
+        };
+
+        t2.beforeEach(() => {
+            mockRedisData = {};
+            mockSets = {};
+        });
+
+        await t2.test('retries once on 429 and succeeds', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getClient: async () => ({
+                        request: async () => {
+                            callCount++;
+                            if (callCount === 1) {
+                                throw create429Error(1);
+                            }
+                            return '';
+                        }
+                    }),
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    await oauth2Apps.deleteTopic(deleteAppData);
+                    // First call fails with 429, retry succeeds, then subscription delete succeeds
+                    assert.ok(callCount >= 3, `expected at least 3 requests (topic attempt, topic retry, subscription), got ${callCount}`);
+                }
+            )();
+        });
+
+        await t2.test('throws after retry also fails with 429', async () => {
+            let callCount = 0;
+            await withMockedOauth2Apps(
+                {
+                    getClient: async () => ({
+                        request: async () => {
+                            callCount++;
+                            throw create429Error(1);
+                        }
+                    }),
+                    getServiceAccessToken: async () => 'mock-token'
+                },
+                async () => {
+                    await assert.rejects(
+                        async () => oauth2Apps.deleteTopic(deleteAppData),
+                        err => err.statusCode === 429
+                    );
+                    // First attempt + retry = 2 calls for topic (fails before reaching subscription)
+                    assert.strictEqual(callCount, 2, 'should have made exactly 2 requests (topic attempt + retry)');
+                }
+            )();
         });
     });
 });
