@@ -87,6 +87,18 @@
         <hr>
         {{/if}}
 
+        {{#if app.meta.ttlWarning}}
+        <div class="alert alert-warning">{{app.meta.ttlWarning.message}}
+            {{#if app.meta.ttlWarning.description}}
+            <hr>
+            <p class="mb-0">
+                <small>{{app.meta.ttlWarning.description}}</small>
+            </p>
+            {{/if}}
+        </div>
+        <hr>
+        {{/if}}
+
         <dl class="row">
             <dt class="col-sm-3">Provider ID</dt>
             <dd class="col-sm-9">
