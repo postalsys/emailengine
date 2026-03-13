@@ -5261,8 +5261,9 @@ Include your token in requests using one of these methods:
             try {
                 let result = await oauth2Apps.create(request.payload);
 
-                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
+                if (result && result.pubsubUpdates) {
                     await call({ cmd: 'googlePubSub', app: result.id });
+                    delete result.pubsubUpdates;
                 }
 
                 return result;
@@ -5321,8 +5322,9 @@ Include your token in requests using one of these methods:
             try {
                 let result = await oauth2Apps.update(request.params.app, request.payload);
 
-                if (result && result.pubsubUpdates && result.pubsubUpdates.pubSubSubscription) {
+                if (result && result.pubsubUpdates) {
                     await call({ cmd: 'googlePubSub', app: result.id });
+                    delete result.pubsubUpdates;
                 }
 
                 return result;
