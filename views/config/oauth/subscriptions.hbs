@@ -164,7 +164,7 @@
         <div class="alert alert-info mt-3 mb-0">
             <strong>Note:</strong> Google automatically deletes Pub/Sub subscriptions that receive no activity
             for a set period. This setting controls that period for both new and existing subscriptions.
-            Changes take effect the next time an OAuth app is created or updated.
+            Changes take effect the next time an OAuth app is created, updated, or its subscription is recovered.
             If a subscription does expire, EmailEngine detects this and recreates it automatically.
             No messages are lost during the gap because EmailEngine also polls the Gmail API every 10 minutes
             and uses the History API to catch up on any missed changes.
