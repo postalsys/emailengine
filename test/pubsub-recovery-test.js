@@ -262,6 +262,12 @@ function create404Error() {
     return err;
 }
 
+function create401Error() {
+    let err = new Error('Unauthorized');
+    err.statusCode = 401;
+    return err;
+}
+
 function create403Error() {
     let err = new Error('Permission denied');
     err.statusCode = 403;
@@ -298,8 +304,6 @@ function createTestInstance(overrides) {
     let defaults = {
         app: 'test-app',
         stopped: false,
-        recoveryAttempts: 0,
-        lastRecoveryAttempt: 0,
         _hadPubSubFlag: true,
         _lastLoopError: null,
         _consecutiveErrors: 0,
@@ -392,13 +396,11 @@ test('Pub/Sub subscription recovery tests', async t => {
                 // setMeta should be called to clear pubSubFlag
                 let clearCall = setMetaCalls.find(c => c.meta && c.meta.pubSubFlag === null);
                 assert.ok(clearCall, 'setMeta should be called with pubSubFlag: null');
-
-                assert.strictEqual(instance.recoveryAttempts, 0, 'recoveryAttempts should be reset to 0 after success');
             }
         )();
     });
 
-    await t.test('recovery uses exponential backoff on repeated failures', async () => {
+    await t.test('recovery failure propagates error to caller', async () => {
         let ensurePubsubCalls = [];
 
         await withMockedOauth2Apps(
@@ -411,28 +413,14 @@ test('Pub/Sub subscription recovery tests', async t => {
             async () => {
                 let instance = createTestInstance();
 
-                // First call: ensurePubsub fails, should throw the recovery error
+                // ensurePubsub fails, error should propagate to caller (startLoop handles backoff)
                 await assert.rejects(() => instance.run(), /GCP permission error/);
-                assert.strictEqual(instance.recoveryAttempts, 1);
                 assert.strictEqual(ensurePubsubCalls.length, 1);
-
-                // Second call immediately: should skip recovery due to backoff and throw with retryDelay
-                let backoffErr;
-                try {
-                    await instance.run();
-                } catch (err) {
-                    backoffErr = err;
-                }
-                assert.ok(backoffErr, 'should throw during backoff');
-                assert.match(backoffErr.message, /Subscription not found/);
-                assert.ok(typeof backoffErr.retryDelay === 'number' && backoffErr.retryDelay > 0, 'backoff error should include retryDelay');
-                // ensurePubsub should NOT be called again (backoff not elapsed)
-                assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should not be called during backoff');
             }
         )();
     });
 
-    await t.test('403 error triggers recovery via attemptRecovery', async () => {
+    await t.test('403 error sets pubSubFlag and throws without calling ensurePubsub', async () => {
         let ensurePubsubCalls = [];
         let setMetaCalls = [];
 
@@ -443,13 +431,11 @@ test('Pub/Sub subscription recovery tests', async t => {
                 },
                 setMeta: async (id, meta) => {
                     setMetaCalls.push({ id, meta });
-                },
-                getClient: async () => ({
-                    request: async () => ({})
-                })
+                }
             },
             async () => {
                 let instance = createTestInstance({
+                    _hadPubSubFlag: false,
                     client: {
                         request: async () => {
                             throw create403Error();
@@ -457,12 +443,46 @@ test('Pub/Sub subscription recovery tests', async t => {
                     }
                 });
 
-                // 403 should trigger recovery via attemptRecovery, which calls ensurePubsub
-                await instance.run();
-                assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should be called for 403 errors via recovery');
+                // 403 should throw without calling attemptRecovery/ensurePubsub
+                await assert.rejects(() => instance.run(), { statusCode: 403 });
+                assert.strictEqual(ensurePubsubCalls.length, 0, 'ensurePubsub should NOT be called for 403 errors');
                 assert.ok(
-                    setMetaCalls.some(c => c.meta.pubSubFlag !== undefined),
+                    setMetaCalls.some(c => c.meta.pubSubFlag !== undefined && c.meta.pubSubFlag !== null),
                     'pubSubFlag should be set for 403 errors'
+                );
+            }
+        )();
+    });
+
+    await t.test('401 error sets pubSubFlag and throws without calling ensurePubsub', async () => {
+        let ensurePubsubCalls = [];
+        let setMetaCalls = [];
+
+        await withMockedOauth2Apps(
+            {
+                ensurePubsub: async () => {
+                    ensurePubsubCalls.push(Date.now());
+                },
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                }
+            },
+            async () => {
+                let instance = createTestInstance({
+                    _hadPubSubFlag: false,
+                    client: {
+                        request: async () => {
+                            throw create401Error();
+                        }
+                    }
+                });
+
+                // 401 should throw without calling attemptRecovery/ensurePubsub
+                await assert.rejects(() => instance.run(), { statusCode: 401 });
+                assert.strictEqual(ensurePubsubCalls.length, 0, 'ensurePubsub should NOT be called for 401 errors');
+                assert.ok(
+                    setMetaCalls.some(c => c.meta.pubSubFlag !== undefined && c.meta.pubSubFlag !== null),
+                    'pubSubFlag should be set for 401 errors'
                 );
             }
         )();
@@ -674,7 +694,6 @@ test('Pub/Sub subscription recovery tests', async t => {
 
                     assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should be called for missing subscription');
                     assert.strictEqual(clientRequestCalls, 0, 'pull should not be attempted when subscription is missing');
-                    assert.strictEqual(instance.recoveryAttempts, 0, 'recoveryAttempts should be reset after successful recovery');
                 }
             )();
         });
@@ -713,7 +732,7 @@ test('Pub/Sub subscription recovery tests', async t => {
             )();
         });
 
-        await t2.test('missing subscription respects backoff on repeated recovery failures', async () => {
+        await t2.test('missing subscription recovery failure propagates error to caller', async () => {
             let ensurePubsubCalls = [];
 
             await withMockedOauth2Apps(
@@ -729,14 +748,9 @@ test('Pub/Sub subscription recovery tests', async t => {
                         appData: { id: 'test-app' }
                     });
 
-                    // First call: recovery attempted, fails
+                    // Recovery fails, error should propagate to caller (startLoop handles backoff)
                     await assert.rejects(() => instance.run(), /Setup failed/);
                     assert.strictEqual(ensurePubsubCalls.length, 1);
-                    assert.strictEqual(instance.recoveryAttempts, 1);
-
-                    // Second immediate call: backoff should skip recovery
-                    await assert.rejects(() => instance.run(), /Subscription not configured/);
-                    assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should not be called during backoff');
                 }
             )();
         });
@@ -864,31 +878,31 @@ test('Pub/Sub subscription recovery tests', async t => {
 
     await t.test('_backoffMs() returns expected values with jitter', async t2 => {
         await t2.test('backoff at 0 attempts is in range [1500, 3000)', () => {
-            let instance = createTestInstance({ recoveryAttempts: 0 });
+            let instance = createTestInstance();
             let result = instance._backoffMs(0);
             assert.ok(result >= 1500 && result < 3000, `expected [1500, 3000) but got ${result}`);
         });
 
         await t2.test('backoff at 1 attempt is in range [3000, 6000)', () => {
-            let instance = createTestInstance({ recoveryAttempts: 1 });
+            let instance = createTestInstance();
             let result = instance._backoffMs(1);
             assert.ok(result >= 3000 && result < 6000, `expected [3000, 6000) but got ${result}`);
         });
 
         await t2.test('backoff at 5 attempts is in range [48000, 96000)', () => {
-            let instance = createTestInstance({ recoveryAttempts: 5 });
+            let instance = createTestInstance();
             let result = instance._backoffMs(5);
             assert.ok(result >= 48000 && result < 96000, `expected [48000, 96000) but got ${result}`);
         });
 
         await t2.test('backoff caps at 300000ms (5 minutes) with jitter in range [150000, 300000)', () => {
-            let instance = createTestInstance({ recoveryAttempts: 20 });
+            let instance = createTestInstance();
             let result = instance._backoffMs(20);
             assert.ok(result >= 150000 && result < 300000, `expected [150000, 300000) but got ${result}`);
         });
 
         await t2.test('backoff stays capped beyond 20 attempts with jitter in range [150000, 300000)', () => {
-            let instance = createTestInstance({ recoveryAttempts: 25 });
+            let instance = createTestInstance();
             let result = instance._backoffMs(25);
             assert.ok(result >= 150000 && result < 300000, `expected [150000, 300000) but got ${result}`);
         });
@@ -1091,7 +1105,7 @@ test('Pub/Sub subscription recovery tests', async t => {
                     get: async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' })
                 },
                 async () => {
-                    let instance = createTestInstance({ recoveryAttempts: 0, lastRecoveryAttempt: 0 });
+                    let instance = createTestInstance();
                     instance.stopped = true;
 
                     await instance.attemptRecovery('test reason');
@@ -1105,10 +1119,6 @@ test('Pub/Sub subscription recovery tests', async t => {
 
             await withMockedOauth2Apps(
                 {
-                    ensurePubsub: async function () {
-                        // Simulate being stopped during recovery
-                        this._instance.stopped = true;
-                    },
                     get: async () => ({ id: 'test-app', pubSubSubscription: 'projects/test/subscriptions/test-sub' }),
                     getClient: async () => ({ request: async () => {} }),
                     setMeta: async () => {
@@ -1116,18 +1126,15 @@ test('Pub/Sub subscription recovery tests', async t => {
                     }
                 },
                 async () => {
-                    let instance = createTestInstance({ recoveryAttempts: 0, lastRecoveryAttempt: 0 });
+                    let instance = createTestInstance();
 
-                    // Patch ensurePubsub to set stopped on the correct instance
-                    let origEnsurePubsub = oauth2Apps.ensurePubsub;
+                    // Override ensurePubsub to simulate shutdown during recovery
                     oauth2Apps.ensurePubsub = async () => {
                         instance.stopped = true;
                     };
 
                     await instance.attemptRecovery('test reason');
                     assert.strictEqual(setMetaCalls, 0, 'setMeta should not be called after stopped during recovery');
-
-                    oauth2Apps.ensurePubsub = origEnsurePubsub;
                 }
             )();
         });
