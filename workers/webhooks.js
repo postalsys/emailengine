@@ -482,28 +482,6 @@ const notifyWorker = new Worker(
                 status: 'success'
             });
         } catch (err) {
-            /*
-            // do not disable by default
-            if (err.status === 410) {
-                // disable webhook
-                logger.error({
-                    msg: 'Webhooks were disabled by server',
-                    action: 'webhook',
-                    queue: job.queue.name,
-                    code: 'disabled_by_server',
-                    job: job.id,
-                    webhooks,
-                    accountWebhooks: !!accountWebhooks,
-                    event: job.name,
-                    status: err.status,
-                    account: job.data.account,
-route: customRoute && customRoute.id,
-                    err
-                });
-                await settings.set('webhooksEnabled', false);
-                return;
-            }
-            */
             logger.error({
                 msg: 'Failed posting webhook',
                 action: 'webhook',
