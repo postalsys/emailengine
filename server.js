@@ -2756,6 +2756,9 @@ async function onCommand(worker, message) {
         case 'googlePubSub':
         case 'googlePubSubRemove': {
             // Notify all webhook workers about PubSub app changes
+            if (!workers.has('webhooks')) {
+                return true;
+            }
             let proms = [];
             for (let worker of workers.get('webhooks')) {
                 proms.push(
@@ -2770,18 +2773,20 @@ async function onCommand(worker, message) {
 
         case 'externalNotify': {
             // External notification (e.g., Google Push)
-            for (let account of message.accounts) {
+            let proms = [];
+            for (let account of message.accounts || []) {
                 if (!assigned.has(account)) {
                     continue;
                 }
 
                 let assignedWorker = assigned.get(account);
-                try {
-                    await call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId });
-                } catch (err) {
-                    logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
-                }
+                proms.push(
+                    call(assignedWorker, { cmd: 'externalNotify', account, historyId: message.historyId }).catch(err => {
+                        logger.error({ msg: 'External notification failed', cmd: 'externalNotify', account, historyId: message.historyId, err });
+                    })
+                );
             }
+            await Promise.all(proms);
             return true;
         }
     }

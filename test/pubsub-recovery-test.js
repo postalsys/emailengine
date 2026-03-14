@@ -432,18 +432,20 @@ test('Pub/Sub subscription recovery tests', async t => {
         )();
     });
 
-    await t.test('pull loop falls through on non-404 errors', async () => {
+    await t.test('403 error triggers recovery via attemptRecovery', async () => {
         let ensurePubsubCalls = [];
+        let setMetaCalls = [];
 
         await withMockedOauth2Apps(
             {
                 ensurePubsub: async () => {
                     ensurePubsubCalls.push(Date.now());
                 },
+                setMeta: async (id, meta) => {
+                    setMetaCalls.push({ id, meta });
+                },
                 getClient: async () => ({
-                    request: async () => {
-                        throw create403Error();
-                    }
+                    request: async () => ({})
                 })
             },
             async () => {
@@ -455,9 +457,13 @@ test('Pub/Sub subscription recovery tests', async t => {
                     }
                 });
 
-                // 403 should throw without calling ensurePubsub
-                await assert.rejects(() => instance.run(), /Permission denied/);
-                assert.strictEqual(ensurePubsubCalls.length, 0, 'ensurePubsub should not be called for non-404 errors');
+                // 403 should trigger recovery via attemptRecovery, which calls ensurePubsub
+                await instance.run();
+                assert.strictEqual(ensurePubsubCalls.length, 1, 'ensurePubsub should be called for 403 errors via recovery');
+                assert.ok(
+                    setMetaCalls.some(c => c.meta.pubSubFlag !== undefined),
+                    'pubSubFlag should be set for 403 errors'
+                );
             }
         )();
     });
@@ -1574,7 +1580,7 @@ test('startLoop orchestration tests', async t => {
 
         return {
             instance,
-            resolve: () => runResolve(),
+            resolve: val => runResolve(val),
             reject: err => runReject(err),
             get settled() {
                 return settled;
@@ -1610,7 +1616,8 @@ test('startLoop orchestration tests', async t => {
             let guard = guardStartLoop(ctl.instance);
 
             ctl.instance.startLoop();
-            ctl.resolve();
+            // Resolve with a positive messageCount so startLoop uses setImmediate
+            ctl.resolve(1);
 
             // Wait for .then handler and setImmediate
             await new Promise(r => setImmediate(r));
