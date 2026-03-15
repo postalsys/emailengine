@@ -2789,6 +2789,19 @@ async function onCommand(worker, message) {
             await Promise.all(proms);
             return true;
         }
+
+        case 'subscriptionLifecycle': {
+            // MS Graph subscription lifecycle event (reauthorizationRequired, subscriptionRemoved)
+            if (!assigned.has(message.account)) {
+                return false;
+            }
+            let assignedWorker = assigned.get(message.account);
+            return await call(assignedWorker, {
+                cmd: 'subscriptionLifecycle',
+                account: message.account,
+                event: message.event
+            });
+        }
     }
 
     return 999;

@@ -635,6 +635,32 @@ class ConnectionHandler {
         return await accountData.connection.externalNotify(message);
     }
 
+    async subscriptionLifecycle(message) {
+        if (!this.accounts.has(message.account)) {
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
+        }
+
+        let accountData = this.accounts.get(message.account);
+        if (!accountData.connection) {
+            throw NO_ACTIVE_HANDLER_RESP_ERR;
+        }
+
+        let connection = accountData.connection;
+
+        switch (message.event) {
+            case 'reauthorizationRequired':
+                return await connection.renewSubscription(true);
+
+            case 'subscriptionRemoved':
+                await connection.ensureSubscription();
+                return true;
+
+            default:
+                logger.warn({ msg: 'Unknown subscription lifecycle event', event: message.event, account: message.account });
+                return false;
+        }
+    }
+
     async getQuota(message) {
         if (!this.accounts.has(message.account)) {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
@@ -845,6 +871,7 @@ class ConnectionHandler {
             case 'uploadMessage':
             case 'subconnections':
             case 'externalNotify':
+            case 'subscriptionLifecycle':
             case 'listSignatures':
                 return await this[message.cmd](message);
 

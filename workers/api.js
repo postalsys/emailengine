@@ -2073,78 +2073,57 @@ Include your token in requests using one of these methods:
 
                 switch (entry.lifecycleEvent) {
                     case 'reauthorizationRequired': {
-                        // Microsoft is requesting reauthorization - force renewal immediately
+                        // Microsoft is requesting reauthorization - route to IMAP worker
+                        // so the live client with its OAuth state handles it
                         request.logger.info({
                             msg: 'Received reauthorizationRequired lifecycle event',
                             subscriptionId: outlookSubscription.id,
                             account: request.query.account
                         });
 
-                        // Use the unified renewal method from OutlookClient
-                        // We need to create a client instance to call the renewal method
-                        const { OutlookClient } = require('../lib/email-client/outlook-client');
-                        const client = new OutlookClient(accountData, {
-                            redis,
-                            secret: await getSecret(),
-                            logger: request.logger
-                        });
-
                         try {
-                            // Force renewal when we get reauthorizationRequired
-                            const renewalResult = await client.renewSubscription(true);
-
-                            if (renewalResult.success) {
-                                request.logger.info({
-                                    msg: 'Successfully renewed subscription from lifecycle event',
-                                    subscriptionId: outlookSubscription.id,
-                                    account: request.query.account,
-                                    newExpirationDateTime: renewalResult.expirationDateTime
-                                });
-                            } else {
-                                request.logger.error({
-                                    msg: 'Failed to renew subscription from lifecycle event',
-                                    subscriptionId: outlookSubscription.id,
-                                    account: request.query.account,
-                                    reason: renewalResult.reason,
-                                    error: renewalResult.error
-                                });
-                            }
+                            await call({
+                                cmd: 'subscriptionLifecycle',
+                                account: request.query.account,
+                                event: 'reauthorizationRequired'
+                            });
                         } catch (err) {
                             request.logger.error({
-                                msg: 'Exception while renewing subscription from lifecycle event',
-                                subscriptionId: outlookSubscription.id,
+                                msg: 'Failed to handle reauthorizationRequired via worker',
                                 account: request.query.account,
                                 err
                             });
-                        } finally {
-                            // Clean up client instance
-                            if (client && typeof client.close === 'function') {
-                                try {
-                                    await client.close();
-                                } catch (cleanupErr) {
-                                    request.logger.debug({
-                                        msg: 'Error closing client after lifecycle renewal',
-                                        account: request.query.account,
-                                        err: cleanupErr
-                                    });
-                                }
-                            }
                         }
 
                         break;
                     }
 
                     case 'subscriptionRemoved': {
-                        // subscription was removed, should we recreate it?
+                        // subscription was removed, save error state and trigger immediate recreation
                         await accountObject.update({
                             outlookSubscription: {
                                 state: {
                                     state: 'error',
-                                    error: `Subscription removed`,
+                                    error: 'Subscription removed',
                                     time: Date.now()
                                 }
                             }
                         });
+
+                        try {
+                            await call({
+                                cmd: 'subscriptionLifecycle',
+                                account: request.query.account,
+                                event: 'subscriptionRemoved'
+                            });
+                        } catch (err) {
+                            request.logger.error({
+                                msg: 'Failed to recreate subscription after removal',
+                                account: request.query.account,
+                                err
+                            });
+                        }
+
                         break;
                     }
                 }
