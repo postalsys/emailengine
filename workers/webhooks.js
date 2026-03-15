@@ -614,8 +614,15 @@ let startRetryTimer = null;
             logger.info({ msg: 'Started processing Google pub/sub' });
         })
         .catch(err => {
-            let delay = Math.min(5000 * Math.pow(2, Math.min(attempt, 10)), 60000);
-            logger.error({ msg: 'Failed to start processing Google pub/sub', err, attempt: attempt + 1, retryMs: delay });
+            let maxNormalAttempts = 20;
+            let delay;
+            if (attempt < maxNormalAttempts) {
+                delay = Math.min(5000 * Math.pow(2, Math.min(attempt, 10)), 60000);
+                logger.error({ msg: 'Failed to start processing Google pub/sub', err, attempt: attempt + 1, retryMs: delay });
+            } else {
+                delay = 5 * 60 * 1000;
+                logger.warn({ msg: 'Failed to start processing Google pub/sub (reduced frequency)', err, attempt: attempt + 1, retryMs: delay });
+            }
             startRetryTimer = setTimeout(() => startGooglePubSub(attempt + 1), delay);
         });
 })(0);
