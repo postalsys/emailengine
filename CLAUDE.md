@@ -414,3 +414,4 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - Never use emojis in code or documentation, only printable ASCII characters
 - When composing git commit messages do not include Claude as co-contributor
 - After making code changes, run `npm run format` and `npm run lint` before committing
+- Avoid the circuit breaker pattern unless absolutely necessary. EmailEngine processes many independent accounts through shared workers, so a single failing account can trip a circuit breaker and block all other accounts. Prefer per-account error handling (retry with backoff, error state tracking) over global circuit breakers.
