@@ -415,3 +415,8 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - When composing git commit messages do not include Claude as co-contributor
 - After making code changes, run `npm run format` and `npm run lint` before committing
 - Avoid the circuit breaker pattern unless absolutely necessary. EmailEngine processes many independent accounts through shared workers, so a single failing account can trip a circuit breaker and block all other accounts. Prefer per-account error handling (retry with backoff, error state tracking) over global circuit breakers.
+- Never suppress or swallow unhandled rejections/exceptions at the global handler level. If an error reaches the global `unhandledRejection` or `uncaughtException` handler, the worker must die -- this is the last line of defense. The correct fix is always to handle the error at the source so it never bubbles up to the global handler. This means adding proper try/catch, .catch(), or error event handlers at the actual call site. If the unhandled rejection originates in a dependency (e.g. ImapFlow), fix it in the dependency itself.
+
+## Dependencies We Maintain
+
+- **ImapFlow** (`../imapflow`): The ImapFlow IMAP client library is maintained by us. The local development copy lives at `../imapflow` relative to this project root. When bugs or unhandled promise rejections originate in ImapFlow, fix them directly in the ImapFlow source rather than working around them in EmailEngine.

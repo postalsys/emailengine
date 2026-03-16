@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-15 21:05+0000\n"
+"POT-Creation-Date: 2026-03-16 14:50+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:7060
+#: workers/api.js:7025
 msgid "Something went wrong"
 msgstr ""
 
@@ -100,6 +100,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -217,14 +225,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/routes-ui.js:522
 #: lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -279,7 +279,7 @@ msgstr ""
 #: lib/routes-ui.js:4969
 #: lib/routes-ui.js:5216
 #: lib/routes-ui.js:5252
-#: workers/api.js:2564
+#: workers/api.js:2529
 #: lib/ui-routes/account-routes.js:549
 #: lib/ui-routes/account-routes.js:585
 #: lib/ui-routes/account-routes.js:702
@@ -364,8 +364,8 @@ msgstr ""
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:7059
-#: workers/api.js:7176
+#: workers/api.js:7024
+#: workers/api.js:7141
 msgid "Requested page not found"
 msgstr ""
 
