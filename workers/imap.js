@@ -652,6 +652,8 @@ class ConnectionHandler {
                 return await connection.renewSubscription({ force: true });
 
             case 'subscriptionRemoved':
+                // Clear stored subscription since MS deleted it server-side
+                await connection.redis.hdel(connection.getAccountKey(), 'outlookSubscription');
                 await connection.ensureSubscription();
                 return true;
 

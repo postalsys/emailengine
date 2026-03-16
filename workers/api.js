@@ -2082,21 +2082,21 @@ Include your token in requests using one of these methods:
                         });
                     }
 
-                    try {
-                        await call({
-                            cmd: 'subscriptionLifecycle',
-                            account: request.query.account,
-                            event: entry.lifecycleEvent,
-                            timeout: consts.OUTLOOK_SUBSCRIPTION_LOCK_TTL
-                        });
-                    } catch (err) {
+                    // Fire-and-forget: return HTTP 202 immediately so Microsoft
+                    // does not time out the lifecycle webhook delivery
+                    call({
+                        cmd: 'subscriptionLifecycle',
+                        account: request.query.account,
+                        event: entry.lifecycleEvent,
+                        timeout: consts.OUTLOOK_SUBSCRIPTION_LOCK_TTL
+                    }).catch(err => {
                         request.logger.error({
                             msg: 'Failed to handle lifecycle event via worker',
                             account: request.query.account,
                             lifecycleEvent: entry.lifecycleEvent,
                             err
                         });
-                    }
+                    });
                 }
             }
 
