@@ -2071,60 +2071,31 @@ Include your token in requests using one of these methods:
                     continue;
                 }
 
-                switch (entry.lifecycleEvent) {
-                    case 'reauthorizationRequired': {
-                        // Microsoft is requesting reauthorization - route to IMAP worker
-                        // so the live client with its OAuth state handles it
+                // Route recognized lifecycle events to the IMAP worker
+                // so the live client with its OAuth state handles them
+                if (entry.lifecycleEvent === 'reauthorizationRequired' || entry.lifecycleEvent === 'subscriptionRemoved') {
+                    if (entry.lifecycleEvent === 'reauthorizationRequired') {
                         request.logger.info({
                             msg: 'Received reauthorizationRequired lifecycle event',
                             subscriptionId: outlookSubscription.id,
                             account: request.query.account
                         });
-
-                        try {
-                            await call({
-                                cmd: 'subscriptionLifecycle',
-                                account: request.query.account,
-                                event: 'reauthorizationRequired'
-                            });
-                        } catch (err) {
-                            request.logger.error({
-                                msg: 'Failed to handle reauthorizationRequired via worker',
-                                account: request.query.account,
-                                err
-                            });
-                        }
-
-                        break;
                     }
 
-                    case 'subscriptionRemoved': {
-                        // subscription was removed, save error state and trigger immediate recreation
-                        await accountObject.update({
-                            outlookSubscription: {
-                                state: {
-                                    state: 'error',
-                                    error: 'Subscription removed',
-                                    time: Date.now()
-                                }
-                            }
+                    try {
+                        await call({
+                            cmd: 'subscriptionLifecycle',
+                            account: request.query.account,
+                            event: entry.lifecycleEvent,
+                            timeout: consts.OUTLOOK_SUBSCRIPTION_LOCK_TTL
                         });
-
-                        try {
-                            await call({
-                                cmd: 'subscriptionLifecycle',
-                                account: request.query.account,
-                                event: 'subscriptionRemoved'
-                            });
-                        } catch (err) {
-                            request.logger.error({
-                                msg: 'Failed to recreate subscription after removal',
-                                account: request.query.account,
-                                err
-                            });
-                        }
-
-                        break;
+                    } catch (err) {
+                        request.logger.error({
+                            msg: 'Failed to handle lifecycle event via worker',
+                            account: request.query.account,
+                            lifecycleEvent: entry.lifecycleEvent,
+                            err
+                        });
                     }
                 }
             }

@@ -2793,13 +2793,19 @@ async function onCommand(worker, message) {
         case 'subscriptionLifecycle': {
             // MS Graph subscription lifecycle event (reauthorizationRequired, subscriptionRemoved)
             if (!assigned.has(message.account)) {
+                logger.warn({
+                    msg: 'Subscription lifecycle event for unassigned account',
+                    account: message.account,
+                    event: message.event
+                });
                 return false;
             }
             let assignedWorker = assigned.get(message.account);
             return await call(assignedWorker, {
                 cmd: 'subscriptionLifecycle',
                 account: message.account,
-                event: message.event
+                event: message.event,
+                timeout: message.timeout
             });
         }
     }

@@ -649,7 +649,7 @@ class ConnectionHandler {
 
         switch (message.event) {
             case 'reauthorizationRequired':
-                return await connection.renewSubscription(true);
+                return await connection.renewSubscription({ force: true });
 
             case 'subscriptionRemoved':
                 await connection.ensureSubscription();
