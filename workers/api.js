@@ -2047,6 +2047,10 @@ Include your token in requests using one of these methods:
 
             const outlookSubscription = accountData.outlookSubscription;
 
+            // Deduplicate lifecycle events within the same batch to prevent
+            // concurrent handlers racing (e.g., two subscriptionRemoved entries)
+            const seenLifecycleEvents = new Set();
+
             for (let entry of (request.payload && request.payload.value) || []) {
                 request.logger.debug({
                     msg: 'MS Graph subscription event',
@@ -2074,13 +2078,24 @@ Include your token in requests using one of these methods:
                 // Route recognized lifecycle events to the IMAP worker
                 // so the live client with its OAuth state handles them
                 if (entry.lifecycleEvent === 'reauthorizationRequired' || entry.lifecycleEvent === 'subscriptionRemoved') {
-                    if (entry.lifecycleEvent === 'reauthorizationRequired') {
-                        request.logger.info({
-                            msg: 'Received reauthorizationRequired lifecycle event',
-                            subscriptionId: outlookSubscription.id,
+                    const dedupeKey = `${entry.lifecycleEvent}:${entry.subscriptionId}`;
+                    if (seenLifecycleEvents.has(dedupeKey)) {
+                        request.logger.debug({
+                            msg: 'Skipping duplicate lifecycle event in batch',
+                            lifecycleEvent: entry.lifecycleEvent,
+                            subscriptionId: entry.subscriptionId,
                             account: request.query.account
                         });
+                        continue;
                     }
+                    seenLifecycleEvents.add(dedupeKey);
+
+                    request.logger.info({
+                        msg: 'Received lifecycle event',
+                        lifecycleEvent: entry.lifecycleEvent,
+                        subscriptionId: outlookSubscription.id,
+                        account: request.query.account
+                    });
 
                     // Fire-and-forget: return HTTP 202 immediately so Microsoft
                     // does not time out the lifecycle webhook delivery
