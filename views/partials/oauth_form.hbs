@@ -6,6 +6,11 @@
                 <strong>Delegated</strong> access means EmailEngine acts on behalf of a signed-in user. Each
                 mailbox owner must complete an interactive OAuth2 login. Use this when users manage their own
                 accounts or when you have access to the mailbox credentials.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} OAuth2 project from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
             </div>
             <div class="col-auto">
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>

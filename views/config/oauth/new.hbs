@@ -7,6 +7,7 @@
     </ol>
 </nav>
 
+{{#unless activeOutlook}}
 {{#if providerData.tutorialUrl}}
 <div class="card border-left-info shadow mb-4">
     <div class="card-body">
@@ -26,6 +27,7 @@
     </div>
 </div>
 {{/if}}
+{{/unless}}
 
 <form method="post" action="/admin/config/oauth/new" class="pending-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
