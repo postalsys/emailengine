@@ -13,6 +13,9 @@ module.exports = {
     // Timeout for Gmail API operations
     GMAIL_TIMEOUT: 90000, // 90 seconds
 
+    // Timeout for Outlook Graph API operations
+    OUTLOOK_TIMEOUT: 90000, // 90 seconds
+
     // Timeout for waiting for account connections
     CONNECTION_TIMEOUT: 60000, // 60 seconds
 
@@ -27,6 +30,7 @@ module.exports = {
         ? {
               // Increase timeouts in CI environment
               GMAIL_TIMEOUT: 120000, // 2 minutes in CI
+              OUTLOOK_TIMEOUT: 120000, // 2 minutes in CI
               CONNECTION_TIMEOUT: 90000, // 90 seconds in CI
               WEBHOOK_TIMEOUT: 60000 // 60 seconds in CI
           }

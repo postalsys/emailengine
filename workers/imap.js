@@ -232,6 +232,7 @@ class ConnectionHandler {
                         accountObject.logger = accountObject.connection.logger;
                         break;
 
+                    case 'outlookService':
                     case 'outlook':
                         accountObject.connection = new OutlookClient(account, {
                             runIndex,
