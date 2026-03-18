@@ -2,6 +2,7 @@ on:
     push:
         branches:
             - master
+            - feat/outlook-service-client-credentials
 
 name: Deploy test instance and Docker image
 
