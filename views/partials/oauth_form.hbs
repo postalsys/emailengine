@@ -20,6 +20,32 @@
 </div>
 {{/if}}
 
+{{#if activeGmailService}}
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <strong>Service accounts</strong> allow EmailEngine to access Gmail mailboxes using a Google Cloud
+                service key, with no interactive user login required. The service account must have domain-wide
+                delegation enabled in Google Workspace. Use this for automated integrations where you cannot
+                perform interactive logins.
+                Accounts using service access can only be added via the
+                <a href="/admin/swagger#/Account/postV1Account">REST API</a>,
+                not through the hosted authentication form.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
 {{#if activeOutlookService}}
 <div class="card border-left-info shadow mb-4">
     <div class="card-body">
