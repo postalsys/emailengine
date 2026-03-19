@@ -1,3 +1,77 @@
+{{#if activeOutlook}}
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <strong>Delegated</strong> access means EmailEngine acts on behalf of a signed-in user. Each
+                mailbox owner must complete an interactive OAuth2 login. Use this when users manage their own
+                accounts or when you have access to the mailbox credentials.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} OAuth2 project from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+{{#if activeGmailService}}
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <strong>Service accounts</strong> allow EmailEngine to access Gmail mailboxes using a Google Cloud
+                service key, with no interactive user login required. The service account must have domain-wide
+                delegation enabled in Google Workspace. Use this for automated integrations where you cannot
+                perform interactive logins.
+                Accounts using service access can only be added via the
+                <a href="/admin/swagger#/Account/postV1Account">REST API</a>,
+                not through the hosted authentication form.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+{{#if activeOutlookService}}
+<div class="card border-left-info shadow mb-4">
+    <div class="card-body">
+        <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+                <strong>Application</strong> access means EmailEngine authenticates as the app itself using
+                client credentials, with no interactive user login required. The Entra app registration must have
+                <strong>application permissions</strong> (not delegated) with admin consent. Use this for
+                service integrations, shared mailboxes, or when you cannot perform interactive logins.
+                Accounts using application access can only be added via the
+                <a href="/admin/swagger#/Account/postV1Account">REST API</a>,
+                not through the hosted authentication form.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
+            </div>
+            <div class="col-auto">
+                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
 <div class="card mb-4">
 
     <div class="card-body">
@@ -42,7 +116,7 @@
             <small class="form-text text-muted">Optional application description or a comment.</small>
         </div>
 
-        {{#unless activeGmailService}}
+        {{#unless activeGmailService}}{{#unless activeOutlookService}}
         <div class="form-group">
 
             <label for="title">
@@ -63,7 +137,7 @@
             <small class="form-text text-muted">Optional display title next to the application button on the account
                 type selection page.</small>
         </div>
-        {{/unless}}
+        {{/unless}}{{/unless}}
 
 
         {{#if activeGmail}}
@@ -82,7 +156,7 @@
         </div>
         {{/if}}
 
-        {{#unless activeGmailService}}
+        {{#unless activeGmailService}}{{#unless activeOutlookService}}
         <div class="form-group form-check">
 
             <input type="checkbox" class="form-check-input {{#if errors.enabled}}is-invalid{{/if}}" id="enabled"
@@ -94,7 +168,7 @@
             <small class="form-text text-muted">If enabled, then this OAuth2 app is shown as an
                 account type option in the hosted authentication form.</small>
         </div>
-        {{/unless}}
+        {{/unless}}{{/unless}}
 
     </div>
 </div>
@@ -173,6 +247,66 @@
             {{#if errors.serviceKey}}
             <span class="invalid-feedback">{{errors.serviceKey}}</span>
             {{/if}}
+        </div>
+
+        {{else if activeOutlookService}}
+
+        <div class="form-group">
+
+            <label for="clientId">
+                Azure Application Id
+            </label>
+            <input type="text" class="form-control {{#if errors.clientId}}is-invalid{{/if}}" id="clientId"
+                name="clientId" value="{{values.clientId}}" placeholder="Enter application (client) ID&mldr;" required />
+            {{#if errors.clientId}}
+            <span class="invalid-feedback">{{errors.clientId}}</span>
+            {{/if}}
+            <small class="form-text text-muted">The Application (client) ID from your Entra app registration.</small>
+        </div>
+
+        <div class="form-group">
+
+            <label for="clientSecret">Client Secret</label>
+
+            <input type="text" class="form-control {{#if errors.clientSecret}}is-invalid{{/if}}" id="clientSecret"
+                name="clientSecret" value="{{values.clientSecret}}" {{#if hasClientSecret}}
+                placeholder="Client secret is set but not shown&mldr;" {{else}} placeholder="Enter client secret&mldr;"
+                {{/if}} {{#unless hasClientSecret}}required{{/unless}} />
+            {{#if errors.clientSecret}}
+            <span class="invalid-feedback">{{errors.clientSecret}}</span>
+            {{/if}}
+            <small class="form-text text-muted">Client secret value from Certificates &amp; secrets.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="cloud">Azure cloud environment</label>
+            <select class="custom-select custom-select-sm {{#if errors.cloud}}is-invalid{{/if}}" id="cloud" name="cloud"
+                required>
+
+                {{#each azureClouds}}
+                <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if
+                    description}} &mdash;
+                    {{description}}{{/if}}</option>
+                {{/each}}
+            </select>
+            {{#if errors.cloud}}
+            <span class="invalid-feedback">{{errors.cloud}}</span>
+            {{/if}}
+            <small class="form-text text-muted">Accounts hosted in different cloud environments use different OAuth2
+                endpoints.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="authority">Directory (tenant) ID</label>
+
+            <input type="text" class="form-control {{#if errors.authority}}is-invalid{{/if}}" id="authority"
+                name="authority" value="{{values.authority}}"
+                placeholder="Enter tenant ID, eg. &quot;f8cdef31-a31e-4b4a-93e4-5f571e91255a&quot;" required />
+            {{#if errors.authority}}
+            <span class="invalid-feedback">{{errors.authority}}</span>
+            {{/if}}
+            <small class="form-text text-muted">The Directory (tenant) ID from your Entra app registration. Client
+                credentials flow requires a specific tenant ID.</small>
         </div>
 
         {{else}}
@@ -696,6 +830,47 @@
             <code>{{mainServiceUrl}}</code>.
         </p>
 
+
+    </div>
+</div>
+
+{{/if}}
+
+{{#if activeOutlookService}}
+
+<div class="card mb-4">
+
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Connection type</h6>
+    </div>
+
+    <div class="card-body">
+        <input type="hidden" name="baseScopes" value="api" />
+        <p><strong>MS Graph API</strong> &mdash; This app uses Microsoft Graph API with application permissions
+            (client credentials). Requires <code>Mail.ReadWrite</code>, <code>Mail.Send</code>, and
+            <code>User.Read.All</code> application permissions with admin consent in Entra.</p>
+    </div>
+
+    <div class="card-footer">
+
+        <p>Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
+
+        <pre><code>{{mainServiceUrl}}/oauth/msg/lifecycle
+{{mainServiceUrl}}/oauth/msg/notification</code></pre>
+
+        <p>
+            Both endpoints must be publicly reachable for anonymous HTTPS
+            <strong>POST</strong> requests. When a notification arrives, EmailEngine
+            immediately forwards the event to your application through its own webhooks.
+        </p>
+
+        <p>
+            If your EmailEngine instance cannot be exposed directly, configure a public
+            proxy domain in <span class="text-muted code-link"><a href="/admin/swagger#/Settings/postV1Settings"
+                    target="_blank" rel="noopener noreferrer">notificationBaseUrl</a></span>. Microsoft Graph will then
+            post to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code> instead of
+            <code>{{mainServiceUrl}}</code>.
+        </p>
 
     </div>
 </div>

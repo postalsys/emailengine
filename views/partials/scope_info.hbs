@@ -119,6 +119,16 @@
 </div>
 {{/if}}
 
+{{#if activeOutlookService}}
+<div>Your Entra app registration <strong>must</strong> have the following <strong>application permissions</strong> (not
+    delegated) with admin consent:</div>
+<ul>
+    <li><code>"Mail.ReadWrite"</code></li>
+    <li><code>"Mail.Send"</code></li>
+    <li><code>"User.Read.All"</code></li>
+</ul>
+{{/if}}
+
 {{#if activeMailRu}}
 <div>Your OAuth2 project <strong>must</strong> have the following scopes enabled:</div>
 <ul>

@@ -24,7 +24,7 @@ cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.
 
 cp node_modules/\@postalsys/ee-client/index.js static/js/ee-client.js
 
-wget https://developers.google.com/static/search/apis/ipranges/special-crawlers.json -O data/google-crawlers.json
+wget https://developers.google.com/static/crawling/ipranges/special-crawlers.json -O data/google-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 
 # brew install gh

@@ -21,6 +21,7 @@ const defaultAccountId = 'main-account';
 const gmailAccountId1 = 'gmail-account1';
 const gmailAccountId2 = 'gmail-account2';
 const gmailSendOnlyAccountId = 'gmail-sendonly-account';
+const outlookServiceAccountId = 'outlook-service-account';
 
 // Helper function for polling with timeout
 async function waitForCondition(checkFn, options = {}) {
@@ -48,6 +49,9 @@ test('API tests', async t => {
     let gmailReceivedMessageId;
 
     let oauth2SendOnlyAppId;
+
+    let outlookServiceAppId;
+    let outlookReceivedEmailId;
 
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
@@ -895,5 +899,182 @@ test('API tests', async t => {
         // Cannot verify the final Gmail-assigned message ID because send-only accounts
         // lack read permissions for the Sent Mail folder. Gmail assigns a new message ID
         // that differs from the original messageId sent in the request.
+    });
+
+    // --- Outlook Service (client_credentials) tests ---
+
+    await t.test('Create Outlook Service OAuth2 app', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/oauth2`)
+            .send({
+                name: 'Outlook Service Test App',
+                provider: 'outlookService',
+                baseScopes: 'api',
+                clientId: process.env.OUTLOOK_SERVICE_CLIENT_ID,
+                clientSecret: process.env.OUTLOOK_SERVICE_CLIENT_SECRET,
+                authority: process.env.OUTLOOK_SERVICE_TENANT_ID
+            })
+            .expect(200);
+
+        outlookServiceAppId = response.body.id;
+        assert.ok(outlookServiceAppId);
+    });
+
+    await t.test('Register Outlook Service account', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: outlookServiceAccountId,
+                name: 'Outlook Service Test',
+                email: process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL,
+                oauth2: {
+                    provider: outlookServiceAppId,
+                    auth: {
+                        user: process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL
+                    }
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('wait until Outlook Service account is connected', { timeout: 120000 }, async () => {
+        await waitForCondition(
+            async () => {
+                const response = await server.get(`/v1/account/${outlookServiceAccountId}`).expect(200);
+                switch (response.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + response.body.state);
+                    case 'connected':
+                        return true;
+                }
+                return false;
+            },
+            { timeout: testConfig.OUTLOOK_TIMEOUT, message: 'Outlook Service account connection timeout' }
+        );
+    });
+
+    await t.test('list mailboxes for Outlook Service account', { timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${outlookServiceAccountId}/mailboxes`).expect(200);
+
+        assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
+    });
+
+    await t.test('list inbox messages for Outlook Service account', { timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${outlookServiceAccountId}/messages?path=INBOX`).expect(200);
+
+        assert.ok(typeof response.body.total === 'number');
+    });
+
+    await t.test('send email via Outlook Service account', { timeout: 120000 }, async () => {
+        let messageId = `<outlook-test-${Date.now()}@example.com>`;
+
+        const response = await server
+            .post(`/v1/account/${outlookServiceAccountId}/submit`)
+            .send({
+                to: [
+                    {
+                        name: 'Outlook Service Test',
+                        address: process.env.OUTLOOK_SERVICE_ACCOUNT_EMAIL
+                    }
+                ],
+                subject: 'Outlook Service test message',
+                text: 'This is a test from Outlook Service account',
+                html: '<p>This is a test from <strong>Outlook Service</strong> account</p>',
+                messageId
+            })
+            .expect(200);
+
+        assert.ok(response.body.messageId);
+        assert.ok(response.body.queueId);
+
+        // Wait for messageSent webhook (internal EmailEngine webhook, always works)
+        const messageSentWebhook = await waitForCondition(
+            async () => {
+                let webhooks = webhooksServer.webhooks.get(outlookServiceAccountId);
+                return webhooks.find(wh => wh.event === 'messageSent' && wh.data.originalMessageId === messageId);
+            },
+            { timeout: testConfig.OUTLOOK_TIMEOUT, message: 'Outlook Service message sent webhook timeout' }
+        );
+
+        assert.ok(messageSentWebhook);
+
+        // MS Graph push notifications require HTTPS and a publicly reachable URL,
+        // so messageNew webhooks won't arrive in the test environment.
+        // Instead, poll the inbox API directly until the sent message appears.
+        const receivedMessage = await waitForCondition(
+            async () => {
+                const messagesRes = await server.get(`/v1/account/${outlookServiceAccountId}/messages?path=INBOX`).expect(200);
+                return messagesRes.body.messages.find(msg => msg.subject === 'Outlook Service test message');
+            },
+            { timeout: testConfig.OUTLOOK_TIMEOUT, message: 'Outlook Service message receive timeout' }
+        );
+
+        assert.ok(receivedMessage);
+        outlookReceivedEmailId = receivedMessage.id;
+        assert.ok(outlookReceivedEmailId);
+    });
+
+    await t.test('get Outlook Service message details', { timeout: 30000 }, async () => {
+        assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
+
+        const response = await server.get(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}`).expect(200);
+
+        assert.strictEqual(response.body.subject, 'Outlook Service test message');
+        assert.ok(response.body.from);
+    });
+
+    await t.test('get Outlook Service message text', { timeout: 30000 }, async () => {
+        assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
+
+        const response = await server.get(`/v1/account/${outlookServiceAccountId}/text/${outlookReceivedEmailId}`).expect(200);
+
+        assert.ok(response.body.plain || response.body.html);
+    });
+
+    await t.test('download Outlook Service raw message', { timeout: 30000 }, async () => {
+        assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
+
+        const response = await server.get(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}/source`).expect(200);
+
+        assert.ok(response.text.length > 0);
+    });
+
+    await t.test('search messages in Outlook Service account', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/account/${outlookServiceAccountId}/search?path=INBOX`)
+            .send({
+                search: {
+                    unseen: true
+                }
+            })
+            .expect(200);
+
+        assert.ok(Array.isArray(response.body.messages));
+    });
+
+    await t.test('update message flags in Outlook Service account', { timeout: 60000 }, async () => {
+        assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
+
+        const response = await server
+            .put(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}`)
+            .send({
+                flags: {
+                    add: ['\\Seen']
+                }
+            })
+            .expect(200);
+
+        assert.ok(response.body.flags);
+    });
+
+    await t.test('delete message in Outlook Service account', { timeout: 30000 }, async () => {
+        assert.ok(outlookReceivedEmailId, 'Need received email ID from previous test');
+
+        const response = await server.delete(`/v1/account/${outlookServiceAccountId}/message/${outlookReceivedEmailId}`).expect(200);
+
+        assert.ok(response.body.deleted);
     });
 });
