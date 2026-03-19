@@ -58,6 +58,11 @@
                 Accounts using application access can only be added via the
                 <a href="/admin/swagger#/Account/postV1Account">REST API</a>,
                 not through the hosted authentication form.
+                {{#if providerData.tutorialUrl}}
+                Read about setting up {{providerData.comment}} from <a
+                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer">here</a>.
+                {{/if}}
             </div>
             <div class="col-auto">
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>
