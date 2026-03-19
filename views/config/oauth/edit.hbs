@@ -8,7 +8,7 @@
     </ol>
 </nav>
 
-{{#unless activeOutlook}}{{#unless activeGmailService}}
+{{#unless activeOutlook}}{{#unless activeGmailService}}{{#unless activeOutlookService}}
 {{#if providerData.tutorialUrl}}
 <div class="card border-left-info shadow mb-4">
     <div class="card-body">
@@ -28,7 +28,7 @@
     </div>
 </div>
 {{/if}}
-{{/unless}}{{/unless}}
+{{/unless}}{{/unless}}{{/unless}}
 
 <form method="post" action="/admin/config/oauth/edit" class="pending-form">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
