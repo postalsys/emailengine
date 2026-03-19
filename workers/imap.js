@@ -37,7 +37,7 @@ const { GmailClient } = require('../lib/email-client/gmail-client');
 const { OutlookClient } = require('../lib/email-client/outlook-client');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
-const { oauth2Apps } = require('../lib/oauth2-apps');
+const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { MessagePortWritable } = require('../lib/message-port-stream');
 const { getESClient } = require('../lib/document-store');
@@ -209,7 +209,7 @@ class ConnectionHandler {
                 oauth2App = await oauth2Apps.get(accountData.oauth2.provider);
             }
 
-            if (oauth2App && oauth2App.baseScopes === 'api') {
+            if (isApiBasedApp(oauth2App)) {
                 // Use API instead of IMAP
 
                 switch (oauth2App.provider) {
