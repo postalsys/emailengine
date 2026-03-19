@@ -84,7 +84,7 @@
         "iconv-lite": "0.7.2",
         "imapflow": "1.2.16",
         "ioredfour": "1.4.0",
-        "ioredis": "5.10.0",
+        "ioredis": "5.10.1",
         "ipaddr.js": "2.3.0",
         "joi": "17.13.3",
         "jquery": "4.0.0",
