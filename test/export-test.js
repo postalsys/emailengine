@@ -33,33 +33,48 @@ function createMockRedis() {
             if (!mockRedisData[key]) mockRedisData[key] = {};
             Object.assign(mockRedisData[key], data);
         },
-        multi: () => ({
-            exec: async () => [],
-            hmset: function () {
-                return this;
-            },
-            hset: function () {
-                return this;
-            },
-            hdel: function () {
-                return this;
-            },
-            del: function () {
-                return this;
-            },
-            expire: function () {
-                return this;
-            },
-            srem: function () {
-                return this;
-            },
-            zadd: function () {
-                return this;
-            },
-            hincrby: function () {
-                return this;
-            }
-        }),
+        multi: () => {
+            const ops = [];
+            return {
+                hmset(key, data) {
+                    ops.push({ cmd: 'hmset', key, data });
+                    return this;
+                },
+                hset() {
+                    return this;
+                },
+                hdel() {
+                    return this;
+                },
+                del(key) {
+                    ops.push({ cmd: 'del', key });
+                    return this;
+                },
+                expire() {
+                    return this;
+                },
+                srem() {
+                    return this;
+                },
+                zadd() {
+                    return this;
+                },
+                hincrby() {
+                    return this;
+                },
+                async exec() {
+                    for (const op of ops) {
+                        if (op.cmd === 'hmset') {
+                            if (!mockRedisData[op.key]) mockRedisData[op.key] = {};
+                            Object.assign(mockRedisData[op.key], op.data);
+                        } else if (op.cmd === 'del') {
+                            delete mockRedisData[op.key];
+                        }
+                    }
+                    return [];
+                }
+            };
+        },
         ttl: async () => 3600,
         eval: async () => 1,
         smembers: async () => [],
@@ -1262,5 +1277,82 @@ test('Export functionality tests', async t => {
         const exportResult = simulateExportMessages(sizes, 0);
         assert.strictEqual(exportResult.processed, 10000);
         assert.strictEqual(exportResult.sizeLimitReached, false);
+    });
+
+    // truncated field in formatStatus
+    await t.test('formatStatus() includes truncated field when set', async () => {
+        const data = {
+            exportId: 'exp_abc123def456abc123def456',
+            status: 'completed',
+            phase: 'complete',
+            folders: '[]',
+            truncated: '1',
+            created: String(Date.now()),
+            expiresAt: String(Date.now() + 86400000),
+            error: ''
+        };
+
+        const result = Export.formatStatus(data);
+        assert.strictEqual(result.truncated, true);
+    });
+
+    await t.test('formatStatus() omits truncated field when not set', async () => {
+        const data = {
+            exportId: 'exp_abc123def456abc123def456',
+            status: 'completed',
+            phase: 'complete',
+            folders: '[]',
+            created: String(Date.now()),
+            expiresAt: String(Date.now() + 86400000),
+            error: ''
+        };
+
+        const result = Export.formatStatus(data);
+        assert.strictEqual(result.truncated, undefined);
+    });
+
+    // Export.startProcessing() tests
+    await t.test('Export.startProcessing() sets status, phase, and refreshes expiresAt', async () => {
+        const account = 'test-account';
+        const exportId = 'exp_test123';
+        const exportKey = `exp:${account}:${exportId}`;
+        const oldExpiresAt = Date.now() - 1000; // already in the past
+        mockRedisData[exportKey] = { exportId, status: 'queued', phase: 'pending', expiresAt: String(oldExpiresAt) };
+
+        await Export.startProcessing(account, exportId);
+
+        assert.strictEqual(mockRedisData[exportKey].status, 'processing');
+        assert.strictEqual(mockRedisData[exportKey].phase, 'indexing');
+        assert.ok(Number(mockRedisData[exportKey].expiresAt) > Date.now(), 'expiresAt should be refreshed to a future value');
+    });
+
+    // Export.deleteFully() tests
+    await t.test('Export.deleteFully() removes export and queue keys', async () => {
+        const account = 'test-account';
+        const exportId = 'exp_test123';
+        const exportKey = `exp:${account}:${exportId}`;
+        const queueKey = `exq:${account}:${exportId}`;
+        mockRedisData[exportKey] = { exportId, status: 'cancelled' };
+        mockRedisData[queueKey] = { someData: '1' };
+
+        await Export.deleteFully(account, exportId);
+
+        assert.strictEqual(mockRedisData[exportKey], undefined, 'Export key should be deleted');
+        assert.strictEqual(mockRedisData[queueKey], undefined, 'Queue key should be deleted');
+    });
+
+    // Schema validation for truncated field
+    await t.test('exportStatusSchema accepts truncated field', async () => {
+        const schemasPath = require.resolve('../lib/schemas');
+        delete require.cache[schemasPath];
+        const { exportStatusSchema } = require('../lib/schemas');
+
+        const result = exportStatusSchema.validate({
+            exportId: 'exp_abc123def456abc123def456',
+            status: 'completed',
+            truncated: true
+        });
+
+        assert.ok(!result.error, `Should accept truncated field, got error: ${result.error?.message}`);
     });
 });

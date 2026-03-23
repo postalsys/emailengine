@@ -755,7 +755,7 @@ const exportWorker = new Worker(
                 throw new Error('Export not found');
             }
 
-            await Export.update(account, exportId, { status: 'processing', phase: 'indexing' });
+            await Export.startProcessing(account, exportId);
             await indexMessages(job, exportData);
             await Export.update(account, exportId, { phase: 'exporting' });
 
@@ -788,7 +788,11 @@ const exportWorker = new Worker(
                 await fs.promises.unlink(exportData.filePath).catch(() => {});
             }
 
-            await Export.fail(account, exportId, err.message);
+            if (err.code === 'ExportCancelled') {
+                await Export.deleteFully(account, exportId);
+            } else {
+                await Export.fail(account, exportId, err.message);
+            }
 
             if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound' && err.code !== 'ExportCancelled') {
                 await notify(account, EXPORT_FAILED_NOTIFY, {
