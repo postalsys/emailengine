@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.65.0](https://github.com/postalsys/emailengine/compare/v2.64.0...v2.65.0) (2026-03-23)
+
+
+### Features
+
+* add Outlook Service (client_credentials) provider for app-only Microsoft 365 access ([#587](https://github.com/postalsys/emailengine/issues/587)) ([5f906cd](https://github.com/postalsys/emailengine/commit/5f906cd540564afe2dc2024b4e17c2d5d9483ed2))
+
+
+### Bug Fixes
+
+* fix export TTL expiration, cancellation cleanup, and expose truncated field ([019c05c](https://github.com/postalsys/emailengine/commit/019c05c941842ae28668711e8f5c2e8a85d3b84b))
+* include failed jobs in /v1/outbox response ([b393676](https://github.com/postalsys/emailengine/commit/b393676f2f877046d27b06d518a03dd256d5b7d9))
+* switch pkg targets from node22 to node24 to fix Windows builds ([12522a7](https://github.com/postalsys/emailengine/commit/12522a7b92d72684af49cd70c1c6d4bcafe1d4af))
+
 ## [2.64.0](https://github.com/postalsys/emailengine/compare/v2.63.4...v2.64.0) (2026-03-16)
 
 
