@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-25 12:56+0000\n"
+"POT-Creation-Date: 2026-03-25 15:37+0000\n"
 
 #: views/error.hbs:4
 #: workers/api.js:7030
@@ -100,6 +100,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -217,14 +225,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/routes-ui.js:384
 #: lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -273,12 +273,12 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/routes-ui.js:4974
-#: lib/routes-ui.js:5009
-#: lib/routes-ui.js:5124
-#: lib/routes-ui.js:5171
-#: lib/routes-ui.js:5418
-#: lib/routes-ui.js:5454
+#: lib/routes-ui.js:4986
+#: lib/routes-ui.js:5021
+#: lib/routes-ui.js:5136
+#: lib/routes-ui.js:5183
+#: lib/routes-ui.js:5430
+#: lib/routes-ui.js:5466
 #: workers/api.js:2534
 #: lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590
@@ -289,44 +289,44 @@ msgstr ""
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:5034
-#: lib/routes-ui.js:5067
-#: lib/routes-ui.js:8027
+#: lib/routes-ui.js:5046
+#: lib/routes-ui.js:5079
+#: lib/routes-ui.js:8039
 #: lib/ui-routes/account-routes.js:615
 #: lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:5227
-#: lib/routes-ui.js:5238
+#: lib/routes-ui.js:5239
+#: lib/routes-ui.js:5250
 #: lib/ui-routes/account-routes.js:811
 #: lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5230
-#: lib/routes-ui.js:5241
+#: lib/routes-ui.js:5242
+#: lib/routes-ui.js:5253
 #: lib/ui-routes/account-routes.js:814
 #: lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5244
+#: lib/routes-ui.js:5256
 #: lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/routes-ui.js:5247
+#: lib/routes-ui.js:5259
 #: lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/routes-ui.js:5250
-#: lib/routes-ui.js:5254
+#: lib/routes-ui.js:5262
+#: lib/routes-ui.js:5266
 #: lib/ui-routes/account-routes.js:834
 #: lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
@@ -334,33 +334,33 @@ msgstr ""
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5258
+#: lib/routes-ui.js:5270
 #: lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/routes-ui.js:5261
+#: lib/routes-ui.js:5273
 #: lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/routes-ui.js:5264
+#: lib/routes-ui.js:5276
 #: lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/routes-ui.js:7990
+#: lib/routes-ui.js:8002
 #: lib/tools.js:950
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:8000
-#: lib/routes-ui.js:8118
-#: lib/routes-ui.js:8135
-#: lib/routes-ui.js:8171
+#: lib/routes-ui.js:8012
+#: lib/routes-ui.js:8130
+#: lib/routes-ui.js:8147
+#: lib/routes-ui.js:8183
 msgid "Subscription Management"
 msgstr ""
 
