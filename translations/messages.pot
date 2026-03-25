@@ -1,14 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-23 13:22+0000\n"
-
-#: views/config/license.hbs:45
-#: lib/routes-ui.js:2490
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
+"POT-Creation-Date: 2026-03-25 08:46+0000\n"
 
 #: views/error.hbs:4
 #: workers/api.js:7025
@@ -26,6 +19,13 @@ msgstr ""
 #: views/error.hbs:17
 msgid "Dashboard"
 msgstr ""
+
+#: views/config/license.hbs:45
+#: lib/routes-ui.js:2490
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -80,14 +80,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
 msgstr ""
@@ -108,6 +100,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
