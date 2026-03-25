@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     crumb: crumbValue,
                     challengeId: optionsData.challengeId,
                     credential: authResponse,
-                    next: nextValue
+                    next: nextValue,
+                    remember: (document.querySelector('input[name="remember"]') || {}).value || false
                 })
             });
 
