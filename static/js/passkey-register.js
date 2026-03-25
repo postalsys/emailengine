@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!optionsResp.ok) {
                 var errData = await optionsResp.json();
-                throw new Error(errData.error || 'Failed to get registration options');
+                throw new Error(errData.error || 'Could not start registration.');
             }
 
             var optionsData = await optionsResp.json();
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.reload();
                 }, 1000);
             } else {
-                throw new Error(verifyData.error || 'Registration failed');
+                throw new Error(verifyData.error || 'Registration failed.');
             }
         } catch (err) {
             if (err.name === 'NotAllowedError') {

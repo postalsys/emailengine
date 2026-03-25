@@ -1,7 +1,7 @@
 <div class="text-center">
     <h1 class="h4 text-gray-900 mb-4">Two-Factor Authentication</h1>
 </div>
-<form class="user" method="post" action="/admin/totp" style="min-height: 14rem;">
+<form class="user" method="post" action="/admin/totp">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="next" value="{{values.next}}" />
     <input type="hidden" name="type" value="totp" />
@@ -10,7 +10,7 @@
     <div class="form-group">
         <label for="code">Enter your 6-digit verification code</label>
         <input type="text" pattern="[0-9]{6}"
-            class="form-control form-control-user  {{#if errors.code}}is-invalid{{/if}}" id="code" name="code"
+            class="form-control form-control-user {{#if errors.code}}is-invalid{{/if}}" id="code" name="code"
             required />
         {{#if errors.code}}
         <span class="invalid-feedback">{{errors.code}}</span>

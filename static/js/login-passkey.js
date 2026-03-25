@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!optionsResp.ok || optionsData.error) {
                 throw new Error(
-                    optionsData.error === 'no_passkeys' ? 'No passkeys registered for this account.' : optionsData.error || 'Failed to start authentication'
+                    optionsData.error === 'no_passkeys' ? 'No passkeys have been registered.' : optionsData.error || 'Could not start authentication.'
                 );
             }
 
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (verifyData.success) {
                 window.location.href = verifyData.redirect || '/admin';
             } else {
-                throw new Error(verifyData.error || 'Authentication failed');
+                throw new Error(verifyData.error || 'Authentication failed.');
             }
         } catch (err) {
             if (err.name === 'NotAllowedError') {

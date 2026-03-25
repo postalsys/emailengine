@@ -33,11 +33,11 @@
                         {{#if authData.enabled}} ******** {{else}}Not configured{{/if}}
                     </div>
                     <div class="col-4 text-right">
-                        <a href="/admin/account/password" class="btn btn-outline-primary bn-xs">
+                        <a href="/admin/account/password" class="btn btn-outline-primary btn-xs">
                             {{#if authData.enabled}}
-                            Change Password
+                            Change password
                             {{else}}
-                            Create Password
+                            Create password
                             {{/if}}
                         </a>
                     </div>
@@ -58,13 +58,13 @@
                     <div class="col-4 text-right">
                         {{#if totp.enabled}}
                         <button type="button" class="btn btn-outline-danger" data-toggle="modal"
-                            data-target="#disableTfaModal" title="Disable Two-factor authentication"
+                            data-target="#disableTfaModal" title="Disable two-factor authentication"
                             id="disable-tfa-btn" data-placement="top">
                             Disable 2FA
                         </button>
                         {{else}}
                         <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#enableTfaModal" title="Enable Two-factor authentication" id="disable-tfa-btn"
+                            data-target="#enableTfaModal" title="Enable two-factor authentication" id="enable-tfa-btn"
                             data-placement="top">
                             Enable 2FA
                         </button>
@@ -103,12 +103,12 @@
                     <div class="col-4 text-right">
                         {{#if serviceUrl}}
                         <button type="button" class="btn btn-outline-primary" id="register-passkey-btn">
-                            <i class="fas fa-fingerprint fa-sm fa-fw mr-1"></i>Add Passkey
+                            <i class="fas fa-fingerprint fa-sm fa-fw mr-1"></i>Add passkey
                         </button>
                         {{else}}
                         <button type="button" class="btn btn-outline-secondary" disabled
                             title="Set a Service URL in configuration before registering passkeys">
-                            Add Passkey
+                            Add passkey
                         </button>
                         <br><small class="text-muted">Requires Service URL</small>
                         {{/if}}
@@ -130,7 +130,7 @@
                         <button type="button" class="btn btn-outline-primary" data-toggle="modal"
                             data-target="#ssoInstructionsModal" title="Setting up SSO" id="sso-instructions"
                             data-placement="top">
-                            Setup Guide
+                            Setup guide
                         </button>
                     </div>
                 </div>
@@ -144,7 +144,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="disableTfaModalLabel">Disable Two-Factor Authentication</h5>
+                <h5 class="modal-title" id="disableTfaModalLabel">Disable two-factor authentication</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -169,7 +169,7 @@
         <form method="post" action="/admin/account/tfa/enable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="enableTfaModalLabel">Enable Two-Factor Authentication</h5>
+                    <h5 class="modal-title" id="enableTfaModalLabel">Enable two-factor authentication</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -316,7 +316,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="registerPasskeyModalLabel">Register a New Passkey</h5>
+                <h5 class="modal-title" id="registerPasskeyModalLabel">Register a new passkey</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -337,7 +337,7 @@
                 <input type="hidden" id="security-crumb" value="{{crumb}}" />
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="passkey-register-confirm-btn">
-                    Register Passkey
+                    Register passkey
                 </button>
             </div>
         </div>
