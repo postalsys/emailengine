@@ -36,17 +36,37 @@
             Sign In
         </button>
     </div>
-
-    {{#if providers.okta}}
-    <hr>
-    <div>
-        <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
-            Sign in with Okta SSO
-        </a>
-    </div>
-    {{/if}}
-
 </form>
+
+{{#if passkeysAvailable}}
+<div class="d-flex align-items-center my-3">
+    <hr class="flex-grow-1">
+    <span class="px-3 text-muted small">or</span>
+    <hr class="flex-grow-1">
+</div>
+<div>
+    <button type="button" class="btn btn-primary btn-user btn-block" id="passkey-login-btn">
+        <i class="fas fa-fingerprint fa-sm fa-fw mr-2"></i>Sign in with a passkey
+    </button>
+    <div id="passkey-error" class="text-danger small mt-2 text-center" style="display:none;"></div>
+</div>
+{{/if}}
+
+{{#if providers.okta}}
+{{#unless passkeysAvailable}}
+<div class="d-flex align-items-center my-3">
+    <hr class="flex-grow-1">
+    <span class="px-3 text-muted small">or</span>
+    <hr class="flex-grow-1">
+</div>
+{{/unless}}
+<div class="mt-2">
+    <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
+        <i class="fas fa-sign-in-alt fa-sm fa-fw mr-2"></i>Sign in with Okta SSO
+    </a>
+</div>
+{{/if}}
+
 <hr>
 <div class="text-center">
     <a class="small" href="https://emailengine.app/reset-password" target="_blank" rel="noopener noreferrer"

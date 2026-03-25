@@ -73,6 +73,11 @@
 
     <script src="/static/js/app.js"></script>
 
+    {{#if passkeysAvailable}}
+    <script src="/static/vendor/simplewebauthn/browser.min.js"></script>
+    <script src="/static/js/login-passkey.js"></script>
+    {{/if}}
+
 </body>
 
 </html>

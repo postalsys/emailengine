@@ -64,6 +64,8 @@
         "@postalsys/gettext": "4.1.1",
         "@postalsys/joi-messages": "1.0.5",
         "@postalsys/templates": "2.0.0",
+        "@simplewebauthn/browser": "^13.3.0",
+        "@simplewebauthn/server": "^13.3.0",
         "@zone-eu/mailsplit": "5.4.8",
         "@zone-eu/wild-config": "1.7.3",
         "ace-builds": "1.43.6",

@@ -74,6 +74,49 @@
             </li>
 
             <li class="list-group-item">
+                <div class="row" style="align-items: flex-start;">
+                    <div class="col-4" style="padding-top: 0.4rem;">Passkeys</div>
+                    <div class="col-4">
+                        {{#if passkeys.length}}
+                        <ul class="list-unstyled mb-0">
+                            {{#each passkeys}}
+                            <li class="mb-2">
+                                <strong>{{this.name}}</strong><br>
+                                <small class="text-muted">Added {{this.createdAtFormatted}}</small>
+                                <form method="post" action="/admin/account/passkeys/delete" style="display:inline;"
+                                    class="ml-2">
+                                    <input type="hidden" name="crumb" value="{{../crumb}}" />
+                                    <input type="hidden" name="credentialId" value="{{this.id}}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        title="Remove passkey"
+                                        onclick="return confirm('Remove this passkey?');">
+                                        Remove
+                                    </button>
+                                </form>
+                            </li>
+                            {{/each}}
+                        </ul>
+                        {{else}}
+                        <span class="badge badge-light">None registered</span>
+                        {{/if}}
+                    </div>
+                    <div class="col-4 text-right">
+                        {{#if serviceUrl}}
+                        <button type="button" class="btn btn-outline-primary" id="register-passkey-btn">
+                            <i class="fas fa-fingerprint fa-sm fa-fw mr-1"></i>Add Passkey
+                        </button>
+                        {{else}}
+                        <button type="button" class="btn btn-outline-secondary" disabled
+                            title="Set a Service URL in configuration before registering passkeys">
+                            Add Passkey
+                        </button>
+                        <br><small class="text-muted">Requires Service URL</small>
+                        {{/if}}
+                    </div>
+                </div>
+            </li>
+
+            <li class="list-group-item">
                 <div class="row" style="justify-content: center; align-items: center;">
                     <div class="col-4">Single Sign-On (SSO)</div>
                     <div class="col-4">
@@ -267,3 +310,39 @@
 
     </div>
 </div>
+
+<div class="modal fade" id="registerPasskeyModal" tabindex="-1" aria-labelledby="registerPasskeyModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="registerPasskeyModalLabel">Register a New Passkey</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="passkey-name">Passkey name</label>
+                    <input type="text" class="form-control" id="passkey-name" placeholder="e.g., MacBook Touch ID"
+                        maxlength="100" />
+                    <small class="form-text text-muted">A friendly name to help you identify this passkey.</small>
+                </div>
+                <div id="passkey-register-error" class="text-danger small" style="display:none;"></div>
+                <div id="passkey-register-success" class="text-success small" style="display:none;">
+                    Passkey registered successfully.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="security-crumb" value="{{crumb}}" />
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="passkey-register-confirm-btn">
+                    Register Passkey
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/vendor/simplewebauthn/browser.min.js"></script>
+<script src="/static/js/passkey-register.js"></script>

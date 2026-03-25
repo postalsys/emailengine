@@ -1307,7 +1307,12 @@ Include your token in requests using one of these methods:
             }
 
             // unless it is a login or TOPT (or public) page, require TOTP code
-            if (session.requireTotp && !['/{any*}', '/admin/totp', '/admin/login'].includes(request.route && request.route.path)) {
+            if (
+                session.requireTotp &&
+                !['/{any*}', '/admin/totp', '/admin/login', '/admin/passkey/auth/options', '/admin/passkey/auth/verify'].includes(
+                    request.route && request.route.path
+                )
+            ) {
                 request.requireTotp = true;
             }
 
