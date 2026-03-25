@@ -17,7 +17,7 @@
                     <div class="col-4 text-right">
                         {{#if authData.enabled}}
                         <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#logoutAllModal" title="Log out all sessions" id="logout-all-btn"
+                            data-target="#logoutAllModal" title="Sign out all sessions" id="logout-all-btn"
                             data-placement="top">
                             Sign out everywhere
                         </button>
@@ -207,7 +207,7 @@
         <form method="post" action="/admin/account/logout-all">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="logoutAllModalLabel">Sign Out from All Devices</h5>
+                    <h5 class="modal-title" id="logoutAllModalLabel">Sign out from all devices</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -222,7 +222,7 @@
                     <input type="hidden" name="crumb" value="{{crumb}}" />
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary"><i
-                            class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Sign Out Everywhere</button>
+                            class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Sign out everywhere</button>
                 </div>
             </div>
         </form>
