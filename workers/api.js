@@ -1359,6 +1359,8 @@ Include your token in requests using one of these methods:
                     throw error;
                 }
                 request.cookieAuth.set(request.auth.credentials);
+                let oktaUser = request.auth.credentials && request.auth.credentials.profile && request.auth.credentials.profile.username;
+                request.logger.info({ msg: 'Admin login successful', user: oktaUser || 'unknown', method: 'okta', remoteAddress: request.app.ip });
                 return h.redirect('/admin');
             },
             options: {
