@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-25 18:12+0000\n"
+"POT-Creation-Date: 2026-03-27 13:52+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:7030
+#: workers/api.js:7074
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,6 +26,26 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"EmailEngine requires all requested permissions to function properly. Some "
+"required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:12
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:18
+msgid "Try Again"
+msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -273,13 +293,14 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/routes-ui.js:4986
-#: lib/routes-ui.js:5021
-#: lib/routes-ui.js:5136
-#: lib/routes-ui.js:5183
-#: lib/routes-ui.js:5430
-#: lib/routes-ui.js:5466
-#: workers/api.js:2534
+#: lib/routes-ui.js:4990
+#: lib/routes-ui.js:5025
+#: lib/routes-ui.js:5140
+#: lib/routes-ui.js:5187
+#: lib/routes-ui.js:5434
+#: lib/routes-ui.js:5470
+#: workers/api.js:2251
+#: workers/api.js:2578
 #: lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590
 #: lib/ui-routes/account-routes.js:707
@@ -289,44 +310,44 @@ msgstr ""
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:5046
-#: lib/routes-ui.js:5079
-#: lib/routes-ui.js:8039
+#: lib/routes-ui.js:5050
+#: lib/routes-ui.js:5083
+#: lib/routes-ui.js:8043
 #: lib/ui-routes/account-routes.js:615
 #: lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:5239
-#: lib/routes-ui.js:5250
+#: lib/routes-ui.js:5243
+#: lib/routes-ui.js:5254
 #: lib/ui-routes/account-routes.js:811
 #: lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5242
-#: lib/routes-ui.js:5253
+#: lib/routes-ui.js:5246
+#: lib/routes-ui.js:5257
 #: lib/ui-routes/account-routes.js:814
 #: lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5256
+#: lib/routes-ui.js:5260
 #: lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/routes-ui.js:5259
+#: lib/routes-ui.js:5263
 #: lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/routes-ui.js:5262
 #: lib/routes-ui.js:5266
+#: lib/routes-ui.js:5270
 #: lib/ui-routes/account-routes.js:834
 #: lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
@@ -334,38 +355,38 @@ msgstr ""
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5270
+#: lib/routes-ui.js:5274
 #: lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/routes-ui.js:5273
+#: lib/routes-ui.js:5277
 #: lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/routes-ui.js:5276
+#: lib/routes-ui.js:5280
 #: lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/routes-ui.js:8002
+#: lib/routes-ui.js:8006
 #: lib/tools.js:950
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:8012
-#: lib/routes-ui.js:8130
-#: lib/routes-ui.js:8147
-#: lib/routes-ui.js:8183
+#: lib/routes-ui.js:8016
+#: lib/routes-ui.js:8134
+#: lib/routes-ui.js:8151
+#: lib/routes-ui.js:8187
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:7029
-#: workers/api.js:7146
+#: workers/api.js:7073
+#: workers/api.js:7190
 msgid "Requested page not found"
 msgstr ""
 

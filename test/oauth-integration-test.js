@@ -1,5 +1,6 @@
 'use strict';
 
+const http = require('node:http');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
@@ -8,7 +9,7 @@ test('OAuth integration tests', async t => {
         setTimeout(() => process.exit(), 1000).unref();
     });
 
-    const { GmailOauth } = require('../lib/oauth/gmail');
+    const { GmailOauth, OPENID_SCOPES } = require('../lib/oauth/gmail');
     const { OutlookOauth } = require('../lib/oauth/outlook');
     const { MailRuOauth } = require('../lib/oauth/mail-ru');
 
@@ -150,5 +151,99 @@ test('OAuth integration tests', async t => {
         const gmail = new GmailOauth(baseOpts);
 
         assert.ok(gmail.scopes.length > 0);
+    });
+
+    await t.test('GmailOauth.revokeToken sends correct revocation request', async () => {
+        let capturedBody = null;
+        let capturedHeaders = null;
+        let capturedMethod = null;
+
+        const server = http.createServer((req, res) => {
+            capturedMethod = req.method;
+            capturedHeaders = req.headers;
+            const chunks = [];
+            req.on('data', chunk => chunks.push(chunk));
+            req.on('end', () => {
+                capturedBody = Buffer.concat(chunks).toString();
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end('{}');
+            });
+        });
+
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        try {
+            const gmail = new GmailOauth(baseOpts);
+            gmail.revokeUrl = `http://127.0.0.1:${port}/revoke`;
+
+            await gmail.revokeToken('test-access-token-123');
+
+            assert.strictEqual(capturedMethod, 'POST');
+            assert.ok(capturedHeaders['content-type'].includes('application/x-www-form-urlencoded'));
+            assert.strictEqual(capturedBody, 'token=test-access-token-123');
+        } finally {
+            await new Promise(resolve => server.close(resolve));
+        }
+    });
+
+    await t.test('GmailOauth.revokeToken does not throw on HTTP error', async () => {
+        const server = http.createServer((req, res) => {
+            req.on('data', () => {});
+            req.on('end', () => {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'invalid_token' }));
+            });
+        });
+
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        try {
+            const gmail = new GmailOauth(baseOpts);
+            gmail.revokeUrl = `http://127.0.0.1:${port}/revoke`;
+
+            await gmail.revokeToken('bad-token');
+        } finally {
+            await new Promise(resolve => server.close(resolve));
+        }
+    });
+
+    await t.test('GmailOauth.revokeToken does not throw on network error', async () => {
+        const gmail = new GmailOauth(baseOpts);
+        gmail.revokeUrl = 'http://127.0.0.1:1/revoke';
+
+        await gmail.revokeToken('any-token');
+    });
+
+    await t.test('Scope comparison detects missing functional scopes', async () => {
+        const requested = ['openid', 'email', 'profile', 'https://mail.google.com/'];
+        const granted = ['openid', 'email', 'profile'];
+
+        const requiredFunctional = requested.filter(s => !OPENID_SCOPES.includes(s));
+        const missing = requiredFunctional.filter(s => !granted.includes(s));
+
+        assert.deepStrictEqual(requiredFunctional, ['https://mail.google.com/']);
+        assert.deepStrictEqual(missing, ['https://mail.google.com/']);
+    });
+
+    await t.test('Scope comparison returns empty when all functional scopes granted', async () => {
+        const requested = ['openid', 'email', 'profile', 'https://mail.google.com/'];
+        const granted = ['openid', 'email', 'profile', 'https://mail.google.com/'];
+
+        const requiredFunctional = requested.filter(s => !OPENID_SCOPES.includes(s));
+        const missing = requiredFunctional.filter(s => !granted.includes(s));
+
+        assert.deepStrictEqual(missing, []);
+    });
+
+    await t.test('Scope comparison handles multiple missing scopes', async () => {
+        const requested = ['openid', 'email', 'profile', 'https://mail.google.com/', 'https://www.googleapis.com/auth/pubsub'];
+        const granted = ['openid', 'email', 'profile'];
+
+        const requiredFunctional = requested.filter(s => !OPENID_SCOPES.includes(s));
+        const missing = requiredFunctional.filter(s => !granted.includes(s));
+
+        assert.deepStrictEqual(missing, ['https://mail.google.com/', 'https://www.googleapis.com/auth/pubsub']);
     });
 });

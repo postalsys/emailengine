@@ -200,7 +200,7 @@ const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
 const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'];
 
-const { GMAIL_SCOPES } = require('../lib/oauth/gmail');
+const { GMAIL_SCOPES, OPENID_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
@@ -2213,6 +2213,50 @@ Include your token in requests using one of these methods:
                     const grantedScopes = r.scope ? r.scope.split(/\s+/) : [];
 
                     request.logger.info({ msg: 'OAuth token received', grantedScopes, hasIdToken: !!r.id_token });
+
+                    // Check if user deselected required scopes in Google's granular consent
+                    const requiredFunctionalScopes = oAuth2Client.scopes.filter(s => !OPENID_SCOPES.includes(s));
+                    const missingScopes = requiredFunctionalScopes.filter(s => !grantedScopes.includes(s));
+
+                    if (missingScopes.length > 0) {
+                        request.logger.warn({
+                            msg: 'OAuth2 grant missing required scopes',
+                            requested: requiredFunctionalScopes,
+                            granted: grantedScopes,
+                            missing: missingScopes
+                        });
+
+                        // Best-effort revocation of the partial token
+                        oAuth2Client.revokeToken(r.refresh_token || r.access_token).catch(err => {
+                            request.logger.error({ msg: 'Failed to revoke partial OAuth2 token', err });
+                        });
+
+                        const reAuthNonce = crypto.randomBytes(NONCE_BYTES).toString('base64url');
+                        const reAuthState = `account:add:${reAuthNonce}`;
+                        const reAuthAccountData = Object.assign({}, accountData, {
+                            oauth2: { provider },
+                            _meta: accountMeta
+                        });
+
+                        await redis.set(`${REDIS_PREFIX}${reAuthState}`, JSON.stringify(reAuthAccountData), 'EX', Math.floor(MAX_FORM_TTL / 1000));
+
+                        const reAuthUrl = oAuth2Client.generateAuthUrl({
+                            state: reAuthState,
+                            email: accountData.email
+                        });
+
+                        return h.view(
+                            'oauth-scope-error',
+                            {
+                                pageTitleFull: request.app.gt.gettext('Email Account Setup'),
+                                templateLocale: request.app.locale,
+                                reAuthUrl
+                            },
+                            {
+                                layout: 'public'
+                            }
+                        );
+                    }
 
                     let profileRes;
                     let userEmail;

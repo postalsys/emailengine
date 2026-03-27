@@ -1,0 +1,20 @@
+<div class="text-center">
+    <h1 class="h4 text-gray-900 mb-4">{{_ "Insufficient Permissions" templateLocale}}</h1>
+</div>
+
+<div class="mb-4">
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        {{_ "EmailEngine requires all requested permissions to function properly. Some required permissions were not granted during sign-in." templateLocale}}
+    </div>
+
+    <p class="text-muted">
+        {{_ "Please try again and make sure all permission checkboxes are selected on the Google consent screen." templateLocale}}
+    </p>
+</div>
+
+<div class="mt-4">
+    <a href="{{reAuthUrl}}" class="btn btn-primary btn-block">
+        <i class="fas fa-redo mr-2"></i>{{_ "Try Again" templateLocale}}
+    </a>
+</div>
