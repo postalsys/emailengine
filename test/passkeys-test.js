@@ -23,7 +23,7 @@ function createMockRedis() {
         hgetall: async key => {
             let data = mockRedisData[key];
             if (!data || Object.keys(data).length === 0) return null;
-            return data;
+            return { ...data };
         },
         hdel: async () => {},
         hmset: async (key, data) => {
@@ -444,6 +444,29 @@ test('Passkeys module tests', async t => {
 
         let allSetKey = `${REDIS_PREFIX}webauthn:all`;
         assert.ok(!mockRedisSets[allSetKey] || !mockRedisSets[allSetKey].has('cred-del'));
+    });
+
+    await t.test('deleteCredential() returns false for wrong user', async () => {
+        await passkeys.saveCredential({
+            id: 'cred-owned',
+            publicKey: 'pk',
+            counter: 0,
+            transports: [],
+            name: 'Owned Key',
+            user: 'admin'
+        });
+
+        let result = await passkeys.deleteCredential('cred-owned', 'wrong-user');
+        assert.strictEqual(result, false);
+
+        let still = await passkeys.getCredential('cred-owned');
+        assert.ok(still);
+        assert.strictEqual(still.id, 'cred-owned');
+    });
+
+    await t.test('deleteCredential() returns false for nonexistent credential', async () => {
+        let result = await passkeys.deleteCredential('nonexistent', 'admin');
+        assert.strictEqual(result, false);
     });
 
     // -- hasPasskeys --
