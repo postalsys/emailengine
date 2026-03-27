@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-27 13:52+0000\n"
+"POT-Creation-Date: 2026-03-27 14:08+0000\n"
 
 #: views/error.hbs:4
 #: workers/api.js:7074
@@ -27,6 +27,10 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/oauth-scope-error.hbs:2
 msgid "Insufficient Permissions"
 msgstr ""
@@ -45,10 +49,6 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:18
 msgid "Try Again"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
@@ -120,14 +120,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -243,6 +235,14 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:395
 msgid "Request failed."
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: lib/routes-ui.js:384
