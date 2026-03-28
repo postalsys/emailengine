@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     challengeId: optionsData.challengeId,
                     credential: authResponse,
                     next: nextValue,
+                    // Reads the hidden "remember" input; always "Y" (persistent sessions hardcoded, no UI toggle)
                     remember: (document.querySelector('input[name="remember"]') || {}).value || false
                 })
             });

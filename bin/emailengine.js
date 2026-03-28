@@ -373,6 +373,9 @@ function run() {
                     await settings.set('totpEnabled', false);
                     await settings.set('totpSeed', false);
 
+                    let passkeys = require('../lib/passkeys');
+                    await passkeys.deleteAllCredentials(authData.user);
+
                     return { password, passwordHash };
                 };
 
