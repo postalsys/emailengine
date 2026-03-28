@@ -227,6 +227,31 @@
     </div>
 </div>
 
+{{#if isServiceAccount}}
+<div class="card mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">API usage example</h6>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small">This application uses service credentials, so accounts can not be added through the hosted authentication form. Use the API to register email accounts instead.</p>
+        <pre class="bg-light p-3 rounded mb-0" style="white-space: pre-wrap; word-wrap: break-word;"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
+  -H "Authorization: Bearer <span class="text-danger">YOUR_ACCESS_TOKEN</span>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account": "<span class="text-danger">ACCOUNT_ID</span>",
+    "email": "<span class="text-danger">user@example.com</span>",
+    "oauth2": {
+        "provider": "{{app.id}}",
+        "auth": {
+            "user": "<span class="text-danger">user@example.com</span>"
+        }
+    }
+}'</code></pre>
+        <small class="form-text text-muted mt-2">Replace <span class="text-danger">highlighted values</span> with your own. The access token is an API token generated in <a href="/admin/tokens">access tokens</a>.</small>
+    </div>
+</div>
+{{/if}}
+
 {{#if baseScopesPubsub}}
 <div class="card mt-4">
     <div class="card-header py-3">
