@@ -1287,6 +1287,7 @@ Include your token in requests using one of these methods:
                             }
                         };
                     }
+                    return { isValid: false };
                 }
             }
 
