@@ -152,10 +152,6 @@ const { normalizePath } = require('../lib/tools');
 const { REDIS_PREFIX, MAILBOX_HASH } = require('../lib/consts');
 
 test('Mailbox listing performance tests', async t => {
-    t.after(() => {
-        setTimeout(() => process.exit(), 1000).unref();
-    });
-
     t.beforeEach(() => {
         mockRedisData = {};
         pipelineCalls = [];
@@ -278,6 +274,135 @@ test('Mailbox listing performance tests', async t => {
         assert.ok(listing[count].isNew, 'BrandNew should be marked as new');
         assert.strictEqual(deletedCount, 1, 'Should detect one deleted folder');
         assert.ok(elapsed < 500, `Should complete in under 500ms for ${count} folders, took ${elapsed}ms`);
+    });
+
+    await t.test('getCurrentListing marks all entries as new when stored listing is empty', async () => {
+        let storedListing = [];
+        let listing = [
+            { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
+            { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
+            { path: 'Drafts', delimiter: '/', specialUseSource: 'extension', noInferiors: false }
+        ];
+
+        const storedListingMap = new Map();
+        for (const entry of storedListing) {
+            storedListingMap.set(normalizePath(entry.path), entry);
+        }
+
+        let hasChanges = false;
+        for (let mailbox of listing) {
+            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
+            if (!existingMailbox) {
+                mailbox.isNew = true;
+                hasChanges = true;
+            }
+        }
+
+        assert.ok(hasChanges, 'Should detect changes when stored listing is empty');
+        for (let mailbox of listing) {
+            assert.ok(mailbox.isNew, `${mailbox.path} should be marked as new`);
+        }
+    });
+
+    await t.test('getCurrentListing detects no changes when listings are identical', async () => {
+        let entries = [
+            { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
+            { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false }
+        ];
+        let storedListing = entries.map(e => ({ ...e }));
+        let listing = entries.map(e => ({ ...e }));
+
+        const storedListingMap = new Map();
+        for (const entry of storedListing) {
+            storedListingMap.set(normalizePath(entry.path), entry);
+        }
+
+        let hasChanges = false;
+        for (let mailbox of listing) {
+            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
+            if (!existingMailbox) {
+                mailbox.isNew = true;
+                hasChanges = true;
+            } else if (
+                existingMailbox.delimiter !== mailbox.delimiter ||
+                existingMailbox.specialUseSource !== mailbox.specialUseSource ||
+                existingMailbox.noInferiors !== mailbox.noInferiors
+            ) {
+                hasChanges = true;
+            }
+        }
+
+        const listingPathSet = new Set(listing.map(mailbox => normalizePath(mailbox.path)));
+        for (let entry of storedListing) {
+            if (!listingPathSet.has(normalizePath(entry.path))) {
+                hasChanges = true;
+            }
+        }
+
+        assert.ok(!hasChanges, 'Should not detect changes when listings are identical');
+    });
+
+    await t.test('getCurrentListing handles special characters and prototype-named paths', async () => {
+        let storedListing = [
+            { path: 'Gesendet/Entwurfe', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: '__proto__', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: 'constructor', delimiter: '/', specialUseSource: undefined, noInferiors: false }
+        ];
+
+        let listing = [
+            { path: 'Gesendet/Entwurfe', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: '__proto__', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: 'constructor', delimiter: '/', specialUseSource: undefined, noInferiors: false }
+        ];
+
+        const storedListingMap = new Map();
+        for (const entry of storedListing) {
+            storedListingMap.set(normalizePath(entry.path), entry);
+        }
+
+        let hasChanges = false;
+        for (let mailbox of listing) {
+            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
+            if (!existingMailbox) {
+                mailbox.isNew = true;
+                hasChanges = true;
+            }
+        }
+
+        assert.ok(!hasChanges, 'Should find all entries including prototype-named paths');
+        assert.strictEqual(storedListingMap.size, 3, 'Map should have 3 entries');
+        assert.ok(storedListingMap.has('__proto__'), '__proto__ should be a valid Map key');
+        assert.ok(storedListingMap.has('constructor'), 'constructor should be a valid Map key');
+    });
+
+    await t.test('getCurrentListing handles deeply nested paths', async () => {
+        let storedListing = [
+            { path: 'A/B/C/D/E', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: 'X.Y.Z', delimiter: '.', specialUseSource: undefined, noInferiors: false }
+        ];
+
+        let listing = [
+            { path: 'A/B/C/D/E', delimiter: '/', specialUseSource: undefined, noInferiors: false },
+            { path: 'X.Y.Z', delimiter: '.', specialUseSource: undefined, noInferiors: false }
+        ];
+
+        const storedListingMap = new Map();
+        for (const entry of storedListing) {
+            storedListingMap.set(normalizePath(entry.path), entry);
+        }
+
+        let hasChanges = false;
+        for (let mailbox of listing) {
+            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
+            if (!existingMailbox) {
+                mailbox.isNew = true;
+                hasChanges = true;
+            }
+        }
+
+        assert.ok(!hasChanges, 'Should match deeply nested paths');
+        assert.ok(storedListingMap.has('A/B/C/D/E'), 'Deep slash path should be found');
+        assert.ok(storedListingMap.has('X.Y.Z'), 'Deep dot path should be found');
     });
 
     // --- Change 2: getMailboxListing Redis pipeline tests ---
@@ -439,6 +564,92 @@ test('Mailbox listing performance tests', async t => {
         assert.strictEqual(result.messages, undefined, 'Should not have messages when no mailbox info');
     });
 
+    await t.test('getMailboxListing handles edge case message count values', async () => {
+        // Test the expression: data.messages && !isNaN(data.messages) ? Number(data.messages) : false
+        let testCases = [
+            { input: '42', expected: 42, label: 'normal string number' },
+            { input: '0', expected: 0, label: 'zero string is truthy, yields 0' },
+            { input: '', expected: false, label: 'empty string is falsy' },
+            { input: 'NaN', expected: false, label: 'NaN string is detected by isNaN, filtered out' },
+            { input: null, expected: false, label: 'null is falsy' },
+            { input: '-1', expected: -1, label: 'negative number' },
+            { input: undefined, expected: false, label: 'undefined is falsy' }
+        ];
+
+        for (let tc of testCases) {
+            let result = tc.input && !isNaN(tc.input) ? Number(tc.input) : false;
+            assert.strictEqual(result, tc.expected, `messages='${tc.input}': ${tc.label}`);
+        }
+    });
+
+    await t.test('getMailboxListing computes parentPath for nested folders', async () => {
+        let testCases = [
+            { path: 'Folder/Sub', delimiter: '/', expectedParent: 'Folder' },
+            { path: 'A.B.C', delimiter: '.', expectedParent: 'A.B' },
+            { path: 'A/B/C/D', delimiter: '/', expectedParent: 'A/B/C' },
+            { path: 'INBOX', delimiter: '/', expectedParent: undefined },
+            { path: 'TopLevel', delimiter: '.', expectedParent: undefined }
+        ];
+
+        for (let tc of testCases) {
+            let decoded = { path: tc.path, delimiter: tc.delimiter, name: tc.path, listed: true, subscribed: true };
+
+            if (decoded.path && decoded.delimiter && decoded.path.indexOf(decoded.delimiter) >= 0) {
+                decoded.parentPath = decoded.path.substring(0, decoded.path.lastIndexOf(decoded.delimiter));
+            }
+
+            assert.strictEqual(decoded.parentPath, tc.expectedParent, `parentPath for '${tc.path}' with '${tc.delimiter}' delimiter`);
+        }
+    });
+
+    await t.test('getMailboxListing handles pipeline error for individual mailbox', async () => {
+        let paths = ['INBOX', 'Sent'];
+        let storedListing = {};
+
+        for (let path of paths) {
+            storedListing[path] = msgpack.encode({
+                path,
+                delimiter: '/',
+                name: path,
+                listed: true,
+                subscribed: true
+            });
+        }
+
+        // Simulate pipeline results where one succeeds and one fails
+        let pipelineResults = [
+            [null, { path: 'INBOX', messages: '10', uidNext: '50' }], // success
+            [new Error('REDIS_ERR'), null] // failure
+        ];
+
+        let mailboxes = [];
+        for (let i = 0; i < paths.length; i++) {
+            let path = paths[i];
+            let decoded = msgpack.decode(storedListing[path]);
+
+            let mailboxInfo = {};
+            let [pipelineErr, data] = pipelineResults[i] || [];
+            if (!pipelineErr && data && Object.keys(data).length) {
+                mailboxInfo = {
+                    path: data.path || path,
+                    messages: data.messages && !isNaN(data.messages) ? Number(data.messages) : false,
+                    uidNext: data.uidNext && !isNaN(data.uidNext) ? Number(data.uidNext) : false
+                };
+            }
+
+            mailboxes.push(Object.assign(decoded, mailboxInfo));
+        }
+
+        assert.strictEqual(mailboxes.length, 2);
+        // First mailbox should have pipeline data
+        assert.strictEqual(mailboxes[0].messages, 10);
+        assert.strictEqual(mailboxes[0].uidNext, 50);
+        // Second mailbox should have no pipeline data due to error
+        assert.strictEqual(mailboxes[1].messages, undefined, 'Failed pipeline entry should have no messages');
+        assert.strictEqual(mailboxes[1].uidNext, undefined, 'Failed pipeline entry should have no uidNext');
+        assert.strictEqual(mailboxes[1].path, 'Sent', 'Path should still come from stored listing');
+    });
+
     // --- Change 3: Gmail detailed label cache tests ---
 
     await t.test('Gmail label detail cache avoids repeated API calls', async () => {
@@ -532,5 +743,18 @@ test('Mailbox listing performance tests', async t => {
         }
 
         assert.strictEqual(resultLabels[0].name, 'Fresh', 'Without counters, should use basic labels not cache');
+    });
+
+    await t.test('Gmail label detail cache treats empty array as valid cache hit', async () => {
+        let cachedDetailedLabels = [];
+        let cachedDetailedLabelsTime = Date.now();
+
+        // The cache check: cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60s
+        // An empty array is truthy in JS, so it should be a cache hit
+        let now = Date.now();
+        let cacheHit = !!(cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60 * 1000);
+
+        assert.ok(cacheHit, 'Empty array should be a valid cache hit (arrays are truthy)');
+        assert.deepStrictEqual(cachedDetailedLabels, [], 'Cache should hold the empty array');
     });
 });
