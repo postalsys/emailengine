@@ -324,6 +324,14 @@
                 </button>
             </div>
             <div class="modal-body">
+                {{#if authData.enabled}}
+                <div class="form-group">
+                    <label for="passkey-current-password">Current password</label>
+                    <input type="password" class="form-control" id="passkey-current-password"
+                        placeholder="Enter your current password" maxlength="256" autocomplete="current-password" />
+                    <small class="form-text text-muted">Confirm your identity before registering a new passkey.</small>
+                </div>
+                {{/if}}
                 <div class="form-group">
                     <label for="passkey-name">Passkey name</label>
                     <input type="text" class="form-control" id="passkey-name" placeholder="e.g., MacBook Touch ID"

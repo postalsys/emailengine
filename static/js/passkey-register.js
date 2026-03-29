@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (nameInput) {
             nameInput.value = '';
         }
+        var passwordInput = document.getElementById('passkey-current-password');
+        if (passwordInput) {
+            passwordInput.value = '';
+        }
         var errorEl = document.getElementById('passkey-register-error');
         var successEl = document.getElementById('passkey-register-success');
         if (errorEl) {
@@ -47,6 +51,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var nameInput = document.getElementById('passkey-name');
         var name = (nameInput && nameInput.value.trim()) || 'Unnamed passkey';
 
+        var passwordInput = document.getElementById('passkey-current-password');
+        var password = passwordInput ? passwordInput.value : '';
+
         var crumbInput = document.getElementById('security-crumb');
         var crumbValue = crumbInput ? crumbInput.value : '';
 
@@ -54,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var optionsResp = await fetch('/admin/account/passkeys/register/options', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ crumb: crumbValue })
+                body: JSON.stringify({ crumb: crumbValue, password: password })
             });
 
             if (!optionsResp.ok) {
