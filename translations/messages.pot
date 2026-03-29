@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-28 17:40+0000\n"
+"POT-Creation-Date: 2026-03-29 07:27+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:7076
+#: workers/api.js:7077
 msgid "Something went wrong"
 msgstr ""
 
@@ -98,6 +98,14 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:18
 msgid "Try Again"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -237,14 +245,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/routes-ui.js:384
 #: lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -293,14 +293,14 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/routes-ui.js:5056
-#: lib/routes-ui.js:5091
-#: lib/routes-ui.js:5206
-#: lib/routes-ui.js:5253
-#: lib/routes-ui.js:5500
-#: lib/routes-ui.js:5536
-#: workers/api.js:2253
-#: workers/api.js:2580
+#: lib/routes-ui.js:5124
+#: lib/routes-ui.js:5159
+#: lib/routes-ui.js:5274
+#: lib/routes-ui.js:5321
+#: lib/routes-ui.js:5568
+#: lib/routes-ui.js:5604
+#: workers/api.js:2254
+#: workers/api.js:2581
 #: lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590
 #: lib/ui-routes/account-routes.js:707
@@ -310,44 +310,44 @@ msgstr ""
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:5116
-#: lib/routes-ui.js:5149
-#: lib/routes-ui.js:8109
+#: lib/routes-ui.js:5184
+#: lib/routes-ui.js:5217
+#: lib/routes-ui.js:8177
 #: lib/ui-routes/account-routes.js:615
 #: lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:5309
-#: lib/routes-ui.js:5320
+#: lib/routes-ui.js:5377
+#: lib/routes-ui.js:5388
 #: lib/ui-routes/account-routes.js:811
 #: lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5312
-#: lib/routes-ui.js:5323
+#: lib/routes-ui.js:5380
+#: lib/routes-ui.js:5391
 #: lib/ui-routes/account-routes.js:814
 #: lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5326
+#: lib/routes-ui.js:5394
 #: lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/routes-ui.js:5329
+#: lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/routes-ui.js:5332
-#: lib/routes-ui.js:5336
+#: lib/routes-ui.js:5400
+#: lib/routes-ui.js:5404
 #: lib/ui-routes/account-routes.js:834
 #: lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
@@ -355,38 +355,38 @@ msgstr ""
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5340
+#: lib/routes-ui.js:5408
 #: lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/routes-ui.js:5343
+#: lib/routes-ui.js:5411
 #: lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/routes-ui.js:5346
+#: lib/routes-ui.js:5414
 #: lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/routes-ui.js:8072
+#: lib/routes-ui.js:8140
 #: lib/tools.js:950
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:8082
-#: lib/routes-ui.js:8200
-#: lib/routes-ui.js:8217
-#: lib/routes-ui.js:8253
+#: lib/routes-ui.js:8150
+#: lib/routes-ui.js:8268
+#: lib/routes-ui.js:8285
+#: lib/routes-ui.js:8321
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:7075
-#: workers/api.js:7192
+#: workers/api.js:7076
+#: workers/api.js:7193
 msgid "Requested page not found"
 msgstr ""
 

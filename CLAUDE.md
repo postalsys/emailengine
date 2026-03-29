@@ -412,6 +412,7 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 ## Code Style Rules
 
 - Never use emojis in code or documentation, only printable ASCII characters
+- Use a single hyphen-minus (`-`) as a dash in UI copy and user-facing strings. Never use double hyphens (`--`), em dashes, or en dashes.
 - When composing git commit messages do not include Claude as co-contributor
 - After making code changes:
   1. Run `/simplify` to review changed code for reuse, quality, and efficiency
