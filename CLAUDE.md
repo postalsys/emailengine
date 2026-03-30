@@ -379,6 +379,10 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - Does not work with API-only accounts (e.g., Mail.ru API mode)
 - Requires IMAP support on the email provider
 
+## Authentication Design
+
+- **Passkey (WebAuthn) login is a standalone authentication method.** It intentionally bypasses TOTP. When a user authenticates via passkey, no additional factor is required. This is by design - passkeys are treated as a single sufficient factor.
+
 ## Architecture Notes
 
 - **Multi-threaded**: 8 worker types (API, IMAP, webhooks, submit, export, documents, SMTP server, IMAP proxy)
