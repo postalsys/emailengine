@@ -658,6 +658,10 @@ class ConnectionHandler {
                 await connection.ensureSubscription({ clearExisting: true });
                 return true;
 
+            case 'missed':
+                logger.info({ msg: 'Handling missed notification lifecycle event', account: message.account });
+                return await connection.syncMissedMessages();
+
             default:
                 logger.warn({ msg: 'Unknown subscription lifecycle event', event: message.event, account: message.account });
                 return false;

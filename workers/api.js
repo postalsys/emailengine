@@ -2085,7 +2085,7 @@ Include your token in requests using one of these methods:
 
                 // Route recognized lifecycle events to the IMAP worker
                 // so the live client with its OAuth state handles them
-                if (entry.lifecycleEvent === 'reauthorizationRequired' || entry.lifecycleEvent === 'subscriptionRemoved') {
+                if (entry.lifecycleEvent === 'reauthorizationRequired' || entry.lifecycleEvent === 'subscriptionRemoved' || entry.lifecycleEvent === 'missed') {
                     const dedupeKey = `${entry.lifecycleEvent}:${entry.subscriptionId}`;
                     if (seenLifecycleEvents.has(dedupeKey)) {
                         request.logger.debug({
