@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-03-29 07:27+0000\n"
+"POT-Creation-Date: 2026-03-31 08:56+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:7077
+#: workers/api.js:7103
 msgid "Something went wrong"
 msgstr ""
 
@@ -29,6 +29,30 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
@@ -80,56 +104,6 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"EmailEngine requires all requested permissions to function properly. Some "
-"required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:12
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:18
-msgid "Try Again"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:19
 msgid "IMAP"
 msgstr ""
@@ -137,6 +111,12 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:22
 #: views/accounts/register/imap-server.hbs:114
 msgid "Username"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+#: views/accounts/register/imap.hbs:31
+msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:45
@@ -245,6 +225,30 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
 #: lib/routes-ui.js:384
 #: lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -293,14 +297,14 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/routes-ui.js:5124
-#: lib/routes-ui.js:5159
-#: lib/routes-ui.js:5274
-#: lib/routes-ui.js:5321
-#: lib/routes-ui.js:5568
-#: lib/routes-ui.js:5604
-#: workers/api.js:2254
-#: workers/api.js:2581
+#: lib/routes-ui.js:5133
+#: lib/routes-ui.js:5168
+#: lib/routes-ui.js:5283
+#: lib/routes-ui.js:5330
+#: lib/routes-ui.js:5577
+#: lib/routes-ui.js:5613
+#: workers/api.js:2279
+#: workers/api.js:2607
 #: lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590
 #: lib/ui-routes/account-routes.js:707
@@ -310,44 +314,44 @@ msgstr ""
 msgid "Email Account Setup"
 msgstr ""
 
-#: lib/routes-ui.js:5184
-#: lib/routes-ui.js:5217
-#: lib/routes-ui.js:8177
+#: lib/routes-ui.js:5193
+#: lib/routes-ui.js:5226
+#: lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615
 #: lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
-#: lib/routes-ui.js:5377
-#: lib/routes-ui.js:5388
+#: lib/routes-ui.js:5386
+#: lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811
 #: lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr ""
 
-#: lib/routes-ui.js:5380
-#: lib/routes-ui.js:5391
+#: lib/routes-ui.js:5389
+#: lib/routes-ui.js:5400
 #: lib/ui-routes/account-routes.js:814
 #: lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr ""
 
-#: lib/routes-ui.js:5394
+#: lib/routes-ui.js:5403
 #: lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr ""
 
-#: lib/routes-ui.js:5397
+#: lib/routes-ui.js:5406
 #: lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr ""
 
-#: lib/routes-ui.js:5400
-#: lib/routes-ui.js:5404
+#: lib/routes-ui.js:5409
+#: lib/routes-ui.js:5413
 #: lib/ui-routes/account-routes.js:834
 #: lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
@@ -355,38 +359,38 @@ msgstr ""
 msgid "TLS protocol error"
 msgstr ""
 
-#: lib/routes-ui.js:5408
+#: lib/routes-ui.js:5417
 #: lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr ""
 
-#: lib/routes-ui.js:5411
+#: lib/routes-ui.js:5420
 #: lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr ""
 
-#: lib/routes-ui.js:5414
+#: lib/routes-ui.js:5423
 #: lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/routes-ui.js:8140
+#: lib/routes-ui.js:8149
 #: lib/tools.js:950
 msgid "Invalid input"
 msgstr ""
 
-#: lib/routes-ui.js:8150
-#: lib/routes-ui.js:8268
-#: lib/routes-ui.js:8285
-#: lib/routes-ui.js:8321
+#: lib/routes-ui.js:8159
+#: lib/routes-ui.js:8277
+#: lib/routes-ui.js:8294
+#: lib/routes-ui.js:8330
 msgid "Subscription Management"
 msgstr ""
 
-#: workers/api.js:7076
-#: workers/api.js:7193
+#: workers/api.js:7102
+#: workers/api.js:7219
 msgid "Requested page not found"
 msgstr ""
 

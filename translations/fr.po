@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-03-27 13:52+0000\n"
+"POT-Creation-Date: 2026-03-31 08:47+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,9 +10,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 3.8\n"
+"X-Generator: Poedit 3.9\n"
 
-#: views/error.hbs:4 workers/api.js:7074
+#: views/error.hbs:4 workers/api.js:7103
 msgid "Something went wrong"
 msgstr "Un problème est survenu"
 
@@ -33,31 +33,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d jour"
 msgstr[1] "%d jours"
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr "Autorisations insuffisantes"
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"EmailEngine requires all requested permissions to function properly. Some "
-"required permissions were not granted during sign-in."
-msgstr ""
-"EmailEngine a besoin de toutes les autorisations demandées pour fonctionner "
-"correctement. Certaines autorisations requises n'ont pas été accordées lors "
-"de la connexion."
-
-#: views/oauth-scope-error.hbs:12
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Veuillez réessayer et vous assurer que toutes les cases d'autorisation sont "
-"cochées sur l'écran de consentement de Google."
-
-#: views/oauth-scope-error.hbs:18
-msgid "Try Again"
-msgstr "Essayer de nouveau"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -89,11 +64,11 @@ msgstr "Fermer"
 
 #: views/unsubscribe.hbs:34
 msgid "Subscribe"
-msgstr "Abbonez-vouz"
+msgstr "Abonnez-vous"
 
 #: views/unsubscribe.hbs:56
 msgid "Subscription resumed"
-msgstr "Récapitulatif de l'abonnement"
+msgstr "Abonnement repris"
 
 #: views/unsubscribe.hbs:58
 msgid "Your email address <em>%s</em> was re-subscribed."
@@ -106,6 +81,35 @@ msgstr "Adresse e-mail"
 #: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
 msgstr "Entrez votre adresse email"
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr "Autorisations insuffisantes"
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function properly. "
+"Some required permissions were not granted during sign-in."
+msgstr ""
+"Toutes les autorisations demandées sont nécessaires au bon fonctionnement de "
+"ce service. Certaines autorisations requises n'ont pas été accordées lors de "
+"la connexion."
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr "Les autorisations suivantes n'ont pas été accordées :"
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Veuillez réessayer et vous assurer que toutes les cases d'autorisation sont "
+"cochées sur l'écran de consentement de Google."
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
+msgstr "Essayer de nouveau"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -185,12 +189,12 @@ msgstr "TLS pour IMAP"
 
 #: views/accounts/register/imap-server.hbs:100
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 993. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 993. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"lors de l'utilisation du port 993. Pour les autres ports, EmailEngine revient "
+"à l'utilisation du cryptage basé sur STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:102
 #: views/accounts/register/imap-server.hbs:193
@@ -207,16 +211,16 @@ msgstr "TLS pour SMTP"
 
 #: views/accounts/register/imap-server.hbs:191
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 465. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS (également connu sous le nom de SSL) n'est généralement nécessaire que "
-"lors de l'utilisation du port 465. Pour les autres ports, EmailEngine "
-"revient à l'utilisation du cryptage basé sur STARTTLS."
+"lors de l'utilisation du port 465. Pour les autres ports, EmailEngine revient "
+"à l'utilisation du cryptage basé sur STARTTLS."
 
 #: views/accounts/register/imap-server.hbs:209
 msgid "Verify connection"
-msgstr "Verifier la connexion"
+msgstr "Vérifier la connexion"
 
 #: views/accounts/register/imap-server.hbs:218
 msgid "Save and continue"
@@ -224,16 +228,16 @@ msgstr "Enregistrer et continuer"
 
 #: views/accounts/register/imap-server.hbs:226
 msgid "Skip verification"
-msgstr "Ignorer la verification"
+msgstr "Ignorer la vérification"
 
 #: views/accounts/register/imap-server.hbs:241
 msgid "Connection test failed"
-msgstr "Le test de connexion a echoue"
+msgstr "Le test de connexion a échoué"
 
 #: views/accounts/register/imap-server.hbs:247
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
-"Impossible de se connecter avec ces parametres. Verifiez les erreurs ci-"
+"Impossible de se connecter avec ces paramètres. Vérifiez les erreurs ci-"
 "dessous."
 
 #: views/accounts/register/imap-server.hbs:318
@@ -242,7 +246,7 @@ msgstr "Erreur"
 
 #: views/accounts/register/imap-server.hbs:320
 msgid "Invalid settings"
-msgstr "Parametres invalides"
+msgstr "Paramètres invalides"
 
 #: views/accounts/register/imap-server.hbs:326
 msgid "Couldn't connect to IMAP server"
@@ -251,7 +255,7 @@ msgstr "Impossible de se connecter au serveur IMAP"
 #: views/accounts/register/imap-server.hbs:328
 #: views/accounts/register/imap-server.hbs:337
 msgid "Server response:"
-msgstr "Reponse du serveur :"
+msgstr "Réponse du serveur :"
 
 #: views/accounts/register/imap-server.hbs:335
 msgid "Couldn't connect to SMTP server"
@@ -259,7 +263,7 @@ msgstr "Impossible de se connecter au serveur SMTP"
 
 #: views/accounts/register/imap-server.hbs:395
 msgid "Request failed."
-msgstr "La requete a echoue."
+msgstr "La requête a échoué."
 
 #: lib/routes-ui.js:384 lib/ui-routes/account-routes.js:60
 msgid "Delegated"
@@ -292,8 +296,8 @@ msgstr ""
 
 #: lib/routes-ui.js:446 lib/ui-routes/account-routes.js:122
 msgid ""
-"The server refused the connection. This typically occurs if the server is "
-"not running, is overloaded, or you are connecting to the wrong host or port."
+"The server refused the connection. This typically occurs if the server is not "
+"running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 "Le serveur a refusé la connexion. Cela se produit généralement si le serveur "
 "ne fonctionne pas, s'il est surchargé ou si vous vous connectez au mauvais "
@@ -311,74 +315,74 @@ msgstr "Inconnu"
 msgid "Indefinite"
 msgstr "Indéfinie"
 
-#: lib/routes-ui.js:4990 lib/routes-ui.js:5025 lib/routes-ui.js:5140
-#: lib/routes-ui.js:5187 lib/routes-ui.js:5434 lib/routes-ui.js:5470
-#: workers/api.js:2251 workers/api.js:2578 lib/ui-routes/account-routes.js:554
+#: lib/routes-ui.js:5133 lib/routes-ui.js:5168 lib/routes-ui.js:5283
+#: lib/routes-ui.js:5330 lib/routes-ui.js:5577 lib/routes-ui.js:5613
+#: workers/api.js:2279 workers/api.js:2607 lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590 lib/ui-routes/account-routes.js:707
 #: lib/ui-routes/account-routes.js:754 lib/ui-routes/account-routes.js:1003
 #: lib/ui-routes/account-routes.js:1039
 msgid "Email Account Setup"
 msgstr "Configuration du compte de messagerie"
 
-#: lib/routes-ui.js:5050 lib/routes-ui.js:5083 lib/routes-ui.js:8043
+#: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr "Impossible de valider les arguments de la demande."
 
-#: lib/routes-ui.js:5243 lib/routes-ui.js:5254
+#: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr "Le nom d'hôte du serveur est introuvable"
 
-#: lib/routes-ui.js:5246 lib/routes-ui.js:5257
+#: lib/routes-ui.js:5389 lib/routes-ui.js:5400
 #: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr "Nom d'utilisateur ou mot de passe invalide"
 
-#: lib/routes-ui.js:5260 lib/ui-routes/account-routes.js:828
+#: lib/routes-ui.js:5403 lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr "Les informations d'authentification n'ont pas été fournies"
 
-#: lib/routes-ui.js:5263 lib/ui-routes/account-routes.js:831
+#: lib/routes-ui.js:5406 lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr "Échec de l'authentification OAuth2"
 
-#: lib/routes-ui.js:5266 lib/routes-ui.js:5270
+#: lib/routes-ui.js:5409 lib/routes-ui.js:5413
 #: lib/ui-routes/account-routes.js:834 lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
 #: lib/ui-routes/admin-entities-routes.js:2036
 msgid "TLS protocol error"
 msgstr "Erreur de protocole TLS"
 
-#: lib/routes-ui.js:5274 lib/ui-routes/account-routes.js:842
+#: lib/routes-ui.js:5417 lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr "Connexion expirée"
 
-#: lib/routes-ui.js:5277 lib/ui-routes/account-routes.js:845
+#: lib/routes-ui.js:5420 lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr "N'a pas pu se connecter au serveur"
 
-#: lib/routes-ui.js:5280 lib/ui-routes/account-routes.js:848
+#: lib/routes-ui.js:5423 lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr "Réponse inattendue du serveur"
 
-#: lib/routes-ui.js:8006 lib/tools.js:950
+#: lib/routes-ui.js:8149 lib/tools.js:950
 msgid "Invalid input"
 msgstr "Entrée invalide"
 
-#: lib/routes-ui.js:8016 lib/routes-ui.js:8134 lib/routes-ui.js:8151
-#: lib/routes-ui.js:8187
+#: lib/routes-ui.js:8159 lib/routes-ui.js:8277 lib/routes-ui.js:8294
+#: lib/routes-ui.js:8330
 msgid "Subscription Management"
 msgstr "Gestion des abonnements"
 
-#: workers/api.js:7073 workers/api.js:7190
+#: workers/api.js:7102 workers/api.js:7219
 msgid "Requested page not found"
 msgstr "La page demandée n'a pas été trouvée"
 

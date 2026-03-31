@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-03-27 13:52+0000\n"
+"POT-Creation-Date: 2026-03-31 08:47+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -10,9 +10,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.8\n"
+"X-Generator: Poedit 3.9\n"
 
-#: views/error.hbs:4 workers/api.js:7074
+#: views/error.hbs:4 workers/api.js:7103
 msgid "Something went wrong"
 msgstr "問題がありました"
 
@@ -32,30 +32,6 @@ msgstr "ダッシュボード"
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d日"
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr "権限不足"
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"EmailEngine requires all requested permissions to function properly. Some "
-"required permissions were not granted during sign-in."
-msgstr ""
-"EmailEngineが正常に動作するには、要求されたすべての権限が必要です。サインイン"
-"時に、必要な権限の一部が付与されませんでした。"
-
-#: views/oauth-scope-error.hbs:12
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"もう一度お試しいただき、Googleの同意画面で全ての権限のチェックボックスが選択"
-"されていることをご確認ください。"
-
-#: views/oauth-scope-error.hbs:18
-msgid "Try Again"
-msgstr "もう一度試してください"
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -104,6 +80,34 @@ msgstr "メールアドレス"
 #: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
 msgstr "メールアドレスを入力してください"
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr "権限不足"
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function properly. "
+"Some required permissions were not granted during sign-in."
+msgstr ""
+"このサービスが正常に動作するには、要求されたすべての権限が必要です。サインイン"
+"時に、必要な権限の一部が付与されませんでした。"
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr "以下の権限は付与されませんでした："
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"もう一度お試しいただき、Googleの同意画面で全ての権限のチェックボックスが選択さ"
+"れていることをご確認ください。"
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
+msgstr "もう一度試してください"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -182,8 +186,8 @@ msgstr "IMAPのTLS"
 
 #: views/accounts/register/imap-server.hbs:100
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 993. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS（SSLとも呼ばれます）は、通常ポート993を使用する場合にのみ必要です。その他"
 "のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
@@ -203,8 +207,8 @@ msgstr "SMTPのTLS"
 
 #: views/accounts/register/imap-server.hbs:191
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For "
-"other ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 465. For other "
+"ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS（SSLとも呼ばれます）は、通常ポート465を使用する場合にのみ必要です。その他"
 "のポートではEmailEngineがSTARTTLSベースの暗号化にフォールバックします。"
@@ -260,15 +264,15 @@ msgstr "委任された"
 
 #: lib/routes-ui.js:385 lib/ui-routes/account-routes.js:61
 msgid "Using credentials from \"%s\""
-msgstr "0]」の認証情報を使用"
+msgstr "\"%s\"の認証情報を使用"
 
 #: lib/routes-ui.js:435 lib/ui-routes/account-routes.js:111
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
-"接続がタイムアウトしました。これは通常、ファイアウォールの内側にいるか、間"
-"違ったポートに接続している場合に発生します。"
+"接続がタイムアウトしました。これは通常、ファイアウォールの内側にいるか、間違っ"
+"たポートに接続している場合に発生します。"
 
 #: lib/routes-ui.js:438 lib/ui-routes/account-routes.js:114
 msgid "The server unexpectedly closed the connection."
@@ -284,11 +288,11 @@ msgstr ""
 
 #: lib/routes-ui.js:446 lib/ui-routes/account-routes.js:122
 msgid ""
-"The server refused the connection. This typically occurs if the server is "
-"not running, is overloaded, or you are connecting to the wrong host or port."
+"The server refused the connection. This typically occurs if the server is not "
+"running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
-"サーバーが接続を拒否しました。これは通常、サーバーが稼動していないか、過負荷"
-"になっているか、間違ったホストまたはポートに接続している場合に発生します。"
+"サーバーが接続を拒否しました。これは通常、サーバーが稼動していないか、過負荷に"
+"なっているか、間違ったホストまたはポートに接続している場合に発生します。"
 
 #: lib/routes-ui.js:573
 msgid "Invalid API key for OpenAI"
@@ -302,74 +306,74 @@ msgstr "不明"
 msgid "Indefinite"
 msgstr "不定"
 
-#: lib/routes-ui.js:4990 lib/routes-ui.js:5025 lib/routes-ui.js:5140
-#: lib/routes-ui.js:5187 lib/routes-ui.js:5434 lib/routes-ui.js:5470
-#: workers/api.js:2251 workers/api.js:2578 lib/ui-routes/account-routes.js:554
+#: lib/routes-ui.js:5133 lib/routes-ui.js:5168 lib/routes-ui.js:5283
+#: lib/routes-ui.js:5330 lib/routes-ui.js:5577 lib/routes-ui.js:5613
+#: workers/api.js:2279 workers/api.js:2607 lib/ui-routes/account-routes.js:554
 #: lib/ui-routes/account-routes.js:590 lib/ui-routes/account-routes.js:707
 #: lib/ui-routes/account-routes.js:754 lib/ui-routes/account-routes.js:1003
 #: lib/ui-routes/account-routes.js:1039
 msgid "Email Account Setup"
 msgstr "メールアカウント設定"
 
-#: lib/routes-ui.js:5050 lib/routes-ui.js:5083 lib/routes-ui.js:8043
+#: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
 msgstr "リクエスト引数の検証に失敗しました。"
 
-#: lib/routes-ui.js:5243 lib/routes-ui.js:5254
+#: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
 msgstr "サーバーホスト名が見つかりませんでした"
 
-#: lib/routes-ui.js:5246 lib/routes-ui.js:5257
+#: lib/routes-ui.js:5389 lib/routes-ui.js:5400
 #: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:825
 #: lib/ui-routes/admin-entities-routes.js:2023
 msgid "Invalid username or password"
 msgstr "無効なユーザー名またはパスワード"
 
-#: lib/routes-ui.js:5260 lib/ui-routes/account-routes.js:828
+#: lib/routes-ui.js:5403 lib/ui-routes/account-routes.js:828
 #: lib/ui-routes/admin-entities-routes.js:2026
 msgid "Authentication credentials were not provided"
 msgstr "認証情報が提供されませんでした"
 
-#: lib/routes-ui.js:5263 lib/ui-routes/account-routes.js:831
+#: lib/routes-ui.js:5406 lib/ui-routes/account-routes.js:831
 #: lib/ui-routes/admin-entities-routes.js:2029
 msgid "OAuth2 authentication failed"
 msgstr "OAuth2認証に失敗しました"
 
-#: lib/routes-ui.js:5266 lib/routes-ui.js:5270
+#: lib/routes-ui.js:5409 lib/routes-ui.js:5413
 #: lib/ui-routes/account-routes.js:834 lib/ui-routes/account-routes.js:838
 #: lib/ui-routes/admin-entities-routes.js:2032
 #: lib/ui-routes/admin-entities-routes.js:2036
 msgid "TLS protocol error"
 msgstr "TLSプロトコルエラー"
 
-#: lib/routes-ui.js:5274 lib/ui-routes/account-routes.js:842
+#: lib/routes-ui.js:5417 lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
 msgstr "接続タイムアウト"
 
-#: lib/routes-ui.js:5277 lib/ui-routes/account-routes.js:845
+#: lib/routes-ui.js:5420 lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
 msgstr "サーバーに接続できませんでした"
 
-#: lib/routes-ui.js:5280 lib/ui-routes/account-routes.js:848
+#: lib/routes-ui.js:5423 lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046
 msgid "Unexpected server response"
 msgstr "予期しないサーバー応答"
 
-#: lib/routes-ui.js:8006 lib/tools.js:950
+#: lib/routes-ui.js:8149 lib/tools.js:950
 msgid "Invalid input"
 msgstr "無効な入力"
 
-#: lib/routes-ui.js:8016 lib/routes-ui.js:8134 lib/routes-ui.js:8151
-#: lib/routes-ui.js:8187
+#: lib/routes-ui.js:8159 lib/routes-ui.js:8277 lib/routes-ui.js:8294
+#: lib/routes-ui.js:8330
 msgid "Subscription Management"
 msgstr "サブスクリプション管理"
 
-#: workers/api.js:7073 workers/api.js:7190
+#: workers/api.js:7102 workers/api.js:7219
 msgid "Requested page not found"
 msgstr "リクエストされたページが見つかりません"
 
