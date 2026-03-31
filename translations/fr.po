@@ -40,7 +40,7 @@ msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
 
 #: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
 msgid "Unsubscribe"
-msgstr "Désabonnement"
+msgstr "Se désabonner"
 
 #: views/unsubscribe.hbs:5
 msgid "Your email address was unsubscribed."
@@ -56,7 +56,7 @@ msgstr "Se réabonner"
 
 #: views/unsubscribe.hbs:21
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "Êtes-vous sûr de vouloir réabonner votre adresse e-mail <em>%s</em> ?"
+msgstr "Voulez-vous vraiment réabonner votre adresse e-mail <em>%s</em> ?"
 
 #: views/unsubscribe.hbs:32 views/accounts/register/imap-server.hbs:251
 msgid "Close"
@@ -64,7 +64,7 @@ msgstr "Fermer"
 
 #: views/unsubscribe.hbs:34
 msgid "Subscribe"
-msgstr "Abonnez-vous"
+msgstr "S'abonner"
 
 #: views/unsubscribe.hbs:56
 msgid "Subscription resumed"
@@ -80,7 +80,7 @@ msgstr "Adresse e-mail"
 
 #: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
-msgstr "Entrez votre adresse email"
+msgstr "Entrez votre adresse e-mail"
 
 #: views/oauth-scope-error.hbs:2
 msgid "Insufficient Permissions"
@@ -165,8 +165,7 @@ msgstr "Mot de passe de l'application"
 #: views/accounts/register/imap-server.hbs:54
 #: views/accounts/register/imap-server.hbs:145
 msgid "%s accounts require an application password for %s."
-msgstr ""
-"les comptes %s nécessitent un mot de passe d'application pour les comptes %s."
+msgstr "Les comptes %s nécessitent un mot de passe d'application pour %s."
 
 #: views/accounts/register/imap-server.hbs:55
 #: views/accounts/register/imap-server.hbs:145
@@ -313,7 +312,7 @@ msgstr "Inconnu"
 
 #: lib/routes-ui.js:2499
 msgid "Indefinite"
-msgstr "Indéfinie"
+msgstr "Indéfini"
 
 #: lib/routes-ui.js:5133 lib/routes-ui.js:5168 lib/routes-ui.js:5283
 #: lib/routes-ui.js:5330 lib/routes-ui.js:5577 lib/routes-ui.js:5613
@@ -327,7 +326,7 @@ msgstr "Configuration du compte de messagerie"
 #: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
-msgstr "Impossible de valider les arguments de la demande."
+msgstr "Requête invalide. Vérifiez vos informations et réessayez."
 
 #: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
@@ -366,7 +365,7 @@ msgstr "Connexion expirée"
 #: lib/routes-ui.js:5420 lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043
 msgid "Could not connect to server"
-msgstr "N'a pas pu se connecter au serveur"
+msgstr "Impossible de se connecter au serveur"
 
 #: lib/routes-ui.js:5423 lib/ui-routes/account-routes.js:848
 #: lib/ui-routes/admin-entities-routes.js:2046

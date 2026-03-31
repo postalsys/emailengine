@@ -49,15 +49,15 @@ msgstr "Je e-mailadres is uitgeschreven."
 #: views/unsubscribe.hbs:7
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
 msgstr ""
-"Was dit een vergissing. Klik dan <a%s>hier</a> om u opnieuw aan te melden."
+"Was dit een vergissing? Klik dan <a%s>hier</a> om je opnieuw te abonneren."
 
 #: views/unsubscribe.hbs:15
 msgid "Re-subscribe"
-msgstr "Opnieuw aanmelden"
+msgstr "Opnieuw abonneren"
 
 #: views/unsubscribe.hbs:21
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "Weet je zeker dat je je e-mailadres <em>%s</em> weer wilt aanmelden?"
+msgstr "Weet je zeker dat je je e-mailadres <em>%s</em> opnieuw wilt abonneren?"
 
 #: views/unsubscribe.hbs:32 views/accounts/register/imap-server.hbs:251
 msgid "Close"
@@ -73,7 +73,7 @@ msgstr "Abonnement hervat"
 
 #: views/unsubscribe.hbs:58
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr "Je e-mailadres <em>%s</em> is weer aangemeld."
+msgstr "Je e-mailadres <em>%s</em> is opnieuw geabonneerd."
 
 #: views/unsubscribe.hbs:75 views/accounts/register/imap.hbs:21
 msgid "Email address"
@@ -81,7 +81,7 @@ msgstr "E-mailadres"
 
 #: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
-msgstr "Vul je email in"
+msgstr "Vul je e-mailadres in"
 
 #: views/oauth-scope-error.hbs:2
 msgid "Insufficient Permissions"
@@ -160,7 +160,7 @@ msgstr "Belangrijk"
 #: views/accounts/register/imap-server.hbs:144
 #: views/accounts/register/imap-server.hbs:151
 msgid "Application Password"
-msgstr "Applicatie wachtwoord"
+msgstr "Applicatiewachtwoord"
 
 #: views/accounts/register/imap-server.hbs:54
 #: views/accounts/register/imap-server.hbs:145
@@ -318,12 +318,12 @@ msgstr "Voor onbepaalde tijd"
 #: lib/ui-routes/account-routes.js:754 lib/ui-routes/account-routes.js:1003
 #: lib/ui-routes/account-routes.js:1039
 msgid "Email Account Setup"
-msgstr "E-mailaccountinstelling"
+msgstr "E-mailaccount instellen"
 
 #: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
-msgstr "Het valideren van de aanvraag-argumenten is mislukt."
+msgstr "Ongeldige aanvraag. Controleer je invoer en probeer het opnieuw."
 
 #: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
@@ -357,7 +357,7 @@ msgstr "TLS-protocolfout"
 #: lib/routes-ui.js:5417 lib/ui-routes/account-routes.js:842
 #: lib/ui-routes/admin-entities-routes.js:2040
 msgid "Connection timed out"
-msgstr "Verbindingslimiet overschreden"
+msgstr "Verbindingstime-out"
 
 #: lib/routes-ui.js:5420 lib/ui-routes/account-routes.js:845
 #: lib/ui-routes/admin-entities-routes.js:2043

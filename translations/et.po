@@ -26,7 +26,7 @@ msgstr "Mine tagasi"
 
 #: views/error.hbs:17
 msgid "Dashboard"
-msgstr "Avaleht"
+msgstr "Töölaud"
 
 #: views/config/license.hbs:45 lib/routes-ui.js:2497
 msgid "%d day"
@@ -44,22 +44,22 @@ msgstr "Loobu tellimusest"
 
 #: views/unsubscribe.hbs:5
 msgid "Your email address was unsubscribed."
-msgstr "Teie e-posti aadress on kustutatud."
+msgstr "Teie e-posti aadress eemaldati tellijate nimekirjast."
 
 #: views/unsubscribe.hbs:7
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
 msgstr ""
-"Kas see oli viga? Klõpsake <a%s>siin</a>, et end uuesti tellijaks lisada."
+"Kas see oli viga? Klõpsake <a%s>siin</a>, et oma tellimus uuesti aktiveerida."
 
 #: views/unsubscribe.hbs:15
 msgid "Re-subscribe"
-msgstr "Uuesti tellimine"
+msgstr "Telli uuesti"
 
 #: views/unsubscribe.hbs:21
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr ""
-"Kas olete kindel, et soovite oma e-posti aadressi <em>%s</em> uuesti tellijaks "
-"märkida?"
+"Kas olete kindel, et soovite oma e-posti aadressi <em>%s</em> uuesti tellijate "
+"nimekirja lisada?"
 
 #: views/unsubscribe.hbs:32 views/accounts/register/imap-server.hbs:251
 msgid "Close"
@@ -115,7 +115,7 @@ msgstr "Proovige uuesti"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
-msgstr "Sinu nimi"
+msgstr "Teie nimi"
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
@@ -166,7 +166,7 @@ msgstr "Rakenduse parool"
 #: views/accounts/register/imap-server.hbs:54
 #: views/accounts/register/imap-server.hbs:145
 msgid "%s accounts require an application password for %s."
-msgstr "%s kontod peavad kasutama %s jaoks rakenduse parooli."
+msgstr "%s kontode jaoks on %s puhul vaja rakenduse parooli."
 
 #: views/accounts/register/imap-server.hbs:55
 #: views/accounts/register/imap-server.hbs:145
@@ -323,13 +323,13 @@ msgstr "E-posti konto seadistamine"
 #: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
-msgstr "Päringu argumentide kontroll ebaõnnestus."
+msgstr "Vigane päring. Kontrollige sisestatud andmeid ja proovige uuesti."
 
 #: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
 #: lib/ui-routes/admin-entities-routes.js:2020
 msgid "Server hostname was not found"
-msgstr "Serverit ei leitud"
+msgstr "Serveri hostinime ei leitud"
 
 #: lib/routes-ui.js:5389 lib/routes-ui.js:5400
 #: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:825

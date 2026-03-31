@@ -46,7 +46,7 @@ msgstr "Wypisz się"
 
 #: views/unsubscribe.hbs:5
 msgid "Your email address was unsubscribed."
-msgstr "Twój adres e-mail został wyrejestrowany."
+msgstr "Twój adres e-mail został wypisany z listy."
 
 #: views/unsubscribe.hbs:7
 msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
@@ -167,7 +167,7 @@ msgstr "Hasło aplikacji"
 #: views/accounts/register/imap-server.hbs:54
 #: views/accounts/register/imap-server.hbs:145
 msgid "%s accounts require an application password for %s."
-msgstr "konta %s wymagają hasła aplikacji dla %s."
+msgstr "Konta %s wymagają hasła aplikacji dla %s."
 
 #: views/accounts/register/imap-server.hbs:55
 #: views/accounts/register/imap-server.hbs:145
@@ -324,7 +324,7 @@ msgstr "Konfiguracja konta e-mail"
 #: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
 #: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
 msgid "Invalid request. Check your input and try again."
-msgstr "Nie udało się zweryfikować argumentów żądania."
+msgstr "Nieprawidłowe żądanie. Sprawdź wprowadzone dane i spróbuj ponownie."
 
 #: lib/routes-ui.js:5386 lib/routes-ui.js:5397
 #: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
