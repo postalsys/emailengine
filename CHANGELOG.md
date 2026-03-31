@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.67.0](https://github.com/postalsys/emailengine/compare/v2.66.0...v2.67.0) (2026-03-31)
+
+
+### Features
+
+* handle MS Graph 'missed' lifecycle event for Outlook notification recovery ([d55f48c](https://github.com/postalsys/emailengine/commit/d55f48c9a183f9e0108801563b1085c176dbeb06))
+* show human-readable missing scopes on OAuth scope error page ([4ee2365](https://github.com/postalsys/emailengine/commit/4ee2365449e3cbece6f4a83d540ae63c18464535))
+
+
+### Bug Fixes
+
+* add IMAP fetch retry timeout and harden passkey registration ([3a1b61b](https://github.com/postalsys/emailengine/commit/3a1b61b00e916c308cae5e7493a2207164d9d45f))
+* close command client proactively after subconnection setup ([02d3687](https://github.com/postalsys/emailengine/commit/02d36874d8533beabe5ad0fba978851b3791cbb5))
+* correct translation errors and remove EmailEngine branding from OAuth scope error ([9284ddd](https://github.com/postalsys/emailengine/commit/9284ddd1e28e40fd24abeea7296636b21c4b3878))
+* use STATUS instead of NOOP as keepalive for 163.com IMAP ([3b3516f](https://github.com/postalsys/emailengine/commit/3b3516feb14e64bab5ac586378237f2160cdf010))
+
 ## [2.66.0](https://github.com/postalsys/emailengine/compare/v2.65.0...v2.66.0) (2026-03-29)
 
 
