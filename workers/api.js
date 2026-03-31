@@ -203,6 +203,29 @@ const FLAG_SORT_ORDER = ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', 
 const { GMAIL_SCOPES, OPENID_SCOPES } = require('../lib/oauth/gmail');
 const { MAIL_RU_SCOPES } = require('../lib/oauth/mail-ru');
 
+const GMAIL_SCOPE_DESCRIPTIONS = {
+    'https://mail.google.com/': 'Full email access (IMAP and SMTP)',
+    'https://www.googleapis.com/auth/gmail.modify': 'Read, compose, send, and modify emails',
+    'https://www.googleapis.com/auth/gmail.readonly': 'Read email messages and settings',
+    'https://www.googleapis.com/auth/gmail.send': 'Send email on your behalf',
+    'https://www.googleapis.com/auth/gmail.labels': 'Manage email labels',
+    'https://www.googleapis.com/auth/pubsub': 'Cloud Pub/Sub notifications'
+};
+
+function formatScopeDescription(scope) {
+    if (GMAIL_SCOPE_DESCRIPTIONS[scope]) {
+        return GMAIL_SCOPE_DESCRIPTIONS[scope];
+    }
+    let shortName = scope;
+    try {
+        const url = new URL(scope);
+        shortName = url.pathname.split('/').pop() || scope;
+    } catch (e) {
+        // Not a URL, use as-is
+    }
+    return shortName.replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
 
 const SMTP_TEST_HOST = 'https://api.nodemailer.com';
@@ -2248,12 +2271,15 @@ Include your token in requests using one of these methods:
                             email: accountData.email
                         });
 
+                        const missingScopesList = missingScopes.map(formatScopeDescription);
+
                         return h.view(
                             'oauth-scope-error',
                             {
                                 pageTitleFull: request.app.gt.gettext('Email Account Setup'),
                                 templateLocale: request.app.locale,
-                                reAuthUrl
+                                reAuthUrl,
+                                missingScopesList
                             },
                             {
                                 layout: 'public'

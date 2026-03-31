@@ -8,6 +8,15 @@
         {{_ "EmailEngine requires all requested permissions to function properly. Some required permissions were not granted during sign-in." templateLocale}}
     </div>
 
+    {{#if missingScopesList}}
+    <p class="font-weight-bold mb-2">{{_ "The following permissions were not granted:" templateLocale}}</p>
+    <ul class="mb-3">
+        {{#each missingScopesList}}
+        <li>{{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
     <p class="text-muted">
         {{_ "Please try again and make sure all permission checkboxes are selected on the Google consent screen." templateLocale}}
     </p>
