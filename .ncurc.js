@@ -22,6 +22,9 @@ module.exports = {
         'joi',
 
         // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
-        '@asamuzakjp/css-color'
+        '@asamuzakjp/css-color',
+
+        // undici >=8.0.0 requires Node >=22.19.0; pin to last Node 20-compatible release
+        'undici'
     ]
 };
