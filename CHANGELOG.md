@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.3](https://github.com/postalsys/emailengine/compare/v2.67.2...v2.67.3) (2026-04-21)
+
+
+### Bug Fixes
+
+* use template literals for translated strings in showErrorPopup ([b56fd1f](https://github.com/postalsys/emailengine/commit/b56fd1fa7612b4cf2b7e99cbd78d7447b89c03c6))
+
 ## [2.67.2](https://github.com/postalsys/emailengine/compare/v2.67.1...v2.67.2) (2026-04-21)
 
 
