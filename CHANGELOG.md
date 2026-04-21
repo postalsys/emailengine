@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.67.2](https://github.com/postalsys/emailengine/compare/v2.67.1...v2.67.2) (2026-04-21)
+
+
+### Bug Fixes
+
+* restore IMAP XOAUTH2 path for gmailService accounts ([d2ebe9b](https://github.com/postalsys/emailengine/commit/d2ebe9b3c19cd0bcaaf0fa17d40148f79dd7cd2b))
+
 ## [2.67.1](https://github.com/postalsys/emailengine/compare/v2.67.0...v2.67.1) (2026-04-17)
 
 
