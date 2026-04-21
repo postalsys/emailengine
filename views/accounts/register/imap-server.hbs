@@ -315,26 +315,26 @@
             errorsListElm.innerHTML = '';
 
             if (data.error && !data.fields) {
-                addErrorRow('{{_ "Error" templateLocale }}', data.error.message || data.error)
+                addErrorRow(`{{_ "Error" templateLocale }}`, data.error.message || data.error)
             } else if (data.fields) {
-                addErrorRow('{{_ "Invalid settings" templateLocale }}', data.message);
+                addErrorRow(`{{_ "Invalid settings" templateLocale }}`, data.message);
                 for (let field of data.fields) {
                     addErrorRow('-', field.message, 'aaaa', 'bbbbbb');
                 }
             } else {
                 if (!data.imap || !data.imap.success) {
-                    let error = data.imap && data.imap.error || '{{_ "Couldn't connect to IMAP server" templateLocale }}'
+                    let error = data.imap && data.imap.error || `{{_ "Couldn't connect to IMAP server" templateLocale }}`
                     if (data.imap && data.imap.responseText) {
-                        addErrorRow('IMAP', error, '{{_ "Server response:" templateLocale }}', data.imap.responseText);
+                        addErrorRow('IMAP', error, `{{_ "Server response:" templateLocale }}`, data.imap.responseText);
                     } else {
                         addErrorRow('IMAP', error);
                     }
                 }
 
                 if (!data.smtp || !data.smtp.success) {
-                    let error = data.smtp && data.smtp.error || '{{_ "Couldn't connect to SMTP server" templateLocale }}'
+                    let error = data.smtp && data.smtp.error || `{{_ "Couldn't connect to SMTP server" templateLocale }}`
                     if (data.smtp && data.smtp.responseText) {
-                        addErrorRow('SMTP', error, '{{_ "Server response:" templateLocale }}', data.smtp.responseText);
+                        addErrorRow('SMTP', error, `{{_ "Server response:" templateLocale }}`, data.smtp.responseText);
                     } else {
                         addErrorRow('SMTP', error);
                     }
