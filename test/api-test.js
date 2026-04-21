@@ -24,6 +24,7 @@ const gmailAccountId1 = 'gmail-account1';
 const gmailAccountId2 = 'gmail-account2';
 const gmailSendOnlyAccountId = 'gmail-sendonly-account';
 const outlookServiceAccountId = 'outlook-service-account';
+const gmailServiceAccountId = 'gmail-service-account';
 
 // Helper: acquire MS Graph token using client_credentials flow
 async function getGraphToken() {
@@ -70,6 +71,8 @@ test('API tests', async t => {
 
     let outlookServiceAppId;
     let outlookReceivedEmailId;
+
+    let gmailServiceAppId;
 
     t.before(async () => {
         testAccount = await nodemailer.createTestAccount();
@@ -1176,5 +1179,80 @@ test('API tests', async t => {
 
         // First page and second page should have different message IDs
         assert.notEqual(page1Data.value[0].id, page2Data.value[0].id, 'Pages should return different messages');
+    });
+
+    // --- Gmail Service Account (IMAP XOAUTH2) tests ---
+
+    await t.test('Create gmailService OAuth2 app', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/oauth2`)
+            .send({
+                name: 'Gmail Service Account (IMAP XOAUTH2)',
+                provider: 'gmailService',
+                serviceClient: process.env.GMAIL_SERVICE_POSTALSYS_CLIENT,
+                serviceClientEmail: process.env.GMAIL_SERVICE_POSTALSYS_SERVICE_EMAIL,
+                serviceKey: process.env.GMAIL_SERVICE_POSTALSYS_KEY
+            })
+            .expect(200);
+
+        gmailServiceAppId = response.body.id;
+        assert.ok(gmailServiceAppId);
+    });
+
+    await t.test('Register gmailService account', { timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: gmailServiceAccountId,
+                name: 'Gmail Service User',
+                email: process.env.GMAIL_SERVICE_POSTALSYS_ACCOUNT_EMAIL,
+                oauth2: {
+                    provider: gmailServiceAppId,
+                    auth: {
+                        user: process.env.GMAIL_SERVICE_POSTALSYS_ACCOUNT_EMAIL
+                    }
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('wait until gmailService account connects via IMAP XOAUTH2', { timeout: 120000 }, async () => {
+        let lastResponse;
+        await waitForCondition(
+            async () => {
+                lastResponse = await server.get(`/v1/account/${gmailServiceAccountId}`).expect(200);
+                switch (lastResponse.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + lastResponse.body.state);
+                    case 'connected':
+                        return true;
+                }
+                return false;
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail Service account connection timeout` }
+        );
+
+        assert.notStrictEqual(lastResponse.body.isApi, true, 'gmailService should use IMAP XOAUTH2, not the API path');
+    });
+
+    await t.test('list mailboxes for gmailService account', { timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${gmailServiceAccountId}/mailboxes`).expect(200);
+
+        assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
+    });
+
+    await t.test('delete gmailService account', { timeout: 30000 }, async () => {
+        const response = await server.delete(`/v1/account/${gmailServiceAccountId}`).expect(200);
+
+        assert.ok(response.body.deleted);
+    });
+
+    await t.test('delete gmailService OAuth2 app', { timeout: 30000 }, async () => {
+        const response = await server.delete(`/v1/oauth2/${gmailServiceAppId}`).expect(200);
+
+        assert.ok(response.body.deleted);
     });
 });
