@@ -168,8 +168,8 @@
             "node24-win-x64"
         ],
         "outputPath": "ee-dist",
-        "options": {
-            "max_old_space_size": "4096"
-        }
+        "options": [
+            "max_old_space_size=4096"
+        ]
     }
 }
