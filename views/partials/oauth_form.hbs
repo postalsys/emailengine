@@ -25,18 +25,22 @@
     <div class="card-body">
         <div class="row no-gutters align-items-center">
             <div class="col mr-2">
-                <strong>Service accounts</strong> allow EmailEngine to access Gmail mailboxes using a Google Cloud
-                service key, with no interactive user login required. The service account must have domain-wide
-                delegation enabled in Google Workspace. Use this for automated integrations where you cannot
-                perform interactive logins.
-                Accounts using service access can only be added via the
-                <a href="/admin/swagger#/Account/postV1Account">REST API</a>,
-                not through the hosted authentication form.
-                {{#if providerData.tutorialUrl}}
-                Read about setting up {{providerData.comment}} from <a
-                    href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer">here</a>.
-                {{/if}}
+                <strong>Service accounts</strong> let EmailEngine access any mailbox in your Google Workspace
+                organization without an interactive user login. The service account must have domain-wide
+                delegation enabled in Workspace. Use this for automated integrations where you cannot perform
+                interactive logins.
+                <p class="mt-2 mb-0">
+                    Two authentication methods are supported: a downloaded <strong>service account key</strong>
+                    (classic) or <strong>Workload Identity Federation</strong> (keyless, for GKE, EKS, AKS, or
+                    any OIDC-emitting workload). Pick one below.
+                </p>
+                <p class="mt-2 mb-0">
+                    Accounts using service access can only be added via the
+                    <a href="/admin/swagger#/Account/postV1Account">REST API</a>, not through the hosted
+                    authentication form.{{#if providerData.tutorialUrl}} Read the
+                    <a href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer">setup guide</a> for both methods.{{/if}}
+                </p>
             </div>
             <div class="col-auto">
                 <i class="fas fa-info-circle fa-2x text-gray-300"></i>
@@ -195,10 +199,9 @@
                     value="externalAccount" {{#if authMethodIsExternalAccount}}checked{{/if}} />
                 <label class="form-check-label" for="authMethodExternalAccount">Workload Identity Federation (keyless)</label>
             </div>
-            <small class="form-text text-muted">Choose "Service account key" to paste a downloaded service-account
-                JSON key, or "Workload Identity Federation" to authenticate without a long-lived key. See the
-                <a href="https://emailengine.app/gmail-service-accounts" target="_blank" rel="noopener noreferrer">documentation</a>
-                for setup instructions.</small>
+            <small class="form-text text-muted">"Service account key" expects a downloaded JSON key file.
+                "Workload Identity Federation" authenticates without a long-lived key, using a credential issued
+                by your runtime environment.</small>
         </div>
 
         <div class="auth-method-section auth-method-section-serviceKey {{#unless authMethodIsServiceKey}}d-none{{/unless}}">
