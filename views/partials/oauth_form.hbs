@@ -184,14 +184,47 @@
         {{#if activeGmailService}}
 
         <div class="form-group">
-            <button type="button" class="btn btn-info btn-icon-split" id="serviceFile">
-                <span class="icon text-white-50">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                </span>
-                <span class="text">Load configuration from the service key file&#x2026;</span>
-            </button>
-            <small class="form-text text-muted">Select the JSON file you received after generating a new service key to
-                retrieve the service values.</small>
+            <label class="d-block">Authentication method</label>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input auth-method-radio" type="radio" name="authMethod" id="authMethodServiceKey"
+                    value="serviceKey" {{#if authMethodIsServiceKey}}checked{{/if}} />
+                <label class="form-check-label" for="authMethodServiceKey">Service account key</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input auth-method-radio" type="radio" name="authMethod" id="authMethodExternalAccount"
+                    value="externalAccount" {{#if authMethodIsExternalAccount}}checked{{/if}} />
+                <label class="form-check-label" for="authMethodExternalAccount">Workload Identity Federation (keyless)</label>
+            </div>
+            <small class="form-text text-muted">Choose "Service account key" to paste a downloaded service-account
+                JSON key, or "Workload Identity Federation" to authenticate without a long-lived key. See the
+                <a href="https://emailengine.app/gmail-service-accounts" target="_blank" rel="noopener noreferrer">documentation</a>
+                for setup instructions.</small>
+        </div>
+
+        <div class="auth-method-section auth-method-section-serviceKey {{#unless authMethodIsServiceKey}}d-none{{/unless}}">
+            <div class="form-group">
+                <button type="button" class="btn btn-info btn-icon-split" id="serviceFile">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </span>
+                    <span class="text">Load configuration from the service key file&#x2026;</span>
+                </button>
+                <small class="form-text text-muted">Select the JSON file you received after generating a new service key to
+                    retrieve the service values.</small>
+            </div>
+        </div>
+
+        <div class="auth-method-section auth-method-section-externalAccount {{#unless authMethodIsExternalAccount}}d-none{{/unless}}">
+            <div class="form-group">
+                <button type="button" class="btn btn-info btn-icon-split" id="externalAccountFile">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </span>
+                    <span class="text">Load configuration from the external-account JSON file&#x2026;</span>
+                </button>
+                <small class="form-text text-muted">Select the credential configuration file produced by
+                    <code>gcloud iam workload-identity-pools create-cred-config</code>.</small>
+            </div>
         </div>
 
         <div class="form-group">
@@ -235,18 +268,37 @@
             <small class="form-text text-muted">OAuth2 Service Client ID</small>
         </div>
 
-        <div class="form-group">
+        <div class="auth-method-section auth-method-section-serviceKey {{#unless authMethodIsServiceKey}}d-none{{/unless}}">
+            <div class="form-group">
 
-            <label for="serviceKey">Secret service key</label>
+                <label for="serviceKey">Secret service key</label>
 
-            <textarea class="form-control droptxt autoselect {{#if errors.serviceKey}}is-invalid{{/if}}" id="serviceKey"
-                name="serviceKey" rows="4" data-enable-grammarly="false" spellcheck="false" {{#if
-                hasServiceKey}}placeholder="Service key is set but not shown&mldr;" {{else}}
-                placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;&mldr;" {{/if}} {{#unless
-                hasServiceKey}}required{{/unless}}>{{values.serviceKey}}</textarea>
-            {{#if errors.serviceKey}}
-            <span class="invalid-feedback">{{errors.serviceKey}}</span>
-            {{/if}}
+                <textarea class="form-control droptxt autoselect {{#if errors.serviceKey}}is-invalid{{/if}}" id="serviceKey"
+                    name="serviceKey" rows="4" data-enable-grammarly="false" spellcheck="false" {{#if
+                    hasServiceKey}}placeholder="Service key is set but not shown&mldr;" {{else}}
+                    placeholder="Starts with &quot;-----BEGIN PRIVATE KEY-----&quot;&mldr;" {{/if}}>{{values.serviceKey}}</textarea>
+                {{#if errors.serviceKey}}
+                <span class="invalid-feedback">{{errors.serviceKey}}</span>
+                {{/if}}
+            </div>
+        </div>
+
+        <div class="auth-method-section auth-method-section-externalAccount {{#unless authMethodIsExternalAccount}}d-none{{/unless}}">
+            <div class="form-group">
+
+                <label for="externalAccount">External account configuration</label>
+
+                <textarea class="form-control droptxt autoselect text-monospace {{#if errors.externalAccount}}is-invalid{{/if}}"
+                    id="externalAccount" name="externalAccount" rows="8" data-enable-grammarly="false" spellcheck="false" {{#if
+                    hasExternalAccount}}placeholder="External account configuration is set but not shown&mldr;" {{else}}
+                    placeholder="{&quot;type&quot;:&quot;external_account&quot;,&quot;audience&quot;:&quot;...&quot;,&quot;credential_source&quot;:{&quot;file&quot;:&quot;/var/run/secrets/...&quot;}}" {{/if}}>{{values.externalAccount}}</textarea>
+                {{#if errors.externalAccount}}
+                <span class="invalid-feedback">{{errors.externalAccount}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Paste the JSON produced by
+                    <code>gcloud iam workload-identity-pools create-cred-config</code>. Only the
+                    <code>file</code> and <code>url</code> credential sources are supported.</small>
+            </div>
         </div>
 
         {{else if activeOutlookService}}

@@ -246,4 +246,155 @@ test('OAuth integration tests', async t => {
 
         assert.deepStrictEqual(missing, ['https://mail.google.com/', 'https://www.googleapis.com/auth/pubsub']);
     });
+
+    await t.test('GmailOauth uses LocalKeySigner by default for service account configs', async () => {
+        const { LocalKeySigner } = require('../lib/oauth/gmail');
+        const gmail = new GmailOauth({
+            ...baseOpts,
+            serviceClient: '7103296518315821565203',
+            serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
+            serviceKey: '-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----'
+        });
+        assert.strictEqual(gmail.authMethod, 'serviceKey');
+        assert.ok(gmail.signer instanceof LocalKeySigner);
+    });
+
+    await t.test('GmailOauth uses ExternalAccountSigner when authMethod is externalAccount', async () => {
+        const { ExternalAccountSigner } = require('../lib/oauth/external-account-signer');
+        const externalAccount = JSON.stringify({
+            type: 'external_account',
+            audience: '//iam.googleapis.com/projects/123/locations/global/workloadIdentityPools/pool/providers/p',
+            subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+            token_url: 'https://sts.googleapis.com/v1/token',
+            service_account_impersonation_url:
+                'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken',
+            credential_source: { file: '/tmp/oidc-token' }
+        });
+        const gmail = new GmailOauth({
+            ...baseOpts,
+            serviceClient: '7103296518315821565203',
+            serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
+            authMethod: 'externalAccount',
+            externalAccount
+        });
+        assert.strictEqual(gmail.authMethod, 'externalAccount');
+        assert.ok(gmail.signer instanceof ExternalAccountSigner);
+    });
+
+    await t.test('GmailOauth.parseExternalAccountConfig rejects empty input', () => {
+        const { parseExternalAccountConfig } = require('../lib/oauth/gmail');
+        assert.throws(
+            () => parseExternalAccountConfig(''),
+            err => err.code === 'EExternalAccountConfig'
+        );
+        assert.throws(
+            () => parseExternalAccountConfig('not-json'),
+            err => err.code === 'EExternalAccountConfig'
+        );
+        const parsed = parseExternalAccountConfig('{"type":"external_account"}');
+        assert.strictEqual(parsed.type, 'external_account');
+    });
+
+    await t.test('generateServiceRequest throws when no signer is configured', async () => {
+        // No serviceClient -> no signer is built.
+        const gmail = new GmailOauth(baseOpts);
+        await assert.rejects(
+            () => gmail.generateServiceRequest('user@example.com', false),
+            err => err.code === 'EServiceCredentialsMissing'
+        );
+    });
+
+    await t.test('generateServiceRequest payload byte-equivalent across signer implementations', async () => {
+        // Deterministic timestamp so both signers see the same iat/exp.
+        const fixedNow = 1700000000000;
+        const origNow = Date.now;
+        Date.now = () => fixedNow;
+        try {
+            const localGmail = new GmailOauth({
+                ...baseOpts,
+                serviceClient: '7103296518315821565203',
+                serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
+                serviceKey: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----'
+            });
+            // Replace the local signer with a fake that just returns its inputs, so we can compare payloads.
+            localGmail.signer = {
+                async sign(payload) {
+                    return JSON.stringify(payload);
+                }
+            };
+
+            const wifGmail = new GmailOauth({
+                ...baseOpts,
+                serviceClient: '7103296518315821565203',
+                serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
+                authMethod: 'externalAccount',
+                externalAccount: JSON.stringify({
+                    type: 'external_account',
+                    audience: '//iam.googleapis.com/projects/x/locations/global/workloadIdentityPools/p/providers/q',
+                    subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                    token_url: 'https://sts.googleapis.com/v1/token',
+                    service_account_impersonation_url:
+                        'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken',
+                    credential_source: { file: '/tmp/x' }
+                })
+            });
+            wifGmail.signer = {
+                async sign(payload) {
+                    return JSON.stringify(payload);
+                }
+            };
+
+            const localReq = await localGmail.generateServiceRequest('user@example.com', false);
+            const wifReq = await wifGmail.generateServiceRequest('user@example.com', false);
+            assert.deepStrictEqual(localReq.tokenData, wifReq.tokenData);
+            assert.strictEqual(localReq.payload.grant_type, wifReq.payload.grant_type);
+            assert.strictEqual(localReq.payload.assertion, wifReq.payload.assertion);
+
+            const localPrincipal = await localGmail.generateServiceRequest(null, true);
+            const wifPrincipal = await wifGmail.generateServiceRequest(null, true);
+            assert.deepStrictEqual(localPrincipal.tokenData, wifPrincipal.tokenData);
+        } finally {
+            Date.now = origNow;
+        }
+    });
+
+    await t.test('LocalKeySigner.sign includes kid in header only when kid option is set', async () => {
+        const crypto = require('node:crypto');
+        const { generateKeyPairSync } = crypto;
+        const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+        const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+
+        const { LocalKeySigner } = require('../lib/oauth/gmail');
+        const signer = new LocalKeySigner({ serviceKey: pem });
+
+        const withKid = await signer.sign({ iss: 'a' }, { kid: 'key-id-123' });
+        const withoutKid = await signer.sign({ iss: 'a' }, {});
+
+        const decodeHeader = jwt => JSON.parse(Buffer.from(jwt.split('.')[0], 'base64url').toString('utf8'));
+        assert.strictEqual(decodeHeader(withKid).kid, 'key-id-123');
+        assert.strictEqual(decodeHeader(withoutKid).kid, undefined);
+        assert.strictEqual(decodeHeader(withKid).alg, 'RS256');
+        assert.strictEqual(decodeHeader(withKid).typ, 'JWT');
+    });
+
+    await t.test('LocalKeySigner throws if serviceKey is missing', async () => {
+        const { LocalKeySigner } = require('../lib/oauth/gmail');
+        const signer = new LocalKeySigner({});
+        await assert.rejects(
+            () => signer.sign({ iss: 'a' }, {}),
+            err => err.code === 'EServiceKeyMissing'
+        );
+    });
+
+    await t.test('GmailOauth constructor rejects unknown authMethod', () => {
+        assert.throws(
+            () =>
+                new GmailOauth({
+                    ...baseOpts,
+                    serviceClient: 'sc',
+                    authMethod: 'magic'
+                }),
+            err => err.code === 'EUnknownAuthMethod'
+        );
+    });
 });

@@ -164,6 +164,22 @@
             <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
             {{/if}}
 
+            {{#if appShowAuthMethod}}
+            <dt class="col-sm-3">Authentication method</dt>
+            <dd class="col-sm-9">
+                {{#if authMethodIsExternalAccount}}
+                Workload Identity Federation
+                {{else}}
+                Service account key
+                {{/if}}
+            </dd>
+            {{/if}}
+
+            {{#if app.externalAccount}}
+            <dt class="col-sm-3">External account config</dt>
+            <dd class="col-sm-9 text-monospace"><small>***** (set)</small></dd>
+            {{/if}}
+
             {{#if app.redirectUrl}}
             <dt class="col-sm-3">Redirect URL</dt>
             <dd class="col-sm-9 text-monospace"><small>{{app.redirectUrl}}</small></dd>

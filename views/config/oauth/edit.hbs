@@ -89,6 +89,58 @@
             });
         }
 
+        let externalAccountFileElm = document.getElementById('externalAccountFile');
+        if (externalAccountFileElm) {
+            externalAccountFileElm.addEventListener('click', e => {
+                e.preventDefault();
+                browseFileContents('text').then(jsonStr => {
+                    if (!jsonStr) {
+                        return;
+                    }
+
+                    let data;
+                    try {
+                        data = JSON.parse(jsonStr);
+                    } catch (err) {
+                        return showToast('Selected file is not JSON formatted', 'alert-triangle');
+                    }
+
+                    if (data.type !== 'external_account') {
+                        return showToast('Selected file is not an external_account credential config', 'alert-triangle');
+                    }
+
+                    let impersonationUrl = data.service_account_impersonation_url || '';
+                    let emailMatch = impersonationUrl.match(/\/serviceAccounts\/([^/]+):generateAccessToken$/);
+                    if (emailMatch) {
+                        let derivedEmail = decodeURIComponent(emailMatch[1]);
+                        let emailField = document.getElementById('serviceClientEmail');
+                        if (emailField && !emailField.value) {
+                            emailField.value = derivedEmail;
+                        }
+                    }
+
+                    document.getElementById('externalAccount').value = JSON.stringify(data, null, 2);
+                    return showToast('Loaded external account configuration from file', 'check-circle');
+                }).catch(err => {
+                    console.error(err);
+                    return showToast('Failed to load external account file', 'alert-triangle');
+                });
+            });
+        }
+
+        let authMethodRadios = document.querySelectorAll('.auth-method-radio');
+        if (authMethodRadios.length) {
+            let updateSections = () => {
+                let checked = document.querySelector('.auth-method-radio:checked');
+                let selected = checked ? checked.value : 'serviceKey';
+                document.querySelectorAll('.auth-method-section').forEach(section => {
+                    let active = section.classList.contains('auth-method-section-' + selected);
+                    section.classList.toggle('d-none', !active);
+                });
+            };
+            authMethodRadios.forEach(radio => radio.addEventListener('change', updateSections));
+        }
+
     });
 
 </script>
