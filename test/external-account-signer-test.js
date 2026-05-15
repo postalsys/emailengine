@@ -72,6 +72,13 @@ function makeResponse({ status = 200, json, text, headers } = {}) {
 }
 
 test('ExternalAccountSigner', async t => {
+    t.after(() => {
+        // Loading lib/oauth/external-account-signer transitively pulls in lib/settings -> lib/db,
+        // which opens Redis sockets that keep the event loop alive after tests finish. Force-exit
+        // the test process so node:test's runner does not hang waiting for the loop to drain.
+        setTimeout(() => process.exit(), 500).unref();
+    });
+
     await t.test('validateConfig accepts a valid file-source config', () => {
         let { targetServiceAccountEmail } = validateConfig(VALID_FILE_CONFIG);
         assert.strictEqual(targetServiceAccountEmail, 'svc@proj.iam.gserviceaccount.com');
