@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.68.0](https://github.com/postalsys/emailengine/compare/v2.67.3...v2.68.0) (2026-05-17)
+
+
+### Features
+
+* accept threadId on the submit reference object ([b1b3dc7](https://github.com/postalsys/emailengine/commit/b1b3dc73ec5870a7a8ab9f0844055822ad046d2a))
+* add Workload Identity Federation for Gmail service accounts ([1879c5a](https://github.com/postalsys/emailengine/commit/1879c5aaf30ccff1879e74d28b0c76e25b3d77ae))
+* revoke upstream OAuth2 grant on account delete via ?revoke=true ([2a8c8fa](https://github.com/postalsys/emailengine/commit/2a8c8faf7f63acfab31998fb067289d4c6bd2f09))
+* revoke upstream OAuth2 grant on account delete via ?revoke=true ([15bc43a](https://github.com/postalsys/emailengine/commit/15bc43ae0f8dbf70021a1e13de55c80ec7271a15))
+
+
+### Bug Fixes
+
+* flag WIF support in the gmailService form intro ([61fab27](https://github.com/postalsys/emailengine/commit/61fab2720aa2f289a944ae99629bc47ada8e9e09))
+* force-exit external-account-signer test to unblock CI ([f4a1e4e](https://github.com/postalsys/emailengine/commit/f4a1e4e50ac890d7771e38181a9488837c67757a))
+* pkg config options must be a string array ([6c4702d](https://github.com/postalsys/emailengine/commit/6c4702dbc85171a2987b8cfb6e5a3dc3d656a99d))
+* prefer refresh token and skip gmailService when revoking on delete ([e0dbea8](https://github.com/postalsys/emailengine/commit/e0dbea8a4cd4804bf64d50523c8a1152c2119e26))
+* relax cross-folder assertion in Graph API parentFolderId test ([770279d](https://github.com/postalsys/emailengine/commit/770279ded669efdc5d6a2c33d05290daf91251ea))
+
 ## [2.67.3](https://github.com/postalsys/emailengine/compare/v2.67.2...v2.67.3) (2026-04-21)
 
 
