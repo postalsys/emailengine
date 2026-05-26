@@ -42,6 +42,33 @@ async function getGraphToken() {
     return tokenData.access_token;
 }
 
+// Provision an Ethereal test account whose SMTP AUTH actually works. Ethereal
+// occasionally hands out an account that authenticates over IMAP but is rejected
+// over SMTP with "535 Authentication failed"; such an account breaks the message
+// submission tests with an opaque webhook timeout. Verify SMTP up front and pick
+// another account if the first one is not usable.
+async function createUsableTestAccount(attempts = 5) {
+    let lastErr;
+    for (let i = 0; i < attempts; i++) {
+        const acct = await nodemailer.createTestAccount();
+        const transport = nodemailer.createTransport({
+            host: acct.smtp.host,
+            port: acct.smtp.port,
+            secure: acct.smtp.secure,
+            auth: { user: acct.user, pass: acct.pass }
+        });
+        try {
+            await transport.verify();
+            return acct;
+        } catch (err) {
+            lastErr = err;
+        } finally {
+            transport.close();
+        }
+    }
+    throw new Error(`Could not provision a usable Ethereal test account: ${lastErr && lastErr.message}`);
+}
+
 // Helper function for polling with timeout
 async function waitForCondition(checkFn, options = {}) {
     const { interval = testConfig.POLL_INTERVAL, timeout = testConfig.DEFAULT_TIMEOUT, message = 'Condition not met within timeout' } = options;
@@ -75,7 +102,7 @@ test('API tests', async t => {
     let gmailServiceAppId;
 
     t.before(async () => {
-        testAccount = await nodemailer.createTestAccount();
+        testAccount = await createUsableTestAccount();
         await webhooksServer.init();
     });
 
@@ -1261,5 +1288,153 @@ test('API tests', async t => {
         const response = await server.delete(`/v1/oauth2/${gmailServiceAppId}`).expect(200);
 
         assert.ok(response.body.deleted);
+    });
+
+    // --- Gmail Service Account via Workload Identity Federation (keyless, IMAP XOAUTH2) ---
+
+    const wifSaKeyB64 = process.env.GMAIL_WIF_SA_KEY;
+    const wifAudience = process.env.GMAIL_WIF_AUDIENCE;
+    const wifAccountEmail = process.env.GMAIL_WIF_ACCOUNT_EMAIL;
+    const wifSkip = wifSaKeyB64 && wifAudience && wifAccountEmail ? false : 'GMAIL_WIF_* environment variables are not set';
+    const wifKey = wifSkip ? null : JSON.parse(Buffer.from(wifSaKeyB64, 'base64').toString('utf8'));
+    const wifAccountId = 'gmail-wif-account';
+    let wifAppId;
+    let wifTokenFile;
+
+    await t.test('WIF: mint OIDC subject token for the service account', { skip: wifSkip, timeout: 30000 }, async () => {
+        const crypto = require('node:crypto');
+        const fs = require('node:fs');
+        const os = require('node:os');
+        const path = require('node:path');
+
+        // Simulate a workload's projected OIDC token: a Google-issued ID token for the
+        // service account whose audience is the Workload Identity Pool provider. The
+        // service-account key is used only here, to bootstrap the subject token - it is
+        // never given to EmailEngine, which exercises the real keyless WIF chain.
+        const targetAudience = wifAudience.replace(/^\/\//, 'https://');
+        const b64url = b => Buffer.from(b).toString('base64url');
+        const now = Math.floor(Date.now() / 1000);
+        const header = { alg: 'RS256', typ: 'JWT', kid: wifKey.private_key_id };
+        const payload = {
+            iss: wifKey.client_email,
+            sub: wifKey.client_email,
+            aud: 'https://oauth2.googleapis.com/token',
+            iat: now,
+            exp: now + 3600,
+            target_audience: targetAudience
+        };
+        const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+        const signature = crypto.createSign('RSA-SHA256').update(signingInput).sign(wifKey.private_key);
+        const assertion = `${signingInput}.${b64url(signature)}`;
+
+        const res = await fetchCmd('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }).toString()
+        });
+        const data = await res.json();
+        assert.ok(data.id_token, 'expected a Google-issued ID token');
+
+        wifTokenFile = path.join(os.tmpdir(), `ee-wif-subject-token-${process.pid}`);
+        fs.writeFileSync(wifTokenFile, data.id_token, 'utf8');
+    });
+
+    await t.test('WIF: create gmailService OAuth2 app (externalAccount)', { skip: wifSkip, timeout: 30000 }, async () => {
+        const externalAccount = JSON.stringify({
+            type: 'external_account',
+            audience: wifAudience,
+            subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+            token_url: 'https://sts.googleapis.com/v1/token',
+            service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${wifKey.client_email}:generateAccessToken`,
+            credential_source: { file: wifTokenFile, format: { type: 'text' } }
+        });
+
+        const response = await server
+            .post(`/v1/oauth2`)
+            .send({
+                name: 'Gmail Service Account (Workload Identity Federation)',
+                provider: 'gmailService',
+                authMethod: 'externalAccount',
+                baseScopes: 'imap',
+                googleProjectId: wifKey.project_id,
+                serviceClient: wifKey.client_id,
+                serviceClientEmail: wifKey.client_email,
+                externalAccount
+            })
+            .expect(200);
+
+        wifAppId = response.body.id;
+        assert.ok(wifAppId);
+    });
+
+    await t.test('WIF: register gmailService account', { skip: wifSkip, timeout: 30000 }, async () => {
+        const response = await server
+            .post(`/v1/account`)
+            .send({
+                account: wifAccountId,
+                name: 'Gmail WIF User',
+                email: wifAccountEmail,
+                oauth2: {
+                    provider: wifAppId,
+                    auth: { user: wifAccountEmail }
+                }
+            })
+            .expect(200);
+
+        assert.strictEqual(response.body.state, 'new');
+    });
+
+    await t.test('WIF: wait until account connects via IMAP XOAUTH2', { skip: wifSkip, timeout: 120000 }, async () => {
+        let lastResponse;
+        await waitForCondition(
+            async () => {
+                lastResponse = await server.get(`/v1/account/${wifAccountId}`).expect(200);
+                switch (lastResponse.body.state) {
+                    case 'authenticationError':
+                    case 'connectError':
+                        throw new Error('Invalid account state ' + lastResponse.body.state);
+                    case 'connected':
+                        return true;
+                }
+                return false;
+            },
+            { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail WIF account connection timeout` }
+        );
+
+        assert.notStrictEqual(lastResponse.body.isApi, true, 'gmailService (WIF) should use IMAP XOAUTH2, not the API path');
+    });
+
+    await t.test('WIF: list mailboxes for the account', { skip: wifSkip, timeout: 30000 }, async () => {
+        const response = await server.get(`/v1/account/${wifAccountId}/mailboxes`).expect(200);
+
+        assert.ok(response.body.mailboxes.some(mb => mb.specialUse === '\\Inbox'));
+    });
+
+    await t.test('WIF: verify setup endpoint reports all checks pass', { skip: wifSkip, timeout: 60000 }, async () => {
+        const response = await server.post(`/v1/oauth2/${wifAppId}/verify`).send({ account: wifAccountEmail }).expect(200);
+
+        assert.strictEqual(response.body.ok, true, JSON.stringify(response.body.steps));
+        assert.ok(response.body.steps.some(s => s.id === 'signJwt' && s.status === 'ok'));
+        assert.ok(response.body.steps.some(s => s.id === 'mailbox' && s.status === 'ok'));
+    });
+
+    await t.test('WIF: delete account', { skip: wifSkip, timeout: 30000 }, async () => {
+        const response = await server.delete(`/v1/account/${wifAccountId}`).expect(200);
+
+        assert.ok(response.body.deleted);
+    });
+
+    await t.test('WIF: delete OAuth2 app', { skip: wifSkip, timeout: 30000 }, async () => {
+        const response = await server.delete(`/v1/oauth2/${wifAppId}`).expect(200);
+
+        assert.ok(response.body.deleted);
+
+        if (wifTokenFile) {
+            try {
+                require('node:fs').unlinkSync(wifTokenFile);
+            } catch (err) {
+                // ignore cleanup failure
+            }
+        }
     });
 });
