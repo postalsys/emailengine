@@ -45,6 +45,16 @@
 
             </div>
 
+            {{#if canAddServiceAccount}}
+            <div class="btn-group mr-2 mb-1" role="group" aria-label="Account actions">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addServiceAccountModal"
+                    title="Register an email account that authenticates through this service application"
+                    id="add-service-account-btn" data-placement="top">
+                    <i class="fas fa-user-plus fa-fw"></i> Add account
+                </button>
+            </div>
+            {{/if}}
+
         </div>
 
         {{#if app.description}}
@@ -401,6 +411,64 @@
         </div>
     </div>
 </div>
+
+{{#if canAddServiceAccount}}
+<div class="modal fade" id="addServiceAccountModal" tabindex="-1" aria-labelledby="addServiceAccountLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addServiceAccountLabel">Add an account</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="/admin/config/oauth/app/{{app.id}}/add-account">
+                <input type="hidden" name="crumb" value="{{crumb}}">
+                <div class="modal-body">
+                    <p><small class="text-muted">This service application authenticates without an interactive consent
+                        screen, so the account is registered directly. The mailbox must be reachable with the
+                        application's service credentials.</small></p>
+                    <div class="form-group">
+                        <label for="service-account-name" class="col-form-label">Full name:</label>
+                        <input type="text" class="form-control" id="service-account-name" name="name"
+                            placeholder="e.g., John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label for="service-account-email" class="col-form-label">Email address:</label>
+                        <input type="email" class="form-control" id="service-account-email" name="email"
+                            placeholder="e.g., user@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="service-account-id" class="col-form-label">Account identifier (optional):</label>
+                        <input type="text" class="form-control" id="service-account-id" name="account"
+                            placeholder="e.g., account_123">
+                        <small class="form-text text-muted">Leave blank to auto-generate. Existing accounts with this ID
+                            will be updated.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-user-plus"></i>
+                        </span>
+                        <span class="text">Add account</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        $('#addServiceAccountModal').on('shown.bs.modal', () => {
+            document.getElementById('service-account-name').focus();
+        });
+    });
+</script>
+{{/if}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
