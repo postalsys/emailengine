@@ -875,7 +875,7 @@
 
     <div id="select-pubsub-app" class="card-footer {{#unless baseScopesApi}}d-none{{/unless}}">
 
-        <p>Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
+        <p>Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
 
         <pre><code>{{mainServiceUrl}}/oauth/msg/lifecycle
 {{mainServiceUrl}}/oauth/msg/notification</code></pre>
@@ -889,7 +889,7 @@
         <p>
             If your EmailEngine instance cannot be exposed directly, configure a public
             proxy domain in <span class="text-muted code-link"><a href="/admin/swagger#/Settings/postV1Settings"
-                    target="_blank" rel="noopener noreferrer">notificationBaseUrl</a></span>. Microsoft Graph will then
+                    target="_blank" rel="noopener noreferrer">notificationBaseUrl</a></span>. Microsoft Graph will then
             post to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code> instead of
             <code>{{mainServiceUrl}}</code>.
         </p>
