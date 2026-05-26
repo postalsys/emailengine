@@ -219,14 +219,9 @@ test('ExternalAccountSigner', async t => {
         );
     });
 
-    await t.test('sign() drives full file -> STS -> impersonate -> signJwt chain', async () => {
+    await t.test('sign() drives full file -> STS -> signJwt chain', async () => {
         let { fetchImpl, calls } = makeFakeFetch({
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'federated-tok' } }),
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({
-                    status: 200,
-                    json: { accessToken: 'impersonated-tok', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() }
-                }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'federated-tok', expires_in: 3600 } }),
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 200, json: { signedJwt: 'header.payload.sig' } })
         });
@@ -243,7 +238,8 @@ test('ExternalAccountSigner', async t => {
         let signed = await signer.sign({ iss: 'svc@proj.iam.gserviceaccount.com', aud: 'https://oauth2.googleapis.com/token' });
         assert.strictEqual(signed, 'header.payload.sig');
 
-        assert.strictEqual(calls.length, 3);
+        // Single hop: STS exchange then signJwt - no separate impersonation call.
+        assert.strictEqual(calls.length, 2);
 
         let stsCall = calls[0];
         assert.strictEqual(stsCall.options.method, 'POST');
@@ -255,15 +251,10 @@ test('ExternalAccountSigner', async t => {
         assert.strictEqual(stsParams.get('requested_token_type'), 'urn:ietf:params:oauth:token-type:access_token');
         assert.strictEqual(stsParams.get('scope'), 'https://www.googleapis.com/auth/cloud-platform');
 
-        let impCall = calls[1];
-        assert.strictEqual(impCall.options.method, 'POST');
-        assert.strictEqual(impCall.options.headers.Authorization, 'Bearer federated-tok');
-        let impBody = JSON.parse(impCall.options.body);
-        assert.deepStrictEqual(impBody, { scope: ['https://www.googleapis.com/auth/cloud-platform'] });
-
-        let signCall = calls[2];
+        // signJwt is authorized with the federated token directly.
+        let signCall = calls[1];
         assert.strictEqual(signCall.options.method, 'POST');
-        assert.strictEqual(signCall.options.headers.Authorization, 'Bearer impersonated-tok');
+        assert.strictEqual(signCall.options.headers.Authorization, 'Bearer federated-tok');
         let signBody = JSON.parse(signCall.options.body);
         assert.strictEqual(typeof signBody.payload, 'string');
         let parsedPayload = JSON.parse(signBody.payload);
@@ -273,10 +264,7 @@ test('ExternalAccountSigner', async t => {
     await t.test('sign() uses url credential source with json format', async () => {
         let { fetchImpl, calls } = makeFakeFetch({
             'http://169.254.169.254': () => makeResponse({ status: 200, text: '{"access_token":"imds-token"}' }),
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
-            // Impersonation URL is taken from the config as-is.
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({ status: 200, json: { accessToken: 'imp', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() } }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } }),
             // signJwt URL is built by the signer with encodeURIComponent on the email.
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 200, json: { signedJwt: 'a.b.c' } })
@@ -295,15 +283,10 @@ test('ExternalAccountSigner', async t => {
         assert.strictEqual(stsParams.get('subject_token'), 'imds-token');
     });
 
-    await t.test('sign() caches impersonated token across calls within TTL', async () => {
+    await t.test('sign() caches federated token across calls within TTL', async () => {
         let now = 1700000000000;
         let { fetchImpl, calls } = makeFakeFetch({
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({
-                    status: 200,
-                    json: { accessToken: 'imp', expireTime: new Date(now + 3600 * 1000).toISOString() }
-                }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } }),
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 200, json: { signedJwt: 'sig' } })
         });
@@ -322,24 +305,18 @@ test('ExternalAccountSigner', async t => {
         await signer.sign({ iss: 'a' });
         await signer.sign({ iss: 'b' });
 
-        // Second call should NOT re-read file, NOT re-hit STS, NOT re-hit impersonate.
-        // It only re-hits signJwt.
+        // Second call should NOT re-read file and NOT re-hit STS. It only re-hits signJwt.
         assert.strictEqual(readCount, 1);
         let stsCalls = calls.filter(c => c.url === 'https://sts.googleapis.com/v1/token');
-        let impCalls = calls.filter(c => c.url.includes(':generateAccessToken'));
         let signCalls = calls.filter(c => c.url.includes(':signJwt'));
         assert.strictEqual(stsCalls.length, 1);
-        assert.strictEqual(impCalls.length, 1);
         assert.strictEqual(signCalls.length, 2);
     });
 
-    await t.test('sign() re-acquires impersonated token after expiry', async () => {
+    await t.test('sign() re-acquires federated token after expiry', async () => {
         let now = 1700000000000;
-        let impExpiry = now + 1000; // already near expiry
         let { fetchImpl, calls } = makeFakeFetch({
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({ status: 200, json: { accessToken: 'imp', expireTime: new Date(impExpiry).toISOString() } }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } }),
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 200, json: { signedJwt: 'sig' } })
         });
@@ -352,12 +329,49 @@ test('ExternalAccountSigner', async t => {
         });
 
         await signer.sign({ iss: 'a' });
-        // Advance past skew threshold
-        now = impExpiry + 1000;
+        // Advance past the federated token TTL (plus the expiry skew window).
+        now = now + 3600 * 1000 + 1000;
         await signer.sign({ iss: 'b' });
 
         let stsCalls = calls.filter(c => c.url === 'https://sts.googleapis.com/v1/token');
         assert.strictEqual(stsCalls.length, 2);
+    });
+
+    await t.test('sign() falls back to default TTL when STS omits expires_in', async () => {
+        let now = 1700000000000;
+        let { fetchImpl, calls } = makeFakeFetch({
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
+            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
+                makeResponse({ status: 200, json: { signedJwt: 'sig' } })
+        });
+
+        let signer = new ExternalAccountSigner({
+            config: VALID_FILE_CONFIG,
+            fetchImpl,
+            readFileImpl: async () => 'tok',
+            nowImpl: () => now
+        });
+
+        await signer.sign({ iss: 'a' });
+        // Within the default 1h TTL the token is reused.
+        now += 30 * 60 * 1000;
+        await signer.sign({ iss: 'b' });
+        assert.strictEqual(calls.filter(c => c.url === 'https://sts.googleapis.com/v1/token').length, 1);
+    });
+
+    await t.test('sign() surfaces STS response without access_token as ESTSExchange', async () => {
+        let { fetchImpl } = makeFakeFetch({
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { token_type: 'Bearer' } })
+        });
+        let signer = new ExternalAccountSigner({
+            config: VALID_FILE_CONFIG,
+            fetchImpl,
+            readFileImpl: async () => 'tok'
+        });
+        await assert.rejects(
+            () => signer.sign({ iss: 'a' }),
+            err => err.code === 'ESTSExchange'
+        );
     });
 
     await t.test('sign() surfaces STS HTTP errors as ESTSExchange', async () => {
@@ -375,31 +389,9 @@ test('ExternalAccountSigner', async t => {
         );
     });
 
-    await t.test('sign() surfaces impersonation HTTP errors as EImpersonate', async () => {
-        let { fetchImpl } = makeFakeFetch({
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({ status: 403, json: { error: { message: 'token-creator missing' } } })
-        });
-        let signer = new ExternalAccountSigner({
-            config: VALID_FILE_CONFIG,
-            fetchImpl,
-            readFileImpl: async () => 'tok'
-        });
-        await assert.rejects(
-            () => signer.sign({ iss: 'a' }),
-            err => err.code === 'EImpersonate' && err.statusCode === 403
-        );
-    });
-
     await t.test('sign() surfaces signJwt 429 with retryAfter', async () => {
         let { fetchImpl } = makeFakeFetch({
-            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed' } }),
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({
-                    status: 200,
-                    json: { accessToken: 'imp', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() }
-                }),
+            'https://sts.googleapis.com/v1/token': () => makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } }),
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 429, headers: { 'retry-after': '17' }, json: { error: 'quota' } })
         });
@@ -448,13 +440,8 @@ test('ExternalAccountSigner', async t => {
         let { fetchImpl, calls } = makeFakeFetch({
             'https://sts.googleapis.com/v1/token': async () => {
                 await stsGate;
-                return makeResponse({ status: 200, json: { access_token: 'fed' } });
+                return makeResponse({ status: 200, json: { access_token: 'fed', expires_in: 3600 } });
             },
-            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:generateAccessToken': () =>
-                makeResponse({
-                    status: 200,
-                    json: { accessToken: 'imp', expireTime: new Date(now + 3600 * 1000).toISOString() }
-                }),
             'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc%40proj.iam.gserviceaccount.com:signJwt': () =>
                 makeResponse({ status: 200, json: { signedJwt: 'sig' } })
         });
@@ -477,10 +464,9 @@ test('ExternalAccountSigner', async t => {
         let results = await Promise.all(inflight);
 
         assert.strictEqual(results.length, 10);
-        // Even with 10 concurrent callers, only one chain ran:
+        // Even with 10 concurrent callers, only one exchange ran:
         assert.strictEqual(readCount, 1);
         assert.strictEqual(calls.filter(c => c.url === 'https://sts.googleapis.com/v1/token').length, 1);
-        assert.strictEqual(calls.filter(c => c.url.includes(':generateAccessToken')).length, 1);
         // signJwt fires once per caller.
         assert.strictEqual(calls.filter(c => c.url.includes(':signJwt')).length, 10);
     });

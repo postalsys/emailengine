@@ -1,16 +1,17 @@
 'use strict';
 
 // Integration tests for ExternalAccountSigner against a local node:http mock
-// server that emulates the three Google endpoints the signer talks to:
+// server that emulates the two Google endpoints the signer talks to:
 //   - sts.googleapis.com/v1/token            (token exchange)
-//   - iamcredentials.googleapis.com /
-//     v1/projects/-/serviceAccounts/{e}:generateAccessToken
-//                                            (service-account impersonation)
 //   - iamcredentials.googleapis.com /
 //     v1/projects/-/serviceAccounts/{e}:signJwt
 //                                            (JWT signing)
 //
-// These tests do NOT inject a fake fetch — the signer's production undici
+// The signer uses a single hop: it exchanges the subject token at STS for a
+// federated access token and calls signJwt directly with it (the workload
+// principal holds serviceAccountTokenCreator on the target service account).
+//
+// These tests do NOT inject a fake fetch - the signer's production undici
 // fetch path executes end-to-end against the mock server. The iamcredentials
 // base URL is redirected to the mock via the constructor option, mirroring
 // what a forward-proxy deployment would do.
@@ -47,13 +48,8 @@ function createState() {
     return {
         expectedSubjectToken: null, // assert what the signer sent (optional)
         stsResponse: { ok: true, status: 200, body: { access_token: 'fed-default', token_type: 'Bearer', expires_in: 3600 } },
-        impersonateResponse: {
-            ok: true,
-            status: 200,
-            body: { accessToken: 'imp-default', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() }
-        },
         signJwtResponse: { ok: true, status: 200, body: { signedJwt: 'header.payload.signature' } },
-        calls: { sts: [], impersonate: [], signJwt: [] }
+        calls: { sts: [], signJwt: [] }
     };
 }
 
@@ -70,11 +66,6 @@ async function startMockServer(state) {
                     assert.strictEqual(parsed.get('subject_token'), state.expectedSubjectToken);
                 }
                 return send(res, state.stsResponse.status, state.stsResponse.body);
-            }
-
-            if (/:generateAccessToken$/.test(url) && req.method === 'POST') {
-                state.calls.impersonate.push({ url, authorization: req.headers.authorization, body: JSON.parse(body || '{}') });
-                return send(res, state.impersonateResponse.status, state.impersonateResponse.body);
             }
 
             if (/:signJwt$/.test(url) && req.method === 'POST') {
@@ -139,7 +130,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
         setTimeout(() => process.exit(), 500).unref();
     });
 
-    await t.test('end-to-end file source: file -> STS -> impersonate -> signJwt', async () => {
+    await t.test('end-to-end file source: file -> STS -> signJwt', async () => {
         let state = createState();
         let server = await startMockServer(state);
         try {
@@ -149,10 +140,6 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             state.expectedSubjectToken = 'k8s-projected-token-v1';
             state.stsResponse = { status: 200, body: { access_token: 'fed-abc', expires_in: 3600, token_type: 'Bearer' } };
-            state.impersonateResponse = {
-                status: 200,
-                body: { accessToken: 'imp-xyz', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() }
-            };
             state.signJwtResponse = { status: 200, body: { signedJwt: 'a.b.c' } };
 
             let signer = new ExternalAccountSigner({
@@ -177,12 +164,9 @@ test('ExternalAccountSigner integration (mock server)', async t => {
             assert.strictEqual(state.calls.sts[0].params.subject_token, 'k8s-projected-token-v1');
             assert.strictEqual(state.calls.sts[0].params.scope, 'https://www.googleapis.com/auth/cloud-platform');
 
-            assert.strictEqual(state.calls.impersonate.length, 1);
-            assert.strictEqual(state.calls.impersonate[0].authorization, 'Bearer fed-abc');
-            assert.deepStrictEqual(state.calls.impersonate[0].body, { scope: ['https://www.googleapis.com/auth/cloud-platform'] });
-
+            // signJwt is authorized with the federated token directly - no impersonation hop.
             assert.strictEqual(state.calls.signJwt.length, 1);
-            assert.strictEqual(state.calls.signJwt[0].authorization, 'Bearer imp-xyz');
+            assert.strictEqual(state.calls.signJwt[0].authorization, 'Bearer fed-abc');
             let signJwtPayload = JSON.parse(state.calls.signJwt[0].body.payload);
             assert.strictEqual(signJwtPayload.iss, TARGET_SA);
             assert.strictEqual(signJwtPayload.sub, 'user@example.com');
@@ -235,8 +219,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
                 err => err.code === 'ESTSExchange' && err.statusCode === 400 && err.response && err.response.error === 'invalid_request'
             );
 
-            // No subsequent calls fired after STS failed.
-            assert.strictEqual(state.calls.impersonate.length, 0);
+            // No signJwt fired after STS failed.
             assert.strictEqual(state.calls.signJwt.length, 0);
 
             await fs.promises.rm(tokenDir, { recursive: true, force: true });
@@ -253,11 +236,8 @@ test('ExternalAccountSigner integration (mock server)', async t => {
             let tokenPath = path.join(tokenDir, 'token');
             await fs.promises.writeFile(tokenPath, 'token-v1', 'utf8');
 
-            // Impersonation token expires immediately so the next sign() refreshes.
-            state.impersonateResponse = {
-                status: 200,
-                body: { accessToken: 'imp-1', expireTime: new Date(Date.now() - 1000).toISOString() }
-            };
+            // Federated token expires almost immediately so the next sign() refreshes.
+            state.stsResponse = { status: 200, body: { access_token: 'fed-1', expires_in: 1 } };
             state.signJwtResponse = { status: 200, body: { signedJwt: 'one' } };
 
             let signer = new ExternalAccountSigner({
@@ -283,7 +263,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
         }
     });
 
-    await t.test('concurrent sign() invocations share one upstream chain on cold cache', async () => {
+    await t.test('concurrent sign() invocations share one upstream exchange on cold cache', async () => {
         let state = createState();
         let server = await startMockServer(state);
         try {
@@ -291,10 +271,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
             let tokenPath = path.join(tokenDir, 'token');
             await fs.promises.writeFile(tokenPath, 'concurrent-tok', 'utf8');
 
-            state.impersonateResponse = {
-                status: 200,
-                body: { accessToken: 'imp-shared', expireTime: new Date(Date.now() + 3600 * 1000).toISOString() }
-            };
+            state.stsResponse = { status: 200, body: { access_token: 'fed-shared', expires_in: 3600 } };
             state.signJwtResponse = { status: 200, body: { signedJwt: 'shared.sig.value' } };
 
             let signer = new ExternalAccountSigner({
@@ -306,11 +283,10 @@ test('ExternalAccountSigner integration (mock server)', async t => {
             assert.strictEqual(results.length, 8);
             assert.ok(results.every(r => r === 'shared.sig.value'));
 
-            // Cache dedup: STS and impersonate each ran once across 8 concurrent
-            // callers; signJwt ran per-caller.
+            // Cache dedup: STS ran once across 8 concurrent callers; signJwt ran per-caller.
             assert.strictEqual(state.calls.sts.length, 1);
-            assert.strictEqual(state.calls.impersonate.length, 1);
             assert.strictEqual(state.calls.signJwt.length, 8);
+            assert.ok(state.calls.signJwt.every(c => c.authorization === 'Bearer fed-shared'));
 
             await fs.promises.rm(tokenDir, { recursive: true, force: true });
         } finally {
@@ -329,8 +305,6 @@ test('ExternalAccountSigner integration (mock server)', async t => {
         try {
             let { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
 
-            // Override the signJwt handler to actually sign.
-            state.signJwtResponse = null; // sentinel; we patch the server below
             let signer = new ExternalAccountSigner({
                 config: {
                     type: 'external_account',
@@ -343,15 +317,9 @@ test('ExternalAccountSigner integration (mock server)', async t => {
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
-            // Replace state.signJwtResponse behaviour by intercepting the call:
-            // we read the payload, sign it locally with the test private key,
-            // and return a real JWT in the signedJwt field.
-            let originalSign = state.signJwtResponse;
+            // Intercept the signJwt call: read the payload, sign it locally with
+            // the test private key, and return a real JWT in the signedJwt field.
             let signedJwtCapture = null;
-
-            // We can't easily monkey-patch the server post-creation, so wrap the
-            // handler via state. Replace impersonateResponse-style state with a
-            // dynamic function-style result captured on call.
             state.signJwtResponse = {
                 status: 200,
                 get body() {
@@ -375,9 +343,6 @@ test('ExternalAccountSigner integration (mock server)', async t => {
             let decoded = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
             assert.strictEqual(decoded.sub, 'verify@example.com');
             assert.strictEqual(decoded.iss, TARGET_SA);
-
-            // Sanity: the originalSign sentinel was never used.
-            assert.strictEqual(originalSign, null);
         } finally {
             await server.stop();
         }

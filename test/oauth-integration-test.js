@@ -304,7 +304,7 @@ test('OAuth integration tests', async t => {
         );
     });
 
-    await t.test('generateServiceRequest payload byte-equivalent across signer implementations', async () => {
+    await t.test('generateServiceRequest issues WIF assertions as the signing service account', async () => {
         // Deterministic timestamp so both signers see the same iat/exp.
         const fixedNow = 1700000000000;
         const origNow = Date.now;
@@ -338,23 +338,130 @@ test('OAuth integration tests', async t => {
                     credential_source: { file: '/tmp/x' }
                 })
             });
-            wifGmail.signer = {
+            wifGmail.signer = Object.assign(wifGmail.signer, {
                 async sign(payload) {
                     return JSON.stringify(payload);
                 }
-            };
+            });
 
             const localReq = await localGmail.generateServiceRequest('user@example.com', false);
             const wifReq = await wifGmail.generateServiceRequest('user@example.com', false);
-            assert.deepStrictEqual(localReq.tokenData, wifReq.tokenData);
-            assert.strictEqual(localReq.payload.grant_type, wifReq.payload.grant_type);
-            assert.strictEqual(localReq.payload.assertion, wifReq.payload.assertion);
 
+            // In delegation mode the local key issues as the numeric client ID, while the WIF
+            // assertion MUST be issued as the impersonated service account email so Google can
+            // verify the signature (made by that account via signJwt) against the issuer.
+            assert.strictEqual(localReq.tokenData.iss, '7103296518315821565203');
+            assert.strictEqual(wifReq.tokenData.iss, 'svc@proj.iam.gserviceaccount.com');
+
+            // Every other claim stays identical between the two signers.
+            for (let key of ['scope', 'sub', 'aud', 'iat', 'exp']) {
+                assert.strictEqual(localReq.tokenData[key], wifReq.tokenData[key]);
+            }
+            assert.strictEqual(localReq.payload.grant_type, wifReq.payload.grant_type);
+
+            // In principal mode the local key already issues as the service account email,
+            // so the issuer (and the entire payload) matches the WIF assertion.
             const localPrincipal = await localGmail.generateServiceRequest(null, true);
             const wifPrincipal = await wifGmail.generateServiceRequest(null, true);
+            assert.strictEqual(localPrincipal.tokenData.iss, 'svc@proj.iam.gserviceaccount.com');
             assert.deepStrictEqual(localPrincipal.tokenData, wifPrincipal.tokenData);
         } finally {
             Date.now = origNow;
+        }
+    });
+
+    await t.test('GmailOauth rejects external account whose service account differs from serviceClientEmail', () => {
+        assert.throws(
+            () =>
+                new GmailOauth({
+                    ...baseOpts,
+                    serviceClient: '7103296518315821565203',
+                    serviceClientEmail: 'wrong@proj.iam.gserviceaccount.com',
+                    authMethod: 'externalAccount',
+                    externalAccount: JSON.stringify({
+                        type: 'external_account',
+                        audience: '//iam.googleapis.com/projects/x/locations/global/workloadIdentityPools/p/providers/q',
+                        subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                        token_url: 'https://sts.googleapis.com/v1/token',
+                        service_account_impersonation_url:
+                            'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken',
+                        credential_source: { file: '/tmp/x' }
+                    })
+                }),
+            err => err.code === 'EServiceAccountMismatch'
+        );
+    });
+
+    await t.test('refreshToken drives the WIF signer through the jwt-bearer grant end to end', async () => {
+        const { ExternalAccountSigner } = require('../lib/oauth/external-account-signer');
+        const fs = require('node:fs');
+        const path = require('node:path');
+        const os = require('node:os');
+
+        let tokenRequestBodies = [];
+        let server = http.createServer((req, res) => {
+            let chunks = [];
+            req.on('data', chunk => chunks.push(chunk));
+            req.on('end', () => {
+                let body = Buffer.concat(chunks).toString();
+                if (req.url === '/sts' && req.method === 'POST') {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ access_token: 'fed-tok', expires_in: 3600, token_type: 'Bearer' }));
+                }
+                if (/:signJwt$/.test(req.url) && req.method === 'POST') {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ signedJwt: 'signed.jwt.assertion' }));
+                }
+                if (req.url === '/token' && req.method === 'POST') {
+                    tokenRequestBodies.push(body);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ access_token: 'ya29.real-token', expires_in: 3599, token_type: 'Bearer' }));
+                }
+                res.writeHead(404).end();
+            });
+        });
+
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        let { port } = server.address();
+        let base = `http://127.0.0.1:${port}`;
+
+        let tokenDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'wif-rt-'));
+        let tokenPath = path.join(tokenDir, 'token');
+        await fs.promises.writeFile(tokenPath, 'subject-token', 'utf8');
+
+        try {
+            let externalAccount = JSON.stringify({
+                type: 'external_account',
+                audience: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q',
+                subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+                token_url: `${base}/sts`,
+                service_account_impersonation_url: `${base}/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken`,
+                credential_source: { file: tokenPath }
+            });
+
+            let gmail = new GmailOauth({
+                ...baseOpts,
+                serviceClient: '7103296518315821565203',
+                serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
+                authMethod: 'externalAccount',
+                externalAccount
+            });
+
+            // Redirect the Google token endpoint and the signer's iamcredentials base to the mock.
+            gmail.tokenUrl = `${base}/token`;
+            gmail.signer = new ExternalAccountSigner({ config: JSON.parse(externalAccount), iamCredentialsBaseUrl: base });
+
+            let result = await gmail.refreshToken({ user: 'user@example.com' });
+
+            assert.strictEqual(result.access_token, 'ya29.real-token');
+
+            assert.strictEqual(tokenRequestBodies.length, 1);
+            let params = new URLSearchParams(tokenRequestBodies[0]);
+            assert.strictEqual(params.get('grant_type'), 'urn:ietf:params:oauth:grant-type:jwt-bearer');
+            assert.strictEqual(params.get('assertion'), 'signed.jwt.assertion');
+        } finally {
+            await new Promise(resolve => server.close(resolve));
+            await fs.promises.rm(tokenDir, { recursive: true, force: true });
         }
     });
 
@@ -384,6 +491,47 @@ test('OAuth integration tests', async t => {
             () => signer.sign({ iss: 'a' }, {}),
             err => err.code === 'EServiceKeyMissing'
         );
+    });
+
+    await t.test('oauthCreateSchema rejects a structurally invalid external_account config', () => {
+        const Joi = require('joi');
+        const { oauthCreateSchema } = require('../lib/schemas');
+        const schema = Joi.object(oauthCreateSchema);
+
+        const base = {
+            provider: 'gmailService',
+            name: 'WIF app',
+            authMethod: 'externalAccount',
+            serviceClient: '7103296518315821565203',
+            serviceClientEmail: 'svc@proj.iam.gserviceaccount.com'
+        };
+
+        // type is correct but the impersonation URL is malformed - this must be caught
+        // at save time rather than on the first token refresh.
+        const badConfig = {
+            type: 'external_account',
+            audience: '//iam.googleapis.com/x',
+            subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+            token_url: 'https://sts.googleapis.com/v1/token',
+            service_account_impersonation_url: 'https://example.com/not-a-valid-endpoint',
+            credential_source: { file: '/var/run/secrets/token' }
+        };
+        const badResult = schema.validate({ ...base, externalAccount: JSON.stringify(badConfig) }, { abortEarly: false });
+        assert.ok(badResult.error, 'malformed external_account config must be rejected');
+        assert.ok(/service_account_impersonation_url/.test(badResult.error.message), 'error should point at the bad field');
+
+        // A well-formed config validates cleanly.
+        const goodConfig = {
+            type: 'external_account',
+            audience: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q',
+            subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+            token_url: 'https://sts.googleapis.com/v1/token',
+            service_account_impersonation_url:
+                'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken',
+            credential_source: { file: '/var/run/secrets/token' }
+        };
+        const goodResult = schema.validate({ ...base, externalAccount: JSON.stringify(goodConfig) }, { abortEarly: false });
+        assert.ok(!goodResult.error, goodResult.error && goodResult.error.message);
     });
 
     await t.test('GmailOauth constructor rejects unknown authMethod', () => {
