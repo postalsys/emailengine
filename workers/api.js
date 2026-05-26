@@ -5017,7 +5017,7 @@ Include your token in requests using one of these methods:
                 let response = await oauth2Apps.list(request.query.page, request.query.pageSize);
 
                 for (let app of response.apps) {
-                    for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
+                    for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken', 'externalAccount']) {
                         if (app[secretKey]) {
                             app[secretKey] = '******';
                         }
@@ -5171,7 +5171,7 @@ Include your token in requests using one of these methods:
                 let app = await oauth2Apps.get(request.params.app);
 
                 // remove secrets
-                for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken']) {
+                for (let secretKey of ['clientSecret', 'serviceKey', 'accessToken', 'externalAccount']) {
                     if (app[secretKey]) {
                         app[secretKey] = '******';
                     }
