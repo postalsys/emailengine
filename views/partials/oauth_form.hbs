@@ -189,19 +189,28 @@
 
         <div class="form-group">
             <label class="d-block">Authentication method</label>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input auth-method-radio" type="radio" name="authMethod" id="authMethodServiceKey"
-                    value="serviceKey" {{#if authMethodIsServiceKey}}checked{{/if}} />
-                <label class="form-check-label" for="authMethodServiceKey">Service account key</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input auth-method-radio" type="radio" name="authMethod" id="authMethodExternalAccount"
-                    value="externalAccount" {{#if authMethodIsExternalAccount}}checked{{/if}} />
-                <label class="form-check-label" for="authMethodExternalAccount">Workload Identity Federation (keyless)</label>
-            </div>
-            <small class="form-text text-muted">"Service account key" expects a downloaded JSON key file.
-                "Workload Identity Federation" authenticates without a long-lived key, using a credential issued
-                by your runtime environment.</small>
+            <input type="hidden" name="authMethod" id="authMethod"
+                value="{{#if authMethodIsExternalAccount}}externalAccount{{else}}serviceKey{{/if}}" />
+            <ul class="nav nav-tabs" id="auth-method-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link auth-method-tab {{#if authMethodIsServiceKey}}active{{/if}}{{#if authMethodLocked}}{{#unless authMethodIsServiceKey}} disabled{{/unless}}{{/if}}"
+                        id="auth-method-tab-serviceKey" data-auth-method="serviceKey" href="#" role="tab"
+                        aria-selected="{{#if authMethodIsServiceKey}}true{{else}}false{{/if}}">Service account key</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link auth-method-tab {{#if authMethodIsExternalAccount}}active{{/if}}{{#if authMethodLocked}}{{#unless authMethodIsExternalAccount}} disabled{{/unless}}{{/if}}"
+                        id="auth-method-tab-externalAccount" data-auth-method="externalAccount" href="#" role="tab"
+                        aria-selected="{{#if authMethodIsExternalAccount}}true{{else}}false{{/if}}">Workload Identity Federation (keyless)</a>
+                </li>
+            </ul>
+            <small class="form-text text-muted">
+                {{#if authMethodLocked}}
+                The authentication method is fixed once the application has been created and cannot be changed.
+                {{else}}
+                "Service account key" expects a downloaded JSON key file. "Workload Identity Federation"
+                authenticates without a long-lived key, using a credential issued by your runtime environment.
+                {{/if}}
+            </small>
         </div>
 
         <div class="auth-method-section auth-method-section-serviceKey {{#unless authMethodIsServiceKey}}d-none{{/unless}}">

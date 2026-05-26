@@ -126,17 +126,31 @@
             });
         }
 
-        let authMethodRadios = document.querySelectorAll('.auth-method-radio');
-        if (authMethodRadios.length) {
-            let updateSections = () => {
-                let checked = document.querySelector('.auth-method-radio:checked');
-                let selected = checked ? checked.value : 'serviceKey';
+        let authMethodTabs = document.querySelectorAll('.auth-method-tab');
+        let authMethodInput = document.getElementById('authMethod');
+        if (authMethodTabs.length && authMethodInput) {
+            let updateSections = selected => {
                 document.querySelectorAll('.auth-method-section').forEach(section => {
                     let active = section.classList.contains('auth-method-section-' + selected);
                     section.classList.toggle('d-none', !active);
                 });
             };
-            authMethodRadios.forEach(radio => radio.addEventListener('change', updateSections));
+            authMethodTabs.forEach(tab => {
+                tab.addEventListener('click', e => {
+                    e.preventDefault();
+                    if (tab.classList.contains('disabled') || tab.classList.contains('active')) {
+                        return;
+                    }
+                    let selected = tab.getAttribute('data-auth-method');
+                    authMethodTabs.forEach(other => {
+                        let isActive = other === tab;
+                        other.classList.toggle('active', isActive);
+                        other.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    });
+                    authMethodInput.value = selected;
+                    updateSections(selected);
+                });
+            });
         }
 
     });
