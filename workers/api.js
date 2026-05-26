@@ -84,6 +84,7 @@ const pathlib = require('path');
 const crypto = require('crypto');
 const { Transform, finished } = require('stream');
 const { oauth2Apps, OAUTH_PROVIDERS } = require('../lib/oauth2-apps');
+const { verifyOAuth2App } = require('../lib/oauth/verify-app');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -5571,6 +5572,94 @@ Include your token in requests using one of these methods:
                         .example(12)
                         .description('The number of accounts registered with this application. Not available for legacy apps.')
                 }).label('DeleteAppRequestResponse'),
+                failAction: 'log'
+            }
+        }
+    });
+
+    server.route({
+        method: 'POST',
+        path: '/v1/oauth2/{app}/verify',
+
+        async handler(request) {
+            try {
+                return await verifyOAuth2App(request.params.app, {
+                    account: request.payload.account,
+                    testConnection: request.payload.testConnection
+                });
+            } catch (err) {
+                request.logger.error({ msg: 'API request failed', err });
+                if (Boom.isBoom(err)) {
+                    throw err;
+                }
+                let error = Boom.boomify(err, { statusCode: err.statusCode || 500 });
+                if (err.code) {
+                    error.output.payload.code = err.code;
+                }
+                throw error;
+            }
+        },
+        options: {
+            description: 'Verify OAuth2 application setup',
+            notes: 'Runs the provider authentication chain step by step and reports which steps pass or fail, with hints for fixing failures. For service-account apps an optional mailbox address enables the delegation and live mailbox checks.',
+            tags: ['api', 'OAuth2 Applications'],
+
+            plugins: {},
+
+            auth: {
+                strategy: 'api-token',
+                mode: 'required'
+            },
+            cors: CORS_CONFIG,
+
+            validate: {
+                options: {
+                    stripUnknown: false,
+                    abortEarly: false,
+                    convert: true
+                },
+                failAction,
+
+                params: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID')
+                }),
+
+                payload: Joi.object({
+                    account: Joi.string()
+                        .trim()
+                        .empty('')
+                        .max(256)
+                        .example('user@example.com')
+                        .description('Mailbox address used to verify domain-wide delegation and live mailbox access'),
+                    testConnection: Joi.boolean()
+                        .truthy('Y', 'true', '1', 'on')
+                        .falsy('N', 'false', 0, '')
+                        .default(true)
+                        .description('Perform the live IMAP/API connection step when an access token is obtained')
+                }).label('VerifyOAuth2AppRequest')
+            },
+
+            response: {
+                schema: Joi.object({
+                    app: Joi.string().max(256).required().example('AAABhaBPHscAAAAH').description('OAuth2 application ID'),
+                    provider: Joi.string().example('gmailService').description('Provider type'),
+                    authMethod: Joi.string().allow(null).example('externalAccount').description('Authentication method for service-account apps'),
+                    account: Joi.string().allow(null).example('user@example.com').description('Mailbox used for the delegation/mailbox checks'),
+                    ok: Joi.boolean().example(true).description('True when no verification step failed'),
+                    steps: Joi.array()
+                        .items(
+                            Joi.object({
+                                id: Joi.string().example('signJwt').description('Step identifier'),
+                                label: Joi.string().example('Sign assertion (signJwt)').description('Human readable step name'),
+                                status: Joi.string().valid('ok', 'fail', 'skip').example('ok').description('Step outcome'),
+                                message: Joi.string().allow(null).example('Assertion signed via IAM signJwt').description('Outcome detail'),
+                                hint: Joi.string()
+                                    .example('Grant roles/iam.serviceAccountTokenCreator to the workload principal')
+                                    .description('How to fix a failed step')
+                            }).label('OAuth2VerifyStep')
+                        )
+                        .label('OAuth2VerifySteps')
+                }).label('VerifyOAuth2AppResponse'),
                 failAction: 'log'
             }
         }

@@ -33,6 +33,11 @@
                     <i class="fas fa-user-edit fa-fw"></i> Edit app
                 </a>
 
+                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#verifySetupModal"
+                    title="Run live checks against the provider" id="verify-btn" data-placement="top">
+                    <i class="fas fa-clipboard-check fa-fw"></i> Verify setup
+                </button>
+
                 <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
                     title="Delete this application" id="delete-btn" data-placement="top">
                     <i class="fas fa-trash-alt fa-fw"></i> Delete app
@@ -352,6 +357,141 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="verifySetupModal" tabindex="-1" aria-labelledby="verifySetupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="verifySetupModalLabel">Verify OAuth2 setup</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="verify-crumb" value="{{crumb}}" />
+                <p><small class="text-muted">Runs the provider authentication chain step by step and reports what passes
+                    or fails.{{#if appShowAuthMethod}} Enter a mailbox address in your Workspace domain to also verify
+                    domain-wide delegation and live mailbox access.{{/if}}</small></p>
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <input type="email" class="form-control" id="verify-account"
+                            placeholder="mailbox@example.com (optional)" autocomplete="off" />
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-primary" id="verify-run-btn">
+                                <i class="fas fa-play fa-fw"></i> Run test
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Leave empty to check configuration and signing only.</small>
+                </div>
+
+                <div id="verify-pending" class="d-none">
+                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Running checks, please wait&mldr;</p>
+                </div>
+                <div id="verify-error" class="d-none">
+                    <small class="alert alert-danger text-monospace error-message" style="display: block;"></small>
+                </div>
+                <div id="verify-verdict" class="d-none mb-3"></div>
+                <ul id="verify-steps" class="list-group"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const appId = "{{app.id}}";
+        const stepsElm = document.getElementById('verify-steps');
+        const pendingElm = document.getElementById('verify-pending');
+        const errorElm = document.getElementById('verify-error');
+        const verdictElm = document.getElementById('verify-verdict');
+        const runBtn = document.getElementById('verify-run-btn');
+        const accountInput = document.getElementById('verify-account');
+
+        const ICONS = {
+            ok: '<i class="fas fa-check-circle text-success fa-fw"></i>',
+            fail: '<i class="fas fa-times-circle text-danger fa-fw"></i>',
+            skip: '<i class="fas fa-minus-circle text-muted fa-fw"></i>'
+        };
+
+        const esc = str => {
+            let div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        };
+
+        const renderResult = data => {
+            stepsElm.innerHTML = '';
+            (data.steps || []).forEach(step => {
+                let li = document.createElement('li');
+                li.className = 'list-group-item';
+                let html = `${ICONS[step.status] || ''} <strong>${esc(step.label)}</strong>`;
+                if (step.message) {
+                    html += `<div class="small text-muted ml-4">${esc(step.message)}</div>`;
+                }
+                if (step.hint) {
+                    html += `<div class="small text-info ml-4"><i class="fas fa-lightbulb fa-fw"></i> ${esc(step.hint)}</div>`;
+                }
+                li.innerHTML = html;
+                stepsElm.appendChild(li);
+            });
+
+            let failed = (data.steps || []).some(s => s.status === 'fail');
+            verdictElm.className = 'mb-3 alert ' + (failed ? 'alert-danger' : 'alert-success');
+            verdictElm.textContent = failed
+                ? 'Setup has problems - review the failing step(s) below.'
+                : 'Setup verified - all checks passed.';
+            verdictElm.classList.remove('d-none');
+        };
+
+        const runVerify = async account => {
+            errorElm.classList.add('d-none');
+            verdictElm.classList.add('d-none');
+            stepsElm.innerHTML = '';
+            pendingElm.classList.remove('d-none');
+            runBtn.disabled = true;
+            try {
+                let res = await fetch(`/admin/config/oauth/verify/${encodeURIComponent(appId)}`, {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('verify-crumb').value,
+                        account: account || '',
+                        testConnection: true
+                    })
+                });
+                let data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                renderResult(data);
+            } catch (err) {
+                errorElm.querySelector('.error-message').textContent = err.message;
+                errorElm.classList.remove('d-none');
+            } finally {
+                pendingElm.classList.add('d-none');
+                runBtn.disabled = false;
+            }
+        };
+
+        $('#verifySetupModal').on('shown.bs.modal', () => {
+            // Auto-run the no-mailbox checks (config + signing chain) on open.
+            runVerify(accountInput.value.trim());
+        });
+
+        runBtn.addEventListener('click', () => runVerify(accountInput.value.trim()));
+        accountInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                runVerify(accountInput.value.trim());
+            }
+        });
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
