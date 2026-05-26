@@ -104,7 +104,10 @@
                     }
 
                     if (data.type !== 'external_account') {
-                        return showToast('Selected file is not an external_account credential config', 'alert-triangle');
+                        if (data.type === 'service_account') {
+                            return showToast('This is a service account key file, not a Workload Identity Federation config. Switch to the "Service account key" tab to load it.', 'alert-triangle');
+                        }
+                        return showToast(`Selected file is not an external_account credential config (type: ${data.type || 'missing'})`, 'alert-triangle');
                     }
 
                     let impersonationUrl = data.service_account_impersonation_url || '';
