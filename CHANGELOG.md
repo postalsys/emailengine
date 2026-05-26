@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.68.0](https://github.com/postalsys/emailengine/compare/v2.67.3...v2.68.0) (2026-05-26)
+
+
+### Features
+
+* accept threadId on the submit reference object ([b1b3dc7](https://github.com/postalsys/emailengine/commit/b1b3dc73ec5870a7a8ab9f0844055822ad046d2a))
+* add direct account registration for email service account apps ([6602b2e](https://github.com/postalsys/emailengine/commit/6602b2ee3f851bcfec00b34e70756007763f5490))
+* add OAuth2 app "Verify setup" diagnostic ([cba9f58](https://github.com/postalsys/emailengine/commit/cba9f58bc58a434c6156cd2e55fee655336a4cf4))
+* add Workload Identity Federation for Gmail service accounts ([1879c5a](https://github.com/postalsys/emailengine/commit/1879c5aaf30ccff1879e74d28b0c76e25b3d77ae))
+* lock Gmail auth method display after app creation ([6ba16c2](https://github.com/postalsys/emailengine/commit/6ba16c2fbca571d500b21be776dbf5eb76fcf8a1))
+* revoke upstream OAuth2 grant on account delete via ?revoke=true ([2a8c8fa](https://github.com/postalsys/emailengine/commit/2a8c8faf7f63acfab31998fb067289d4c6bd2f09))
+* revoke upstream OAuth2 grant on account delete via ?revoke=true ([15bc43a](https://github.com/postalsys/emailengine/commit/15bc43ae0f8dbf70021a1e13de55c80ec7271a15))
+* use tabs for Gmail auth method and lock it after creation ([6c74521](https://github.com/postalsys/emailengine/commit/6c7452138c257ecf0667aa9b44d1fa91186e2302))
+
+
+### Bug Fixes
+
+* clearer error when loading wrong file into WIF config field ([40686d4](https://github.com/postalsys/emailengine/commit/40686d409229347193c1e153e9e47f98b5de86dc))
+* flag WIF support in the gmailService form intro ([61fab27](https://github.com/postalsys/emailengine/commit/61fab2720aa2f289a944ae99629bc47ada8e9e09))
+* force-exit external-account-signer test to unblock CI ([f4a1e4e](https://github.com/postalsys/emailengine/commit/f4a1e4e50ac890d7771e38181a9488837c67757a))
+* let npm run gettext parse object spread and drop non-ASCII from template ([195ce60](https://github.com/postalsys/emailengine/commit/195ce601db50f394164ca05e2efb6de4b784a77a))
+* mask externalAccount in OAuth2 app API responses ([fac18bf](https://github.com/postalsys/emailengine/commit/fac18bfdc11d5d252e0d93980aad7c90d92b246f))
+* pkg config options must be a string array ([6c4702d](https://github.com/postalsys/emailengine/commit/6c4702dbc85171a2987b8cfb6e5a3dc3d656a99d))
+* prefer refresh token and skip gmailService when revoking on delete ([e0dbea8](https://github.com/postalsys/emailengine/commit/e0dbea8a4cd4804bf64d50523c8a1152c2119e26))
+* relax cross-folder assertion in Graph API parentFolderId test ([770279d](https://github.com/postalsys/emailengine/commit/770279ded669efdc5d6a2c33d05290daf91251ea))
+* right-align the service account Add account button ([c6f77b9](https://github.com/postalsys/emailengine/commit/c6f77b9777fb1cb9b1449662d05d4887e36a6ad8))
+
 ## [2.67.3](https://github.com/postalsys/emailengine/compare/v2.67.2...v2.67.3) (2026-04-21)
 
 
