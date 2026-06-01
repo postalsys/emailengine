@@ -374,7 +374,7 @@ if (preparedPasswordString) {
             throw new Error('Password format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Invalid password hash provided', input: preparedPasswordString, err });
+        logger.error({ msg: 'Invalid password hash provided', inputLength: preparedPasswordString && preparedPasswordString.length, err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -3167,9 +3167,9 @@ const startApplication = async () => {
             authData.passwordVersion = Date.now();
 
             await settings.set('authData', authData);
-            logger.debug({ msg: 'Password imported', hash: preparedPassword });
+            logger.debug({ msg: 'Password imported' });
         } catch (err) {
-            logger.error({ msg: 'Password import failed', hash: preparedPassword });
+            logger.error({ msg: 'Password import failed', err });
         }
     }
 

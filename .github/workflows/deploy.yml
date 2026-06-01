@@ -5,6 +5,9 @@ on:
 
 name: Deploy test instance and Docker image
 
+permissions:
+    contents: read
+
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
@@ -60,6 +63,9 @@ jobs:
     docker:
         name: Build Docker Image
         runs-on: ubuntu-24.04
+        permissions:
+            contents: read
+            packages: write
 
         steps:
             - name: Checkout

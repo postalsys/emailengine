@@ -1,0 +1,16 @@
+name: "EmailEngine CodeQL config"
+
+# Exclude code that is not part of the production runtime from analysis.
+# These paths generate only false-positive noise:
+#   - test fixtures intentionally disable TLS verification, build shell
+#     commands from fixed paths, etc.
+#   - vendored third-party browser assets (Bootstrap and other bundles) ship
+#     with their own known patterns and are not maintained here
+#   - developer helper scripts (e.g. test-token refresh) deliberately print
+#     tokens to the console for local debugging
+paths-ignore:
+    - test
+    - '**/test/**'
+    - scripts
+    - static/bootstrap-4.6.2-dist
+    - static/vendor
