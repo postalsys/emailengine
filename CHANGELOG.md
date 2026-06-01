@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.68.1](https://github.com/postalsys/emailengine/compare/v2.68.0...v2.68.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* harden mergeObjects and tighten CodeQL scanning ([d35025d](https://github.com/postalsys/emailengine/commit/d35025daabf8fe7b3f5200b0000f52c3a012f4eb))
+* prevent IMAP proxy worker crashes and connection leaks ([#596](https://github.com/postalsys/emailengine/issues/596)) ([4453330](https://github.com/postalsys/emailengine/commit/4453330ad38fb3e64692add1357d48227e1956e0))
+* stop referencing prepared password string in error log ([50cdb89](https://github.com/postalsys/emailengine/commit/50cdb8998e27f33f700f267cb39ddba39e7d32d0))
+
 ## [2.68.0](https://github.com/postalsys/emailengine/compare/v2.67.3...v2.68.0) (2026-05-26)
 
 
