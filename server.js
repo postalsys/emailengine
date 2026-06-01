@@ -374,7 +374,7 @@ if (preparedPasswordString) {
             throw new Error('Password format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Invalid password hash provided', inputLength: preparedPasswordString && preparedPasswordString.length, err });
+        logger.error({ msg: 'Invalid password hash provided', err });
         logger.flush(() => process.exit(1));
     }
 }
