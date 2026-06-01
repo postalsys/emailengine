@@ -300,7 +300,7 @@ The export worker (`workers/export.js`) processes bulk email export jobs via Bul
 - `EENGINE_EXPORT_QC` - Concurrency per worker (default: 1)
 - `EENGINE_EXPORT_TIMEOUT` - Operation timeout (default: 5 minutes)
 - `EENGINE_EXPORT_PATH` - Export file directory (default: OS temp dir)
-- `exportMaxAge` setting - Export file retention (default: 7 days)
+- `EENGINE_EXPORT_MAX_AGE` / `exportMaxAge` setting - Export file retention in ms (default: 24 hours)
 - `exportMaxConcurrent` setting - Per-account concurrent limit (default: 3)
 - `exportMaxGlobalConcurrent` setting - Global concurrent limit (default: 10)
 - `exportMaxMessageSize` setting - Max attachment size (default: 25MB)

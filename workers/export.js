@@ -155,6 +155,28 @@ async function notify(account, event, data) {
     await Webhooks.pushToQueue(event, await Webhooks.formatPayload(event, payload));
 }
 
+// Returns a throttled callback that extends both the BullMQ job lock and the export's Redis key
+// expiry on the LOCK_EXTENSION_INTERVAL cadence. Long-running indexing/exporting loops call it
+// freely; the lock/expiry are refreshed at most once per interval. Without this the lock could lapse
+// (stalling and reprocessing the job) and the export keys could expire mid-run.
+function createLeaseExtender(job, account, exportId) {
+    let lastExtension = Date.now();
+    return async function maybeExtendLease() {
+        if (Date.now() - lastExtension <= LOCK_EXTENSION_INTERVAL) {
+            return;
+        }
+        await Promise.all([
+            job.extendLock(job.token, 10 * 60 * 1000).catch(err => {
+                logger.warn({ msg: 'Failed to extend job lock', account, exportId, err });
+            }),
+            Export.extendExpiry(account, exportId).catch(err => {
+                logger.warn({ msg: 'Failed to extend export expiry', account, exportId, err });
+            })
+        ]);
+        lastExtension = Date.now();
+    };
+}
+
 async function indexMessages(job, exportData) {
     const { account, exportId } = job.data;
     const folders = JSON.parse(exportData.folders || '[]');
@@ -195,15 +217,10 @@ async function indexMessages(job, exportData) {
 
     let totalIndexed = 0;
     let truncated = false;
-    let lastLockExtension = Date.now();
+    const maybeExtendLease = createLeaseExtender(job, account, exportId);
 
     for (let i = 0; i < foldersToProcess.length; i++) {
-        if (Date.now() - lastLockExtension > LOCK_EXTENSION_INTERVAL) {
-            await job.extendLock(job.token, 10 * 60 * 1000).catch(err => {
-                logger.warn({ msg: 'Failed to extend job lock during indexing', account, exportId, err });
-            });
-            lastLockExtension = Date.now();
-        }
+        await maybeExtendLease();
 
         if (await Export.isCancelled(account, exportId)) {
             const err = new Error('Export cancelled by user');
@@ -220,8 +237,6 @@ async function indexMessages(job, exportData) {
                 const remaining = maxMessages ? maxMessages - totalIndexed : 0;
                 const queued = await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime, remaining);
                 totalIndexed += queued;
-
-                await Export.update(account, exportId, { foldersScanned: i + 1 });
 
                 logger.trace({
                     msg: 'Folder indexed',
@@ -265,6 +280,9 @@ async function indexMessages(job, exportData) {
                 err: lastError
             });
         }
+
+        // Count the folder as scanned whether or not it succeeded so progress reaches foldersTotal.
+        await Export.update(account, exportId, { foldersScanned: i + 1 });
 
         if (maxMessages && totalIndexed >= maxMessages) {
             truncated = true;
@@ -357,7 +375,9 @@ async function exportMessages(job, exportData) {
     const { filePath } = exportData;
     const includeAttachments = exportData.includeAttachments === '1';
     const textType = exportData.textType || '*';
-    const maxBytes = Number(exportData.maxBytes) || 5 * 1024 * 1024;
+    const rawMaxBytes = Number(exportData.maxBytes);
+    // Preserve an explicit 0 ("unlimited" per the API contract); only fall back when unset/invalid.
+    const maxBytes = Number.isFinite(rawMaxBytes) ? rawMaxBytes : 5 * 1024 * 1024;
     const maxMessageSize = (await settings.get('exportMaxMessageSize')) || DEFAULT_EXPORT_MAX_MESSAGE_SIZE;
     const maxExportSize = Number(await settings.get('exportMaxSize')) || DEFAULT_EXPORT_MAX_SIZE;
     const isEncrypted = exportData.isEncrypted === '1';
@@ -419,14 +439,15 @@ async function exportMessages(job, exportData) {
         });
     }
 
-    let lastScore = Number(exportData.lastProcessedScore) || 0;
     let processed = 0;
     let totalBytesWritten = 0;
     let processingError = null;
     let sizeLimitReached = false;
 
     let lastAccountCheck = Date.now();
-    let lastLockExtension = Date.now();
+    // Refreshes the job lock and export key expiry on a fixed cadence; called from the main loop and
+    // from inside the rate-limit backoff so a batch stuck retrying does not let the lock lapse.
+    const maybeExtendLease = createLeaseExtender(job, account, exportId);
 
     const accountData = await accountObject.loadAccountData(account);
     const isApiAccount = await accountObject.isApiClient(accountData);
@@ -490,12 +511,7 @@ async function exportMessages(job, exportData) {
                 break;
             }
 
-            if (Date.now() - lastLockExtension > LOCK_EXTENSION_INTERVAL) {
-                await job.extendLock(job.token, 10 * 60 * 1000).catch(err => {
-                    logger.warn({ msg: 'Failed to extend job lock', account, exportId, err });
-                });
-                lastLockExtension = Date.now();
-            }
+            await maybeExtendLease();
 
             if (await Export.isCancelled(account, exportId)) {
                 const err = new Error('Export cancelled by user');
@@ -513,7 +529,7 @@ async function exportMessages(job, exportData) {
                 lastAccountCheck = Date.now();
             }
 
-            const batch = await Export.getNextBatch(account, exportId, lastScore, BATCH_SIZE);
+            const batch = await Export.getNextBatch(account, exportId, BATCH_SIZE);
             if (batch.length === 0) {
                 break;
             }
@@ -522,14 +538,12 @@ async function exportMessages(job, exportData) {
             for (const entry of batch) {
                 if (includeAttachments && entry.size > maxMessageSize) {
                     await Export.incrementSkipped(account, exportId);
-                    lastScore = entry.score;
                 } else {
                     entriesToFetch.push(entry);
                 }
             }
 
             if (entriesToFetch.length === 0) {
-                await Export.updateLastProcessedScore(account, exportId, lastScore);
                 continue;
             }
 
@@ -573,7 +587,6 @@ async function exportMessages(job, exportData) {
                                         reason: err.message || err.code
                                     });
                                     await Export.incrementSkipped(account, exportId);
-                                    lastScore = entry.score;
                                 } else if (isRateLimited && rateLimitRetry < MAX_RATE_LIMIT_RETRIES) {
                                     rateLimitedEntries.push(entry);
                                 } else {
@@ -584,7 +597,6 @@ async function exportMessages(job, exportData) {
                                 }
                             } else if (result && result.data) {
                                 await processMessage(result.data, entry);
-                                lastScore = entry.score;
                                 if (maxExportSize && totalBytesWritten >= maxExportSize) {
                                     sizeLimitReached = true;
                                     break;
@@ -599,7 +611,6 @@ async function exportMessages(job, exportData) {
                                     reason: 'Message not found in batch results'
                                 });
                                 await Export.incrementSkipped(account, exportId);
-                                lastScore = entry.score;
                             }
                         }
 
@@ -620,6 +631,7 @@ async function exportMessages(job, exportData) {
                                 delayMs: Math.round(delay)
                             });
                             await new Promise(resolve => setTimeout(resolve, delay));
+                            await maybeExtendLease();
                             fetchBatch = rateLimitedEntries;
                         } else {
                             break;
@@ -672,7 +684,6 @@ async function exportMessages(job, exportData) {
                         await processMessage(message, entry);
                         if (maxExportSize && totalBytesWritten >= maxExportSize) {
                             sizeLimitReached = true;
-                            lastScore = entry.score;
                             break;
                         }
                     } else if (fetchError && isSkippableError(fetchError)) {
@@ -688,12 +699,9 @@ async function exportMessages(job, exportData) {
                     } else if (fetchError) {
                         throw fetchError;
                     }
-
-                    lastScore = entry.score;
                 }
             }
 
-            await Export.updateLastProcessedScore(account, exportId, lastScore);
             logger.trace({ msg: 'Export batch processed', account, exportId, messagesExported: processed });
         }
     } catch (err) {
@@ -764,19 +772,26 @@ const exportWorker = new Worker(
 
             await Export.complete(account, exportId);
 
-            const finalData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
+            // The export is complete and persisted. A failure while reading final stats or delivering
+            // the completion webhook must NOT fall through to the job catch below, which would delete
+            // the finished file and mark the export as failed.
+            try {
+                const finalData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`);
 
-            await notify(account, EXPORT_COMPLETED_NOTIFY, {
-                exportId,
-                folders: JSON.parse(exportData.folders || '[]'),
-                startDate: new Date(Number(exportData.startDate)).toISOString(),
-                endDate: new Date(Number(exportData.endDate)).toISOString(),
-                messagesExported: Number(finalData.messagesExported) || 0,
-                messagesSkipped: Number(finalData.messagesSkipped) || 0,
-                bytesWritten: Number(finalData.bytesWritten) || 0,
-                duration: Date.now() - startTime,
-                expiresAt: new Date(Number(finalData.expiresAt)).toISOString()
-            });
+                await notify(account, EXPORT_COMPLETED_NOTIFY, {
+                    exportId,
+                    folders: JSON.parse(exportData.folders || '[]'),
+                    startDate: new Date(Number(exportData.startDate)).toISOString(),
+                    endDate: new Date(Number(exportData.endDate)).toISOString(),
+                    messagesExported: Number(finalData.messagesExported) || 0,
+                    messagesSkipped: Number(finalData.messagesSkipped) || 0,
+                    bytesWritten: Number(finalData.bytesWritten) || 0,
+                    duration: Date.now() - startTime,
+                    expiresAt: new Date(Number(finalData.expiresAt)).toISOString()
+                });
+            } catch (notifyErr) {
+                logger.error({ msg: 'Failed to deliver export completion notification', account, exportId, err: notifyErr });
+            }
 
             logger.info({ msg: 'Export job completed', account, exportId, duration: Date.now() - startTime });
         } catch (err) {
@@ -876,7 +891,7 @@ function onCommand(command) {
             try {
                 const activeExports = await redis.smembers(`${REDIS_PREFIX}exp:active`);
                 for (const entry of activeExports) {
-                    const separatorIndex = entry.indexOf(':exp_');
+                    const separatorIndex = entry.lastIndexOf(':exp_');
                     if (separatorIndex === -1) continue;
                     const entryAccount = entry.substring(0, separatorIndex);
                     const entryExportId = entry.substring(separatorIndex + 1);
@@ -891,6 +906,22 @@ function onCommand(command) {
             }
         },
         5 * 60 * 1000
+    ).unref();
+
+    // Periodically remove export files whose Redis state has already expired. Without this, files of
+    // expired exports would only be reclaimed on the next worker restart.
+    setInterval(
+        async () => {
+            try {
+                const cleaned = await Export.cleanup();
+                if (cleaned > 0) {
+                    logger.info({ msg: 'Cleaned up orphaned export files', count: cleaned });
+                }
+            } catch (err) {
+                logger.error({ msg: 'Failed to clean up export files', err });
+            }
+        },
+        60 * 60 * 1000
     ).unref();
 
     parentPort.postMessage({ cmd: 'ready' });
