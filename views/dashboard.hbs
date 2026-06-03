@@ -5,16 +5,16 @@
     </div>
 
 
-    {{#if isElastiCache}}
-    <div class="card border-left-danger mt-4">
+    {{#each redisWarnings}}
+    <div class="card border-left-{{color}} mt-4">
         <div class="card-body">
             <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatibility warning
+                    <div class="text-xs font-weight-bold text-{{color}} text-uppercase mb-1">{{title}}
                     </div>
-                    <p>EmailEngine is incompatible with Amazon ElastiCache as the database backend.</p>
-                    <p>Please switch to a standard Redis instance. Using ElastiCache with EmailEngine can result in data
-                        loss and some features may not work correctly.</p>
+                    {{#each details}}
+                    <p>{{this}}</p>
+                    {{/each}}
                 </div>
                 <div class="col-auto">
                     <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
@@ -22,26 +22,7 @@
             </div>
         </div>
     </div>
-    {{/if}}
-
-
-    {{#if isRedisCluster}}
-    <div class="card border-left-danger mt-4">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Compatibility warning
-                    </div>
-                    <p>EmailEngine is incompatible with Redis Cluster setup.</p>
-                    <p>Please switch to a standard Redis primary instance.</p>
-                </div>
-                <div class="col-auto">
-                    <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    {{/if}}
+    {{/each}}
 
 
     {{#unless hasAccounts}}
