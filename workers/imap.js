@@ -728,8 +728,6 @@ class ConnectionHandler {
         if (!accountData.connection) {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
-        let stream = new MessagePortWritable(message.port);
-
         let source = await accountData.connection.getRawMessage(message.message);
         if (!source) {
             let err = new Error('Requested file not found');
@@ -737,9 +735,20 @@ class ConnectionHandler {
             throw err;
         }
 
+        // Build the cross-thread writable only after we know there is content to send.
+        // Constructing it earlier leaks the transferred MessagePort (and its message
+        // listener) whenever the lookup above throws (e.g. a 404).
+        let stream = new MessagePortWritable(message.port);
+
         setImmediate(() => {
             if (Buffer.isBuffer(source)) {
-                stream.end(source);
+                // The consumer may have aborted and destroyed the writable (via a cancel
+                // message) before this runs; ending a destroyed stream would emit an
+                // unhandled 'error' and take down the worker. The streaming branch is
+                // safe because pipeline() tears down a destroyed destination cleanly.
+                if (!stream.destroyed) {
+                    stream.end(source);
+                }
             } else {
                 pipeToMessagePort(source, stream, accountData.connection.logger);
             }
@@ -764,8 +773,6 @@ class ConnectionHandler {
             throw NO_ACTIVE_HANDLER_RESP_ERR;
         }
 
-        let stream = new MessagePortWritable(message.port);
-
         let source = await accountData.connection.getAttachment(message.attachment);
         if (!source) {
             let err = new Error('Requested file not found');
@@ -773,9 +780,20 @@ class ConnectionHandler {
             throw err;
         }
 
+        // Build the cross-thread writable only after we know there is content to send.
+        // Constructing it earlier leaks the transferred MessagePort (and its message
+        // listener) whenever the lookup above throws (e.g. a 404).
+        let stream = new MessagePortWritable(message.port);
+
         setImmediate(() => {
             if (Buffer.isBuffer(source.data)) {
-                stream.end(source.data);
+                // The consumer may have aborted and destroyed the writable (via a cancel
+                // message) before this runs; ending a destroyed stream would emit an
+                // unhandled 'error' and take down the worker. The streaming branch is
+                // safe because pipeline() tears down a destroyed destination cleanly.
+                if (!stream.destroyed) {
+                    stream.end(source.data);
+                }
             } else {
                 pipeToMessagePort(source, stream, accountData.connection.logger);
             }

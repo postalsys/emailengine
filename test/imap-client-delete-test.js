@@ -78,4 +78,27 @@ test('IMAPClient.delete() tests', async t => {
         assert.strictEqual(subB.listenersRemoved, true, 'second subconnection listeners should be removed');
         assert.strictEqual(connection.subconnections.length, 0, 'subconnections array should be emptied');
     });
+
+    await t.test('delete() still closes subconnections when mailbox/Redis cleanup throws', async () => {
+        // Account deletion is exactly when Redis is most likely to be under pressure.
+        // If a cleanup step rejects, the subconnection teardown must still run (it
+        // lives in the finally block) so subconnections cannot keep reconnecting to
+        // the now-deleted account.
+        const connection = makeConnection();
+        connection.redis = {
+            del: async () => {
+                throw new Error('Redis unavailable');
+            }
+        };
+
+        const subA = makeFakeSubconnection('INBOX');
+        const subB = makeFakeSubconnection('Archive');
+        connection.subconnections = [subA, subB];
+
+        await assert.rejects(() => connection.delete(), /Redis unavailable/, 'the cleanup error must still propagate');
+
+        assert.strictEqual(subA.closed, true, 'first subconnection should be closed despite the error');
+        assert.strictEqual(subB.closed, true, 'second subconnection should be closed despite the error');
+        assert.strictEqual(connection.subconnections.length, 0, 'subconnections array should be emptied despite the error');
+    });
 });
