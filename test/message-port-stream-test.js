@@ -112,6 +112,35 @@ test('a producer error reaches the reader as a stream error, not a clean end (Co
     }
 });
 
+test('destroying a reader whose producer never attached releases the port (setup-failure cleanup)', async () => {
+    // Mirrors lib/account.js: a getRawMessage/getAttachment setup call rejects (timeout,
+    // worker gone, 404) before the IMAP worker attaches a writable to the transferred
+    // port. The consumer destroys the reader; this must release port1's listener and tell
+    // the (possibly future) producer to stop via { cancel: true }.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+
+        const peerMessages = [];
+        port2.on('message', message => peerMessages.push(message));
+
+        assert.strictEqual(port1.listenerCount('message'), 1, 'reader should hold a port listener before cleanup');
+
+        reader.destroy();
+        await tick();
+
+        assert.strictEqual(port1.listenerCount('message'), 0, 'reader message listener must be removed on destroy');
+        assert.ok(
+            peerMessages.some(message => message && message.cancel),
+            'the producer side must receive a cancel signal'
+        );
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
 test('normal completion closes the reader port and removes its listener (Commit 3)', async () => {
     const { port1, port2 } = new MessageChannel();
 

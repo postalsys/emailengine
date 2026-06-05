@@ -148,6 +148,8 @@ const { QueueEvents } = require('bullmq');
 
 const getSecret = require('./lib/get-secret');
 
+const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
+
 const msgpack = require('msgpack5')();
 
 // Initialize default configuration values if not set
@@ -274,6 +276,12 @@ logger.info({
 const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
 NO_ACTIVE_HANDLER_RESP_ERR.statusCode = 503;
 NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
+
+// Shared rejection for in-flight calls whose target worker terminated mid-request.
+// Reused across concurrent rejections - never attach per-call fields to this instance.
+const WORKER_DIED_RESP_ERR = new Error('Worker handling the request terminated before completion. Try again.');
+WORKER_DIED_RESP_ERR.statusCode = 503;
+WORKER_DIED_RESP_ERR.code = 'WorkerNotAvailable';
 
 // Update check intervals
 const UPGRADE_CHECK_TIMEOUT = 1 * 24 * 3600 * 1000; // 24 hours
@@ -1013,6 +1021,13 @@ let spawnWorker = async type => {
             onlineWorkers.delete(worker);
             metrics.threadStops.inc();
 
+            // Fail any in-flight calls routed to this worker right away, so callers
+            // get a fast retryable error instead of hanging until their own timeout.
+            let rejectedCalls = rejectWorkerCalls(callQueue, worker, WORKER_DIED_RESP_ERR);
+            if (rejectedCalls) {
+                logger.info({ msg: 'Rejected in-flight calls for exited worker', type, threadId: worker.threadId, rejectedCalls });
+            }
+
             workers.get(type).delete(worker);
 
             // Update server state for proxy servers
@@ -1499,7 +1514,8 @@ async function call(worker, message, transferList) {
             reject(err);
         }, ttl);
 
-        // Store callback info
+        // Store callback info. `worker` lets us reject this entry immediately if
+        // the target worker terminates, instead of waiting out the timeout.
         callQueue.set(mid, {
             resolve: result => {
                 clearTimeout(timer);
@@ -1509,7 +1525,8 @@ async function call(worker, message, transferList) {
                 clearTimeout(timer);
                 reject(err);
             },
-            timer
+            timer,
+            worker
         });
 
         try {
