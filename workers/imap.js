@@ -39,7 +39,7 @@ const { BaseClient } = require('../lib/email-client/base-client');
 const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
-const { MessagePortWritable } = require('../lib/message-port-stream');
+const { MessagePortWritable, pipeToMessagePort } = require('../lib/message-port-stream');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
@@ -741,7 +741,7 @@ class ConnectionHandler {
             if (Buffer.isBuffer(source)) {
                 stream.end(source);
             } else {
-                source.pipe(stream);
+                pipeToMessagePort(source, stream, accountData.connection.logger);
             }
         });
 
@@ -777,7 +777,7 @@ class ConnectionHandler {
             if (Buffer.isBuffer(source.data)) {
                 stream.end(source.data);
             } else {
-                source.pipe(stream);
+                pipeToMessagePort(source, stream, accountData.connection.logger);
             }
         });
 
