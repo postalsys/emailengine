@@ -9,10 +9,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const { Readable } = require('node:stream');
+const { Readable, PassThrough } = require('node:stream');
 const { MessageChannel } = require('node:worker_threads');
 
-const { MessagePortWritable, pipeToMessagePort } = require('../lib/message-port-stream');
+const { MessagePortWritable, MessagePortReadable, pipeToMessagePort } = require('../lib/message-port-stream');
+
+function tick() {
+    return new Promise(resolve => setImmediate(resolve));
+}
 
 test('pipeToMessagePort() handles a source error without throwing', async () => {
     const { port1, port2 } = new MessageChannel();
@@ -41,6 +45,93 @@ test('pipeToMessagePort() handles a source error without throwing', async () => 
 
         assert.strictEqual(writable.destroyed, true, 'writable should be destroyed when the source errors');
         assert.ok(loggedError && loggedError.err === boom, 'the source error should be logged, not thrown');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('destroying the reader aborts the transfer and releases the source (Commit 3)', async () => {
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const writable = new MessagePortWritable(port2);
+        const reader = new MessagePortReadable(port1);
+        const source = new PassThrough();
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+        source.write('first chunk');
+
+        // The API consumer (Hapi) aborts mid-download by destroying the reader.
+        await new Promise(resolve => {
+            writable.on('close', resolve);
+            reader.destroy();
+        });
+        await tick();
+
+        assert.strictEqual(writable.destroyed, true, 'writable should be destroyed when the reader aborts');
+        assert.strictEqual(source.destroyed, true, 'source (IMAP stream) must be destroyed so its mailbox lock is released');
+        assert.strictEqual(port1.listenerCount('message'), 0, 'reader message listener must be removed');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('a producer error reaches the reader as a stream error, not a clean end (Commit 3)', async () => {
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const writable = new MessagePortWritable(port2);
+        const reader = new MessagePortReadable(port1);
+        const source = new PassThrough();
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+
+        let readerError = null;
+        let endedCleanly = false;
+        reader.on('error', err => {
+            readerError = err;
+        });
+        reader.on('end', () => {
+            endedCleanly = true;
+        });
+        reader.resume();
+
+        source.write('partial');
+        source.destroy(new Error('upstream exploded'));
+
+        await tick();
+        await tick();
+
+        assert.ok(readerError, 'reader should surface an error when the producer fails mid-transfer');
+        assert.strictEqual(endedCleanly, false, 'reader must not end cleanly on a truncated transfer');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
+test('normal completion closes the reader port and removes its listener (Commit 3)', async () => {
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const writable = new MessagePortWritable(port2);
+        const reader = new MessagePortReadable(port1);
+        const source = new PassThrough();
+
+        pipeToMessagePort(source, writable, { error() {}, debug() {} });
+
+        const chunks = [];
+        reader.on('data', chunk => chunks.push(chunk));
+        const ended = new Promise(resolve => reader.on('end', resolve));
+
+        source.end('the whole message');
+        await ended;
+        await tick();
+
+        assert.strictEqual(Buffer.concat(chunks).toString(), 'the whole message', 'all data should be delivered');
+        assert.strictEqual(port1.listenerCount('message'), 0, 'reader message listener must be removed after a clean end');
     } finally {
         port1.close();
         port2.close();
