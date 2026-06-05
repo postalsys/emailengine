@@ -11,6 +11,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
 const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, reloadHttpProxyAgent } = require('../lib/tools');
+const { sendWebhookRequest } = require('../lib/webhook-request');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -424,9 +425,9 @@ const notifyWorker = new Worker(
         headers['X-EE-Wh-Signature'] = hmac.digest('base64url');
 
         try {
-            let res;
+            let status;
             try {
-                res = await fetchCmd(parsed.toString(), {
+                status = await sendWebhookRequest(fetchCmd, parsed.toString(), {
                     method: 'post',
                     body,
                     headers,
@@ -436,18 +437,6 @@ const notifyWorker = new Worker(
             } catch (err) {
                 duration = Date.now() - start;
                 throw err.cause || err;
-            }
-
-            if (!res.ok) {
-                // Drain response body to release connection back to pool
-                try {
-                    await res.text();
-                } catch {
-                    // ignore drain errors
-                }
-                let err = new Error(res.statusText || `Invalid response: ${res.status} ${res.statusText}`);
-                err.statusCode = res.status;
-                throw err;
             }
 
             logger.trace({
@@ -460,7 +449,7 @@ const notifyWorker = new Worker(
                 requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
-                status: res.status,
+                status,
                 account: job.data.account,
                 route: customRoute && customRoute.id
             });
