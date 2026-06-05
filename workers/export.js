@@ -810,14 +810,19 @@ const exportWorker = new Worker(
             }
 
             if (err.code !== 'AccountDeleted' && err.code !== 'AccountNotFound' && err.code !== 'ExportCancelled') {
-                await notify(account, EXPORT_FAILED_NOTIFY, {
-                    exportId,
-                    error: err.message,
-                    errorCode: err.code,
-                    phase: exportData.phase || 'unknown',
-                    messagesExported: Number(exportData.messagesExported) || 0,
-                    messagesQueued: Number(exportData.messagesQueued) || 0
-                });
+                try {
+                    await notify(account, EXPORT_FAILED_NOTIFY, {
+                        exportId,
+                        error: err.message,
+                        errorCode: err.code,
+                        phase: exportData.phase || 'unknown',
+                        messagesExported: Number(exportData.messagesExported) || 0,
+                        messagesQueued: Number(exportData.messagesQueued) || 0
+                    });
+                } catch (notifyErr) {
+                    // Never let a failed notification replace the original error below.
+                    logger.error({ msg: 'Failed to deliver export failure notification', account, exportId, err: notifyErr });
+                }
             }
 
             throw err;
