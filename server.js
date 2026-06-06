@@ -349,18 +349,34 @@ let apiWorkerReusePort = false;
 // worker is derived: `apiWorkersRequested > 1 && !apiWorkerReusePort`.
 let apiWorkersRequested = 1;
 
+// Why a multi-worker request fell back to a single API worker, surfaced on /admin/internals so the
+// banner can state the real cause. Set during probeReusePort():
+//  - 'platform': SO_REUSEPORT is unsupported on this OS/Node build (Linux with Node < 23.1, macOS, Windows)
+//  - 'port': the probe could not test the port (transient conflict / permission), so support is unknown
+// Stays null when SO_REUSEPORT is supported or only one worker was requested.
+let apiWorkerReusePortFallbackReason = null;
+
 /**
  * Probe whether SO_REUSEPORT can load-balance across multiple sockets on this
  * platform. Binds two listeners to the same host:port with reusePort enabled;
- * both must succeed. It is unsupported on macOS, Windows, and Node < 23.1 (the
- * bind fails with ENOTSUP or similar) so callers can fall back to a single API
- * worker. The first failing bind's error code is returned so the caller can tell
- * a genuine platform/capability limitation apart from a transient port conflict
- * (EADDRINUSE/EACCES), which must not be reported as "platform unsupported".
+ * both must succeed for load balancing to work. It is unsupported on macOS,
+ * Windows, and Node < 23.1, where either the first bind fails outright (e.g.
+ * ENOTSUP) or - when the reusePort option is silently ignored (Node < 23.1) -
+ * the first bind succeeds as a plain bind and the second fails with EADDRINUSE.
+ * The `stage` field tells the caller where the probe failed so it can separate a
+ * genuine platform/capability limitation from a transient port conflict:
+ *   - 'probe': the first bind failed, so the port could not even be tested. An
+ *     EADDRINUSE/EACCES code here means the port is unavailable (transient); any
+ *     other code means the platform rejected reusePort.
+ *   - 'reuse': the first bind succeeded but the second did not, so reusePort is
+ *     not honored on this platform/Node - a capability limitation, even though
+ *     the failing code is EADDRINUSE.
+ *   - null: SO_REUSEPORT is supported.
  * @param {string} host - Bind address
  * @param {number} port - Listen port
- * @returns {Promise<{supported: boolean, code: (string|null)}>} Whether SO_REUSEPORT
- *   load balancing works, plus the first failing bind's error code (or null)
+ * @returns {Promise<{supported: boolean, code: (string|null), stage: (string|null)}>}
+ *   Whether SO_REUSEPORT load balancing works, the failing bind's error code (or
+ *   null), and which bind failed ('probe', 'reuse', or null when supported)
  */
 async function probeReusePort(host, port) {
     const net = require('net');
@@ -386,14 +402,23 @@ async function probeReusePort(host, port) {
 
     let first = await open();
     if (!first.srv) {
-        return { supported: false, code: first.code };
+        // Could not even bind the first probe socket, so the port itself could not be tested.
+        return { supported: false, code: first.code, stage: 'probe' };
     }
 
     let second = await open();
     await close(first.srv);
     await close(second.srv);
 
-    return { supported: !!second.srv, code: second.srv ? null : second.code };
+    if (second.srv) {
+        return { supported: true, code: null, stage: null };
+    }
+
+    // The first bind succeeded but a second listener on the same host:port did not, so the kernel is
+    // not load-balancing via SO_REUSEPORT - the option was accepted/ignored but not honored (e.g.
+    // Linux with Node < 23.1, where reusePort is an unrecognized listen() option). This is a platform
+    // limitation, not a port conflict, even though the failing code is EADDRINUSE.
+    return { supported: false, code: second.code, stage: 'reuse' };
 }
 
 /**
@@ -2680,10 +2705,11 @@ async function onCommand(worker, message) {
 
         case 'apiWorkerScaling': {
             // Reported on /admin/internals so operators can see when EENGINE_WORKERS_API > 1
-            // was requested but only one worker started (SO_REUSEPORT unavailable).
+            // was requested but only one worker started, and why (reason: 'platform' | 'port').
             return {
                 requested: apiWorkersRequested,
-                fallback: apiWorkersRequested > 1 && !apiWorkerReusePort
+                fallback: apiWorkersRequested > 1 && !apiWorkerReusePort,
+                reason: apiWorkerReusePortFallbackReason
             };
         }
 
@@ -3301,10 +3327,14 @@ const startApplication = async () => {
         const probe = await probeReusePort(config.api.host, config.api.port);
         apiWorkerReusePort = probe.supported;
         if (!apiWorkerReusePort) {
-            // EADDRINUSE/EACCES means the probe could not even test the port; that is a transient
-            // conflict, not a platform limitation, so don't claim SO_REUSEPORT is unsupported. The
-            // single API worker we start next will surface the real bind error.
-            if (probe.code === 'EADDRINUSE' || probe.code === 'EACCES') {
+            // Only a first-bind EADDRINUSE/EACCES (stage 'probe') means we genuinely could not test
+            // the port - a transient conflict or permission issue, which the single API worker we
+            // start next will surface. A failed second bind (stage 'reuse') instead means reusePort
+            // is accepted but not honored on this platform/Node (e.g. Node < 23.1), which is a
+            // capability limitation rather than a port conflict, so it falls through to the
+            // "not available on this platform" message below.
+            if (probe.stage === 'probe' && (probe.code === 'EADDRINUSE' || probe.code === 'EACCES')) {
+                apiWorkerReusePortFallbackReason = 'port';
                 logger.warn({
                     msg: 'Could not probe SO_REUSEPORT because the API port is unavailable; starting a single API worker',
                     requested: apiWorkersRequested,
@@ -3313,6 +3343,7 @@ const startApplication = async () => {
                     port: config.api.port
                 });
             } else {
+                apiWorkerReusePortFallbackReason = 'platform';
                 logger.warn({
                     msg: 'Multiple API workers requested but SO_REUSEPORT is not available on this platform; starting a single API worker',
                     requested: apiWorkersRequested,
