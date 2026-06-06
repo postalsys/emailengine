@@ -1,6 +1,8 @@
 
 [workers]
 imap = 4
+# Number of API/HTTP workers. Values >1 require SO_REUSEPORT (Linux); on other platforms it falls back to 1.
+api = 1
 webhooks = 1
 "imapProxy" = 1
 

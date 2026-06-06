@@ -17,7 +17,7 @@ const {
     DEFAULT_EXPORT_MAX_MESSAGES,
     DEFAULT_EXPORT_MAX_SIZE
 } = require('../lib/consts');
-const { getDuration, readEnvValue, threadStats, reloadHttpProxyAgent } = require('../lib/tools');
+const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 const { Export } = require('../lib/export');
@@ -955,10 +955,7 @@ parentPort.on('message', message => {
     }
 
     if (message && message.cmd === 'settings') {
-        let d = message.data || {};
-        if ('httpProxyEnabled' in d || 'httpProxyUrl' in d) {
-            reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
-        }
+        maybeReloadHttpProxyAgent(message.data);
     }
 });
 

@@ -5,6 +5,15 @@
     </h1>
 </div>
 
+{{#if apiWorkerWarning}}
+<div class="alert alert-warning mt-4" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Multiple API workers are not active.</strong>
+    <code>EENGINE_WORKERS_API</code> is set to {{apiWorkerWarning.requested}}, but this platform does not support
+    <code>SO_REUSEPORT</code> (requires Linux with Node.js 23.1 or newer), so only a single API worker was started.
+</div>
+{{/if}}
+
 <div class="card mb-4 mt-4">
 
     <div class="table-responsive">

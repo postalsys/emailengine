@@ -102,7 +102,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 
 | Worker | File | Count | Purpose |
 |--------|------|-------|---------|
-| API | `api.js` | 1 | HTTP server for REST API and admin UI (see API Worker section below) |
+| API | `api.js` | 1* | HTTP server for REST API and admin UI (see API Worker section below) |
 | IMAP | `imap.js` | 4* | Email sync engine (see IMAP Worker section below) |
 | Webhooks | `webhooks.js` | 1* | Webhook delivery processor (see Webhooks section below) |
 | Submit | `submit.js` | 1* | Email delivery processor (see Submit Worker section below) |
@@ -111,7 +111,7 @@ EmailEngine uses Node.js Worker Threads for isolated execution. Workers communic
 | SMTP | `smtp.js` | 1 | Optional SMTP server (see SMTP Server section below) |
 | IMAP Proxy | `imap-proxy.js` | 1 | Optional IMAP proxy server (see IMAP Proxy section below) |
 
-*Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`, `EENGINE_EXPORT_QC`)
+*Configurable via environment variables (`EENGINE_WORKERS`, `EENGINE_WORKERS_API`, `EENGINE_WORKERS_WEBHOOKS`, `EENGINE_WORKERS_SUBMIT`, `EENGINE_EXPORT_QC`). Multiple API workers (`EENGINE_WORKERS_API` > 1) require `SO_REUSEPORT` (Linux); on macOS/Windows/Node <23.1 it falls back to a single API worker.
 
 **Worker Lifecycle:**
 - Main thread spawns workers at startup and monitors health via heartbeats (every 10s)
@@ -147,6 +147,7 @@ The API worker (`workers/api.js`) runs a Hapi.js HTTP server serving both the RE
 **Configuration:**
 - `EENGINE_PORT` / `PORT` - Listen port (default: 3000)
 - `EENGINE_HOST` - Bind address (default: 127.0.0.1)
+- `EENGINE_WORKERS_API` - Number of API/HTTP workers (default: 1). Values >1 share the port via `SO_REUSEPORT` (Linux only); on macOS/Windows/Node <23.1 EmailEngine falls back to a single worker with a warning
 - `EENGINE_MAX_BODY_SIZE` - Max POST body (default: 25MB)
 - `EENGINE_TIMEOUT` - Request timeout (default: 10s), override with `X-EE-Timeout` header
 - `EENGINE_API_PROXY` - Enable X-Forwarded-For parsing
@@ -401,6 +402,7 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 
 **Workers:**
 - `EENGINE_WORKERS` - IMAP worker count (default: 4)
+- `EENGINE_WORKERS_API` - API/HTTP worker count (default: 1; values >1 need `SO_REUSEPORT`/Linux, otherwise falls back to 1)
 - `EENGINE_WORKERS_WEBHOOKS` - Webhook worker count (default: 1)
 - `EENGINE_WORKERS_SUBMIT` - Submit worker count (default: 1)
 - `EENGINE_EXPORT_QC` - Export concurrency per worker (default: 1)

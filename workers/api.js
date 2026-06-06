@@ -2,7 +2,7 @@
 
 // NB! This file is processed by gettext parser and can not use newer syntax like ?.
 
-const { parentPort } = require('worker_threads');
+const { parentPort, workerData } = require('worker_threads');
 
 const packageData = require('../package.json');
 const config = require('@zone-eu/wild-config');
@@ -40,7 +40,7 @@ const {
     getBoolean,
     loadTlsConfig,
     httpAgent,
-    reloadHttpProxyAgent,
+    maybeReloadHttpProxyAgent,
     resolveOAuthErrorStatus
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
@@ -259,6 +259,15 @@ const API_TLS = hasEnvValue('EENGINE_API_TLS') ? getBoolean(readEnvValue('EENGIN
 
 // Merge TLS settings from config params and environment
 loadTlsConfig(API_TLS, 'EENGINE_API_TLS_');
+
+// Per-worker thread metadata. With multiple API workers (EENGINE_WORKERS_API > 1) the
+// main thread assigns each one an index and whether to bind with SO_REUSEPORT. Only
+// worker 0 runs singleton maintenance tasks (e.g. TLS certificate renewal).
+const WORKER_INDEX = (workerData && workerData.workerIndex) || 0;
+const USE_REUSE_PORT = !!(workerData && workerData.reusePort);
+// Worker 0 is the primary; it runs singleton maintenance tasks (e.g. TLS certificate renewal)
+// that must execute exactly once across all API workers.
+const IS_PRIMARY_API_WORKER = WORKER_INDEX === 0;
 
 const ADMIN_ACCESS_ADDRESSES = hasEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
     ? readEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
@@ -542,6 +551,11 @@ parentPort.on('message', message => {
     if (message && message.cmd === 'change') {
         publishChangeEvent(message);
     }
+
+    if (message && message.cmd === 'settings') {
+        // Keep this worker's in-memory HTTP proxy agent in sync when proxy settings change
+        maybeReloadHttpProxyAgent(message.data);
+    }
 });
 
 const init = async () => {
@@ -620,11 +634,8 @@ const init = async () => {
         return formatter.format(intVal);
     });
 
-    const server = Hapi.server({
-        port: API_PORT,
-        host: API_HOST,
-        tls: API_TLS,
-
+    // Base Hapi options shared by both the default and SO_REUSEPORT binding paths
+    const serverOptions = {
         state: {
             strictHeader: false
         },
@@ -646,7 +657,27 @@ const init = async () => {
                 }).unknown()
             }
         }
-    });
+    };
+
+    // With multiple API workers we provide our own listener and bind it ourselves with
+    // SO_REUSEPORT so the kernel load-balances connections. Hapi forbids port/host when
+    // autoListen is false and needs a truthy `tls` flag to treat a provided HTTPS
+    // listener correctly. The single-worker path keeps Hapi's default binding unchanged.
+    let reusePortListener = null;
+    if (USE_REUSE_PORT) {
+        const http = require('http');
+        const https = require('https');
+        reusePortListener = API_TLS ? https.createServer(API_TLS) : http.createServer();
+        serverOptions.listener = reusePortListener;
+        serverOptions.tls = !!API_TLS;
+        serverOptions.autoListen = false;
+    } else {
+        serverOptions.port = API_PORT;
+        serverOptions.host = API_HOST;
+        serverOptions.tls = API_TLS;
+    }
+
+    const server = Hapi.server(serverOptions);
 
     let assertPreconditionResult;
     server.decorate('toolkit', 'getESClient', async (...args) => await getESClient(...args));
@@ -3970,10 +4001,9 @@ Include your token in requests using one of these methods:
                 updated.push(key);
             }
 
+            // Broadcast to all workers (including this one); each reloads its HTTP proxy agent via
+            // the 'settings' message handler, so no inline reload is needed here.
             notify('settings', request.payload);
-            if ('httpProxyEnabled' in request.payload || 'httpProxyUrl' in request.payload) {
-                reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
-            }
             return { updated };
         },
         options: {
@@ -7311,6 +7341,35 @@ ${now}`,
 
     await server.start();
 
+    if (USE_REUSE_PORT) {
+        // Hapi (autoListen:false) wired its request dispatcher to our listener but did not
+        // bind it. Bind now with SO_REUSEPORT so the kernel distributes connections across
+        // all API workers. listen() can throw synchronously (bad args) or emit 'error'
+        // asynchronously (EADDRINUSE/EACCES/ENOTSUP); handle both, mirroring probeReusePort().
+        await new Promise((resolve, reject) => {
+            const onError = err => {
+                let wrapped = new Error(
+                    `Failed to bind API worker ${WORKER_INDEX} to ${API_HOST}:${API_PORT} with SO_REUSEPORT` + (err && err.code ? ` (${err.code})` : '')
+                );
+                wrapped.code = err && err.code;
+                wrapped.workerIndex = WORKER_INDEX;
+                wrapped.host = API_HOST;
+                wrapped.port = API_PORT;
+                reject(wrapped);
+            };
+            reusePortListener.once('error', onError);
+            try {
+                reusePortListener.listen({ port: API_PORT, host: API_HOST, reusePort: true }, () => {
+                    reusePortListener.removeListener('error', onError);
+                    resolve();
+                });
+            } catch (err) {
+                reusePortListener.removeListener('error', onError);
+                onError(err);
+            }
+        });
+    }
+
     // trigger a request to cache swagger.json
     setImmediate(() => {
         server
@@ -7340,6 +7399,7 @@ ${now}`,
             }
 
             if (
+                IS_PRIMARY_API_WORKER &&
                 currentCert &&
                 currentCert.validTo < new Date(Date.now() - RENEW_TLS_AFTER) &&
                 (!currentCert.lastCheck || currentCert.lastCheck < new Date(Date.now() - BLOCK_TLS_RENEW))

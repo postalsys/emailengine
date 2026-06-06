@@ -7,7 +7,7 @@ const logger = require('../lib/logger');
 
 const { REDIS_PREFIX } = require('../lib/consts');
 
-const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats, reloadHttpProxyAgent } = require('../lib/tools');
+const { getDuration, getBoolean, emitChangeEvent, readEnvValue, hasEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -830,9 +830,7 @@ class ConnectionHandler {
 
         switch (message.cmd) {
             case 'settings':
-                if (message.data && ('httpProxyEnabled' in message.data || 'httpProxyUrl' in message.data)) {
-                    reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
-                }
+                maybeReloadHttpProxyAgent(message.data);
 
                 if (message.data && message.data.logs) {
                     for (let [account, accountObject] of this.accounts) {

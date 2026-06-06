@@ -10,7 +10,7 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, reloadHttpProxyAgent } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
 
 const Bugsnag = require('@bugsnag/js');
@@ -200,10 +200,7 @@ parentPort.on('message', message => {
     }
 
     if (message && message.cmd === 'settings') {
-        let d = message.data || {};
-        if ('httpProxyEnabled' in d || 'httpProxyUrl' in d) {
-            reloadHttpProxyAgent().catch(err => logger.error({ msg: 'Failed to reload HTTP proxy agent', err }));
-        }
+        maybeReloadHttpProxyAgent(message.data);
     }
 });
 
