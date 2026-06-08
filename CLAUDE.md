@@ -33,7 +33,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - `lib/export.js` - Export class for bulk email export operations
 - `lib/api-routes/export-routes.js` - Export REST API endpoints
 - `workers/api.js` - REST API worker with Hapi server
-- `lib/routes-ui.js` - Web UI routes for admin interface
+- `lib/routes-ui.js` - Admin UI route orchestrator (wires the `lib/ui-routes/*` modules)
 
 ## Technology Stack
 
@@ -154,7 +154,7 @@ The API worker (`workers/api.js`) runs a Hapi.js HTTP server serving both the RE
 
 **Key files:**
 - `workers/api.js` - Hapi server setup and middleware
-- `lib/routes-ui.js` - Admin UI routes (88 routes)
+- `lib/routes-ui.js` - Admin UI route orchestrator (wires the `lib/ui-routes/*` route modules)
 - `lib/api-routes/*.js` - REST API route modules
 - `lib/tokens.js` - Token validation and CRUD
 
