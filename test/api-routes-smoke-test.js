@@ -17,6 +17,7 @@ require('dotenv').config({ quiet: true });
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');
+const crypto = require('crypto');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
@@ -132,5 +133,22 @@ test('Extracted API routes smoke test', async t => {
             const res = await authed.get(path);
             assert.equal(res.status, 200, `GET ${path} should return 200 with a valid token (got ${res.status})`);
         }
+    });
+
+    await t.test('token listing exposes the SHA-256 id for each token', async () => {
+        const res = await authed.get('/v1/tokens');
+        assert.equal(res.status, 200, `GET /v1/tokens should return 200 (got ${res.status})`);
+        assert.ok(Array.isArray(res.body.tokens) && res.body.tokens.length > 0, 'expected at least one root token in the listing');
+
+        for (const token of res.body.tokens) {
+            assert.match(token.id, /^[0-9a-f]{64}$/, 'each listed token should expose a 64-hex id (SHA-256 hash)');
+        }
+
+        // The id is the SHA-256 hash of the raw token, so the prepared token must appear by its hash.
+        const expectedId = crypto.createHash('sha256').update(Buffer.from(accessToken, 'hex')).digest('hex');
+        assert.ok(
+            res.body.tokens.some(token => token.id === expectedId),
+            'the prepared token should be listed with its SHA-256 id'
+        );
     });
 });

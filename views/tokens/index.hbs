@@ -35,6 +35,9 @@
                         <div class="p-2">Scopes</div>
                     </th>
                     <th class="p-0">
+                        <div class="p-2">Token ID</div>
+                    </th>
+                    <th class="p-0">
                         <div class="p-2">Last used</div>
                     </th>
                     <th class="p-0">
@@ -53,6 +56,12 @@
                     <td class="p-2">
                         {{#if scopes}}
                         {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}
+                        {{/if}}
+                    </td>
+
+                    <td class="p-2">
+                        {{#if idShort}}
+                        <code data-toggle="tooltip" data-placement="top" title="{{id}}" style="cursor: help;">{{idShort}}</code>
                         {{/if}}
                     </td>
 

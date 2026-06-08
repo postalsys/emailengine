@@ -1117,6 +1117,12 @@ Include your token in requests using one of these methods:
                 };
             }
 
+            // Bind the token hash (id) to the request logger so it is included in the per-request
+            // log entry, allowing API requests to be correlated to the token that made them.
+            if (request.logger && typeof request.logger.setBindings === 'function') {
+                request.logger.setBindings({ tokenId: tokenData.id, tokenAccount: tokenData.account || null });
+            }
+
             if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
                 // failed scope validation
                 logger.error({
