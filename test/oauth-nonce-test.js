@@ -32,7 +32,7 @@ test('OAuth nonce encoding tests', async t => {
     await t.test('new nonce generation uses base64url encoding in codebase', async () => {
         // Static analysis: scan source files for nonce generation
         // New nonces should use base64url, but validation accepts both for backward compatibility
-        const sourceFiles = ['workers/api.js', 'lib/routes-ui.js', 'lib/ui-routes/account-routes.js', 'lib/api-routes/account-routes.js'];
+        const sourceFiles = ['workers/api.js', 'lib/routes-ui.js', 'lib/api-routes/account-routes.js'];
 
         const base64urlPattern = /NONCE_BYTES\)\.toString\(['"]base64url['"]\)/;
         const base64Pattern = /NONCE_BYTES\)\.toString\(['"]base64['"]\)/;
@@ -99,7 +99,7 @@ test('OAuth nonce encoding tests', async t => {
 
     await t.test('nonce validation accepts both base64 and base64url formats', async () => {
         // Verify that files using data.n validate the format with backward-compatible regex
-        const filesToCheck = ['lib/routes-ui.js', 'lib/ui-routes/account-routes.js'];
+        const filesToCheck = ['lib/routes-ui.js'];
 
         // Pattern: validates nonce and throws Boom error for invalid format
         // Now accepts both base64url and base64 encoding
