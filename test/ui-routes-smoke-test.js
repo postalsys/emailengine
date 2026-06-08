@@ -67,11 +67,7 @@ const GET_ROUTES = [
     '/admin/templates/new',
     '/admin/tokens',
     '/admin/tokens/new',
-    // NOTE: GET /admin/totp is intentionally omitted. Its handler reads the logged-in
-    // user off request.auth.credentials, so a direct GET without a partial-auth login
-    // session returns a pre-existing 500 (lib/routes-ui.js, the 2FA page). That is not a
-    // regression this refactor can cause; the route's registration is still covered by
-    // the route-table snapshot test.
+    '/admin/totp',
     '/admin/upgrade',
     '/admin/webhooks',
     '/admin/webhooks/new',
