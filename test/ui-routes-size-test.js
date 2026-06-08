@@ -16,7 +16,7 @@ const fs = require('fs');
 const pathlib = require('path');
 
 // Lower this after every extraction batch to the new `wc -l lib/routes-ui.js`.
-const BUDGET = 8143;
+const BUDGET = 7813;
 
 test('routes-ui.js stays within the size budget', () => {
     const filePath = pathlib.join(__dirname, '..', 'lib', 'routes-ui.js');
