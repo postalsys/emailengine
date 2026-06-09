@@ -76,6 +76,11 @@ function createMockRedis() {
             };
         },
         ttl: async () => 3600,
+        hincrby: async (key, field, increment) => {
+            if (!mockRedisData[key]) mockRedisData[key] = {};
+            mockRedisData[key][field] = String((Number(mockRedisData[key][field]) || 0) + increment);
+            return Number(mockRedisData[key][field]);
+        },
         zpopmin: async () => [],
         eval: async () => 1,
         smembers: async () => [],
@@ -1351,6 +1356,29 @@ test('Export functionality tests', async t => {
 
         assert.strictEqual(mockRedisData[exportKey], undefined, 'Export key should be deleted');
         assert.strictEqual(mockRedisData[queueKey], undefined, 'Queue key should be deleted');
+    });
+
+    // Export.getNextBatch() tests
+    await t.test('Export.getNextBatch() counts undecodable entries as skipped', async () => {
+        const account = 'test-account';
+        const exportId = 'exp_test123';
+        const exportKey = `exp:${account}:${exportId}`;
+        mockRedisData[exportKey] = { exportId, status: 'processing', messagesSkipped: '0' };
+
+        const validEntry = msgpack.encode({ folder: 'INBOX', messageId: '<a@b>', uid: 1, size: 10 }).toString('base64url');
+        const garbageEntry = 'not-valid-msgpack-data';
+
+        const originalZpopmin = mockRedis.zpopmin;
+        mockRedis.zpopmin = async () => [validEntry, '1', garbageEntry, '2'];
+        try {
+            const messages = await Export.getNextBatch(account, exportId, 10);
+
+            assert.strictEqual(messages.length, 1, 'Only the decodable entry should be returned');
+            assert.strictEqual(messages[0].messageId, '<a@b>');
+            assert.strictEqual(Number(mockRedisData[exportKey].messagesSkipped), 1, 'Undecodable entry should be counted as skipped');
+        } finally {
+            mockRedis.zpopmin = originalZpopmin;
+        }
     });
 
     // Schema validation for truncated field
