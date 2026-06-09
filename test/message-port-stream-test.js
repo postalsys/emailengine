@@ -112,6 +112,44 @@ test('a producer error reaches the reader as a stream error, not a clean end (Co
     }
 });
 
+test('an error posted before the consumer starts reading is caught by a construction-time guard listener', async () => {
+    // Mirrors lib/account.js getRawMessage/getAttachment: the producer error travels one
+    // hop (direct MessageChannel) while the setup-call response travels two, so {error}
+    // can arrive before Hapi attaches its own 'error' listeners. The guard listener
+    // attached synchronously after construction must catch it - otherwise the emission
+    // is an uncaught exception that kills the API worker.
+    const { port1, port2 } = new MessageChannel();
+
+    try {
+        const reader = new MessagePortReadable(port1);
+
+        // Attached in the same synchronous block as the constructor, like account.js.
+        let guardedError = null;
+        reader.on('error', err => {
+            guardedError = err;
+        });
+        let endedCleanly = false;
+        reader.on('end', () => {
+            endedCleanly = true;
+        });
+
+        // Producer fails instantly, before any read()/resume() or further listeners.
+        port2.postMessage({ error: 'producer failed before consumer attached' });
+
+        await tick();
+        await tick();
+
+        assert.ok(guardedError, 'the guard listener must receive the early producer error');
+        assert.strictEqual(guardedError.message, 'producer failed before consumer attached');
+        assert.strictEqual(reader.destroyed, true, 'reader should be destroyed by the early error');
+        assert.strictEqual(endedCleanly, false, 'reader must not end cleanly on a producer error');
+        assert.strictEqual(port1.listenerCount('message'), 0, 'reader message listener must be removed on destroy');
+    } finally {
+        port1.close();
+        port2.close();
+    }
+});
+
 test('destroying a reader whose producer never attached releases the port (setup-failure cleanup)', async () => {
     // Mirrors lib/account.js: a getRawMessage/getAttachment setup call rejects (timeout,
     // worker gone, 404) before the IMAP worker attaches a writable to the transferred
