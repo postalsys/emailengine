@@ -91,48 +91,85 @@ const { shouldSeedLostIndex, SyncOperations } = require('../lib/email-client/ima
 const { MAILBOX_RESET_NOTIFY } = require('../lib/consts');
 
 // --- shouldSeedLostIndex: the recover-silently decision -------------------------------------
+//
+// The stored objects below follow the getStoredStatus contract: hasStoredState reports
+// whether the mailbox hash held ANY field at all (Redis eviction removes whole keys),
+// while individual fields are false when absent.
 
 test('shouldSeedLostIndex is false on a genuine first sync (preserves notifyFrom backfill)', () => {
     // First connected session: state:count:connected === 1 by the time onOpen runs.
-    const stored = { uidNext: false };
+    const stored = { hasStoredState: false, uidNext: false };
     const mailbox = { messages: 5 };
     assert.equal(shouldSeedLostIndex(stored, mailbox, 1), false);
 });
 
 test('shouldSeedLostIndex is true when a prior session synced but folder state is gone', () => {
-    const stored = { uidNext: false };
+    const stored = { hasStoredState: false, uidNext: false };
     const mailbox = { messages: 5 };
     assert.equal(shouldSeedLostIndex(stored, mailbox, 2), true);
 });
 
-test('shouldSeedLostIndex is false when stored state is intact (uidNext is a number)', () => {
-    const stored = { uidNext: 42 };
+test('shouldSeedLostIndex is false when stored state is intact', () => {
+    const stored = { hasStoredState: true, uidNext: 42 };
     const mailbox = { messages: 5 };
     assert.equal(shouldSeedLostIndex(stored, mailbox, 5), false);
 });
 
 test('shouldSeedLostIndex is false when the server mailbox is empty', () => {
-    const stored = { uidNext: false };
+    const stored = { hasStoredState: false, uidNext: false };
     const mailbox = { messages: 0 };
     assert.equal(shouldSeedLostIndex(stored, mailbox, 5), false);
 });
 
 test('shouldSeedLostIndex is false when the account never connected before', () => {
-    const stored = { uidNext: false };
+    const stored = { hasStoredState: false, uidNext: false };
     const mailbox = { messages: 5 };
     assert.equal(shouldSeedLostIndex(stored, mailbox, 0), false);
+});
+
+test('shouldSeedLostIndex is false on a server that omits UIDNEXT once other state is persisted', () => {
+    // Regression: servers that omit UIDNEXT from SELECT never get a stored uidNext
+    // (updateStoredStatus skips falsy values), but the fields written by every sync
+    // keep the hash present. Keying on uidNext alone caused an infinite reseed loop
+    // with messageNew permanently suppressed.
+    const stored = { hasStoredState: true, uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, initialUidNext: false, lastFullSync: false };
+    const mailbox = { messages: 3 };
+    assert.equal(shouldSeedLostIndex(stored, mailbox, 5), false);
+});
+
+test('shouldSeedLostIndex is false for a synced-but-empty mailbox (stored messages: 0 is state)', () => {
+    const stored = { hasStoredState: true, uidValidity: false, uidNext: false, highestModseq: false, messages: 0, initialUidNext: false, lastFullSync: false };
+    const mailbox = { messages: 4 };
+    assert.equal(shouldSeedLostIndex(stored, mailbox, 3), false);
+});
+
+test('shouldSeedLostIndex is false when any single field survived in the hash', () => {
+    // initialUidNext alone can remain from an interrupted first sync - the hash was not
+    // evicted, so the normal notifyFrom-bounded path is the correct continuation there.
+    const mailbox = { messages: 5 };
+    const onlyInitialUidNext = {
+        hasStoredState: true,
+        uidValidity: false,
+        uidNext: false,
+        highestModseq: false,
+        messages: false,
+        initialUidNext: 7,
+        lastFullSync: false
+    };
+    assert.equal(shouldSeedLostIndex(onlyInitialUidNext, mailbox, 5), false);
 });
 
 // --- SyncOperations.seedMailboxIndex: the silent rebuild action -----------------------------
 
 // Shaped like a SyncOperations instance (this.mailbox / this.connection / this.logger).
-function createSeedCtx(messages) {
+function createSeedCtx(messages, opts = {}) {
     const calls = {
         entryListSet: [],
         updateStoredStatus: [],
         deletedKeys: [],
         zadd: [],
-        resetEvents: []
+        resetEvents: [],
+        fetchOne: []
     };
 
     const redis = {
@@ -158,6 +195,10 @@ function createSeedCtx(messages) {
                             yield m;
                         }
                     })();
+                },
+                fetchOne: async (range, fields) => {
+                    calls.fetchOne.push({ range, fields });
+                    return 'fetchOneResult' in opts ? opts.fetchOneResult : false;
                 }
             },
             notify: async (mailbox, event, payload) => {
@@ -167,6 +208,7 @@ function createSeedCtx(messages) {
         mailbox: {
             path: 'INBOX',
             syncing: false,
+            imapIndexer: opts.imapIndexer || 'full',
             listingEntry: { path: 'INBOX', name: 'INBOX', specialUse: '\\Inbox' },
             getNotificationsKey: () => 'iam:acc:n:KEY',
             getMailboxLock: async () => ({ release: () => {} }),
@@ -229,6 +271,60 @@ test('seedMailboxIndex includes prevUidValidity when reseeding after a UIDVALIDI
     assert.equal(calls.zadd.length, 0);
 });
 
+// --- seedMailboxIndex in fast indexer mode ---------------------------------------------------
+
+test('seedMailboxIndex in fast mode skips message enumeration when the server reports UIDNEXT', async () => {
+    // Fast mode never maintains the message index; runFastSync only needs the stored
+    // uidNext baseline, which updateStoredStatus persists from the reported value.
+    const mailboxStatus = { uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 50000, path: 'INBOX' };
+    const { ctx, calls } = createSeedCtx([{ uid: 1, flags: new Set() }], { imapIndexer: 'fast' });
+
+    const indexed = await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
+
+    assert.equal(indexed, 0);
+    assert.equal(calls.fetch, undefined, 'no 1:* fetch in fast mode');
+    assert.equal(calls.fetchOne.length, 0, 'no fetchOne when the server reported UIDNEXT');
+    assert.equal(calls.entryListSet.length, 0, 'fast mode must not build the message index');
+    assert.equal(calls.zadd.length, 0);
+    assert.deepEqual(calls.deletedKeys, ['iam:acc:n:KEY']);
+    assert.equal(calls.updateStoredStatus.length, 1);
+    assert.equal(calls.updateStoredStatus[0], mailboxStatus);
+    assert.equal(calls.resetEvents.length, 1);
+    assert.equal(calls.resetEvents[0].event, MAILBOX_RESET_NOTIFY);
+});
+
+test('seedMailboxIndex in fast mode derives the uidNext baseline when the server omits UIDNEXT', async () => {
+    // Without a stored uidNext, runFastSync would replay every message as messageNew.
+    const mailboxStatus = { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, path: 'INBOX' };
+    const { ctx, calls } = createSeedCtx([], { imapIndexer: 'fast', fetchOneResult: { uid: 30 } });
+
+    await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
+
+    assert.equal(calls.fetchOne.length, 1);
+    assert.equal(calls.fetchOne[0].range, '*');
+    // The derived baseline is persisted through the regular updateStoredStatus mechanism
+    assert.equal(calls.updateStoredStatus.length, 1);
+    assert.equal(calls.updateStoredStatus[0].uidNext, 31);
+    assert.equal(mailboxStatus.uidNext, false, 'the caller-owned status object must not be mutated');
+    assert.equal(calls.fetch, undefined, 'no 1:* fetch in fast mode');
+    assert.equal(calls.entryListSet.length, 0);
+    assert.equal(calls.zadd.length, 0);
+    assert.equal(calls.resetEvents.length, 1);
+});
+
+test('seedMailboxIndex in fast mode completes without a baseline if fetchOne yields nothing', async () => {
+    // A raced expunge can leave fetchOne empty-handed; the seed must still finish cleanly.
+    const mailboxStatus = { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, path: 'INBOX' };
+    const { ctx, calls } = createSeedCtx([], { imapIndexer: 'fast', fetchOneResult: false });
+
+    await SyncOperations.prototype.seedMailboxIndex.call(ctx, mailboxStatus, { reason: 'syncStateLost' });
+
+    assert.equal(calls.fetchOne.length, 1);
+    assert.equal(calls.updateStoredStatus.length, 1);
+    assert.equal(calls.updateStoredStatus[0].uidNext, false, 'no synthesized baseline without a UID');
+    assert.equal(calls.resetEvents.length, 1);
+});
+
 // --- onOpen wiring: which branch runs when state is missing ---------------------------------
 
 function createOnOpenCtx({ stored, mailbox, previouslyConnected }) {
@@ -276,7 +372,7 @@ function createOnOpenCtx({ stored, mailbox, previouslyConnected }) {
 
 test('onOpen recovers silently when folder state is lost after a prior session', async () => {
     const { ctx, calls } = createOnOpenCtx({
-        stored: { uidNext: false }, // mailbox hash evicted: no stored state
+        stored: { hasStoredState: false, uidNext: false }, // mailbox hash evicted: no stored state
         mailbox: { uidValidity: 123n, uidNext: 51, highestModseq: 10n, messages: 3 },
         previouslyConnected: 2
     });
@@ -293,7 +389,7 @@ test('onOpen recovers silently when folder state is lost after a prior session',
 
 test('onOpen does NOT seed on a genuine first sync (normal sync path runs)', async () => {
     const { ctx, calls } = createOnOpenCtx({
-        stored: { uidNext: false, messages: false, highestModseq: false },
+        stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false },
         mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 },
         previouslyConnected: 1
     });
@@ -303,4 +399,38 @@ test('onOpen does NOT seed on a genuine first sync (normal sync path runs)', asy
     // First sync must fall through to the normal (notifyFrom-bounded) sync, not the silent reseed
     assert.equal(calls.seed.length, 0);
     assert.ok(calls.fullSync + calls.partialSync >= 1);
+});
+
+test('onOpen does NOT reseed on a server that omits UIDNEXT once state is persisted (no loop)', async () => {
+    // Regression: after one seed the stored hash holds uidValidity/highestModseq/messages
+    // but never uidNext on such servers. The next open must take the normal sync path,
+    // not loop back into seedMailboxIndex (which suppressed messageNew forever).
+    const { ctx, calls } = createOnOpenCtx({
+        stored: { hasStoredState: true, uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3, initialUidNext: false, lastFullSync: false },
+        mailbox: { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 3 },
+        previouslyConnected: 3
+    });
+
+    const result = await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(calls.seed.length, 0, 'must not reseed when stored state exists');
+    // Unchanged MODSEQ means no sync is needed at all on this open
+    assert.equal(result, false);
+    assert.equal(calls.fullSync, 0);
+    assert.equal(calls.partialSync, 0);
+});
+
+test('onOpen syncs new mail in a previously-empty mailbox instead of silently reseeding', async () => {
+    // A synced-but-empty folder stores messages: "0". When the first messages arrive,
+    // they must be advertised via the normal sync path, not swallowed by a reseed.
+    const { ctx, calls } = createOnOpenCtx({
+        stored: { hasStoredState: true, uidValidity: 123n, uidNext: false, highestModseq: 9n, messages: 0, initialUidNext: false, lastFullSync: false },
+        mailbox: { uidValidity: 123n, uidNext: false, highestModseq: 10n, messages: 5 },
+        previouslyConnected: 3
+    });
+
+    await Mailbox.prototype.onOpen.call(ctx);
+
+    assert.equal(calls.seed.length, 0, 'stored messages: 0 is state, not a lost index');
+    assert.ok(calls.fullSync + calls.partialSync >= 1, 'new mail must run a normal sync');
 });
