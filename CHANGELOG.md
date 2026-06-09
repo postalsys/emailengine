@@ -1,5 +1,45 @@
 # Changelog
 
+## [2.69.0](https://github.com/postalsys/emailengine/compare/v2.68.1...v2.69.0) (2026-06-09)
+
+
+### Features
+
+* add label/category filtering to message search ([c171c4e](https://github.com/postalsys/emailengine/commit/c171c4e1efe582f7e532b69108110a1c48aa3ede))
+* detect unsafe Redis eviction config in dashboard warnings ([712d5d6](https://github.com/postalsys/emailengine/commit/712d5d69b99cc45c6f3e123a084ef054236e0110))
+* rebuild lost IMAP sync state without replaying messageNew ([9fe391e](https://github.com/postalsys/emailengine/commit/9fe391e9d6350485aded780709305d698a4c65fb))
+* surface token hash for identification in API, UI, and logs ([8e2a5a9](https://github.com/postalsys/emailengine/commit/8e2a5a9f2bb5194e92575c34c0006a8c4e21888d))
+
+
+### Bug Fixes
+
+* avoid 500 on GET /admin/totp without a partial-auth session ([b6f2394](https://github.com/postalsys/emailengine/commit/b6f2394182379d94a05f95c84f5ce04ae6f87a05))
+* bound inbound line length in the IMAP proxy parser ([9fb8a5e](https://github.com/postalsys/emailengine/commit/9fb8a5e301564dee46b48ca32a5b84e4832d96e8))
+* close leaks and a worker crash found in the connection hardening review ([e97950e](https://github.com/postalsys/emailengine/commit/e97950e7e907ac5b5549302b8865c5d2bfb0d6e2))
+* count undecodable export queue entries as skipped ([72e2498](https://github.com/postalsys/emailengine/commit/72e2498390f17ad24d5f7b1577540674d7e1fe09))
+* distinguish SO_REUSEPORT fallback cause in logs and admin UI ([99ad9f3](https://github.com/postalsys/emailengine/commit/99ad9f3359eab5bafc4726535584874d4823f7bd))
+* drain webhook response body on every delivery path ([2cc3e7a](https://github.com/postalsys/emailengine/commit/2cc3e7aef114b5b913dea5c363278e1a883d5a48))
+* extract gettext strings from the decomposed ui-routes modules ([227e60f](https://github.com/postalsys/emailengine/commit/227e60ff4f354c5d0f55534877c8ab6fbdd92c7d))
+* guard cross-thread download streams against early producer errors ([191ec62](https://github.com/postalsys/emailengine/commit/191ec6204887c3abe78da7a9944e3165b19c0b87))
+* guard IMAP notification handlers against malformed events ([0248953](https://github.com/postalsys/emailengine/commit/0248953a5dcccba5d46704bf7113a70fb5ac3150))
+* guard webhook notifications in BullMQ failure handlers ([e90048e](https://github.com/postalsys/emailengine/commit/e90048e7b7bd92916219602f92305342234df4a3))
+* harden IMAP proxy STARTTLS against command injection ([3661ddd](https://github.com/postalsys/emailengine/commit/3661dddbf216b29ec8f074d3f6422dd4db5d9e7b))
+* harden inter-thread IPC (worker-death call rejection, webhook guards, stream cleanup) ([0111a8e](https://github.com/postalsys/emailengine/commit/0111a8e2bf139c3412cc37e5e933fd5316cee8fc))
+* harden message export against data loss and corruption ([540d867](https://github.com/postalsys/emailengine/commit/540d8678ec25f62e8123fc78fa929f4e4713b5d4))
+* harden multiple-API-worker startup and centralize proxy-agent reload ([7f2db9e](https://github.com/postalsys/emailengine/commit/7f2db9e557d960aa1b7523b7d8678598683c2f29))
+* list Outlook folders with slashes in the name ([dd35e7b](https://github.com/postalsys/emailengine/commit/dd35e7b262a47f9395811d75c4bcc1d9ab4c6ec0))
+* only reseed lost IMAP sync state when no stored state exists ([78e0141](https://github.com/postalsys/emailengine/commit/78e0141e9f3478d2a2a1206c805258c6807a45d8))
+* prevent IMAP worker crash on download stream errors ([d9d5396](https://github.com/postalsys/emailengine/commit/d9d539632cc245a8e2a14585fc7918186bee00b6))
+* prevent post-BYE command dispatch in IMAP proxy teardown ([d51e92d](https://github.com/postalsys/emailengine/commit/d51e92d298e9373a6dc5c2eb0919885e161b45c7))
+* re-arm a generous idle timeout for proxied IMAP connections ([627c6d4](https://github.com/postalsys/emailengine/commit/627c6d472e50f6fc3e958e4774226557a526018d))
+* reject in-flight worker calls when a worker thread terminates ([08e7b01](https://github.com/postalsys/emailengine/commit/08e7b0128a4b8e9f9e5a96fefe49110bd032bd2c))
+* release cross-thread download streams on abort and error ([6514249](https://github.com/postalsys/emailengine/commit/65142499d095bbcb5f0bb49755a2e24f6e52fa62))
+* release MessagePort streams when message/attachment downloads fail ([787f4f5](https://github.com/postalsys/emailengine/commit/787f4f5ef6364ec1389c15269c8f7f8eaaa2142a))
+* return 422 for unsupported label search and surface Outlook categories ([d981359](https://github.com/postalsys/emailengine/commit/d981359b78b61d2c8a03e4e35086a4c9674ce53a))
+* return the append destination folder from uploadMessage ([96aed6b](https://github.com/postalsys/emailengine/commit/96aed6b1144e1d3ee9da79b3a1fb03606245f83c))
+* send correctly typed SMTP and IMAP proxy state change notifications ([3fbd27f](https://github.com/postalsys/emailengine/commit/3fbd27fc08bb74f9738a3fc95d4177fa4978c263))
+* tear down subconnections when deleting an IMAP account ([bd81a33](https://github.com/postalsys/emailengine/commit/bd81a33caf9400cbee2781a9180f1a901c1d6e48))
+
 ## [2.68.1](https://github.com/postalsys/emailengine/compare/v2.68.0...v2.68.1) (2026-06-01)
 
 
