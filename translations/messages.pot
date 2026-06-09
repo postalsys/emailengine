@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-08 17:28+0000\n"
+"POT-Creation-Date: 2026-06-09 18:01+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:2953
+#: workers/api.js:2959
 msgid "Something went wrong"
 msgstr ""
 
@@ -55,6 +55,46 @@ msgstr ""
 msgid "Try Again"
 msgstr ""
 
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:21
+#: views/unsubscribe.hbs:75
+msgid "Email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27
+#: views/unsubscribe.hbs:81
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/unsubscribe.hbs:3
 #: views/unsubscribe.hbs:62
 #: views/unsubscribe.hbs:85
@@ -92,46 +132,6 @@ msgstr ""
 
 #: views/unsubscribe.hbs:58
 msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:75
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:81
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-msgid "Password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -249,8 +249,8 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: workers/api.js:2172
-#: workers/api.js:2500
+#: workers/api.js:2178
+#: workers/api.js:2506
 #: lib/ui-routes/account-routes.js:399
 #: lib/ui-routes/account-routes.js:434
 #: lib/ui-routes/account-routes.js:549
@@ -260,8 +260,8 @@ msgstr ""
 msgid "Email Account Setup"
 msgstr ""
 
-#: workers/api.js:2952
-#: workers/api.js:3069
+#: workers/api.js:2958
+#: workers/api.js:3075
 msgid "Requested page not found"
 msgstr ""
 
