@@ -787,7 +787,7 @@ let updateServerState = async (type, state, payload) => {
         for (let worker of workers.get('api')) {
             let callPayload = {
                 cmd: 'change',
-                type: '${type}ServerState',
+                type: `${type}ServerState`,
                 key: state,
                 payload: payload || null
             };
