@@ -1,7 +1,5 @@
 'use strict';
 
-// NB! This file is processed by gettext parser and can not use newer syntax like ?.
-
 const { parentPort, workerData } = require('worker_threads');
 
 const packageData = require('../package.json');
