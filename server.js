@@ -1970,6 +1970,11 @@ let licenseCheckHandler = async opts => {
                         }
                 }
             }
+
+            // Workers were respawned after license activation. Assign any accounts that
+            // accumulated in the unassigned set while workers were suspended, as the
+            // worker ready handler only reassigns after crashes (reassignmentPending)
+            assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts after license activation', err }));
         }
     } finally {
         checkingLicense = false;
