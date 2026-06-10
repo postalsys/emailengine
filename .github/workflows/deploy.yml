@@ -41,7 +41,7 @@ jobs:
               id: deploy
               run: |
                   echo $GITHUB_SHA > commit.txt
-                  ./update-info.sh
+                  EE_COMMIT_HASH=$GITHUB_SHA ./update-info.sh
                   npm install --omit=dev
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
                   scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
@@ -55,7 +55,7 @@ jobs:
               id: deploy-demo
               run: |
                   echo $GITHUB_SHA > commit.txt
-                  ./update-info.sh
+                  EE_COMMIT_HASH=$GITHUB_SHA ./update-info.sh
                   npm install --omit=dev
                   tar czf /tmp/${SERVICE_NAME}.tar.gz --exclude .git .
                   scp -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" /tmp/${SERVICE_NAME}.tar.gz deploy@${TARGET_HOST_02}:
@@ -104,8 +104,11 @@ jobs:
                   images: |
                       ${{ github.repository }}
                       ghcr.io/${{ github.repository }}
+                  # :latest is owned by the release workflow (release.yaml) and
+                  # always points at the newest release; per-push dev builds from
+                  # master are published as :edge instead
                   tags: |
-                      type=raw,value=latest,enable=true
+                      type=raw,value=edge,enable=true
 
             - name: Build and push
               uses: docker/build-push-action@v7
