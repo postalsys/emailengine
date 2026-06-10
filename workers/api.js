@@ -133,7 +133,7 @@ const deliveryTestRoutes = require('../lib/api-routes/delivery-test-routes');
 const blocklistRoutes = require('../lib/api-routes/blocklist-routes');
 const submitRoutes = require('../lib/api-routes/submit-routes');
 
-const { imapSchema, smtpSchema, oauth2Schema, accountIdSchema, headerTimeoutSchema } = require('../lib/schemas');
+const { imapSchema, smtpSchema, oauth2Schema, accountIdSchema, headerTimeoutSchema, errorResponses } = require('../lib/schemas');
 
 const OAuth2ProviderSchema = Joi.string()
     .valid(...Object.keys(OAUTH_PROVIDERS))
@@ -2659,7 +2659,8 @@ Include your token in requests using one of these methods:
 
             plugins: {
                 'hapi-swagger': {
-                    produces: ['text/event-stream']
+                    produces: ['text/event-stream'],
+                    responses: errorResponses(401, 403, 429, 500)
                 }
             },
 
