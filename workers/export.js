@@ -91,6 +91,13 @@ function isSkippableError(err) {
     return err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
 }
 
+// Account.listMessages reports unknown folders as FolderNotFound (Boom error with the code in
+// the payload), the Gmail and Outlook backends throw NotFound directly
+function isFolderMissingError(err) {
+    let errCode = err.output?.payload?.code || err.code;
+    return ['FolderNotFound', 'NotFound'].includes(errCode);
+}
+
 let callQueue = new Map();
 let mids = 0;
 
@@ -341,7 +348,18 @@ async function indexFolder(accountObject, account, exportId, folderPath, startDa
             cursor
         };
 
-        const result = await accountObject.listMessages(listOptions);
+        let result;
+        try {
+            result = await accountObject.listMessages(listOptions);
+        } catch (err) {
+            // Other errors (e.g. a deleted account) propagate
+            if (isFolderMissingError(err)) {
+                // The folder disappeared mid-export - treat it as empty instead of failing the export
+                logger.warn({ msg: 'Export folder was not found, skipping', account, exportId, folder: folderPath, err });
+                return queued;
+            }
+            throw err;
+        }
 
         for (const msg of result.messages || []) {
             if (maxMessages && queued >= maxMessages) {

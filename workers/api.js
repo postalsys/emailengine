@@ -145,9 +145,11 @@ const OAuth2ProviderSchema = Joi.string()
     .label('OAuth2Provider');
 
 const AccountTypeSchema = Joi.string()
-    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat('oauth2'))
+    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat(['oauth2', 'delegated', 'sending', 'invalid']))
     .example('outlook')
-    .description('Account type')
+    .description(
+        'Account type: "imap" for IMAP accounts, an OAuth2 provider name for OAuth2 accounts, "oauth2" when the OAuth2 application is missing, "delegated" for delegated accounts, "sending" for send-only accounts, "invalid" when delegation cannot be resolved'
+    )
     .required()
     .label('AccountType');
 
@@ -2684,7 +2686,7 @@ Include your token in requests using one of these methods:
             skip: (request /*, h*/) => {
                 let tags = (request.route && request.route.settings && request.route.settings.tags) || [];
 
-                if (tags.includes('api') || tags.includes('metrics') || tags.includes('external')) {
+                if (tags.includes('api') || tags.includes('scope:metrics') || tags.includes('static') || tags.includes('external')) {
                     return true;
                 }
 
@@ -3055,9 +3057,7 @@ Include your token in requests using one of these methods:
 
         async handler(request, h) {
             const renderedMetrics = await call({ cmd: 'metrics', timeout: request.headers['x-ee-timeout'] });
-            const response = h.response('success');
-            response.type('text/plain');
-            return renderedMetrics;
+            return h.response(renderedMetrics).type('text/plain');
         },
         options: {
             tags: ['scope:metrics'],
