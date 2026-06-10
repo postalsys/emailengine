@@ -222,13 +222,15 @@ const submitWorker = new Worker(
             }
 
             let backoffDelay = Number(job.opts.backoff && job.opts.backoff.delay) || 0;
-            let nextAttempt = job.attemptsMade < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
+            // job.attemptsMade is not yet incremented for the ongoing attempt, so the
+            // next retry (if this attempt fails) is delayed by 2^attemptsMade * base
+            let nextAttempt = job.attemptsMade + 1 < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
 
             queueEntry.job = {
                 id: job.id,
                 attemptsMade: job.attemptsMade,
                 attempts: job.opts.attempts,
-                nextAttempt: new Date(nextAttempt).toISOString()
+                nextAttempt: nextAttempt ? new Date(nextAttempt).toISOString() : false
             };
 
             let res = await accountObject.submitMessage(queueEntry);
