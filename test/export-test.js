@@ -1396,3 +1396,55 @@ test('Export functionality tests', async t => {
         assert.ok(!result.error, `Should accept truncated field, got error: ${result.error?.message}`);
     });
 });
+
+// Regression tests for the error classifiers the export worker uses to decide between skipping a
+// single message, retrying, or failing the whole job. Account.assertMessageFound throws a Boom 404
+// whose code/status live only in err.output - isSkippableError used to read only the plain fields,
+// so an expunged message failed the entire export instead of being counted as skipped.
+test('Export error classifiers', async t => {
+    const Boom = require('@hapi/boom');
+    const { isTransientError, isSkippableError, isFolderMissingError } = require('../lib/export');
+
+    await t.test('Boom 404 from Account.assertMessageFound is skippable', () => {
+        // exact construction from lib/account.js assertFound()
+        let error = Boom.boomify(new Error('Requested message was not found'), { statusCode: 404 });
+        error.output.payload.code = 'MessageNotFound';
+
+        assert.strictEqual(isSkippableError(error), true, 'Boom-wrapped MessageNotFound must be skippable');
+        assert.strictEqual(isTransientError(error), false, 'a missing message is not transient');
+    });
+
+    await t.test('Boom 404 from Account.assertFolderFound is a missing folder', () => {
+        let error = Boom.boomify(new Error('Requested folder was not found'), { statusCode: 404 });
+        error.output.payload.code = 'FolderNotFound';
+
+        assert.strictEqual(isFolderMissingError(error), true);
+    });
+
+    await t.test('plain RPC-reconstructed not-found errors keep working', () => {
+        // workers/export.js call() rebuilds RPC errors with plain code/statusCode fields
+        let err = new Error('Folder not found');
+        err.code = 'NotFound';
+        err.statusCode = 404;
+
+        assert.strictEqual(isFolderMissingError(err), true);
+        assert.strictEqual(isSkippableError(err), true);
+    });
+
+    await t.test('transient and permanent errors are not skippable', () => {
+        let timeout = new Error('connection timed out');
+        timeout.code = 'ETIMEDOUT';
+        assert.strictEqual(isTransientError(timeout), true);
+        assert.strictEqual(isSkippableError(timeout), false);
+
+        let upstream = new Error('upstream failed');
+        upstream.statusCode = 502;
+        assert.strictEqual(isTransientError(upstream), true);
+        assert.strictEqual(isSkippableError(upstream), false);
+
+        let other = new Error('something else');
+        assert.strictEqual(isTransientError(other), false);
+        assert.strictEqual(isSkippableError(other), false);
+        assert.strictEqual(isFolderMissingError(other), false);
+    });
+});

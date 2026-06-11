@@ -28,6 +28,25 @@ function listJsFiles(dir) {
         .map(entryPath => Path.join(dir, entryPath));
 }
 
+// The full sorted scan set (sorted to keep POT reference output deterministic)
+function listScanFiles() {
+    let files = SCAN_FILES.map(file => Path.join(ROOT_DIR, file));
+    for (let dir of SCAN_DIRS) {
+        files = files.concat(listJsFiles(Path.join(ROOT_DIR, dir)));
+    }
+    return files.sort();
+}
+
+function parseFile(filePath) {
+    const source = fs.readFileSync(filePath, 'utf-8');
+    try {
+        return parse(source, { ecmaVersion: 'latest', sourceType: 'script', locations: true, allowHashBang: true });
+    } catch (err) {
+        err.message = `Failed to parse ${filePath}: ${err.message}`;
+        throw err;
+    }
+}
+
 // Resolves a call argument into a string value. Handles string literals and
 // concatenation of string literals ('foo' + 'bar'). Returns false for anything
 // dynamic (identifiers, template literals with expressions, etc.) - such calls
@@ -62,15 +81,7 @@ function calleeName(callee) {
 }
 
 function extractFromFile(filePath) {
-    const source = fs.readFileSync(filePath, 'utf-8');
-
-    let ast;
-    try {
-        ast = parse(source, { ecmaVersion: 'latest', sourceType: 'script', locations: true, allowHashBang: true });
-    } catch (err) {
-        err.message = `Failed to parse ${filePath}: ${err.message}`;
-        throw err;
-    }
+    const ast = parseFile(filePath);
 
     let entries = [];
     let reference = node => `${Path.relative(ROOT_DIR, filePath)}:${node.loc.start.line}`;
@@ -82,9 +93,11 @@ function extractFromFile(filePath) {
 
         let name = calleeName(node.callee);
 
+        // An empty msgid is skipped (like xgettext does): translations[''] is the POT header
+        // entry in gettext-parser, so an empty key would corrupt the header block
         if (name === 'gettext' && node.arguments.length >= 1) {
             let msgid = resolveString(node.arguments[0]);
-            if (msgid !== false) {
+            if (msgid !== false && msgid !== '') {
                 entries.push({ msgid, reference: reference(node) });
             }
         }
@@ -92,7 +105,7 @@ function extractFromFile(filePath) {
         if (name === 'ngettext' && node.arguments.length >= 2) {
             let msgid = resolveString(node.arguments[0]);
             let msgidPlural = resolveString(node.arguments[1]);
-            if (msgid !== false && msgidPlural !== false) {
+            if (msgid !== false && msgid !== '' && msgidPlural !== false) {
                 entries.push({ msgid, msgidPlural, reference: reference(node) });
             }
         }
@@ -102,12 +115,7 @@ function extractFromFile(filePath) {
 }
 
 function main() {
-    let files = SCAN_FILES.map(file => Path.join(ROOT_DIR, file));
-    for (let dir of SCAN_DIRS) {
-        files = files.concat(listJsFiles(Path.join(ROOT_DIR, dir)));
-    }
-    // keep POT reference output deterministic
-    files.sort();
+    let files = listScanFiles();
 
     let extracted = [];
     for (let filePath of files) {
@@ -147,4 +155,9 @@ function main() {
     console.log(`Extracted ${extracted.length} gettext strings from ${files.length} JS files into ${Path.relative(ROOT_DIR, POT_PATH)}`);
 }
 
-main();
+if (require.main === module) {
+    main();
+}
+
+// Exported for the gettext coverage test, which walks the same scan set with the same helpers
+module.exports = { listScanFiles, parseFile, calleeName, extractFromFile };

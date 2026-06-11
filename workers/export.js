@@ -20,7 +20,7 @@ const {
 const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
-const { Export } = require('../lib/export');
+const { Export, isTransientError, isSkippableError, isFolderMissingError } = require('../lib/export');
 
 const Bugsnag = require('@bugsnag/js');
 if (readEnvValue('BUGSNAG_API_KEY')) {
@@ -73,30 +73,6 @@ const IMAP_MESSAGE_MAX_RETRIES = 3;
 const IMAP_MESSAGE_RETRY_BASE_DELAY = 2000;
 const ACCOUNT_CHECK_INTERVAL = 60 * 1000;
 const LOCK_EXTENSION_INTERVAL = 5 * 60 * 1000;
-
-function isTransientError(err) {
-    if (['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH'].includes(err.code)) {
-        return true;
-    }
-    if (err.statusCode >= 500 && err.statusCode < 600) {
-        return true;
-    }
-    if (err.code === 'Timeout' || err.message?.includes('timeout')) {
-        return true;
-    }
-    return false;
-}
-
-function isSkippableError(err) {
-    return err.code === 'MessageNotFound' || err.statusCode === 404 || err.message?.includes('Failed to generate message ID');
-}
-
-// Account.listMessages reports unknown folders as FolderNotFound (Boom error with the code in
-// the payload), the Gmail and Outlook backends throw NotFound directly
-function isFolderMissingError(err) {
-    let errCode = err.output?.payload?.code || err.code;
-    return ['FolderNotFound', 'NotFound'].includes(errCode);
-}
 
 let callQueue = new Map();
 let mids = 0;
@@ -978,11 +954,3 @@ parentPort.on('message', message => {
 });
 
 logger.info({ msg: 'Started export worker thread', version: packageData.version });
-
-module.exports = {
-    isTransientError,
-    isSkippableError,
-    IMAP_MESSAGE_MAX_RETRIES,
-    IMAP_MESSAGE_RETRY_BASE_DELAY,
-    ACCOUNT_CHECK_INTERVAL
-};

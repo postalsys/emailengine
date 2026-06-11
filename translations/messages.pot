@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-10 16:21+0000\n"
+"POT-Creation-Date: 2026-06-11 03:50+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:2959
+#: workers/api.js:2960
 msgid "Something went wrong"
 msgstr ""
 
@@ -29,30 +29,6 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:12
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:21
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:27
-msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
@@ -102,6 +78,30 @@ msgstr ""
 #: views/unsubscribe.hbs:81
 #: views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -391,7 +391,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2958
-#: workers/api.js:3073
+#: workers/api.js:2959
+#: workers/api.js:3074
 msgid "Requested page not found"
 msgstr ""
