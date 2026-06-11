@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.70.0](https://github.com/postalsys/emailengine/compare/v2.69.0...v2.70.0) (2026-06-11)
+
+
+### Features
+
+* allow enabling Sentry error reporting from the admin UI ([a4076a4](https://github.com/postalsys/emailengine/commit/a4076a4fa6658ccc998f9bfe35dddf015cd12b09))
+* replace Bugsnag with self-hosted Sentry for error tracking ([62de831](https://github.com/postalsys/emailengine/commit/62de831a2911da9b649fe693547ba09d70e2e481))
+* tag Sentry error reports with instance id and license key ([2e9683f](https://github.com/postalsys/emailengine/commit/2e9683f27d54ff8fa7ba3f6f4453866fd135f173))
+
+
+### Bug Fixes
+
+* align API response schemas with actual responses and fix uncovered API bugs ([abacbf6](https://github.com/postalsys/emailengine/commit/abacbf66f048a77d00d180a831a97594380d8ed9))
+* align remaining API response schemas with actual responses ([06136ab](https://github.com/postalsys/emailengine/commit/06136abd20a97c45b25aac7f93653387eb55928a))
+* assign unassigned accounts after license activation ([5677977](https://github.com/postalsys/emailengine/commit/56779778eba27f2d1604ff06f17e5736a5ddee61))
+* do not crash at startup when a feature flag env variable is set to a falsy value ([98ad979](https://github.com/postalsys/emailengine/commit/98ad97988e752fad9e2ae11eff63f35ffcf84976))
+* report correct nextAttempt time for queued messages ([d5ebdfb](https://github.com/postalsys/emailengine/commit/d5ebdfb029b3ed331a8239ace7426f4f0704ae2e))
+* resolve code review findings in Gmail bulk ops, exports, webhooks, and schemas ([f0ddb46](https://github.com/postalsys/emailengine/commit/f0ddb4631fb924ddb93e0a99d0e20bc9f0cc8ee2))
+
 ## [2.69.0](https://github.com/postalsys/emailengine/compare/v2.68.1...v2.69.0) (2026-06-09)
 
 
