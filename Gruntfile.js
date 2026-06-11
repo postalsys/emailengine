@@ -15,7 +15,9 @@ module.exports = function (grunt) {
 
         shell: {
             eslint: {
-                command: 'npx eslint lib/**/*.js workers/**/*.js server.js Gruntfile.js',
+                // Globs are quoted so eslint expands them itself - unquoted, sh (no globstar)
+                // expands lib/**/*.js to depth-2 files only and skips most of lib/
+                command: "npx eslint 'lib/**/*.js' 'workers/**/*.js' server.js Gruntfile.js",
                 options: {
                     async: false
                 }
