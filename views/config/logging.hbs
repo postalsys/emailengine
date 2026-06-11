@@ -49,6 +49,54 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Error Reporting</h6>
+        </div>
+        <div class="card-body">
+
+            {{#if sentryEnvManaged}}
+            <div class="alert alert-info">Error reporting is currently managed by the <code>SENTRY_DSN</code>
+                environment variable. The settings below are ignored until that variable is removed.</div>
+            {{/if}}
+
+            <div class="form-group form-check">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">sentryEnabled</a>]</div>
+
+                <input type="checkbox" class="form-check-input {{#if errors.sentryEnabled}}is-invalid{{/if}}"
+                    id="settingsSentryEnabled" name="sentryEnabled" {{#if values.sentryEnabled}}checked{{/if}}
+                    {{#if sentryEnvManaged}}disabled{{/if}} />
+                <label class="form-check-label" for="settingsSentryEnabled">Report Unhandled Errors to Sentry</label>
+                {{#if errors.sentryEnabled}}
+                <span class="invalid-feedback">{{errors.sentryEnabled}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Send unhandled errors to a Sentry server. Reports include stack
+                    traces, account IDs, and error details, but never credentials or message content. Changes apply
+                    within a minute - no restart needed.</small>
+            </div>
+
+            <div class="form-group">
+
+                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
+                        target="_blank" rel="noopener noreferrer">sentryDsn</a>]</div>
+
+                <label for="settingsSentryDsn">Sentry DSN</label>
+                <input type="text" class="form-control {{#if errors.sentryDsn}}is-invalid{{/if}}"
+                    id="settingsSentryDsn" name="sentryDsn" placeholder="https://public-key@sentry.example.com/1"
+                    value="{{values.sentryDsn}}" {{#if sentryEnvManaged}}disabled{{/if}} />
+                {{#if errors.sentryDsn}}
+                <span class="invalid-feedback">{{errors.sentryDsn}}</span>
+                {{/if}}
+                <small class="form-text text-muted">Leave empty to send reports to the Sentry instance run by the
+                    EmailEngine developers (sentry.emailengine.dev). Enabling this temporarily during a support case
+                    helps to debug problems with your installation. Set your own DSN to keep reports
+                    in-house.</small>
+            </div>
+        </div>
+    </div>
+
     <div class="mb-4">
         <button type="submit" class="btn btn-primary btn-icon-split">
             <span class="icon text-white-50">
