@@ -11,28 +11,8 @@ const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = re
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'submit', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+const { initSentry } = require('../lib/sentry');
+initSentry('submit');
 
 const util = require('util');
 const { redis, queueConf, submitQueue } = require('../lib/db');

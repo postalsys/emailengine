@@ -38,28 +38,8 @@ const {
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'api', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+const { initSentry } = require('../lib/sentry');
+initSentry('api');
 
 const Hapi = require('@hapi/hapi');
 const Boom = require('@hapi/boom');

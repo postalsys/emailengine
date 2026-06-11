@@ -107,29 +107,9 @@ const bounceClassifier = require('@postalsys/bounce-classifier');
 
 const v8 = require('node:v8');
 
-// Initialize Bugsnag error tracking if API key is provided
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'main', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+// Initialize Sentry error tracking if a DSN is provided
+const { initSentry } = require('./lib/sentry');
+initSentry('main');
 
 // Import additional dependencies
 const pathlib = require('path');

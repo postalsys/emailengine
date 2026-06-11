@@ -22,28 +22,8 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
 const { Export, isTransientError, isSkippableError, isFolderMissingError } = require('../lib/export');
 
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'export', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+const { initSentry } = require('../lib/sentry');
+initSentry('export');
 
 const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');

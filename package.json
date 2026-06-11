@@ -43,7 +43,6 @@
     },
     "homepage": "https://emailengine.app/",
     "dependencies": {
-        "@bugsnag/js": "8.9.0",
         "@bull-board/api": "7.2.1",
         "@bull-board/hapi": "7.2.1",
         "@elastic/elasticsearch": "8.15.3",
@@ -64,6 +63,7 @@
         "@postalsys/gettext": "4.1.1",
         "@postalsys/joi-messages": "1.0.5",
         "@postalsys/templates": "2.0.1",
+        "@sentry/node": "10.57.0",
         "@simplewebauthn/browser": "13.3.0",
         "@simplewebauthn/server": "13.3.1",
         "@zone-eu/mailsplit": "5.4.12",

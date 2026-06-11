@@ -14,28 +14,8 @@ const GB_COLLECT_DELAY = 6 * 3600 * 1000; // 6h
 const GB_FAILURE_DELAY = 3 * 1000;
 const GB_EMPTY_DELAY = 10 * 1000;
 
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'documents', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+const { initSentry } = require('../lib/sentry');
+initSentry('documents');
 
 const { redis, queueConf } = require('../lib/db');
 const { Worker } = require('bullmq');

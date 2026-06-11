@@ -9,28 +9,8 @@ const logger = require('../lib/logger');
 const { getDuration, emitChangeEvent, readEnvValue, threadStats, loadTlsConfig, getByteSize } = require('../lib/tools');
 const { matchIp } = require('../lib/utils/network');
 
-const Bugsnag = require('@bugsnag/js');
-if (readEnvValue('BUGSNAG_API_KEY')) {
-    Bugsnag.start({
-        apiKey: readEnvValue('BUGSNAG_API_KEY'),
-        appVersion: packageData.version,
-        logger: {
-            debug(...args) {
-                logger.debug({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            info(...args) {
-                logger.debug({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            warn(...args) {
-                logger.warn({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
-            },
-            error(...args) {
-                logger.error({ msg: args.shift(), worker: 'smtp', source: 'bugsnag', args: args.length ? args : undefined });
-            }
-        }
-    });
-    logger.notifyError = Bugsnag.notify.bind(Bugsnag);
-}
+const { initSentry } = require('../lib/sentry');
+initSentry('smtp');
 
 const { SMTPServer } = require('smtp-server');
 const util = require('util');
