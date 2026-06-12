@@ -48,7 +48,9 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 ```
 npm start         # Production mode
 npm run dev       # Development mode (verbose logging, Redis DB 9)
-npm test          # Run full test suite (lint + tests)
+npm test          # Run full test suite (lint + unit + integration tests)
+npm run test:unit # Fast unit tier only (parallel, no live server)
+npm run test:integration  # Live-server integration tier only
 npm run format    # Format code with Prettier
 npm run format:check  # Check formatting without changes
 npm run lint      # Lint with ESLint
@@ -60,9 +62,15 @@ npm run single    # Single-worker debug mode with Inspector
 
 - Uses Node.js native test runner with native assert module
 - Tests run via Grunt: `npm test` executes `grunt` which runs Node.js test runner
-- Tests located in `/test` directory
-- Uses Redis database 9 for test isolation
-- Run `npm test` for full test suite with linting
+- Uses Redis database 13 for test isolation (`config/test.toml`)
+- Two test tiers:
+  - **Unit tier** (`/test/*-test.js`): self-contained tests that need Redis but not the live server; run in parallel with default `node --test` concurrency. Run with `npm run test:unit`
+  - **Integration tier** (`/test/integration/*-test.js`): tests that run against a live EmailEngine server booted by Grunt (api-test, sendonly-test, api-routes-smoke-test, ui-routes-smoke-test); run serially. Server readiness is detected by polling `/health` (`test/helpers/wait-for-server.js`). Run with `npm run test:integration`
+- Test files must be named `*-test.js` - the runner globs only match that pattern, so helper modules (e.g. `test/integration/test-config.js`, `test/helpers/*`) are never executed as tests
+- New tests go in `/test` unless they make HTTP requests to the live server, in which case they go in `/test/integration`
+- The integration tier is non-hermetic: api-test.js talks to live Gmail/MS Graph and needs credentials from `.env`; failures there are often external-state flakes, re-run before blaming a change
+- Run `npm test` for the full suite with linting (unit tier, then integration tier)
+- CI (`.github/workflows/test.yml`) runs lint, unit, and integration as separate parallel jobs, so a failed section (usually the flaky integration tier) can be re-run alone via "Re-run failed jobs"
 
 ## Main Process (server.js)
 
