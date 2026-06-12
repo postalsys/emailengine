@@ -118,8 +118,8 @@
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
-        "acorn": "^8.16.0",
-        "acorn-walk": "^8.3.5",
+        "acorn": "8.17.0",
+        "acorn-walk": "8.3.5",
         "chai": "4.3.10",
         "eerawlog": "1.5.3",
         "eslint": "10.4.1",
