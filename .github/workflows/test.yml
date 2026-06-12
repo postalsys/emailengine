@@ -23,20 +23,33 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: 24
+                  cache: npm
             - run: npm install
 
             - name: Run License Checks
               run: |
                   npm run licenses
 
-    test:
-        name: Test Suite
-        timeout-minutes: 15  # Increased timeout for Gmail API tests
-        strategy:
-            matrix:
-                node: [24.x]
-                os: [ubuntu-24.04]
-        runs-on: ${{ matrix.os }}
+    lint:
+        name: Lint
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm install
+            - name: Run ESLint
+              run: |
+                  npm run lint
+
+    unit:
+        name: Unit Tests
+        timeout-minutes: 10
+        runs-on: ubuntu-24.04
         # Service containers to run with `container-job`
         services:
             # Label used to access the service container
@@ -53,19 +66,67 @@ jobs:
                     - 6379:6379
         steps:
             - uses: actions/checkout@v6
-            - name: Use Node.js ${{ matrix.node }}
+            - name: Use Node.js 24
               uses: actions/setup-node@v6
               with:
-                  node-version: ${{ matrix.node }}
+                  node-version: 24
+                  cache: npm
             - name: Setup Redis CLI
               uses: shogo82148/actions-setup-redis@v1
               with:
                   redis-version: '7.x'
                   auto-start: 'false'
             - run: npm install
-            - name: Run tests
+            - name: Run unit tests
               run: |
-                  npm test
+                  npm run test:unit
+              env:
+                  NODE_ENV: test
+                  # account-revoke-on-delete-test.js runs against live Gmail when
+                  # these are present and skips itself when they are not
+                  GMAIL_API_PROJECT_ID: ${{ secrets.TEST_GMAIL_API_PROJECT_ID }}
+                  GMAIL_API_CLIENT_ID: ${{ secrets.TEST_GMAIL_API_CLIENT_ID }}
+                  GMAIL_API_CLIENT_SECRET: ${{ secrets.TEST_GMAIL_API_CLIENT_SECRET }}
+                  GMAIL_API_SERVICE_EMAIL: ${{ secrets.TEST_GMAIL_API_SERVICE_EMAIL }}
+                  GMAIL_API_SERVICE_CLIENT: ${{ secrets.TEST_GMAIL_API_SERVICE_CLIENT }}
+                  GMAIL_API_SERVICE_KEY: ${{ secrets.TEST_GMAIL_API_SERVICE_KEY }}
+                  GMAIL_API_ACCOUNT_EMAIL_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_EMAIL_1 }}
+                  GMAIL_API_ACCOUNT_REFRESH_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_REFRESH_1 }}
+
+    integration:
+        name: Integration Tests
+        timeout-minutes: 15 # Increased timeout for Gmail API tests
+        runs-on: ubuntu-24.04
+        # Service containers to run with `container-job`
+        services:
+            # Label used to access the service container
+            redis:
+                # Docker Hub image
+                image: redis
+                # Set health checks to wait until redis has started
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - name: Setup Redis CLI
+              uses: shogo82148/actions-setup-redis@v1
+              with:
+                  redis-version: '7.x'
+                  auto-start: 'false'
+            - run: npm install
+            - name: Run integration tests
+              run: |
+                  npm run test:integration
               env:
                   NODE_ENV: test
                   GMAIL_API_PROJECT_ID: ${{ secrets.TEST_GMAIL_API_PROJECT_ID }}
