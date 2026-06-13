@@ -1,5 +1,8 @@
 module.exports = {
     upgrade: true,
+    // Keep joi within the 17.x major (hapi-swagger's peer dependency requires joi 17.x).
+    // Using a target function instead of a blanket reject so joi still receives 17.x security patches.
+    target: name => (name === 'joi' ? 'minor' : 'latest'),
     reject: [
         // Block package upgrades that moved to ESM
         'nanoid',
@@ -17,9 +20,6 @@ module.exports = {
 
         // some kind of CVE in later versions. Only needed for license reference, so the actual version does not matter anyway
         'startbootstrap-sb-admin-2',
-
-        // Keep joi at version 17.x for hapi-swagger compatibility
-        'joi',
 
         // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
         '@asamuzakjp/css-color',

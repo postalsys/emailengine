@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-13 08:30+0000\n"
+"POT-Creation-Date: 2026-06-13 08:57+0000\n"
 
 #: views/error.hbs:4
 #: workers/api.js:2940
@@ -104,6 +104,28 @@ msgstr ""
 msgid "Enter your email address"
 msgstr ""
 
+#: views/accounts/register/imap.hbs:11
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:17
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:31
+#: views/accounts/register/imap-server.hbs:36
+#: views/accounts/register/imap-server.hbs:128
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:51
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/index.hbs:2
 msgid "Choose your email account provider"
 msgstr ""
@@ -119,12 +141,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:22
 #: views/accounts/register/imap-server.hbs:114
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:36
-#: views/accounts/register/imap-server.hbs:128
-#: views/accounts/register/imap.hbs:31
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:45
@@ -231,22 +247,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:395
 msgid "Request failed."
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
-msgid "Continue"
 msgstr ""
 
 #: lib/autodetect-imap-settings.js:80
