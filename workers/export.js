@@ -812,6 +812,11 @@ const exportWorker = new Worker(
         lockDuration: 10 * 60 * 1000,
         stalledInterval: 2 * 60 * 1000,
         maxStalledCount: 5,
+        // Do not start consuming jobs at construction. Startup recovery (markInterruptedAsFailed +
+        // cleanup) must finish first, otherwise the worker can pick up a queued export and start
+        // processing it while recovery concurrently marks that same export failed and deletes its
+        // file. run() is called from the startup IIFE once recovery completes.
+        autorun: false,
         ...queueConf
     }
 );
@@ -861,6 +866,11 @@ function onCommand(command) {
     } catch (err) {
         logger.error({ msg: 'Failed to clean up export files', err });
     }
+
+    // Now that interrupted exports have been reconciled and orphaned files cleaned, start consuming
+    // jobs. Mirrors BullMQ's own autorun: a fatal run() failure is surfaced as an 'error' event,
+    // which (no listener) crashes the worker thread so the main process can restart it.
+    exportWorker.run().catch(error => exportWorker.emit('error', error));
 
     setInterval(() => {
         try {
