@@ -192,10 +192,9 @@ async function indexMessages(job, exportData) {
         }
 
         const folderPath = foldersToProcess[i];
-        let retries = FOLDER_INDEX_MAX_RETRIES;
-        let lastError = null;
+        let attempt = 0;
 
-        while (retries > 0) {
+        while (true) {
             try {
                 const remaining = maxMessages ? maxMessages - totalIndexed : 0;
                 const queued = await indexFolder(accountObject, account, exportId, folderPath, startDate, endDate, indexingStartTime, remaining);
@@ -211,40 +210,43 @@ async function indexMessages(job, exportData) {
                     totalIndexed
                 });
 
-                lastError = null;
                 break;
             } catch (err) {
-                lastError = err;
-                retries--;
-                if (retries > 0) {
-                    const attemptNumber = FOLDER_INDEX_MAX_RETRIES - retries;
-                    const delay = FOLDER_INDEX_RETRY_DELAY_MS * Math.pow(2, attemptNumber - 1);
-                    logger.warn({
-                        msg: 'Folder indexing failed, retrying',
+                attempt++;
+                // A folder that was deleted mid-export is handled inside indexFolder (treated as empty),
+                // so any error reaching here is a real failure. Only transient errors are worth retrying;
+                // a permanent error (deleted account, auth failure, unexpected server response) is not
+                // specific to this folder and would repeat for the rest, so fail the whole export. Silently
+                // skipping folders and marking an incomplete export "completed" hides data loss from the caller.
+                if (!isTransientError(err) || attempt >= FOLDER_INDEX_MAX_RETRIES) {
+                    logger.error({
+                        msg: 'Failed to index folder, failing export',
                         account,
                         exportId,
                         folder: folderPath,
-                        retriesLeft: retries,
-                        delayMs: delay,
+                        attempts: attempt,
                         err
                     });
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    err.message = `Failed to index folder "${folderPath}": ${err.message}`;
+                    throw err;
                 }
+
+                const delay = FOLDER_INDEX_RETRY_DELAY_MS * Math.pow(2, attempt - 1);
+                logger.warn({
+                    msg: 'Folder indexing failed, retrying',
+                    account,
+                    exportId,
+                    folder: folderPath,
+                    attempt,
+                    maxRetries: FOLDER_INDEX_MAX_RETRIES,
+                    delayMs: delay,
+                    err
+                });
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
 
-        if (lastError) {
-            logger.warn({
-                msg: 'Failed to index folder after retries',
-                account,
-                exportId,
-                folder: folderPath,
-                maxRetries: FOLDER_INDEX_MAX_RETRIES,
-                err: lastError
-            });
-        }
-
-        // Count the folder as scanned whether or not it succeeded so progress reaches foldersTotal.
+        // The folder indexed successfully (failures throw above); count it toward progress.
         await Export.update(account, exportId, { foldersScanned: i + 1 });
 
         if (maxMessages && totalIndexed >= maxMessages) {
