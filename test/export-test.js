@@ -1403,7 +1403,7 @@ test('Export functionality tests', async t => {
 // so an expunged message failed the entire export instead of being counted as skipped.
 test('Export error classifiers', async t => {
     const Boom = require('@hapi/boom');
-    const { isTransientError, isSkippableError, isFolderMissingError } = require('../lib/export');
+    const { isTransientError, isSkippableError, isFolderMissingError, isRetryableError } = require('../lib/export');
 
     await t.test('Boom 404 from Account.assertMessageFound is skippable', () => {
         // exact construction from lib/account.js assertFound()
@@ -1446,5 +1446,28 @@ test('Export error classifiers', async t => {
         assert.strictEqual(isTransientError(other), false);
         assert.strictEqual(isSkippableError(other), false);
         assert.strictEqual(isFolderMissingError(other), false);
+    });
+
+    // The API-account batch fetch path retries a superset of isTransientError: rate limits and
+    // Outlook's dropped-batch-response (EMISSING_RESPONSE) on top of the transient network/5xx set.
+    // A single such blip must not fail an entire multi-message export.
+    await t.test('rate limits, dropped batch responses, and transient errors are retryable', () => {
+        assert.strictEqual(isRetryableError({ statusCode: 429 }), true, '429 is retryable');
+        assert.strictEqual(isRetryableError({ code: 'rateLimitExceeded' }), true);
+        assert.strictEqual(isRetryableError({ code: 'userRateLimitExceeded' }), true);
+        assert.strictEqual(isRetryableError({ code: 'EMISSING_RESPONSE' }), true, 'dropped Outlook batch response is retryable');
+        assert.strictEqual(isRetryableError({ statusCode: 503 }), true, 'transient 5xx is retryable');
+        assert.strictEqual(isRetryableError({ code: 'ETIMEDOUT' }), true);
+    });
+
+    await t.test('skippable and permanent errors are not retryable', () => {
+        let notFound = new Error('Requested message was not found');
+        notFound.code = 'MessageNotFound';
+        notFound.statusCode = 404;
+        assert.strictEqual(isRetryableError(notFound), false, 'a missing message is not retryable');
+
+        assert.strictEqual(isRetryableError({ statusCode: 400 }), false, 'a 4xx (other than 429) is not retryable');
+        assert.strictEqual(isRetryableError({ code: 'InvalidGrant' }), false);
+        assert.strictEqual(isRetryableError(new Error('something else')), false);
     });
 });

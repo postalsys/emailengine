@@ -20,7 +20,7 @@ const {
 const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
-const { Export, isTransientError, isSkippableError, isFolderMissingError } = require('../lib/export');
+const { Export, isTransientError, isSkippableError, isFolderMissingError, isRetryableError } = require('../lib/export');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('export');
@@ -420,14 +420,14 @@ async function exportMessages(job, exportData) {
 
     let lastAccountCheck = Date.now();
     // Refreshes the job lock and export key expiry on a fixed cadence; called from the main loop and
-    // from inside the rate-limit backoff so a batch stuck retrying does not let the lock lapse.
+    // from inside the retry backoff so a batch stuck retrying does not let the lock lapse.
     const maybeExtendLease = createLeaseExtender(job, account, exportId);
 
     const accountData = await accountObject.loadAccountData(account);
     const isApiAccount = await accountObject.isApiClient(accountData);
     const MESSAGE_FETCH_BATCH_SIZE = 10; // Batch size for parallel message fetching
-    const MAX_RATE_LIMIT_RETRIES = 5; // Max retries for rate-limited messages
-    const RATE_LIMIT_BASE_DELAY = 5000; // Base delay for rate limit backoff (5 seconds)
+    const MAX_BATCH_RETRIES = 5; // Max retries for rate-limited or transient per-message errors within a batch
+    const BATCH_RETRY_BASE_DELAY = 5000; // Base delay for batch retry backoff (5 seconds)
 
     async function processMessage(message, entry) {
         message.path = entry.folder;
@@ -531,7 +531,7 @@ async function exportMessages(job, exportData) {
                     }
 
                     let fetchBatch = entriesToFetch.slice(i, i + MESSAGE_FETCH_BATCH_SIZE);
-                    let rateLimitRetry = 0;
+                    let batchRetry = 0;
 
                     while (fetchBatch.length > 0) {
                         const messageIds = fetchBatch.map(e => e.messageId);
@@ -542,14 +542,17 @@ async function exportMessages(job, exportData) {
                             resultMap.set(result.messageId, result);
                         }
 
-                        const rateLimitedEntries = [];
+                        const retryEntries = [];
 
                         for (const entry of fetchBatch) {
                             const result = resultMap.get(entry.messageId);
 
                             if (result && result.error) {
                                 const err = result.error;
-                                const isRateLimited = err.statusCode === 429 || err.code === 'rateLimitExceeded' || err.code === 'userRateLimitExceeded';
+                                // A single transient blip (rate limit, dropped batch response, network/5xx)
+                                // must not fail an entire multi-message export; only give up once the retry
+                                // budget is exhausted. See isRetryableError for the full classification.
+                                const isRetryable = isRetryableError(err);
 
                                 if (isSkippableError(err)) {
                                     logger.warn({
@@ -561,8 +564,8 @@ async function exportMessages(job, exportData) {
                                         reason: err.message || err.code
                                     });
                                     await Export.incrementSkipped(account, exportId);
-                                } else if (isRateLimited && rateLimitRetry < MAX_RATE_LIMIT_RETRIES) {
-                                    rateLimitedEntries.push(entry);
+                                } else if (isRetryable && batchRetry < MAX_BATCH_RETRIES) {
+                                    retryEntries.push(entry);
                                 } else {
                                     const error = new Error(err.message);
                                     error.code = err.code;
@@ -592,21 +595,21 @@ async function exportMessages(job, exportData) {
                             break;
                         }
 
-                        if (rateLimitedEntries.length > 0) {
-                            rateLimitRetry++;
-                            const delay = RATE_LIMIT_BASE_DELAY * Math.pow(2, rateLimitRetry - 1) + Math.random() * 1000;
+                        if (retryEntries.length > 0) {
+                            batchRetry++;
+                            const delay = BATCH_RETRY_BASE_DELAY * Math.pow(2, batchRetry - 1) + Math.random() * 1000;
                             logger.warn({
-                                msg: 'Rate limited during export, retrying batch',
+                                msg: 'Retrying failed messages during export batch',
                                 account,
                                 exportId,
-                                rateLimitedCount: rateLimitedEntries.length,
-                                attempt: rateLimitRetry,
-                                maxAttempts: MAX_RATE_LIMIT_RETRIES,
+                                retryCount: retryEntries.length,
+                                attempt: batchRetry,
+                                maxAttempts: MAX_BATCH_RETRIES,
                                 delayMs: Math.round(delay)
                             });
                             await new Promise(resolve => setTimeout(resolve, delay));
                             await maybeExtendLease();
-                            fetchBatch = rateLimitedEntries;
+                            fetchBatch = retryEntries;
                         } else {
                             break;
                         }
