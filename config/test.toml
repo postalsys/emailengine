@@ -43,3 +43,8 @@ port = 7077
 
 [webhooksServer]
 port = 7078
+
+# Keep the deprecated Document Store feature available during tests so the existing
+# document-store API/UI endpoints stay covered. Disabled by default in production.
+[documentStore]
+enabled = true

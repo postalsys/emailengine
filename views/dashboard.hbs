@@ -24,6 +24,28 @@
     </div>
     {{/each}}
 
+    {{#if documentStoreUnavailable}}
+    <div class="card border-left-danger mt-4">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Document Store unavailable</div>
+                    <p class="mb-0">The Document Store is enabled in the EmailEngine settings, but the feature is not
+                        available because EmailEngine was not started with the Document Store enabled. The deprecated
+                        Document Store only runs when started with the <code>--documentStore.enabled</code> command line
+                        flag or the <code>EENGINE_DOCUMENT_STORE_ENABLED=true</code> environment variable. Until then the
+                        document store worker is not running and all Document Store API and configuration endpoints
+                        return 404. Either restart EmailEngine with the flag, or disable the <code>documentStoreEnabled</code>
+                        setting to clear this warning.</p>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-database fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
 
     {{#unless hasAccounts}}
 

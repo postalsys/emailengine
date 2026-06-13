@@ -28,6 +28,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { redis } = require('../lib/db');
+const { captureRoutes } = require('./helpers/capture-ui-routes');
 
 // The complete, sorted set of routes registered by lib/routes-ui.js (including the
 // already-extracted admin-entities-routes.js it wires in). 128 routes.
@@ -162,47 +163,10 @@ const GOLDEN_ROUTES = [
     'POST /unsubscribe/address'
 ];
 
-// Capture every route registered by routes-ui.js using a mock server.
-function captureRoutes() {
-    const captured = [];
-
-    const record = cfg => {
-        if (Array.isArray(cfg)) {
-            cfg.forEach(record);
-            return;
-        }
-        const methods = Array.isArray(cfg.method) ? cfg.method : [cfg.method];
-        for (const method of methods) {
-            captured.push(`${String(method).toUpperCase()} ${cfg.path}`);
-        }
-    };
-
-    // Mock Hapi server. routes-ui.js (and the modules it wires) only call server.route()
-    // at registration time; server.auth is touched only inside a handler. Any other
-    // server.* access returns a harmless no-op.
-    const mockServer = new Proxy(
-        {
-            route: record,
-            auth: { settings: { default: null }, default() {} }
-        },
-        {
-            get(target, prop) {
-                if (prop in target) {
-                    return target[prop];
-                }
-                return () => {};
-            }
-        }
-    );
-
-    // `call` is only awaited inside handlers, never during registration.
-    const mockCall = async () => ({});
-
-    const routesUi = require('../lib/routes-ui');
-    routesUi(mockServer, mockCall);
-
-    return captured;
-}
+// Route capture (mock Hapi server) lives in test/helpers/capture-ui-routes.js so the
+// document-store-disabled test can reuse it in a child process. captureRoutes() returns the
+// raw registration list (with any duplicates), which lets this test detect duplicate
+// registrations before comparing the de-duplicated set against the golden snapshot.
 
 test('UI route table is unchanged', async t => {
     t.after(() => {

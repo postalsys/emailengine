@@ -67,7 +67,7 @@ const { Account } = require('../lib/account');
 const settings = require('../lib/settings');
 
 const getSecret = require('../lib/get-secret');
-const { getESClient } = require('../lib/document-store');
+const { getESClient, documentStoreFeatureEnabled } = require('../lib/document-store');
 
 const routesUi = require('../lib/routes-ui');
 
@@ -2538,8 +2538,10 @@ Include your token in requests using one of these methods:
     // setup template routes
     await templateRoutes({ server, call, CORS_CONFIG });
 
-    // setup "chat with email" routes
-    await chatRoutes({ server, call, CORS_CONFIG });
+    // setup "chat with email" routes (deprecated Document Store feature; only when enabled)
+    if (documentStoreFeatureEnabled) {
+        await chatRoutes({ server, call, CORS_CONFIG });
+    }
 
     // setup account CRUD routes
     await accountRoutes({
@@ -2562,7 +2564,8 @@ Include your token in requests using one of these methods:
         CORS_CONFIG,
         MAX_ATTACHMENT_SIZE,
         MAX_BODY_SIZE,
-        MAX_PAYLOAD_TIMEOUT
+        MAX_PAYLOAD_TIMEOUT,
+        documentStoreFeatureEnabled
     });
 
     // setup export routes
@@ -2735,6 +2738,10 @@ Include your token in requests using one of these methods:
             let systemAlerts = [];
             let authData;
 
+            // Deprecated Document Store: enabled in settings but unavailable because EmailEngine
+            // was not started with the document store gate (--documentStore.enabled / EENGINE_DOCUMENT_STORE_ENABLED).
+            let documentStoreUnavailable = !documentStoreFeatureEnabled && !!showDocumentStore;
+
             switch (request.auth.artifacts && request.auth.artifacts.provider) {
                 case 'okta': {
                     let profile = request.auth.artifacts.profile || {};
@@ -2861,6 +2868,15 @@ Include your token in requests using one of these methods:
                 });
             }
 
+            if (documentStoreUnavailable) {
+                systemAlerts.push({
+                    url: '/admin',
+                    level: 'danger',
+                    icon: 'database',
+                    message: `The Document Store is enabled in settings but unavailable. Start EmailEngine with the document store gate to use it, or disable the setting.`
+                });
+            }
+
             if (consts.EE_DOCKER_LEGACY) {
                 systemAlerts.push({
                     url: 'https://emailengine.app/docker',
@@ -2894,7 +2910,8 @@ Include your token in requests using one of these methods:
                 embeddedTemplateHeader,
                 embeddedTemplateHtmlHead,
                 currentYear: new Date().getFullYear(),
-                showDocumentStore,
+                showDocumentStore: documentStoreFeatureEnabled && showDocumentStore,
+                documentStoreUnavailable,
                 updateBrowserInfo: !serviceUrl || !language || !timezone,
 
                 // Suppress large banner warnings when EENGINE_DISABLE_SETUP_WARNINGS is set

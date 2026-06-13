@@ -121,6 +121,7 @@ const { compare: cv } = require('compare-versions');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
+const { documentStoreFeatureEnabled } = require('./lib/document-store');
 const tokens = require('./lib/tokens');
 
 const { checkRateLimit } = require('./lib/rate-limit');
@@ -3418,8 +3419,10 @@ const startApplication = async () => {
         await spawnWorker('export');
     }
 
-    // Start document processing worker
-    await spawnWorker('documents');
+    // Start document processing worker (deprecated Document Store feature; only when enabled)
+    if (documentStoreFeatureEnabled) {
+        await spawnWorker('documents');
+    }
 
     // Start SMTP proxy if enabled
     if (await settings.get('smtpServerEnabled')) {

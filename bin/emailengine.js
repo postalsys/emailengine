@@ -105,7 +105,14 @@ const GLOBAL_OPTIONS = [
     { name: '--smtp.host', description: 'SMTP server bind address', type: 'string', default: '127.0.0.1', group: 'SMTP server' },
     { name: '--smtp.port', description: 'SMTP server port', type: 'number', default: 2525, group: 'SMTP server' },
     { name: '--smtp.proxy', description: 'Enable HAProxy PROXY protocol', type: 'boolean', default: false, group: 'SMTP server' },
-    { name: '--smtp.maxMessageSize', description: 'Maximum email size', type: 'number/string', default: '25M', group: 'SMTP server' }
+    { name: '--smtp.maxMessageSize', description: 'Maximum email size', type: 'number/string', default: '25M', group: 'SMTP server' },
+    {
+        name: '--documentStore.enabled',
+        description: 'Enable the deprecated Document Store (ElasticSearch) feature',
+        type: 'boolean',
+        default: false,
+        group: 'Document Store (deprecated)'
+    }
 ];
 
 // Help formatting functions

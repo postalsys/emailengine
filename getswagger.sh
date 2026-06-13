@@ -4,6 +4,10 @@ set -e
 
 export EENGINE_PORT=5678
 
+# Keep the deprecated Document Store endpoints in the generated spec; they are only
+# registered when the feature is enabled.
+export EENGINE_DOCUMENT_STORE_ENABLED=true
+
 # refuse to run if something is already listening on the port, otherwise the
 # polling loop below would silently fetch swagger.json from a stale instance
 if (exec 3<>"/dev/tcp/127.0.0.1/${EENGINE_PORT}") 2>/dev/null; then
