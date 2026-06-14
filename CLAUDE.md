@@ -409,6 +409,7 @@ The IMAP proxy (`lib/imapproxy/`) allows standard IMAP clients to access EmailEn
 - `EENGINE_HOST` - API server bind address (default: 127.0.0.1)
 - `EENGINE_TIMEOUT` - Command timeout in ms (default: 10000)
 - `EENGINE_LOG_LEVEL` - Logging level (default: trace)
+- `EENGINE_BEACON_DISABLED` - Set to `true` to opt out of the feature beacon (anonymized feature-usage diagnostics piggybacked on the existing license-validation call). License validation itself is unaffected. See `lib/license-beacon.js`.
 
 **Workers:**
 - `EENGINE_WORKERS` - IMAP worker count (default: 4)

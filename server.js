@@ -122,6 +122,7 @@ const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
 const { documentStoreFeatureEnabled } = require('./lib/document-store');
+const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
 
 const { checkRateLimit } = require('./lib/rate-limit');
@@ -243,6 +244,9 @@ const API_PROXY = hasEnvValue('EENGINE_API_PROXY') ? getBoolean(readEnvValue('EE
 
 // API authentication requirement configuration (default: true)
 const REQUIRE_API_AUTH = hasEnvValue('EENGINE_REQUIRE_API_AUTH') ? getBoolean(readEnvValue('EENGINE_REQUIRE_API_AUTH')) : null;
+
+// Opt-out for the license-validation feature beacon (telemetry rides on the existing license call)
+const BEACON_DISABLED = hasEnvValue('EENGINE_BEACON_DISABLED') ? getBoolean(readEnvValue('EENGINE_BEACON_DISABLED')) : false;
 
 // OAuth2 token access configuration
 const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API') ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')) : null;
@@ -1858,6 +1862,21 @@ let licenseCheckHandler = async opts => {
             (await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subcheck', now - subscriptionCheckTimeout, now))
         ) {
             try {
+                let body = {
+                    key: licenseInfo.details.key,
+                    version: packageData.version,
+                    app: '@postalsys/emailengine-app',
+                    instance: (await settings.get('serviceId')) || ''
+                };
+
+                // Best-effort feature beacon: enrich the existing call with a compact, anonymized
+                // feature snapshot. Time-boxed and fully isolated (attachBeacon never throws) so it
+                // can never block, delay, or alter license validation. The full snapshot is only sent
+                // when its digest changes or once every 30 days; otherwise just the digest rides along.
+                if (!BEACON_DISABLED) {
+                    await attachBeacon(body, { redis, logger, now });
+                }
+
                 // Call license validation API
                 let res = await fetchCmd(`https://postalsys.com/licenses/validate`, {
                     method: 'post',
@@ -1865,12 +1884,7 @@ let licenseCheckHandler = async opts => {
                         'User-Agent': `${packageData.name}/${packageData.version} (+${packageData.homepage})`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        key: licenseInfo.details.key,
-                        version: packageData.version,
-                        app: '@postalsys/emailengine-app',
-                        instance: (await settings.get('serviceId')) || ''
-                    }),
+                    body: JSON.stringify(body),
                     dispatcher: httpAgent.retry
                 });
 
@@ -1901,6 +1915,11 @@ let licenseCheckHandler = async opts => {
                         let validatedUntil = new Date(data.validatedUntil);
                         let nextCheck = Math.min(now + MAX_LICENSE_CHECK_DELAY, validatedUntil.getTime());
                         await redis.hset(`${REDIS_PREFIX}settings`, 'ks', new Date(nextCheck).getTime().toString(16));
+                    }
+
+                    // Persist beacon markers so the full snapshot is only resent when it changes.
+                    if (!BEACON_DISABLED) {
+                        await persistBeaconMarkers({ redis, logger, body, now, needFull: data.needFull });
                     }
                 }
             } catch (err) {
