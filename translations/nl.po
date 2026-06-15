@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-03-31 08:47+0000\n"
+"POT-Creation-Date: 2026-06-15 18:35+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -12,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.9\n"
 
-#: views/error.hbs:4 workers/api.js:7103
+#: views/error.hbs:4 workers/api.js:2957
 msgid "Something went wrong"
 msgstr "Er ging iets mis"
 
@@ -28,7 +28,7 @@ msgstr "Ga terug"
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: views/config/license.hbs:45 lib/routes-ui.js:2497
+#: views/config/license.hbs:45 lib/ui-routes/oauth-config-routes.js:217
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] "%d dag"
@@ -37,6 +37,34 @@ msgstr[1] "%d dagen"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Klik <a href=\"%s\">hier</a> om door te gaan&mldr;"
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr "Onvoldoende rechten"
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Alle gevraagde machtigingen zijn vereist om deze dienst correct te laten "
+"werken. Bij het inloggen zijn sommige vereiste machtigingen niet verleend."
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr "De volgende machtigingen zijn niet verleend:"
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Probeer het nog eens en zorg ervoor dat alle selectievakjes voor toestemming "
+"op het toestemmingsscherm van Google zijn aangevinkt."
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
+msgstr "Probeer opnieuw"
 
 #: views/unsubscribe.hbs:3 views/unsubscribe.hbs:62 views/unsubscribe.hbs:85
 msgid "Unsubscribe"
@@ -57,7 +85,8 @@ msgstr "Opnieuw abonneren"
 
 #: views/unsubscribe.hbs:21
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr "Weet je zeker dat je je e-mailadres <em>%s</em> opnieuw wilt abonneren?"
+msgstr ""
+"Weet je zeker dat je je e-mailadres <em>%s</em> opnieuw wilt abonneren?"
 
 #: views/unsubscribe.hbs:32 views/accounts/register/imap-server.hbs:251
 msgid "Close"
@@ -82,34 +111,6 @@ msgstr "E-mailadres"
 #: views/unsubscribe.hbs:81 views/accounts/register/imap.hbs:27
 msgid "Enter your email address"
 msgstr "Vul je e-mailadres in"
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr "Onvoldoende rechten"
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"All requested permissions are required for this service to function properly. "
-"Some required permissions were not granted during sign-in."
-msgstr ""
-"Alle gevraagde machtigingen zijn vereist om deze dienst correct te laten "
-"werken. Bij het inloggen zijn sommige vereiste machtigingen niet verleend."
-
-#: views/oauth-scope-error.hbs:12
-msgid "The following permissions were not granted:"
-msgstr "De volgende machtigingen zijn niet verleend:"
-
-#: views/oauth-scope-error.hbs:21
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Probeer het nog eens en zorg ervoor dat alle selectievakjes voor toestemming "
-"op het toestemmingsscherm van Google zijn aangevinkt."
-
-#: views/oauth-scope-error.hbs:27
-msgid "Try Again"
-msgstr "Probeer opnieuw"
 
 #: views/accounts/register/imap.hbs:11
 msgid "Your name"
@@ -188,8 +189,8 @@ msgstr "TLS voor IMAP"
 
 #: views/accounts/register/imap-server.hbs:100
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 993. For other "
-"ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 993. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS (ook wel SSL genoemd) is meestal alleen nodig bij het gebruik van poort "
 "993. Voor andere poorten schakelt EmailEngine over op STARTTLS-versleuteling."
@@ -209,8 +210,8 @@ msgstr "TLS voor SMTP"
 
 #: views/accounts/register/imap-server.hbs:191
 msgid ""
-"TLS (also known as SSL) is usually only needed when using port 465. For other "
-"ports EmailEngine falls back to using STARTTLS based encryption."
+"TLS (also known as SSL) is usually only needed when using port 465. For "
+"other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 "TLS (ook wel SSL genoemd) is meestal alleen nodig bij het gebruik van poort "
 "465. Voor andere poorten schakelt EmailEngine over op STARTTLS-versleuteling."
@@ -262,134 +263,6 @@ msgstr "Kon geen verbinding maken met SMTP-server"
 msgid "Request failed."
 msgstr "Verzoek mislukt."
 
-#: lib/routes-ui.js:384 lib/ui-routes/account-routes.js:60
-msgid "Delegated"
-msgstr "Gedelegeerd"
-
-#: lib/routes-ui.js:385 lib/ui-routes/account-routes.js:61
-msgid "Using credentials from \"%s\""
-msgstr "Gebruikmakend van inloggegevens van \"%s\""
-
-#: lib/routes-ui.js:435 lib/ui-routes/account-routes.js:111
-msgid ""
-"Connection timed out. This usually occurs if you are behind a firewall or "
-"connecting to the wrong port."
-msgstr ""
-"De verbinding is verlopen. Dit gebeurt meestal als je achter een firewall zit "
-"of verbinding maakt met de verkeerde poort."
-
-#: lib/routes-ui.js:438 lib/ui-routes/account-routes.js:114
-msgid "The server unexpectedly closed the connection."
-msgstr "De server sloot onverwacht de verbinding."
-
-#: lib/routes-ui.js:441 lib/ui-routes/account-routes.js:117
-msgid ""
-"The server unexpectedly closed the connection. This usually happens when "
-"attempting to connect to a TLS port without TLS enabled."
-msgstr ""
-"De server sloot onverwacht de verbinding. Dit gebeurt meestal wanneer je "
-"probeert verbinding te maken met een TLS-poort zonder TLS ingeschakeld."
-
-#: lib/routes-ui.js:446 lib/ui-routes/account-routes.js:122
-msgid ""
-"The server refused the connection. This typically occurs if the server is not "
-"running, is overloaded, or you are connecting to the wrong host or port."
-msgstr ""
-"De server weigerde de verbinding. Dit gebeurt meestal als de server niet "
-"draait, overbelast is, of als je verbinding maakt met de verkeerde host of "
-"poort."
-
-#: lib/routes-ui.js:573
-msgid "Invalid API key for OpenAI"
-msgstr "Ongeldige API-sleutel voor OpenAI"
-
-#: lib/routes-ui.js:2490
-msgid "Unknown"
-msgstr "Onbekend"
-
-#: lib/routes-ui.js:2499
-msgid "Indefinite"
-msgstr "Voor onbepaalde tijd"
-
-#: lib/routes-ui.js:5133 lib/routes-ui.js:5168 lib/routes-ui.js:5283
-#: lib/routes-ui.js:5330 lib/routes-ui.js:5577 lib/routes-ui.js:5613
-#: workers/api.js:2279 workers/api.js:2607 lib/ui-routes/account-routes.js:554
-#: lib/ui-routes/account-routes.js:590 lib/ui-routes/account-routes.js:707
-#: lib/ui-routes/account-routes.js:754 lib/ui-routes/account-routes.js:1003
-#: lib/ui-routes/account-routes.js:1039
-msgid "Email Account Setup"
-msgstr "E-mailaccount instellen"
-
-#: lib/routes-ui.js:5193 lib/routes-ui.js:5226 lib/routes-ui.js:8186
-#: lib/ui-routes/account-routes.js:615 lib/ui-routes/account-routes.js:649
-msgid "Invalid request. Check your input and try again."
-msgstr "Ongeldige aanvraag. Controleer je invoer en probeer het opnieuw."
-
-#: lib/routes-ui.js:5386 lib/routes-ui.js:5397
-#: lib/ui-routes/account-routes.js:811 lib/ui-routes/account-routes.js:822
-#: lib/ui-routes/admin-entities-routes.js:2020
-msgid "Server hostname was not found"
-msgstr "De serverhostnaam kon niet worden gevonden."
-
-#: lib/routes-ui.js:5389 lib/routes-ui.js:5400
-#: lib/ui-routes/account-routes.js:814 lib/ui-routes/account-routes.js:825
-#: lib/ui-routes/admin-entities-routes.js:2023
-msgid "Invalid username or password"
-msgstr "Ongeldige gebruikersnaam of wachtwoord"
-
-#: lib/routes-ui.js:5403 lib/ui-routes/account-routes.js:828
-#: lib/ui-routes/admin-entities-routes.js:2026
-msgid "Authentication credentials were not provided"
-msgstr "Er zijn geen authenticatiegegevens verstrekt"
-
-#: lib/routes-ui.js:5406 lib/ui-routes/account-routes.js:831
-#: lib/ui-routes/admin-entities-routes.js:2029
-msgid "OAuth2 authentication failed"
-msgstr "OAuth2-authenticatie mislukt"
-
-#: lib/routes-ui.js:5409 lib/routes-ui.js:5413
-#: lib/ui-routes/account-routes.js:834 lib/ui-routes/account-routes.js:838
-#: lib/ui-routes/admin-entities-routes.js:2032
-#: lib/ui-routes/admin-entities-routes.js:2036
-msgid "TLS protocol error"
-msgstr "TLS-protocolfout"
-
-#: lib/routes-ui.js:5417 lib/ui-routes/account-routes.js:842
-#: lib/ui-routes/admin-entities-routes.js:2040
-msgid "Connection timed out"
-msgstr "Verbindingstime-out"
-
-#: lib/routes-ui.js:5420 lib/ui-routes/account-routes.js:845
-#: lib/ui-routes/admin-entities-routes.js:2043
-msgid "Could not connect to server"
-msgstr "Kan geen verbinding maken met de server"
-
-#: lib/routes-ui.js:5423 lib/ui-routes/account-routes.js:848
-#: lib/ui-routes/admin-entities-routes.js:2046
-msgid "Unexpected server response"
-msgstr "Onverwachte serverreactie"
-
-#: lib/routes-ui.js:8149 lib/tools.js:950
-msgid "Invalid input"
-msgstr "Ongeldige invoer"
-
-#: lib/routes-ui.js:8159 lib/routes-ui.js:8277 lib/routes-ui.js:8294
-#: lib/routes-ui.js:8330
-msgid "Subscription Management"
-msgstr "Abonnementenbeheer"
-
-#: workers/api.js:7102 workers/api.js:7219
-msgid "Requested page not found"
-msgstr "Opgevraagde pagina niet gevonden"
-
-#: lib/tools.js:1653
-msgid "Signature validation failed"
-msgstr "Handtekeningvalidatie mislukt"
-
-#: lib/tools.js:1662 lib/tools.js:1667
-msgid "Invalid or expired account setup URL"
-msgstr "Ongeldige of verlopen accountinstellings-URL"
-
 #: lib/autodetect-imap-settings.js:80
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) for "
@@ -402,11 +275,136 @@ msgstr ""
 "Microsoft 365 e-mailaccounts. Gebruik de knop \"Inloggen met Microsoft\" om "
 "je account veilig te verbinden."
 
-#: lib/ui-routes/account-routes.js:747 lib/ui-routes/account-routes.js:1032
+#: lib/tools.js:975 lib/ui-routes/unsubscribe-routes.js:28
+msgid "Invalid input"
+msgstr "Ongeldige invoer"
+
+#: lib/tools.js:1742
+msgid "Signature validation failed"
+msgstr "Handtekeningvalidatie mislukt"
+
+#: lib/tools.js:1751 lib/tools.js:1756
+msgid "Invalid or expired account setup URL"
+msgstr "Ongeldige of verlopen accountinstellings-URL"
+
+#: lib/ui-routes/account-routes.js:402 lib/ui-routes/account-routes.js:437
+#: lib/ui-routes/account-routes.js:552 lib/ui-routes/account-routes.js:599
+#: lib/ui-routes/account-routes.js:846 lib/ui-routes/account-routes.js:882
+#: workers/api.js:2158 workers/api.js:2486
+msgid "Email Account Setup"
+msgstr "E-mailaccount instellen"
+
+#: lib/ui-routes/account-routes.js:462 lib/ui-routes/account-routes.js:495
+#: lib/ui-routes/unsubscribe-routes.js:65
+msgid "Invalid request. Check your input and try again."
+msgstr "Ongeldige aanvraag. Controleer je invoer en probeer het opnieuw."
+
+#: lib/ui-routes/account-routes.js:592 lib/ui-routes/account-routes.js:875
 msgid "Couldn't set up account. Try again."
 msgstr "Kan geen account aanmaken. Probeer het opnieuw."
 
-#, fuzzy
-#~| msgid "Failed to process request"
-#~ msgid "Couldn't process request. Try again."
-#~ msgstr "Verzoek kon niet worden verwerkt."
+#: lib/ui-routes/account-routes.js:655 lib/ui-routes/account-routes.js:666
+#: lib/ui-routes/admin-entities-routes.js:2020
+msgid "Server hostname was not found"
+msgstr "De serverhostnaam kon niet worden gevonden."
+
+#: lib/ui-routes/account-routes.js:658 lib/ui-routes/account-routes.js:669
+#: lib/ui-routes/admin-entities-routes.js:2023
+msgid "Invalid username or password"
+msgstr "Ongeldige gebruikersnaam of wachtwoord"
+
+#: lib/ui-routes/account-routes.js:672
+#: lib/ui-routes/admin-entities-routes.js:2026
+msgid "Authentication credentials were not provided"
+msgstr "Er zijn geen authenticatiegegevens verstrekt"
+
+#: lib/ui-routes/account-routes.js:675
+#: lib/ui-routes/admin-entities-routes.js:2029
+msgid "OAuth2 authentication failed"
+msgstr "OAuth2-authenticatie mislukt"
+
+#: lib/ui-routes/account-routes.js:678 lib/ui-routes/account-routes.js:682
+#: lib/ui-routes/admin-entities-routes.js:2032
+#: lib/ui-routes/admin-entities-routes.js:2036
+msgid "TLS protocol error"
+msgstr "TLS-protocolfout"
+
+#: lib/ui-routes/account-routes.js:686
+#: lib/ui-routes/admin-entities-routes.js:2040
+msgid "Connection timed out"
+msgstr "Verbindingstime-out"
+
+#: lib/ui-routes/account-routes.js:689
+#: lib/ui-routes/admin-entities-routes.js:2043
+msgid "Could not connect to server"
+msgstr "Kan geen verbinding maken met de server"
+
+#: lib/ui-routes/account-routes.js:692
+#: lib/ui-routes/admin-entities-routes.js:2046
+msgid "Unexpected server response"
+msgstr "Onverwachte serverreactie"
+
+#: lib/ui-routes/admin-config-routes.js:145
+msgid "Invalid API key for OpenAI"
+msgstr "Ongeldige API-sleutel voor OpenAI"
+
+#: lib/ui-routes/oauth-config-routes.js:210
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: lib/ui-routes/oauth-config-routes.js:219
+msgid "Indefinite"
+msgstr "Voor onbepaalde tijd"
+
+#: lib/ui-routes/route-helpers.js:81
+msgid "Delegated"
+msgstr "Gedelegeerd"
+
+#: lib/ui-routes/route-helpers.js:82
+msgid "Using credentials from \"%s\""
+msgstr "Gebruikmakend van inloggegevens van \"%s\""
+
+#: lib/ui-routes/route-helpers.js:132
+msgid ""
+"Connection timed out. This usually occurs if you are behind a firewall or "
+"connecting to the wrong port."
+msgstr ""
+"De verbinding is verlopen. Dit gebeurt meestal als je achter een firewall "
+"zit of verbinding maakt met de verkeerde poort."
+
+#: lib/ui-routes/route-helpers.js:135
+msgid "The server unexpectedly closed the connection."
+msgstr "De server sloot onverwacht de verbinding."
+
+#: lib/ui-routes/route-helpers.js:138
+msgid ""
+"The server unexpectedly closed the connection. This usually happens when "
+"attempting to connect to a TLS port without TLS enabled."
+msgstr ""
+"De server sloot onverwacht de verbinding. Dit gebeurt meestal wanneer je "
+"probeert verbinding te maken met een TLS-poort zonder TLS ingeschakeld."
+
+#: lib/ui-routes/route-helpers.js:143
+msgid ""
+"The server refused the connection. This typically occurs if the server is "
+"not running, is overloaded, or you are connecting to the wrong host or port."
+msgstr ""
+"De server weigerde de verbinding. Dit gebeurt meestal als de server niet "
+"draait, overbelast is, of als je verbinding maakt met de verkeerde host of "
+"poort."
+
+#: lib/ui-routes/unsubscribe-routes.js:38
+#: lib/ui-routes/unsubscribe-routes.js:156
+#: lib/ui-routes/unsubscribe-routes.js:173
+#: lib/ui-routes/unsubscribe-routes.js:209
+msgid "Subscription Management"
+msgstr "Abonnementenbeheer"
+
+#: lib/ui-routes/unsubscribe-routes.js:167
+#: lib/ui-routes/unsubscribe-routes.js:202
+msgid "Couldn't process request. Try again."
+msgstr "Het verzoek kon niet worden verwerkt. Probeer het nog eens."
+
+#: workers/api.js:2956 workers/api.js:3071
+msgid "Requested page not found"
+msgstr "Opgevraagde pagina niet gevonden"
