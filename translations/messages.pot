@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-15 17:14+0000\n"
+"POT-Creation-Date: 2026-06-15 18:35+0000\n"
 
 #: views/error.hbs:4
 #: workers/api.js:2957
@@ -29,6 +29,30 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
@@ -108,30 +132,6 @@ msgstr ""
 
 #: views/accounts/register/index.hbs:15
 msgid "Standard IMAP"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:12
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:21
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:27
-msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
