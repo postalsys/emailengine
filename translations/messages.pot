@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-13 08:57+0000\n"
+"POT-Creation-Date: 2026-06-15 17:14+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:2940
+#: workers/api.js:2957
 msgid "Something went wrong"
 msgstr ""
 
@@ -29,30 +29,6 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:2
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:8
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:12
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:21
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:27
-msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
@@ -132,6 +108,30 @@ msgstr ""
 
 #: views/accounts/register/index.hbs:15
 msgid "Standard IMAP"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:2
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:8
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:12
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:21
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:27
+msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -257,17 +257,17 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:956
+#: lib/tools.js:975
 #: lib/ui-routes/unsubscribe-routes.js:28
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:1723
+#: lib/tools.js:1742
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1732
-#: lib/tools.js:1737
+#: lib/tools.js:1751
+#: lib/tools.js:1756
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
@@ -337,7 +337,7 @@ msgstr ""
 msgid "Unexpected server response"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:144
+#: lib/ui-routes/admin-config-routes.js:145
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
@@ -391,7 +391,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2939
-#: workers/api.js:3054
+#: workers/api.js:2956
+#: workers/api.js:3071
 msgid "Requested page not found"
 msgstr ""
