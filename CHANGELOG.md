@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.71.0](https://github.com/postalsys/emailengine/compare/v2.70.0...v2.71.0) (2026-06-15)
+
+
+### Features
+
+* add anonymized feature beacon to license validation ([954d92a](https://github.com/postalsys/emailengine/commit/954d92a9d8e7c5fff6f1b8c711dfd228f556387a))
+* disable deprecated Document Store by default behind a feature gate ([8790f75](https://github.com/postalsys/emailengine/commit/8790f7538ba2ee8d6ec73d1f3bbc221c2f54f0fe))
+
+
+### Bug Fixes
+
+* defer export worker job consumption until startup recovery completes ([a21b0a5](https://github.com/postalsys/emailengine/commit/a21b0a50fdb98d13a2227a020069129d23fe225b))
+* fail export when a folder cannot be indexed ([36c9c9d](https://github.com/postalsys/emailengine/commit/36c9c9d536540cd5a61b16b69af5e8e84c194ee6))
+* filter transient fetch failures from Sentry and retry DNS errors ([883b9b4](https://github.com/postalsys/emailengine/commit/883b9b487e3580c5b1240d28cd519d190c402b47))
+* retry transient errors in API-account batch export path ([6cba7c7](https://github.com/postalsys/emailengine/commit/6cba7c72658a037f68867cf2464f7d3420a79507))
+* translate OAuth scope error page across 6 languages ([4ae1919](https://github.com/postalsys/emailengine/commit/4ae19199fe628f8a4f7177d53db1f05167077e3e))
+* upgrade joi to 17.13.4 and @postalsys/certs to 1.0.15 (GHSA-q7cg-457f-vx79) ([6ec77e5](https://github.com/postalsys/emailengine/commit/6ec77e50b288b14550cd09b724f5aab59d17ced4))
+
 ## [2.70.0](https://github.com/postalsys/emailengine/compare/v2.69.0...v2.70.0) (2026-06-11)
 
 
