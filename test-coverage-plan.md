@@ -196,3 +196,38 @@ Guiding constraint: no unverified or fragile tests were committed. The deferred
 items each require infrastructure (extra server, live mailbox, orchestrator
 refactor, or large-class mocking) beyond what a test can assert reliably in this
 environment.
+
+## 7. Deferred-item follow-up (2026-06-16, same branch)
+
+A second pass converted most of the deferred items into verified tests by
+extracting testable units (leaf workers only - never server.js) and using the
+real handlers against the test Redis:
+
+Done (committed):
+- P1 #12 remainder - OAuth2AppsHandler create/get/update/list/del with
+  credential encryption at rest (oauth2-apps-crud-test.js).
+- P1 #9 - SMTP auth (extracted lib/smtp-auth.js) and IMAP-proxy auth (extracted
+  lib/imap-proxy-auth.js): rejection paths (password/token account/scope/IP) and
+  accept paths, plus the IMAP-proxy API-only-account ACCOUNTDISABLED rejection.
+- P1 #14 remainder - IMAPClient.reconnect() guard logic (no double-connect /
+  reconnect-storm), via the prototype with start() stubbed.
+- P1 #13 (partial) - Gmail flag/label mapping (flagToLabel/flagsToLabelIds incl.
+  inverse \Seen<->UNREAD and set precedence) and Outlook parseExpirationDate.
+- P1 #6 (decision logic) - message-builder send-pipeline deciders
+  (SentMailCopyDecider, ProviderMessageIdHandler, SmtpErrorBuilder,
+  NetworkRoutingBuilder, NotificationBuilder).
+
+Still remaining (genuinely blocked):
+- P1 #7 - server.js account assignment: the assignAccounts loop is entangled
+  with module state and per-iteration rollback; a faithful extraction risks
+  changing assignment behavior on worker-crash recovery (highest blast radius).
+  Not done autonomously - needs a reviewed refactor. The consistency-critical
+  half (rendezvous reassignment) is already covered by tools-test.js.
+- P1 #6 remainder - the full submitMessage orchestration (actual SMTP send +
+  retry loop) - decision logic is now covered; the glue needs integration/e2e.
+- P1 #13 remainder - Gmail processHistoryEntry / Outlook renew-subscription
+  orchestration: multi-step async over 3k-4.5k-line client classes.
+- P0 #5 remainder / P1 #10 - e2e auth-gate + passwordVersion and bulk-message
+  REST: need the Playwright e2e instance (isolated server with a password and a
+  live mailbox) which depends on Chromium + external endpoints not reliably
+  reachable here.
