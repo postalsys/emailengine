@@ -71,6 +71,7 @@ npm run single    # Single-worker debug mode with Inspector
 - The integration tier is non-hermetic: api-test.js talks to live Gmail/MS Graph and needs credentials from `.env`; failures there are often external-state flakes, re-run before blaming a change
 - Run `npm test` for the full suite with linting (unit tier, then integration tier)
 - CI (`.github/workflows/test.yml`) runs lint, unit, and integration as separate parallel jobs, so a failed section (usually the flaky integration tier) can be re-run alone via "Re-run failed jobs"
+- **E2E tier** (`/test/e2e/*.spec.js`): a separate, browser-driven happy-path suite using Playwright (`@playwright/test`), NOT part of `npm test`. It boots a fresh instance (isolated Redis db 14, `config/e2e.toml`, `NODE_ENV=e2e`), drives the admin UI to enable auth + activate a 14-day trial + create an API token, then exercises the REST API end to end against an Ethereal mailbox. Run with `npm run test:e2e` (one-time `npm run test:e2e:install` to fetch Chromium). It runs in its own workflow (`.github/workflows/e2e.yml`, `workflow_dispatch` + push to master) so it is easy to re-run, and is non-hermetic: it needs outbound internet (Ethereal + the postalsys.com trial endpoint). The trial rate limit is bypassed for the e2e `serviceUrl` (`https://e2e.emailengine.app/`) via the postalsys-web trial allowlist
 
 ## Main Process (server.js)
 

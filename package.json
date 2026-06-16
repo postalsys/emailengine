@@ -13,6 +13,8 @@
         "test": "NODE_ENV=test grunt",
         "test:unit": "NODE_ENV=test grunt test-unit",
         "test:integration": "NODE_ENV=test grunt test-integration",
+        "test:e2e": "playwright test",
+        "test:e2e:install": "playwright install --with-deps chromium",
         "lint": "npx eslint 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' server.js Gruntfile.js",
         "swagger": "./getswagger.sh",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && rm -rf node_modules/ace-builds node_modules/@postalsys/ee-client && ./update-info.sh",
@@ -120,6 +122,7 @@
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
+        "@playwright/test": "^1.61.0",
         "acorn": "8.17.0",
         "acorn-walk": "8.3.5",
         "chai": "4.3.10",

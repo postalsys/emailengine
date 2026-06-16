@@ -1,0 +1,56 @@
+name: E2E Tests
+
+# Browser-driven happy-path end-to-end suite (test/e2e), kept separate from the unit and
+# integration tiers so it is easy to re-run on its own and has its own requirements: it drives a
+# real browser (Playwright/Chromium) and reaches external services (Ethereal for the test mailbox,
+# postalsys.com for the 14-day trial). The trial rate limit is bypassed for the e2e serviceUrl
+# (https://e2e.emailengine.app/) - see the postalsys-web trial allowlist.
+
+on:
+    workflow_dispatch:
+    push:
+        branches: [master]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: e2e-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    e2e:
+        name: E2E (Playwright)
+        timeout-minutes: 20
+        runs-on: ubuntu-24.04
+        services:
+            redis:
+                image: redis
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm install
+            - name: Install Playwright browser
+              run: npx playwright install --with-deps chromium
+            - name: Run e2e tests
+              run: npm run test:e2e
+              env:
+                  NODE_ENV: e2e
+            - name: Upload Playwright report
+              uses: actions/upload-artifact@v4
+              if: ${{ !cancelled() }}
+              with:
+                  name: playwright-report
+                  path: playwright-report/
+                  retention-days: 7

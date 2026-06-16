@@ -1,0 +1,35 @@
+# End-to-end overrides, merged over default.toml by @zone-eu/wild-config when NODE_ENV=e2e.
+# Boots a fresh EmailEngine for the Playwright happy-path suite (test/e2e): enable auth,
+# activate a 14-day trial (hits postalsys.com), register an Ethereal account, send + read back.
+#
+# Uses an isolated Redis DB so the suite can flush it for a clean fresh-instance run without
+# touching dev (db 9), test (db 13), or default (db 8) data. No preparedToken / preparedPassword /
+# preparedLicense here on purpose - the suite enables auth and activates the trial through the UI.
+
+# JSON formatted settings, seeded on startup.
+# serviceUrl is the recognizable e2e URL that postalsys-web allowlists to skip the trial rate
+# limit. It is only used as the trial request's `url`; the browser and API talk to 127.0.0.1:7099.
+settings = '''
+{
+  "serviceUrl": "https://e2e.emailengine.app/",
+  "ignoreMailCertErrors": true
+}
+'''
+
+[service]
+# Fixed encryption secret for the throwaway e2e instance (Redis is flushed on every run).
+secret = "e2e encryption secret"
+
+[workers]
+imap = 1
+
+[log]
+level = "warn"
+
+[dbs]
+# Isolated Redis DB for e2e; flushed before each run by test/e2e/flush-redis.js
+redis = "redis://127.0.0.1:6379/14"
+
+[api]
+host = "127.0.0.1"
+port = 7099
