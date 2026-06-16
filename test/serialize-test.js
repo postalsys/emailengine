@@ -12,14 +12,9 @@ const assert = require('node:assert').strict;
 const tools = require('../lib/tools');
 const enumMessageFlags = require('../lib/enum-message-flags');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 // Serialize then unserialize and return the decoded entry.
 function roundTrip(entry) {

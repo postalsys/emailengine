@@ -12,6 +12,7 @@ const assert = require('node:assert').strict;
 
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const msgpack = require('msgpack5')();
@@ -42,18 +43,13 @@ async function rawEntry(id) {
     return buf ? msgpack.decode(buf) : null;
 }
 
-test.after(async () => {
+registerRedisTeardown(redis, async () => {
     for (const id of createdIds) {
         try {
             await oauth2Apps.del(id);
         } catch (err) {
             // ignore
         }
-    }
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
     }
 });
 

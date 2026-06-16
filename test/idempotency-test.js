@@ -13,6 +13,7 @@ const assert = require('node:assert').strict;
 
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {}, fatal() {} };
@@ -26,17 +27,12 @@ const clear = (data, err) => BaseClient.prototype.clearIdempotencyData.call(ctx,
 let counter = 0;
 const uniqueKey = () => `idem-test-${process.pid}-${counter++}`;
 
-test.after(async () => {
+registerRedisTeardown(redis, async () => {
     try {
         const keys = await redis.keys(`${REDIS_PREFIX}idempotency:bucket:*`);
         if (keys.length) {
             await redis.del(keys);
         }
-    } catch (err) {
-        // ignore
-    }
-    try {
-        await redis.quit();
     } catch (err) {
         // ignore
     }

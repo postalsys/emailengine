@@ -17,14 +17,9 @@ const {
     SentMailCopyDecider
 } = require('../lib/email-client/message-builder');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
-    }
-});
+registerRedisTeardown(redis);
 
 test('SentMailCopyDecider.shouldCopy', async t => {
     const imapAccount = { imap: { host: 'imap.test' } };

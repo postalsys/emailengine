@@ -14,6 +14,7 @@ const { oauth2Apps } = require('../lib/oauth2-apps');
 const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT = 'imap-proxy-acct';
@@ -57,7 +58,7 @@ test.before(async () => {
     await seedAccount(API_ACCOUNT, { oauth2: JSON.stringify({ provider: apiAppId, auth: { user: 'user@example.com' } }) });
 });
 
-test.after(async () => {
+registerRedisTeardown(redis, async () => {
     for (const tok of [proxyToken, apiScopeToken, ipRestrictedToken]) {
         if (tok) {
             try {
@@ -83,11 +84,6 @@ test.after(async () => {
     }
     try {
         await settings.set('imapProxyServerPassword', prevPassword || '');
-    } catch (err) {
-        // ignore
-    }
-    try {
-        await redis.quit();
     } catch (err) {
         // ignore
     }

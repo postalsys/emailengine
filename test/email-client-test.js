@@ -8,15 +8,9 @@ const assert = require('node:assert').strict;
 // regression in pagination or label mapping now fails this suite.
 const { PageCursor, SKIP_LABELS, SYSTEM_LABELS, SYSTEM_NAMES } = require('../lib/email-client/gmail-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    // gmail-client transitively opens a Redis connection via base-client -> lib/db.
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 test('Gmail client building blocks', async t => {
     // Gmail Label Tests

@@ -11,14 +11,9 @@ const assert = require('node:assert').strict;
 const { SubScript } = require('../lib/sub-script');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 const run = (code, payload, options) => SubScript.create('test', code).exec(payload, options);
 

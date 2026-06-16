@@ -19,6 +19,7 @@ const fs = require('fs');
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const inboxReceiver = { path: 'INBOX', isAllMail: false };
 const mightBeAComplaint = messageInfo => Mailbox.prototype.mightBeAComplaint.call(inboxReceiver, messageInfo);
@@ -26,15 +27,7 @@ const mightBeAComplaint = messageInfo => Mailbox.prototype.mightBeAComplaint.cal
 const Path = require('path');
 const path = fname => Path.join(__dirname, 'fixtures', 'complaints', fname);
 
-test.after(async () => {
-    // Requiring the email-client modules transitively opens a Redis connection
-    // via lib/db. Close it so the test process can exit cleanly.
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 // Helper to parse email and prepare messageInfo for arfDetect
 async function parseForArfDetect(filePath) {

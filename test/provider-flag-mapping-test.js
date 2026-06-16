@@ -13,14 +13,9 @@ const { GmailClient } = require('../lib/email-client/gmail-client');
 const { OutlookClient } = require('../lib/email-client/outlook-client');
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
-    }
-});
+registerRedisTeardown(redis);
 
 const flagToLabel = (flag, remove) => GmailClient.prototype.flagToLabel.call(null, flag, remove);
 

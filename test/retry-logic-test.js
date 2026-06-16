@@ -11,15 +11,9 @@ const { OUTLOOK_MAX_RETRY_ATTEMPTS, OUTLOOK_RETRY_BASE_DELAY, OUTLOOK_RETRY_MAX_
 // we control. A regression in the shipping retry/backoff logic now fails this suite.
 const graphApi = require('../lib/email-client/outlook/graph-api');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    // graph-api transitively opens a Redis connection via base-client -> lib/db.
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 const noopLogger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
 

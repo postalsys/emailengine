@@ -13,14 +13,9 @@ const assert = require('node:assert').strict;
 const gmail = require('../lib/oauth/gmail');
 const outlook = require('../lib/oauth/outlook');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
-    }
-});
+registerRedisTeardown(redis);
 
 test('Gmail checkForFlags', async t => {
     await t.test('returns false for non-object input', () => {

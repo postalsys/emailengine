@@ -11,6 +11,7 @@ const assert = require('node:assert').strict;
 
 const { IMAPClient } = require('../lib/email-client/imap-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const noopLogger = {
     trace() {},
@@ -42,13 +43,7 @@ function stubbedClient() {
     return { client, startCalled: () => startCalled };
 }
 
-test.after(async () => {
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
-    }
-});
+registerRedisTeardown(redis);
 
 test('IMAPClient.reconnect() guards', async t => {
     await t.test('skips when a connect is already in progress', async () => {

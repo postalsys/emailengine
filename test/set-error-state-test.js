@@ -14,6 +14,7 @@ const assert = require('node:assert').strict;
 
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {}, fatal() {}, child: () => noopLogger };
@@ -44,18 +45,13 @@ function makeCtx(account) {
 
 const setErrorState = (ctx, event, data) => BaseClient.prototype.setErrorState.call(ctx, event, data);
 
-test.after(async () => {
+registerRedisTeardown(redis, async () => {
     for (const key of createdKeys) {
         try {
             await redis.del(key);
         } catch (err) {
             // ignore
         }
-    }
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore
     }
 });
 

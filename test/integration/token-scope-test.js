@@ -20,6 +20,7 @@ const assert = require('node:assert').strict;
 
 const tokens = require('../../lib/tokens');
 const { redis } = require('../../lib/db');
+const registerRedisTeardown = require('../helpers/redis-teardown');
 
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
 const ACCOUNT = 'scope-test-account';
@@ -29,6 +30,9 @@ let smtpToken;
 let accountToken;
 
 const get = (path, tok) => supertest(baseUrl).get(path).auth(tok, { type: 'bearer' });
+
+// Force the process to exit once tests finish; lib/db keeps connections open.
+registerRedisTeardown();
 
 test('API token scope and account binding', async t => {
     t.before(async () => {

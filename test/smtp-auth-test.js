@@ -13,6 +13,7 @@ const { createSmtpAuthHandler } = require('../lib/smtp-auth');
 const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT = 'smtp-auth-acct';
@@ -47,7 +48,7 @@ test.before(async () => {
     await seedAccount(ACCOUNT);
 });
 
-test.after(async () => {
+registerRedisTeardown(redis, async () => {
     for (const tok of [smtpToken, apiScopeToken, ipRestrictedToken]) {
         if (tok) {
             try {
@@ -66,11 +67,6 @@ test.after(async () => {
     }
     try {
         await settings.set('smtpServerPassword', prevSmtpPassword || '');
-    } catch (err) {
-        // ignore
-    }
-    try {
-        await redis.quit();
     } catch (err) {
         // ignore
     }

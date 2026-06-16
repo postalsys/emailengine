@@ -17,20 +17,13 @@ const Path = require('path');
 // honest: a regression in lib/email-client/base-client.js now fails the suite.
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
 
 const isAutoreply = messageData => BaseClient.prototype.isAutoreply.call(null, messageData);
 
 const path = fname => Path.join(__dirname, 'fixtures', 'autoreply', fname);
 
-test.after(async () => {
-    // Requiring base-client transitively opens a Redis connection via lib/db.
-    // Close it so the test process can exit cleanly.
-    try {
-        await redis.quit();
-    } catch (err) {
-        // ignore - connection may already be closing
-    }
-});
+registerRedisTeardown(redis);
 
 // Convert parsed email headers to the format expected by isAutoreply
 function convertHeaders(parsed) {
