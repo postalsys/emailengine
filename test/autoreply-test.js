@@ -11,51 +11,26 @@ const { simpleParser } = require('mailparser');
 const fs = require('fs');
 const Path = require('path');
 
+// Import the real implementation under test instead of re-implementing it.
+// isAutoreply is a pure method on BaseClient (it does not touch `this`), so we
+// invoke it through the prototype with a null receiver. This keeps the test
+// honest: a regression in lib/email-client/base-client.js now fails the suite.
+const { BaseClient } = require('../lib/email-client/base-client');
+const { redis } = require('../lib/db');
+
+const isAutoreply = messageData => BaseClient.prototype.isAutoreply.call(null, messageData);
+
 const path = fname => Path.join(__dirname, 'fixtures', 'autoreply', fname);
 
-// Replicate isAutoreply logic from base-client.js for testing
-function isAutoreply(messageData) {
-    // Check subject patterns - these are strong autoreply indicators
-    // Note: "Automatic reply:" and "Auto reply:" (with space) are common variants
-    // "Out of the Office" is also valid (with "the")
-    if (/^(auto(matic)?\s*(reply|response)|Out of(?: the)? Office|OOF:|OOO:)/i.test(messageData.subject)) {
-        return true;
+test.after(async () => {
+    // Requiring base-client transitively opens a Redis connection via lib/db.
+    // Close it so the test process can exit cleanly.
+    try {
+        await redis.quit();
+    } catch (err) {
+        // ignore - connection may already be closing
     }
-
-    // Weaker subject patterns require inReplyTo as confirmation
-    if (/^auto:/i.test(messageData.subject) && messageData.inReplyTo) {
-        return true;
-    }
-
-    if (!messageData.headers) {
-        return false;
-    }
-
-    // Check Precedence header
-    if (messageData.headers.precedence && messageData.headers.precedence.some(e => /auto[_-]?reply/.test(e))) {
-        return true;
-    }
-
-    // Check Auto-Submitted header (RFC 3834)
-    if (messageData.headers['auto-submitted'] && messageData.headers['auto-submitted'].some(e => /auto[_-]?replied/.test(e))) {
-        return true;
-    }
-
-    // Check X-Auto-Response-Suppress header (Microsoft Exchange)
-    // Values like "All", "OOF", "AutoReply" indicate this is an autoreply
-    if (messageData.headers['x-auto-response-suppress'] && messageData.headers['x-auto-response-suppress'].length) {
-        return true;
-    }
-
-    // Check various vendor-specific headers
-    for (let headerKey of ['x-autoresponder', 'x-autorespond', 'x-autoreply']) {
-        if (messageData.headers[headerKey] && messageData.headers[headerKey].length) {
-            return true;
-        }
-    }
-
-    return false;
-}
+});
 
 // Convert parsed email headers to the format expected by isAutoreply
 function convertHeaders(parsed) {

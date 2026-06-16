@@ -11,8 +11,30 @@ const { arfDetect } = require('../lib/arf-detect');
 const { simpleParser } = require('mailparser');
 const fs = require('fs');
 
+// Exercise the real complaint heuristic instead of a copy. The IMAP sync path
+// uses Mailbox.mightBeAComplaint (lib/email-client/imap/mailbox.js); it only
+// reads `this.path` and `this.isAllMail`, so we bind a minimal receiver that
+// represents an INBOX folder. A regression in the shipping heuristic now fails
+// this suite.
+const { Mailbox } = require('../lib/email-client/imap/mailbox');
+const { BaseClient } = require('../lib/email-client/base-client');
+const { redis } = require('../lib/db');
+
+const inboxReceiver = { path: 'INBOX', isAllMail: false };
+const mightBeAComplaint = messageInfo => Mailbox.prototype.mightBeAComplaint.call(inboxReceiver, messageInfo);
+
 const Path = require('path');
 const path = fname => Path.join(__dirname, 'fixtures', 'complaints', fname);
+
+test.after(async () => {
+    // Requiring the email-client modules transitively opens a Redis connection
+    // via lib/db. Close it so the test process can exit cleanly.
+    try {
+        await redis.quit();
+    } catch (err) {
+        // ignore - connection may already be closing
+    }
+});
 
 // Helper to parse email and prepare messageInfo for arfDetect
 async function parseForArfDetect(filePath) {
@@ -22,42 +44,12 @@ async function parseForArfDetect(filePath) {
     return {
         from: parsed.from?.value?.[0] || {},
         subject: parsed.subject || '',
+        messageSpecialUse: '\\Inbox',
         attachments: (parsed.attachments || []).map(att => ({
             contentType: att.contentType,
             content: att.content
         }))
     };
-}
-
-// Replicate mightBeAComplaint logic for testing
-function mightBeAComplaint(messageInfo) {
-    let hasEmbeddedMessage = false;
-    for (let attachment of messageInfo.attachments || []) {
-        if (attachment.contentType === 'message/feedback-report') {
-            return true;
-        }
-        if (['message/rfc822', 'message/rfc822-headers', 'text/rfc822-headers', 'text/rfc822-header'].includes(attachment.contentType)) {
-            hasEmbeddedMessage = true;
-        }
-    }
-
-    let fromAddress = (messageInfo.from && messageInfo.from.address) || '';
-
-    if (fromAddress === 'staff@hotmail.com' && /complaint/i.test(messageInfo.subject)) {
-        return true;
-    }
-
-    if (/^(feedbackloop|fbl|complaints|abuse)@/i.test(fromAddress)) {
-        if (hasEmbeddedMessage || /abuse|complaint|feedback|report/i.test(messageInfo.subject)) {
-            return true;
-        }
-    }
-
-    if (hasEmbeddedMessage && /abuse report|feedback report|spam report/i.test(messageInfo.subject)) {
-        return true;
-    }
-
-    return false;
 }
 
 test('ARF complaint detection tests', async t => {
@@ -272,5 +264,49 @@ test('mightBeAComplaint heuristics', async t => {
             attachments: [{ contentType: 'image/png' }]
         };
         assert.strictEqual(mightBeAComplaint(messageInfo), false);
+    });
+});
+
+// BaseClient.mightBeAComplaint (the Gmail/Outlook path) has drifted from the
+// Mailbox.mightBeAComplaint (IMAP path) heuristic above: it gates on
+// messageSpecialUse === '\\Inbox', requires an embedded message for the Hotmail
+// case, and does NOT recognize the generic feedback-loop sender patterns. These
+// tests pin that real (narrower) behavior so a future change to either copy is
+// caught. If the two are ever consolidated, update these expectations together.
+test('mightBeAComplaint drift between BaseClient and Mailbox', async t => {
+    const baseClientComplaint = messageData => BaseClient.prototype.mightBeAComplaint.call(null, messageData);
+
+    await t.test('BaseClient requires messageSpecialUse Inbox', () => {
+        const msg = { attachments: [{ contentType: 'message/feedback-report' }] };
+        // Without the Inbox special-use marker the base-client heuristic bails out.
+        assert.strictEqual(baseClientComplaint(msg), false);
+        assert.strictEqual(baseClientComplaint({ ...msg, messageSpecialUse: '\\Inbox' }), true);
+    });
+
+    await t.test('BaseClient ignores generic FBL sender patterns that Mailbox detects', () => {
+        const msg = {
+            messageSpecialUse: '\\Inbox',
+            from: { address: 'fbl@example.com' },
+            subject: 'FBL Report',
+            attachments: [{ contentType: 'text/rfc822-headers' }]
+        };
+        // Mailbox path: FBL sender + embedded message -> complaint.
+        assert.strictEqual(mightBeAComplaint(msg), true);
+        // BaseClient path: no feedback-report, text/rfc822-headers is not treated
+        // as an embedded message, no FBL pattern -> not a complaint.
+        assert.strictEqual(baseClientComplaint(msg), false);
+    });
+
+    await t.test('BaseClient Hotmail case requires an embedded message', () => {
+        const base = {
+            messageSpecialUse: '\\Inbox',
+            from: { address: 'staff@hotmail.com' },
+            subject: 'complaint about message'
+        };
+        // Without an embedded message BaseClient rejects, Mailbox accepts.
+        assert.strictEqual(baseClientComplaint({ ...base, attachments: [] }), false);
+        assert.strictEqual(mightBeAComplaint({ ...base, attachments: [] }), true);
+        // With an embedded message both accept.
+        assert.strictEqual(baseClientComplaint({ ...base, attachments: [{ contentType: 'message/rfc822' }] }), true);
     });
 });

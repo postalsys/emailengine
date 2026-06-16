@@ -5,284 +5,217 @@ const assert = require('node:assert').strict;
 
 const { OUTLOOK_MAX_RETRY_ATTEMPTS, OUTLOOK_RETRY_BASE_DELAY, OUTLOOK_RETRY_MAX_DELAY } = require('../lib/consts');
 
-/**
- * Calculate exponential backoff delay (mirrors implementation in outlook-client.js)
- * @param {number} attempt - Current attempt number (0-indexed)
- * @param {number} [retryAfter] - Optional Retry-After header value
- * @returns {number} Delay in seconds
- */
-function calculateBackoffDelay(attempt, retryAfter) {
-    return retryAfter || Math.min(OUTLOOK_RETRY_BASE_DELAY * Math.pow(2, attempt), OUTLOOK_RETRY_MAX_DELAY);
-}
+// Exercise the real Graph API retry orchestration (lib/email-client/outlook/graph-api.js)
+// instead of a re-implementation. requestWithRetry(context, ...) takes the client
+// as its first argument, so we drive it with a fake context whose oAuth2Client.request
+// we control. A regression in the shipping retry/backoff logic now fails this suite.
+const graphApi = require('../lib/email-client/outlook/graph-api');
+const { redis } = require('../lib/db');
 
-/**
- * Simulates requestWithRetry behavior for testing
- * @param {Function} requestFn - Mock request function that may throw
- * @param {object} options - Options including maxRetries
- * @returns {Promise<object>} Result or throws after max retries
- */
-async function simulateRequestWithRetry(requestFn, options = {}) {
-    const maxRetries = options.maxRetries ?? OUTLOOK_MAX_RETRY_ATTEMPTS;
-    const delays = [];
-    let lastError;
+test.after(async () => {
+    // graph-api transitively opens a Redis connection via base-client -> lib/db.
+    try {
+        await redis.quit();
+    } catch (err) {
+        // ignore - connection may already be closing
+    }
+});
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            return await requestFn(attempt);
-        } catch (err) {
-            // Only retry on 429 (rate limit) errors
-            if (err.oauthRequest?.status !== 429 || attempt === maxRetries) {
-                throw err;
-            }
+const noopLogger = { info() {}, warn() {}, error() {}, debug() {}, trace() {} };
 
-            lastError = err;
-            const retryAfter = calculateBackoffDelay(attempt, err.retryAfter);
-            delays.push(retryAfter);
-
-            // In tests, we don't actually wait - just record the delay
-            if (options.recordDelays) {
-                options.recordDelays.push(retryAfter);
+// Build a fake OutlookClient context. requestImpl receives the attempt index
+// (0-based) and returns a value to resolve with or throws to simulate failure.
+function makeContext(requestImpl) {
+    let attempt = 0;
+    const context = {
+        account: 'test-account',
+        logger: noopLogger,
+        getToken: async () => 'access-token',
+        oAuth2Client: {
+            apiBase: 'https://graph.microsoft.com',
+            provider: 'outlook',
+            request: async () => {
+                const current = attempt++;
+                return requestImpl(current);
             }
         }
-    }
-
-    throw lastError;
+    };
+    return {
+        context,
+        getCalls: () => attempt
+    };
 }
 
-test('Retry logic tests', async t => {
-    await t.test('constants are defined with expected values', async () => {
+// Run requestWithRetry while neutralizing the real (30-120s) backoff sleeps.
+// We swap global.setTimeout for one that fires immediately but records the
+// requested delay. Retry delays are always >= 1000ms (base 30s), so we filter
+// out any unrelated sub-second timers that other libraries might schedule.
+async function runRetry(requestImpl, options = {}) {
+    const { context, getCalls } = makeContext(requestImpl);
+    const realSetTimeout = global.setTimeout;
+    const rawDelays = [];
+
+    global.setTimeout = (cb, ms, ...args) => {
+        rawDelays.push(ms);
+        return realSetTimeout(cb, 0, ...args);
+    };
+
+    let result;
+    let error;
+    try {
+        result = await graphApi.requestWithRetry(context, '/me', 'get', {}, options);
+    } catch (err) {
+        error = err;
+    } finally {
+        global.setTimeout = realSetTimeout;
+    }
+
+    const delaysSeconds = rawDelays.filter(ms => ms >= 1000).map(ms => ms / 1000);
+    return { result, error, calls: getCalls(), delaysSeconds };
+}
+
+function rateLimitError(retryAfter) {
+    const err = new Error('Rate limited');
+    err.oauthRequest = { status: 429 };
+    if (retryAfter !== undefined) {
+        err.retryAfter = retryAfter;
+    }
+    return err;
+}
+
+test('Outlook Graph API requestWithRetry', async t => {
+    await t.test('constants are defined with expected values', () => {
         assert.strictEqual(OUTLOOK_MAX_RETRY_ATTEMPTS, 3, 'Max retry attempts should be 3');
         assert.strictEqual(OUTLOOK_RETRY_BASE_DELAY, 30, 'Base delay should be 30 seconds');
         assert.strictEqual(OUTLOOK_RETRY_MAX_DELAY, 120, 'Max delay should be 120 seconds');
     });
 
-    await t.test('calculates correct exponential backoff delays', async () => {
-        // attempt 0: min(30 * 2^0, 120) = min(30, 120) = 30
-        assert.strictEqual(calculateBackoffDelay(0), 30, 'Attempt 0 should have 30s delay');
-
-        // attempt 1: min(30 * 2^1, 120) = min(60, 120) = 60
-        assert.strictEqual(calculateBackoffDelay(1), 60, 'Attempt 1 should have 60s delay');
-
-        // attempt 2: min(30 * 2^2, 120) = min(120, 120) = 120
-        assert.strictEqual(calculateBackoffDelay(2), 120, 'Attempt 2 should have 120s delay');
-
-        // attempt 3: min(30 * 2^3, 120) = min(240, 120) = 120 (capped)
-        assert.strictEqual(calculateBackoffDelay(3), 120, 'Attempt 3 should be capped at 120s');
-
-        // attempt 4: min(30 * 2^4, 120) = min(480, 120) = 120 (capped)
-        assert.strictEqual(calculateBackoffDelay(4), 120, 'Attempt 4 should be capped at 120s');
-    });
-
-    await t.test('respects Retry-After header when present', async () => {
-        // When Retry-After is provided, it takes precedence
-        assert.strictEqual(calculateBackoffDelay(0, 45), 45, 'Should use Retry-After value of 45');
-        assert.strictEqual(calculateBackoffDelay(1, 10), 10, 'Should use Retry-After value of 10');
-        assert.strictEqual(calculateBackoffDelay(2, 200), 200, 'Should use Retry-After even if > max');
-    });
-
     await t.test('succeeds on first attempt without retry', async () => {
-        const delays = [];
-        let attemptCount = 0;
-
-        const result = await simulateRequestWithRetry(
-            async attempt => {
-                attemptCount++;
-                return { success: true, data: 'test' };
-            },
-            { recordDelays: delays }
-        );
-
-        assert.strictEqual(attemptCount, 1, 'Should only make one attempt');
-        assert.strictEqual(delays.length, 0, 'Should not record any delays');
-        assert.deepStrictEqual(result, { success: true, data: 'test' });
+        const { result, error, calls, delaysSeconds } = await runRetry(() => ({ ok: true, data: 'test' }));
+        assert.ifError(error);
+        assert.strictEqual(calls, 1, 'Should only make one attempt');
+        assert.strictEqual(delaysSeconds.length, 0, 'Should not sleep');
+        assert.deepStrictEqual(result, { ok: true, data: 'test' });
     });
 
     await t.test('retries on 429 and succeeds on second attempt', async () => {
-        const delays = [];
-        let attemptCount = 0;
-
-        const result = await simulateRequestWithRetry(
-            async attempt => {
-                attemptCount++;
-                if (attempt === 0) {
-                    const err = new Error('Rate limited');
-                    err.oauthRequest = { status: 429 };
-                    throw err;
-                }
-                return { success: true, attempt };
-            },
-            { recordDelays: delays }
-        );
-
-        assert.strictEqual(attemptCount, 2, 'Should make two attempts');
-        assert.strictEqual(delays.length, 1, 'Should record one delay');
-        assert.strictEqual(delays[0], 30, 'First retry delay should be 30s');
-        assert.deepStrictEqual(result, { success: true, attempt: 1 });
+        const { result, error, calls, delaysSeconds } = await runRetry(attempt => {
+            if (attempt === 0) {
+                throw rateLimitError();
+            }
+            return { ok: true, attempt };
+        });
+        assert.ifError(error);
+        assert.strictEqual(calls, 2, 'Should make two attempts');
+        assert.deepStrictEqual(delaysSeconds, [30], 'First retry delay should be 30s');
+        assert.deepStrictEqual(result, { ok: true, attempt: 1 });
     });
 
-    await t.test('retries with exponential backoff delays', async () => {
-        const delays = [];
-        let attemptCount = 0;
-
-        const result = await simulateRequestWithRetry(
-            async attempt => {
-                attemptCount++;
-                if (attempt < 3) {
-                    const err = new Error('Rate limited');
-                    err.oauthRequest = { status: 429 };
-                    throw err;
-                }
-                return { success: true, attempt };
-            },
-            { recordDelays: delays }
-        );
-
-        assert.strictEqual(attemptCount, 4, 'Should make 4 attempts (initial + 3 retries)');
-        assert.strictEqual(delays.length, 3, 'Should record 3 delays');
-        assert.deepStrictEqual(delays, [30, 60, 120], 'Delays should follow exponential backoff');
-        assert.deepStrictEqual(result, { success: true, attempt: 3 });
+    await t.test('retries with exponential backoff (30, 60, 120)', async () => {
+        const { result, error, calls, delaysSeconds } = await runRetry(attempt => {
+            if (attempt < 3) {
+                throw rateLimitError();
+            }
+            return { ok: true, attempt };
+        });
+        assert.ifError(error);
+        assert.strictEqual(calls, 4, 'Should make 4 attempts (initial + 3 retries)');
+        assert.deepStrictEqual(delaysSeconds, [30, 60, 120], 'Delays should follow exponential backoff, capped at 120');
+        assert.deepStrictEqual(result, { ok: true, attempt: 3 });
     });
 
     await t.test('stops retrying after max attempts and throws', async () => {
-        const delays = [];
-        let attemptCount = 0;
-
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(
-                    async () => {
-                        attemptCount++;
-                        const err = new Error('Rate limited');
-                        err.oauthRequest = { status: 429 };
-                        throw err;
-                    },
-                    { recordDelays: delays }
-                );
-            },
-            err => {
-                assert.strictEqual(err.message, 'Rate limited');
-                assert.strictEqual(err.oauthRequest.status, 429);
-                return true;
-            }
-        );
-
-        // initial attempt + 3 retries = 4 total attempts
-        assert.strictEqual(attemptCount, 4, 'Should make 4 attempts total');
-        assert.strictEqual(delays.length, 3, 'Should record 3 delays before final failure');
+        const { error, calls, delaysSeconds } = await runRetry(() => {
+            throw rateLimitError();
+        });
+        assert.ok(error, 'Should throw after exhausting retries');
+        assert.strictEqual(error.oauthRequest.status, 429);
+        assert.strictEqual(calls, 4, 'initial attempt + 3 retries');
+        assert.strictEqual(delaysSeconds.length, 3, 'Should sleep 3 times before final failure');
     });
 
-    await t.test('throws immediately on non-429 errors', async () => {
-        const delays = [];
-        let attemptCount = 0;
-
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(
-                    async () => {
-                        attemptCount++;
-                        const err = new Error('Not found');
-                        err.oauthRequest = { status: 404 };
-                        throw err;
-                    },
-                    { recordDelays: delays }
-                );
-            },
-            err => {
-                assert.strictEqual(err.message, 'Not found');
-                assert.strictEqual(err.oauthRequest.status, 404);
-                return true;
-            }
-        );
-
-        assert.strictEqual(attemptCount, 1, 'Should only make one attempt');
-        assert.strictEqual(delays.length, 0, 'Should not record any delays');
+    await t.test('throws immediately on non-429 client error (404)', async () => {
+        const { error, calls, delaysSeconds } = await runRetry(() => {
+            const err = new Error('Not found');
+            err.oauthRequest = { status: 404 };
+            throw err;
+        });
+        assert.ok(error);
+        assert.strictEqual(error.oauthRequest.status, 404);
+        assert.strictEqual(calls, 1, 'Should not retry');
+        assert.strictEqual(delaysSeconds.length, 0);
     });
 
-    await t.test('throws immediately on 500 errors', async () => {
-        let attemptCount = 0;
-
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(async () => {
-                    attemptCount++;
-                    const err = new Error('Server error');
-                    err.oauthRequest = { status: 500 };
-                    throw err;
-                });
-            },
-            err => {
-                assert.strictEqual(err.oauthRequest.status, 500);
-                return true;
-            }
-        );
-
-        assert.strictEqual(attemptCount, 1, 'Should not retry on 500');
+    await t.test('throws immediately on 500 server error', async () => {
+        const { error, calls } = await runRetry(() => {
+            const err = new Error('Server error');
+            err.oauthRequest = { status: 500 };
+            throw err;
+        });
+        assert.ok(error);
+        assert.strictEqual(error.oauthRequest.status, 500);
+        assert.strictEqual(calls, 1, 'Should not retry on 500');
     });
 
     await t.test('uses Retry-After from error when provided', async () => {
-        const delays = [];
-
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(
-                    async () => {
-                        const err = new Error('Rate limited');
-                        err.oauthRequest = { status: 429 };
-                        err.retryAfter = 90; // Server requested 90 second wait
-                        throw err;
-                    },
-                    { recordDelays: delays }
-                );
-            },
-            () => true
-        );
-
-        // All delays should use the Retry-After value
-        assert.strictEqual(delays.length, 3);
+        const { error, delaysSeconds } = await runRetry(() => {
+            throw rateLimitError(90); // server-requested 90s wait
+        });
+        assert.ok(error);
+        assert.strictEqual(delaysSeconds.length, 3);
         assert.ok(
-            delays.every(d => d === 90),
+            delaysSeconds.every(d => d === 90),
             'All delays should be 90s from Retry-After'
         );
     });
 
     await t.test('respects custom maxRetries option', async () => {
-        let attemptCount = 0;
-
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(
-                    async () => {
-                        attemptCount++;
-                        const err = new Error('Rate limited');
-                        err.oauthRequest = { status: 429 };
-                        throw err;
-                    },
-                    { maxRetries: 1 }
-                );
+        const { error, calls } = await runRetry(
+            () => {
+                throw rateLimitError();
             },
-            () => true
+            { maxRetries: 1 }
         );
-
-        // initial attempt + 1 retry = 2 total
-        assert.strictEqual(attemptCount, 2, 'Should only make 2 attempts with maxRetries=1');
+        assert.ok(error);
+        assert.strictEqual(calls, 2, 'initial attempt + 1 retry');
     });
 
-    await t.test('handles errors without oauthRequest property', async () => {
-        let attemptCount = 0;
+    await t.test('does not retry errors without a status code', async () => {
+        const { error, calls, delaysSeconds } = await runRetry(() => {
+            throw new Error('Unexpected error');
+        });
+        assert.ok(error);
+        assert.strictEqual(error.message, 'Unexpected error');
+        assert.strictEqual(calls, 1, 'Should not retry non-HTTP errors');
+        assert.strictEqual(delaysSeconds.length, 0);
+    });
 
-        await assert.rejects(
-            async () => {
-                await simulateRequestWithRetry(async () => {
-                    attemptCount++;
-                    throw new Error('Network error');
-                });
-            },
-            err => {
-                assert.strictEqual(err.message, 'Network error');
-                return true;
+    // The transient-network-retry branch (graph-api.js retries ENOTFOUND/
+    // ETIMEDOUT/ECONNRESET/... before the 429 check) was previously untested.
+    await t.test('retries transient network errors then succeeds', async () => {
+        const { result, error, calls, delaysSeconds } = await runRetry(attempt => {
+            if (attempt < 2) {
+                const err = new Error('socket hang up');
+                err.code = 'ECONNRESET';
+                throw err;
             }
-        );
+            return { ok: true, attempt };
+        });
+        assert.ifError(error);
+        assert.strictEqual(calls, 3, 'initial attempt + 2 retries');
+        assert.deepStrictEqual(delaysSeconds, [30, 60], 'Transient retries use exponential backoff');
+        assert.deepStrictEqual(result, { ok: true, attempt: 2 });
+    });
 
-        assert.strictEqual(attemptCount, 1, 'Should not retry errors without status');
+    await t.test('transient network error exhausts retries and throws', async () => {
+        const { error, calls, delaysSeconds } = await runRetry(() => {
+            const err = new Error('timeout');
+            err.code = 'ETIMEDOUT';
+            throw err;
+        });
+        assert.ok(error);
+        assert.strictEqual(error.code, 'ETIMEDOUT');
+        assert.strictEqual(calls, 4, 'initial attempt + 3 retries');
+        assert.strictEqual(delaysSeconds.length, 3);
     });
 });
