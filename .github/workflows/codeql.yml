@@ -22,6 +22,9 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
+    # Skip release-please's auto-generated release PR: it only changes CHANGELOG/version,
+    # so there is no new code to scan. (Matches the guard in test.yml.)
+    if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
     # Runner size impacts CodeQL analysis time. To learn more, please see:
     #   - https://gh.io/recommended-hardware-resources-for-running-codeql
     #   - https://gh.io/supported-runners-and-hardware-resources
