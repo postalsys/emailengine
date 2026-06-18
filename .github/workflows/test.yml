@@ -12,8 +12,13 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    # Skip CI for release-please's auto-generated release PR / branch: it only bumps the
+    # version + CHANGELOG (no code change), so re-running the suite is wasted work. This is
+    # gated per job rather than with [skip ci] in the release commit, because that text would
+    # ride the squash-merge into master and skip the Manage Release run, breaking releases.
     license_check:
         name: License Compliance Check
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         runs-on: ubuntu-24.04
         # Service containers to run with `container-job`
         steps:
@@ -32,6 +37,7 @@ jobs:
 
     lint:
         name: Lint
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         runs-on: ubuntu-24.04
         timeout-minutes: 10
         steps:
@@ -48,6 +54,7 @@ jobs:
 
     unit:
         name: Unit Tests
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         timeout-minutes: 10
         runs-on: ubuntu-24.04
         # Service containers to run with `container-job`
@@ -95,6 +102,7 @@ jobs:
 
     integration:
         name: Integration Tests
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
         timeout-minutes: 15 # Increased timeout for Gmail API tests
         runs-on: ubuntu-24.04
         # Service containers to run with `container-job`
