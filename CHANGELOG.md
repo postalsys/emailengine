@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.72.0](https://github.com/postalsys/emailengine/compare/v2.71.0...v2.72.0) (2026-06-18)
+
+
+### Features
+
+* adopt pre-existing Gmail Pub/Sub resources with ownership tracking ([fe43fad](https://github.com/postalsys/emailengine/commit/fe43fadad624025a56139382428256eb810f9e08))
+
 ## [2.71.0](https://github.com/postalsys/emailengine/compare/v2.70.0...v2.71.0) (2026-06-15)
 
 
