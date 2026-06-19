@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.72.1](https://github.com/postalsys/emailengine/compare/v2.72.0...v2.72.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* log expected API client errors (4xx) at warn instead of error ([c51e347](https://github.com/postalsys/emailengine/commit/c51e3476e346f321af845905a89141bf07a83421))
+
 ## [2.72.0](https://github.com/postalsys/emailengine/compare/v2.71.0...v2.72.0) (2026-06-18)
 
 
