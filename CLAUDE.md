@@ -191,7 +191,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
 
 **Error handling:**
-- Auth failures tracked; auto-disable after threshold (4-hour window)
+- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`)
 - Transient errors (timeout, DNS) trigger reconnection with backoff
 - Permanent errors (5xx) fail immediately
 - Excessive reconnection detection (>20/min triggers warning)
