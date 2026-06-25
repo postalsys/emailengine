@@ -183,4 +183,32 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         assert.strictEqual(calls.filter(c => c.cmd === 'update').length, 1, 'imap change requests cmd:update');
         assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 0);
     });
+
+    await t.test('reconnect dispatch failure does not reject the update', async () => {
+        // Credentials are already persisted by the time the reconnect is dispatched, so a failed
+        // dispatch must be swallowed (logged) rather than surfaced as a 500 to the user.
+        let { ctx, calls } = createCtx({
+            account: 'acc6',
+            state: 'authenticationError',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        // Simulate the worker RPC failing for the reconnect command only.
+        ctx.call = async message => {
+            calls.push(message);
+            if (message.cmd === 'reconnect') {
+                throw new Error('worker unavailable');
+            }
+            return true;
+        };
+
+        await assert.doesNotReject(
+            Account.prototype.update.call(ctx, {
+                account: 'acc6',
+                oauth2: { accessToken: 'NEW', refreshToken: 'R1' }
+            })
+        );
+
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'reconnect was attempted');
+    });
 });
