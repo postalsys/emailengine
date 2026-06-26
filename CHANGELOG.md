@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.72.2](https://github.com/postalsys/emailengine/compare/v2.72.1...v2.72.2) (2026-06-26)
+
+
+### Bug Fixes
+
+* reconnect error-state accounts after OAuth re-auth via create() ([77cee1e](https://github.com/postalsys/emailengine/commit/77cee1eb1916fbd6582cfcf931023d53f6cc8abf))
+* resume sync after OAuth re-auth and enable Run sync for Gmail/Outlook ([f3bef82](https://github.com/postalsys/emailengine/commit/f3bef823ee90cd6fcf90b95fadcb6f2730657441))
+* update dependencies (libmime 5.4.0, mailparser 3.9.12, imapflow 1.4.3, email-ai-tools 1.13.9) ([8c999d8](https://github.com/postalsys/emailengine/commit/8c999d8c5e6b550c6d3a28fd4ec118c48d095901))
+
 ## [2.72.1](https://github.com/postalsys/emailengine/compare/v2.72.0...v2.72.1) (2026-06-19)
 
 
