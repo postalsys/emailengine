@@ -539,7 +539,12 @@ const init = async () => {
         } catch (err) {
             res = util.inspect(payload, false, 4, false);
         }
-        return new handlebars.SafeString(res);
+        // SECURITY: return a plain string (NOT a SafeString) so Handlebars HTML-escapes the
+        // output. `payload` can carry attacker-controlled data (e.g. inbound email fields in
+        // webhook / pre-processing error logs); wrapping it in a SafeString allowed a stored
+        // XSS via a </textarea> breakout in the error-log views (security review H1). In the
+        // <textarea> render contexts this is display-identical (the browser decodes entities).
+        return res;
     });
 
     handlebars.registerHelper('lastVal', (value, separator) => {
