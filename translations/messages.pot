@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-06-26 08:10+0000\n"
+"POT-Creation-Date: 2026-07-01 21:25+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:2957
+#: workers/api.js:2963
 msgid "Something went wrong"
 msgstr ""
 
@@ -56,8 +56,8 @@ msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:3
-#: views/unsubscribe.hbs:62
-#: views/unsubscribe.hbs:85
+#: views/unsubscribe.hbs:60
+#: views/unsubscribe.hbs:76
 msgid "Unsubscribe"
 msgstr ""
 
@@ -77,31 +77,26 @@ msgstr ""
 msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
 msgstr ""
 
-#: views/unsubscribe.hbs:32
+#: views/unsubscribe.hbs:30
 #: views/accounts/register/imap-server.hbs:251
 msgid "Close"
 msgstr ""
 
-#: views/unsubscribe.hbs:34
+#: views/unsubscribe.hbs:32
 msgid "Subscribe"
 msgstr ""
 
-#: views/unsubscribe.hbs:56
+#: views/unsubscribe.hbs:54
 msgid "Subscription resumed"
 msgstr ""
 
-#: views/unsubscribe.hbs:58
+#: views/unsubscribe.hbs:56
 msgid "Your email address <em>%s</em> was re-subscribed."
 msgstr ""
 
-#: views/unsubscribe.hbs:75
+#: views/unsubscribe.hbs:71
 #: views/accounts/register/imap.hbs:21
 msgid "Email address"
-msgstr ""
-
-#: views/unsubscribe.hbs:81
-#: views/accounts/register/imap.hbs:27
-msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:11
@@ -110,6 +105,10 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:17
 msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:27
+msgid "Enter your email address"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:31
@@ -124,6 +123,14 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:51
 msgid "Continue"
+msgstr ""
+
+#: views/accounts/register/index.hbs:2
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:15
+msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:19
@@ -241,14 +248,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/index.hbs:2
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:15
-msgid "Standard IMAP"
-msgstr ""
-
 #: lib/autodetect-imap-settings.js:80
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
@@ -257,17 +256,18 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:975
-#: lib/ui-routes/unsubscribe-routes.js:28
+#: lib/tools.js:995
+#: lib/ui-routes/unsubscribe-routes.js:27
+#: lib/ui-routes/unsubscribe-routes.js:92
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:1742
+#: lib/tools.js:1762
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1751
-#: lib/tools.js:1756
+#: lib/tools.js:1771
+#: lib/tools.js:1776
 msgid "Invalid or expired account setup URL"
 msgstr ""
 
@@ -277,14 +277,14 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:599
 #: lib/ui-routes/account-routes.js:846
 #: lib/ui-routes/account-routes.js:882
-#: workers/api.js:2158
-#: workers/api.js:2486
+#: workers/api.js:2164
+#: workers/api.js:2492
 msgid "Email Account Setup"
 msgstr ""
 
 #: lib/ui-routes/account-routes.js:462
 #: lib/ui-routes/account-routes.js:495
-#: lib/ui-routes/unsubscribe-routes.js:65
+#: lib/ui-routes/unsubscribe-routes.js:67
 msgid "Invalid request. Check your input and try again."
 msgstr ""
 
@@ -379,19 +379,19 @@ msgid ""
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/unsubscribe-routes.js:38
-#: lib/ui-routes/unsubscribe-routes.js:156
-#: lib/ui-routes/unsubscribe-routes.js:173
-#: lib/ui-routes/unsubscribe-routes.js:209
+#: lib/ui-routes/unsubscribe-routes.js:37
+#: lib/ui-routes/unsubscribe-routes.js:171
+#: lib/ui-routes/unsubscribe-routes.js:196
+#: lib/ui-routes/unsubscribe-routes.js:231
 msgid "Subscription Management"
 msgstr ""
 
-#: lib/ui-routes/unsubscribe-routes.js:167
-#: lib/ui-routes/unsubscribe-routes.js:202
+#: lib/ui-routes/unsubscribe-routes.js:190
+#: lib/ui-routes/unsubscribe-routes.js:224
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2956
-#: workers/api.js:3071
+#: workers/api.js:2962
+#: workers/api.js:3077
 msgid "Requested page not found"
 msgstr ""
