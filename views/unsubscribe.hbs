@@ -25,10 +25,8 @@
                 <form method="post" action="/unsubscribe/address">
                     <input type="hidden" name="crumb" value="{{crumb}}">
                     <input type="hidden" name="action" value="subscribe">
-                    <input type="hidden" name="account" value="{{values.account}}">
-                    <input type="hidden" name="listId" value="{{values.listId}}">
-                    <input type="hidden" name="messageId" value="{{values.messageId}}">
-                    <input type="hidden" name="email" value="{{values.email}}">
+                    <input type="hidden" name="data" value="{{values.data}}">
+                    <input type="hidden" name="sig" value="{{values.sig}}">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{_ "Close" templateLocale
                         }}</button>
                     <button type="submit" class="btn btn-primary">{{_ "Subscribe" templateLocale }}</button>
@@ -66,19 +64,12 @@
         <form method="post" action="/unsubscribe/address">
             <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
             <input type="hidden" name="action" value="unsubscribe">
-            <input type="hidden" name="account" value="{{values.account}}">
-            <input type="hidden" name="listId" value="{{values.listId}}">
-            <input type="hidden" name="messageId" value="{{values.messageId}}">
-            <input type="hidden" name="reason" value="form">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
 
             <div class="form-group">
                 <label for="email">{{_ "Email address" templateLocale }}</label>
-                <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email" name="email"
-                    value="{{values.email}}" required />
-                {{#if errors.email}}
-                <span class="invalid-feedback">{{errors.email}}</span>
-                {{/if}}
-                <small class="form-text text-muted">{{_ "Enter your email address" templateLocale }}</small>
+                <input type="email" class="form-control" id="email" value="{{values.email}}" readonly />
             </div>
 
             <div class="mt-3">
