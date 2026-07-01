@@ -373,6 +373,14 @@ export class EmailEngineClient {
         return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
     }
 
+    escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+        const htmlEscapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(value).replace(/[&<>"']/g, ch => htmlEscapes[ch]);
+    }
+
     async downloadAttachment(attachmentId, suggestedFilename = null) {
         try {
             const headers = {};
@@ -1357,11 +1365,11 @@ export class EmailEngineClient {
                         const hasChildren = this.folders.some(f => f.parentPath === folder.path);
                         return `
                         <li class="ee-folder-item ${folder.path === this.currentFolder ? 'active' : ''}" 
-                            data-path="${folder.path}" 
+                            data-path="${this.escapeHtml(folder.path)}" 
                             data-depth="${depth}">
                             <div class="ee-folder-content" style="padding-left: ${8 + depth * 12}px;">
                                 ${depth > 0 ? '<span class="ee-folder-indent">└ </span>' : ''}
-                                <span class="ee-folder-name ${hasChildren ? 'has-children' : ''}">${folder.name}</span>
+                                <span class="ee-folder-name ${hasChildren ? 'has-children' : ''}">${this.escapeHtml(folder.name)}</span>
                                 ${folder.status && folder.status.messages > 0 ? `<span class="ee-folder-count">${folder.status.messages}</span>` : ''}
                             </div>
                         </li>
@@ -1430,16 +1438,16 @@ export class EmailEngineClient {
                 ${this.messages
                     .map(
                         msg => `
-                    <div class="ee-message-item ${msg.unseen ? 'unread' : ''} ${msg.id === (this.currentMessage && this.currentMessage.id) ? 'active' : ''}" data-id="${msg.id}">
+                    <div class="ee-message-item ${msg.unseen ? 'unread' : ''} ${msg.id === (this.currentMessage && this.currentMessage.id) ? 'active' : ''}" data-id="${this.escapeHtml(msg.id)}">
                         <div class="ee-message-header">
-                            <span class="ee-message-from">${msg.from ? msg.from.name || msg.from.address : 'Unknown'}</span>
+                            <span class="ee-message-from">${this.escapeHtml(msg.from ? msg.from.name || msg.from.address : 'Unknown')}</span>
                             <span class="ee-message-date">${this.formatDate(msg.date)}</span>
                         </div>
                         <div class="ee-message-subject">
-                            <span class="ee-message-subject-text">${msg.subject || '(no subject)'}</span>
+                            <span class="ee-message-subject-text">${this.escapeHtml(msg.subject || '(no subject)')}</span>
                             ${msg.attachments && msg.attachments.length > 0 ? `<span class="ee-attachment-indicator">${msg.attachments.length}</span>` : ''}
                         </div>
-                        <div class="ee-message-preview">${msg.intro || ''}</div>
+                        <div class="ee-message-preview">${this.escapeHtml(msg.intro || '')}</div>
                     </div>
                 `
                     )
@@ -1509,7 +1517,7 @@ export class EmailEngineClient {
                             const depth = this.calculateFolderDepth(folder);
                             const indent = '　'.repeat(depth);
                             const prefix = depth > 0 ? '└ ' : '';
-                            return `<option value="${folder.path}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${folder.name}</option>`;
+                            return `<option value="${this.escapeHtml(folder.path)}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${this.escapeHtml(folder.name)}</option>`;
                         })
                         .join('')}
                 </select>
@@ -1518,18 +1526,18 @@ export class EmailEngineClient {
                 <div class="ee-message-meta">
                     <div class="ee-message-meta-row">
                         <span class="ee-message-meta-label">From:</span>
-                        ${msg.from ? `${msg.from.name || ''} &lt;${msg.from.address}&gt;` : 'Unknown'}
+                        ${msg.from ? `${this.escapeHtml(msg.from.name || '')} &lt;${this.escapeHtml(msg.from.address)}&gt;` : 'Unknown'}
                     </div>
                     <div class="ee-message-meta-row">
                         <span class="ee-message-meta-label">To:</span>
-                        ${msg.to ? msg.to.map(t => `${t.name || ''} &lt;${t.address}&gt;`).join(', ') : ''}
+                        ${msg.to ? msg.to.map(t => `${this.escapeHtml(t.name || '')} &lt;${this.escapeHtml(t.address)}&gt;`).join(', ') : ''}
                     </div>
                     ${
                         msg.cc && msg.cc.length
                             ? `
                         <div class="ee-message-meta-row">
                             <span class="ee-message-meta-label">Cc:</span>
-                            ${msg.cc.map(c => `${c.name || ''} &lt;${c.address}&gt;`).join(', ')}
+                            ${msg.cc.map(c => `${this.escapeHtml(c.name || '')} &lt;${this.escapeHtml(c.address)}&gt;`).join(', ')}
                         </div>
                     `
                             : ''
@@ -1540,11 +1548,11 @@ export class EmailEngineClient {
                     </div>
                     <div class="ee-message-meta-row">
                         <span class="ee-message-meta-label">Subject:</span>
-                        ${msg.subject || '(no subject)'}
+                        ${this.escapeHtml(msg.subject || '(no subject)')}
                     </div>
                 </div>
                 <div class="ee-message-body">
-                    ${msg.text && msg.text.html ? msg.text.html : msg.text && msg.text.plain ? `<pre>${msg.text.plain}</pre>` : ''}
+                    ${msg.text && msg.text.html ? msg.text.html : msg.text && msg.text.plain ? `<pre>${this.escapeHtml(msg.text.plain)}</pre>` : ''}
                 </div>
                 ${
                     msg.attachments && msg.attachments.length > 0
@@ -1554,10 +1562,10 @@ export class EmailEngineClient {
                         ${msg.attachments
                             .map(
                                 att => `
-                            <div class="ee-attachment-item" data-attachment-id="${att.id}">
+                            <div class="ee-attachment-item" data-attachment-id="${this.escapeHtml(att.id)}">
                                 <div class="ee-attachment-icon">📎</div>
                                 <div class="ee-attachment-info">
-                                    <div class="ee-attachment-name">${att.filename || 'Unnamed attachment'}</div>
+                                    <div class="ee-attachment-name">${this.escapeHtml(att.filename || 'Unnamed attachment')}</div>
                                     ${att.size ? `<div class="ee-attachment-size">${this.formatFileSize(att.size)}</div>` : ''}
                                 </div>
                             </div>
