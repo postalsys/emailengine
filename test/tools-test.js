@@ -312,6 +312,34 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.escapeRegExp('test123'), 'test123');
     });
 
+    await t.test('escapeRedisGlob() escapes glob metacharacters', async () => {
+        assert.strictEqual(tools.escapeRedisGlob('user123'), 'user123');
+        assert.strictEqual(tools.escapeRedisGlob('acc@ex.com'), 'acc@ex.com');
+        assert.strictEqual(tools.escapeRedisGlob('*'), '\\*');
+        assert.strictEqual(tools.escapeRedisGlob('a*b?c'), 'a\\*b\\?c');
+        assert.strictEqual(tools.escapeRedisGlob('x[y]'), 'x\\[y\\]');
+        assert.strictEqual(tools.escapeRedisGlob('a\\b'), 'a\\\\b');
+    });
+
+    await t.test('escapeRedisGlob() coerces null/undefined to empty string', async () => {
+        assert.strictEqual(tools.escapeRedisGlob(null), '');
+        assert.strictEqual(tools.escapeRedisGlob(undefined), '');
+    });
+
+    await t.test('constantTimeEqual() matches equal values and rejects any difference', async () => {
+        assert.strictEqual(tools.constantTimeEqual('s3cr3t-abc', 's3cr3t-abc'), true);
+        assert.strictEqual(tools.constantTimeEqual('', ''), true);
+        assert.strictEqual(tools.constantTimeEqual('s3cr3t-abc', 's3cr3t-abd'), false);
+        // unequal lengths must return false, never throw
+        assert.strictEqual(tools.constantTimeEqual('abc', 'abcdef'), false);
+    });
+
+    await t.test('constantTimeEqual() treats null/undefined as non-matching', async () => {
+        assert.strictEqual(tools.constantTimeEqual(null, 'x'), false);
+        assert.strictEqual(tools.constantTimeEqual('x', undefined), false);
+        assert.strictEqual(tools.constantTimeEqual(null, null), false);
+    });
+
     // filterEmptyObjectValues tests
     await t.test('filterEmptyObjectValues() removes falsy values', async () => {
         const input = { a: 'value', b: '', c: null, d: 0, e: false, f: 'keep' };
