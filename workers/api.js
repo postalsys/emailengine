@@ -34,7 +34,8 @@ const {
     getBoolean,
     loadTlsConfig,
     maybeReloadHttpProxyAgent,
-    resolveOAuthErrorStatus
+    resolveOAuthErrorStatus,
+    constantTimeEqual
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -1605,7 +1606,7 @@ Include your token in requests using one of these methods:
             if (serviceSecret) {
                 let hmac = crypto.createHmac('sha256', serviceSecret);
                 hmac.update(data);
-                if (hmac.digest('base64url') !== request.query.sig) {
+                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
                     let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
                     throw error;
                 }
@@ -1674,7 +1675,7 @@ Include your token in requests using one of these methods:
             if (serviceSecret) {
                 let hmac = crypto.createHmac('sha256', serviceSecret);
                 hmac.update(data);
-                if (hmac.digest('base64url') !== request.query.sig) {
+                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
                     let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
                     throw error;
                 }
@@ -1745,7 +1746,7 @@ Include your token in requests using one of these methods:
             if (serviceSecret) {
                 let hmac = crypto.createHmac('sha256', serviceSecret);
                 hmac.update(data);
-                if (hmac.digest('base64url') !== request.query.sig) {
+                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
                     return 'data validation failed';
                 }
             }
