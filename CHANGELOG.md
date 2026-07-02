@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.72.3](https://github.com/postalsys/emailengine/compare/v2.72.2...v2.72.3) (2026-07-02)
+
+
+### Bug Fixes
+
+* constant-time MS Graph clientState check and escape unsubscribe email ([3def225](https://github.com/postalsys/emailengine/commit/3def225ab1d598dec4f0b44443ff842295736039))
+* escape Redis glob metacharacters in account-scoped SCAN patterns ([603d9db](https://github.com/postalsys/emailengine/commit/603d9dbce9c4e21b390e10dc7499f2cc5989c875))
+* escape untrusted email fields in message browser to prevent stored XSS ([1159cc1](https://github.com/postalsys/emailengine/commit/1159cc193a98eb972454a5ae61ec01d7df77f06a))
+* HTML-escape json Handlebars helper to prevent stored XSS in error logs ([af2c153](https://github.com/postalsys/emailengine/commit/af2c153eb4d7de06b2730da6fdeb17bbe868472b))
+* stop logging the MS Graph access token on HTTP 401 ([f2f0300](https://github.com/postalsys/emailengine/commit/f2f03008cbcbaba8b7c2ff9c043ede7930c5c4ef))
+* update dependencies (@postalsys/ee-client 1.3.2, nodemailer 9.0.3, bullmq 5.79.2, @sentry/node 10.63.0, [@bull-board](https://github.com/bull-board) 8.0.2) ([b954f67](https://github.com/postalsys/emailengine/commit/b954f67e1250d8a0029d355a5a8c6fc9d7f00e8e))
+* use constant-time comparison for secret and MAC checks ([453caf3](https://github.com/postalsys/emailengine/commit/453caf3ac01e58248a3a7019aa4ec3c2179b3abc))
+* verify HMAC signature on the human-facing unsubscribe routes ([e30be83](https://github.com/postalsys/emailengine/commit/e30be836a71bc7e96baee19e5b019da5b0de40fa))
+
 ## [2.72.2](https://github.com/postalsys/emailengine/compare/v2.72.1...v2.72.2) (2026-06-26)
 
 
