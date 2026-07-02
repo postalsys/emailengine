@@ -35,7 +35,8 @@ const {
     loadTlsConfig,
     maybeReloadHttpProxyAgent,
     resolveOAuthErrorStatus,
-    constantTimeEqual
+    constantTimeEqual,
+    verifyServiceSignature
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -1607,14 +1608,9 @@ Include your token in requests using one of these methods:
         path: '/redirect',
         async handler(request, h) {
             let data = Buffer.from(request.query.data, 'base64url').toString();
-            let serviceSecret = await settings.get('serviceSecret');
-            if (serviceSecret) {
-                let hmac = crypto.createHmac('sha256', serviceSecret);
-                hmac.update(data);
-                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
-                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
-                    throw error;
-                }
+            if (!(await verifyServiceSignature(data, request.query.sig))) {
+                let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                throw error;
             }
 
             data = JSON.parse(data);
@@ -1676,14 +1672,9 @@ Include your token in requests using one of these methods:
         path: '/open.gif',
         async handler(request, h) {
             let data = Buffer.from(request.query.data, 'base64url').toString();
-            let serviceSecret = await settings.get('serviceSecret');
-            if (serviceSecret) {
-                let hmac = crypto.createHmac('sha256', serviceSecret);
-                hmac.update(data);
-                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
-                    let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
-                    throw error;
-                }
+            if (!(await verifyServiceSignature(data, request.query.sig))) {
+                let error = Boom.boomify(new Error('Signature validation failed'), { statusCode: 403 });
+                throw error;
             }
 
             data = JSON.parse(data);
@@ -1747,13 +1738,8 @@ Include your token in requests using one of these methods:
             // NB! Avoid throwing errors
 
             let data = Buffer.from(request.query.data, 'base64url').toString();
-            let serviceSecret = await settings.get('serviceSecret');
-            if (serviceSecret) {
-                let hmac = crypto.createHmac('sha256', serviceSecret);
-                hmac.update(data);
-                if (!constantTimeEqual(hmac.digest('base64url'), request.query.sig)) {
-                    return 'data validation failed';
-                }
+            if (!(await verifyServiceSignature(data, request.query.sig))) {
+                return 'data validation failed';
             }
 
             data = JSON.parse(data);

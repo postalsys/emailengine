@@ -270,10 +270,22 @@
         let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
 
-        let urlify = (text) => {
-            return text.replace(/(https?:\/\/[^\s]+)/g, function (url) {
-                return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
-            })
+        let appendLinkified = (parentElm, text) => {
+            // Split on URLs and append text nodes + anchors via DOM APIs so server-provided text is
+            // never parsed as HTML (avoids an innerHTML injection sink).
+            let parts = String(text == null ? '' : text).split(/(https?:\/\/[^\s]+)/g);
+            for (let part of parts) {
+                if (/^https?:\/\//.test(part)) {
+                    let a = document.createElement('a');
+                    a.href = part;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    a.textContent = part;
+                    parentElm.appendChild(a);
+                } else if (part) {
+                    parentElm.appendChild(document.createTextNode(part));
+                }
+            }
         }
 
         let addErrorRow = (type, text, extraLabel, extraText) => {
@@ -300,9 +312,7 @@
                 extraLabelElm.textContent = extraLabel;
 
                 extraTextElm = document.createElement('small');
-                extraTextElm.textContent = extraText;
-
-                extraTextElm.innerHTML = urlify(extraTextElm.innerHTML);
+                appendLinkified(extraTextElm, extraText);
 
                 valueContainerElm.appendChild(extraLabelElm);
                 valueContainerElm.appendChild(extraTextElm);
@@ -319,7 +329,7 @@
             } else if (data.fields) {
                 addErrorRow(`{{_ "Invalid settings" templateLocale }}`, data.message);
                 for (let field of data.fields) {
-                    addErrorRow('-', field.message, 'aaaa', 'bbbbbb');
+                    addErrorRow('-', field.message);
                 }
             } else {
                 if (!data.imap || !data.imap.success) {
