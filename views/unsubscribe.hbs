@@ -18,8 +18,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" templateLocale values.email
-                }}
+                {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" templateLocale
+                (escapeHtml values.email) }}
             </div>
             <div class="modal-footer">
                 <form method="post" action="/unsubscribe/address">
@@ -53,7 +53,7 @@
 
 <h1 class="h4 text-gray-900 mb-4">{{_ "Subscription resumed" templateLocale }}</h1>
 
-<p>{{_ "Your email address <em>%s</em> was re-subscribed." templateLocale values.email}}</p>
+<p>{{_ "Your email address <em>%s</em> was re-subscribed." templateLocale (escapeHtml values.email)}}</p>
 
 {{else}}
 

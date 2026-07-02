@@ -513,6 +513,11 @@ const init = async () => {
         return new handlebars.SafeString(translated);
     });
 
+    // HTML-escape a value for safe interpolation into an otherwise-unescaped context - e.g. a
+    // dynamic `%s` argument to the SafeString-returning `_` helper. Returns a plain string so
+    // the surrounding markup stays live while the value itself is entity-escaped.
+    handlebars.registerHelper('escapeHtml', value => handlebars.escapeExpression(value));
+
     handlebars.registerHelper('isodate', time => new Date(Number(time)).toISOString());
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
@@ -1873,14 +1878,16 @@ Include your token in requests using one of these methods:
 
             for (let entry of (request.payload && request.payload.value) || []) {
                 // enumerate and queue all entries
-                if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
+                const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
+                const clientStateMatch = constantTimeEqual(entry.clientState, outlookSubscription.clientState);
+                if (!subscriptionIdMatch || !clientStateMatch) {
                     // Security: Log webhook validation failures - could indicate spoofed notifications
                     request.logger.warn({
                         msg: 'Webhook validation failed - potential security issue',
                         securityEvent: 'webhook_validation_failure',
                         account: request.query.account,
-                        subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
-                        clientStateMatch: entry.clientState === outlookSubscription.clientState,
+                        subscriptionIdMatch,
+                        clientStateMatch,
                         receivedSubscriptionId: entry.subscriptionId,
                         changeType: entry.changeType,
                         resource: entry.resource
@@ -1977,14 +1984,16 @@ Include your token in requests using one of these methods:
                 });
 
                 // enumerate and queue all entries
-                if (entry.subscriptionId !== outlookSubscription.id || entry.clientState !== outlookSubscription.clientState) {
+                const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
+                const clientStateMatch = constantTimeEqual(entry.clientState, outlookSubscription.clientState);
+                if (!subscriptionIdMatch || !clientStateMatch) {
                     // Security: Log lifecycle webhook validation failures - could indicate spoofed notifications
                     request.logger.warn({
                         msg: 'Lifecycle webhook validation failed - potential security issue',
                         securityEvent: 'lifecycle_webhook_validation_failure',
                         account: request.query.account,
-                        subscriptionIdMatch: entry.subscriptionId === outlookSubscription.id,
-                        clientStateMatch: entry.clientState === outlookSubscription.clientState,
+                        subscriptionIdMatch,
+                        clientStateMatch,
                         receivedSubscriptionId: entry.subscriptionId,
                         lifecycleEvent: entry.lifecycleEvent
                     });
