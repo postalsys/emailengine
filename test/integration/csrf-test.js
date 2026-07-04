@@ -15,18 +15,9 @@ const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { extractCrumb } = require('./helpers');
 
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
-
-function extractCrumb(setCookie) {
-    for (const cookie of setCookie || []) {
-        const match = /(?:^|;\s*)crumb=([^;]+)/.exec(cookie);
-        if (match) {
-            return decodeURIComponent(match[1]);
-        }
-    }
-    return null;
-}
 
 test('Admin CSRF (crumb) protection', async t => {
     await t.test('the login page issues a crumb cookie', async () => {

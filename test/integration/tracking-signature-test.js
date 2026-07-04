@@ -13,18 +13,11 @@ require('dotenv').config({ quiet: true });
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');
-const crypto = require('node:crypto');
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { signBlob } = require('./helpers');
 
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
-const SERVICE_SECRET = 'a cat'; // prepared serviceSecret in config/test.toml
-
-function signBlob(obj) {
-    const data = Buffer.from(JSON.stringify(obj));
-    const sig = crypto.createHmac('sha256', SERVICE_SECRET).update(data).digest('base64url');
-    return { data: data.toString('base64url'), sig };
-}
 
 test('Tracking endpoints enforce (and accept) service-secret signatures', async t => {
     await t.test('/open.gif accepts a valid signature and rejects a forged one', async () => {

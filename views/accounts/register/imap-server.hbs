@@ -5,11 +5,10 @@
     <input type="hidden" name="email" value="{{values.email}}">
     <input type="hidden" name="name" value="{{values.name}}">
 
-    <input type="hidden" name="appPassword_required" value="{{values.appPassword_required}}">
-    <input type="hidden" name="appPassword_provider" value="{{values.appPassword_provider}}">
-    <input type="hidden" name="appPassword_instructions" value="{{values.appPassword_instructions}}">
-    <input type="hidden" name="appPassword_warning" value="{{values.appPassword_warning}}">
-
+    {{!-- The appPassword_* hint values are server-derived only (initial render and the failAction
+    re-render both compute them from the static provider table), never read back from the
+    submission - the payload schemas stripUnknown any posted copy. Do not reintroduce hidden
+    inputs for them: echoing a client-controlled hint into the page was an XSS vector. --}}
 
     <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
 
@@ -270,6 +269,63 @@
         let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
 
+        let submitButtons = [submitElm, submitDownElm, document.getElementById('submit-wo-testing')];
+        let setSubmitButtonsDisabled = (disabled) => {
+            for (let elm of submitButtons) {
+                // NB: 'submit-wo-testing' is an <a> anchor, so `.disabled` on it is a no-op expando (anchors
+                // have no disabled semantics) - this only greys out the two real <button>s. That is fine: the
+                // actual duplicate-submit guard is the formSubmitting latch in submitForm(), which every path
+                // (including the anchor's click handler) routes through. This is cosmetic-only, not the guard.
+                elm.disabled = disabled;
+            }
+        };
+
+        let formSubmitting = false;
+        let submitRecoveryTimer = null;
+        let resetSubmitGuard = () => {
+            formSubmitting = false;
+            if (submitRecoveryTimer) {
+                clearTimeout(submitRecoveryTimer);
+                submitRecoveryTimer = null;
+            }
+            setSubmitButtonsDisabled(false);
+        };
+        let submitForm = () => {
+            // The server claims a single-use nonce, so a second POST from a double-click loses the race and
+            // renders a 403 even though the first request created the account. Submit at most once and
+            // disable the submit controls so a duplicate submission cannot fire.
+            if (formSubmitting) {
+                return;
+            }
+            // myForm.submit() below bypasses HTML5 constraint validation (unlike a real submit button), so
+            // run it explicitly - otherwise a cleared required field round-trips to the server, 400s, and the
+            // re-render wipes the password fields. Bail (without latching the guard) so the user can fix it.
+            if (!myForm.reportValidity()) {
+                return;
+            }
+            formSubmitting = true;
+            setSubmitButtonsDisabled(true);
+            // Recovery timer for an aborted submit: a successful submit navigates away (this page and the
+            // timer are discarded) and a validation error reloads the page fresh, so this only fires when the
+            // navigation never happened - the user cancelled it (Esc / Stop) while the page stayed alive. There
+            // is no DOM event for an aborted navigation, so without this the one-shot guard would leave the form
+            // permanently unsubmittable. Re-enabling is safe: the server's single-use nonce is the real
+            // double-submit guard, so at worst a later duplicate POST is rejected server-side. The delay is a
+            // generous upper bound on a create round trip so it never re-arms a genuinely in-flight submit.
+            submitRecoveryTimer = setTimeout(resetSubmitGuard, 20 * 1000);
+            myForm.submit();
+        };
+
+        // Reset the one-shot guard when the page is restored from the back-forward cache (Back after a
+        // submit): bfcache keeps JS state, so without this the flag stays set and the buttons stay disabled,
+        // permanently deadening the form. Mirrors the global bfcache reset in static/js/app.js.
+        window.addEventListener('pageshow', e => {
+            if (!e.persisted) {
+                return;
+            }
+            resetSubmitGuard();
+        });
+
         let appendLinkified = (parentElm, text) => {
             // Split on URLs and append text nodes + anchors via DOM APIs so server-provided text is
             // never parsed as HTML (avoids an innerHTML injection sink).
@@ -325,7 +381,10 @@
             errorsListElm.innerHTML = '';
 
             if (data.error && !data.fields) {
-                addErrorRow(`{{_ "Error" templateLocale }}`, data.error.message || data.error)
+                // A Hapi/Boom error body carries the human-readable text in data.message and only the
+                // status name in data.error ('Forbidden', 'Too Many Requests'); the client-side catch
+                // path passes { error: Error } instead, hence the fallbacks.
+                addErrorRow(`{{_ "Error" templateLocale }}`, data.message || data.error.message || data.error)
             } else if (data.fields) {
                 addErrorRow(`{{_ "Invalid settings" templateLocale }}`, data.message);
                 for (let field of data.fields) {
@@ -427,7 +486,7 @@
 
                     if (continueIfSuccessful) {
                         // resubmit after paint
-                        setTimeout(() => myForm.submit(), 10);
+                        setTimeout(() => submitForm(), 10);
                     }
 
                 } else {
@@ -446,7 +505,7 @@
         document.getElementById('submit-wo-testing').addEventListener('click', e => {
             e.preventDefault();
             formTested = true;
-            myForm.submit();
+            submitForm();
         });
 
         btnElm.addEventListener('click', () => {
@@ -455,10 +514,11 @@
 
         myForm.addEventListener('submit', e => {
             submitElm.blur();
+            e.preventDefault();
             if (formTested) {
+                submitForm();
                 return;
             }
-            e.preventDefault();
             runTest(true);
         });
 

@@ -59,6 +59,24 @@ test('getAppPassword', async t => {
         assert.strictEqual(getAppPassword('User@AOL.COM', null, gt).provider, 'AOL');
     });
 
+    await t.test('matches the canonical provider domains without an exchange lookup', () => {
+        // The hosted form's failAction re-render resolves the hint with exchange=false (no MX
+        // lookup, no probe budget), so the big providers must match by domain alone.
+        for (const [email, provider] of [
+            ['user@gmail.com', 'Gmail'],
+            ['user@googlemail.com', 'Gmail'],
+            ['user@icloud.com', 'iCloud'],
+            ['user@me.com', 'iCloud'],
+            ['user@mac.com', 'iCloud'],
+            ['user@outlook.com', 'Microsoft'],
+            ['user@hotmail.com', 'Microsoft'],
+            ['user@live.com', 'Microsoft'],
+            ['user@t-online.de', 'T-Online']
+        ]) {
+            assert.strictEqual(getAppPassword(email, false, gt).provider, provider, `${email} should match ${provider} by domain`);
+        }
+    });
+
     await t.test('matches by MX exchange when the domain does not match (iCloud)', () => {
         const result = getAppPassword('user@customdomain.com', 'mx01.mail.icloud.com', gt);
         assert.strictEqual(result.provider, 'iCloud');

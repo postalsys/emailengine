@@ -36,7 +36,9 @@ const {
     maybeReloadHttpProxyAgent,
     resolveOAuthErrorStatus,
     constantTimeEqual,
-    verifyServiceSignature
+    verifyServiceSignature,
+    claimFormNonce,
+    releaseFormNonce
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -1658,6 +1660,12 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 query: Joi.object({
+                    // `sig` is intentionally OPTIONAL on the tracking endpoints (/redirect, /open.gif,
+                    // /unsubscribe), unlike the hosted form's signedFormBlobFields which requires it. The
+                    // handler calls verifyServiceSignature and fails closed on a missing/bad signature, so a
+                    // required-sig schema would only turn that 403 into a Joi 400 - and /unsubscribe must not
+                    // 400 a missing-sig one-click request (RFC 8058 wants a benign non-throwing response).
+                    // Kept optional deliberately; do not "align" these with the hosted-form fragment.
                     data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
                     sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
@@ -1722,6 +1730,7 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 query: Joi.object({
+                    // sig intentionally optional - see the note on the /redirect schema above.
                     data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
                     sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 })
@@ -1735,16 +1744,33 @@ Include your token in requests using one of these methods:
         method: 'POST',
         path: '/unsubscribe',
         async handler(request) {
-            // NB! Avoid throwing errors
+            // This unauthenticated RFC 8058 one-click endpoint separates two failure classes:
+            //   - Permanent (forged/malformed/incomplete blob, unknown account): retrying cannot help,
+            //     so return a benign 2xx string and do not invite a retry.
+            //   - Transient (a Redis/getSecret hiccup while recording the suppression): must surface as
+            //     a retryable 5xx. An RFC 8058 client treats any 2xx as "unsubscribed" and never retries,
+            //     so swallowing a transient failure to 2xx would silently drop the unsubscribe and the
+            //     recipient would keep receiving mail. eeListAdd is idempotent (isNew), so a retry is safe.
 
-            let data = Buffer.from(request.query.data, 'base64url').toString();
-            if (!(await verifyServiceSignature(data, request.query.sig))) {
+            // Joi already enforces base64url on request.query.data, and Buffer.from(<string>, 'base64url')
+            // never throws, so decode inline like the sibling /redirect and /open.gif handlers.
+            let raw = Buffer.from(request.query.data, 'base64url').toString();
+
+            // A false result is a forged/bad signature (permanent -> benign); a THROWN error is a
+            // transient failure reading the service secret and is intentionally left to surface as 5xx.
+            if (!(await verifyServiceSignature(raw, request.query.sig))) {
                 return 'data validation failed';
             }
 
-            data = JSON.parse(data);
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (err) {
+                // Malformed JSON inside a validly-signed blob - permanent.
+                return 'not ok';
+            }
 
-            if (!data || typeof data !== 'object' || data.act !== 'unsub') {
+            if (!data || typeof data !== 'object' || data.act !== 'unsub' || !data.acc || !data.list || !data.rcpt) {
                 return 'not ok';
             }
 
@@ -1760,9 +1786,18 @@ Include your token in requests using one of these methods:
                 // throws if account does not exist
                 await accountObject.loadAccountData();
             } catch (err) {
-                return 'unknown account';
+                // A genuine "account does not exist" is a permanent 404 -> benign 2xx (retrying cannot
+                // help). Any other error (e.g. a transient Redis/decrypt failure) must NOT be swallowed
+                // to a 2xx: an RFC 8058 client treats any 2xx as "unsubscribed" and never retries, so
+                // dropping the unsubscribe would leave the recipient subscribed. Let it surface as 5xx.
+                if (err.output && err.output.statusCode === 404) {
+                    return 'unknown account';
+                }
+                throw err;
             }
 
+            // Record the suppression. A transient backend failure here is intentionally NOT swallowed to
+            // a 2xx: it propagates as a 5xx so the client retries rather than dropping the unsubscribe.
             let isNew = await redis.eeListAdd(
                 `${REDIS_PREFIX}lists:unsub:lists`,
                 `${REDIS_PREFIX}lists:unsub:entries:${data.list}`,
@@ -1781,13 +1816,19 @@ Include your token in requests using one of these methods:
             );
 
             if (isNew) {
-                await sendWebhook(data.acc, LIST_UNSUBSCRIBE_NOTIFY, {
-                    recipient: data.rcpt,
-                    messageId: data.msg,
-                    listId: data.list,
-                    remoteAddress: request.app.ip,
-                    userAgent: request.headers['user-agent']
-                });
+                // The suppression is already stored; a webhook delivery hiccup must not fail (and thus
+                // trigger a client retry of) an unsubscribe that already succeeded. Log and move on.
+                try {
+                    await sendWebhook(data.acc, LIST_UNSUBSCRIBE_NOTIFY, {
+                        recipient: data.rcpt,
+                        messageId: data.msg,
+                        listId: data.list,
+                        remoteAddress: request.app.ip,
+                        userAgent: request.headers['user-agent']
+                    });
+                } catch (err) {
+                    request.logger.error({ msg: 'Failed to send one-click unsubscribe webhook', err });
+                }
             }
 
             return 'ok';
@@ -1805,6 +1846,9 @@ Include your token in requests using one of these methods:
                 failAction,
 
                 query: Joi.object({
+                    // sig intentionally optional - see the note on the /redirect schema above. Especially
+                    // here: making sig required would 400 a missing-sig one-click POST, but RFC 8058 wants a
+                    // benign non-throwing response (the handler returns 'data validation failed' instead).
                     data: Joi.string().base64({ paddingRequired: false, urlSafe: true }).required(),
                     sig: Joi.string().base64({ paddingRequired: false, urlSafe: true })
                 }).label('OneClickUnsubQuery'),
@@ -2453,20 +2497,46 @@ Include your token in requests using one of these methods:
                 timeout: request.headers['x-ee-timeout']
             });
 
-            let result = await accountObject.create(accountData);
-
+            // Claim the single-use nonce BEFORE create (SET NX), mirroring the IMAP arm in
+            // lib/ui-routes/account-routes.js, so one signed link cannot be double-spent across the two
+            // arms (initiate OAuth -> submit the same blob to /accounts/new/imap/server -> complete this
+            // callback) and a replayed callback cannot create a second account.
+            //
+            // Backward-compat, BY DESIGN: this only engages when accountMeta.n is present. Legacy /
+            // pre-upgrade re-auth blobs carry no nonce (accountMeta.n is undefined), so the claim is
+            // skipped and those links keep working - the OAuth entry (accountFormHandler) intentionally
+            // does NOT require a nonce for exactly that reason.
+            // claimFormNonce/releaseFormNonce (lib/tools.js) are the same primitives the IMAP arm uses, so
+            // the double-spend semantics stay in one place.
+            let nonceClaimed = false;
             if (accountMeta.n) {
-                // store nonce to prevent this URL to be reused
-                const keyName = `${REDIS_PREFIX}account:form:${accountMeta.n}`;
+                let claimed;
                 try {
-                    await redis
-                        .multi()
-                        .set(keyName, (accountMeta.t || '0').toString())
-                        .expire(keyName, Math.floor(MAX_FORM_TTL / 1000))
-                        .exec();
+                    claimed = await claimFormNonce(redis, accountMeta.n, accountMeta.t);
                 } catch (err) {
-                    request.logger.error({ msg: 'Failed to set nonce for an account form request', err });
+                    // A Redis failure is not a consumed nonce - surface a retryable error rather than
+                    // misreporting a valid setup URL as invalid.
+                    request.logger.error({ msg: 'Failed to claim nonce for an account form request', err });
+                    throw Boom.boomify(new Error('Temporary error, please try again'), { statusCode: 500 });
                 }
+                if (!claimed) {
+                    // The nonce key already exists: this signed URL was already used.
+                    throw Boom.boomify(new Error('Invalid or expired account setup URL'), { statusCode: 403 });
+                }
+                nonceClaimed = true;
+            }
+
+            let result;
+            try {
+                result = await accountObject.create(accountData);
+            } catch (err) {
+                // Release the nonce so the user can retry (same accepted residual as the IMAP arm: if
+                // Redis also fails here the nonce stays consumed for its TTL and a fresh link is needed -
+                // the price of claim-before-create being atomic).
+                if (nonceClaimed) {
+                    await releaseFormNonce(redis, accountMeta.n, request.logger);
+                }
+                throw err;
             }
 
             let httpRedirectUrl;

@@ -9,9 +9,11 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('node:crypto');
 
+const Joi = require('joi');
 const tools = require('../lib/tools');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
+const { signedFormBlobFields } = require('../lib/schemas');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX, MAX_FORM_TTL, NONCE_BYTES } = require('../lib/consts');
 
@@ -40,7 +42,13 @@ registerRedisTeardown(redis, async () => {
         }
     }
     try {
-        await settings.set('serviceSecret', prevSecret || '');
+        // Restore the original state. set() refuses to persist a blank serviceSecret, so an absent
+        // original must be restored with a direct hdel rather than set('').
+        if (prevSecret) {
+            await settings.set('serviceSecret', prevSecret);
+        } else {
+            await redis.hdel(`${REDIS_PREFIX}settings`, 'serviceSecret');
+        }
     } catch (err) {
         // ignore
     }
@@ -90,6 +98,21 @@ test('parseSignedFormData', async t => {
         await assert.rejects(tools.parseSignedFormData(redis, { data, sig: signature }, gt), is403);
     });
 
+    await t.test('requireNonce rejects a blob missing n or t, accepts a complete one', async () => {
+        // The connection/create endpoints pass { requireNonce: true } so a signature-only blob (no
+        // single-use nonce) cannot be replayed. A blob missing n (or t) is rejected even though its
+        // signature is valid; a full n+t blob is accepted.
+        const noNonce = sign({ account: 'psfd-no-nonce', t: Date.now() });
+        await assert.rejects(tools.parseSignedFormData(redis, { data: noNonce.data, sig: noNonce.signature }, gt, { requireNonce: true }), is403);
+
+        const noTs = sign({ account: 'psfd-no-ts', n: freshNonce() });
+        await assert.rejects(tools.parseSignedFormData(redis, { data: noTs.data, sig: noTs.signature }, gt, { requireNonce: true }), is403);
+
+        const full = sign({ account: 'psfd-require-ok', n: freshNonce(), t: Date.now() });
+        const parsed = await tools.parseSignedFormData(redis, { data: full.data, sig: full.signature }, gt, { requireNonce: true });
+        assert.equal(parsed.account, 'psfd-require-ok');
+    });
+
     await t.test('verifyServiceSignature returns true only for a matching signature', async () => {
         const { data, signature } = sign({ account: 'psfd-vss', n: freshNonce(), t: Date.now() });
         const decoded = Buffer.from(data, 'base64url').toString();
@@ -99,9 +122,10 @@ test('parseSignedFormData', async t => {
     });
 
     await t.test('fails closed when the service secret is empty (regenerates, does not skip)', async () => {
-        // Force the stored secret empty. getServiceSecret() must regenerate a fresh secret, so a blob
-        // signed with the empty secret is rejected rather than silently accepted.
-        await settings.set('serviceSecret', '');
+        // Force the stored secret absent (a direct hdel - set() now refuses to blank serviceSecret, which
+        // is the guard exercised by settings-coupling-test.js). getServiceSecret() must regenerate a fresh
+        // secret, so a blob signed with the empty secret is rejected rather than silently accepted.
+        await redis.hdel(`${REDIS_PREFIX}settings`, 'serviceSecret');
         const n = freshNonce();
         const forged = sign({ account: 'psfd-forged', n, t: Date.now() }, '');
         await assert.rejects(tools.parseSignedFormData(redis, { data: forged.data, sig: forged.signature }, gt), is403);
@@ -111,5 +135,26 @@ test('parseSignedFormData', async t => {
 
         // Restore the known secret for any later runs in this process.
         await settings.set('serviceSecret', SECRET);
+    });
+});
+
+test('signedFormBlobFields (shared hosted-form data/sig fragment)', async t => {
+    // The shared fragment (lib/schemas.js) is what stops the hosted-form endpoints from drifting on
+    // their security-relevant data/sig validation. Guard the contract: both are required base64url.
+    const schema = Joi.object(signedFormBlobFields);
+
+    await t.test('accepts a well-formed data + sig pair', () => {
+        const { error } = schema.validate({ data: 'AAAA', sig: 'BBBB' });
+        assert.ok(!error, error && error.message);
+    });
+
+    await t.test('rejects a missing sig (required, not optional)', () => {
+        const { error } = schema.validate({ data: 'AAAA' });
+        assert.ok(error, 'sig must be required so it cannot silently drift back to optional');
+    });
+
+    await t.test('rejects a missing data', () => {
+        const { error } = schema.validate({ sig: 'BBBB' });
+        assert.ok(error, 'data must be required');
     });
 });
