@@ -86,6 +86,23 @@ async function waitForCondition(checkFn, options = {}) {
     throw new Error(`Timeout: ${message}`);
 }
 
+// Poll until all expected account-lifecycle webhooks have been delivered to the shared receiver.
+// Webhooks are delivered ASYNCHRONOUSLY via the notify queue, so they lag the account reaching
+// 'connected' state by a few ms (accountInitialized in particular fires right around the state
+// change). Reading webhooksServer.webhooks.get(account) synchronously the instant the account
+// connects therefore raced that delivery and flaked. Poll instead, the same way every other webhook
+// assertion in this file does. (.get() can also be undefined before the first webhook lands, hence
+// the `|| []`.)
+async function waitForAccountWebhooks(account, events = ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
+    await waitForCondition(
+        async () => {
+            const webhooks = webhooksServer.webhooks.get(account) || [];
+            return events.every(event => webhooks.some(wh => wh.event === event));
+        },
+        { timeout: testConfig.WEBHOOK_TIMEOUT, message: `expected account webhooks [${events.join(', ')}] not received for ${account}` }
+    );
+}
+
 test('API tests', async t => {
     let message2;
     let oauth2PubsubId;
@@ -199,12 +216,9 @@ test('API tests', async t => {
             { timeout: testConfig.CONNECTION_TIMEOUT, message: 'Account connection timeout' }
         );
 
-        // check if we have all expected webhooks
-        let webhooks = webhooksServer.webhooks.get(defaultAccountId);
-
-        for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
-            assert.ok(webhooks.some(wh => wh.event === event));
-        }
+        // Wait for the expected account-lifecycle webhooks (delivered asynchronously - see
+        // waitForAccountWebhooks) rather than reading the receiver synchronously right after connect.
+        await waitForAccountWebhooks(defaultAccountId);
     });
 
     await t.test('list existing users (1 account)', async () => {
@@ -704,11 +718,8 @@ test('API tests', async t => {
                 { timeout: testConfig.GMAIL_TIMEOUT, message: `Gmail account ${account} connection timeout` }
             );
 
-            // check if we have all expected webhooks
-            let webhooks = webhooksServer.webhooks.get(account);
-            for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
-                assert.ok(webhooks.some(wh => wh.event === event));
-            }
+            // Wait for the expected account-lifecycle webhooks (delivered asynchronously).
+            await waitForAccountWebhooks(account);
         }
     });
 
@@ -879,11 +890,8 @@ test('API tests', async t => {
         const response = await server.get(`/v1/account/${gmailSendOnlyAccountId}`).expect(200);
         assert.strictEqual(response.body.sendOnly, true, 'Account should be detected as send-only');
 
-        // check if we have expected webhooks
-        let webhooks = webhooksServer.webhooks.get(gmailSendOnlyAccountId);
-        for (let event of ['accountAdded', 'authenticationSuccess', 'accountInitialized']) {
-            assert.ok(webhooks.some(wh => wh.event === event));
-        }
+        // Wait for the expected account-lifecycle webhooks (delivered asynchronously).
+        await waitForAccountWebhooks(gmailSendOnlyAccountId);
     });
 
     await t.test('send-only account - list mailboxes should fail', { timeout: 30000 }, async () => {
