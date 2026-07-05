@@ -3,7 +3,20 @@ export class EmailEngineClient {
         this.apiUrl = options.apiUrl || 'http://127.0.0.1:3000';
         this.account = options.account;
         this.accessToken = options.accessToken;
-        this.container = options.container;
+        this.container = options.container || null;
+        // Resolve containerId when no element was passed directly, so
+        // `new EmailEngineClient({ containerId })` renders UI too (not only the
+        // factory). In a non-DOM env this stays null - an API-only client.
+        if (!this.container && options.containerId && typeof document !== 'undefined') {
+            this.container = document.getElementById(options.containerId);
+            // A containerId that matches nothing is almost always a typo; warn
+            // rather than silently degrading to a UI-less, API-only client.
+            if (!this.container) {
+                console.warn(
+                    `EmailEngineClient: no element found for containerId "${options.containerId}"; UI rendering disabled`
+                );
+            }
+        }
         this.confirmMethod =
             options.confirmMethod ||
             ((message, _title = 'Confirm', _cancelText = 'Cancel', _okText = 'OK') => confirm(message));
@@ -16,6 +29,11 @@ export class EmailEngineClient {
         this.messages = [];
         this.nextPageCursor = null;
         this.prevPageCursor = null;
+
+        // Set once destroy() runs; guards async completions (loadFolders,
+        // loadMessages, loadMessage) from re-rendering or scrolling into a
+        // torn-down - or recreated - container.
+        this._destroyed = false;
 
         // Keep-alive timer for sess_ tokens
         this.keepAliveTimer = null;
@@ -30,7 +48,8 @@ export class EmailEngineClient {
         // Get page size from localStorage or options or default
         const savedPageSize =
             typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('ee-client-page-size') : null;
-        this.pageSize = savedPageSize ? parseInt(savedPageSize) : options.pageSize || 20;
+        const requestedPageSize = savedPageSize ? parseInt(savedPageSize, 10) : parseInt(options.pageSize, 10);
+        this.pageSize = requestedPageSize > 0 ? requestedPageSize : 20;
 
         if (this.container) {
             this.init();
@@ -48,32 +67,32 @@ export class EmailEngineClient {
         const options = {
             method: method,
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                ...this._authHeaders()
             }
         };
-
-        if (this.accessToken) {
-            options.headers['Authorization'] = `Bearer ${this.accessToken}`;
-        }
 
         if (data) {
             options.body = JSON.stringify(data);
         }
 
         let fetchFn = globalThis.fetch;
-        if (!fetchFn && typeof require !== 'undefined') {
+        if (!fetchFn) {
+            // Native fetch is missing (older Node.js). Fall back to node-fetch.
+            // This is a dynamic import so browsers and modern Node never load it.
             try {
                 const nodeFetch = await import('node-fetch');
                 fetchFn = nodeFetch.default;
             } catch (err) {
-                throw new Error(
-                    'fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch'
-                );
+                // node-fetch is not installed; the guard below reports it
             }
         }
 
         if (!fetchFn) {
-            throw new Error('fetch is not available');
+            // Either node-fetch is missing or it exposed no callable default export
+            throw new Error(
+                'fetch is not available. In Node.js environments, please install node-fetch: npm install node-fetch'
+            );
         }
 
         const response = await fetchFn(url, options);
@@ -99,6 +118,7 @@ export class EmailEngineClient {
         try {
             const data = await this.apiRequest('GET', `/v1/account/${this.account}/mailboxes`);
             this.folders = data.mailboxes || [];
+            this._folderTreeCache = null;
             if (this.container) {
                 this.renderFolderList();
             }
@@ -181,7 +201,7 @@ export class EmailEngineClient {
                 }
             }
 
-            if (this.container) {
+            if (this.container && !this._destroyed) {
                 this.renderMessage();
 
                 // Scroll to top of the email client container
@@ -321,23 +341,18 @@ export class EmailEngineClient {
     _formatSendError(error) {
         // If we have detailed error information from the API
         if (error.details && error.details.fields && Array.isArray(error.details.fields)) {
-            const fieldErrors = error.details.fields.map(field => {
-                // Try to make field errors more user-friendly
-                let message = field.message;
-
-                // Map technical field names to user-friendly names
-                if (message.includes('to[0].address') || message.includes('"address"')) {
-                    message = message.replace(/to\[\d+\]\.address|"address"/g, 'email address');
-                }
-                if (message.includes('"subject"')) {
-                    message = message.replace('"subject"', 'subject');
-                }
-                if (message.includes('"text"')) {
-                    message = message.replace('"text"', 'message');
-                }
-
-                return message;
-            });
+            const fieldErrors = error.details.fields
+                // Keep only entries that carry a usable message string.
+                .filter(field => field && typeof field.message === 'string')
+                // Map technical field names to user-friendly ones. Each replace
+                // is a no-op when its pattern is absent, so no includes-guards
+                // are needed - and to[N] for any index is handled, not just to[0].
+                .map(field =>
+                    field.message
+                        .replace(/to\[\d+\]\.address|"address"/g, 'email address')
+                        .replace(/"subject"/g, 'subject')
+                        .replace(/"text"/g, 'message')
+                );
 
             const mainMessage = error.details.message || 'Failed to send email';
             if (fieldErrors.length > 0) {
@@ -381,21 +396,43 @@ export class EmailEngineClient {
         return String(value).replace(/[&<>"']/g, ch => htmlEscapes[ch]);
     }
 
+    _authHeaders() {
+        const headers = {};
+        if (this.accessToken) {
+            headers['Authorization'] = `Bearer ${this.accessToken}`;
+        }
+        return headers;
+    }
+
+    _saveBlob(blob, filename) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Authenticated GET for binary payloads (attachments, message source).
+    // apiRequest is not reused here - it always parses the body as JSON.
+    async _fetchBlob(endpoint) {
+        const response = await fetch(`${this.apiUrl}${endpoint}`, {
+            headers: this._authHeaders(),
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return response;
+    }
+
     async downloadAttachment(attachmentId, suggestedFilename = null) {
         try {
-            const headers = {};
-            if (this.accessToken) {
-                headers['Authorization'] = `Bearer ${this.accessToken}`;
-            }
-
-            const response = await fetch(`${this.apiUrl}/v1/account/${this.account}/attachment/${attachmentId}`, {
-                headers,
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await this._fetchBlob(`/v1/account/${this.account}/attachment/${attachmentId}`);
 
             // Get filename from Content-Disposition header if available
             const contentDisposition = response.headers.get('content-disposition');
@@ -407,18 +444,9 @@ export class EmailEngineClient {
                 }
             }
 
-            // Get the attachment data
+            // Get the attachment data and trigger the download
             const blob = await response.blob();
-
-            // Create a download link
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download attachment:', error);
             this.alertMethod('Failed to download attachment. Please try again.', 'Download Error', null, 'OK');
@@ -427,19 +455,7 @@ export class EmailEngineClient {
 
     async downloadOriginalMessage(messageId, subject = null) {
         try {
-            const headers = {};
-            if (this.accessToken) {
-                headers['Authorization'] = `Bearer ${this.accessToken}`;
-            }
-
-            const response = await fetch(`${this.apiUrl}/v1/account/${this.account}/message/${messageId}/source`, {
-                headers,
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await this._fetchBlob(`/v1/account/${this.account}/message/${messageId}/source`);
 
             // Get the email data
             const blob = await response.blob();
@@ -450,15 +466,7 @@ export class EmailEngineClient {
             const safeSubject = subject ? subject.replace(/[^a-z0-9]/gi, '_').substring(0, 50) : 'email';
             const filename = `${dateStr}_${safeSubject}.eml`;
 
-            // Create a download link
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            this._saveBlob(blob, filename);
         } catch (error) {
             console.error('Failed to download original message:', error);
             this.alertMethod('Failed to download original message. Please try again.', 'Download Error', null, 'OK');
@@ -1273,18 +1281,14 @@ export class EmailEngineClient {
             }
         `;
         document.head.appendChild(style);
-    }
-
-    calculateFolderDepth(folder) {
-        if (!folder.parentPath || !folder.delimiter) {
-            return 0;
-        }
-
-        const pathParts = folder.path.split(folder.delimiter);
-        return Math.max(0, pathParts.length - 1);
+        this._styleElement = style;
     }
 
     buildFolderTree() {
+        if (this._folderTreeCache) {
+            return this._folderTreeCache;
+        }
+
         const specialFolders = [];
         const regularFolders = [];
 
@@ -1319,34 +1323,52 @@ export class EmailEngineClient {
             return a.name.localeCompare(b.name);
         });
 
-        const buildHierarchy = (folders, parentPath = null, depth = 0) => {
+        // Index children by parent in a single pass so the hierarchy walk is
+        // O(n) instead of re-filtering the whole list at every level. A folder
+        // whose parent is not among the regular folders (special-use parent,
+        // missing parent, or no parent) is a root, keyed under null - those must
+        // still surface at the top level rather than be dropped.
+        const regularPaths = new Set(regularFolders.map(f => f.path));
+        const childrenByParent = new Map();
+        regularFolders.forEach(folder => {
+            const key = regularPaths.has(folder.parentPath) ? folder.parentPath : null;
+            const siblings = childrenByParent.get(key);
+            if (siblings) {
+                siblings.push(folder);
+            } else {
+                childrenByParent.set(key, [folder]);
+            }
+        });
+        childrenByParent.forEach(siblings => siblings.sort((a, b) => a.name.localeCompare(b.name)));
+
+        // Each entry carries its depth in the rendered tree (roots = 0). Depth
+        // comes from tree position, not the path string, so a folder whose
+        // parent is a special-use or missing folder renders flush at the top.
+        const visited = new Set();
+        const walk = (parentKey, depth) => {
             const result = [];
-
-            const children = folders.filter(f => {
-                if (parentPath === null) {
-                    return f.parentPath === 'INBOX' || !f.parentPath || f.parentPath === '';
-                } else {
-                    return f.parentPath === parentPath;
+            const siblings = childrenByParent.get(parentKey) || [];
+            siblings.forEach(folder => {
+                // Guard against cyclic/self-referential parentPath values.
+                if (visited.has(folder.path)) {
+                    return;
                 }
+                visited.add(folder.path);
+                result.push({ folder, depth });
+                result.push(...walk(folder.path, depth + 1));
             });
-
-            children.sort((a, b) => a.name.localeCompare(b.name));
-
-            children.forEach(folder => {
-                result.push(folder);
-                result.push(...buildHierarchy(folders, folder.path, depth + 1));
-            });
-
             return result;
         };
 
-        const hierarchicalRegular = buildHierarchy(regularFolders);
+        const hierarchicalRegular = walk(null, 0);
 
-        return [...specialFolders, ...hierarchicalRegular];
+        const tree = [...specialFolders.map(folder => ({ folder, depth: 0 })), ...hierarchicalRegular];
+        this._folderTreeCache = tree;
+        return tree;
     }
 
     renderFolderList() {
-        if (typeof document === 'undefined' || !this.container) {
+        if (typeof document === 'undefined' || !this.container || this._destroyed) {
             return;
         }
 
@@ -1356,13 +1378,15 @@ export class EmailEngineClient {
         }
 
         const sortedFolders = this.buildFolderTree();
+        // Precompute which paths are some folder's parent so the per-row
+        // has-children check is O(1) instead of scanning this.folders each time.
+        const parentPaths = new Set(this.folders.map(f => f.parentPath));
 
         const html = `
             <ul class="ee-folder-list">
                 ${sortedFolders
-                    .map(folder => {
-                        const depth = this.calculateFolderDepth(folder);
-                        const hasChildren = this.folders.some(f => f.parentPath === folder.path);
+                    .map(({ folder, depth }) => {
+                        const hasChildren = parentPaths.has(folder.path);
                         return `
                         <li class="ee-folder-item ${folder.path === this.currentFolder ? 'active' : ''}" 
                             data-path="${this.escapeHtml(folder.path)}" 
@@ -1389,7 +1413,7 @@ export class EmailEngineClient {
     }
 
     renderMessageList() {
-        if (typeof document === 'undefined' || !this.container) {
+        if (typeof document === 'undefined' || !this.container || this._destroyed) {
             return;
         }
 
@@ -1489,7 +1513,7 @@ export class EmailEngineClient {
     }
 
     renderMessage() {
-        if (typeof document === 'undefined' || !this.container) {
+        if (typeof document === 'undefined' || !this.container || this._destroyed) {
             return;
         }
 
@@ -1513,8 +1537,7 @@ export class EmailEngineClient {
                 <select class="ee-button" data-action="move">
                     <option value="">Move to...</option>
                     ${this.buildFolderTree()
-                        .map(folder => {
-                            const depth = this.calculateFolderDepth(folder);
+                        .map(({ folder, depth }) => {
                             const indent = '　'.repeat(depth);
                             const prefix = depth > 0 ? '└ ' : '';
                             return `<option value="${this.escapeHtml(folder.path)}" ${folder.path === this.currentFolder ? 'disabled' : ''}>${indent}${prefix}${this.escapeHtml(folder.name)}</option>`;
@@ -1721,11 +1744,12 @@ export class EmailEngineClient {
         });
 
         // Close on Escape key
-        document.addEventListener('keydown', e => {
+        this._composeKeydownHandler = e => {
             if (e.key === 'Escape' && modal.classList.contains('show')) {
                 closeModal();
             }
-        });
+        };
+        document.addEventListener('keydown', this._composeKeydownHandler);
 
         // Send email
         sendButton.addEventListener('click', async () => {
@@ -1928,6 +1952,11 @@ export class EmailEngineClient {
             localStorage.setItem('ee-client-dark-mode', this.darkMode.toString());
         }
 
+        // DOM updates only apply to the rendered UI; skip without a container
+        if (!this.container) {
+            return;
+        }
+
         // Update UI
         const client = this.container.querySelector('.ee-client');
         if (client) {
@@ -1946,40 +1975,61 @@ export class EmailEngineClient {
     }
 
     destroy() {
+        // Mark destroyed first so any in-flight async completion skips
+        // re-rendering into a torn-down or recreated container.
+        this._destroyed = true;
+
         // Clean up keep-alive timer
         if (this.keepAliveTimer) {
             clearInterval(this.keepAliveTimer);
             this.keepAliveTimer = null;
         }
+
+        // Remove the compose button's window scroll/resize listeners
+        if (this._composeButtonCleanup) {
+            this._composeButtonCleanup();
+            this._composeButtonCleanup = null;
+        }
+
+        // Remove the document-level Escape keydown listener
+        if (this._composeKeydownHandler && typeof document !== 'undefined') {
+            document.removeEventListener('keydown', this._composeKeydownHandler);
+            this._composeKeydownHandler = null;
+        }
+
+        // Remove the injected stylesheet
+        if (this._styleElement && this._styleElement.parentNode) {
+            this._styleElement.parentNode.removeChild(this._styleElement);
+            this._styleElement = null;
+        }
     }
 }
 
 export function createEmailEngineClient(options) {
-    if (typeof options === 'string') {
-        options = {
-            container: typeof document !== 'undefined' ? document.getElementById(options) : null
-        };
-    } else if (typeof HTMLElement !== 'undefined' && options instanceof HTMLElement) {
-        options = {
-            container: options
-        };
-    } else if (typeof options === 'object' && options.containerId) {
-        options.container = typeof document !== 'undefined' ? document.getElementById(options.containerId) : null;
-    }
-
-    if (options.container && !options.container) {
-        throw new Error('Container element not found');
-    }
-
-    if (!options.apiUrl) {
-        console.warn('No API URL specified, using default http://127.0.0.1:3000');
+    if (!options || typeof options !== 'object') {
+        throw new Error('Invalid options: expected an options object');
     }
 
     if (!options.account) {
         throw new Error('Account identifier is required');
     }
 
-    return new EmailEngineClient(options);
+    if (!options.apiUrl) {
+        console.warn('No API URL specified, using default http://127.0.0.1:3000');
+    }
+
+    const client = new EmailEngineClient(options);
+
+    // The constructor is the single place that resolves containerId to an
+    // element. In a DOM environment a containerId that matches nothing is a
+    // caller error, so fail loudly here - and tear down the half-built client
+    // so its keep-alive timer does not leak.
+    if (options.containerId && !client.container && typeof document !== 'undefined') {
+        client.destroy();
+        throw new Error('Container element not found');
+    }
+
+    return client;
 }
 
 export default EmailEngineClient;
