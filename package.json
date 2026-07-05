@@ -139,7 +139,10 @@
         "xgettext-template": "5.0.0"
     },
     "overrides": {
-        "@asamuzakjp/css-color": "4.1.1"
+        "@asamuzakjp/css-color": "4.1.1",
+        "grunt": {
+            "js-yaml": "3.15.0"
+        }
     },
     "engines": {
         "node": ">=20.x"
