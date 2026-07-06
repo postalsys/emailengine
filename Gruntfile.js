@@ -12,7 +12,10 @@ module.exports = function (grunt) {
                 command: "npx eslint 'lib/**/*.js' 'workers/**/*.js' server.js Gruntfile.js"
             },
             server: {
-                command: 'node server.js',
+                // Short Gmail fallback-poll interval so gmail-polling-test can exercise the poller
+                // quickly. Harmless for push-based Gmail accounts in api-test: notifications keep
+                // resetting the timer, and a stray fallback sync is coalesced/idempotent.
+                command: 'EENGINE_GMAIL_FALLBACK_POLL_INTERVAL=15000 node server.js',
                 options: {
                     async: true
                 }
