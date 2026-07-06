@@ -764,10 +764,10 @@
         </p>
 
         <p>
-            <strong>Note:</strong> This is optional but recommended. Without a configured Pub/Sub service account,
-            EmailEngine will not
-            detect or send webhooks for new, updated, or deleted emails, and will not detect bounces. Send-only accounts
-            don't require this.
+            <strong>Note:</strong> This is optional but recommended. With a Pub/Sub service account, EmailEngine
+            receives changes in near real time. Without one, it falls back to polling each account about every 10
+            minutes, so webhooks for new, updated, or deleted emails (and bounce detection) still fire, just with up
+            to a 10-minute delay. Send-only accounts don't require this.
         </p>
 
         <label for="pubSubApp">Select service account to manage webhooks (optional). The service account must be for the
