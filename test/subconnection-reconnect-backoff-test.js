@@ -59,7 +59,7 @@ function makeSubconnection({ mailboxOpenError, listResponse = [{ path: 'Shared F
     });
 
     // Shrink the scheduling delay so the pre-connect wait stays in milliseconds
-    subconnection.reconnectBaseDelay = 1;
+    subconnection.reconnectBackoff.baseDelay = 1;
 
     // Replace the connection setup: successful "login", configurable mailboxOpen
     subconnection.start = async () => {
@@ -88,24 +88,24 @@ test('Subconnection.reconnect() backoff counter', async t => {
             serverResponseCode: 'NONEXISTENT'
         });
         const { subconnection } = makeSubconnection({ mailboxOpenError });
-        subconnection.reconnectAttempts = 5;
+        subconnection.reconnectBackoff.attempts = 5;
 
         await subconnection.reconnect();
 
         // reconnect() increments the counter when scheduling; a failed mailbox
         // open must not reset it, otherwise every retry runs at the base delay
-        assert.equal(subconnection.reconnectAttempts, 6, 'counter must keep growing while the setup keeps failing');
+        assert.equal(subconnection.reconnectBackoff.attempts, 6, 'counter must keep growing while the setup keeps failing');
         assert.notEqual(subconnection.state, 'connected');
         assert.ok(!subconnection.disabled, 'a still-listed mailbox must not disable the subconnection');
     });
 
     await t.test('resets the counter after the monitored mailbox is open', async () => {
         const { subconnection } = makeSubconnection();
-        subconnection.reconnectAttempts = 5;
+        subconnection.reconnectBackoff.attempts = 5;
 
         await subconnection.reconnect();
 
-        assert.equal(subconnection.reconnectAttempts, 0, 'counter must reset after a fully successful setup');
+        assert.equal(subconnection.reconnectBackoff.attempts, 0, 'counter must reset after a fully successful setup');
         assert.equal(subconnection.state, 'connected');
     });
 });
@@ -141,12 +141,12 @@ test('Subconnection.reconnect() missing monitored mailbox', async t => {
                 throw Object.assign(new Error('Connection not available'), { code: 'NoConnection' });
             }
         });
-        subconnection.reconnectAttempts = 5;
+        subconnection.reconnectBackoff.attempts = 5;
 
         await subconnection.reconnect();
 
         assert.ok(!subconnection.disabled, 'an unverified miss must not disable the subconnection');
-        assert.equal(subconnection.reconnectAttempts, 6, 'the backoff counter must keep growing');
+        assert.equal(subconnection.reconnectBackoff.attempts, 6, 'the backoff counter must keep growing');
         assert.notEqual(subconnection.state, 'disabled');
     });
 });
