@@ -360,6 +360,34 @@ test('Mailbox.onOpen() pre-sync failures', async t => {
         assert.equal(ctx.listingEntry.isNew, true, 'isNew must be kept');
     });
 
+    await t.test('a re-entrant open settles the resolver without re-running the sync work', async () => {
+        // A sync operation inside onOpen (e.g. seeding) can re-SELECT the same
+        // mailbox, firing a nested mailboxOpen event while the outer onOpen is
+        // still running. The nested call must not re-enter the state machine -
+        // before the guard this recursed into an endless reseed storm on
+        // servers where the seeding FETCH keeps failing
+        let nestedResult;
+        const { ctx, syncedCalls } = createOnOpenCtx({
+            stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false, lastFullSync: false },
+            mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 }
+        });
+        let fullSyncCalls = 0;
+        ctx.fullSync = async () => {
+            fullSyncCalls++;
+            // Simulate the nested mailboxOpen event fired by a SELECT issued
+            // from within the sync operation
+            nestedResult = await Mailbox.prototype.onOpen.call(ctx);
+            return 'fullSync';
+        };
+
+        await Mailbox.prototype.onOpen.call(ctx);
+
+        assert.equal(nestedResult, false, 'the nested open must bail out');
+        assert.equal(fullSyncCalls, 1, 'the sync work must run exactly once');
+        assert.ok(syncedCalls() >= 1, 'the armed resolver must be settled');
+        assert.equal(ctx.processingOpen, false, 'the latch must be released after the outer open completes');
+    });
+
     await t.test('emits mailboxNew with the mailbox uidValidity once the open succeeds', async () => {
         const { ctx, notifyCalls, syncedCalls } = createOnOpenCtx({
             stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false, lastFullSync: false },
