@@ -47,17 +47,28 @@ require.cache[getSecretPath] = {
 
 // Now safe to import
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
+const { MAILBOX_NEW_NOTIFY } = require('../lib/consts');
 
-// Regression tests for Mailbox.sync() when SELECT fails for a listed folder.
+// Regression tests for promise settlement in the Mailbox sync flow:
+// sync() SELECT-failure handling, sync()/select() behavior when a concurrent
+// operation already selected the mailbox, and onOpen() failures before the
+// sync work starts.
 //
-// Some servers (e.g. Dovecot with mailbox list indexes) list a phantom folder
-// without \Noselect, answer STATUS for it, but reject SELECT with a tagged NO
-// like "NO [NONEXISTENT] Mailbox doesn't exist". Before the fix the rejection
-// propagated out of sync() and aborted the entire account connection setup,
-// causing an endless reconnect loop. sync() must skip such folders while still
-// propagating transient connection errors so reconnect logic keeps working.
+// SELECT-failure background: some servers (e.g. Dovecot with mailbox list
+// indexes) list a phantom folder without \Noselect, answer STATUS for it, but
+// reject SELECT with a tagged NO like "NO [NONEXISTENT] Mailbox doesn't
+// exist". Before the fix the rejection propagated out of sync() and aborted
+// the entire account connection setup, causing an endless reconnect loop.
+// sync() must skip such folders while still propagating transient connection
+// errors so reconnect logic keeps working.
+//
+// Settlement background: sync() arms this.synced as the resolver of the
+// promise it awaits, and the only production call site is onOpen()'s finally.
+// Every path that skips the SELECT (already-selected early returns) or fails
+// before onOpen()'s try block must still settle the promise, otherwise the
+// account wedges in the syncing state forever.
 
-function createMockContext({ selectError, statusResult } = {}) {
+function createMockContext({ selectError, statusResult, statusError, listingError, lockResult } = {}) {
     const warnCalls = [];
     let lockCalls = 0;
     let listingCalls = 0;
@@ -83,6 +94,9 @@ function createMockContext({ selectError, statusResult } = {}) {
             account: 'test-account',
             getCurrentListing: async () => {
                 listingCalls++;
+                if (listingError) {
+                    throw listingError;
+                }
                 return mockListing;
             },
             processListing: async listing => {
@@ -93,8 +107,12 @@ function createMockContext({ selectError, statusResult } = {}) {
             },
             imapClient: {
                 currentLock: null,
-                status: async () =>
-                    statusResult !== undefined
+                mailbox: null,
+                status: async () => {
+                    if (statusError) {
+                        throw statusError;
+                    }
+                    return statusResult !== undefined
                         ? statusResult
                         : {
                               path: 'Shared Folders',
@@ -102,10 +120,14 @@ function createMockContext({ selectError, statusResult } = {}) {
                               uidNext: 1,
                               uidValidity: 1n,
                               highestModseq: false
-                          },
+                          };
+                },
                 getMailboxLock: async () => {
                     lockCalls++;
-                    throw selectError;
+                    if (selectError) {
+                        throw selectError;
+                    }
+                    return lockResult || { release: () => {} };
                 }
             }
         },
@@ -172,5 +194,179 @@ test('Mailbox.sync() select failure handling', async t => {
         await Mailbox.prototype.sync.call(ctx, true);
 
         assert.equal(lockCalls(), 0, 'SELECT must not be attempted when STATUS already failed');
+    });
+
+    await t.test('propagates a listing refresh failure from the missing-mailbox branch', async () => {
+        const selectError = Object.assign(new Error('Command failed'), {
+            responseStatus: 'NO',
+            serverResponseCode: 'NONEXISTENT',
+            responseText: "Mailbox doesn't exist: Shared Folders",
+            mailboxMissing: true
+        });
+        const listingError = Object.assign(new Error('Connection not available'), {
+            code: 'NoConnection'
+        });
+        const { ctx, listingCalls, processedListings } = createMockContext({ selectError, listingError });
+
+        // A failing refresh is a connection-level problem: it must reject so
+        // the reconnect logic upstream schedules a retry, not be swallowed
+        await assert.rejects(() => Mailbox.prototype.sync.call(ctx, true), listingError);
+
+        assert.equal(ctx.synced, false, 'stale synced resolver must be cleared');
+        assert.equal(listingCalls(), 1, 'refresh must have been attempted');
+        assert.equal(processedListings.length, 0, 'a failed refresh has no listing to process');
+    });
+
+    await t.test('processes the refreshed listing when STATUS reports NotFound', async () => {
+        const statusError = Object.assign(new Error('Unknown Mailbox'), {
+            code: 'NotFound'
+        });
+        const { ctx, listingCalls, processedListings, lockCalls } = createMockContext({ statusError });
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 0, 'SELECT must not be attempted for a folder missing at STATUS');
+        assert.equal(listingCalls(), 1, 'listing must be refreshed');
+        assert.equal(processedListings.length, 1, 'refreshed listing must be processed so new folders are registered and synced');
+    });
+});
+
+test('Mailbox.sync() concurrent select handling', async t => {
+    await t.test('returns without arming when the mailbox is selected during the status checks', { timeout: 5000 }, async () => {
+        const { ctx, lockCalls } = createMockContext();
+
+        // Simulate a concurrent operation selecting this mailbox while sync()
+        // is between its entry guard and the promise arming: onOpen() sets
+        // this.selected synchronously with the mailboxOpen event
+        ctx.connection.redis.exists = async () => {
+            ctx.selected = true;
+            return 0;
+        };
+
+        const result = await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(result, false, 'sync must defer to the operation that owns the open');
+        assert.equal(ctx.synced, undefined, 'the sync promise must not be armed');
+        assert.equal(lockCalls(), 0, 'no SELECT must be attempted');
+    });
+
+    await t.test('resolves instead of hanging when the path is already locked-active', { timeout: 5000 }, async () => {
+        const { ctx, lockCalls } = createMockContext();
+
+        // A concurrent command holds the lock on this same path; select()
+        // must settle the armed resolver because no mailboxOpen event will
+        // fire for an already-open mailbox. Before the fix this test hung.
+        ctx.connection.imapClient.currentLock = { path: 'Shared Folders', lockId: 1, options: {} };
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 0, 'the active lock must not be re-acquired');
+    });
+
+    await t.test('resolves when the mailbox is found selected after the lock is acquired', { timeout: 5000 }, async () => {
+        let released = 0;
+        const { ctx, lockCalls } = createMockContext({ lockResult: { release: () => released++ } });
+
+        // Another operation selected the mailbox while select() was waiting
+        // for the lock: the granted lock skips the SELECT, so the armed
+        // resolver must be settled before the lock is released
+        ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 1, 'the lock must be acquired once');
+        assert.equal(released, 1, 'the granted lock must be released');
+    });
+});
+
+// --- onOpen(): failures before the sync work starts must still settle the promise ---
+
+function createOnOpenCtx({ stored, mailbox, hgetError, statusThrows } = {}) {
+    const notifyCalls = [];
+    let syncedCalls = 0;
+
+    const ctx = {
+        selected: false,
+        runPartialSyncTimer: null,
+        listingEntry: { path: 'Shared Folders', name: 'Shared Folders', specialUse: false, isNew: true },
+        logger: {
+            trace() {},
+            debug() {},
+            info() {},
+            warn() {},
+            error() {}
+        },
+        synced: () => syncedCalls++,
+        connection: {
+            getAccountKey: () => 'iad:test-account',
+            imapClient: { enabled: new Set() },
+            redis: {
+                hget: async () => {
+                    if (hgetError) {
+                        throw hgetError;
+                    }
+                    return '1';
+                },
+                hSetNew: async () => {},
+                exists: async () => 0
+            },
+            notify: async (mailboxObject, event, data) => {
+                notifyCalls.push({ event, data });
+            }
+        },
+        getMailboxStatus: () => {
+            if (statusThrows) {
+                throw statusThrows;
+            }
+            return mailbox;
+        },
+        getStoredStatus: async () => stored,
+        getNotificationsKey: () => 'iam:test-account:n:KEY',
+        getMailboxKey: () => 'iam:test-account:h:KEY',
+        getMessagesKey: () => 'iam:test-account:l:KEY',
+        seedMailboxIndex: async () => 0,
+        fullSync: async () => 'fullSync',
+        partialSync: async () => 'partialSync',
+        select: async () => {}
+    };
+
+    return { ctx, notifyCalls, syncedCalls: () => syncedCalls };
+}
+
+test('Mailbox.onOpen() pre-sync failures', async t => {
+    await t.test('settles the armed sync resolver and keeps isNew when reading mailbox status throws', async () => {
+        const statusThrows = new Error('IMAP mailbox state is not available');
+        const { ctx, notifyCalls, syncedCalls } = createOnOpenCtx({ statusThrows });
+
+        await assert.rejects(() => Mailbox.prototype.onOpen.call(ctx), statusThrows);
+
+        assert.equal(syncedCalls(), 1, 'the sync promise must be settled even when the open failed');
+        assert.equal(notifyCalls.length, 0, 'no mailboxNew must be sent for a mailbox that was never synced');
+        assert.equal(ctx.listingEntry.isNew, true, 'isNew must be kept so the notification is emitted on the next successful open');
+    });
+
+    await t.test('settles the armed sync resolver when the connection-count lookup throws', async () => {
+        const hgetError = new Error('Redis connection lost');
+        const { ctx, syncedCalls } = createOnOpenCtx({ hgetError });
+
+        await assert.rejects(() => Mailbox.prototype.onOpen.call(ctx), hgetError);
+
+        assert.equal(syncedCalls(), 1, 'the sync promise must be settled even when the open failed');
+        assert.equal(ctx.listingEntry.isNew, true, 'isNew must be kept');
+    });
+
+    await t.test('emits mailboxNew with the mailbox uidValidity once the open succeeds', async () => {
+        const { ctx, notifyCalls, syncedCalls } = createOnOpenCtx({
+            stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false, lastFullSync: false },
+            mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 }
+        });
+
+        await Mailbox.prototype.onOpen.call(ctx);
+
+        assert.equal(notifyCalls.length, 1, 'exactly one mailboxNew must be sent');
+        assert.equal(notifyCalls[0].event, MAILBOX_NEW_NOTIFY);
+        assert.equal(notifyCalls[0].data.uidValidity, '123');
+        assert.equal(ctx.listingEntry.isNew, false, 'isNew must be consumed by a successful open');
+        assert.equal(syncedCalls(), 1, 'the sync promise must be settled');
     });
 });
