@@ -60,6 +60,7 @@ const { Mailbox } = require('../lib/email-client/imap/mailbox');
 function createMockContext({ selectError, statusResult } = {}) {
     const warnCalls = [];
     let lockCalls = 0;
+    let listingCalls = 0;
 
     const ctx = {
         path: 'Shared Folders',
@@ -78,6 +79,9 @@ function createMockContext({ selectError, statusResult } = {}) {
         getNotificationsKey: () => 'test-notifications-key',
         connection: {
             account: 'test-account',
+            getCurrentListing: async () => {
+                listingCalls++;
+            },
             redis: {
                 exists: async () => 0
             },
@@ -105,7 +109,7 @@ function createMockContext({ selectError, statusResult } = {}) {
         getMailboxLock: Mailbox.prototype.getMailboxLock
     };
 
-    return { ctx, warnCalls, lockCalls: () => lockCalls };
+    return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls };
 }
 
 test('Mailbox.sync() select failure handling', async t => {
@@ -115,7 +119,7 @@ test('Mailbox.sync() select failure handling', async t => {
             serverResponseCode: 'NONEXISTENT',
             responseText: "Mailbox doesn't exist: Shared Folders"
         });
-        const { ctx, warnCalls } = createMockContext({ selectError });
+        const { ctx, warnCalls, listingCalls } = createMockContext({ selectError });
 
         // must resolve instead of rejecting; forceEmpty=true mirrors the
         // refreshFolderList() call path used during connection setup
@@ -123,6 +127,25 @@ test('Mailbox.sync() select failure handling', async t => {
 
         assert.equal(ctx.synced, false, 'stale synced resolver must be cleared');
         assert.equal(warnCalls.filter(entry => entry.msg === 'Skipped mailbox that can not be selected').length, 1, 'skip must be logged');
+        assert.equal(listingCalls(), 0, 'listing must not be refreshed for a phantom folder that is still listed');
+    });
+
+    await t.test('refreshes the folder listing when the mailbox is missing', async () => {
+        // ImapFlow sets mailboxMissing after a SELECT NO when a verification LIST
+        // shows the folder is gone (deleted by another client mid-sync)
+        const selectError = Object.assign(new Error('Command failed'), {
+            responseStatus: 'NO',
+            serverResponseCode: 'NONEXISTENT',
+            responseText: "Mailbox doesn't exist: Shared Folders",
+            mailboxMissing: true
+        });
+        const { ctx, listingCalls } = createMockContext({ selectError });
+
+        // must resolve instead of rejecting so the rest of the account sync continues
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(ctx.synced, false, 'stale synced resolver must be cleared');
+        assert.equal(listingCalls(), 1, 'listing must be refreshed right away so the deletion is processed');
     });
 
     await t.test('still throws for connection-level errors', async () => {
