@@ -56,7 +56,12 @@ npm run format:check  # Check formatting without changes
 npm run lint      # Lint with ESLint
 npm run swagger   # Generate OpenAPI docs
 npm run single    # Single-worker debug mode with Inspector
+npm run update    # Upgrade dependencies (see Dependency Updates below)
 ```
+
+### Dependency Updates
+
+Always use `npm run update` to bump dependencies - never edit versions in package.json by hand and never run a bare `npx ncu`. The script does a full refresh (`ncu -u` + fresh lockfile + `copy-static-files.sh` + regenerated license listing and gettext catalog); a manual package.json edit skips the artifact regeneration and leaves `static/licenses.html` and the translation catalog stale. Version constraints for packages that must not be upgraded to latest live in `.ncurc.js` with per-package rationale.
 
 ## Testing
 
