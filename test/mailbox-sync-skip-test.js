@@ -102,6 +102,10 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
             processListing: async listing => {
                 processedListings.push(listing);
             },
+            async refreshAndProcessListing() {
+                let listing = await this.getCurrentListing();
+                return await this.processListing(listing);
+            },
             redis: {
                 exists: async () => 0
             },
