@@ -37,6 +37,7 @@ const CONNECT_TIMEOUT = 30000;
 // - listNonExistent: the root is listed with a \NonExistent flag (RFC 5258)
 function startMockImap({ sharedStatus = 'ok', listNonExistent = false } = {}) {
     const counters = { connects: 0, logins: 0, sharedSelects: 0, sharedStatuses: 0 };
+    const sockets = new Set();
 
     const listRows = [
         ['\\HasNoChildren', 'INBOX'],
@@ -46,6 +47,8 @@ function startMockImap({ sharedStatus = 'ok', listNonExistent = false } = {}) {
 
     const mockServer = net.createServer(socket => {
         counters.connects++;
+        sockets.add(socket);
+        socket.on('close', () => sockets.delete(socket));
         let buf = '';
         let idleTag = null;
 
@@ -180,6 +183,13 @@ function startMockImap({ sharedStatus = 'ok', listNonExistent = false } = {}) {
                 counters,
                 close: () =>
                     new Promise(done => {
+                        // Destroy lingering client connections first - server.close()
+                        // fires its callback only after every socket has ended, so a
+                        // connection leaked by a failed subtest would otherwise keep
+                        // the close promise (and the whole test run) hanging
+                        for (const socket of sockets) {
+                            socket.destroy();
+                        }
                         mockServer.close(() => done());
                     })
             });
