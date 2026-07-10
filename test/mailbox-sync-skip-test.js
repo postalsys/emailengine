@@ -61,6 +61,8 @@ function createMockContext({ selectError, statusResult } = {}) {
     const warnCalls = [];
     let lockCalls = 0;
     let listingCalls = 0;
+    const mockListing = [{ path: 'Other Folder' }];
+    const processedListings = [];
 
     const ctx = {
         path: 'Shared Folders',
@@ -81,6 +83,10 @@ function createMockContext({ selectError, statusResult } = {}) {
             account: 'test-account',
             getCurrentListing: async () => {
                 listingCalls++;
+                return mockListing;
+            },
+            processListing: async listing => {
+                processedListings.push(listing);
             },
             redis: {
                 exists: async () => 0
@@ -109,7 +115,7 @@ function createMockContext({ selectError, statusResult } = {}) {
         getMailboxLock: Mailbox.prototype.getMailboxLock
     };
 
-    return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls };
+    return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls, processedListings, mockListing };
 }
 
 test('Mailbox.sync() select failure handling', async t => {
@@ -139,13 +145,15 @@ test('Mailbox.sync() select failure handling', async t => {
             responseText: "Mailbox doesn't exist: Shared Folders",
             mailboxMissing: true
         });
-        const { ctx, listingCalls } = createMockContext({ selectError });
+        const { ctx, listingCalls, processedListings, mockListing } = createMockContext({ selectError });
 
         // must resolve instead of rejecting so the rest of the account sync continues
         await Mailbox.prototype.sync.call(ctx, true);
 
         assert.equal(ctx.synced, false, 'stale synced resolver must be cleared');
         assert.equal(listingCalls(), 1, 'listing must be refreshed right away so the deletion is processed');
+        assert.equal(processedListings.length, 1, 'refreshed listing must be processed so new folders are registered and synced');
+        assert.equal(processedListings[0], mockListing, 'the freshly fetched listing must be passed through unmodified');
     });
 
     await t.test('still throws for connection-level errors', async () => {
