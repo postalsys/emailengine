@@ -1,13 +1,20 @@
 'use strict';
 
-// Regression tests for the reconnection backoff counter in Subconnection.reconnect().
+// Regression tests for the reconnect scheduling behavior of Subconnection.reconnect():
+// the backoff counter and the close/re-entry races around the pre-connect sleep.
 //
-// The counter must be reset only after the monitored mailbox has been opened,
+// Counter: it must be reset only after the monitored mailbox has been opened,
 // not right after connect/login succeeds. Before the fix a subconnection whose
 // folder could be logged into but not opened (the phantom-folder scenario) reset
 // the counter on every cycle, so a server that drops the connection after the
 // failed SELECT kept the close-triggered retry loop at the base delay forever -
 // the same reset-on-every-cycle storm that was fixed on the primary connection.
+//
+// Races: _connecting must be set before the backoff sleep (otherwise the error
+// and close handlers of one dying connection each start an overlapping cycle),
+// and a close() landing during the sleep must not be erased on wake (otherwise
+// a subconnection the parent already discarded revives as an unreachable zombie
+// holding a live server connection).
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -33,11 +40,9 @@ const noopLogger = {
 
 function makeSubconnection({ mailboxOpenError } = {}) {
     const subconnection = new Subconnection({
-        parent: {
-            connections: new Set(),
-            redis: { hSetExists: async () => 1 },
-            getAccountKey: () => 'iad:test-account'
-        },
+        // start() is stubbed below, so nothing on the exercised code path
+        // dereferences the parent
+        parent: {},
         account: 'test-account',
         mailbox: { path: 'Shared Folders/team' },
         logger: noopLogger
@@ -86,6 +91,49 @@ test('Subconnection.reconnect() backoff counter', async t => {
         await subconnection.reconnect();
 
         assert.equal(subconnection.reconnectAttempts, 0, 'counter must reset after a fully successful setup');
+        assert.equal(subconnection.state, 'connected');
+    });
+});
+
+test('Subconnection.reconnect() close and re-entry races', async t => {
+    await t.test('a close() during the backoff sleep is not erased on wake', async () => {
+        const subconnection = makeSubconnection();
+        let startCalls = 0;
+        subconnection.start = async () => {
+            startCalls++;
+        };
+
+        // reconnect() enters its (1ms base + zeroed jitter) backoff sleep;
+        // close() is synchronous, so it lands inside that sleep window
+        const pending = subconnection.reconnect();
+        subconnection.close();
+
+        assert.equal(await pending, false, 'the sleeping cycle must bail out');
+        assert.equal(startCalls, 0, 'a closed subconnection must not open a new connection');
+        assert.equal(subconnection.isClosed, true, 'close() must not be erased by the sleeping cycle');
+        assert.equal(subconnection._connecting, false);
+    });
+
+    await t.test('a concurrent reconnect() during an in-flight cycle is rejected', async () => {
+        const subconnection = makeSubconnection();
+        let startCalls = 0;
+        subconnection.start = async () => {
+            startCalls++;
+            subconnection.imapClient = {
+                usable: true,
+                mailboxOpen: async () => ({})
+            };
+        };
+
+        // The first call sets _connecting synchronously, so a second call -
+        // e.g. from the 'close' handler of a dying connection while the first
+        // cycle sleeps - must short-circuit on the guard
+        const first = subconnection.reconnect();
+        assert.equal(await subconnection.reconnect(), false, 'concurrent reconnect must be rejected');
+
+        await first;
+
+        assert.equal(startCalls, 1, 'exactly one connection cycle must run');
         assert.equal(subconnection.state, 'connected');
     });
 });
