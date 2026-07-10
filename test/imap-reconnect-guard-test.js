@@ -5,6 +5,12 @@
 // or when the client is paused/closing/closed - otherwise accounts get duplicate
 // connections or reconnect storms. The actual connect (start()) is stubbed so we
 // assert only the guard decisions.
+//
+// Also covers the flip side of the _connecting guard: a failure while loading
+// account data must clear the flag again. Before the fix the load ran outside
+// the try/finally, so a transient Redis error left _connecting set forever and
+// every later reconnection attempt short-circuited on the guard, leaving the
+// account dead until the worker was restarted.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -92,5 +98,47 @@ test('IMAPClient.reconnect() guards', async t => {
 
         await client.reconnect(true);
         assert.strictEqual(startCalled(), true, 'forced reconnect must call start() even when closed');
+    });
+
+    await t.test('clears the connecting flag when loading account data fails', async () => {
+        const { client, startCalled } = stubbedClient();
+        client.state = 'unset';
+        const loadError = new Error('Redis connection lost');
+        client.accountObject = {
+            loadAccountData: async () => {
+                throw loadError;
+            }
+        };
+
+        await assert.rejects(() => client.reconnect(), loadError);
+
+        assert.strictEqual(client._connecting, false, 'a failed account data load must not leave the connecting flag set');
+        assert.strictEqual(startCalled(), false);
+    });
+
+    await t.test('a later reconnect attempt is not blocked by the failed one', async () => {
+        const { client, startCalled } = stubbedClient();
+        client.state = 'unset';
+        let loadCalls = 0;
+        client.accountObject = {
+            loadAccountData: async () => {
+                loadCalls++;
+                if (loadCalls === 1) {
+                    throw new Error('Redis connection lost');
+                }
+                return { imapIndexer: 'full' };
+            }
+        };
+
+        await assert.rejects(() => client.reconnect());
+
+        // Before the fix this returned false from the _connecting guard without
+        // ever calling loadAccountData or start() again
+        const result = await client.reconnect();
+
+        assert.notStrictEqual(result, false, 'reconnect must not short-circuit on a stale connecting flag');
+        assert.strictEqual(loadCalls, 2, 'account data must be loaded again on the retry');
+        assert.strictEqual(startCalled(), true, 'the retry must reach start()');
+        assert.strictEqual(client._connecting, false);
     });
 });
