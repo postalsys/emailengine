@@ -63,10 +63,11 @@ const { MAILBOX_NEW_NOTIFY } = require('../lib/consts');
 // errors so reconnect logic keeps working.
 //
 // Settlement background: sync() arms this.synced as the resolver of the
-// promise it awaits, and the only production call site is onOpen()'s finally.
-// Every path that skips the SELECT (already-selected early returns) or fails
-// before onOpen()'s try block must still settle the promise, otherwise the
-// account wedges in the syncing state forever.
+// promise it awaits. The primary resolver is onOpen()'s finally, with
+// select()'s two SELECT-less early returns settling it when no mailboxOpen
+// event will ever fire. Every path that skips the SELECT or fails before
+// onOpen()'s try block must settle the promise one way or the other,
+// otherwise the account wedges in the syncing state forever.
 
 function createMockContext({ selectError, statusResult, statusError, listingError, lockResult } = {}) {
     const warnCalls = [];
