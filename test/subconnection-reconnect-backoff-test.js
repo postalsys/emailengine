@@ -42,7 +42,7 @@ const noopLogger = {
 // tagged NO: a non-empty array means the folder is still listed (phantom), an
 // empty array means it is gone, and a function can throw to simulate a failed
 // verification. Defaults to "folder exists".
-function makeSubconnection({ mailboxOpenError, listResponse = [{ path: 'Shared Folders/team' }] } = {}) {
+function makeSubconnection({ mailboxOpenError, path = 'Shared Folders/team', listResponse = [{ path: 'Shared Folders/team' }] } = {}) {
     const listingRefreshCalls = [];
 
     const subconnection = new Subconnection({
@@ -54,7 +54,7 @@ function makeSubconnection({ mailboxOpenError, listResponse = [{ path: 'Shared F
             }
         },
         account: 'test-account',
-        mailbox: { path: 'Shared Folders/team' },
+        mailbox: { path },
         logger: noopLogger
     });
 
@@ -128,6 +128,29 @@ test('Subconnection.reconnect() missing monitored mailbox', async t => {
         assert.equal(subconnection.imapClient, null);
         assert.equal(listingRefreshCalls.length, 1, 'the parent listing refresh must be requested');
         assert.equal(await subconnection.reconnect(), false, 'retries must stop for the missing folder');
+    });
+
+    await t.test('a wildcard-matched sibling is not proof that the mailbox exists', async () => {
+        const mailboxOpenError = Object.assign(new Error('Command failed'), {
+            responseStatus: 'NO',
+            serverResponseCode: 'NONEXISTENT'
+        });
+        // The raw path is used as the LIST match pattern, so the '%' in the
+        // deleted folder's name makes the server return a matching sibling.
+        // Only an exact path match may count as "still exists" - otherwise
+        // the disable path is skipped and the subconnection retries forever
+        const { subconnection, listingRefreshCalls } = makeSubconnection({
+            mailboxOpenError,
+            path: 'Reports 2024%',
+            listResponse: [{ path: 'Reports 2024-archive' }]
+        });
+
+        await subconnection.reconnect();
+
+        assert.equal(subconnection.disabled, true, 'a wildcard sibling match must not keep the subconnection alive');
+        assert.equal(subconnection.state, 'disabled');
+        assert.equal(subconnection.disabledReason, 'Mailbox folder not found');
+        assert.equal(listingRefreshCalls.length, 1, 'the folder deletion must be processed');
     });
 
     await t.test('keeps retrying when the verification LIST itself fails', async () => {
