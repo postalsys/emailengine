@@ -6,11 +6,16 @@
 // connections or reconnect storms. The actual connect (start()) is stubbed so we
 // assert only the guard decisions.
 //
-// Also covers the flip side of the _connecting guard: a failure while loading
-// account data must clear the flag again. Before the fix the load ran outside
-// the try/finally, so a transient Redis error left _connecting set forever and
-// every later reconnection attempt short-circuited on the guard, leaving the
-// account dead until the worker was restarted.
+// Also covers the flip side of the _connecting guard: a failed connection
+// cycle must clear the flag again, otherwise every later reconnection attempt
+// short-circuits on the guard and the account stays dead until the worker is
+// restarted.
+//
+// Account data is loaded inside start(), within reconnect()'s backOff loop, so
+// a transient load failure (e.g. a Redis hiccup) is retried like any other
+// connection failure. It used to be loaded by reconnect() itself, where a
+// throw escaped past the retry scheduling and stalled the account until the
+// next external trigger (resume, account update, worker restart).
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -100,20 +105,20 @@ test('IMAPClient.reconnect() guards', async t => {
         assert.strictEqual(startCalled(), true, 'forced reconnect must call start() even when closed');
     });
 
-    await t.test('clears the connecting flag when loading account data fails', async () => {
-        const { client, startCalled } = stubbedClient();
+    await t.test('clears the connecting flag when the connection cycle fails', async () => {
+        const { client } = stubbedClient();
         client.state = 'unset';
-        const loadError = new Error('Redis connection lost');
-        client.accountObject = {
-            loadAccountData: async () => {
-                throw loadError;
-            }
+        const startError = new Error('Redis connection lost');
+        client.start = async () => {
+            // Flag the client as closed so backOff's retry predicate declines
+            // and the failure propagates out of the retry loop
+            client.isClosed = true;
+            throw startError;
         };
 
-        await assert.rejects(() => client.reconnect(), loadError);
+        await assert.rejects(() => client.reconnect(), startError);
 
-        assert.strictEqual(client._connecting, false, 'a failed account data load must not leave the connecting flag set');
-        assert.strictEqual(startCalled(), false);
+        assert.strictEqual(client._connecting, false, 'a failed connection cycle must not leave the connecting flag set');
     });
 
     // The 'error' event handler only schedules its debounced reconnection while
@@ -140,8 +145,40 @@ test('IMAPClient.reconnect() guards', async t => {
     });
 
     await t.test('a later reconnect attempt is not blocked by the failed one', async () => {
-        const { client, startCalled } = stubbedClient();
+        const { client } = stubbedClient();
         client.state = 'unset';
+        let startCalls = 0;
+        client.start = async () => {
+            startCalls++;
+            if (startCalls === 1) {
+                client.isClosed = true;
+                throw new Error('Redis connection lost');
+            }
+        };
+
+        await assert.rejects(() => client.reconnect());
+
+        // The failed cycle set isClosed to break out of the retry loop; a
+        // forced reconnect (the resume path) must not be blocked by a stale
+        // connecting flag left over from the failure
+        const result = await client.reconnect(true);
+
+        assert.notStrictEqual(result, false, 'reconnect must not short-circuit on a stale connecting flag');
+        assert.strictEqual(startCalls, 2, 'the retry must reach start()');
+        assert.strictEqual(client._connecting, false);
+    });
+
+    // Account data used to be loaded by reconnect() itself, outside the backOff
+    // retry loop: the throw escaped past the retry scheduling (all reconnect()
+    // callers only log rejections), so one Redis blip at the wrong instant left
+    // the account disconnected until an external trigger. The load now happens
+    // inside start(), where the existing backOff loop retries it.
+    await t.test('a transient account data load failure is retried within the same cycle', async () => {
+        const { client } = stubbedClient();
+        delete client.start; // use the real start(), the load happens there
+        client.state = 'unset';
+        client.notify = async () => {};
+
         let loadCalls = 0;
         client.accountObject = {
             loadAccountData: async () => {
@@ -149,19 +186,15 @@ test('IMAPClient.reconnect() guards', async t => {
                 if (loadCalls === 1) {
                     throw new Error('Redis connection lost');
                 }
-                return { imapIndexer: 'full' };
+                // No imap/oauth2 config: start() bails out cleanly with
+                // state 'unset' right after the successful load
+                return {};
             }
         };
 
-        await assert.rejects(() => client.reconnect());
+        await client.reconnect();
 
-        // Before the fix this returned false from the _connecting guard without
-        // ever calling loadAccountData or start() again
-        const result = await client.reconnect();
-
-        assert.notStrictEqual(result, false, 'reconnect must not short-circuit on a stale connecting flag');
-        assert.strictEqual(loadCalls, 2, 'account data must be loaded again on the retry');
-        assert.strictEqual(startCalled(), true, 'the retry must reach start()');
+        assert.strictEqual(loadCalls, 2, 'the account data load must be retried after the transient failure');
         assert.strictEqual(client._connecting, false);
     });
 });
