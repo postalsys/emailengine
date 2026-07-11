@@ -388,6 +388,46 @@ test('Mailbox.onOpen() pre-sync failures', async t => {
         assert.equal(ctx.processingOpen, false, 'the latch must be released after the outer open completes');
     });
 
+    await t.test('an open event from a new connection is not swallowed by an unwinding handler', async () => {
+        // The latch is per-mailbox but Mailbox objects persist across
+        // reconnects: when the connection drops while onOpen() is deep in a
+        // Redis-heavy phase (which never touches the dead socket), the
+        // replacement connection re-SELECTs the folder within seconds. That
+        // open event used to hit the still-set latch, settle the freshly
+        // armed resolver and bail - the post-reconnect sync reported success
+        // without any sync work, and the folder waited for the next resync
+        const oldClient = { generation: 'old', enabled: new Set() };
+        const newClient = { generation: 'new', enabled: new Set() };
+
+        const { ctx, notifyCalls, syncedCalls } = createOnOpenCtx({
+            stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false, lastFullSync: false },
+            mailbox: { uidValidity: 123n, uidNext: 6, highestModseq: 10n, messages: 5 }
+        });
+        ctx.connection.imapClient = oldClient;
+
+        let nestedResult;
+        let fullSyncCalls = 0;
+        ctx.fullSync = async () => {
+            fullSyncCalls++;
+            if (fullSyncCalls === 1) {
+                // The connection died mid-sync and was replaced; the new
+                // connection's SELECT fires an open event while this
+                // handler is still unwinding
+                ctx.connection.imapClient = newClient;
+                nestedResult = await Mailbox.prototype.onOpen.call(ctx, null, newClient);
+            }
+            return 'fullSync';
+        };
+
+        await Mailbox.prototype.onOpen.call(ctx, null, oldClient);
+
+        assert.notEqual(nestedResult, false, 'the new connection open must not bail on the stale latch');
+        assert.equal(fullSyncCalls, 2, 'the new connection must run its own sync work');
+        assert.equal(ctx.processingOpen, false, 'the latch must be released after the new owner completes');
+        assert.equal(syncedCalls(), 1, 'only the new owner may settle the sync promise');
+        assert.equal(notifyCalls.length, 1, 'the isNew notification must be sent exactly once');
+    });
+
     await t.test('emits mailboxNew with the mailbox uidValidity once the open succeeds', async () => {
         const { ctx, notifyCalls, syncedCalls } = createOnOpenCtx({
             stored: { hasStoredState: false, uidNext: false, messages: false, highestModseq: false, lastFullSync: false },
