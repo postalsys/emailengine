@@ -160,3 +160,39 @@ test('IMAPClient.start() honors a connect() bail', async () => {
     const counterWrites = hSetExistsCalls.filter(args => args[1] === 'connections');
     assert.equal(counterWrites[counterWrites.length - 1][2], '0', 'the connection counter must be written back to zero');
 });
+
+// ImapFlow's close() REJECTS a pending connect() ('Unexpected close'), so a
+// pause() landing mid-handshake surfaces as a thrown error, not as a false
+// bail - the pause re-checks inside connect() never run on that path. start()'s
+// catch used to fire a connectError webhook and overwrite the freshly written
+// 'paused' state with 'connectError' for a deliberately paused account.
+test('IMAPClient.start() ignores connection errors caused by pause()', async () => {
+    const client = makeClient();
+    client.accountObject = {
+        loadAccountData: async () => ({ imap: { host: '127.0.0.1', port: 9993, auth: { user: 'u', pass: 'p' } } })
+    };
+    client.getImapConfig = async () => ({
+        id: 'test',
+        host: '127.0.0.1',
+        port: 9993,
+        secure: false,
+        auth: { user: 'u', pass: 'p' },
+        logger: noopLogger
+    });
+    // pause() lands during the handshake; the closed client rejects the
+    // pending connect() instead of returning the bail marker
+    client.connect = async () => {
+        simulatePause(client);
+        throw new Error('Unexpected close');
+    };
+
+    let notifyCalls = 0;
+    client.notify = async () => {
+        notifyCalls++;
+    };
+
+    await client.start();
+
+    assert.equal(notifyCalls, 0, 'no connectError webhook may be sent for a paused account');
+    assert.equal(client.state, 'paused', 'the paused state must not be overwritten with connectError');
+});
