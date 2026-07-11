@@ -252,6 +252,7 @@ test('IMAP null guard tests', async t => {
             state: 'syncing',
             syncing: false,
             account: 'test-account',
+            subconnections: [],
             refreshFolderList: async () => null,
             setStateVal: async () => {},
             getAccountKey: () => 'test:account',

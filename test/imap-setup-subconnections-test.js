@@ -145,4 +145,118 @@ test('IMAPClient.setupSubConnections() reconciliation', async t => {
         assert.ok(client.subconnections[0] instanceof Subconnection, 'a fresh live subconnection must be created');
         assert.ok(!client.subconnections[0].disabled);
     });
+
+    await t.test('concurrent runs are single-flighted', async () => {
+        const client = makeClient({
+            listing: [{ path: 'INBOX', specialUse: '\\Inbox' }, { path: 'Reports' }],
+            subconnections: [{ ...MISSING_PLACEHOLDER }]
+        });
+
+        let loadCalls = 0;
+        const loadAccountData = client.accountObject.loadAccountData;
+        client.accountObject.loadAccountData = async (...args) => {
+            loadCalls++;
+            return loadAccountData(...args);
+        };
+
+        // The second call lands while the first is awaiting account data and
+        // must bail instead of racing the shared subconnections array
+        const [first, second] = await Promise.all([client.setupSubConnections(), client.setupSubConnections()]);
+
+        assert.equal(loadCalls, 1, 'only one reconciliation run may execute');
+        assert.equal(first, 1, 'the first run must reconcile');
+        assert.equal(second, null, 'the overlapping run must bail out');
+    });
+});
+
+// The reconciler is only invoked from start(), so without the resync-cycle
+// trigger below a subconnection that disabled itself while its folder was
+// missing would never be revived on a stable long-lived connection - the
+// folder's events would stay silently lost until a full reconnect.
+test('IMAPClient.syncMailboxes() subconnection revival trigger', async t => {
+    function makeSyncClient({ subconnections, mailboxPaths = [], specialUse = {} }) {
+        const client = new IMAPClient('test-account', {
+            logger: noopLogger,
+            accountLogger: { enabled: false, log() {} },
+            redis: { del: async () => 1, hget: async () => null, hdel: async () => 1, hSetExists: async () => 1 }
+        });
+
+        client.imapClient = { usable: true, rawCapabilities: [], authCapabilities: new Map(), serverInfo: {} };
+        client.refreshFolderList = async () => new Set();
+        client.setStateVal = async () => {};
+        client.subconnections = subconnections;
+
+        for (const path of mailboxPaths) {
+            client.mailboxes.set(path, { path, listingEntry: { path, specialUse: specialUse[path] || false }, sync: async () => {}, select: async () => {} });
+        }
+
+        let setupCalls = 0;
+        client.setupSubConnections = async () => {
+            setupCalls++;
+            return 0;
+        };
+
+        return { client, setupCalls: () => setupCalls };
+    }
+
+    await t.test('re-runs the reconciler when a missing folder is back in the listing', async () => {
+        const { client, setupCalls } = makeSyncClient({
+            subconnections: [{ ...MISSING_PLACEHOLDER }],
+            mailboxPaths: ['Reports']
+        });
+
+        await client.syncMailboxes();
+        clearTimeout(client.resyncTimer);
+
+        assert.equal(setupCalls(), 1, 'the reconciler must run for a revivable subconnection');
+    });
+
+    await t.test('matches a subconnection configured by special-use selector', async () => {
+        const { client, setupCalls } = makeSyncClient({
+            subconnections: [{ ...MISSING_PLACEHOLDER, path: '\\Sent' }],
+            mailboxPaths: ['Sent Mail'],
+            specialUse: { 'Sent Mail': '\\Sent' }
+        });
+
+        await client.syncMailboxes();
+        clearTimeout(client.resyncTimer);
+
+        assert.equal(setupCalls(), 1, 'the reconciler must run when the special-use folder is back');
+    });
+
+    await t.test('does not re-run while the folder is still missing', async () => {
+        const { client, setupCalls } = makeSyncClient({
+            subconnections: [{ ...MISSING_PLACEHOLDER }],
+            mailboxPaths: ['INBOX']
+        });
+
+        await client.syncMailboxes();
+        clearTimeout(client.resyncTimer);
+
+        assert.equal(setupCalls(), 0, 'nothing to revive while the folder is missing');
+    });
+
+    await t.test('leaves permanently disabled placeholders alone', async () => {
+        const { client, setupCalls } = makeSyncClient({
+            subconnections: [{ path: 'Reports', disabled: true, state: 'disabled', disabledReason: 'Covered by the "All Mail" folder' }],
+            mailboxPaths: ['Reports']
+        });
+
+        await client.syncMailboxes();
+        clearTimeout(client.resyncTimer);
+
+        assert.equal(setupCalls(), 0, 'a permanently disabled placeholder must not trigger reconciliation runs');
+    });
+
+    await t.test('does not run for healthy subconnections', async () => {
+        const { client, setupCalls } = makeSyncClient({
+            subconnections: [{ path: 'Reports', state: 'connected' }],
+            mailboxPaths: ['Reports']
+        });
+
+        await client.syncMailboxes();
+        clearTimeout(client.resyncTimer);
+
+        assert.equal(setupCalls(), 0, 'healthy subconnections must not trigger reconciliation runs');
+    });
 });
