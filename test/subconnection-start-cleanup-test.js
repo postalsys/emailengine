@@ -1,11 +1,16 @@
 'use strict';
 
-// Regression tests for the previous-client cleanup in Subconnection.start().
+// Regression tests for Subconnection lifecycle cleanup.
 //
-// Same defect class as in IMAPClient.start(): removeAllListeners() on the
-// replaced client strips the 'close' handler that removes the client from
-// parent.connections and updates the Redis connection counter, so every
+// start(): same defect class as in IMAPClient.start() - removeAllListeners()
+// on the replaced client strips the 'close' handler that removes the client
+// from parent.connections and updates the Redis connection counter, so every
 // subconnection reconnect leaked the previous ImapFlow instance.
+//
+// close(): must drop the pending 'changes' debounce timer. The mailboxMissing
+// disable path closes the subconnection while the parent's listeners are still
+// attached, so a surviving timer would emit on the closed instance and trigger
+// a pointless sync for the removed folder.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -96,5 +101,25 @@ test('Subconnection.start() previous client cleanup', async t => {
 
         assert.equal(parent.connections.has(prev), false);
         assert.equal(hSetExistsCalls.filter(args => args[1] === 'connections').length, 1);
+    });
+});
+
+test('Subconnection.close() timer cleanup', async t => {
+    await t.test('drops the pending changes debounce', t => {
+        t.mock.timers.enable({ apis: ['setTimeout'] });
+
+        const { subconnection } = makeSubconnection();
+        let changesEmitted = 0;
+        subconnection.on('changes', () => changesEmitted++);
+
+        // Arm the debounce as a flags/exists notification would, then close
+        // before it fires
+        subconnection.requestSync();
+        subconnection.close();
+
+        t.mock.timers.tick(1000);
+
+        assert.equal(changesEmitted, 0, 'a closed subconnection must not emit changes');
+        assert.equal(subconnection.emitTimer, false, 'close() must drop the debounce timer handle');
     });
 });
