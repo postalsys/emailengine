@@ -141,10 +141,22 @@ test('IMAPClient.start() honors a connect() bail', async () => {
         }
         return redisHget(key, field);
     };
+    const hSetExistsCalls = [];
+    client.redis.hSetExists = async (...args) => {
+        hSetExistsCalls.push(args);
+        return 1;
+    };
 
     await client.start();
 
     assert.equal(notifyCalls, 0, 'no notification may be sent for a connection that was never established');
     assert.equal(setupCalls, 0, 'subconnections must not be set up for a bailed connect');
     assert.equal(stateCountReads, 0, 'the first-connection bookkeeping must be skipped');
+
+    // The bailed client never opens a socket, so the close-listener cleanup
+    // never fires - start() itself must untrack it, otherwise the paused
+    // account keeps reporting connections=1 until the next resume
+    assert.equal(client.connections.size, 0, 'the bailed client must be dropped from connection tracking');
+    const counterWrites = hSetExistsCalls.filter(args => args[1] === 'connections');
+    assert.equal(counterWrites[counterWrites.length - 1][2], '0', 'the connection counter must be written back to zero');
 });
