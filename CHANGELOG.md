@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.72.4](https://github.com/postalsys/emailengine/compare/v2.72.3...v2.72.4) (2026-07-11)
+
+
+### Bug Fixes
+
+* bump imapflow/bullmq/bull-board/sentry-node/eerawlog/prettier ([8f7b6bf](https://github.com/postalsys/emailengine/commit/8f7b6bf21eae70b1f3c8e0856a6c0f0a0d641317))
+* clear the connecting flag if loading account data fails during reconnect ([8d82167](https://github.com/postalsys/emailengine/commit/8d8216730f809eebdc8a0762e38f93f0084de038))
+* clear the pending changes debounce when closing a subconnection ([a286f89](https://github.com/postalsys/emailengine/commit/a286f89e721336b64a9c16737cf30d161f52fe22))
+* disable subconnection when the monitored mailbox no longer exists ([e1895d6](https://github.com/postalsys/emailengine/commit/e1895d64b5fd17912f582406c7c352b9176364c6))
+* do not report connectError when pause() interrupts a connection attempt ([4d38e4f](https://github.com/postalsys/emailengine/commit/4d38e4f047be16f4f5a16a0274c5240346c2b50f))
+* drop the reconnect timer handle when closing an IMAP connection ([9f46c77](https://github.com/postalsys/emailengine/commit/9f46c77afef8217a8b6b69e736cb0cd38b27429b))
+* ignore \NonExistent folders in mailbox listing ([7ec96cf](https://github.com/postalsys/emailengine/commit/7ec96cfaaf5425c16479151e66ef3285c854b49a))
+* prevent overlapping and revived subconnection reconnect cycles ([5754c07](https://github.com/postalsys/emailengine/commit/5754c074f0f8c89222008e4c1d331b66891b3c16))
+* process refreshed folder listings so new folders emit mailboxNew ([247c325](https://github.com/postalsys/emailengine/commit/247c325cc71f1842cc8083c7fd025792217c77d8))
+* reconcile disabled and active subconnections in setupSubConnections ([85ebb54](https://github.com/postalsys/emailengine/commit/85ebb54bae8d4d7321a7362bb20e570a149fe892))
+* refresh folder listing when a listed mailbox is missing on SELECT ([1e54d32](https://github.com/postalsys/emailengine/commit/1e54d32c1c74cb1f6d3d085a75d5b5ecc1cf5ff2))
+* require an exact path match in the missing-mailbox verification LIST ([54e23c4](https://github.com/postalsys/emailengine/commit/54e23c4f6f13d3d834348df4bf15cf11206dc58b))
+* reset IMAP reconnection backoff only after a successful sync ([7138dab](https://github.com/postalsys/emailengine/commit/7138dabab866483818440478d3584a46dfc8de12))
+* reset subconnection backoff only after the monitored mailbox is opened ([f2bf297](https://github.com/postalsys/emailengine/commit/f2bf297883c38f4d1f61197ae75bdd7ae3976a53))
+* resolve the mailbox sync promise when a concurrent operation already selected the mailbox ([7327dcc](https://github.com/postalsys/emailengine/commit/7327dcc9479a991881d3ddafdd0f36cc69e3411d))
+* resolve the mailbox sync promise when opening fails before the sync starts ([c2268af](https://github.com/postalsys/emailengine/commit/c2268af90bea13d5b804c0a84945801cd9d74e45))
+* retry transient account data load failures during reconnect ([7f18d4b](https://github.com/postalsys/emailengine/commit/7f18d4b16ccdfcfde77eb433530636b8657a354a))
+* revive missing-folder subconnections when the folder is re-created ([254fce4](https://github.com/postalsys/emailengine/commit/254fce4f0eca59bc52ed4a8235f581b8107b97a7))
+* scope the re-entrant open latch to the connection that emitted the event ([627b6ee](https://github.com/postalsys/emailengine/commit/627b6eeaf9ed493f6a4d81adcbe5b766eba54682))
+* skip mailboxes that can not be selected during account sync ([eaf09c1](https://github.com/postalsys/emailengine/commit/eaf09c1700eca77e27fada20371bad193e0665c8))
+* skip re-entrant mailbox open events while onOpen is already running ([6d06b09](https://github.com/postalsys/emailengine/commit/6d06b09c0c573a2f8ca554ba85c75d6b7be87002))
+* stop opening IMAP connections for accounts paused while connecting ([128aef3](https://github.com/postalsys/emailengine/commit/128aef3cf2b7f1485a2e3d291436e88183255c0e))
+* untrack bailed subconnection clients and harden the revival trigger ([086a585](https://github.com/postalsys/emailengine/commit/086a585541d3c6d751ebfbfc34f8f15397d51407))
+* untrack the IMAP client when connect() bails for a paused account ([cface66](https://github.com/postalsys/emailengine/commit/cface665f16d7ad00f7b657e07f3c3f77c3401ef))
+* update connection tracking when replacing a previous IMAP client ([8e143c2](https://github.com/postalsys/emailengine/commit/8e143c281d03d3d226e65eaae32eab96b1db0671))
+
 ## [2.72.3](https://github.com/postalsys/emailengine/compare/v2.72.2...v2.72.3) (2026-07-06)
 
 
