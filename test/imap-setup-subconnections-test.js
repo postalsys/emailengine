@@ -37,7 +37,8 @@ const MISSING_PLACEHOLDER = {
     path: 'Reports',
     disabled: true,
     state: 'disabled',
-    disabledReason: 'Mailbox folder not found'
+    disabledReason: 'Mailbox folder not found',
+    mailboxMissing: true
 };
 
 function makeClient({ listing, subconnections }) {
@@ -62,7 +63,7 @@ function makeFakeLive({ disabled } = {}) {
     const fakeLive = {
         path: 'Reports',
         state: disabled ? 'disabled' : 'connected',
-        ...(disabled ? { disabled: true, disabledReason: 'Mailbox folder not found' } : {}),
+        ...(disabled ? { disabled: true, disabledReason: 'Mailbox folder not found', mailboxMissing: true } : {}),
         close: () => calls.close++,
         removeAllListeners: () => calls.removeAllListeners++
     };
@@ -146,7 +147,7 @@ test('IMAPClient.setupSubConnections() reconciliation', async t => {
         assert.ok(!client.subconnections[0].disabled);
     });
 
-    await t.test('concurrent runs are single-flighted', async () => {
+    await t.test('concurrent runs are serialized and coalesced', async () => {
         const client = makeClient({
             listing: [{ path: 'INBOX', specialUse: '\\Inbox' }, { path: 'Reports' }],
             subconnections: [{ ...MISSING_PLACEHOLDER }]
@@ -159,13 +160,14 @@ test('IMAPClient.setupSubConnections() reconciliation', async t => {
             return loadAccountData(...args);
         };
 
-        // The second call lands while the first is awaiting account data and
-        // must bail instead of racing the shared subconnections array
+        // The second call lands while the first is awaiting account data. It
+        // must not race the shared subconnections array; instead the in-flight
+        // run executes one more pass with fresh state after it finishes
         const [first, second] = await Promise.all([client.setupSubConnections(), client.setupSubConnections()]);
 
-        assert.equal(loadCalls, 1, 'only one reconciliation run may execute');
-        assert.equal(first, 1, 'the first run must reconcile');
-        assert.equal(second, null, 'the overlapping run must bail out');
+        assert.equal(loadCalls, 2, 'the deferred request must run serially after the in-flight one');
+        assert.equal(first, 1, 'the first caller must receive the final reconciliation result');
+        assert.equal(second, null, 'the overlapping caller must bail out');
     });
 });
 

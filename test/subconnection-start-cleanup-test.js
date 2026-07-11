@@ -43,7 +43,7 @@ function makeFakePrevClient({ closeThrows } = {}) {
     return prev;
 }
 
-function makeSubconnection() {
+function makeSubconnection({ getImapConfig } = {}) {
     const hSetExistsCalls = [];
     const stopError = new Error('stop after cleanup');
 
@@ -55,7 +55,14 @@ function makeSubconnection() {
                 return 1;
             }
         },
-        getAccountKey: () => 'iad:test-account'
+        getAccountKey: () => 'iad:test-account',
+        // Mirrors IMAPClient.untrackConnection() - subconnections delegate
+        // their connection-count bookkeeping to the parent
+        untrackConnection: async imapClient => {
+            if (parent.connections.delete(imapClient)) {
+                await parent.redis.hSetExists(parent.getAccountKey(), 'connections', parent.connections.size.toString());
+            }
+        }
     };
 
     const subconnection = new Subconnection({
@@ -63,10 +70,12 @@ function makeSubconnection() {
         account: 'test-account',
         mailbox: { path: 'INBOX' },
         logger: noopLogger,
-        // Throwing here aborts start() right after the previous-client cleanup
-        getImapConfig: async () => {
-            throw stopError;
-        }
+        // The default throws to abort start() right after the previous-client cleanup
+        getImapConfig:
+            getImapConfig ||
+            (async () => {
+                throw stopError;
+            })
     });
 
     return { subconnection, parent, hSetExistsCalls, stopError };
@@ -101,6 +110,31 @@ test('Subconnection.start() previous client cleanup', async t => {
 
         assert.equal(parent.connections.has(prev), false);
         assert.equal(hSetExistsCalls.filter(args => args[1] === 'connections').length, 1);
+    });
+
+    await t.test('untracks the client when connect() bails after close()', async () => {
+        // start() registers the new client in parent connection tracking
+        // before connect() runs its isClosing/isClosed check. When close()
+        // lands during start()'s awaits, connect() bails without opening a
+        // socket, so the 'close' listener never fires - the bail path must
+        // drop the tracking entry itself
+        const { subconnection, parent, hSetExistsCalls } = makeSubconnection({
+            getImapConfig: async () => ({
+                host: '127.0.0.1',
+                port: 9993,
+                secure: false,
+                auth: { user: 'u', pass: 'p' }
+            })
+        });
+
+        // close() landed while start() was awaiting the IMAP config
+        subconnection.isClosed = true;
+
+        await subconnection.start();
+
+        assert.equal(parent.connections.size, 0, 'the bailed client must be dropped from parent connection tracking');
+        const counterWrites = hSetExistsCalls.filter(args => args[1] === 'connections');
+        assert.equal(counterWrites[counterWrites.length - 1][2], '0', 'the connection counter must be written back to zero');
     });
 });
 
