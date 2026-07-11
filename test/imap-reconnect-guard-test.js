@@ -116,6 +116,29 @@ test('IMAPClient.reconnect() guards', async t => {
         assert.strictEqual(startCalled(), false);
     });
 
+    // The 'error' event handler only schedules its debounced reconnection while
+    // this.reconnectTimer is unset, and only the timer callback ever nulls the
+    // field. close()/delete() used to clearTimeout() the handle but leave it
+    // assigned, so after pause()+resume() (which reuse the same instance) every
+    // later error event saw the stale truthy handle and skipped scheduling.
+    await t.test('close() drops the cleared reconnect timer handle', () => {
+        const { client } = stubbedClient();
+        client.reconnectTimer = setTimeout(() => {}, 60 * 1000).unref();
+
+        client.close();
+
+        assert.strictEqual(client.reconnectTimer, null, 'close() must drop the reconnect timer handle, not just clear it');
+    });
+
+    await t.test('delete() drops the cleared reconnect timer handle', async () => {
+        const { client } = stubbedClient();
+        client.reconnectTimer = setTimeout(() => {}, 60 * 1000).unref();
+
+        await client.delete();
+
+        assert.strictEqual(client.reconnectTimer, null, 'delete() must drop the reconnect timer handle, not just clear it');
+    });
+
     await t.test('a later reconnect attempt is not blocked by the failed one', async () => {
         const { client, startCalled } = stubbedClient();
         client.state = 'unset';
