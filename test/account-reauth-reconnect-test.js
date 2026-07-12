@@ -184,6 +184,53 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 0);
     });
 
+    await t.test('re-auth in error state without a call dispatcher does not crash (EMAILENGINE-4)', async () => {
+        // Regression: the IMAP worker builds its Account without a `call` channel. Before the fix
+        // the reconnect gate hit `this.call(...)` and threw "TypeError: this.call is not a function",
+        // which the try/catch turned into a handled error shipped to Sentry. A missing dispatcher
+        // must degrade to a warning, never an error, and must not reject.
+        let { ctx, calls } = createCtx({
+            account: 'acc7',
+            state: 'authenticationError',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        // Mirror the worker-constructed Account: no `call` method available.
+        delete ctx.call;
+        let errorLogged = false;
+        ctx.logger.error = () => {
+            errorLogged = true;
+        };
+
+        await assert.doesNotReject(
+            Account.prototype.update.call(ctx, {
+                account: 'acc7',
+                oauth2: { accessToken: 'NEW', refreshToken: 'R1' }
+            })
+        );
+
+        assert.strictEqual(calls.length, 0, 'no RPC should be attempted without a dispatcher');
+        assert.strictEqual(errorLogged, false, 'missing dispatcher must not be reported as an error');
+    });
+
+    await t.test('imap config change without a call dispatcher does not throw', async () => {
+        // The config-change branch dispatches cmd:update and has no try/catch, so a missing
+        // dispatcher there would throw uncaught. It must be guarded too.
+        let { ctx } = createCtx({
+            account: 'acc8',
+            state: 'connected',
+            imap: { host: 'old.example.com' }
+        });
+        delete ctx.call;
+
+        await assert.doesNotReject(
+            Account.prototype.update.call(ctx, {
+                account: 'acc8',
+                imap: { host: 'new.example.com' }
+            })
+        );
+    });
+
     await t.test('reconnect dispatch failure does not reject the update', async () => {
         // Credentials are already persisted by the time the reconnect is dispatched, so a failed
         // dispatch must be swallowed (logged) rather than surfaced as a 500 to the user.

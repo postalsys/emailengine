@@ -165,6 +165,9 @@ class ConnectionHandler {
             redis,
             account,
             secret,
+            // Needed so Account.update() can dispatch reconnect/update commands back to
+            // this worker (e.g. auto-reconnect after OAuth re-auth in an error state).
+            call: msg => this.call(msg),
             esClient: await getESClient(logger)
         });
 
