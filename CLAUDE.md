@@ -148,7 +148,9 @@ The API worker (`workers/api.js`) runs a Hapi.js HTTP server serving both the RE
 **Authentication:**
 - **API tokens**: Bearer token via `Authorization` header or `?access_token=` query param
 - **Sessions**: Cookie-based (`ee` cookie) for admin UI
-- **OAuth2**: Optional OKTA integration (`OKTA_OAUTH2_*` env vars)
+- **SSO (admin login)**: Two independent, env-var-only OAuth2/OIDC paths, both via `@hapi/bell`:
+  - **Okta** (`OKTA_OAUTH2_*`) - legacy, uses bell's built-in `okta` provider.
+  - **Generic OIDC** (`OIDC_*`) - Keycloak, Authentik, Azure AD/Entra, Google, etc. Endpoints come from the issuer's discovery document (`<issuer>/.well-known/openid-configuration`), fetched once at API-worker startup; if discovery fails the SSO button is hidden and password/passkey login still work (no crash). Optional `OIDC_ALLOWED_USERS` (comma-separated emails and/or `@domain` entries) gates who may sign in; empty means anyone the IdP authenticates. Config and helpers live in `lib/sso.js`; callback route `/admin/login/oidc`. SSO sessions bypass TOTP and cannot manage local password/passkeys (same as Okta).
 - **TOTP**: Optional two-factor authentication for admin login
 
 **Token scopes:** `api`, `metrics`, `smtp`, `imap-proxy`, `*` (all)

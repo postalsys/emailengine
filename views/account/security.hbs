@@ -124,15 +124,24 @@
                     <div class="col-4">
                         {{#if providers.okta}}
                         <span class="badge badge-success">Okta</span>
-                        {{else}}
-                        <span class="badge badge-light">Not configured</span>
                         {{/if}}
+                        {{#if providers.oidc}}
+                        <span class="badge badge-success">{{providers.oidc.name}}</span>
+                        {{/if}}
+                        {{#unless providers.any}}
+                        <span class="badge badge-light">Not configured</span>
+                        {{/unless}}
                     </div>
                     <div class="col-4 text-right">
                         <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#ssoInstructionsModal" title="Setting up SSO" id="sso-instructions"
+                            data-target="#ssoInstructionsModal" title="Setting up Okta SSO" id="sso-instructions"
                             data-placement="top">
-                            Setup guide
+                            Okta setup
+                        </button>
+                        <button type="button" class="btn btn-outline-primary mt-1" data-toggle="modal"
+                            data-target="#oidcInstructionsModal" title="Setting up OIDC SSO" id="oidc-instructions"
+                            data-placement="top">
+                            OIDC setup
                         </button>
                     </div>
                 </div>
@@ -303,6 +312,123 @@
                         </tr>
                     </tbody>
                 </table>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="oidcInstructionsModal" tabindex="-1" aria-labelledby="oidcInstructionsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="oidcInstructionsModalLabel">Configure Single Sign-On with OIDC</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <p>EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
+                    Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
+                    its discovery document (<code style="color:#333;">{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
+                    when EmailEngine starts.</p>
+
+                <ol>
+                    <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
+                        Redirect URI below</li>
+                    <li>Configure the required environment variables for EmailEngine</li>
+                    <li>Restart EmailEngine to apply the changes</li>
+                </ol>
+
+                <p><strong>Redirect URI for your OIDC client:</strong><br>
+                    <code style="color:#333;">{{serviceUrl}}/admin/login/oidc</code>
+                </p>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Environment variable</th>
+                            <th>Current value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th><code style="color:#333;">OIDC_ISSUER</code></th>
+                            <td>
+                                {{#if oidc.OIDC_ISSUER}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ISSUER}}</code>
+                                {{else}}
+                                Not configured (enter your OIDC issuer URL)
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_CLIENT_ID</code></th>
+                            <td>
+                                {{#if oidc.OIDC_CLIENT_ID}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_CLIENT_ID}}</code>
+                                {{else}}
+                                Not configured
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_CLIENT_SECRET</code></th>
+                            <td>
+                                {{#if oidc.OIDC_CLIENT_SECRET}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_CLIENT_SECRET}}</code>
+                                {{else}}
+                                Not configured
+                                {{/if}}
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_PROVIDER_NAME</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_PROVIDER_NAME}}</code>
+                                <br><small class="text-muted">Label shown on the sign-in button</small>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_ALLOWED_USERS</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                {{#if oidc.OIDC_ALLOWED_USERS}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ALLOWED_USERS}}</code>
+                                {{else}}
+                                Not set - anyone the identity provider authenticates can sign in
+                                {{/if}}
+                                <br><small class="text-muted">Comma-separated allow-list of emails and/or
+                                    <code style="color:#333;">@domain</code> entries</small>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="mb-1"><strong>Keycloak example</strong></p>
+                <ul>
+                    <li>Issuer: <code style="color:#333;">https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
+                    <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
+                    <li>Valid redirect URI: <code style="color:#333;">{{serviceUrl}}/admin/login/oidc</code></li>
+                </ul>
+
+                <p class="text-muted small mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
+                    prompted, and local password/passkey management is disabled for SSO sessions. Signing out clears the
+                    local EmailEngine session only; it does not end the session at your identity provider.</p>
 
             </div>
             <div class="modal-footer">

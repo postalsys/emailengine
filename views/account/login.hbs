@@ -44,17 +44,26 @@
 </div>
 {{/if}}
 
-{{#if providers.okta}}
+{{#if providers.any}}
 <div class="d-flex align-items-center my-3">
     <hr class="flex-grow-1">
     <span class="px-3 text-muted small">or</span>
     <hr class="flex-grow-1">
 </div>
+{{#if providers.okta}}
 <div class="mt-2">
     <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
         <i class="fas fa-sign-in-alt fa-sm fa-fw mr-2"></i>Sign in with Okta SSO
     </a>
 </div>
+{{/if}}
+{{#if providers.oidc}}
+<div class="mt-2">
+    <a href="/admin/login/oidc" class="btn btn-primary btn-user btn-block">
+        <i class="fas fa-sign-in-alt fa-sm fa-fw mr-2"></i>Sign in with {{providers.oidc.name}}
+    </a>
+</div>
+{{/if}}
 {{/if}}
 
 <hr>

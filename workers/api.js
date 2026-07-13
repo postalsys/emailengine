@@ -73,6 +73,8 @@ const settings = require('../lib/settings');
 const getSecret = require('../lib/get-secret');
 const { getESClient, documentStoreFeatureEnabled } = require('../lib/document-store');
 
+const sso = require('../lib/sso');
+
 const routesUi = require('../lib/routes-ui');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
@@ -184,6 +186,12 @@ const OKTA_OAUTH2_CLIENT_SECRET = readEnvValue('OKTA_OAUTH2_CLIENT_SECRET');
 
 const OKTA_BASE_URL = OKTA_OAUTH2_ISSUER ? new URL(OKTA_OAUTH2_ISSUER).origin : null;
 const USE_OKTA_AUTH = !!(OKTA_OAUTH2_ISSUER && OKTA_OAUTH2_CLIENT_ID && OKTA_OAUTH2_CLIENT_SECRET);
+
+// Generic OIDC SSO (Keycloak, Authentik, Azure AD/Entra, Google, ...). Config lives
+// in lib/sso.js; the allow-list is parsed once here and consulted both in the
+// session validate() and in the /admin/login/oidc callback.
+const USE_OIDC_AUTH = sso.USE_OIDC_AUTH;
+const oidcAllowList = sso.parseAllowList(sso.OIDC_ALLOWED_USERS);
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -1285,14 +1293,29 @@ Include your token in requests using one of these methods:
 
         async validate(request, session) {
             switch (session.provider) {
-                case 'okta': {
+                case 'okta':
+                case 'oidc': {
                     if (session.profile && session.profile.id) {
                         let profile = session.profile;
+
+                        // Re-check the OIDC allow-list on every request so removing a user from
+                        // OIDC_ALLOWED_USERS (after a restart) takes effect without waiting out
+                        // the existing session cookie. Okta has no allow-list.
+                        if (session.provider === 'oidc' && !sso.isAllowedUser(profile, oidcAllowList)) {
+                            return { isValid: false };
+                        }
+
                         return {
                             isValid: true,
                             credentials: {
                                 enabled: true,
                                 user: profile.username
+                            },
+                            // Expose the SSO provider on artifacts so the "SSO users can't manage
+                            // local password/TOTP/passkeys" guards in the UI routes fire.
+                            artifacts: {
+                                provider: session.provider,
+                                profile
                             }
                         };
                     }
@@ -1380,6 +1403,89 @@ Include your token in requests using one of these methods:
                 }
             }
         });
+    }
+
+    if (USE_OIDC_AUTH) {
+        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+
+        // Fetch the discovery document once at startup. bell needs static auth/token
+        // URLs at strategy-registration time, so this must precede registration. A
+        // failure here (IdP outage/misconfig) must NOT take EmailEngine down - password
+        // and passkey login plus the REST API have to keep working - so we log a
+        // prominent error, leave the strategy unregistered, and disable the SSO button.
+        let oidcDiscovery = null;
+        try {
+            oidcDiscovery = await sso.fetchOidcDiscovery();
+        } catch (err) {
+            logger.error({ msg: 'OIDC SSO disabled: discovery failed', issuer: sso.OIDC_ISSUER, err });
+        }
+
+        // Registered unconditionally so the login/security views can call it; returns
+        // false when discovery failed or the serviceUrl origin drifted from startup.
+        server.decorate('toolkit', 'validateOidcConfig', async () => {
+            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+            return !!oidcDiscovery && activeRedirectUrl.origin === redirectUrl.origin && USE_OIDC_AUTH;
+        });
+
+        if (oidcDiscovery) {
+            server.auth.strategy('oidc', 'bell', {
+                provider: sso.buildOidcBellProvider(oidcDiscovery),
+                password: await settings.get('cookiePassword'),
+                isSecure: secureCookie,
+                location: redirectUrl.origin,
+
+                clientId: sso.OIDC_CLIENT_ID,
+                clientSecret: sso.OIDC_CLIENT_SECRET
+            });
+
+            server.route({
+                method: ['GET', 'POST'],
+                path: '/admin/login/oidc',
+                async handler(request, h) {
+                    if (!request.auth.isAuthenticated) {
+                        let error = Boom.unauthorized('Failed to authorize user');
+                        error.output.payload.details = [request.auth.error.message];
+                        throw error;
+                    }
+
+                    let profile = (request.auth.credentials && request.auth.credentials.profile) || {};
+
+                    // Enforce the optional allow-list before establishing the session.
+                    if (!sso.isAllowedUser(profile, oidcAllowList)) {
+                        request.logger.warn({
+                            msg: 'OIDC login denied by allow-list',
+                            user: profile.username || profile.email || 'unknown',
+                            method: 'oidc',
+                            remoteAddress: request.app.ip
+                        });
+                        await request.flash({ type: 'danger', message: 'Your account is not authorized to access this admin panel' });
+                        return h.redirect('/admin/login');
+                    }
+
+                    // Store only the minimal profile - not the full bell credentials. OIDC
+                    // access/refresh tokens (e.g. Keycloak JWTs) can push the iron-sealed
+                    // `ee` cookie past the ~4KB browser limit and cause a silent login loop.
+                    request.cookieAuth.set({
+                        provider: 'oidc',
+                        profile: {
+                            id: profile.id,
+                            username: profile.username,
+                            displayName: profile.displayName,
+                            email: profile.email
+                        }
+                    });
+
+                    request.logger.info({ msg: 'Admin login successful', user: profile.username || 'unknown', method: 'oidc', remoteAddress: request.app.ip });
+                    return h.redirect('/admin');
+                },
+                options: {
+                    auth: {
+                        mode: 'try',
+                        strategy: 'oidc'
+                    }
+                }
+            });
+        }
     }
 
     const authData = await settings.get('authData');
@@ -2823,6 +2929,17 @@ Include your token in requests using one of these methods:
                                 .concat(profile.firstName || [])
                                 .concat(profile.lastName || [])
                                 .join(' ') || profile.username,
+                        enabled: !!profile.username,
+                        isAdmin: false
+                    };
+                    break;
+                }
+
+                case 'oidc': {
+                    let profile = request.auth.artifacts.profile || {};
+                    authData = {
+                        user: profile.username,
+                        name: profile.displayName || profile.username,
                         enabled: !!profile.username,
                         isAdmin: false
                     };
