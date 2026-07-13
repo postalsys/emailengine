@@ -442,6 +442,25 @@
                                     <code style="color:#333;">realm_access.roles</code></small>
                             </td>
                         </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_FORCED</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_FORCED}}</code>
+                                <br><small class="text-muted">When true, the login page redirects straight to the identity
+                                    provider and local password/passkey sign-in is disabled. If discovery fails at
+                                    startup the local form is shown as a fallback.</small>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_LOGOUT</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_LOGOUT}}</code>
+                                <br><small class="text-muted">When true, signing out also ends the identity-provider session
+                                    (RP-initiated logout via the end_session endpoint).</small>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -453,11 +472,15 @@
                     <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
                         <code style="color:#333;">groups</code>, "Add to userinfo" enabled), then set
                         <code style="color:#333;">OIDC_ALLOWED_GROUPS</code></li>
+                    <li>For <code style="color:#333;">OIDC_LOGOUT</code>: add
+                        <code style="color:#333;">{{serviceUrl}}/admin/login</code> to the client's Valid post logout
+                        redirect URIs</li>
                 </ul>
 
                 <p class="text-muted small mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
-                    prompted, and local password/passkey management is disabled for SSO sessions. Signing out clears the
-                    local EmailEngine session only; it does not end the session at your identity provider.</p>
+                    prompted, and local password/passkey management is disabled for SSO sessions. With
+                    <code style="color:#333;">OIDC_LOGOUT</code> off, signing out clears only the local EmailEngine
+                    session, not the identity-provider session.</p>
 
             </div>
             <div class="modal-footer">

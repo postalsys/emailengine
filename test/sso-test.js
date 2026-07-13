@@ -205,6 +205,35 @@ test('mapUserinfoProfile', async t => {
     });
 });
 
+test('buildLogoutUrl', async t => {
+    const endpoint = 'https://idp.example.com/realms/main/protocol/openid-connect/logout';
+
+    await t.test('returns null without an endpoint', () => {
+        assert.equal(sso.buildLogoutUrl(null, { idToken: 'x' }), null);
+        assert.equal(sso.buildLogoutUrl('', {}), null);
+    });
+
+    await t.test('includes id_token_hint, client_id and post_logout_redirect_uri', () => {
+        const url = new URL(
+            sso.buildLogoutUrl(endpoint, {
+                idToken: 'tok123',
+                clientId: 'emailengine',
+                postLogoutRedirectUri: 'https://app.example.com/admin/login?loggedout=1'
+            })
+        );
+        assert.equal(url.origin + url.pathname, endpoint);
+        assert.equal(url.searchParams.get('id_token_hint'), 'tok123');
+        assert.equal(url.searchParams.get('client_id'), 'emailengine');
+        assert.equal(url.searchParams.get('post_logout_redirect_uri'), 'https://app.example.com/admin/login?loggedout=1');
+    });
+
+    await t.test('omits id_token_hint when no id token is available', () => {
+        const url = new URL(sso.buildLogoutUrl(endpoint, { clientId: 'emailengine' }));
+        assert.equal(url.searchParams.has('id_token_hint'), false);
+        assert.equal(url.searchParams.get('client_id'), 'emailengine');
+    });
+});
+
 test('buildOidcBellProvider', async t => {
     const doc = {
         issuer: 'https://idp.example.com',

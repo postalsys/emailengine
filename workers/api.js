@@ -1314,10 +1314,12 @@ Include your token in requests using one of these methods:
                                 user: profile.username
                             },
                             // Expose the SSO provider on artifacts so the "SSO users can't manage
-                            // local password/TOTP/passkeys" guards in the UI routes fire.
+                            // local password/TOTP/passkeys" guards in the UI routes fire. idToken is
+                            // carried for OIDC RP-initiated logout (undefined for Okta).
                             artifacts: {
                                 provider: session.provider,
-                                profile
+                                profile,
+                                idToken: session.idToken
                             }
                         };
                     }
@@ -1429,6 +1431,22 @@ Include your token in requests using one of these methods:
             return !!oidcDiscovery && activeRedirectUrl.origin === redirectUrl.origin && USE_OIDC_AUTH;
         });
 
+        // RP-initiated logout URL for the /admin/logout handler. Returns null unless
+        // OIDC_LOGOUT is enabled and the IdP advertised an end_session_endpoint. The
+        // post-logout landing is the login page with a ?loggedout marker so a forced
+        // instance shows a "signed out" screen instead of bouncing straight back in.
+        server.decorate('toolkit', 'oidcLogoutUrl', async idToken => {
+            if (!sso.OIDC_LOGOUT || !oidcDiscovery || !oidcDiscovery.end_session_endpoint) {
+                return null;
+            }
+            let serviceUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+            return sso.buildLogoutUrl(oidcDiscovery.end_session_endpoint, {
+                idToken,
+                clientId: sso.OIDC_CLIENT_ID,
+                postLogoutRedirectUri: new URL('/admin/login?loggedout=1', serviceUrl.origin).toString()
+            });
+        });
+
         if (oidcDiscovery) {
             server.auth.strategy('oidc', 'bell', {
                 provider: sso.buildOidcBellProvider(oidcDiscovery),
@@ -1462,13 +1480,16 @@ Include your token in requests using one of these methods:
                             remoteAddress: request.app.ip
                         });
                         await request.flash({ type: 'danger', message: 'Your account is not authorized to access this admin panel' });
-                        return h.redirect('/admin/login');
+                        // ?sso_denied=1 stops a forced instance from auto-redirecting back into the
+                        // OIDC flow before the user can see the error.
+                        return h.redirect('/admin/login?sso_denied=1');
                     }
 
                     // Store only the minimal profile - not the full bell credentials. OIDC
                     // access/refresh tokens (e.g. Keycloak JWTs) can push the iron-sealed
                     // `ee` cookie past the ~4KB browser limit and cause a silent login loop.
-                    // Group names are kept so the per-request authorization re-check works.
+                    // Group names are kept so the per-request authorization re-check works;
+                    // the id_token is kept only as the logout id_token_hint (RP-initiated logout).
                     request.cookieAuth.set({
                         provider: 'oidc',
                         profile: {
@@ -1477,7 +1498,8 @@ Include your token in requests using one of these methods:
                             displayName: profile.displayName,
                             email: profile.email,
                             groups: profile.groups
-                        }
+                        },
+                        idToken: (request.auth.artifacts && request.auth.artifacts.id_token) || null
                     });
 
                     request.logger.info({ msg: 'Admin login successful', user: profile.username || 'unknown', method: 'oidc', remoteAddress: request.app.ip });

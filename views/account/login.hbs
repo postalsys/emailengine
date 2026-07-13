@@ -1,6 +1,12 @@
 <div class="text-center">
     <h1 class="h4 text-gray-900 mb-4">Sign in to EmailEngine</h1>
 </div>
+
+{{#if loggedOut}}
+<div class="alert alert-info text-center" role="alert">You have been signed out.</div>
+{{/if}}
+
+{{#unless forceLogin}}
 <form class="user" method="post" action="/admin/login">
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="next" value="{{values.next}}" />
@@ -43,13 +49,16 @@
     <div id="passkey-error" class="text-danger small mt-2 text-center" style="display:none;"></div>
 </div>
 {{/if}}
+{{/unless}}
 
 {{#if providers.any}}
+{{#unless forceLogin}}
 <div class="d-flex align-items-center my-3">
     <hr class="flex-grow-1">
     <span class="px-3 text-muted small">or</span>
     <hr class="flex-grow-1">
 </div>
+{{/unless}}
 {{#if providers.okta}}
 <div class="mt-2">
     <a href="/admin/login/okta" class="btn btn-primary btn-user btn-block">
@@ -66,8 +75,10 @@
 {{/if}}
 {{/if}}
 
+{{#unless forceLogin}}
 <hr>
 <div class="text-center">
     <a class="small" href="https://emailengine.app/reset-password" target="_blank" rel="noopener noreferrer"
         referrerpolicy="no-referrer">Forgot your password?</a>
 </div>
+{{/unless}}
