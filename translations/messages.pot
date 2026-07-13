@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-10 09:25+0000\n"
+"POT-Creation-Date: 2026-07-13 13:14+0000\n"
 
 #: views/error.hbs:4
-#: workers/api.js:3028
+#: workers/api.js:3172
 msgid "Something went wrong"
 msgstr ""
 
@@ -279,8 +279,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:785
 #: lib/ui-routes/account-routes.js:1043
 #: lib/ui-routes/account-routes.js:1135
-#: workers/api.js:2203
-#: workers/api.js:2557
+#: workers/api.js:2336
+#: workers/api.js:2690
 msgid "Email Account Setup"
 msgstr ""
 
@@ -401,7 +401,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:3027
-#: workers/api.js:3142
+#: workers/api.js:3171
+#: workers/api.js:3286
 msgid "Requested page not found"
 msgstr ""
