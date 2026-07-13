@@ -461,6 +461,22 @@
                                     (RP-initiated logout via the end_session endpoint).</small>
                             </td>
                         </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_POST_LOGOUT_REDIRECT_URI</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                {{#if oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}</code>
+                                {{else}}
+                                Not set - the identity provider shows its own logged-out page
+                                {{/if}}
+                                <br><small class="text-muted">Where the IdP returns after logout (must be a registered post
+                                    logout redirect URI). Point it at
+                                    <code style="color:#333;">{{serviceUrl}}/admin/login?loggedout=1</code> for an in-app
+                                    signed-out screen.</small>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -472,9 +488,9 @@
                     <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
                         <code style="color:#333;">groups</code>, "Add to userinfo" enabled), then set
                         <code style="color:#333;">OIDC_ALLOWED_GROUPS</code></li>
-                    <li>For <code style="color:#333;">OIDC_LOGOUT</code>: add
-                        <code style="color:#333;">{{serviceUrl}}/admin/login</code> to the client's Valid post logout
-                        redirect URIs</li>
+                    <li>For return-to-app after logout (optional): set
+                        <code style="color:#333;">OIDC_POST_LOGOUT_REDIRECT_URI</code> and add that URL to the client's
+                        Valid post logout redirect URIs</li>
                 </ul>
 
                 <p class="text-muted small mb-0">Note: signing in via SSO is a standalone factor - TOTP is not

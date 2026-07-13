@@ -1432,18 +1432,18 @@ Include your token in requests using one of these methods:
         });
 
         // RP-initiated logout URL for the /admin/logout handler. Returns null unless
-        // OIDC_LOGOUT is enabled and the IdP advertised an end_session_endpoint. The
-        // post-logout landing is the login page with a ?loggedout marker so a forced
-        // instance shows a "signed out" screen instead of bouncing straight back in.
-        server.decorate('toolkit', 'oidcLogoutUrl', async idToken => {
+        // OIDC_LOGOUT is enabled and the IdP advertised an end_session_endpoint.
+        // post_logout_redirect_uri is only sent when OIDC_POST_LOGOUT_REDIRECT_URI is
+        // configured (and registered at the IdP); otherwise the IdP shows its own
+        // logged-out page, so logout needs no IdP-side configuration.
+        server.decorate('toolkit', 'oidcLogoutUrl', idToken => {
             if (!sso.OIDC_LOGOUT || !oidcDiscovery || !oidcDiscovery.end_session_endpoint) {
                 return null;
             }
-            let serviceUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
             return sso.buildLogoutUrl(oidcDiscovery.end_session_endpoint, {
                 idToken,
                 clientId: sso.OIDC_CLIENT_ID,
-                postLogoutRedirectUri: new URL('/admin/login?loggedout=1', serviceUrl.origin).toString()
+                postLogoutRedirectUri: sso.OIDC_POST_LOGOUT_REDIRECT_URI || undefined
             });
         });
 
