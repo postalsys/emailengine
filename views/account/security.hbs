@@ -410,10 +410,36 @@
                                 <code
                                     style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ALLOWED_USERS}}</code>
                                 {{else}}
-                                Not set - anyone the identity provider authenticates can sign in
+                                Not set
                                 {{/if}}
                                 <br><small class="text-muted">Comma-separated allow-list of emails and/or
                                     <code style="color:#333;">@domain</code> entries</small>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_ALLOWED_GROUPS</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                {{#if oidc.OIDC_ALLOWED_GROUPS}}
+                                <code
+                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ALLOWED_GROUPS}}</code>
+                                {{else}}
+                                Not set
+                                {{/if}}
+                                <br><small class="text-muted">Comma-separated group names. A user is allowed if their
+                                    email matches <code style="color:#333;">OIDC_ALLOWED_USERS</code> OR they belong to
+                                    one of these groups. When both are empty, anyone the identity provider authenticates
+                                    can sign in.</small>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th><code style="color:#333;">OIDC_GROUPS_CLAIM</code><br><small class="text-muted">optional</small></th>
+                            <td>
+                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_GROUPS_CLAIM}}</code>
+                                <br><small class="text-muted">userinfo claim that carries group membership (default
+                                    <code style="color:#333;">groups</code>); may be a dotted path such as
+                                    <code style="color:#333;">realm_access.roles</code></small>
                             </td>
                         </tr>
                     </tbody>
@@ -424,6 +450,9 @@
                     <li>Issuer: <code style="color:#333;">https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
                     <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
                     <li>Valid redirect URI: <code style="color:#333;">{{serviceUrl}}/admin/login/oidc</code></li>
+                    <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
+                        <code style="color:#333;">groups</code>, "Add to userinfo" enabled), then set
+                        <code style="color:#333;">OIDC_ALLOWED_GROUPS</code></li>
                 </ul>
 
                 <p class="text-muted small mb-0">Note: signing in via SSO is a standalone factor - TOTP is not

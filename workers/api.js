@@ -188,10 +188,11 @@ const OKTA_BASE_URL = OKTA_OAUTH2_ISSUER ? new URL(OKTA_OAUTH2_ISSUER).origin : 
 const USE_OKTA_AUTH = !!(OKTA_OAUTH2_ISSUER && OKTA_OAUTH2_CLIENT_ID && OKTA_OAUTH2_CLIENT_SECRET);
 
 // Generic OIDC SSO (Keycloak, Authentik, Azure AD/Entra, Google, ...). Config lives
-// in lib/sso.js; the allow-list is parsed once here and consulted both in the
-// session validate() and in the /admin/login/oidc callback.
+// in lib/sso.js; the email and group allow-lists are parsed once here and consulted
+// both in the session validate() and in the /admin/login/oidc callback.
 const USE_OIDC_AUTH = sso.USE_OIDC_AUTH;
 const oidcAllowList = sso.parseAllowList(sso.OIDC_ALLOWED_USERS);
+const oidcAllowGroups = sso.parseGroupList(sso.OIDC_ALLOWED_GROUPS);
 
 const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.service.commandTimeout) || DEFAULT_EENGINE_TIMEOUT;
 const MAX_ATTACHMENT_SIZE = getByteSize(readEnvValue('EENGINE_MAX_SIZE') || config.api.maxSize) || DEFAULT_MAX_ATTACHMENT_SIZE;
@@ -1298,10 +1299,11 @@ Include your token in requests using one of these methods:
                     if (session.profile && session.profile.id) {
                         let profile = session.profile;
 
-                        // Re-check the OIDC allow-list on every request so removing a user from
-                        // OIDC_ALLOWED_USERS (after a restart) takes effect without waiting out
-                        // the existing session cookie. Okta has no allow-list.
-                        if (session.provider === 'oidc' && !sso.isAllowedUser(profile, oidcAllowList)) {
+                        // Re-check OIDC authorization (email + group allow-lists) on every request
+                        // so changes to OIDC_ALLOWED_USERS/OIDC_ALLOWED_GROUPS (after a restart)
+                        // take effect without waiting out the existing session cookie. Okta has no
+                        // allow-list.
+                        if (session.provider === 'oidc' && !sso.isAuthorized(profile, oidcAllowList, oidcAllowGroups)) {
                             return { isValid: false };
                         }
 
@@ -1450,11 +1452,12 @@ Include your token in requests using one of these methods:
 
                     let profile = (request.auth.credentials && request.auth.credentials.profile) || {};
 
-                    // Enforce the optional allow-list before establishing the session.
-                    if (!sso.isAllowedUser(profile, oidcAllowList)) {
+                    // Enforce the optional email/group allow-lists before establishing the session.
+                    if (!sso.isAuthorized(profile, oidcAllowList, oidcAllowGroups)) {
                         request.logger.warn({
                             msg: 'OIDC login denied by allow-list',
                             user: profile.username || profile.email || 'unknown',
+                            groups: profile.groups,
                             method: 'oidc',
                             remoteAddress: request.app.ip
                         });
@@ -1465,13 +1468,15 @@ Include your token in requests using one of these methods:
                     // Store only the minimal profile - not the full bell credentials. OIDC
                     // access/refresh tokens (e.g. Keycloak JWTs) can push the iron-sealed
                     // `ee` cookie past the ~4KB browser limit and cause a silent login loop.
+                    // Group names are kept so the per-request authorization re-check works.
                     request.cookieAuth.set({
                         provider: 'oidc',
                         profile: {
                             id: profile.id,
                             username: profile.username,
                             displayName: profile.displayName,
-                            email: profile.email
+                            email: profile.email,
+                            groups: profile.groups
                         }
                     });
 

@@ -51,35 +51,83 @@ test('parseAllowList', async t => {
     });
 });
 
-test('isAllowedUser', async t => {
-    await t.test('empty allow-list allows everyone', () => {
-        assert.equal(sso.isAllowedUser({ email: 'anyone@example.com' }, []), true);
-        assert.equal(sso.isAllowedUser({}, []), true);
-        assert.equal(sso.isAllowedUser({ email: 'anyone@example.com' }, null), true);
+test('parseGroupList', async t => {
+    await t.test('empty inputs yield empty list', () => {
+        assert.deepEqual(sso.parseGroupList(''), []);
+        assert.deepEqual(sso.parseGroupList(null), []);
+        assert.deepEqual(sso.parseGroupList(undefined), []);
     });
 
-    await t.test('exact email match (case-insensitive)', () => {
-        const list = sso.parseAllowList('alice@example.com');
-        assert.equal(sso.isAllowedUser({ email: 'Alice@Example.com' }, list), true);
-        assert.equal(sso.isAllowedUser({ email: 'bob@example.com' }, list), false);
+    await t.test('trims, strips leading slashes, drops empties (case preserved)', () => {
+        assert.deepEqual(sso.parseGroupList(' /emailengine-admins , Ops ,, //Nested '), ['emailengine-admins', 'Ops', 'Nested']);
+    });
+});
+
+test('extractGroups', async t => {
+    await t.test('reads a top-level groups array and normalizes', () => {
+        assert.deepEqual(sso.extractGroups({ groups: ['/emailengine-admins', 'Ops'] }, 'groups'), ['emailengine-admins', 'Ops']);
     });
 
-    await t.test('domain match', () => {
-        const list = sso.parseAllowList('@corp.example.com');
-        assert.equal(sso.isAllowedUser({ email: 'anyone@corp.example.com' }, list), true);
-        assert.equal(sso.isAllowedUser({ email: 'anyone@other.example.com' }, list), false);
+    await t.test('defaults to the "groups" claim', () => {
+        assert.deepEqual(sso.extractGroups({ groups: ['a'] }), ['a']);
+    });
+
+    await t.test('accepts a single string value', () => {
+        assert.deepEqual(sso.extractGroups({ groups: '/solo' }, 'groups'), ['solo']);
+    });
+
+    await t.test('supports a dotted claim path', () => {
+        assert.deepEqual(sso.extractGroups({ realm_access: { roles: ['admin', 'user'] } }, 'realm_access.roles'), ['admin', 'user']);
+    });
+
+    await t.test('missing claim yields empty array', () => {
+        assert.deepEqual(sso.extractGroups({}, 'groups'), []);
+        assert.deepEqual(sso.extractGroups({ realm_access: {} }, 'realm_access.roles'), []);
+        assert.deepEqual(sso.extractGroups(null, 'groups'), []);
+    });
+
+    await t.test('ignores non-string entries', () => {
+        assert.deepEqual(sso.extractGroups({ groups: ['ok', 42, null, { x: 1 }] }, 'groups'), ['ok']);
+    });
+});
+
+test('isAuthorized', async t => {
+    const emails = sso.parseAllowList('alice@example.com, @corp.example.com');
+    const groups = sso.parseGroupList('emailengine-admins');
+
+    await t.test('no constraints allows everyone', () => {
+        assert.equal(sso.isAuthorized({ email: 'anyone@example.com' }, [], []), true);
+        assert.equal(sso.isAuthorized({}, null, null), true);
+    });
+
+    await t.test('email allow-list: exact and domain match (case-insensitive)', () => {
+        assert.equal(sso.isAuthorized({ email: 'Alice@Example.com' }, emails, []), true);
+        assert.equal(sso.isAuthorized({ email: 'someone@corp.example.com' }, emails, []), true);
+        assert.equal(sso.isAuthorized({ email: 'bob@other.com' }, emails, []), false);
     });
 
     await t.test('falls back to username when email is absent', () => {
-        const list = sso.parseAllowList('@corp.example.com');
-        assert.equal(sso.isAllowedUser({ username: 'anyone@corp.example.com' }, list), true);
+        assert.equal(sso.isAuthorized({ username: 'someone@corp.example.com' }, emails, []), true);
     });
 
-    await t.test('non-empty list with no usable identifier denies', () => {
-        const list = sso.parseAllowList('alice@example.com');
-        assert.equal(sso.isAllowedUser({}, list), false);
-        assert.equal(sso.isAllowedUser({ email: '' }, list), false);
-        assert.equal(sso.isAllowedUser(null, list), false);
+    await t.test('group allow-list matches on membership (slash-insensitive)', () => {
+        assert.equal(sso.isAuthorized({ email: 'x@nope.com', groups: ['/emailengine-admins'] }, [], groups), true);
+        assert.equal(sso.isAuthorized({ email: 'x@nope.com', groups: ['other'] }, [], groups), false);
+        assert.equal(sso.isAuthorized({ email: 'x@nope.com' }, [], groups), false);
+    });
+
+    await t.test('email OR group: matching either grants access', () => {
+        // email fails, group passes
+        assert.equal(sso.isAuthorized({ email: 'bob@other.com', groups: ['emailengine-admins'] }, emails, groups), true);
+        // group fails, email passes
+        assert.equal(sso.isAuthorized({ email: 'alice@example.com', groups: ['nope'] }, emails, groups), true);
+        // neither matches
+        assert.equal(sso.isAuthorized({ email: 'bob@other.com', groups: ['nope'] }, emails, groups), false);
+    });
+
+    await t.test('non-empty constraints with no usable identity denies', () => {
+        assert.equal(sso.isAuthorized({}, emails, groups), false);
+        assert.equal(sso.isAuthorized(null, emails, groups), false);
     });
 });
 
@@ -130,12 +178,13 @@ test('validateDiscoveryDocument', async t => {
 });
 
 test('mapUserinfoProfile', async t => {
-    await t.test('maps standard claims', () => {
-        assert.deepEqual(sso.mapUserinfoProfile({ sub: 'abc', email: 'alice@example.com', name: 'Alice A' }), {
+    await t.test('maps standard claims and groups', () => {
+        assert.deepEqual(sso.mapUserinfoProfile({ sub: 'abc', email: 'alice@example.com', name: 'Alice A', groups: ['/ops'] }, 'groups'), {
             id: 'abc',
             username: 'alice@example.com',
             displayName: 'Alice A',
-            email: 'alice@example.com'
+            email: 'alice@example.com',
+            groups: ['ops']
         });
     });
 
@@ -152,7 +201,7 @@ test('mapUserinfoProfile', async t => {
     });
 
     await t.test('tolerates empty input', () => {
-        assert.deepEqual(sso.mapUserinfoProfile(), { id: undefined, username: undefined, displayName: undefined, email: undefined });
+        assert.deepEqual(sso.mapUserinfoProfile(), { id: undefined, username: undefined, displayName: undefined, email: undefined, groups: [] });
     });
 });
 
@@ -180,12 +229,12 @@ test('buildOidcBellProvider', async t => {
         assert.deepEqual(provider.scope, ['openid', 'profile', 'groups']);
     });
 
-    await t.test('profile() fetches userinfo and maps it onto credentials', async () => {
+    await t.test('profile() fetches userinfo and maps it (incl. groups) onto credentials', async () => {
         const provider = sso.buildOidcBellProvider(doc);
         let requestedUrl = null;
         const get = async url => {
             requestedUrl = url;
-            return { sub: 'abc', email: 'alice@example.com', name: 'Alice A' };
+            return { sub: 'abc', email: 'alice@example.com', name: 'Alice A', groups: ['/emailengine-admins'] };
         };
         const credentials = {};
         await provider.profile(credentials, {}, get);
@@ -194,7 +243,16 @@ test('buildOidcBellProvider', async t => {
             id: 'abc',
             username: 'alice@example.com',
             displayName: 'Alice A',
-            email: 'alice@example.com'
+            email: 'alice@example.com',
+            groups: ['emailengine-admins']
         });
+    });
+
+    await t.test('profile() honors a custom groupsClaim (dotted path)', async () => {
+        const provider = sso.buildOidcBellProvider(doc, { groupsClaim: 'realm_access.roles' });
+        const get = async () => ({ sub: 'abc', realm_access: { roles: ['admin'] } });
+        const credentials = {};
+        await provider.profile(credentials, {}, get);
+        assert.deepEqual(credentials.profile.groups, ['admin']);
     });
 });
