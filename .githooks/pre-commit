@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: auto-format staged JavaScript with Prettier.
+#
+# Mirrors the file set covered by `npm run format` (lib/, workers/, test/, and
+# top-level *.js); Prettier additionally applies .prettierignore. Installed via the
+# "prepare" npm script, which points core.hooksPath at .githooks on `npm install`.
+#
+# Behavior:
+#   - Fully-staged files are formatted in place and re-added to the index, so the
+#     commit records the formatted result.
+#   - Files that are staged AND still have unstaged changes are only *checked*,
+#     never rewritten: formatting and re-adding them would sweep unrelated unstaged
+#     hunks into the commit. If such a file is unformatted, the commit is aborted.
+
+set -u
+
+repo_root=$(git rev-parse --show-toplevel) || exit 0
+cd "$repo_root" || exit 0
+
+prettier="./node_modules/.bin/prettier"
+if [ ! -x "$prettier" ]; then
+    echo "pre-commit: Prettier not found ($prettier) - skipping format (run 'npm install')." >&2
+    exit 0
+fi
+
+# True for paths inside the format-covered set, matching *.js. Case patterns match
+# '/' with '*', so lib/*.js also covers nested files; the */* arm excludes anything
+# outside the covered directories, leaving top-level *.js to the last arm.
+is_covered() {
+    case "$1" in
+        lib/*.js | workers/*.js | test/*.js) return 0 ;;
+        */*) return 1 ;;
+        *.js) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+to_format=()
+to_check=()
+while IFS= read -r -d '' f; do
+    is_covered "$f" || continue
+    # `git diff --quiet` compares the working tree to the index for this path:
+    # exit 0 => no unstaged changes (safe to format+re-add), non-zero => partial.
+    if git diff --quiet -- "$f"; then
+        to_format+=("$f")
+    else
+        to_check+=("$f")
+    fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z -- '*.js')
+
+if [ ${#to_format[@]} -eq 0 ] && [ ${#to_check[@]} -eq 0 ]; then
+    exit 0
+fi
+
+status=0
+
+if [ ${#to_check[@]} -gt 0 ]; then
+    if ! "$prettier" --check "${to_check[@]}"; then
+        {
+            echo ""
+            echo "pre-commit: the staged file(s) above have additional unstaged changes and are not formatted."
+            echo "They were left untouched to avoid committing unstaged hunks. Run:"
+            echo "    npm run format"
+            echo "then re-stage and commit."
+        } >&2
+        status=1
+    fi
+fi
+
+if [ ${#to_format[@]} -gt 0 ]; then
+    if "$prettier" --write "${to_format[@]}"; then
+        git add -- "${to_format[@]}"
+    else
+        echo "pre-commit: Prettier failed on staged files." >&2
+        status=1
+    fi
+fi
+
+exit $status

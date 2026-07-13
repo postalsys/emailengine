@@ -6,6 +6,7 @@
     "description": "Email Sync Engine",
     "main": "server.js",
     "scripts": {
+        "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
         "start": "node server.js",
         "dev": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true node --tls-keylog=keylog.txt server --dbs.redis='redis://127.0.0.1:6379/9' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.dev.txt  | pino-pretty",
         "single": "EE_OPENAPI_VERBOSE=true EENGINE_LOG_RAW=true EENGINE_SECRET=your-encryption-key EENGINE_WORKERS=1 node --inspect server --dbs.redis='redis://127.0.0.1:6379/6' --api.port=7003 --api.host=0.0.0.0 | tee $HOME/ee.log.single.txt | pino-pretty",
