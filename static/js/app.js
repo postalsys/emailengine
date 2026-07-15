@@ -2,27 +2,7 @@
 
 'use strict';
 
-window.showToast = (message, icon) => {
-    let template = `<div class="toast-header">
-    <img src="/static/icons/${icon ? icon : 'info'}.svg" class="rounded mr-2">
-    <strong class="mr-auto">EmailEngine</strong>
-    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  <div class="toast-body"></div>`;
-
-    let toast = document.createElement('div');
-    toast.classList.add('toast', 'show', 'fade');
-    toast.dataset.delay = '5000';
-    toast.dataset.autohide = 'true';
-
-    toast.innerHTML = template;
-    toast.querySelector('.toast-body').textContent = message;
-    document.getElementById('toastContainer').appendChild(toast);
-
-    $(toast).toast('show');
-};
+// window.showToast is provided by static/js/ui.js (loaded before this file)
 
 window.browseFileContents = function (type) {
     let iElm = document.createElement('input');
@@ -451,28 +431,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const evtSource = new EventSource('/admin/changes');
-    evtSource.onmessage = function (e) {
-        let data;
-        try {
-            data = JSON.parse(e.data);
-        } catch (err) {
-            // ignore?
-            console.error('Failed to process event', e.data, err);
-        }
-        switch (data && data.type) {
-            case 'state':
-                updateStateIndicators(data);
-                break;
-            case 'smtpServerState':
-                updateSmtpStateIndicators(data);
-                break;
-        }
-    };
+    // live account/SMTP state updates; only layouts that mark themselves opt in
+    // (the login and public layouts must not open an authenticated SSE stream)
+    if (document.body.dataset.sseChanges === 'true') {
+        const evtSource = new EventSource('/admin/changes');
+        evtSource.onmessage = function (e) {
+            let data;
+            try {
+                data = JSON.parse(e.data);
+            } catch (err) {
+                // ignore?
+                console.error('Failed to process event', e.data, err);
+            }
+            switch (data && data.type) {
+                case 'state':
+                    updateStateIndicators(data);
+                    break;
+                case 'smtpServerState':
+                    updateSmtpStateIndicators(data);
+                    break;
+            }
+        };
 
-    evtSource.onerror = function (e) {
-        console.log('EventSource failed.', e);
-    };
+        evtSource.onerror = function (e) {
+            console.log('EventSource failed.', e);
+        };
+    }
 
     let crumbElm = document.getElementById('crumb');
     if (crumbElm) {

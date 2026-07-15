@@ -59,15 +59,20 @@
 @source '../../js/login-passkey.js';
 @source '../../../node_modules/flyonui/flyonui.js';
 
-/* Safelist for classes assembled dynamically in JS (badge-${type} etc.) that
- * the scanner cannot see as complete tokens */
-@source inline('badge-{primary,secondary,info,success,warning,error,soft}');
+/* Safelist for classes assembled dynamically - in JS (badge-${type} etc.) and
+ * in the ui/* partials (btn-{{variant}} etc.) - that the scanner cannot see as
+ * complete tokens */
+@source inline('badge-{primary,secondary,accent,neutral,info,success,warning,error,soft}');
 @source inline('alert-{primary,secondary,info,success,warning,error,soft}');
-@source inline('{,text-,bg-}{primary,secondary,info,success,warning,error}');
-@source inline('progress progress-bar animate-spin hidden');
+@source inline('btn-{primary,secondary,accent,neutral,info,success,warning,error,outline,soft,text,xs,sm,lg}');
+@source inline('border-s-{primary,secondary,info,success,warning,error}');
+@source inline('{text-,bg-}{primary,secondary,info,success,warning,error}');
 
 @theme {
     --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* single source for the sidebar width: w-sidebar on the aside,
+     * lg:ps-sidebar on the content column */
+    --spacing-sidebar: 18rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -79,12 +84,6 @@
     .code-editor {
         width: 100%;
         height: 14rem;
-        border: var(--border, 1px) solid var(--color-base-300);
-        border-radius: var(--radius-field, 0.375rem);
-    }
-    .code-editor-low {
-        width: 100%;
-        height: 10rem;
         border: var(--border, 1px) solid var(--color-base-300);
         border-radius: var(--radius-field, 0.375rem);
     }
@@ -144,17 +143,6 @@
         font-size: 0.8em;
     }
 
-    .certinfo dt,
-    .certinfo dd {
-        font-size: 0.8rem;
-    }
-
-    .bg-login-page-image {
-        background: url(/static/logo_wide.png);
-        background-position: center;
-        background-size: cover;
-    }
-
     .full-screen-div {
         z-index: 9999;
         width: 100%;
@@ -207,56 +195,23 @@
     .bd-callout .small-text {
         font-size: 0.8rem;
     }
-    .bd-callout-info {
-        border-left-color: var(--color-info);
+    .bd-callout h4 {
+        color: var(--callout-color, inherit);
     }
-    .bd-callout-info h4 {
-        color: var(--color-info);
+    .bd-callout-info {
+        --callout-color: var(--color-info);
+        border-left-color: var(--callout-color);
     }
     .bd-callout-warning {
-        border-left-color: var(--color-warning);
-    }
-    .bd-callout-warning h4 {
-        color: var(--color-warning);
+        --callout-color: var(--color-warning);
+        border-left-color: var(--callout-color);
     }
     .bd-callout-success {
-        border-left-color: var(--color-success);
-    }
-    .bd-callout-success h4 {
-        color: var(--color-success);
+        --callout-color: var(--color-success);
+        border-left-color: var(--callout-color);
     }
     .bd-callout-danger {
-        border-left-color: var(--color-error);
-    }
-    .bd-callout-danger h4 {
-        color: var(--color-error);
-    }
-
-    /* Fixed-layout account list table (previously static/css/emailengine.css) */
-    .users-table {
-        table-layout: fixed;
-        width: 100%;
-        white-space: nowrap;
-    }
-    .users-table td,
-    .users-table th {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .users-table .row-account {
-        width: 15%;
-    }
-    .users-table .row-name {
-        width: 15%;
-    }
-    .users-table .row-state {
-        width: 15%;
-    }
-    .users-table .row-description {
-        width: 40%;
-    }
-    .users-table .row-btn {
-        width: 15%;
+        --callout-color: var(--color-error);
+        border-left-color: var(--callout-color);
     }
 }

@@ -530,6 +530,13 @@ const init = async () => {
     // the surrounding markup stays live while the value itself is entity-escaped.
     handlebars.registerHelper('escapeHtml', value => handlebars.escapeExpression(value));
 
+    // Translate Bootstrap-era color names emitted by server code (flash types,
+    // systemAlerts levels) into the FlyonUI color vocabulary used by the admin
+    // theme, so templates interpolate a single closed set of class suffixes
+    // (which the stylesheet safelists). Single translation point - producers
+    // keep using "danger" etc.
+    handlebars.registerHelper('eeColor', value => (value === 'danger' ? 'error' : value || 'neutral'));
+
     handlebars.registerHelper('isodate', time => new Date(Number(time)).toISOString());
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));

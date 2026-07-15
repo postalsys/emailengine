@@ -1,0 +1,26 @@
+{{!--
+    ui/btn - button or link with optional leading icon.
+    Params:
+      label   - button text (required)
+      variant - FlyonUI color: primary|secondary|accent|neutral|info|success|warning|error (default primary)
+      style   - optional style modifier: outline|soft|text (adds btn-<style>)
+      size    - xs|sm|lg (adds btn-<size>; optional)
+      icon    - full iconify class, e.g. "icon-[tabler--arrow-right]" (optional; pass the
+                complete class so the Tailwind scanner sees it at the call site)
+      href    - render as <a> instead of <button> (optional)
+      type    - button type when no href (default "button")
+      id      - element id (optional)
+      class   - extra classes (optional)
+      overlay - value for data-overlay to open/close a ui/modal (optional)
+--}}
+{{#*inline "btnClasses"~}}
+btn btn-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{#if style}} btn-{{style}}{{/if}}{{#if size}} btn-{{size}}{{/if}}{{#if class}} {{class}}{{/if}}
+{{~/inline}}
+{{#*inline "btnContent"~}}
+{{#if icon}}<span class="{{icon}} size-4 shrink-0"></span>{{/if}}{{label}}
+{{~/inline}}
+{{#if href}}
+<a href="{{href}}" {{#if id}}id="{{id}}" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</a>
+{{else}}
+<button type="{{#if type}}{{type}}{{else}}button{{/if}}" {{#if id}}id="{{id}}" {{/if}}{{#if overlay}}data-overlay="{{overlay}}" {{/if}}class="{{> btnClasses}}">{{> btnContent}}</button>
+{{/if}}

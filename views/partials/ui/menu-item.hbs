@@ -1,0 +1,13 @@
+{{!--
+    ui/menu-item - one sidebar menu link (an <li> inside a FlyonUI .menu list).
+    Params:
+      href   - link target (required)
+      label  - link text (required)
+      icon   - full iconify class incl. size, e.g. "icon-[tabler--users] size-4.5" (optional)
+      active - true to highlight as the current page
+--}}
+<li>
+    <a class="inline-flex w-full items-center px-2{{#if active}} menu-active{{/if}}" href="{{href}}">
+        {{#if icon}}<span class="{{icon}}"></span>{{/if}}
+        <span>{{label}}</span></a>
+</li>

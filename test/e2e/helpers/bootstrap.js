@@ -7,6 +7,10 @@
 
 const { expect } = require('@playwright/test');
 
+// Shared admin password for the whole e2e suite - every spec authenticates against the same
+// booted instance, so there must be exactly one source for this value.
+const ADMIN_PASSWORD = 'E2e-Test-Password-123!';
+
 // Log in through the admin sign-in form. The set-password flow stores an empty username, so the
 // server's username check is bypassed and any non-empty username works.
 async function loginAsAdmin(page, password) {
@@ -17,7 +21,7 @@ async function loginAsAdmin(page, password) {
 }
 
 // Guarantee the browser context holds an authenticated admin session on return.
-async function ensureAdminSession(page, password) {
+async function ensureAdminSession(page, password = ADMIN_PASSWORD) {
     await page.goto('/admin');
     if (page.url().includes('/admin/login')) {
         // Auth already enabled by an earlier spec - just log in.
@@ -63,4 +67,4 @@ async function createApiToken(page, description = 'e2e token') {
     return tokenInput.inputValue();
 }
 
-module.exports = { ensureAdminSession, ensureTrial, createApiToken };
+module.exports = { ADMIN_PASSWORD, ensureAdminSession, ensureTrial, createApiToken };

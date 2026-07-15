@@ -1,0 +1,16 @@
+{{!--
+    ui/page-header - page title row with optional action buttons. Use the block
+    form to add actions on the right:
+      {{#> ui/page-header title="Email Accounts"}} {{> ui/btn ...}} {{/ui/page-header}}
+    Params:
+      title - page heading (required)
+      class - extra classes on the wrapper (optional)
+--}}
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6{{#if class}} {{class}}{{/if}}">
+    <h1 class="text-2xl font-semibold text-base-content">{{title}}</h1>
+    {{#if @partial-block}}
+    <div class="flex flex-wrap items-center gap-2">
+        {{> @partial-block}}
+    </div>
+    {{/if}}
+</div>

@@ -1,33 +1,28 @@
 {{#each pendingMessages}}
-<div class="alert mt2 alert-{{#if type}}{{type}}{{else}}danger{{/if}} alert-dismissible fade show alert-flush"
+<div class="alert alert-{{#if type}}{{type}}{{else}}danger{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-4 transition-opacity duration-300"
     role="alert">
-    <div class="text-center">
+    <div class="grow text-center">
         {{#if title}}
         <strong>{{title}}</strong>
         {{/if}} {{message}}
     </div>
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <button type="button" class="flash-alert-close shrink-0 text-xl leading-none opacity-50 hover:opacity-100"
+        aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
 </div>
 {{/each}} {{#if alert}}
-<div class="alert mt2 alert-{{#if alert.type}}{{alert.type}}{{else}}danger{{/if}} alert-dismissible fade show alert-flush"
+<div class="alert alert-{{#if alert.type}}{{alert.type}}{{else}}danger{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-4 transition-opacity duration-300"
     role="alert">
-    <div class="text-center">
+    <div class="grow text-center">
         {{#if alert.title}}
         <strong>{{alert.title}}</strong>
         {{/if}} {{alert.message}}
     </div>
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <button type="button" class="flash-alert-close shrink-0 text-xl leading-none opacity-50 hover:opacity-100"
+        aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
 </div>
 {{/if}}
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            $('.alert-dismissible').alert('close');
-        }, 15 * 1000);
-    });
-</script>
+{{!-- close/auto-dismiss behavior for .flash-alert lives in static/js/ui.js --}}

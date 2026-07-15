@@ -22,14 +22,13 @@ const { ensureAdminSession, ensureTrial, createApiToken } = require('./helpers/b
 
 const PORT = 7099;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
-const ADMIN_PASSWORD = 'E2e-Test-Password-123!';
 const ACCOUNT_ID = 'e2e-hosted-imap';
 
 test('hosted auth form: add an IMAP account (Ethereal) and reach connected', async ({ page }) => {
     let token;
 
     await test.step('bootstrap: admin session, trial, API token', async () => {
-        await ensureAdminSession(page, ADMIN_PASSWORD);
+        await ensureAdminSession(page);
         await ensureTrial(page);
         token = await createApiToken(page, 'e2e hosted-form token');
         expect(token).toMatch(/^[0-9a-f]{64}$/);

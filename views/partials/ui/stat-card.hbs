@@ -1,0 +1,33 @@
+{{!--
+    ui/stat-card - card with a colored start-edge accent (replaces the SB-Admin
+    "card border-left-*" pattern). Use the block form for custom body content:
+      {{#> ui/stat-card variant="error" title="License key missing"}} ...body... {{/ui/stat-card}}
+    Params:
+      variant - accent color: primary|secondary|info|success|warning|error (default primary)
+      title   - small uppercase label above the value (optional)
+      value   - large value text; ignored when a block is given (optional)
+      icon    - full iconify class shown muted on the right (optional)
+      id      - element id (optional)
+      class   - extra classes (optional)
+--}}
+<div {{#if id}}id="{{id}}" {{/if}}class="card bg-base-100 shadow-md border-s-4 border-s-{{#if variant}}{{variant}}{{else}}primary{{/if}}{{#if class}} {{class}}{{/if}}">
+    <div class="card-body">
+        <div class="flex items-center gap-4">
+            <div class="grow">
+                {{#if title}}
+                <div class="text-xs font-bold uppercase mb-1 text-{{#if variant}}{{variant}}{{else}}primary{{/if}}">{{title}}</div>
+                {{/if}}
+                {{#if @partial-block}}
+                {{> @partial-block}}
+                {{else}}
+                <div class="text-xl font-bold text-base-content">{{value}}</div>
+                {{/if}}
+            </div>
+            {{#if icon}}
+            <div class="shrink-0">
+                <span class="{{icon}} size-8 text-base-content/25"></span>
+            </div>
+            {{/if}}
+        </div>
+    </div>
+</div>
