@@ -1,60 +1,39 @@
 {{> gateways_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/gateways">Gateways</a></li>
-        <li class="breadcrumb-item active" aria-current="page">New</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" current="New" class="mt-6 mb-6"}}
 
 <form method="post" action="/admin/gateways/new">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}">
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">New Gateway</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Actions:</div>
-                    <a class="dropdown-item test-connection" href="#" id="test-verify-btn">
-                        <i class="fas fa-paper-plane fa-sm"></i> <span>Test Connection</span>
-                    </a>
-                </div>
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">New Gateway</h6>
+            <div class="dropdown relative inline-flex">
+                <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" id="gateway-actions-menu"
+                    aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
+                    <span class="icon-[tabler--dots-vertical] size-4"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 end-0" role="menu"
+                    aria-orientation="vertical" aria-labelledby="gateway-actions-menu">
+                    <li class="dropdown-header">Actions:</li>
+                    <li><a class="dropdown-item test-connection" href="#" id="test-verify-btn">
+                            <span class="icon-[tabler--send] size-4"></span> <span>Test Connection</span></a></li>
+                </ul>
             </div>
         </div>
 
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
-                <label for="gateway">Gateway ID</label>
-                <input type="text" class="form-control {{#if errors.gateway}}is-invalid{{/if}}" id="gateway"
-                    name="gateway" value="{{values.gateway}}" placeholder="sendgrid-main" data-lpignore="true"
-                    autocomplete="off" />
-                {{#if errors.gateway}}
-                <span class="invalid-feedback">{{errors.gateway}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Unique identifier for this gateway. Leave empty to
-                    auto-generate.</small>
-            </div>
+            {{> ui/form-field id="gateway" name="gateway" label="Gateway ID" value=values.gateway error=errors.gateway placeholder="sendgrid-main" lpignore=true hint="Unique identifier for this gateway. Leave empty to auto-generate."}}
 
             {{>gateway_form}}
 
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-paper-plane"></i>
-            </span>
-            <span class="text">Create Gateway</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Create Gateway" type="submit" icon="icon-[tabler--send]"}}
     </div>
 </form>
 

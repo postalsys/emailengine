@@ -16,8 +16,15 @@
 // Run once:  npm run test:e2e:install
 // Run suite: npm run test:e2e
 
+const os = require('os');
+const path = require('path');
 const { test, expect } = require('@playwright/test');
 const { ensureAdminSession } = require('./helpers/bootstrap');
+
+// One real login per run: the admin session cookie is captured in beforeAll and
+// reused by every test via storageState. Logging in per test trips the login
+// rate limiter once the suite grows past ~10 tests.
+const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-admin-state.json');
 
 // Per-test console error collection; every test asserts the page stayed clean.
 function trackConsoleErrors(page) {
@@ -32,6 +39,16 @@ function trackConsoleErrors(page) {
 }
 
 test.describe('admin shell', () => {
+    test.use({ storageState: STATE_FILE });
+
+    test.beforeAll(async ({ browser }) => {
+        // plain context (storageState explicitly unset - the file does not
+        // exist yet) performs the single real login
+        const page = await browser.newPage({ storageState: undefined });
+        await ensureAdminSession(page);
+        await page.context().storageState({ path: STATE_FILE });
+        await page.close();
+    });
     test('dashboard shell: sidebar, topbar and footer render', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
@@ -230,12 +247,45 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('gateways: create, view and delete a gateway', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // list page renders
+        await page.goto('/admin/gateways');
+        await expect(page.locator('h1', { hasText: 'Email Gateways' })).toBeVisible();
+
+        // create via the new-gateway form
+        await page.goto('/admin/gateways/new');
+        await page.fill('#gateway', 'e2e-smoke-gw');
+        await page.fill('#name', 'E2E Smoke Gateway');
+        await page.fill('#host', '127.0.0.1');
+        await page.fill('#port', '2525');
+        await page.locator('button[type="submit"]', { hasText: 'Create Gateway' }).click();
+        // the create redirect lands on the gateway detail page
+        await page.waitForURL(/\/admin\/gateways\/gateway\//);
+
+        // detail page shows the gateway
+        await page.goto('/admin/gateways/gateway/e2e-smoke-gw');
+        await expect(page.locator('.ee-dl dt', { hasText: 'Gateway ID' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'E2E Smoke Gateway' })).toBeVisible();
+
+        // delete through the confirmation modal
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/gateways(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);
 
-        // fresh context without the admin session cookie
-        const context = await browser.newContext();
+        // fresh context without the admin session cookie (storageState must be
+        // explicitly unset - manual contexts inherit the fixture options)
+        const context = await browser.newContext({ storageState: undefined });
         const anonPage = await context.newPage();
         const errors = trackConsoleErrors(anonPage);
 
