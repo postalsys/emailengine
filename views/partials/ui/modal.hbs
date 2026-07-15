@@ -10,6 +10,8 @@
     Params:
       id          - element id (required)
       title       - modal heading (optional)
+      titleId     - id on the heading element, for scripts that retitle the
+                    modal (optional)
       dialogClass - extra classes on .modal-dialog, e.g. "max-w-4xl" (optional)
       hideClose   - true to omit the corner close button (optional)
 --}}
@@ -18,7 +20,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 {{#if title}}
-                <h3 class="modal-title">{{title}}</h3>
+                <h3 class="modal-title" {{#if titleId}}id="{{titleId}}" {{/if}}>{{title}}</h3>
                 {{/if}}
                 {{#unless hideClose}}
                 <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#{{id}}">

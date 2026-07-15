@@ -21,6 +21,8 @@
       options     - array of suggestion strings, rendered as a <datalist> (optional)
       list        - id of an existing shared <datalist> (optional; ignored when
                     options is set)
+      lpignore    - true to add data-lpignore + autocomplete="off" (credential-ish
+                    fields that password managers must not autofill)
       class       - extra classes on the input (optional)
 --}}
 <div class="w-full">
@@ -34,7 +36,7 @@
         class="input{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}"
         name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{#if value}}value="{{value}}" {{/if}}{{#if placeholder}}placeholder="{{placeholder}}"
         {{/if}}{{#if options}}list="{{id}}-datalist" autocomplete="off" {{else}}{{#if list}}list="{{list}}"
-        {{/if}}{{/if}}{{#if required}}required {{/if}}>
+        {{/if}}{{/if}}{{#if lpignore}}data-lpignore="true" autocomplete="off" {{/if}}{{#if required}}required {{/if}}>
     {{#if options}}
     <datalist id="{{id}}-datalist">
         {{#each options}}

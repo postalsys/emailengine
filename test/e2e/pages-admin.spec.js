@@ -142,6 +142,94 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('accounts list: renders and opens the add-account modal', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        await page.goto('/admin/accounts');
+
+        await expect(page.locator('h1', { hasText: 'Email Accounts' })).toBeVisible();
+
+        // FlyonUI overlay opens with focus on the name field, Escape closes and clears
+        await page.locator('[data-overlay="#addAccount"]').first().click();
+        await expect(page.locator('#addAccount.open')).toHaveCount(1);
+        await expect(page.locator('#account-name')).toBeFocused();
+        await page.fill('#account-name', 'wiped-on-close');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#addAccount.open')).toHaveCount(0);
+        await expect(page.locator('#account-name')).toHaveValue('');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    // The detail/edit/browse page tests need an existing account. The happy-path spec
+    // registers one when the full suite runs; standalone runs skip gracefully.
+    async function firstAccountUrl(page) {
+        await page.goto('/admin/accounts');
+        const row = page.locator('tbody tr td a[href^="/admin/accounts/"]').first();
+        if (!(await row.count())) {
+            return null;
+        }
+        return row.getAttribute('href');
+    }
+
+    test('account detail page: toolbar tooltips and modals', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        await page.goto(url);
+        await expect(page.locator('#delete-btn')).toBeVisible();
+
+        // toolbar tooltip on hover
+        await page.locator('#request-reconnect').hover();
+        await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+        await page.mouse.move(0, 0);
+
+        // delete confirmation modal opens and closes without submitting
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#deleteModal.open')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('account edit page: form renders', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        await page.goto(`${url}/edit`);
+        await expect(page.locator('#name')).toBeVisible();
+        await expect(page.locator('#email')).toBeVisible();
+        await expect(page.locator('button[type="submit"]', { hasText: 'Update account' })).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('account browse page: ee-client widget initializes', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        await page.goto(`${url}/browse`);
+        await expect
+            .poll(
+                async () =>
+                    page.evaluate(() => {
+                        const elm = document.getElementById('email-client');
+                        return elm ? elm.children.length : -1;
+                    }),
+                { timeout: 20000 }
+            )
+            .toBeGreaterThan(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

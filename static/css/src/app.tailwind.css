@@ -70,6 +70,8 @@
 @source inline('[--placement:top] [--placement:bottom] [--placement:left] [--placement:right]');
 /* server-driven dashboard icons (lib/ui-routes/dashboard-routes.js is not scanned) */
 @source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
+/* client-side rendered delivery-test status icons (built by browser JS) */
+@source inline('icon-[tabler--circle-check] icon-[tabler--circle-off] icon-[tabler--alert-triangle]');
 
 @theme {
     --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -83,6 +85,30 @@
  * and emailengine.css; colors converted to theme tokens for light+dark)
  * ------------------------------------------------------------------------- */
 @layer components {
+    /* Description list: label column + value column (replaces the Bootstrap
+     * dl.row + dt.col-sm-3/dd.col-sm-9 pattern used across detail pages) */
+    .ee-dl {
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 0.25rem;
+        column-gap: 1rem;
+    }
+    .ee-dl dt {
+        font-weight: 700;
+    }
+    .ee-dl dd {
+        margin: 0 0 0.5rem 0;
+        min-width: 0;
+    }
+    @media (min-width: 640px) {
+        .ee-dl {
+            grid-template-columns: 14rem minmax(0, 1fr);
+        }
+        .ee-dl dd {
+            margin-bottom: 0.25rem;
+        }
+    }
+
     /* ACE editor wrapper chrome (the editors themselves style their content) */
     .code-editor {
         width: 100%;

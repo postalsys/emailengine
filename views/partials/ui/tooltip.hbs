@@ -2,8 +2,11 @@
     ui/tooltip - FlyonUI hover tooltip around arbitrary trigger content.
     Block form only; the block is the visible trigger:
       {{#> ui/tooltip text="Explanation shown on hover"}}<span>trigger</span>{{/ui/tooltip}}
+    Compose interpolated bodies with the concat helper:
+      {{#> ui/tooltip text=(concat "Up to " (formatInteger n locale) " lines")}}...{{/ui/tooltip}}
     Params:
-      text      - tooltip body text (required)
+      text      - tooltip body text (required; calls with an empty text render
+                  an empty bubble, so guard optional sources with {{#if}})
       placement - top|bottom|left|right (default top; the [--placement:*]
                   classes are safelisted in app.tailwind.css)
       class     - extra classes on the wrapper (optional)

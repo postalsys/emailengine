@@ -537,6 +537,13 @@ const init = async () => {
     // keep using "danger" etc.
     handlebars.registerHelper('eeColor', value => (value === 'danger' ? 'error' : value || 'neutral'));
 
+    // Join string fragments in subexpressions, e.g. building composed partial
+    // hash values: text=(concat "Up to " (formatInteger n locale) " lines")
+    handlebars.registerHelper('concat', (...args) => args.slice(0, -1).join(''));
+
+    // Ternary for subexpressions: placeholder=(when hasPass "set..." "")
+    handlebars.registerHelper('when', (cond, truthyValue, falsyValue) => (cond ? truthyValue : typeof falsyValue === 'string' ? falsyValue : ''));
+
     handlebars.registerHelper('isodate', time => new Date(Number(time)).toISOString());
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));

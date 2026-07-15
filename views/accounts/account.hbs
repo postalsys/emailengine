@@ -1,121 +1,119 @@
 {{> accounts_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{account.account}}</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=account.account class="mt-6 mb-6"}}
 
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+        <div class="mb-[1rem] flex flex-wrap gap-2" role="toolbar" aria-label="Account actions">
 
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/edit"
-                    title="Edit account configuration" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-user-edit fa-fw"></i> Edit account
-                </a>
+            {{#> ui/tooltip text="Edit account configuration"}}
+            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/edit">
+                <span class="icon-[tabler--user-edit] size-4"></span> Edit account
+            </a>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
-                    title="Delete this account and all associated data" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete account
+            {{#> ui/tooltip text="Delete this account and all associated data"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete account
+            </button>
+            {{/ui/tooltip}}
+
+            {{#> ui/tooltip text="Close and re-open IMAP connection"}}
+            <button type="button" class="btn btn-soft btn-sm" id="request-reconnect">
+                <span class="icon-[tabler--refresh] size-4" id="reconnect-icon"></span> Reconnect
+            </button>
+            {{/ui/tooltip}}
+
+            {{#> ui/tooltip text="Run periodic folder syncing now"}}
+            <button type="button" class="btn btn-soft btn-sm" id="request-sync">
+                <span class="icon-[tabler--rotate-clockwise] size-4" id="sync-icon"></span> Run sync
+            </button>
+            {{/ui/tooltip}}
+
+            {{#if canReadMail}}
+            {{#> ui/tooltip text="Export messages to file"}}
+            <button type="button" class="btn btn-soft btn-sm" id="request-export" data-overlay="#exportModal">
+                <span class="icon-[tabler--file-export] size-4"></span> Export
+                <span id="export-status-indicator" class="badge rounded-full badge-sm ms-1 hidden"></span>
+            </button>
+            {{/ui/tooltip}}
+            {{/if}}
+
+            {{#> ui/tooltip text="Email templates for this account"}}
+            <a class="btn btn-soft btn-sm" href="/admin/templates/?account={{account.account}}">
+                <span class="icon-[tabler--template] size-4"></span> Email templates
+            </a>
+            {{/ui/tooltip}}
+
+            {{#> ui/tooltip text="Access tokens for this account"}}
+            <a class="btn btn-soft btn-sm" href="/admin/tokens/?account={{account.account}}">
+                <span class="icon-[tabler--key] size-4"></span> Access tokens
+            </a>
+            {{/ui/tooltip}}
+
+            {{#if canSend}}
+            {{#unless gateways}}
+            {{#> ui/tooltip text="Test SMTP delivery settings for this account"}}
+            <button type="button" class="btn btn-soft btn-sm test-send-trigger" data-account="{{account.account}}"
+                id="test-smtp-btn">
+                <span class="icon-[tabler--mail-opened] size-4" id="test-smtp-icon"></span> Delivery test
+            </button>
+            {{/ui/tooltip}}
+            {{else}}
+            <div class="dropdown relative inline-flex">
+                <button type="button" class="dropdown-toggle btn btn-soft btn-sm" aria-haspopup="menu"
+                    aria-expanded="false" id="test-smtp-btn">
+                    <span class="icon-[tabler--mail-opened] size-4" id="test-smtp-icon"></span> Delivery test
+                    <span class="icon-[tabler--chevron-down] size-3.5"></span>
                 </button>
-
-                <button type="button" class="btn btn-light" id="request-reconnect"
-                    title="Close and re-open IMAP connection" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-sync-alt fa-fw" id="reconnect-icon"></i> Reconnect
-                </button>
-
-                <button type="button" class="btn btn-light" id="request-sync" title="Run periodic folder syncing now"
-                    data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-redo fa-fw" id="sync-icon"></i> Run sync
-                </button>
-
-                {{#if canReadMail}}
-                <button type="button" class="btn btn-light" id="request-export" title="Export messages to file"
-                    data-toggle="modal" data-target="#exportModal">
-                    <i class="fas fa-file-export fa-fw"></i> Export
-                    <span id="export-status-indicator" class="badge badge-pill ml-1 d-none"></span>
-                </button>
-                {{/if}}
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52" role="menu"
+                    aria-orientation="vertical">
+                    {{#if canUseSmtp}}
+                    <li><button type="button" class="dropdown-item test-send-trigger"
+                            data-account="{{account.account}}">Account's Mail server</button></li>
+                    <li>
+                        <div class="divider my-1"></div>
+                    </li>
+                    {{/if}}
+                    {{#each gateways}}
+                    <li><button type="button" class="dropdown-item test-send-trigger"
+                            data-account="{{../account.account}}" data-gateway="{{gateway}}">{{name}}</button></li>
+                    {{/each}}
+                </ul>
             </div>
+            {{/unless}}
+            {{/if}}
 
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="Third group">
-                <a type="button" class="btn btn-light" href="/admin/templates/?account={{account.account}}"
-                    title="Email templates for &quot;{{account.account}}&quot;" data-toggle="tooltip"
-                    data-placement="top">
-                    <i class="fas fa-file-code fa-fw"></i> Email templates
-                </a>
+            {{#> ui/tooltip text="Download stored logs for this account"}}
+            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/logs.txt" download>
+                <span class="icon-[tabler--cloud-download] size-4"></span> Logs
+            </a>
+            {{/ui/tooltip}}
 
-                <a type="button" class="btn btn-light" href="/admin/tokens/?account={{account.account}}"
-                    title="Access tokens for &quot;{{account.account}}&quot;" data-toggle="tooltip"
-                    data-placement="top">
-                    <i class="fas fa-key fa-fw"></i> Access tokens
-                </a>
-
-                {{#if canSend}}
-                {{#unless gateways}}
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#testSendModal"
-                    title="Test SMTP delivery settings for this account" data-account="{{account.account}}"
-                    id="test-smtp-btn" data-placement="top">
-                    <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
-                </button>
-                {{else}}
-                <div class="btn-group">
-                    <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown"
-                        aria-expanded="false" title="Test SMTP delivery settings for this account" id="test-smtp-btn">
-                        <i class="fas fa-envelope-open-text fa-fw" id="test-smtp-icon"></i> Delivery test
-                    </button>
-                    <div class="dropdown-menu">
-                        {{#if canUseSmtp}}
-                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal" data-keyboard="false"
-                            data-backdrop="static" data-account="{{account.account}}" href="#">Account's
-                            Mail server</a>
-                        {{#if gateways}}
-                        <div class="dropdown-divider"></div>
-                        {{/if}}
-                        {{/if}}
-                        {{#each gateways}}
-                        <a class="dropdown-item" data-toggle="modal" data-target="#testSendModal"
-                            data-account="{{../account.account}}" data-gateway="{{gateway}}" href="#">{{name}}</a>
-                        {{/each}}
-                    </div>
-                </div>
-                {{/unless}}
-                {{/if}}
-
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/logs.txt"
-                    title="Download stored logs for &quot;{{account.account}}&quot;" data-toggle="tooltip"
-                    data-placement="top" download>
-                    <i class="fas fa-cloud-download-alt fa-fw"></i> Logs
-                </a>
-
-                {{#if canReadMail}}
-                <a type="button" class="btn btn-light" href="/admin/accounts/{{account.account}}/browse"
-                    title="Browse messages" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-folder-open fa-fw"></i> Browse messages
-                </a>
-                {{/if}}
-            </div>
+            {{#if canReadMail}}
+            {{#> ui/tooltip text="Browse messages"}}
+            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/browse">
+                <span class="icon-[tabler--folder-open] size-4"></span> Browse messages
+            </a>
+            {{/ui/tooltip}}
+            {{/if}}
 
             {{#if account.oauth2.provider}}
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#renewGrantModal"
-                    title="Re-authenticate OAuth2 account" id="renew-grant-btn" data-placement="top">
-                    {{#if account.type.icon}}
-                    <i class="{{account.type.icon}} fa-fw"></i>
-                    {{/if}} Re-authenticate
-                </button>
-            </div>
+            {{#> ui/tooltip text="Re-authenticate OAuth2 account"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#renewGrantModal" id="renew-grant-btn">
+                {{#if account.type.icon}}
+                <i class="{{account.type.icon}} fa-fw"></i>
+                {{/if}} Re-authenticate
+            </button>
+            {{/ui/tooltip}}
             {{/if}}
         </div>
 
-        <dl class="row">
+        <dl class="ee-dl">
             {{#if account.account}}
-            <dt class="col-sm-3">ID</dt>
-            <dd class="col-sm-9">
+            <dt>ID</dt>
+            <dd>
                 <strong>{{account.account}}</strong>
 
                 <span class="badge badge-pill badge-{{account.stateLabel.type}} state-info"
@@ -145,17 +143,17 @@
             {{/if}}
 
             {{#if account.name}}
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">{{account.name}}</dd>
+            <dt>Name</dt>
+            <dd>{{account.name}}</dd>
             {{/if}}
 
             {{#if account.email}}
-            <dt class="col-sm-3">Email</dt>
-            <dd class="col-sm-9">{{account.email}}</dd>
+            <dt>Email</dt>
+            <dd>{{account.email}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">Account type</dt>
-            <dd class="col-sm-9">
+            <dt>Account type</dt>
+            <dd>
                 {{#if account.type.icon}}
                 <i class="{{account.type.icon}} fa-fw"></i>
                 {{/if}}
@@ -163,34 +161,36 @@
                 {{account.type.name}}
 
                 {{#if account.type.comment}}
-                <span class="text-muted">({{account.type.comment}})</span>
+                <span class="text-base-content/60">({{account.type.comment}})</span>
                 {{/if}}
             </dd>
 
-            <dt class="col-sm-3">Recent logs <a href="#" tabindex="-1" role="button" data-toggle="popover"
-                    data-trigger="hover" style="display: inline-block;"
-                    data-content="Up to last {{formatInteger logs.maxLogLines userLocale}} log lines"><i
-                        class="fas fa-info-circle text-info"></i></a>
+            <dt>Recent logs
+                {{#> ui/tooltip text=(concat "Up to last " (formatInteger logs.maxLogLines userLocale) " log lines")}}<span
+                    class="icon-[tabler--info-circle] text-info size-4 align-text-bottom"></span>{{/ui/tooltip}}
             </dt>
 
-            <dd class="col-sm-9">
+            <dd>
                 {{#if logs.all}}
                 <div>
                     Enabled by default for all accounts
                 </div>
                 {{else}}
 
-                <div class="dropdown">
-                    <div class="dropdown-toggle" role="button" id="logs-info" data-toggle="dropdown"
-                        aria-expanded="false" data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
+                <div class="dropdown relative inline-flex">
+                    <button type="button" class="dropdown-toggle link link-animated" id="logs-info"
+                        aria-haspopup="menu" aria-expanded="false"
+                        data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
                         <span id="logs-info-label">{{#if account.logs}}Enabled{{else}}Disabled{{/if}}</span>
-                    </div>
+                        <span class="icon-[tabler--chevron-down] size-3.5"></span>
+                    </button>
 
-                    <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
-                        <a class="dropdown-item" href="#" id="toggle-logs">{{#if
-                            account.logs}}Disable{{else}}Enable{{/if}}</a>
-                        <a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a>
-                    </div>
+                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44" role="menu"
+                        aria-orientation="vertical" aria-labelledby="logs-info">
+                        <li><a class="dropdown-item" href="#" id="toggle-logs">{{#if
+                                account.logs}}Disable{{else}}Enable{{/if}}</a></li>
+                        <li><a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a></li>
+                    </ul>
                 </div>
 
                 {{/if}}
@@ -202,15 +202,14 @@
 
 {{#if account._app}}
 
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">OAuth2
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header"><h6 class="card-title text-primary">OAuth2
         </h6>
     </div>
     <div class="card-body">
 
         {{#if account.oauth2.userFlag.message }}
-        <div class="alert alert-danger">{{account.oauth2.userFlag.message}}
+        <div class="alert alert-soft alert-error">{{account.oauth2.userFlag.message}}
 
             {{#if account.oauth2.userFlag.description}}
             <hr>
@@ -224,35 +223,31 @@
 
         {{/if}}
 
-        <dl class="row">
+        <dl class="ee-dl">
 
 
-            <dt class="col-sm-3">Provider</dt>
+            <dt>Provider</dt>
 
             {{#if account.oauth2.app}}
-            <dd class="col-sm-9">
+            <dd>
                 <a href="/admin/config/oauth/app/{{account.oauth2.app.id}}">{{account.type.comment}}</a>
                 (<em>{{account.oauth2.app.id}}</em>)
 
                 {{#if account.oauth2.app.meta.authFlag}}
-
-                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                    style="display: inline-block;" data-title="OAuth2 application failure"
-                    data-content="{{account.oauth2.app.meta.authFlag.message}}"><i
-                        class="fas fa-exclamation-triangle text-danger"></i></a>
-
+                {{#> ui/tooltip text=account.oauth2.app.meta.authFlag.message}}<span
+                    class="icon-[tabler--alert-triangle] text-error size-4 align-text-bottom"></span>{{/ui/tooltip}}
                 {{/if}}
             </dd>
             {{else}}
-            <dd class="col-sm-9">{{account.type.comment}}</dd>
+            <dd>{{account.type.comment}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">Connection method</dt>
-            <dd class="col-sm-9">
+            <dt>Connection method</dt>
+            <dd>
                 {{#if account.isApi}}
                 {{#if account.sendOnly}}
-                API <span class="badge badge-info" style="cursor:default;" data-toggle="popover" data-trigger="hover"
-                    data-content="This account can only send emails. It does not have read access to the mailbox.">Send-only</span>
+                API {{#> ui/tooltip text="This account can only send emails. It does not have read access to the mailbox."}}<span
+                    class="badge badge-info badge-sm">Send-only</span>{{/ui/tooltip}}
                 {{else}}
                 API
                 {{/if}}
@@ -262,8 +257,8 @@
             </dd>
 
             {{#if account.oauth2.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">
+            <dt>Username</dt>
+            <dd>
                 {{account.oauth2.auth.user}}
                 {{#if account.oauth2.auth.delegatedUser}}
                 <em>as</em>
@@ -273,8 +268,8 @@
             {{/if}}
 
             {{#if account.oauth2.scopes}}
-            <dt class="col-sm-3">Scopes</dt>
-            <dd class="col-sm-9">
+            <dt>Scopes</dt>
+            <dd>
                 <div>
                     {{#each account.oauth2.scopes}}
                     <div><code>{{this}}</code></div>
@@ -284,8 +279,8 @@
             {{/if}}
 
             {{#if account.oauth2.expiresStr}}
-            <dt class="col-sm-3">Access token validity</dt>
-            <dd class="col-sm-9">
+            <dt>Access token validity</dt>
+            <dd>
 
                 {{#if account.oauth2.generatedStr}}
                 <span class="local-date-time code-link" data-time="{{account.oauth2.generatedStr}}"
@@ -300,24 +295,20 @@
             {{/if}}
 
             {{#if gmailWatch}}
-            <dt class="col-sm-3">Change subscription</dt>
+            <dt>Change subscription</dt>
 
-            <dd class="col-sm-9">
+            <dd>
 
-                <span class="badge badge-pill 
-{{#if gmailWatch.active}}
-    badge-success
-{{else}}
-    {{#if gmailWatch.error}}
-        badge-danger
-    {{else}}
-        badge-warning
-    {{/if}}
-{{/if}}
-" style="cursor:default;" {{#if gmailWatch.error}} data-toggle="popover" data-trigger="hover"
-                    data-title="Subscription error" data-content="{{gmailWatch.error}}" {{/if}}>
+                {{#*inline "gmailWatchBadge"}}
+                <span class="badge rounded-full badge-{{#if gmailWatch.active}}success{{else}}{{#if gmailWatch.error}}error{{else}}warning{{/if}}{{/if}}">
                     {{gmailWatch.stateLabel}}
                 </span>
+                {{/inline}}
+                {{#if gmailWatch.error}}
+                {{#> ui/tooltip text=gmailWatch.error}}{{> gmailWatchBadge}}{{/ui/tooltip}}
+                {{else}}
+                {{> gmailWatchBadge}}
+                {{/if}}
 
                 {{#if gmailWatch.expiresStr}}
                 Valid until <span class="local-date-time code-link" data-time="{{gmailWatch.expiresStr}}"
@@ -325,8 +316,8 @@
                 {{/if}}
 
                 {{#if gmailWatch.error}}
-                <div class="mt-3">
-                    <div class="alert alert-danger">
+                <div class="mt-[1rem]">
+                    <div class="alert alert-soft alert-error">
                         <div>
                             <small>The last attempt to renew the change subscription failed with the following
                                 error.</small>
@@ -336,9 +327,8 @@
                         </div>
 
                         {{#if gmailWatch.request}}
-                        <div class="mt-3">
-                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#watchDetails"
-                                data-placement="top">
+                        <div class="mt-[1rem]">
+                            <button type="button" class="btn btn-error btn-sm" data-overlay="#watchDetails">
                                 Show details
                             </button>
                         </div>
@@ -356,23 +346,19 @@
             {{/if}}
 
             {{#if account.outlookSubscription}}
-            <dt class="col-sm-3">Change subscription</dt>
-            <dd class="col-sm-9">
+            <dt>Change subscription</dt>
+            <dd>
 
-                <span class="badge badge-pill 
-{{#if account.outlookSubscription.isValid}}
-    badge-success
-{{else}}
-    {{#if account.outlookSubscription.state.error}}
-        badge-danger
-    {{else}}
-        badge-warning
-    {{/if}}
-{{/if}}
-" style="cursor:default;" {{#if account.outlookSubscription.state.error}} data-toggle="popover" data-trigger="hover"
-                    data-title="Subscription error" data-content="{{account.outlookSubscription.state.error}}" {{/if}}>
+                {{#*inline "outlookWatchBadge"}}
+                <span class="badge rounded-full badge-{{#if account.outlookSubscription.isValid}}success{{else}}{{#if account.outlookSubscription.state.error}}error{{else}}warning{{/if}}{{/if}}">
                     {{account.outlookSubscription.stateLabel}}
                 </span>
+                {{/inline}}
+                {{#if account.outlookSubscription.state.error}}
+                {{#> ui/tooltip text=account.outlookSubscription.state.error}}{{> outlookWatchBadge}}{{/ui/tooltip}}
+                {{else}}
+                {{> outlookWatchBadge}}
+                {{/if}}
 
                 {{#if account.outlookSubscription.expirationDateTime}}
                 Valid until <span class="local-date-time code-link"
@@ -381,7 +367,7 @@
                 {{/if}}
 
                 {{#if account.outlookSubscription.state.error}}
-                <div class="alert alert-danger">
+                <div class="alert alert-soft alert-error">
                     {{account.outlookSubscription.state.error}}
 
                     {{#if account.outlookSubscription.state.time}}
@@ -405,39 +391,37 @@
 
 {{#unless account.isApi}}
 
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">IMAP {{#if account.lastErrorState}}<span
-                class="badge badge-danger">errored</span>{{/if}}</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header"><h6 class="card-title text-primary">IMAP {{#if account.lastErrorState}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
         {{#if account.lastErrorState}}
         {{#if account.lastErrorState.description}}
-        <div class="alert alert-danger">{{account.lastErrorState.description}}</div>
+        <div class="alert alert-soft alert-error">{{account.lastErrorState.description}}</div>
         {{/if}}
-        <dl class="row">
+        <dl class="ee-dl">
 
 
 
             {{#if account.lastErrorState.response}}
-            <dt class="col-sm-3">IMAP response</dt>
-            <dd class="col-sm-9"><code>{{account.lastErrorState.response}}</code></dd>
+            <dt>IMAP response</dt>
+            <dd><code>{{account.lastErrorState.response}}</code></dd>
             {{/if}}
         </dl>
 
         <hr>
         {{/if}}
 
-        <dl class="row">
+        <dl class="ee-dl">
 
 
-            <dt class="col-sm-3">Enabled</dt>
+            <dt>Enabled</dt>
 
             {{#if account.imap.disabled}}
-            <dd class="col-sm-9">No</dd>
+            <dd>No</dd>
             {{else}}
-            <dd class="col-sm-9">Yes</dd>
+            <dd>Yes</dd>
             {{/if}}
 
 
@@ -445,36 +429,36 @@
             {{#unless account.oauth2.provider}}
 
             {{#if account.imap.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.imap.auth.user}}</dd>
+            <dt>Username</dt>
+            <dd>{{account.imap.auth.user}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">Authentication</dt>
+            <dt>Authentication</dt>
             {{#if account.imap.auth.pass}}
-            <dd class="col-sm-9">Password</dd>
+            <dd>Password</dd>
             {{else}}
-            <dd class="col-sm-9">None</dd>
+            <dd>None</dd>
             {{/if}}
 
             {{#if account.imap.host}}
-            <dt class="col-sm-3">Hostname</dt>
-            <dd class="col-sm-9">{{account.imap.host}}</dd>
+            <dt>Hostname</dt>
+            <dd>{{account.imap.host}}</dd>
             {{/if}}
 
             {{#if account.imap.port}}
-            <dt class="col-sm-3">Port</dt>
-            <dd class="col-sm-9">{{account.imap.port}}</dd>
+            <dt>Port</dt>
+            <dd>{{account.imap.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">TLS</dt>
-            <dd class="col-sm-9">{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            <dt>TLS</dt>
+            <dd>{{#if account.imap.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
             </dd>
 
             {{else}}
 
             {{#if account.oauth2.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">
+            <dt>Username</dt>
+            <dd>
                 {{account.oauth2.auth.user}}
                 {{#if account.oauth2.auth.delegatedUser}}
                 <em>as</em>
@@ -483,48 +467,46 @@
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Authentication</dt>
-            <dd class="col-sm-9">Bearer token</dd>
+            <dt>Authentication</dt>
+            <dd>Bearer token</dd>
 
             {{#if account.oauth2.providerData.imap.host}}
-            <dt class="col-sm-3">Hostname</dt>
-            <dd class="col-sm-9">{{account.oauth2.providerData.imap.host}}</dd>
+            <dt>Hostname</dt>
+            <dd>{{account.oauth2.providerData.imap.host}}</dd>
             {{/if}}
 
             {{#if account.oauth2.providerData.imap.port}}
-            <dt class="col-sm-3">Port</dt>
-            <dd class="col-sm-9">{{account.oauth2.providerData.imap.port}}</dd>
+            <dt>Port</dt>
+            <dd>{{account.oauth2.providerData.imap.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">TLS</dt>
-            <dd class="col-sm-9">{{#if account.oauth2.providerData.imap.secure}}Yes{{else}}Uses STARTTLS if
+            <dt>TLS</dt>
+            <dd>{{#if account.oauth2.providerData.imap.secure}}Yes{{else}}Uses STARTTLS if
                 possible{{/if}}
             </dd>
 
             {{/unless}}
 
             {{#if account.imap.resyncDelay}}
-            <dt class="col-sm-3">Resync delay</dt>
-            <dd class="col-sm-9">{{account.imap.resyncDelay}}</dd>
+            <dt>Resync delay</dt>
+            <dd>{{account.imap.resyncDelay}}</dd>
             {{/if}}
 
             {{#if account.imap.sentMailPath}}
-            <dt class="col-sm-3">Sent Mail folder</dt>
-            <dd class="col-sm-9">{{account.imap.sentMailPath}}</dd>
+            <dt>Sent Mail folder</dt>
+            <dd>{{account.imap.sentMailPath}}</dd>
             {{/if}}
 
             {{#if account.path}}
-            <dt class="col-sm-3">Syncing paths
+            <dt>Syncing paths
 
-                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                    style="display: inline-block;"
-                    data-content="EmailEngine only checks for new or updated emails from the selected paths"><i
-                        class="fas fa-info-circle text-info"></i></a>
+                {{#> ui/tooltip text="EmailEngine only checks for new or updated emails from the selected paths"}}<span
+                    class="icon-[tabler--info-circle] text-info size-4 align-text-bottom"></span>{{/ui/tooltip}}
 
             </dt>
-            <dd class="col-sm-9">
+            <dd>
                 {{#each account.path}}
-                <span class="badge badge-light">
+                <span class="badge badge-soft">
                     {{this}}
                 </span>
                 {{/each}}
@@ -544,10 +526,10 @@
             polling for secondary folders. However, when faster updates are required from
             secondary folders, subconnections can be used to ensure prompt notifications.</p>
 
-        <dl class="row mt-3">
+        <dl class="ee-dl mt-[1rem]">
             {{#each subConnectionInfo}}
-            <dt class="col-sm-3">{{path}}</dt>
-            <dd class="col-sm-9">
+            <dt>{{path}}</dt>
+            <dd>
                 <span class="badge badge-pill badge-{{stateLabel.type}} state-info" style="cursor:default;"
                     data-toggle="popover" data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
                     data-content="{{stateLabel.error}}" {{/if}}>
@@ -563,59 +545,57 @@
         {{/if}}
 
     </div>
-    <div class="card-footer">
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
 
-        <div class="float-right">
-
-            <i class="fas fa-info-circle text-gray-300"></i>
-
-        </div>
-
-        <dl class="row">
+        <dl class="ee-dl">
 
             {{#if account.imapServerInfo.name}}
-            <dt class="col-sm-3">Server Software</dt>
-            <dd class="col-sm-9">{{account.imapServerInfo.name}}</dd>
+            <dt>Server Software</dt>
+            <dd>{{account.imapServerInfo.name}}</dd>
             {{/if}}
 
             {{#if account.imapServerInfo.vendor}}
-            <dt class="col-sm-3">Vendor</dt>
-            <dd class="col-sm-9">{{account.imapServerInfo.vendor}}</dd>
+            <dt>Vendor</dt>
+            <dd>{{account.imapServerInfo.vendor}}</dd>
             {{/if}}
 
             {{#if account.imapServerInfo.version}}
-            <dt class="col-sm-3">Version</dt>
-            <dd class="col-sm-9">{{account.imapServerInfo.version}}</dd>
+            <dt>Version</dt>
+            <dd>{{account.imapServerInfo.version}}</dd>
             {{/if}}
 
             {{#if account.imapServerInfo.[support-url]}}
-            <dt class="col-sm-3">Support URL</dt>
-            <dd class="col-sm-9"><a href="{{account.imapServerInfo.[" support-url"]}}" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer">{{account.imapServerInfo.[support-url]}}</a>
+            <dt>Support URL</dt>
+            <dd><a href="{{account.imapServerInfo.[support-url]}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer" class="link link-animated">{{account.imapServerInfo.[support-url]}}</a>
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Capabilities</dt>
-            <dd class="col-sm-9">
+            <dt>Capabilities</dt>
+            <dd>
                 {{#each capabilities}}
                 {{#if url}}
-                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
+                {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer" class="link link-animated"><small>{{capability}}</small></a>{{/ui/tooltip}}
                 {{else}}
-                <small style="cursor: default;">{{capability}}</small>
+                <small class="cursor-default">{{capability}}</small>
                 {{/if}}
                 {{/each}}
             </dd>
 
-            <dt class="col-sm-3">Authentication</dt>
-            <dd class="col-sm-9">
+            <dt>Authentication</dt>
+            <dd>
                 {{#each authCapabilities}}
                 {{#if url}}
-                <a href="{{url}}" class="{{#if lastUsed}}badge badge-secondary{{/if}}" data-toggle="tooltip"
-                    data-placement="top" title="{{#if lastUsed}}Active method | {{/if}}{{rfc}}" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>
+                {{#if lastUsed}}
+                {{#> ui/tooltip text=(concat "Active method | " rfc)}}<a href="{{url}}" class="badge badge-neutral badge-sm"
+                    target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
                 {{else}}
-                <small style="cursor: default;">{{capability}}</small>
+                {{#> ui/tooltip text=rfc}}<a href="{{url}}" class="link link-animated"
+                    target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
+                {{/if}}
+                {{else}}
+                <small class="cursor-default">{{capability}}</small>
                 {{/if}}
                 {{/each}}
             </dd>
@@ -626,61 +606,59 @@
 </div>
 
 {{#if showSmtp}}
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">SMTP {{#if smtpError}}<span
-                class="badge badge-danger">errored</span>{{/if}}</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header"><h6 class="card-title text-primary">SMTP {{#if smtpError}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
 
         {{#if smtpError}}
-        <dl class="row">
-            <dt class="col-sm-3">Error</dt>
-            <dd class="col-sm-9">{{account.smtpStatus.description}}</dd>
+        <dl class="ee-dl">
+            <dt>Error</dt>
+            <dd>{{account.smtpStatus.description}}</dd>
 
             {{#if account.smtpStatus.response}}
-            <dt class="col-sm-3">SMTP response</dt>
-            <dd class="col-sm-9"><code>{{account.smtpStatus.response}}</code></dd>
+            <dt>SMTP response</dt>
+            <dd><code>{{account.smtpStatus.response}}</code></dd>
             {{/if}}
         </dl>
 
         <hr>
         {{/if}}
 
-        <dl class="row">
+        <dl class="ee-dl">
 
             {{#unless account.oauth2.provider}}
             {{#if account.smtp.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{account.smtp.auth.user}}</dd>
+            <dt>Username</dt>
+            <dd>{{account.smtp.auth.user}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">Authentication</dt>
+            <dt>Authentication</dt>
             {{#if account.smtp.auth.pass}}
-            <dd class="col-sm-9">Password</dd>
+            <dd>Password</dd>
             {{else}}
-            <dd class="col-sm-9">None</dd>
+            <dd>None</dd>
             {{/if}}
 
             {{#if account.smtp.host}}
-            <dt class="col-sm-3">Hostname</dt>
-            <dd class="col-sm-9">{{account.smtp.host}}</dd>
+            <dt>Hostname</dt>
+            <dd>{{account.smtp.host}}</dd>
             {{/if}}
 
             {{#if account.smtp.port}}
-            <dt class="col-sm-3">Port</dt>
-            <dd class="col-sm-9">{{account.smtp.port}}</dd>
+            <dt>Port</dt>
+            <dd>{{account.smtp.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">TLS</dt>
-            <dd class="col-sm-9">{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
+            <dt>TLS</dt>
+            <dd>{{#if account.smtp.secure}}Yes{{else}}Uses STARTTLS if possible{{/if}}
             </dd>
 
             {{else}}
 
             {{#if account.oauth2.auth.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">
+            <dt>Username</dt>
+            <dd>
                 {{account.oauth2.auth.user}}
                 {{#if account.oauth2.auth.delegatedUser}}
                 <em>as</em>
@@ -689,21 +667,21 @@
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Authentication</dt>
-            <dd class="col-sm-9">Bearer token</dd>
+            <dt>Authentication</dt>
+            <dd>Bearer token</dd>
 
             {{#if account.oauth2.providerData.smtp.host}}
-            <dt class="col-sm-3">Hostname</dt>
-            <dd class="col-sm-9">{{account.oauth2.providerData.smtp.host}}</dd>
+            <dt>Hostname</dt>
+            <dd>{{account.oauth2.providerData.smtp.host}}</dd>
             {{/if}}
 
             {{#if account.oauth2.providerData.smtp.port}}
-            <dt class="col-sm-3">Port</dt>
-            <dd class="col-sm-9">{{account.oauth2.providerData.smtp.port}}</dd>
+            <dt>Port</dt>
+            <dd>{{account.oauth2.providerData.smtp.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">TLS</dt>
-            <dd class="col-sm-9">{{#if account.oauth2.providerData.smtp.secure}}Yes{{else}}Uses STARTTLS if
+            <dt>TLS</dt>
+            <dd>{{#if account.oauth2.providerData.smtp.secure}}Yes{{else}}Uses STARTTLS if
                 possible{{/if}}
             </dd>
 
@@ -714,30 +692,24 @@
     </div>
 
     {{#if account.smtpServerEhlo}}
-    <div class="card-footer">
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
 
-        <div class="float-right">
-
-            <i class="fas fa-info-circle text-gray-300"></i>
-
-        </div>
-
-        <dl class="row">
-            <dt class="col-sm-3">Extensions</dt>
-            <dd class="col-sm-9">
+        <dl class="ee-dl">
+            <dt>Extensions</dt>
+            <dd>
                 {{#each account.smtpServerEhlo}}
                 <small style="cursor: default;">{{this}}</small>
                 {{/each}}
             </dd>
 
-            <dt class="col-sm-3">Authentication</dt>
-            <dd class="col-sm-9">
+            <dt>Authentication</dt>
+            <dd>
                 {{#each account.smtpAuthMechanisms}}
                 {{#if url}}
-                <a href="{{url}}" data-toggle="tooltip" data-placement="top" title="{{rfc}}" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{auth}}</small></a>
+                {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
+                    referrerpolicy="no-referrer" class="link link-animated"><small>{{auth}}</small></a>{{/ui/tooltip}}
                 {{else}}
-                <small style="cursor: default;">{{this}}</small>
+                <small class="cursor-default">{{this}}</small>
                 {{/if}}
                 {{/each}}
             </dd>
@@ -752,27 +724,26 @@
 {{/unless}}
 
 {{#if showAdvanced}}
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Advanced</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header"><h6 class="card-title text-primary">Advanced</h6>
     </div>
     <div class="card-body">
 
-        <dl class="row">
+        <dl class="ee-dl">
 
             {{#if account.path}}
-            <dt class="col-sm-3">Path to sync</dt>
-            <dd class="col-sm-9"><code style="color: #858796;">{{account.path}}</code></dd>
+            <dt>Path to sync</dt>
+            <dd><code class="text-base-content/60">{{account.path}}</code></dd>
             {{/if}}
 
             {{#if account.proxy}}
-            <dt class="col-sm-3">Proxy</dt>
-            <dd class="col-sm-9"><code style="color: #858796;">{{account.proxy}}</code></dd>
+            <dt>Proxy</dt>
+            <dd><code class="text-base-content/60">{{account.proxy}}</code></dd>
             {{/if}}
 
             {{#if account.webhooks}}
-            <dt class="col-sm-3">Webhook URL</dt>
-            <dd class="col-sm-9"><code style="color: #858796;">{{account.webhooks}}</code></dd>
+            <dt>Webhook URL</dt>
+            <dd><code class="text-base-content/60">{{account.webhooks}}</code></dd>
             {{/if}}
 
         </dl>
@@ -791,236 +762,173 @@
 </div>
 {{/if}}
 
-<div class="modal fade" id="renewGrantModal" tabindex="-1" aria-labelledby="renewGrantLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="renewGrantLabel">Re-authenticate account</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+{{#> ui/modal id="renewGrantModal" title="Re-authenticate account"}}
+<div class="modal-body">
+    <p>
+        When renewing the OAuth2 grant, ensure you are not logged in to another account for the same
+        provider in this browser. Otherwise, that account might override the settings and messages for
+        <em>{{account.name}}</em> in EmailEngine.
+    </p>
+</div>
+<div class="modal-footer">
+    <form method="post" action="/accounts/new" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" name="type" value="{{account.oauth2.provider}}">
+        <input type="hidden" name="data" value="{{accountForm.data}}">
+        <input type="hidden" name="sig" value="{{accountForm.signature}}">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#renewGrantModal"}}
+        <button type="submit" class="btn btn-primary">
+            {{#if account.type.icon}}
+            <i class="{{account.type.icon}} fa-fw"></i>
+            {{/if}} Re-authenticate
+        </button>
+    </form>
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="deleteModal" title="Delete Account"}}
+<div class="modal-body">
+    <p>Are you sure you want to delete the account for {{account.name}}? This action cannot be
+        undone.</p>
+</div>
+<div class="modal-footer">
+    <form method="post" action="/admin/accounts/{{account.account}}/delete" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
+        {{> ui/btn label="Delete account" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="testSendModal" title="Email delivery test" dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <p><small class="text-base-content/60">EmailEngine sends a test email from the selected account to EmailEngine's
+            remote testing server. Once the test email has been processed, EmailEngine displays the
+            authorization validation results below.</small>
+    </p>
+    <div id="test-send-pending-message">
+        <p><span class="loading loading-spinner loading-sm align-middle"></span> Testing email delivery settings, please
+            wait&mldr;<br />
+            <small><strong>Note:</strong> This process may take several
+                minutes depending on the SMTP server.</small>
+        </p>
+    </div>
+    <div id="test-send-error">
+        <p>Message submission failed with the following result:</p>
+        <div>
+            <small class="alert alert-soft alert-error error-message block font-mono"></small>
+        </div>
+    </div>
+    <div id="test-send-results"></div>
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#testSendModal"}}
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="watchDetails" title="Renewal request details" dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <dl class="ee-dl">
+
+        <dt>Error message</dt>
+        <dd>{{gmailWatch.error}}</dd>
+
+        <dt>Request time</dt>
+        <dd>
+            <span class="local-date-time" data-time="{{gmailWatch.lastCheckStr}}"
+                title="{{gmailWatch.lastCheckStr}}"></span>
+        </dd>
+
+        {{#if gmailWatch.request.status}}
+        <dt>Response status</dt>
+        <dd>
+            {{gmailWatch.request.status}}
+        </dd>
+        {{/if}}
+
+        {{#if gmailWatch.request.contentType}}
+        <dt>Content Type</dt>
+        <dd>
+            <span class="code-link">{{gmailWatch.request.contentType}}</span>
+        </dd>
+        {{/if}}
+
+    </dl>
+
+    {{#if gmailWatch.request.response}}
+
+    <div class="mt-[1rem]">
+        <textarea class="textarea font-mono w-full" rows="5" spellcheck="false" data-enable-grammarly="false"
+            readonly>{{json gmailWatch.request.response}}</textarea>
+    </div>
+
+    {{/if}}
+
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#watchDetails"}}
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="exportModal" title="Export Messages"}}
+<div class="modal-body">
+    <div class="alert alert-soft alert-info mb-[1rem] flex items-start gap-2">
+        <span class="icon-[tabler--flask] size-5 shrink-0"></span>
+        <span><strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues,
+            please contact <a href="mailto:support@postalsys.com" class="link link-animated">support@postalsys.com</a>.</span>
+    </div>
+    <div id="export-form-view" class="space-y-4">
+        {{> ui/form-field id="export-start-date" type="date" label="Start Date"}}
+        {{> ui/form-field id="export-end-date" type="date" label="End Date"}}
+        <div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" class="checkbox checkbox-sm" id="export-include-attachments">
+                <label class="label-text p-0" for="export-include-attachments">Include attachments</label>
             </div>
-            <div class="modal-body">
-                <p>
-                    When renewing the OAuth2 grant, ensure you are not logged in to another account for the same
-                    provider in this browser. Otherwise, that account might override the settings and messages for
-                    <em>{{account.name}}</em> in EmailEngine.
-                </p>
+            <span class="helper-text">Download and include attachment file contents in the export.
+                This increases export size and time.</span>
+        </div>
+        <small class="text-base-content/60 block">Gmail accounts export from All Mail. Other accounts export all folders
+            (excluding Junk and Trash).</small>
+    </div>
+
+    <div id="export-status-view" class="hidden">
+        <div class="mb-[1rem]">
+            <strong>Status:</strong>
+            <span id="export-status-badge" class="badge badge-info">Queued</span>
+            <span id="export-phase-badge" class="badge badge-neutral ms-1 hidden"></span>
+        </div>
+        <div class="mb-[1rem]">
+            <strong>Expires:</strong>
+            <span id="export-expires-at" class="text-base-content/60"></span>
+        </div>
+        <div id="export-progress-section">
+            <div class="progress mb-2">
+                <div id="export-progress-bar" class="progress-bar bg-info" role="progressbar" aria-valuenow="0"
+                    aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
             </div>
-            <div class="modal-footer">
-                <form method="post" action="/accounts/new">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" name="type" value="{{account.oauth2.provider}}">
-                    <input type="hidden" name="data" value="{{accountForm.data}}">
-                    <input type="hidden" name="sig" value="{{accountForm.signature}}">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        {{#if account.type.icon}}
-                        <i class="{{account.type.icon}} fa-fw"></i>
-                        {{/if}} Re-authenticate
-                    </button>
-                </form>
-            </div>
+            <small id="export-progress-text" class="text-base-content/60"></small>
+        </div>
+        <div id="export-error-section" class="hidden">
+            <div class="alert alert-soft alert-error" id="export-error-message"></div>
+        </div>
+        <div id="export-download-section" class="hidden mt-[1rem]">
+            <a href="#" id="export-download-link" class="btn btn-success btn-block">
+                <span class="icon-[tabler--download] size-4"></span> Download Export
+            </a>
         </div>
     </div>
 </div>
-
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Account</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the account for {{account.name}}? This action cannot be
-                    undone.</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/accounts/{{account.account}}/delete">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete account</button>
-                </form>
-            </div>
-        </div>
-    </div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#exportModal"}}
+    <button type="button" class="btn btn-error hidden" id="export-reset-btn">
+        <span class="icon-[tabler--trash] size-4"></span> Reset
+    </button>
+    <button type="button" class="btn btn-primary" id="export-start-btn">
+        <span class="icon-[tabler--file-export] size-4" id="export-start-icon"></span> Start Export
+    </button>
 </div>
-
-<div class="modal fade" id="testSendModal" tabindex="-1" aria-labelledby="testSendModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="testSendModalLabel">Email delivery test</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p><small class="text-muted">EmailEngine sends a test email from the selected account to EmailEngine's
-                        remote testing server. Once the test email has been processed, EmailEngine displays the
-                        authorization validation results below.</small>
-                </p>
-                <div id="test-send-pending-message">
-                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Testing email delivery settings, please
-                        wait&mldr;<br />
-                        <small><strong>Note:</strong> This process may take several
-                            minutes depending on the SMTP server.</small>
-                    </p>
-                </div>
-                <div id="test-send-error">
-                    <p>Message submission failed with the following result:</p>
-                    <div>
-                        <small class="alert alert-danger text-monospace error-message" style="display: block;"></small>
-                    </div>
-                </div>
-                <div id="test-send-results"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="watchDetails" tabindex="-1" aria-labelledby="watchDetailsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="watchDetailsLabel">Renewal request details</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-
-                    <dt class="col-sm-3">Error message</dt>
-                    <dd class="col-sm-9">
-                        {{gmailWatch.error}}</span>
-                    </dd>
-
-                    <dt class="col-sm-3">Request time</dt>
-                    <dd class="col-sm-9">
-                        <span class="local-date-time" data-time="{{gmailWatch.lastCheckStr}}"
-                            title="{{gmailWatch.lastCheckStr}}"></span>
-                    </dd>
-
-                    {{#if gmailWatch.request.status}}
-                    <dt class="col-sm-3">Response status</dt>
-                    <dd class="col-sm-9">
-                        {{gmailWatch.request.status}}
-                    </dd>
-                    {{/if}}
-
-                    {{#if gmailWatch.request.contentType}}
-                    <dt class="col-sm-3">Content Type</dt>
-                    <dd class="col-sm-9">
-                        <span class="code-link">{{gmailWatch.request.contentType}}</span>
-                    </dd>
-                    {{/if}}
-
-
-
-                </div>
-
-                {{#if gmailWatch.request.response}}
-
-                <div class="form-group">
-                    <textarea class="form-control text-monospace" rows="5" spellcheck="false"
-                        data-enable-grammarly="false" readonly>{{json gmailWatch.request.response}}</textarea>
-                </div>
-
-                {{/if}}
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exportModalLabel">Export Messages</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info mb-3">
-                    <i class="fas fa-flask fa-fw"></i>
-                    <strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues,
-                    please contact <a href="mailto:support@postalsys.com">support@postalsys.com</a>.
-                </div>
-                <div id="export-form-view">
-                    <div class="form-group">
-                        <label for="export-start-date">Start Date</label>
-                        <input type="date" class="form-control" id="export-start-date">
-                    </div>
-                    <div class="form-group">
-                        <label for="export-end-date">End Date</label>
-                        <input type="date" class="form-control" id="export-end-date">
-                    </div>
-                    <div class="form-group">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="export-include-attachments">
-                            <label class="custom-control-label" for="export-include-attachments">Include
-                                attachments</label>
-                        </div>
-                        <small class="form-text text-muted">Download and include attachment file contents in the export.
-                            This increases export size and time.</small>
-                    </div>
-                    <small class="text-muted">Gmail accounts export from All Mail. Other accounts export all folders
-                        (excluding Junk and Trash).</small>
-                </div>
-
-                <div id="export-status-view" class="d-none">
-                    <div class="mb-3">
-                        <strong>Status:</strong>
-                        <span id="export-status-badge" class="badge badge-info">Queued</span>
-                        <span id="export-phase-badge" class="badge badge-secondary ml-1 d-none"></span>
-                    </div>
-                    <div class="mb-3">
-                        <strong>Expires:</strong>
-                        <span id="export-expires-at" class="text-muted"></span>
-                    </div>
-                    <div id="export-progress-section">
-                        <div class="progress mb-2">
-                            <div id="export-progress-bar"
-                                class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                                role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
-                                style="width: 0%"></div>
-                        </div>
-                        <small id="export-progress-text" class="text-muted"></small>
-                    </div>
-                    <div id="export-error-section" class="d-none">
-                        <div class="alert alert-danger" id="export-error-message"></div>
-                    </div>
-                    <div id="export-download-section" class="d-none mt-3">
-                        <a href="#" id="export-download-link" class="btn btn-success btn-block">
-                            <i class="fas fa-download fa-fw"></i> Download Export
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-danger d-none" id="export-reset-btn">
-                    <i class="fas fa-trash fa-fw"></i> Reset
-                </button>
-                <button type="button" class="btn btn-primary" id="export-start-btn">
-                    <i class="fas fa-file-export fa-fw" id="export-start-icon"></i> Start Export
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{{/ui/modal}}
 
 <input type="hidden" id="account-id" value="{{account.account}}">
 <input type="hidden" id="crumb" value="{{crumb}}">
@@ -1060,13 +968,13 @@
             }
 
             reconnecting = true;
-            document.getElementById('reconnect-icon').classList.add('fa-spin');
+            document.getElementById('reconnect-icon').classList.add('animate-spin');
             reconnectAccount().then(data => {
-                document.getElementById('reconnect-icon').classList.remove('fa-spin');
+                document.getElementById('reconnect-icon').classList.remove('animate-spin');
                 reconnecting = false;
                 showToast(data.error ? data.error : (data.success ? 'Account reconnection requested' : 'Failed to request reconnect'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
-                document.getElementById('reconnect-icon').classList.remove('fa-spin');
+                document.getElementById('reconnect-icon').classList.remove('animate-spin');
                 reconnecting = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
@@ -1104,13 +1012,13 @@
             }
 
             syncing = true;
-            document.getElementById('sync-icon').classList.add('fa-spin');
+            document.getElementById('sync-icon').classList.add('animate-spin');
             syncAccount().then(data => {
-                document.getElementById('sync-icon').classList.remove('fa-spin');
+                document.getElementById('sync-icon').classList.remove('animate-spin');
                 syncing = false;
                 showToast(data.error ? data.error : (data.success ? 'Account sync requested' : 'Failed to request syncing'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
-                document.getElementById('sync-icon').classList.remove('fa-spin');
+                document.getElementById('sync-icon').classList.remove('animate-spin');
                 syncing = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
@@ -1199,16 +1107,6 @@
             })
         });
 
-        // not set up by default as this element has a different data-toggle
-        $('#delete-btn').tooltip();
-        $('#delete-btn').click(() => $('#delete-btn').tooltip('hide'));
-
-        $('#test-smtp-btn').tooltip();
-        $('#test-smtp-btn').click(() => $('#test-smtp-btn').tooltip('hide'));
-
-        $('#renew-grant-btn').tooltip();
-        $('#renew-grant-btn').click(() => $('#renew-grant-btn').tooltip('hide'));
-
         // Export status indicator on page load
         async function updateExportIndicator() {
             const account = document.getElementById('account-id').value.trim();
@@ -1218,7 +1116,7 @@
             try {
                 const res = await fetch(`/admin/accounts/${account}/exports?pageSize=1`);
                 if (!res.ok) {
-                    indicator.classList.add('d-none');
+                    indicator.classList.add('hidden');
                     return;
                 }
                 const data = await res.json();
@@ -1227,21 +1125,21 @@
                     const latest = data.exports[0];
                     if (latest.status === 'queued' || latest.status === 'processing') {
                         indicator.textContent = latest.status === 'queued' ? 'Queued' : 'Exporting';
-                        indicator.className = 'badge badge-pill badge-info ml-1';
+                        indicator.className = 'badge badge-info badge-sm rounded-full ms-1';
                     } else if (latest.status === 'completed') {
                         indicator.textContent = 'Ready';
-                        indicator.className = 'badge badge-pill badge-success ml-1';
+                        indicator.className = 'badge badge-success badge-sm rounded-full ms-1';
                     } else {
-                        indicator.classList.add('d-none');
+                        indicator.classList.add('hidden');
                         return;
                     }
-                    indicator.classList.remove('d-none');
+                    indicator.classList.remove('hidden');
                 } else {
-                    indicator.classList.add('d-none');
+                    indicator.classList.add('hidden');
                 }
             } catch (err) {
                 console.error('Failed to check export status', err);
-                indicator.classList.add('d-none');
+                indicator.classList.add('hidden');
             }
         }
 
@@ -1253,10 +1151,10 @@
         let exportPollingInterval = null;
 
         function showFormView() {
-            document.getElementById('export-form-view').classList.remove('d-none');
-            document.getElementById('export-status-view').classList.add('d-none');
-            document.getElementById('export-start-btn').classList.remove('d-none');
-            document.getElementById('export-reset-btn').classList.add('d-none');
+            document.getElementById('export-form-view').classList.remove('hidden');
+            document.getElementById('export-status-view').classList.add('hidden');
+            document.getElementById('export-start-btn').classList.remove('hidden');
+            document.getElementById('export-reset-btn').classList.add('hidden');
 
             // Set default dates (last 1 year)
             const today = new Date();
@@ -1267,18 +1165,18 @@
         }
 
         function showStatusView() {
-            document.getElementById('export-form-view').classList.add('d-none');
-            document.getElementById('export-status-view').classList.remove('d-none');
-            document.getElementById('export-start-btn').classList.add('d-none');
-            document.getElementById('export-reset-btn').classList.remove('d-none');
+            document.getElementById('export-form-view').classList.add('hidden');
+            document.getElementById('export-status-view').classList.remove('hidden');
+            document.getElementById('export-start-btn').classList.add('hidden');
+            document.getElementById('export-reset-btn').classList.remove('hidden');
         }
 
         function getStatusBadgeClass(status) {
             switch (status) {
                 case 'completed': return 'success';
-                case 'failed': return 'danger';
+                case 'failed': return 'error';
                 case 'processing': return 'info';
-                default: return 'secondary';
+                default: return 'neutral';
             }
         }
 
@@ -1314,9 +1212,9 @@
                 const phaseBadge = document.getElementById('export-phase-badge');
                 if (data.phase && data.status === 'processing') {
                     phaseBadge.textContent = data.phase.charAt(0).toUpperCase() + data.phase.slice(1);
-                    phaseBadge.classList.remove('d-none');
+                    phaseBadge.classList.remove('hidden');
                 } else {
-                    phaseBadge.classList.add('d-none');
+                    phaseBadge.classList.add('hidden');
                 }
 
                 // Update expiration date
@@ -1354,21 +1252,21 @@
                 // Handle completion
                 if (data.status === 'completed') {
                     stopPolling();
-                    document.getElementById('export-download-section').classList.remove('d-none');
+                    document.getElementById('export-download-section').classList.remove('hidden');
                     document.getElementById('export-download-link').href =
                         `/admin/accounts/${account}/export/${currentExportId}/download`;
                     progressBar.style.width = '100%';
                     progressBar.setAttribute('aria-valuenow', 100);
-                    progressBar.classList.remove('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                    progressBar.classList.remove('bg-info');
                     progressBar.classList.add('bg-success');
                 }
 
                 // Handle failure
                 if (data.status === 'failed') {
                     stopPolling();
-                    document.getElementById('export-error-section').classList.remove('d-none');
+                    document.getElementById('export-error-section').classList.remove('hidden');
                     document.getElementById('export-error-message').textContent = data.error || 'Export failed';
-                    document.getElementById('export-progress-section').classList.add('d-none');
+                    document.getElementById('export-progress-section').classList.add('hidden');
                 }
             } catch (err) {
                 console.error('Failed to update export status', err);
@@ -1391,13 +1289,13 @@
                         currentExportId = latest.exportId;
                         showStatusView();
                         // Reset progress display state
-                        document.getElementById('export-progress-section').classList.remove('d-none');
-                        document.getElementById('export-error-section').classList.add('d-none');
-                        document.getElementById('export-download-section').classList.add('d-none');
-                        document.getElementById('export-phase-badge').classList.add('d-none');
+                        document.getElementById('export-progress-section').classList.remove('hidden');
+                        document.getElementById('export-error-section').classList.add('hidden');
+                        document.getElementById('export-download-section').classList.add('hidden');
+                        document.getElementById('export-phase-badge').classList.add('hidden');
                         const progressBar = document.getElementById('export-progress-bar');
                         progressBar.classList.remove('bg-success');
-                        progressBar.classList.add('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                        progressBar.classList.add('bg-info');
                         await updateExportStatus();
                         if (latest.status !== 'completed' && latest.status !== 'failed') {
                             startPolling();
@@ -1412,14 +1310,17 @@
             }
         }
 
-        $('#exportModal').on('show.bs.modal', async function () {
-            await checkExistingExport();
-        });
+        const exportModalElm = document.getElementById('exportModal');
+        if (exportModalElm) {
+            exportModalElm.addEventListener('open.overlay', () => {
+                checkExistingExport().catch(err => console.error(err));
+            });
 
-        $('#exportModal').on('hidden.bs.modal', function () {
-            stopPolling();
-            updateExportIndicator();
-        });
+            exportModalElm.addEventListener('close.overlay', () => {
+                stopPolling();
+                updateExportIndicator();
+            });
+        }
 
         document.getElementById('export-start-btn').addEventListener('click', async function () {
             const account = document.getElementById('account-id').value.trim();
@@ -1432,7 +1333,7 @@
                 return;
             }
 
-            document.getElementById('export-start-icon').classList.add('fa-spin');
+            document.getElementById('export-start-icon').classList.add('animate-spin');
 
             try {
                 const res = await fetch(`/admin/accounts/${account}/export`, {
@@ -1451,13 +1352,13 @@
                     currentExportId = data.exportId;
                     showStatusView();
                     // Reset progress display state
-                    document.getElementById('export-progress-section').classList.remove('d-none');
-                    document.getElementById('export-error-section').classList.add('d-none');
-                    document.getElementById('export-download-section').classList.add('d-none');
-                    document.getElementById('export-phase-badge').classList.add('d-none');
+                    document.getElementById('export-progress-section').classList.remove('hidden');
+                    document.getElementById('export-error-section').classList.add('hidden');
+                    document.getElementById('export-download-section').classList.add('hidden');
+                    document.getElementById('export-phase-badge').classList.add('hidden');
                     const progressBar = document.getElementById('export-progress-bar');
                     progressBar.classList.remove('bg-success');
-                    progressBar.classList.add('bg-info', 'progress-bar-striped', 'progress-bar-animated');
+                    progressBar.classList.add('bg-info');
                     progressBar.style.width = '0%';
                     progressBar.setAttribute('aria-valuenow', 0);
                     document.getElementById('export-progress-text').textContent = '';
@@ -1470,7 +1371,7 @@
             } catch (err) {
                 showToast('Export failed: ' + err.message, 'alert-triangle');
             } finally {
-                document.getElementById('export-start-icon').classList.remove('fa-spin');
+                document.getElementById('export-start-icon').classList.remove('animate-spin');
             }
         });
 
@@ -1510,6 +1411,22 @@
 
         Handlebars.registerHelper('inc', function (nr, inc, options) {
             return Number(nr) + Number(inc);
+        });
+
+        // status -> FlyonUI color/icon maps for the delivery-test results template
+        const STATUS_COLORS = { pass: 'success', softfail: 'warning', fail: 'error', permerror: 'info', temperror: 'info' };
+        Handlebars.registerHelper('statusColor', result => STATUS_COLORS[result] || 'neutral');
+
+        Handlebars.registerHelper('statusIcon', result => {
+            switch (result) {
+                case 'pass':
+                    return 'icon-[tabler--circle-check]';
+                case 'neutral':
+                case 'none':
+                    return 'icon-[tabler--circle-off]';
+                default:
+                    return 'icon-[tabler--alert-triangle]';
+            }
         });
 
         const testSendTemplate = Handlebars.compile(document.getElementById('test-send-template').innerHTML);
@@ -1584,44 +1501,50 @@
             return results;
         }
 
-        $('#testSendModal').on('show.bs.modal', function (event) {
-            document.getElementById('test-send-pending-message').classList.remove('d-none');
-            document.getElementById('test-send-results').classList.add('d-none');
-            document.getElementById('test-send-error').classList.add('d-none');
-            document.getElementById('test-send-results').innerHTML = ''
-        })
+        const runDeliveryTest = testData => {
+            document.getElementById('test-send-pending-message').classList.remove('hidden');
+            document.getElementById('test-send-results').classList.add('hidden');
+            document.getElementById('test-send-error').classList.add('hidden');
+            document.getElementById('test-send-results').innerHTML = '';
 
-        $('#testSendModal').on('shown.bs.modal', function (event) {
-
-            let testData = {
-                account: event.relatedTarget.dataset.account || '',
-                gateway: event.relatedTarget.dataset.gateway || '',
-            }
+            uiModal.open('#testSendModal');
 
             createSmtpTestAccount(testData.account, testData.gateway).then((result) => {
                 return waitForTestResults(result.user);
             }).then(results => {
-                document.getElementById('test-send-pending-message').classList.add('d-none');
-                document.getElementById('test-send-error').classList.add('d-none');
+                document.getElementById('test-send-pending-message').classList.add('hidden');
+                document.getElementById('test-send-error').classList.add('hidden');
                 if (aborted) {
                     return false
                 }
-                document.getElementById('test-send-results').classList.remove('d-none');
+                document.getElementById('test-send-results').classList.remove('hidden');
                 document.getElementById('test-send-results').innerHTML = testSendTemplate(results);
-
-                // activate tabs
-                //$('#testResultTabs li button').tab();
-                //$('.collapse').collapse();
             }).catch(err => {
-                document.getElementById('test-send-pending-message').classList.add('d-none');
-                document.getElementById('test-send-results').classList.add('d-none');
-                document.getElementById('test-send-error').classList.remove('d-none');
+                if (aborted) {
+                    return false
+                }
+                document.getElementById('test-send-pending-message').classList.add('hidden');
+                document.getElementById('test-send-results').classList.add('hidden');
+                document.getElementById('test-send-error').classList.remove('hidden');
                 document.querySelector('#test-send-error .error-message').textContent = err.message;
             });
-        });
+        };
 
-        $('#testSendModal').on('hide.bs.modal', function (event) {
-            aborted = true;
-        });
+        for (let trigger of document.querySelectorAll('.test-send-trigger')) {
+            trigger.addEventListener('click', e => {
+                e.preventDefault();
+                runDeliveryTest({
+                    account: trigger.dataset.account || '',
+                    gateway: trigger.dataset.gateway || ''
+                });
+            });
+        }
+
+        const testSendModalElm = document.getElementById('testSendModal');
+        if (testSendModalElm) {
+            testSendModalElm.addEventListener('close.overlay', () => {
+                aborted = true;
+            });
+        }
     })
 </script>

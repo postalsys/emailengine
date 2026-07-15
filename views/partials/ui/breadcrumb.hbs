@@ -1,0 +1,24 @@
+{{!--
+    ui/breadcrumb - breadcrumb trail (list page [-> item] -> current page).
+    Usage:
+      {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=account.account}}
+      {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=accountUrl midLabel=account current="Edit"}}
+    Params:
+      parentHref  - URL of the parent list page (required)
+      parentLabel - label of the parent list page (required)
+      midHref     - URL of an intermediate level (optional)
+      midLabel    - label of the intermediate level (optional, with midHref)
+      current     - current page label (required)
+      class       - extra classes on the wrapper (additive; caller owns margins)
+--}}
+<div class="breadcrumbs text-sm{{#if class}} {{class}}{{/if}}">
+    <ul>
+        <li><a href="{{parentHref}}" class="link link-animated">{{parentLabel}}</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
+        {{#if midHref}}
+        <li><a href="{{midHref}}" class="link link-animated">{{midLabel}}</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
+        {{/if}}
+        <li aria-current="page">{{current}}</li>
+    </ul>
+</div>
