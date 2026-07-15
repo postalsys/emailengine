@@ -1,313 +1,158 @@
-<div class="container mt-4">
-
-    <div class="d-flex">
-        <img src="/static/logo/EmailEngine_logo_horiz.png" style="display: block; max-height: 60px; max-width: 100%;">
+{{!-- BullMQ queue stat card. Param names deliberately avoid title/class/
+      variant/icon/value/id, which would fall through into the nested ui/*
+      partials (hash values mask context inside partial blocks). --}}
+{{#*inline "queueCard"}}
+<div class="relative">
+    {{#if queue.isPaused}}
+    <div class="absolute end-4 top-2 z-[1]">
+        {{#> ui/tooltip text="EmailEngine is not processing entries in this queue"}}
+        {{> ui/badge label="paused" variant="warning"}}
+        {{/ui/tooltip}}
     </div>
+    {{/if}}
+    {{#> ui/stat-card variant="primary" icon="icon-[tabler--refresh]" title=""}}
+    <div class="text-xs font-bold uppercase mb-1 text-primary">
+        {{#> ui/tooltip text=tooltip}}
+        <a href="{{href}}" class="hover:underline">{{label}}</a>
+        {{/ui/tooltip}}
+    </div>
+    <div class="text-xl font-bold text-base-content">
+        {{#> ui/tooltip text="Queue entries total"}}{{formatInteger queue.total userLocale}}{{/ui/tooltip}} /
+        {{#> ui/tooltip text=delayedTooltip}}{{formatInteger queue.delayed userLocale}}{{/ui/tooltip}}
+    </div>
+    {{/ui/stat-card}}
+</div>
+{{/inline}}
 
+<div class="mx-auto max-w-7xl mt-[1rem]">
+
+    <div class="flex">
+        <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="block max-h-14 max-w-full">
+    </div>
 
     {{#each redisWarnings}}
-    <div class="card border-left-{{color}} mt-4">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-{{color}} text-uppercase mb-1">{{title}}
-                    </div>
-                    {{#each details}}
-                    <p>{{this}}</p>
-                    {{/each}}
-                </div>
-                <div class="col-auto">
-                    <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{#> ui/stat-card variant=(eeColor color) title=title icon="icon-[tabler--alert-circle]" class="mt-6"}}
+    {{#each details}}
+    <p class="mb-[1rem]">{{this}}</p>
+    {{/each}}
+    {{/ui/stat-card}}
     {{/each}}
 
     {{#if documentStoreUnavailable}}
-    <div class="card border-left-danger mt-4">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Document Store unavailable</div>
-                    <p class="mb-0">The Document Store is enabled in the EmailEngine settings, but the feature is not
-                        available because EmailEngine was not started with the Document Store enabled. The deprecated
-                        Document Store only runs when started with the <code>--documentStore.enabled</code> command line
-                        flag or the <code>EENGINE_DOCUMENT_STORE_ENABLED=true</code> environment variable. Until then the
-                        document store worker is not running and all Document Store API and configuration endpoints
-                        return 404. Either restart EmailEngine with the flag, or disable the <code>documentStoreEnabled</code>
-                        setting to clear this warning.</p>
-                </div>
-                <div class="col-auto">
-                    <i class="fas fa-database fa-2x text-gray-300"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{#> ui/stat-card variant="error" title="Document Store unavailable" icon="icon-[tabler--database]" class="mt-6"}}
+    <p class="mb-0">The Document Store is enabled in the EmailEngine settings, but the feature is not
+        available because EmailEngine was not started with the Document Store enabled. The deprecated
+        Document Store only runs when started with the <code>--documentStore.enabled</code> command line
+        flag or the <code>EENGINE_DOCUMENT_STORE_ENABLED=true</code> environment variable. Until then the
+        document store worker is not running and all Document Store API and configuration endpoints
+        return 404. Either restart EmailEngine with the flag, or disable the <code>documentStoreEnabled</code>
+        setting to clear this warning.</p>
+    {{/ui/stat-card}}
     {{/if}}
 
-
     {{#unless hasAccounts}}
-
-    <div class="card border-left-success mt-4">
-        <div class="card-body">
-            <div class="row no-gutters align-items-center">
-                <div class="col mr-2">
-                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Welcome to EmailEngine!
-                    </div>
-                    <p>Get started by connecting your first email account. Once connected, you can send
-                        and receive emails through the <a href="/admin/swagger">API</a>.
-                    </p>
-                    <p class="text-muted small">You can also add accounts programmatically via the <a
-                            href="https://api.emailengine.app/#operation/postV1Account" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">API endpoint</a>.
-                    </p>
-                    <div>
-                        <button type="button" class="btn btn-primary btn-icon-split" data-overlay="#addAccount">
-                            <span class="icon text-white-50">
-                                <i class="fas fa-user-plus"></i>
-                            </span>
-                            <span class="text">Connect your first account</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <i class="fas fa-info-circle fa-2x text-gray-300"></i>
-                </div>
-            </div>
-        </div>
+    {{#> ui/stat-card variant="success" title="Welcome to EmailEngine!" icon="icon-[tabler--info-circle]" class="mt-6"}}
+    <p class="mb-2">Get started by connecting your first email account. Once connected, you can send
+        and receive emails through the <a href="/admin/swagger" class="link link-animated">API</a>.
+    </p>
+    <p class="mb-[1rem] text-sm text-base-content/60">You can also add accounts programmatically via the <a
+            href="https://api.emailengine.app/#operation/postV1Account" target="_blank" rel="noopener noreferrer"
+            referrerpolicy="no-referrer" class="link link-animated">API endpoint</a>.
+    </p>
+    <div>
+        {{> ui/btn label="Connect your first account" icon="icon-[tabler--user-plus]" overlay="#addAccount"}}
     </div>
-
+    {{/ui/stat-card}}
     {{/unless}}
 
+    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-    <div class="row mt-4">
-
-        <div class="col-xl-3 col-md-6 mb-4">
-
-            <div class="card border-left-primary shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="The number of accounts registered with EmailEngine" data-toggle="tooltip"
-                                data-placement="top" style="cursor: default;">
-                                <a href="/admin/accounts">Accounts total</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{formatInteger stats.accounts
-                                userLocale}}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
+        <div class="text-xs font-bold uppercase mb-1 text-primary">
+            {{#> ui/tooltip text="The number of accounts registered with EmailEngine"}}
+            <a href="/admin/accounts" class="hover:underline">Accounts total</a>
+            {{/ui/tooltip}}
         </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="The number of accounts currently in the &quot;connected&quot; state"
-                                data-toggle="tooltip" data-placement="top" style="cursor: default;">
-                                <a href="/admin/accounts?state=connected">Accounts active</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{formatInteger stats.connectedAccounts
-                                userLocale}}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="text-xl font-bold text-base-content">{{formatInteger stats.accounts userLocale}}</div>
+        {{/ui/stat-card}}
 
+        {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
+        <div class="text-xs font-bold uppercase mb-1 text-primary">
+            {{#> ui/tooltip text='The number of accounts currently in the "connected" state'}}
+            <a href="/admin/accounts?state=connected" class="hover:underline">Accounts active</a>
+            {{/ui/tooltip}}
         </div>
+        <div class="text-xl font-bold text-base-content">{{formatInteger stats.connectedAccounts userLocale}}</div>
+        {{/ui/stat-card}}
 
-        {{#each counterList}}
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-{{color}} shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-gray-800 text-uppercase mb-1" {{#if
-                                comment}}title="{{comment}}" data-toggle="tooltip" data-placement="top" {{/if}}
-                                style="cursor: default;">
-                                {{title}}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{formatInteger value userLocale}}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-{{icon}} fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {{#each counterList as |counter|}}
+        {{!-- title="" keeps the counter's own title key from leaking into the
+              partial via context fallthrough; the block renders it through the
+              |counter| block param, which shadowed hash values cannot mask --}}
+        {{#> ui/stat-card variant=(eeColor counter.color) icon=counter.icon title=""}}
+        <div class="text-xs font-bold uppercase mb-1 text-base-content/80">
+            {{#if counter.comment}}
+            {{#> ui/tooltip text=counter.comment}}{{counter.title}}{{/ui/tooltip}}
+            {{else}}
+            {{counter.title}}
+            {{/if}}
         </div>
+        <div class="text-xl font-bold text-base-content">{{formatInteger counter.value userLocale}}</div>
+        {{/ui/stat-card}}
         {{/each}}
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            {{#if
-            stats.queues.notify.isPaused}}
-            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
-                <span class="badge badge-warning">paused</span>
-            </div>
-            {{/if}}
-            <div class="card border-left-primary shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="This queue processes webhook notifications" data-toggle="tooltip"
-                                data-placement="top" style="cursor: default;">
-                                <a href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify">Webhooks queue</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
-                                <span title="Queue entries total" data-toggle="tooltip"
-                                    data-placement="top">{{formatInteger stats.queues.notify.total userLocale}}</span> /
-                                <span title="Delayed queue entries" data-toggle="tooltip"
-                                    data-placement="top">{{formatInteger stats.queues.notify.delayed userLocale}}</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{> queueCard queue=stats.queues.notify href="/admin/bull-board/queue/Webhooks%20Queue%20-%20notify" label="Webhooks queue" tooltip="This queue processes webhook notifications" delayedTooltip="Delayed queue entries"}}
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            {{#if
-            stats.queues.submit.isPaused}}
-            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
-                <span class="badge badge-warning">paused</span>
-            </div>
-            {{/if}}
-            <div class="card border-left-primary shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="This queue processes emails to be sent via SMTP" data-toggle="tooltip"
-                                data-placement="top" style="cursor: default;">
-                                <a href="/admin/bull-board/queue/Submission%20Queue%20-%20submit">Submission queue</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
-                                <span title="Queue entries total" data-toggle="tooltip"
-                                    data-placement="top">{{formatInteger stats.queues.submit.total userLocale}}</span> /
-                                <span
-                                    title="Delayed queue entries, including emails scheduled to be sent later"
-                                    data-toggle="tooltip" data-placement="top">{{formatInteger
-                                    stats.queues.submit.delayed userLocale}}</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{> queueCard queue=stats.queues.submit href="/admin/bull-board/queue/Submission%20Queue%20-%20submit" label="Submission queue" tooltip="This queue processes emails to be sent via SMTP" delayedTooltip="Delayed queue entries, including emails scheduled to be sent later"}}
 
         {{#if showDocumentStore}}
-        <div class="col-xl-3 col-md-6 mb-4">
-            {{#if
-            stats.queues.documents.isPaused}}
-            <div style="position: absolute; right: 18px; top: 2px; z-index: 1; cursor: default;"
-                title="EmailEngine is not processing entries in this queue" data-toggle="tooltip" data-placement="top">
-                <span class="badge badge-warning">paused</span>
-            </div>
-            {{/if}}
-            <div class="card border-left-primary shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-                                title="This queue indexes mailbox changes to Elasticsearch" data-toggle="tooltip"
-                                data-placement="top" style="cursor: default;">
-                                <a href="/admin/bull-board/queue/Document%20Queue%20-%20documents">Documents queue</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="cursor: default;">
-                                <span title="Queue entries total" data-toggle="tooltip" data-placement="top"></span>
-
-                                {{formatInteger stats.queues.documents.total userLocale}}
-
-                                </span> /
-                                <span title="Delayed queue entries" data-toggle="tooltip"
-                                    data-placement="top">{{formatInteger stats.queues.documents.delayed
-                                    userLocale}}</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-sync-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {{> queueCard queue=stats.queues.documents href="/admin/bull-board/queue/Document%20Queue%20-%20documents" label="Documents queue" tooltip="This queue indexes mailbox changes to Elasticsearch" delayedTooltip="Delayed queue entries"}}
         {{/if}}
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-{{redisPing.color}} shadow">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-gray-800 text-uppercase mb-1" {{#if
-                                redisPing.comment}}title="{{redisPing.comment}}" data-toggle="tooltip"
-                                data-placement="top" {{/if}} style="cursor: default;">
-                                {{redisPing.title}}</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                {{redisPing.value}}
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-{{redisPing.icon}} fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {{#> ui/stat-card variant=(eeColor redisPing.color) icon=redisPing.icon}}
+        <div class="text-xs font-bold uppercase mb-1 text-base-content/80">
+            {{#if redisPing.comment}}
+            {{#> ui/tooltip text=redisPing.comment}}{{redisPing.title}}{{/ui/tooltip}}
+            {{else}}
+            {{redisPing.title}}
+            {{/if}}
         </div>
+        <div class="text-xl font-bold text-base-content">{{redisPing.value}}</div>
+        {{/ui/stat-card}}
 
     </div>
 
-
-    <div class="card mt-4 mb-4">
-        <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
-            aria-expanded="true" aria-controls="showHelp">
-            <h6 class="m-0 font-weight-bold text-primary">Software versions</h6>
-        </a>
-        <div class="collapse" id="showHelp">
-            <div class="card-body">
-
-                <ul class="list-group">
-                    <li class="list-group-item"><a href="https://emailengine.app/" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">EmailEngine</a>
-                        v{{packageData.version}}</li>
-                    <li class="list-group-item"><a href="https://nodejs.org/en/" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">Node.js</a> v{{stats.node}}
-                        ({{stats.arch}})</li>
-                    <li class="list-group-item"><a href="https://redis.io/" target="_blank" rel="noopener noreferrer"
-                            referrerpolicy="no-referrer">Redis</a> v{{stats.redis}}</li>
-                    <li class="list-group-item"><a href="https://imapflow.com/" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">ImapFlow</a> v{{stats.imapflow}}</li>
-                    <li class="list-group-item"><a href="https://docs.bullmq.io/" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">BullMQ</a> v{{stats.bullmq}}</li>
-                    {{#if stats.build.commit}}
-                    <li class="list-group-item">Code version: <a
-                            href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
-                            rel="noopener noreferrer" referrerpolicy="no-referrer">{{stats.build.commit}}</a>
-                    </li>
-                    {{/if}}
-                </ul>
-            </div>
+    <details class="group card bg-base-100 shadow-md mt-6 mb-6">
+        <summary
+            class="flex cursor-pointer items-center gap-2 px-6 py-[1rem] font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+            <span
+                class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
+            Software versions
+        </summary>
+        <div class="card-body pt-0">
+            <ul class="divide-y divide-base-content/10">
+                <li class="py-2"><a href="https://emailengine.app/" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer" class="link link-animated">EmailEngine</a>
+                    v{{packageData.version}}</li>
+                <li class="py-2"><a href="https://nodejs.org/en/" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer" class="link link-animated">Node.js</a> v{{stats.node}}
+                    ({{stats.arch}})</li>
+                <li class="py-2"><a href="https://redis.io/" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer" class="link link-animated">Redis</a> v{{stats.redis}}</li>
+                <li class="py-2"><a href="https://imapflow.com/" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer" class="link link-animated">ImapFlow</a> v{{stats.imapflow}}</li>
+                <li class="py-2"><a href="https://docs.bullmq.io/" target="_blank" rel="noopener noreferrer"
+                        referrerpolicy="no-referrer" class="link link-animated">BullMQ</a> v{{stats.bullmq}}</li>
+                {{#if stats.build.commit}}
+                <li class="py-2">Code version: <a
+                        href="https://github.com/postalsys/emailengine/tree/{{stats.build.commit}}" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer"
+                        class="link link-animated">{{stats.build.commit}}</a>
+                </li>
+                {{/if}}
+            </ul>
         </div>
-    </div>
+    </details>
 </div>
 
 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />

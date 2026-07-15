@@ -1,0 +1,16 @@
+{{!--
+    ui/tooltip - FlyonUI hover tooltip around arbitrary trigger content.
+    Block form only; the block is the visible trigger:
+      {{#> ui/tooltip text="Explanation shown on hover"}}<span>trigger</span>{{/ui/tooltip}}
+    Params:
+      text      - tooltip body text (required)
+      placement - top|bottom|left|right (default top; the [--placement:*]
+                  classes are safelisted in app.tailwind.css)
+      class     - extra classes on the wrapper (optional)
+--}}
+<span class="tooltip [--placement:{{#if placement}}{{placement}}{{else}}top{{/if}}] inline-flex{{#if class}} {{class}}{{/if}}">
+    <span class="tooltip-toggle cursor-default">{{> @partial-block}}</span>
+    <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
+        <span class="tooltip-body">{{text}}</span>
+    </span>
+</span>

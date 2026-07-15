@@ -119,6 +119,29 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('dashboard: stat cards, tooltips and versions panel', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        await page.goto('/admin');
+
+        // stat cards with accent borders
+        await expect(page.locator('.card.border-s-4').first()).toBeVisible();
+        await expect(page.getByText('Accounts total')).toBeVisible();
+        await expect(page.getByText('Webhooks queue')).toBeVisible();
+
+        // FlyonUI tooltip on a stat-card label
+        await page.locator('.tooltip-toggle', { hasText: 'Accounts total' }).hover();
+        await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+
+        // software versions panel toggles open
+        const imapflowRow = page.getByText('ImapFlow');
+        await expect(imapflowRow).toBeHidden();
+        await page.locator('summary', { hasText: 'Software versions' }).click();
+        await expect(imapflowRow).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

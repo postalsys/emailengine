@@ -67,6 +67,9 @@
 @source inline('btn-{primary,secondary,accent,neutral,info,success,warning,error,outline,soft,text,xs,sm,lg}');
 @source inline('border-s-{primary,secondary,info,success,warning,error}');
 @source inline('{text-,bg-}{primary,secondary,info,success,warning,error}');
+@source inline('[--placement:top] [--placement:bottom] [--placement:left] [--placement:right]');
+/* server-driven dashboard icons (lib/ui-routes/dashboard-routes.js is not scanned) */
+@source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
 
 @theme {
     --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
