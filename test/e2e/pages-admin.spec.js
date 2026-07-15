@@ -391,6 +391,162 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('config network: or-else-all gating, IP rescan and remove-address modal', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/network');
+        await expect(page.locator('h1', { hasText: 'Network' })).toBeVisible();
+
+        // the proxy checkbox is disabled until a proxy URL is entered (app.js or-else-all)
+        expect(await page.evaluate(() => document.getElementById('proxy_enabled').disabled)).toBe(true);
+        await page.fill('#proxyUrl', 'socks://localhost:1080');
+        await page.locator('#proxyUrl').dispatchEvent('change');
+        expect(await page.evaluate(() => document.getElementById('proxy_enabled').disabled)).toBe(false);
+
+        // scan for IPs re-renders the address list through the browser-side
+        // Handlebars template; the delete trigger is delegated so it works on
+        // re-rendered rows
+        await page.locator('#reload-btn').click();
+        await page.waitForFunction(() => !document.getElementById('reload-btn').disabled);
+        await expect(page.locator('#address-list tr').first()).toBeVisible();
+
+        const firstDelete = page.locator('#address-list .address-action-delete').first();
+        const address = await firstDelete.getAttribute('data-address');
+        await firstDelete.click();
+        await expect(page.locator('#deleteAddress.open')).toHaveCount(1);
+        await expect(page.locator('#deleteAddressLabel')).toHaveText(`Remove ${address}?`);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#deleteAddress.open')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config webhooks: event-type gating and test-webhook button state', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/webhooks');
+        await expect(page.locator('h1', { hasText: 'Webhooks' })).toBeVisible();
+        expect(await page.locator('.event-type').count()).toBeGreaterThan(10);
+
+        // "All events" disables the individual event checkboxes
+        await page.locator('#notifyAll').check();
+        expect(await page.evaluate(() => [...document.querySelectorAll('.event-type')].every(e => e.disabled))).toBe(true);
+        await page.locator('#notifyAll').uncheck();
+        expect(await page.evaluate(() => [...document.querySelectorAll('.event-type')].every(e => !e.disabled))).toBe(true);
+
+        // the send-test button is gated on the webhook URL
+        await page.fill('#settingsWebhooks', '');
+        await page.locator('#settingsWebhooks').dispatchEvent('change');
+        expect(await page.evaluate(() => document.getElementById('test-payload-btn').disabled)).toBe(true);
+        await page.fill('#settingsWebhooks', 'https://example.com/e2e-hook');
+        await page.locator('#settingsWebhooks').dispatchEvent('change');
+        expect(await page.evaluate(() => document.getElementById('test-payload-btn').disabled)).toBe(false);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config smtp: integration examples render through highlight.js tabs', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/smtp');
+        await expect(page.locator('h1', { hasText: 'SMTP Interface' })).toBeVisible();
+        await expect(page.locator('h1 .state-info')).toBeVisible();
+
+        await page.locator('summary', { hasText: 'Integration Examples' }).click();
+        await expect(page.locator('#example-nodemailer-code')).toContainText('createTransport');
+        await page.locator('#example-phpmailer-tab').click();
+        await expect(page.locator('#example-phpmailer')).toBeVisible();
+        await expect(page.locator('#example-phpmailer-code')).toContainText('PHPMailer');
+
+        // editing the port re-renders the examples
+        await page.fill('#smtpServerPort', '3535');
+        await page.locator('#smtpServerPort').dispatchEvent('change');
+        await expect(page.locator('#example-phpmailer-code')).toContainText('3535');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config imap-proxy: client examples and password reveal', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/imap-proxy');
+        await expect(page.locator('h1', { hasText: 'IMAP Proxy' })).toBeVisible();
+
+        await page.locator('summary', { hasText: 'Client Configuration Examples' }).click();
+        await expect(page.locator('#example-node-imap-code')).toContainText('new Imap');
+
+        await page.fill('#imapProxyServerPassword', 'e2e-secret');
+        await page.locator('#showPassword').click();
+        expect(await page.evaluate(() => document.getElementById('imapProxyServerPassword').type)).toBe('text');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config ai: ACE editors, live filter evaluation and test-filter modal', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/ai');
+        await expect(page.locator('#editor-fn .ace_content')).toBeAttached();
+        await expect(page.locator('#editor-prompt .ace_content')).toBeAttached();
+
+        await page.evaluate(() => window.ace.edit('editor-fn').setValue('return true;'));
+        await expect(page.locator('#filter-res')).toHaveText('match - will process');
+
+        await page.locator('#test-payload-btn').click();
+        await expect(page.locator('#setPayloadModal.open')).toHaveCount(1);
+        await expect(page.locator('#setPayloadModal')).toHaveCSS('opacity', '1');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config service: editors, language override details and queue cleanup toast', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/service');
+        await expect(page.locator('h1', { hasText: 'General Settings' })).toBeVisible();
+        await expect(page.locator('#editor-html .ace_content')).toBeAttached();
+        await expect(page.locator('#editor-env .ace_content')).toBeAttached();
+
+        await page.locator('#languageDetails summary').click();
+        await expect(page.locator('#languageDetails .alert')).toBeVisible();
+
+        // clear-completed-jobs posts to the server and reports through a toast
+        await page.locator('#clean-queues-btn').click();
+        await expect(page.locator('#toastContainer .alert', { hasText: 'Cleanup request sent' })).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config logging and license: forms render', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/logging');
+        await expect(page.locator('h1', { hasText: 'Logging' })).toBeVisible();
+        await expect(page.locator('#settingsLogsMaxLogLines')).toBeVisible();
+
+        await page.goto('/admin/config/license');
+        await expect(page.locator('h1', { hasText: 'License' })).toBeVisible();
+        // the add-license panel is collapsible; the e2e instance runs on a
+        // trial so it starts collapsed
+        const details = page.locator('details', { has: page.locator('summary', { hasText: 'Add License Key' }) });
+        if (!(await details.evaluate(d => d.open))) {
+            await details.locator('summary').click();
+        }
+        await expect(page.locator('#licenseTextElement')).toBeVisible();
+        await expect(page.locator('#licenseFile')).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

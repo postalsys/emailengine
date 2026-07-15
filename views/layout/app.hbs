@@ -296,14 +296,17 @@
     <script src="/static/js/app.js"></script>
 
 
+    {{!-- global #crumb element for page scripts that post with fetch();
+          must render unconditionally - converted pages rely on it instead of
+          page-local duplicates --}}
+    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+
     {{#if trialPossible}}
     {{#> ui/modal id="activateTrial" title="Start a 14-day trial" hideClose=true}}
     <div class="modal-body">
         Provisioning a trial license, please wait <span class="loading loading-spinner loading-sm align-middle"></span>
     </div>
     {{/ui/modal}}
-
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             let trialBtn = document.getElementById('start-trial-btn');

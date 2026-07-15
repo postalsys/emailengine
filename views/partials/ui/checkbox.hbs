@@ -7,19 +7,23 @@
       id         - control id (required; also the default for name)
       label      - label text (required)
       name       - input name (defaults to id)
+      labelTitle - title attribute on the label, shown on hover (optional)
       checked    - true to render checked
       tooltip    - help text shown on hover behind a question icon (optional)
       hint       - muted helper text under the control (optional)
       error      - validation error message (optional)
       dataTarget - value for a data-target attribute hook (optional)
+      dataReverse - true to add data-reverse="true" (inverts the or-else-all
+                    disable direction in app.js; optional)
+      disabled   - true to render the input disabled (optional)
       class      - extra classes on the input (optional)
 --}}
 <div class="w-full">
     <div class="flex items-center gap-2">
         <input type="checkbox" class="checkbox checkbox-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}"
             id="{{id}}" name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{#if checked}}checked {{/if}}{{#if
-            dataTarget}}data-target="{{dataTarget}}" {{/if}}>
-        <label class="label-text p-0" for="{{id}}">{{label}}</label>
+            dataTarget}}data-target="{{dataTarget}}" {{/if}}{{#if dataReverse}}data-reverse="true" {{/if}}{{#if disabled}}disabled {{/if}}>
+        <label class="label-text p-0" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
         {{#if tooltip}}
         {{!-- class="" blocks this partial's own class param (meant for the
               input) from falling through onto the tooltip wrapper --}}

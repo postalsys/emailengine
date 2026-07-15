@@ -1,266 +1,199 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
+{{> ui/page-header title="Network" icon="icon-[tabler--network]" class="mb-1"}}
 
-        <small><i class="fas fa-network-wired fa-fw"></i></small>
-        Network
-    </h1>
-</div>
-
-<p class="mb-4">Control how EmailEngine connects to email servers and routes traffic.</p>
+<p class="mb-6">Control how EmailEngine connects to email servers and routes traffic.</p>
 
 <form method="post" action="/admin/config/network">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element the script reads --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
 
-    <div class="card mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Proxy Settings</h6>
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Proxy Settings</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
             <p>Route all email server connections through a proxy. Supports HTTP CONNECT, SOCKS4, and SOCKS5.</p>
 
-            <div class="form-group form-check">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">proxyEnabled</a>]</div>
-
-                <input type="checkbox"
-                    class="form-check-input proxy-status {{#if errors.proxyEnabled}}is-invalid{{/if}}"
-                    id="proxy_enabled" name="proxyEnabled" {{#if values.proxyEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="proxy_enabled">Enable Global Proxy</label>
-                {{#if errors.proxyEnabled}}
-                <span class="invalid-feedback">{{errors.proxyEnabled}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Routes all connections through the proxy below. Individual accounts
-                    can override this setting.</small>
-
+            <div>
+                {{> ui/setting-ref name="proxyEnabled"}}
+                {{> ui/checkbox id="proxy_enabled" name="proxyEnabled" label="Enable Global Proxy" class="proxy-status"
+                checked=values.proxyEnabled error=errors.proxyEnabled
+                hint="Routes all connections through the proxy below. Individual accounts can override this setting."}}
             </div>
 
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">proxyUrl</a>]</div>
-
-                <label for="proxyUrl">Proxy URL</label>
-                <input type="text" class="form-control or-else-all  {{#if errors.proxyUrl}}is-invalid{{/if}}"
-                    id="proxyUrl" placeholder="socks://localhost:1080" value="{{values.proxyUrl}}" name="proxyUrl"
+            <div>
+                {{> ui/setting-ref name="proxyUrl"}}
+                {{#> ui/form-field id="proxyUrl" label="Proxy URL" error=errors.proxyUrl}}
+                <input type="text" class="input or-else-all{{#if errors.proxyUrl}} is-invalid{{/if}}" id="proxyUrl"
+                    placeholder="socks://localhost:1080" value="{{values.proxyUrl}}" name="proxyUrl"
                     data-target="proxy-status">
-                {{#if errors.proxyUrl}}
-                <span class="invalid-feedback">{{errors.proxyUrl}}</span>
-                {{/if}}
-                <small id="proxyUrlBlock" class="form-text text-muted">Format: <code>http://</code>,
-                    <code>https://</code>, <code>socks://</code>, <code>socks4://</code>, or <code>socks5://</code>
-                    followed by host:port</small>
+                <span class="helper-text" id="proxyUrlBlock">Format: <code>http://</code>, <code>https://</code>,
+                    <code>socks://</code>, <code>socks4://</code>, or <code>socks5://</code> followed by
+                    host:port</span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">smtpEhloName</a>]</div>
-
-                <label for="smtpEhloName">SMTP Greeting Name</label>
-                <input type="text" class="form-control {{#if errors.smtpEhloName}}is-invalid{{/if}}" id="smtpEhloName"
+            <div>
+                {{> ui/setting-ref name="smtpEhloName"}}
+                {{#> ui/form-field id="smtpEhloName" label="SMTP Greeting Name" error=errors.smtpEhloName}}
+                <input type="text" class="input{{#if errors.smtpEhloName}} is-invalid{{/if}}" id="smtpEhloName"
                     placeholder="mail.example.com" value="{{values.smtpEhloName}}" name="smtpEhloName">
-                {{#if errors.smtpEhloName}}
-                <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
-                {{/if}}
-                <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname used in SMTP EHLO/HELO greetings.
-                    Defaults to <code>{{defaultSmtpEhloName}}</code>. For dedicated IPs, use the IP's reverse DNS
-                    hostname.</small>
+                <span class="helper-text" id="smtpEhloNameBlock">Hostname used in SMTP EHLO/HELO greetings. Defaults to
+                    <code>{{defaultSmtpEhloName}}</code>. For dedicated IPs, use the IP's reverse DNS hostname.</span>
+                {{/ui/form-field}}
             </div>
         </div>
     </div>
 
-    <div class="card mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">HTTP Proxy Settings</h6>
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">HTTP Proxy Settings</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
             <p>Route all outbound HTTP/HTTPS requests through a proxy. This applies to webhook delivery, OAuth token
                 exchange, and API calls to Gmail/Outlook. This is separate from the IMAP/SMTP proxy above.</p>
 
-            <div class="form-group form-check">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">httpProxyEnabled</a>]</div>
-
-                <input type="checkbox"
-                    class="form-check-input http-proxy-status {{#if errors.httpProxyEnabled}}is-invalid{{/if}}"
-                    id="http_proxy_enabled" name="httpProxyEnabled" {{#if
-                    values.httpProxyEnabled}}checked{{/if}} />
-                <label class="form-check-label" for="http_proxy_enabled">Enable HTTP Proxy</label>
-                {{#if errors.httpProxyEnabled}}
-                <span class="invalid-feedback">{{errors.httpProxyEnabled}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Routes all outbound HTTP/HTTPS requests through the proxy
-                    below.</small>
-
+            <div>
+                {{> ui/setting-ref name="httpProxyEnabled"}}
+                {{> ui/checkbox id="http_proxy_enabled" name="httpProxyEnabled" label="Enable HTTP Proxy"
+                class="http-proxy-status" checked=values.httpProxyEnabled error=errors.httpProxyEnabled
+                hint="Routes all outbound HTTP/HTTPS requests through the proxy below."}}
             </div>
 
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">httpProxyUrl</a>]</div>
-
-                <label for="httpProxyUrl">HTTP Proxy URL</label>
-                <input type="text" class="form-control or-else-all  {{#if errors.httpProxyUrl}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="httpProxyUrl"}}
+                {{#> ui/form-field id="httpProxyUrl" label="HTTP Proxy URL" error=errors.httpProxyUrl}}
+                <input type="text" class="input or-else-all{{#if errors.httpProxyUrl}} is-invalid{{/if}}"
                     id="httpProxyUrl" placeholder="http://proxy:8080" value="{{values.httpProxyUrl}}"
                     name="httpProxyUrl" data-target="http-proxy-status">
-                {{#if errors.httpProxyUrl}}
-                <span class="invalid-feedback">{{errors.httpProxyUrl}}</span>
-                {{/if}}
-                <small id="httpProxyUrlBlock" class="form-text text-muted">Format: <code>http://</code>,
-                    <code>https://</code>, <code>socks4://</code>, or <code>socks5://</code>
-                    followed by host:port</small>
+                <span class="helper-text" id="httpProxyUrlBlock">Format: <code>http://</code>, <code>https://</code>,
+                    <code>socks4://</code>, or <code>socks5://</code> followed by host:port</span>
+                {{/ui/form-field}}
             </div>
         </div>
     </div>
 
-    <div class="card mb-4 mt-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">IP Address Strategy</h6>
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">IP Address Strategy</h6>
         </div>
         <div class="card-body">
-            <p>Choose how EmailEngine selects IP addresses when your server has multiple IPs:</p>
-            <ul>
+            <p class="mb-2">Choose how EmailEngine selects IP addresses when your server has multiple IPs:</p>
+            <ul class="list-disc ps-6 space-y-1">
                 <li><strong>Dedicated</strong> - Each account always uses the same IP from your pool</li>
                 <li><strong>Random</strong> - Each connection uses a randomly selected IP</li>
                 <li><strong>Server Default</strong> - Uses your server's default network configuration</li>
             </ul>
         </div>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Protocol</th>
-                    <th>Selection Method</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <span>IMAP</span>
-                    </td>
-                    <td>
-                        <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                                target="_blank" rel="noopener noreferrer">imapStrategy</a>]
-                        </div>
-                        <select class="custom-select custom-select-sm" name="imapStrategy" {{#if
-                            errors.imapStrategy}}is-invalid{{/if}}>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>Selection Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span>IMAP</span>
+                        </td>
+                        <td>
+                            {{> ui/setting-ref name="imapStrategy"}}
+                            <select class="select select-sm max-w-xs{{#if errors.imapStrategy}} is-invalid{{/if}}"
+                                name="imapStrategy" aria-label="IMAP IP selection method">
+                                {{#each imapStrategies}}
+                                <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
+                                {{/each}}
+                            </select>
+                            {{#if errors.imapStrategy}}
+                            <span class="helper-text text-error">{{errors.imapStrategy}}</span>
+                            {{/if}}
+                        </td>
+                    </tr>
 
-                            {{#each imapStrategies}}
-                            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
-                            {{/each}}
-                        </select>
-                        {{#if errors.imapStrategy}}
-                        <span class="invalid-feedback">{{errors.imapStrategy}}</span>
-                        {{/if}}
-                    </td>
-                </tr>
+                    <tr>
+                        <td>
+                            <span>SMTP</span>
+                        </td>
+                        <td>
+                            {{> ui/setting-ref name="smtpStrategy"}}
+                            <select class="select select-sm max-w-xs{{#if errors.smtpStrategy}} is-invalid{{/if}}"
+                                name="smtpStrategy" aria-label="SMTP IP selection method">
+                                {{#each smtpStrategies}}
+                                <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
+                                {{/each}}
+                            </select>
+                            {{#if errors.smtpStrategy}}
+                            <span class="helper-text text-error">{{errors.smtpStrategy}}</span>
+                            {{/if}}
+                        </td>
+                    </tr>
 
-                <tr>
-                    <td>
-                        <span>SMTP</span>
-                    </td>
-                    <td>
-                        <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                                target="_blank" rel="noopener noreferrer">smtpStrategy</a>]
-                        </div>
-                        <select class="custom-select custom-select-sm" name="smtpStrategy" {{#if
-                            errors.smtpStrategy}}is-invalid{{/if}}>
-
-                            {{#each smtpStrategies}}
-                            <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
-                            {{/each}}
-
-                        </select>
-                        {{#if errors.smtpStrategy}}
-                        <span class="invalid-feedback">{{errors.smtpStrategy}}</span>
-                        {{/if}}
-                    </td>
-                </tr>
-
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="card mb-4 mt-4">
-        <div class="card-header py-3 d-flex justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary align-self-center">Available IP Addresses</h6>
-            <div class="align-self-center"><button class="btn btn-primary" id="reload-btn">
-                    <i class="fa fa-sync-alt fa-fw"></i>
-                    Scan for IPs</button></div>
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">Available IP Addresses</h6>
+            {{> ui/btn label="Scan for IPs" id="reload-btn" icon="icon-[tabler--refresh] reload-icon"}}
         </div>
 
         <div class="card-body">
-            <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                    target="_blank" rel="noopener noreferrer">localAddresses</a>]</div>
+            {{> ui/setting-ref name="localAddresses"}}
             Select which IP addresses EmailEngine can use with the Dedicated or Random strategies. If selected IPs
             become unavailable, EmailEngine falls back to server defaults.
         </div>
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="checkbox-all">&nbsp;
-                        </div>
-                    </th>
-                    <th>
-                        Local IP
-                    </th>
-                    <th>
-                        Public IP
-                    </th>
-                    <th colspan="2">
-                        Hostname
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="address-list">
-                {{>address_list}}
-            </tbody>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" class="checkbox checkbox-sm" id="checkbox-all"
+                                aria-label="Select all addresses">
+                        </th>
+                        <th>
+                            Local IP
+                        </th>
+                        <th>
+                            Public IP
+                        </th>
+                        <th colspan="2">
+                            Hostname
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="address-list">
+                    {{>address_list}}
+                </tbody>
 
-        </table>
+            </table>
+        </div>
 
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-cog"></i>
-            </span>
-            <span class="text">Save Changes</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
 
 
-<div class="modal fade" id="deleteAddress" tabindex="-1" aria-labelledby="deleteAddressLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteAddressLabel">Remove IP Address</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Remove this IP from the list? It will be re-added if found during the next scan.
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/config/network/delete">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" name="localAddress" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Remove</button>
-                </form>
-            </div>
-
-        </div>
-    </div>
+{{#> ui/modal id="deleteAddress" title="Remove IP Address" titleId="deleteAddressLabel"}}
+<div class="modal-body">
+    Remove this IP from the list? It will be re-added if found during the next scan.
 </div>
+<div class="modal-footer">
+    <form method="post" action="/admin/config/network/delete" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" name="localAddress" value="">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteAddress"}}
+        {{> ui/btn label="Remove" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
 
 <script id="address-list-template" type="text/x-handlebars-template">
@@ -270,7 +203,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let reloadBtn = document.getElementById('reload-btn');
-        let reloadBtnIcon = document.querySelector('#reload-btn i');
+        let reloadBtnIcon = document.querySelector('#reload-btn .reload-icon');
 
         const requestReload = async () => {
             const res = await fetch('/admin/config/network/reload', {
@@ -328,6 +261,10 @@
             }
 
             checkCheckboxes();
+
+            // FlyonUI components (address notice tooltips) in the re-rendered
+            // rows need a fresh init pass
+            uiAutoInit();
         }
 
         let loading = false;
@@ -336,12 +273,12 @@
                 return
             }
             loading = true
-            reloadBtnIcon.classList.add('fa-spin');
+            reloadBtnIcon.classList.add('animate-spin');
             reloadBtn.disabled = true;
 
             requestReload().then(data => {
                 loading = false
-                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtnIcon.classList.remove('animate-spin');
                 reloadBtn.disabled = false;
                 if (data.error) {
                     showToast('Failed to send payload', 'alert-triangle')
@@ -354,7 +291,7 @@
 
             }).catch(err => {
                 loading = false
-                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtnIcon.classList.remove('animate-spin');
                 reloadBtn.disabled = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             });
@@ -366,14 +303,19 @@
             reloadAddresses();
         }
 
-        $('#deleteAddress').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget) // Button that triggered the modal
-            var address = button.data('address') // Extract info from data-* attributes
-            // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
-            // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
-            var modal = $(this)
-            modal.find('.modal-title').text(`Remove ${address}?`)
-            modal.find('.modal-footer input[name=localAddress]').val(address)
-        })
+        // delete triggers live inside the re-renderable address list, so the
+        // listener is delegated from the tbody container (replaces the
+        // Bootstrap show.bs.modal relatedTarget contract)
+        document.getElementById('address-list').addEventListener('click', e => {
+            let btn = e.target.closest('.address-action-delete');
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            let address = btn.dataset.address;
+            document.getElementById('deleteAddressLabel').textContent = `Remove ${address}?`;
+            document.querySelector('#deleteAddress .modal-footer input[name=localAddress]').value = address;
+            uiModal.open('#deleteAddress');
+        });
     });
 </script>

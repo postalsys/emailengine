@@ -1,34 +1,32 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
+{{> ui/page-header title="AI Processing" icon="icon-[tabler--robot]" class="mb-1"}}
 
-        <small><i class="fas fa-robot fa-fw"></i></small>
-        AI Processing
-    </h1>
-</div>
-
-<p>Process incoming emails with AI to extract insights and enrich your data. EmailEngine sends email content to OpenAI
-    and adds the AI response to your webhooks.
+<p class="mb-6">Process incoming emails with AI to extract insights and enrich your data. EmailEngine sends email
+    content to OpenAI and adds the AI response to your webhooks.
 </p>
 
 <form method="post" id="settings-form" action="/admin/config/ai">
-    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element the script reads --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
 
-    <div class="card mb-4" id="openai_settings">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">AI Configuration</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="openai_settings">
+        <div class="card-header">
+            <h6 class="card-title text-primary">AI Configuration</h6>
         </div>
 
         {{#if openAiError}}
-        <div class="card-body">
-            <div class="alert alert-danger clear-alert-btn mb-0" data-clear-alert="open-ai">
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <div class="card-body pb-0">
+            {{!-- legacy alert contract: the data-dismiss close runs through the
+                  compat shim, which fires closed.bs.alert for the app.js
+                  clear-alert-btn handler; retargeted in Phase 5 --}}
+            <div class="alert alert-soft alert-error clear-alert-btn block mb-0" data-clear-alert="open-ai">
+                <button type="button" class="close float-right" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
 
                 <p><strong>OpenAI Error</strong></p>
                 <p>The last API request failed:</p>
-                <hr>
+                <hr class="my-2">
                 <p class="mb-0">
                     <code>{{openAiError.message}}{{#if openAiError.code}} ({{openAiError.code}}){{/if}}</code>
                 </p>
@@ -36,137 +34,112 @@
         </div>
         {{/if}}
 
-        <ul class="list-group list-group-flush mb-3">
-            <li class="list-group-item d-flex justify-content-between align-items-top">
-
-                <div class="form-group form-check mb-0">
-
-
-                    <input type="checkbox" class="form-check-input {{#if errors.generateEmailSummary}}is-invalid{{/if}}"
+        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm{{#if errors.generateEmailSummary}} is-invalid{{/if}}"
                         id="generateEmailSummary" name="generateEmailSummary" {{#if
                         values.generateEmailSummary}}checked{{/if}} />
-                    <label class="form-check-label" for="generateEmailSummary">Enable AI Email Processing
-                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            style="display: inline-block;" data-title="Privacy Notice"
-                            data-content="Email text is sent to OpenAI's servers for processing. While OpenAI doesn't use this data for training, ensure this aligns with your privacy policies and user agreements."><i
-                                class="fas fa-info-circle"></i></a>
-                    </label>
-                    {{#if errors.generateEmailSummary}}
-                    <span class="invalid-feedback">{{errors.generateEmailSummary}}</span>
-                    {{/if}}
-                    <small class="form-text text-muted">Process new emails with AI and include the results in
-                        <code>messageNew</code> webhooks.</small>
+                    <label class="label-text p-0" for="generateEmailSummary">Enable AI Email Processing</label>
+                    {{#> ui/tooltip-rich icon="icon-[tabler--info-circle]"}}
+                    <strong>Privacy Notice</strong><br>
+                    Email text is sent to OpenAI's servers for processing. While OpenAI doesn't use this data for
+                    training, ensure this aligns with your privacy policies and user agreements.
+                    {{/ui/tooltip-rich}}
                 </div>
-
-                <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/swagger#/Settings/postV1Settings" target="_blank"
-                            rel="noopener noreferrer">generateEmailSummary</a>]</div>
-                    {{#if
-                    values.generateEmailSummary}}
-                    <span class="badge badge-success badge-pill">enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning badge-pill">disabled</span>
-                    {{/if}}
-                </div>
-            </li>
-        </ul>
-        <div class="card-body">
-
-
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiAPIKey</a>]
-                </div>
-
-                <label for="openAiAPIKey">API Key</label>
-                <input type="password" class="form-control {{#if errors.openAiAPIKey}}is-invalid{{/if}}"
-                    id="openAiAPIKey" name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasOpenAiAPIKey}} placeholder="Key is set (hidden for security)" {{/if}} />
-                {{#if errors.openAiAPIKey}}
-                <span class="invalid-feedback">{{errors.openAiAPIKey}}</span>
+                {{#if errors.generateEmailSummary}}
+                <span class="helper-text text-error">{{errors.generateEmailSummary}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Your OpenAI API key for authentication.</small>
+                <span class="helper-text">Process new emails with AI and include the results in
+                    <code>messageNew</code> webhooks.</span>
             </div>
 
-            <div class="form-group">
+            <div class="text-end space-y-1">
+                {{> ui/setting-ref name="generateEmailSummary" class="whitespace-nowrap"}}
+                {{#if values.generateEmailSummary}}
+                {{> ui/badge label="enabled" variant="success" pill=true}}
+                {{else}}
+                {{> ui/badge label="disabled" variant="warning" pill=true}}
+                {{/if}}
+            </div>
+        </div>
+        <div class="card-body space-y-4">
 
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiModel</a>]</div>
+            <div>
+                {{> ui/setting-ref name="openAiAPIKey"}}
+                {{#> ui/form-field id="openAiAPIKey" label="API Key" error=errors.openAiAPIKey}}
+                <input type="password" class="input{{#if errors.openAiAPIKey}} is-invalid{{/if}}" id="openAiAPIKey"
+                    name="openAiAPIKey" value="{{values.openAiAPIKey}}" data-lpignore="true" autocomplete="off" {{#if
+                    hasOpenAiAPIKey}} placeholder="Key is set (hidden for security)" {{/if}} />
+                <span class="helper-text">Your OpenAI API key for authentication.</span>
+                {{/ui/form-field}}
+            </div>
 
-                <div>
-                    <label for="settingsServiceOpenAiModel">AI Model</label>
+            <div>
+                {{> ui/setting-ref name="openAiModel"}}
 
-                    <button class="btn btn-link" id="reload-btn">
-                        <i class="fas fa-sync-alt fa-fw"></i>
-                        Refresh Models</button>
+                <div class="flex items-center gap-2">
+                    <label class="label-text" for="settingsServiceOpenAiModel">AI Model</label>
+
+                    {{> ui/btn label="Refresh Models" style="text" size="sm" id="reload-models-btn"
+                    icon="icon-[tabler--refresh] reload-icon"}}
                 </div>
 
-                <select id="settingsServiceOpenAiModel" class="custom-select custom-select-sm" name="openAiModel" {{#if
-                    errors.openAiModel}}is-invalid{{/if}}>
+                <select id="settingsServiceOpenAiModel" class="select select-sm max-w-md{{#if errors.openAiModel}} is-invalid{{/if}}"
+                    name="openAiModel">
                     {{#each openAiModels}}
                     <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}
                 </select>
                 {{#if errors.openAiModel}}
-                <span class="invalid-feedback">{{errors.openAiModel}}</span>
+                <span class="helper-text text-error">{{errors.openAiModel}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Choose the AI model for processing. Ensure your API key has access
-                    to the selected model.</small>
+                <span class="helper-text">Choose the AI model for processing. Ensure your API key has access to the
+                    selected model.</span>
             </div>
 
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiAPIUrl</a>]
-                </div>
-
-                <label for="openAiAPIUrl">API Endpoint</label>
-                <input type="url" class="form-control {{#if errors.openAiAPIUrl}}is-invalid{{/if}}" id="openAiAPIUrl"
+            <div>
+                {{> ui/setting-ref name="openAiAPIUrl"}}
+                {{#> ui/form-field id="openAiAPIUrl" label="API Endpoint" error=errors.openAiAPIUrl}}
+                <input type="url" class="input{{#if errors.openAiAPIUrl}} is-invalid{{/if}}" id="openAiAPIUrl"
                     name="openAiAPIUrl" value="{{values.openAiAPIUrl}}" placeholder="https://api.openai.com" />
-                {{#if errors.openAiAPIUrl}}
-                <span class="invalid-feedback">{{errors.openAiAPIUrl}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Custom API endpoint. Leave empty for default OpenAI servers.</small>
+                <span class="helper-text">Custom API endpoint. Leave empty for default OpenAI servers.</span>
+                {{/ui/form-field}}
             </div>
 
         </div>
     </div>
 
-    <div class="card mb-4" id="openai_settings">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Email Filtering</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="filtering_settings">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Email Filtering</h6>
         </div>
         <div class="card-body">
 
             {{#if errorLog}}
-            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
-                        aria-selected="true">Filter Rules</a>
-                </li>
-
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab"
-                        aria-controls="errors" aria-selected="false">Error Log</a>
-                </li>
-            </ul>
+            <nav class="tabs tabs-bordered mb-[1rem]" aria-label="Email filtering" role="tablist" id="myTab" data-tabs>
+                <button type="button" class="tab active" id="fn-tab" data-tab="#fn" role="tab" aria-controls="fn"
+                    aria-selected="true">Filter Rules</button>
+                <button type="button" class="tab" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
+                    aria-selected="false">Error Log</button>
+            </nav>
             {{/if}}
 
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
+            <div id="myTabContent">
+                <div id="fn" role="tabpanel" aria-labelledby="fn-tab">
 
-                    <div class="form-group">
-                        <div class="text-muted float-right code-link">[<a
+                    <div>
+                        <div class="text-base-content/60 float-right code-link">[<a
                                 href="https://emailengine.app/pre-processing-functions" target="_blank"
-                                rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a>]
+                                rel="noopener noreferrer" referrerpolicy="no-referrer"
+                                class="link link-animated">documentation</a>]
 
                             [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
-                                referrerpolicy="no-referrer">openAiPreProcessingFn</a>]
+                                referrerpolicy="no-referrer" class="link link-animated">openAiPreProcessingFn</a>]
                         </div>
-                        <label for="editor-fn">Filter Function</label>
-                        <div style="line-height: 1; margin-bottom: 10px;">
+                        <label class="label-text" for="editor-fn">Filter Function</label>
+                        <div class="mb-2 leading-tight">
                             <small>JavaScript code to decide which emails to process. Return <code>true</code> to
                                 process the email, <code>false</code> to skip. The email data is available as
                                 <code>payload</code>.</small>
@@ -185,7 +158,7 @@
 
                             <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
                                 Result:
-                                <span id="filter-res" class="evalres text-info">no match</span>
+                                <span id="filter-res" class="text-info">no match</span>
                             </div>
 
                             <div class="editor-embed-content editor-embed-content-right">
@@ -199,76 +172,67 @@
                 </div>
 
 
-                <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+                {{#if errorLog}}
+                <div id="errors" class="hidden" role="tabpanel" aria-labelledby="errors-tab">
 
 
-                    <p>Recent errors from the filter function execution:</p>
+                    <p class="mb-[1rem]">Recent errors from the filter function execution:</p>
 
-                    <table class="table">
+                    <div class="overflow-x-auto">
+                        <table class="table">
 
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th width="40%">Error</th>
-                                <th width="40%">Email Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#each errorLog}}
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th width="40%">Error</th>
+                                    <th width="40%">Email Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each errorLog}}
 
-                            <tr>
+                                <tr>
 
-                                <td>
-                                    <span class="relative-time" data-time="{{created}}"></span>
-                                </td>
+                                    <td>
+                                        <span class="relative-time" data-time="{{created}}"></span>
+                                    </td>
 
-                                <td>
-                                    <textarea class="error-log-field" readonly>{{error}}</textarea>
-                                </td>
+                                    <td>
+                                        <textarea class="error-log-field" readonly>{{error}}</textarea>
+                                    </td>
 
-                                <td>
-                                    <textarea class="error-log-field" readonly>{{json payload}}</textarea>
-                                </td>
+                                    <td>
+                                        <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                                    </td>
 
-                            </tr>
+                                </tr>
 
-                            {{/each}}
-                        </tbody>
+                                {{/each}}
+                            </tbody>
 
-                    </table>
+                        </table>
+                    </div>
 
                 </div>
+                {{/if}}
 
             </div>
 
         </div>
     </div>
 
-    <div id="prompt_settings" class="card mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">AI Instructions</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Actions:</div>
-                    <a class="dropdown-item" href="#" id="prompt-reset-btn">
-                        <i class="fas fa-arrow-circle-down fa-sm"></i> <span>Reset to default</span>
-                    </a>
-                </div>
-            </div>
+    <div id="prompt_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">AI Instructions</h6>
+            {{> ui/btn label="Reset to default" variant="neutral" style="soft" size="sm"
+            icon="icon-[tabler--arrow-back-up]" id="prompt-reset-btn"}}
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
+            <div>
+                {{> ui/setting-ref name="openAiPrompt"}}
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiPrompt</a>]</div>
-
-                <label>AI Prompt</label>
+                <label class="label-text">AI Prompt</label>
 
                 <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
@@ -288,146 +252,105 @@
                 </div>
 
                 {{#if errors.openAiPrompt}}
-                <span class="invalid-feedback">{{errors.openAiPrompt}}</span>
+                <span class="helper-text text-error">{{errors.openAiPrompt}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Instructions for the AI. Must specify which JSON properties to
-                    return in the response.</small>
+                <span class="helper-text">Instructions for the AI. Must specify which JSON properties to return in the
+                    response.</span>
             </div>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiTemperature</a>]
-                </div>
-                <label for="settingsOpenAiTemperature">Temperature</label>
-                <input type="number" class="form-control text-list {{#if errors.openAiTemperature}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="openAiTemperature"}}
+                {{#> ui/form-field id="settingsOpenAiTemperature" label="Temperature" error=errors.openAiTemperature}}
+                <input type="number" class="input text-list{{#if errors.openAiTemperature}} is-invalid{{/if}}"
                     id="settingsOpenAiTemperature" step="0.001" min="0" max="2" name="openAiTemperature"
                     value="{{values.openAiTemperature}}" />
-                {{#if errors.openAiTemperature}}
-                <span class="invalid-feedback">{{errors.openAiTemperature}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Controls randomness (0-2). Lower = more focused, higher = more
-                    creative. <a href="https://platform.openai.com/docs/api-reference/chat/create#temperature"
-                        target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
+                <span class="helper-text">Controls randomness (0-2). Lower = more focused, higher = more creative. <a
+                        href="https://platform.openai.com/docs/api-reference/chat/create#temperature" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
+                        more</a></span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiTopP</a>]
-                </div>
-                <label for="settingsOpenAiTopP">Top-p</label>
-                <input type="number" class="form-control text-list {{#if errors.openAiTopP}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="openAiTopP"}}
+                {{#> ui/form-field id="settingsOpenAiTopP" label="Top-p" error=errors.openAiTopP}}
+                <input type="number" class="input text-list{{#if errors.openAiTopP}} is-invalid{{/if}}"
                     id="settingsOpenAiTopP" step="0.001" min="0" max="1" name="openAiTopP"
                     value="{{values.openAiTopP}}" />
-                {{#if errors.openAiTopP}}
-                <span class="invalid-feedback">{{errors.openAiTopP}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Alternative to temperature (0-1). Controls diversity of word
-                    choices. <a href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
+                <span class="helper-text">Alternative to temperature (0-1). Controls diversity of word choices. <a
+                        href="https://platform.openai.com/docs/api-reference/chat/create#top_p" target="_blank"
+                        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
+                        more</a></span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">openAiMaxTokens</a>]
-                </div>
-                <label for="settingsOpenAiMaxTokens">Max Tokens</label>
-                <input type="number" class="form-control text-list {{#if errors.openAiMaxTokens}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="openAiMaxTokens"}}
+                {{#> ui/form-field id="settingsOpenAiMaxTokens" label="Max Tokens" error=errors.openAiMaxTokens}}
+                <input type="number" class="input text-list{{#if errors.openAiMaxTokens}} is-invalid{{/if}}"
                     id="settingsOpenAiMaxTokens" step="1" min="0" name="openAiMaxTokens"
                     value="{{values.openAiMaxTokens}}" />
-                {{#if errors.openAiMaxTokens}}
-                <span class="invalid-feedback">{{errors.openAiMaxTokens}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Maximum tokens limit for OpenAI API requests. EmailEngine composes
-                    the
-                    full prompt from: the user prompt text (above), system prompt describing the AI role, JSON schema
+                <span class="helper-text">Maximum tokens limit for OpenAI API requests. EmailEngine composes the full
+                    prompt from: the user prompt text (above), system prompt describing the AI role, JSON schema
                     definition, and the structured email data. If the combined prompt exceeds this limit, EmailEngine
                     automatically shortens the email content until it fits. Defaults: GPT-5: 18000, GPT-4: 6500,
-                    GPT-3.5: 3000.</small>
+                    GPT-3.5: 3000.</span>
+                {{/ui/form-field}}
             </div>
 
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-cog"></i>
-            </span>
-            <span class="text">Save Changes</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
 
-<div class="modal fade" id="testPromptModal" tabindex="-1" aria-labelledby="testPromptModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="testPromptModalLabel">Test AI Processing</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    Upload an email file (.eml) to test your AI configuration.
-                </p>
+{{#> ui/modal id="testPromptModal" title="Test AI Processing" titleId="testPromptModalLabel" dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <p class="mb-2">
+        Upload an email file (.eml) to test your AI configuration.
+    </p>
 
-                <div id="testPromptError" class="d-none">
-                    <div class="alert alert-danger"></div>
-                </div>
-                <div id="testPromptResponse" class="d-none">
-                    <pre class="content"
-                        style="max-height: 350px; border: 1px solid #d1d3e2; border-radius: .35rem; padding: 5px; color: #6e707e;"></pre>
-                </div>
-
-            </div>
-            <div class="modal-footer">
-
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" id="prompt-test-btn" class="btn btn-primary btn-icon-split">
-
-                    <span class="icon text-white-50">
-                        <i class="fas fa-flask"></i>
-                    </span>
-                    <span class="text">Choose File and Test</span>
-
-                </button>
-
-            </div>
-        </div>
+    <div id="testPromptError" class="hidden">
+        <div class="alert alert-soft alert-error"></div>
     </div>
-</div>
-
-<div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="setPayloadModalLabel">Test Filter</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-
-                <div>Sample email data (JSON)</div>
-                <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
-                <small id="inputToHelp" class="form-text text-muted">Edit the test data to see if your filter
-                    matches.</small>
-
-            </div>
-            <div class="modal-footer" style="justify-content: space-between">
-                <div>
-                    <select class="custom-select custom-select-sm" id="select-predefined-payload">
-                        <option>Load example...</option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
+    <div id="testPromptResponse" class="hidden">
+        <pre
+            class="content max-h-[350px] overflow-auto border border-base-300 rounded-field p-2 text-base-content/70"></pre>
     </div>
+
 </div>
+<div class="modal-footer">
+
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#testPromptModal"}}
+    <button type="button" id="prompt-test-btn" class="btn btn-primary">
+        <span class="icon-[tabler--flask] size-4" id="prompt-test-btn-icon"></span>
+        Choose File and Test
+    </button>
+
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="setPayloadModal" title="Test Filter" titleId="setPayloadModalLabel" dialogClass="max-w-3xl"}}
+<div class="modal-body">
+
+    <div class="mb-2">Sample email data (JSON)</div>
+    <div id="editor-json" class="code-editor h-40"></div>
+    <span class="helper-text" id="inputToHelp">Edit the test data to see if your filter matches.</span>
+
+</div>
+<div class="modal-footer justify-between">
+    <div>
+        <select class="select select-sm" id="select-predefined-payload">
+            <option>Load example...</option>
+        </select>
+    </div>
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#setPayloadModal"}}
+</div>
+{{/ui/modal}}
 
 <script src="/static/js/ace/ace.js"></script>
 
@@ -507,7 +430,7 @@
 
         document.getElementById('prompt-try-btn').addEventListener('click', e => {
             e.preventDefault()
-            $('#testPromptModal').modal('show');
+            uiModal.open('#testPromptModal');
         })
 
         const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
@@ -515,18 +438,21 @@
         const updateFilterResult = (err, result, opts) => {
             let resultElm = document.getElementById('filter-res');
             if (err) {
-                resultElm.classList.remove('text-warning', 'text-success');
-                resultElm.classList.add('text-danger');
+                // also drop the initial text-info placeholder: the layered
+                // text-error utility sorts before text-info in the compiled
+                // CSS, so a leftover text-info would win the cascade
+                resultElm.classList.remove('text-info', 'text-warning', 'text-success');
+                resultElm.classList.add('text-error');
                 resultElm.textContent = `error: ${err.message}`
                 return;
             }
 
             if (result) {
-                resultElm.classList.remove('text-warning', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-warning', 'text-error');
                 resultElm.classList.add('text-success');
                 resultElm.textContent = `match - will process`
             } else {
-                resultElm.classList.remove('text-success', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-success', 'text-error');
                 resultElm.classList.add('text-warning');
 
                 let truthyWarning = opts && opts.truthyWarning;
@@ -555,22 +481,22 @@
         let testPromptBtn = document.getElementById('prompt-test-btn');
 
         let showError = message => {
-            document.getElementById('testPromptError').classList.remove('d-none');
-            document.getElementById('testPromptResponse').classList.add('d-none');
+            document.getElementById('testPromptError').classList.remove('hidden');
+            document.getElementById('testPromptResponse').classList.add('hidden');
 
             document.querySelector('#testPromptError .alert').textContent = message;
         }
 
         let showResponse = value => {
-            document.getElementById('testPromptError').classList.add('d-none');
-            document.getElementById('testPromptResponse').classList.remove('d-none');
+            document.getElementById('testPromptError').classList.add('hidden');
+            document.getElementById('testPromptResponse').classList.remove('hidden');
 
             document.querySelector('#testPromptResponse .content').textContent = value;
         }
 
         let clearResponses = () => {
-            document.getElementById('testPromptError').classList.add('d-none');
-            document.getElementById('testPromptResponse').classList.add('d-none');
+            document.getElementById('testPromptError').classList.add('hidden');
+            document.getElementById('testPromptResponse').classList.add('hidden');
         }
 
         async function testPromptFn() {
@@ -620,15 +546,15 @@
             showResponse(JSON.stringify(data.response, false, 2));
         }
 
-        let iconElm = document.querySelector('#prompt-test-btn i');
+        let iconElm = document.getElementById('prompt-test-btn-icon');
         let toggleSpinner = (enabled) => {
             if (enabled) {
-                iconElm.classList.remove('fa-spinner', 'fa-spin');
-                iconElm.classList.add('fa-flask');
+                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
+                iconElm.classList.add('icon-[tabler--flask]');
                 testPromptBtn.disabled = false;
             } else {
-                iconElm.classList.remove('fa-flask');
-                iconElm.classList.add('fa-spinner', 'fa-spin');
+                iconElm.classList.remove('icon-[tabler--flask]');
+                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
                 testPromptBtn.disabled = true;
             }
         }
@@ -684,7 +610,7 @@
         const testPayloadBtn = document.getElementById('test-payload-btn');
         testPayloadBtn.addEventListener('click', e => {
             e.preventDefault();
-            $('#setPayloadModal').modal('show');
+            uiModal.open('#setPayloadModal');
         });
 
         const editorJson = ace.edit("editor-json");
@@ -762,8 +688,8 @@
             }
         }
 
-        let reloadBtn = document.getElementById('reload-btn');
-        let reloadBtnIcon = document.querySelector('#reload-btn i');
+        let reloadBtn = document.getElementById('reload-models-btn');
+        let reloadBtnIcon = document.querySelector('#reload-models-btn .reload-icon');
 
         const requestReload = async () => {
             const res = await fetch('/admin/config/ai/reload-models', {
@@ -784,17 +710,17 @@
         }
 
         let loading = false;
-        let reloadAddresses = () => {
+        let reloadModels = () => {
             if (loading) {
                 return
             }
             loading = true
-            reloadBtnIcon.classList.add('fa-spin');
+            reloadBtnIcon.classList.add('animate-spin');
             reloadBtn.disabled = true;
 
             requestReload().then(data => {
                 loading = false
-                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtnIcon.classList.remove('animate-spin');
                 reloadBtn.disabled = false;
                 if (data.error) {
                     showToast('Failed to send payload', 'alert-triangle')
@@ -807,13 +733,13 @@
 
             }).catch(err => {
                 loading = false
-                reloadBtnIcon.classList.remove('fa-spin');
+                reloadBtnIcon.classList.remove('animate-spin');
                 reloadBtn.disabled = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             });
         }
 
-        reloadBtn.addEventListener('click', reloadAddresses);
+        reloadBtn.addEventListener('click', reloadModels);
     });
 
 

@@ -7,15 +7,18 @@
       <ul class="popover-list">...</ul>
       {{/ui/tooltip-rich}}
     Params:
-      icon      - full iconify class for the trigger icon (required)
+      icon      - full iconify class for the trigger icon (required unless
+                  label is set)
+      label     - underlined trigger text, used instead of an icon (optional)
       placement - top|bottom|left|right (default top; the [--placement:*]
                   classes are safelisted in app.tailwind.css)
       class     - extra classes on the wrapper (optional)
 --}}
 <span class="tooltip [--placement:{{#if placement}}{{placement}}{{else}}top{{/if}}] inline-flex{{#if class}} {{class}}{{/if}}">
-    <span class="tooltip-toggle cursor-default"><span class="{{icon}} size-4 align-text-bottom"></span></span>
+    <span class="tooltip-toggle cursor-default">{{#if label}}<span class="underline">{{label}}</span>{{else}}<span
+            class="{{icon}} size-4 align-text-bottom"></span>{{/if}}</span>
     <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
         {{!-- own hash params neutralized against fallthrough into the block --}}
-        <span class="tooltip-body text-start">{{> @partial-block icon="" placement="" class=""}}</span>
+        <span class="tooltip-body text-start">{{> @partial-block icon="" label="" placement="" class=""}}</span>
     </span>
 </span>

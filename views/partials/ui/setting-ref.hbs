@@ -1,0 +1,17 @@
+{{!--
+    ui/setting-ref - floated reference link to a setting key in the API docs,
+    shown at the top-right of config form fields:
+      {{> ui/setting-ref name="proxyEnabled"}}
+    Params:
+      name   - settings key, shown as the link text (required)
+      suffix - literal text after the link, e.g. suffix='="*"' (optional)
+      href   - override link target (default: the Settings update operation in
+               the bundled Swagger UI)
+      plain  - true to render the name without a link (env-var refs that have
+               no docs anchor)
+      class  - extra classes on the wrapper, e.g. "whitespace-nowrap" for
+               flex-row placements where the float is inert (optional)
+--}}
+<div class="text-base-content/60 float-right code-link{{#if class}} {{class}}{{/if}}">[{{#if plain}}{{name}}{{else}}<a
+        href="{{#if href}}{{href}}{{else}}/admin/swagger#/Settings/postV1Settings{{/if}}" target="_blank"
+        rel="noopener noreferrer" class="link link-animated">{{name}}</a>{{/if}}{{suffix}}]</div>

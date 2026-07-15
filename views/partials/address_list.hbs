@@ -1,37 +1,33 @@
+{{!-- Rendered server-side on first paint AND re-compiled in the browser after
+      an IP rescan (served via cachedTemplates.addressList, compiled with the
+      Handlebars runtime in config/network.hbs). Keep it self-contained: no
+      server-registered partials or helpers, plain FlyonUI markup only. --}}
 {{#each addresses}}
-<tr>
+<tr class="hover:bg-base-200/60">
     <td>
-        <div class="form-check">
-            <input type="checkbox" class="form-check-input checkbox-entry" data-ip="{{localAddress}}"
-                name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
-        </div>
+        <input type="checkbox" class="checkbox checkbox-sm checkbox-entry" data-ip="{{localAddress}}"
+            name="localAddresses" value="{{localAddress}}" {{#if checked}}checked{{/if}}>
     </td>
     <td>{{localAddress}}
 
-        {{#if notice}}<i class="fas fa-exclamation-triangle" data-placement="top" data-toggle="popover"
-            data-trigger="hover" data-content="{{notice}}" data-title="Address warning"></i>{{/if}}
+        {{#if notice}}<span class="tooltip [--placement:top] inline-flex align-middle"><span
+                class="tooltip-toggle cursor-default"><span
+                    class="icon-[tabler--alert-triangle] text-warning size-4"></span></span><span
+                class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip"><span
+                    class="tooltip-body">{{notice}}</span></span></span>{{/if}}
         <div class="float-right">
-            {{#if defaultInterface}}<span class="badge badge-light">default</span>{{/if}}
+            {{#if defaultInterface}}<span class="badge badge-soft">default</span>{{/if}}
         </div>
     </td>
     <td>{{ip}}</td>
     <td>
         {{name}}
     </td>
-    <td>
-        <div class="dropdown no-arrow">
-            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-            </a>
-            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
-                <div class="dropdown-header">Address actions:</div>
-                <a class="dropdown-item address-action-delete" data-toggle="modal" data-target="#deleteAddress" href="#"
-                    data-address="{{localAddress}}">
-                    <i class="fas fa-trash-alt fa-sm"></i> <span>Delete this address</span>
-                </a>
-            </div>
-        </div>
+    <td class="text-end">
+        <button type="button" class="btn btn-text btn-sm btn-circle address-action-delete"
+            data-address="{{localAddress}}" aria-label="Delete this address" title="Delete this address">
+            <span class="icon-[tabler--trash] size-4"></span>
+        </button>
     </td>
 </tr>
 {{/each}}
