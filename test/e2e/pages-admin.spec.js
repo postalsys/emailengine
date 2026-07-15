@@ -348,6 +348,49 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('webhooks: create a route with live filter evaluation, tabs on the detail page, delete', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/webhooks');
+        await expect(page.locator('h1', { hasText: 'Webhook Routing' })).toBeVisible();
+
+        // create through the ACE-backed editor form
+        await page.goto('/admin/webhooks/new');
+        await page.fill('#inputName', 'E2E Smoke Route');
+        await page.fill('#inputTargetUrl', 'https://example.com/e2e-webhook');
+        await expect(page.locator('#editor-fn .ace_content')).toBeAttached();
+
+        // the filter function is evaluated live in the evaluation Web Worker
+        await page.evaluate(() => window.ace.edit('editor-fn').setValue('return true;'));
+        await expect(page.locator('#filter-res')).toHaveText('filter matches');
+
+        // test-payload modal opens and offers predefined payloads
+        await page.locator('#test-payload-btn').click();
+        await expect(page.locator('#setPayloadModal.open')).toHaveCount(1);
+        await expect(page.locator('#setPayloadModal')).toHaveCSS('opacity', '1');
+        expect(await page.locator('#select-predefined-payload option').count()).toBeGreaterThan(1);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
+
+        await page.locator('button[type="submit"]', { hasText: 'Create routing' }).click();
+        await page.waitForURL(/\/admin\/webhooks\/webhook\//);
+
+        // detail page: read-only ACE previews, FlyonUI tabs switch fn/map panes
+        await expect(page.locator('#fn-preview .ace_content')).toBeAttached();
+        await page.locator('#map-tab').click();
+        await expect(page.locator('#map')).toBeVisible();
+        await expect(page.locator('#fn')).toBeHidden();
+
+        // delete through the confirmation modal
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/webhooks(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

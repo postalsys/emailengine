@@ -3,7 +3,7 @@
 {{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" midHref=(concat "/admin/gateways/gateway/" gatewayData.gateway) midLabel=gatewayData.gateway current="Edit" class="mt-6 mb-6"}}
 
 <form method="post" action="/admin/gateways/edit">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}">
+    <input type="hidden" name="crumb" value="{{crumb}}">
     <input type="hidden" name="gateway" id="gateway" value="{{gatewayData.gateway}}">
 
     <div class="card bg-base-100 shadow-md mb-6">

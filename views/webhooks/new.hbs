@@ -1,25 +1,15 @@
 {{> webhooks_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/webhooks">Webhook Routing</a></li>
-
-        <li class="breadcrumb-item active" aria-current="page">New</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routing" current="New" class="mt-6 mb-6"}}
 
 <form method="post" action="/admin/webhooks/new" id="edit-form">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
 
     {{>webhook_form}}
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-plus"></i>
-            </span>
-            <span class="text">Create routing</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Create routing" type="submit" icon="icon-[tabler--plus]"}}
     </div>
 </form>
 

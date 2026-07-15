@@ -5,34 +5,24 @@
 <input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
 <input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 
-<div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="setPayloadModalLabel">Set test payload</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
+{{#> ui/modal id="setPayloadModal" title="Set test payload" dialogClass="max-w-3xl"}}
+<div class="modal-body">
 
-                <div>JSON payload</div>
-                <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
-                <small id="inputToHelp" class="form-text text-muted">Enter the JSON structure that will be
-                    used as the <code>payload</code> value for test evaluation.</small>
+    <div class="mb-2">JSON payload</div>
+    <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
+    <span class="helper-text">Enter the JSON structure that will be
+        used as the <code>payload</code> value for test evaluation.</span>
 
-            </div>
-            <div class="modal-footer" style="justify-content: space-between">
-                <div>
-                    <select class="custom-select custom-select-sm" id="select-predefined-payload">
-                        <option> -- Select predefined payload -- </option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
 </div>
+<div class="modal-footer justify-between">
+    <div>
+        <select class="select select-sm" id="select-predefined-payload">
+            <option> -- Select predefined payload -- </option>
+        </select>
+    </div>
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#setPayloadModal"}}
+</div>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -150,18 +140,21 @@
         const updateFilterResult = (err, result, opts) => {
             let resultElm = document.getElementById('filter-res');
             if (err) {
-                resultElm.classList.remove('text-warning', 'text-success');
-                resultElm.classList.add('text-danger');
+                // also drop the initial text-info placeholder: the layered
+                // text-error utility sorts before text-info in the compiled
+                // CSS, so a leftover text-info would win the cascade
+                resultElm.classList.remove('text-info', 'text-warning', 'text-success');
+                resultElm.classList.add('text-error');
                 resultElm.textContent = `validation failed (${err.message})`
                 return;
             }
 
             if (result) {
-                resultElm.classList.remove('text-warning', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-warning', 'text-error');
                 resultElm.classList.add('text-success');
                 resultElm.textContent = `filter matches`
             } else {
-                resultElm.classList.remove('text-success', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-success', 'text-error');
                 resultElm.classList.add('text-warning');
 
                 let truthyWarning = opts && opts.truthyWarning;
@@ -299,7 +292,7 @@ the *Set test payload* button to change the filter payload.`);
         const testPayloadBtn = document.getElementById('test-payload-btn');
         testPayloadBtn.addEventListener('click', e => {
             e.preventDefault();
-            $('#setPayloadModal').modal('show');
+            uiModal.open('#setPayloadModal');
         });
 
 

@@ -11,5 +11,5 @@
 --}}
 <span {{#if id}}id="{{id}}" {{/if}}class="badge badge-{{#if variant}}{{variant}}{{else}}neutral{{/if}}{{#if soft}} badge-soft{{/if}}{{#if pill}} rounded-full{{/if}}{{#if class}} {{class}}{{/if}}">
     {{~#if icon}}<span class="{{icon}} size-3.5 shrink-0"></span>{{/if~}}
-    {{~#if label}}{{label}}{{else}}{{> @partial-block label="" variant="" soft="" pill="" icon="" id="" class=""}}{{/if~}}
+    {{~#if label includeZero=true}}{{label}}{{else}}{{> @partial-block label="" variant="" soft="" pill="" icon="" id="" class=""}}{{/if~}}
 </span>

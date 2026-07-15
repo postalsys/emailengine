@@ -930,8 +930,8 @@
 </div>
 {{/ui/modal}}
 
+{{!-- no #crumb input: the layout already renders the element the script reads --}}
 <input type="hidden" id="account-id" value="{{account.account}}">
-<input type="hidden" id="crumb" value="{{crumb}}">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

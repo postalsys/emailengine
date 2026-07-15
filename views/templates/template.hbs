@@ -122,7 +122,7 @@
 </div>
 {{/ui/modal}}
 
-<input type="hidden" id="crumb" value="{{crumb}}" />
+{{!-- no #crumb input: the layout already renders the element the script reads --}}
 <input type="hidden" id="template" value="{{template.id}}" />
 
 {{#> ui/modal id="sendTestModal" title="Send test email" dialogClass="max-w-3xl"}}
