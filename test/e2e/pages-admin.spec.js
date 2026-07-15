@@ -636,6 +636,57 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('internals: thread table with restart and snapshot modals', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/internals');
+        await expect(page.locator('h1', { hasText: 'System Threads' })).toBeVisible();
+        expect(await page.locator('tbody tr').count()).toBeGreaterThan(3);
+
+        // row buttons fill the hidden thread input before opening the modal
+        await page.locator('.snapshot-thread-btn').first().click();
+        await expect(page.locator('#snapshotThread.open')).toHaveCount(1);
+        expect(await page.evaluate(() => document.getElementById('snapshot-thread').value)).not.toBe('');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#snapshotThread.open')).toHaveCount(0);
+
+        const killBtn = page.locator('.kill-thread-btn:not(.invisible)').first();
+        const killThread = await killBtn.getAttribute('data-thread');
+        await killBtn.click();
+        await expect(page.locator('#killThread.open')).toHaveCount(1);
+        expect(await page.evaluate(() => document.getElementById('kill-thread').value)).toBe(killThread);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#killThread.open')).toHaveCount(0);
+
+        // thread detail page: follow an accounts-count link when an account is
+        // assigned; otherwise open an IMAP worker thread ("Email worker" row)
+        // and assert the empty branch. Late in a full-suite run the IMAP
+        // worker may no longer be listed (pre-existing e2e-environment
+        // behaviour, unrelated to the theme) - then assert the route guard
+        // instead: thread URLs for non-IMAP threads redirect to the list.
+        const threadLink = page.locator('tbody a[href^="/admin/internals/thread/"]').first();
+        const imapRow = page.locator('tbody tr', { hasText: 'Email worker' }).first();
+        if (await threadLink.count()) {
+            await threadLink.click();
+            await page.waitForURL(/\/admin\/internals\/thread\//);
+            await expect(page.locator('.state-info').first()).toBeVisible();
+            await expect(page.locator('h1', { hasText: 'Accounts' })).toBeVisible();
+            await expect(page.getByText('Total Accounts:')).toBeVisible();
+        } else if (await imapRow.count()) {
+            const imapThread = await imapRow.locator('.kill-thread-btn').getAttribute('data-thread');
+            await page.goto(`/admin/internals/thread/${imapThread}`);
+            await expect(page.getByText('No accounts assigned to this thread.')).toBeVisible();
+            await expect(page.locator('h1', { hasText: 'Accounts' })).toBeVisible();
+            await expect(page.getByText('Total Accounts:')).toBeVisible();
+        } else {
+            await page.goto(`/admin/internals/thread/${killThread}`);
+            await page.waitForURL(/\/admin\/internals(\?|$)/);
+        }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);
