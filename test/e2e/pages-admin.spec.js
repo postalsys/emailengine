@@ -547,6 +547,50 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('oauth apps: create via provider dropdown, verify-setup modal, delete', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // apps list with the create-app dropdown
+        await page.goto('/admin/config/oauth');
+        await expect(page.locator('h1', { hasText: 'OAuth2' })).toBeVisible();
+        await page.locator('#create-app-dropdown').click();
+        await expect(page.locator('#create-app-dropdown ~ ul .dropdown-item', { hasText: 'Gmail Service Accounts' })).toBeVisible();
+        await page.keyboard.press('Escape');
+
+        // create a Gmail app with dummy credentials through the converted form;
+        // base-scope radios gate the pubsub select + account-type helper
+        await page.goto('/admin/config/oauth/new?provider=gmail');
+        expect(await page.evaluate(() => document.getElementById('select-pubsub-app').classList.contains('hidden'))).toBe(true);
+        await page.locator('#baseScopesAPI').check();
+        expect(await page.evaluate(() => document.getElementById('account-type-card-gmail').classList.contains('hidden'))).toBe(false);
+        await page.locator('#baseScopesImap').check();
+        await page.fill('#name', 'E2E OAuth App');
+        await page.fill('#clientId', '1234567890-e2e.apps.googleusercontent.com');
+        await page.fill('#clientSecret', 'GOCSPX-e2e-dummy');
+        await page.locator('button[type="submit"]', { hasText: 'Register app' }).click();
+        await page.waitForURL(/\/admin\/config\/oauth\/app\//);
+
+        // detail page: verify-setup modal auto-runs the configuration checks
+        await expect(page.locator('#appIdValue')).toBeVisible();
+        await page.locator('#verify-btn').click();
+        await expect(page.locator('#verifySetupModal.open')).toHaveCount(1);
+        await expect(page.locator('#verifySetupModal')).toHaveCSS('opacity', '1');
+        // the run finishes (dummy credentials, so the verdict may report failures)
+        await page.waitForFunction(() => !document.getElementById('verify-run-btn').disabled);
+        expect(await page.locator('#verify-steps li').count()).toBeGreaterThan(0);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#verifySetupModal.open')).toHaveCount(0);
+
+        // delete through the confirmation modal
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/config\/oauth(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

@@ -1,57 +1,42 @@
 {{> oauth_config_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/config/oauth">OAuth2</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{app.name}}</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/config/oauth" parentLabel="OAuth2" current=app.name class="mt-6 mb-6"}}
 
-<div class="card border-left-info shadow mb-4">
-    <div class="card-body">
-        <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
+{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6"}}
+{{>scope_info}}
+{{/ui/stat-card}}
 
-                {{>scope_info}}
-
-            </div>
-            <div class="col-auto">
-                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+        <div class="mb-6 flex flex-wrap items-center gap-2" role="toolbar" aria-label="OAuth2 app actions">
 
-                <a type="button" class="btn btn-light" href="/admin/config/oauth/edit/{{app.id}}"
-                    title="Edit OAuth2 application" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-user-edit fa-fw"></i> Edit app
-                </a>
+            {{#> ui/tooltip text="Edit OAuth2 application"}}
+            <a class="btn btn-soft btn-sm" href="/admin/config/oauth/edit/{{app.id}}">
+                <span class="icon-[tabler--user-edit] size-4"></span> Edit app
+            </a>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#verifySetupModal"
-                    title="Run live checks against the provider" id="verify-btn" data-placement="top">
-                    <i class="fas fa-clipboard-check fa-fw"></i> Verify setup
-                </button>
+            {{#> ui/tooltip text="Run live checks against the provider"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#verifySetupModal" id="verify-btn">
+                <span class="icon-[tabler--clipboard-check] size-4"></span> Verify setup
+            </button>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
-                    title="Delete this application" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete app
-                </button>
-
-            </div>
+            {{#> ui/tooltip text="Delete this application"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete app
+            </button>
+            {{/ui/tooltip}}
 
             {{#if canAddServiceAccount}}
-            <div class="btn-group ml-auto mb-1" role="group" aria-label="Account actions">
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addServiceAccountModal"
-                    title="Register an email account that authenticates through this service application"
-                    id="add-service-account-btn" data-placement="top">
-                    <i class="fas fa-user-plus fa-fw"></i> Add account
+            <div class="ms-auto">
+                {{#> ui/tooltip text="Register an email account that authenticates through this service application"}}
+                <button type="button" class="btn btn-primary btn-sm" data-overlay="#addServiceAccountModal"
+                    id="add-service-account-btn">
+                    <span class="icon-[tabler--user-plus] size-4"></span> Add account
                 </button>
+                {{/ui/tooltip}}
             </div>
             {{/if}}
 
@@ -62,126 +47,124 @@
             {{#if app.enabled}}
 
             {{#if app.meta.authFlag}}
-            <span class="badge badge-danger">Failing</span>
+            {{> ui/badge label="Failing" variant="error"}}
             {{else}}
-            <span class="badge badge-success">Enabled</span>
+            {{> ui/badge label="Enabled" variant="success"}}
             {{/if}}
             {{else}}
-            <span class="badge badge-warning">Disabled</span>
+            {{> ui/badge label="Disabled" variant="warning"}}
             {{/if}}
         </h5>
 
-        <h6 class="card-subtitle mb-4 text-muted">{{app.description}}</h6>
+        <h6 class="card-subtitle mb-6 text-base-content/60">{{app.description}}</h6>
         {{else}}
-        <h5 class="card-title mb-4">{{app.name}}
+        <h5 class="card-title mb-6">{{app.name}}
 
             {{#if app.enabled}}
 
             {{#if app.meta.authFlag}}
-            <span class="badge badge-danger">Failing</span>
+            {{> ui/badge label="Failing" variant="error"}}
             {{else}}
-            <span class="badge badge-success">Enabled</span>
+            {{> ui/badge label="Enabled" variant="success"}}
             {{/if}}
             {{else}}
-            <span class="badge badge-warning">Disabled</span>
+            {{> ui/badge label="Disabled" variant="warning"}}
             {{/if}}
         </h5>
         {{/if}}
 
         {{#if app.meta.authFlag}}
-        <div class="alert alert-danger">{{app.meta.authFlag.message}}
+        <div class="alert alert-soft alert-error mb-6 block">{{app.meta.authFlag.message}}
 
             {{#if app.meta.authFlag.description}}
-            <hr>
+            <hr class="my-2">
             <p class="mb-0">
                 <small>{{app.meta.authFlag.description}}</small>
             </p>
             {{/if}}
 
         </div>
-        <hr>
         {{/if}}
 
         {{#if app.meta.ttlWarning}}
-        <div class="alert alert-warning">{{app.meta.ttlWarning.message}}
+        <div class="alert alert-soft alert-warning mb-6 block">{{app.meta.ttlWarning.message}}
             {{#if app.meta.ttlWarning.description}}
-            <hr>
+            <hr class="my-2">
             <p class="mb-0">
                 <small>{{app.meta.ttlWarning.description}}</small>
             </p>
             {{/if}}
         </div>
-        <hr>
         {{/if}}
 
-        <dl class="row">
-            <dt class="col-sm-3">Provider ID</dt>
-            <dd class="col-sm-9">
-                <div class="input-group">
-                    <input type="text" id="appIdValue" class="form-control bg-light border-0 small" aria-label="ID"
-                        aria-describedby="basic-addon2" value="{{app.id}}" readonly>
-                    <div class="input-group-append">
-                        <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
-                            data-clipboard-target="#appIdValue" title="Copy to clipboard" data-toggle="tooltip"
-                            data-placement="top">
-                            <i class="fas fa-copy fa-sm"></i>
-                        </button>
-                    </div>
+        <dl class="ee-dl">
+            <dt>Provider ID</dt>
+            <dd>
+                <div class="join w-full max-w-md">
+                    <input type="text" id="appIdValue" class="input input-sm join-item grow bg-base-200 border-0"
+                        aria-label="ID" value="{{app.id}}" readonly>
+                    {{#> ui/tooltip text="Copy to clipboard"}}
+                    <button class="btn btn-primary btn-sm join-item copy-btn" type="button"
+                        data-clipboard-action="copy" data-clipboard-target="#appIdValue" aria-label="Copy to clipboard">
+                        <span class="icon-[tabler--copy] size-4"></span>
+                    </button>
+                    {{/ui/tooltip}}
                 </div>
-                <small id="inputDescriptionHelp" class="form-text text-muted">Use this ID value as the
-                    <em>"provider"</em> property in the account's OAuth2 options.</small>
+                <span class="helper-text" id="inputDescriptionHelp">Use this ID value as the
+                    <em>"provider"</em> property in the account's OAuth2 options.</span>
             </dd>
 
-            <dt class="col-sm-3">Type</dt>
-            <dd class="col-sm-9">{{providerData.comment}} {{#if providerData.icon}}
+            <dt>Type</dt>
+            <dd>{{providerData.comment}} {{#if providerData.icon}}
+                {{!-- legacy server-driven FA provider icon; retargeted in Phase 5 --}}
                 <i class="{{providerData.icon}} fa-fw"></i>
                 {{/if}}
             </dd>
 
             {{#if app.cloudData}}
-            <dt class="col-sm-3">Cloud environment</dt>
-            <dd class="col-sm-9">{{app.cloudData.name}} <em>&mdash;
+            <dt>Cloud environment</dt>
+            <dd>{{app.cloudData.name}} <em>&mdash;
                     {{app.cloudData.description}}</em></dd>
             {{/if}}
 
             {{#unless app.legacy}}
-            <dt class="col-sm-3">Accounts</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.accounts}}</small></dd>
+            <dt>Accounts</dt>
+            <dd class="font-mono"><small>{{app.accounts}}</small></dd>
             {{/unless}}
 
             {{#if app.clientId}}
-            <dt class="col-sm-3">Client ID</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.clientId}}</small></dd>
+            <dt>Client ID</dt>
+            <dd class="font-mono"><small>{{app.clientId}}</small></dd>
             {{/if}}
 
             {{#if app.serviceClient}}
-            <dt class="col-sm-3">Service client</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.serviceClient}}</small></dd>
+            <dt>Service client</dt>
+            <dd class="font-mono"><small>{{app.serviceClient}}</small></dd>
             {{/if}}
 
             {{#if app.googleProjectId}}
-            <dt class="col-sm-3">Google Cloud Project ID</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.googleProjectId}}</small></dd>
+            <dt>Google Cloud Project ID</dt>
+            <dd class="font-mono"><small>{{app.googleProjectId}}</small></dd>
             {{/if}}
 
             {{#if app.serviceClientEmail}}
-            <dt class="col-sm-3">Service Client Email</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.serviceClientEmail}}</small></dd>
+            <dt>Service Client Email</dt>
+            <dd class="font-mono"><small>{{app.serviceClientEmail}}</small></dd>
             {{/if}}
 
             {{#if app.clientSecret}}
-            <dt class="col-sm-3">Client Secret</dt>
-            <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
+            <dt>Client Secret</dt>
+            <dd class="font-mono"><small>*****</small></dd>
             {{/if}}
 
             {{#if app.serviceKey}}
-            <dt class="col-sm-3">Secret service key</dt>
-            <dd class="col-sm-9 text-monospace"><small>*****</small></dd>
+            <dt>Secret service key</dt>
+            <dd class="font-mono"><small>*****</small></dd>
             {{/if}}
 
             {{#if appShowAuthMethod}}
-            <dt class="col-sm-3">Authentication method</dt>
-            <dd class="col-sm-9">
+            <dt>Authentication method</dt>
+            <dd>
                 {{#if authMethodIsExternalAccount}}
                 Workload Identity Federation
                 {{else}}
@@ -191,17 +174,17 @@
             {{/if}}
 
             {{#if app.externalAccount}}
-            <dt class="col-sm-3">External account config</dt>
-            <dd class="col-sm-9 text-monospace"><small>***** (set)</small></dd>
+            <dt>External account config</dt>
+            <dd class="font-mono"><small>***** (set)</small></dd>
             {{/if}}
 
             {{#if app.redirectUrl}}
-            <dt class="col-sm-3">Redirect URL</dt>
-            <dd class="col-sm-9 text-monospace"><small>{{app.redirectUrl}}</small></dd>
+            <dt>Redirect URL</dt>
+            <dd class="font-mono"><small>{{app.redirectUrl}}</small></dd>
             {{/if}}
 
-            <dt class="col-sm-3">Base scopes</dt>
-            <dd class="col-sm-9">
+            <dt>Base scopes</dt>
+            <dd>
 
                 {{#if baseScopesImap}}
                 IMAP and SMTP
@@ -218,11 +201,12 @@
             </dd>
 
             {{#if app.pubSubApp}}
-            <dt class="col-sm-3">Cloud Pub/Sub app for webhooks</dt>
-            <dd class="col-sm-9">
+            <dt>Cloud Pub/Sub app for webhooks</dt>
+            <dd>
 
                 {{#if app.pubSubAppData}}
-                <a href="/admin/config/oauth/app/{{app.pubSubAppData.id}}">{{app.pubSubAppData.name}}{{#if
+                <a href="/admin/config/oauth/app/{{app.pubSubAppData.id}}"
+                    class="link link-animated">{{app.pubSubAppData.name}}{{#if
                     app.pubSubAppData.description}} &mdash; <em>{{app.pubSubAppData.description}}</em>{{/if}}</a>
                 {{else}}
                 <em>App set but not found</em>
@@ -232,22 +216,22 @@
             {{/if}}
 
             {{#if app.extraScopes}}
-            <dt class="col-sm-3">Custom OAuth2 scopes</dt>
-            <dd class="col-sm-9">
-                <ul>
+            <dt>Custom OAuth2 scopes</dt>
+            <dd>
+                <ul class="list-disc ps-6">
                     {{#each app.extraScopes}}
-                    <li class="text-monospace"><small>{{ this }}</small></li>
+                    <li class="font-mono"><small>{{ this }}</small></li>
                     {{/each}}
                 </ul>
             </dd>
             {{/if}}
 
             {{#if app.skipScopes}}
-            <dt class="col-sm-3">Disabled OAuth2 scopes</dt>
-            <dd class="col-sm-9">
-                <ul>
+            <dt>Disabled OAuth2 scopes</dt>
+            <dd>
+                <ul class="list-disc ps-6">
                     {{#each app.skipScopes}}
-                    <li class="text-monospace"><small>{{ this }}</small></li>
+                    <li class="font-mono"><small>{{ this }}</small></li>
                     {{/each}}
                 </ul>
             </dd>
@@ -259,83 +243,87 @@
 </div>
 
 {{#if isServiceAccount}}
-<div class="card mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">API usage example</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header">
+        <h6 class="card-title text-primary">API usage example</h6>
     </div>
     <div class="card-body">
-        <p class="text-muted small">This application uses service credentials, so accounts can not be added through the hosted authentication form. Use the API to register email accounts instead.</p>
-        <pre class="bg-light p-3 rounded mb-0" style="white-space: pre-wrap; word-wrap: break-word;"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
-  -H "Authorization: Bearer <span class="text-danger">YOUR_ACCESS_TOKEN</span>" \
+        <p class="text-base-content/60 text-sm mb-2">This application uses service credentials, so accounts can not be
+            added through the hosted authentication form. Use the API to register email accounts instead.</p>
+        <pre
+            class="bg-base-200 p-[1rem] rounded-box mb-0 whitespace-pre-wrap break-words"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
+  -H "Authorization: Bearer <span class="text-error">YOUR_ACCESS_TOKEN</span>" \
   -H "Content-Type: application/json" \
   -d '{
-    "account": "<span class="text-danger">ACCOUNT_ID</span>",
-    "email": "<span class="text-danger">user@example.com</span>",
+    "account": "<span class="text-error">ACCOUNT_ID</span>",
+    "email": "<span class="text-error">user@example.com</span>",
     "oauth2": {
         "provider": "{{app.id}}",
         "auth": {
-            "user": "<span class="text-danger">user@example.com</span>"
+            "user": "<span class="text-error">user@example.com</span>"
         }
     }
 }'</code></pre>
-        <small class="form-text text-muted mt-2">Replace <span class="text-danger">highlighted values</span> with your own. The access token is an API token generated in <a href="/admin/tokens">access tokens</a>.</small>
+        <span class="helper-text mt-2">Replace <span class="text-error">highlighted values</span> with your own. The
+            access token is an API token generated in <a href="/admin/tokens" class="link link-animated">access
+                tokens</a>.</span>
     </div>
 </div>
 {{/if}}
 
 {{#if baseScopesPubsub}}
-<div class="card mt-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Cloud Pub/Sub configuration</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header">
+        <h6 class="card-title text-primary">Cloud Pub/Sub configuration</h6>
     </div>
     <div class="card-body">
 
         {{#if app.meta.pubSubFlag}}
-        <div class="alert alert-danger">{{app.meta.pubSubFlag.message}}
+        <div class="alert alert-soft alert-error mb-6 block">{{app.meta.pubSubFlag.message}}
 
             {{#if app.meta.pubSubFlag.description}}
-            <hr>
+            <hr class="my-2">
             <p class="mb-0">
                 <small>{{app.meta.pubSubFlag.description}}</small>
             </p>
             {{/if}}
 
         </div>
-        <hr>
         {{/if}}
 
-        <dl class="row">
-            <dt class="col-sm-3">Pub/Sub topic</dt>
-            <dd class="col-sm-9 text-monospace">
+        <dl class="ee-dl">
+            <dt>Pub/Sub topic</dt>
+            <dd>
                 {{#if app.pubSubTopic}}
-                <span class="badge badge-success" title="{{app.pubSubTopic}}" data-toggle="tooltip" data-placement="top"
-                    style="cursor: default;">Created</span>
-                <small class="text-monospace">{{lastVal app.pubSubTopic "/"}}</small>
+                {{#> ui/tooltip text=app.pubSubTopic}}
+                {{> ui/badge label="Created" variant="success"}}
+                {{/ui/tooltip}}
+                <small class="font-mono">{{lastVal app.pubSubTopic "/"}}</small>
                 {{else}}
-                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{> ui/badge label="Not set" variant="error"}}
                 {{/if}}
             </dd>
 
-            <dt class="col-sm-3">Pub/Sub subscription</dt>
-            <dd class="col-sm-9 text-monospace">
+            <dt>Pub/Sub subscription</dt>
+            <dd>
                 {{#if app.pubSubSubscription}}
-                <span class="badge badge-success" title="{{app.pubSubSubscription}}" data-toggle="tooltip"
-                    data-placement="top" style="cursor: default;">Created</span>
-
-                <small class="text-monospace">{{lastVal app.pubSubSubscription "/"}}</small>
+                {{#> ui/tooltip text=app.pubSubSubscription}}
+                {{> ui/badge label="Created" variant="success"}}
+                {{/ui/tooltip}}
+                <small class="font-mono">{{lastVal app.pubSubSubscription "/"}}</small>
                 {{else}}
-                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{> ui/badge label="Not set" variant="error"}}
                 {{/if}}
             </dd>
 
-            <dt class="col-sm-3">Gmail publishing bindings</dt>
-            <dd class="col-sm-9 text-monospace">
+            <dt>Gmail publishing bindings</dt>
+            <dd>
                 {{#if app.pubSubIamPolicy}}
-                <span class="badge badge-success"
-                    title="{{app.pubSubIamPolicy.members.[0]}}: {{app.pubSubIamPolicy.role}}" data-toggle="tooltip"
-                    data-placement="top" style="cursor: default;">Created</span>
+                {{#> ui/tooltip text=(concat app.pubSubIamPolicy.members.[0] ": " app.pubSubIamPolicy.role)}}
+                {{> ui/badge label="Created" variant="success"}}
+                {{/ui/tooltip}}
                 {{else}}
-                <span class="badge badge-danger" style="cursor: default;">Not set</span>
+                {{> ui/badge label="Not set" variant="error"}}
                 {{/if}}
             </dd>
         </dl>
@@ -344,126 +332,86 @@
 {{/if}}
 
 
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete OAuth2 App</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/config/oauth/delete" class="pending-form">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <input type="hidden" name="app" value="{{app.id}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Delete app</button>
-                </form>
-            </div>
-        </div>
-    </div>
+{{#> ui/modal id="deleteModal" title="Delete OAuth2 App" titleId="deleteModalLabel"}}
+<div class="modal-body">
+    <p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action cannot be undone.</p>
 </div>
-
-<div class="modal fade" id="verifySetupModal" tabindex="-1" aria-labelledby="verifySetupModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="verifySetupModalLabel">Verify OAuth2 setup</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="verify-crumb" value="{{crumb}}" />
-                <p><small class="text-muted">Runs the provider authentication chain step by step and reports what passes
-                    or fails.{{#if appShowAuthMethod}} Enter a mailbox address in your Workspace domain to also verify
-                    domain-wide delegation and live mailbox access.{{/if}}</small></p>
-
-                <div class="form-group">
-                    <div class="input-group">
-                        <input type="email" class="form-control" id="verify-account"
-                            placeholder="mailbox@example.com (optional)" autocomplete="off" />
-                        <div class="input-group-append">
-                            <button type="button" class="btn btn-primary" id="verify-run-btn">
-                                <i class="fas fa-play fa-fw"></i> Run test
-                            </button>
-                        </div>
-                    </div>
-                    <small class="form-text text-muted">Leave empty to check configuration and signing only.</small>
-                </div>
-
-                <div id="verify-pending" class="d-none">
-                    <p><i class="fas fa-spinner fa-spin fa-sm"></i> Running checks, please wait&mldr;</p>
-                </div>
-                <div id="verify-error" class="d-none">
-                    <small class="alert alert-danger text-monospace error-message" style="display: block;"></small>
-                </div>
-                <div id="verify-verdict" class="d-none mb-3"></div>
-                <ul id="verify-steps" class="list-group"></ul>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
+<div class="modal-footer">
+    <form method="post" action="/admin/config/oauth/delete" class="pending-form flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="app" value="{{app.id}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
+        {{> ui/btn label="Delete app" variant="error" type="submit" icon="icon-[tabler--trash]"}}
+    </form>
 </div>
+{{/ui/modal}}
+
+{{#> ui/modal id="verifySetupModal" title="Verify OAuth2 setup" titleId="verifySetupModalLabel" dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <input type="hidden" id="verify-crumb" value="{{crumb}}" />
+    <p class="mb-2"><small class="text-base-content/60">Runs the provider authentication chain step by step and reports
+            what passes or fails.{{#if appShowAuthMethod}} Enter a mailbox address in your Workspace domain to also
+            verify domain-wide delegation and live mailbox access.{{/if}}</small></p>
+
+    <div class="mb-[1rem]">
+        <div class="join w-full">
+            <input type="email" class="input join-item grow" id="verify-account"
+                placeholder="mailbox@example.com (optional)" autocomplete="off" />
+            <button type="button" class="btn btn-primary join-item" id="verify-run-btn">
+                <span class="icon-[tabler--player-play] size-4"></span> Run test
+            </button>
+        </div>
+        <span class="helper-text">Leave empty to check configuration and signing only.</span>
+    </div>
+
+    <div id="verify-pending" class="hidden">
+        <p><span class="loading loading-spinner loading-sm align-middle"></span> Running checks, please wait&mldr;</p>
+    </div>
+    <div id="verify-error" class="hidden">
+        <small class="alert alert-soft alert-error font-mono error-message block"></small>
+    </div>
+    <div id="verify-verdict" class="hidden mb-[1rem]"></div>
+    <ul id="verify-steps" class="border-base-content/10 divide-base-content/10 rounded-box divide-y border empty:hidden">
+    </ul>
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#verifySetupModal"}}
+</div>
+{{/ui/modal}}
 
 {{#if canAddServiceAccount}}
-<div class="modal fade" id="addServiceAccountModal" tabindex="-1" aria-labelledby="addServiceAccountLabel"
-    aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addServiceAccountLabel">Add an account</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form method="post" action="/admin/config/oauth/app/{{app.id}}/add-account">
-                <input type="hidden" name="crumb" value="{{crumb}}">
-                <div class="modal-body">
-                    <p><small class="text-muted">This service application authenticates without an interactive consent
-                        screen, so the account is registered directly. The mailbox must be reachable with the
-                        application's service credentials.</small></p>
-                    <div class="form-group">
-                        <label for="service-account-name" class="col-form-label">Full name:</label>
-                        <input type="text" class="form-control" id="service-account-name" name="name"
-                            placeholder="e.g., John Smith">
-                    </div>
-                    <div class="form-group">
-                        <label for="service-account-email" class="col-form-label">Email address:</label>
-                        <input type="email" class="form-control" id="service-account-email" name="email"
-                            placeholder="e.g., user@example.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="service-account-id" class="col-form-label">Account identifier (optional):</label>
-                        <input type="text" class="form-control" id="service-account-id" name="account"
-                            placeholder="e.g., account_123">
-                        <small class="form-text text-muted">Leave blank to auto-generate. Existing accounts with this ID
-                            will be updated.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-icon-split">
-                        <span class="icon text-white-50">
-                            <i class="fas fa-user-plus"></i>
-                        </span>
-                        <span class="text">Add account</span>
-                    </button>
-                </div>
-            </form>
+{{#> ui/modal id="addServiceAccountModal" title="Add an account" titleId="addServiceAccountLabel"}}
+<form method="post" action="/admin/config/oauth/app/{{app.id}}/add-account">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <div class="modal-body space-y-4">
+        <p><small class="text-base-content/60">This service application authenticates without an interactive consent
+                screen, so the account is registered directly. The mailbox must be reachable with the
+                application's service credentials.</small></p>
+        <div>
+            {{> ui/form-field id="service-account-name" name="name" label="Full name:" placeholder="e.g., John Smith"}}
+        </div>
+        <div>
+            {{#> ui/form-field id="service-account-email" label="Email address:"}}
+            <input type="email" class="input" id="service-account-email" name="email"
+                placeholder="e.g., user@example.com" required>
+            {{/ui/form-field}}
+        </div>
+        <div>
+            {{> ui/form-field id="service-account-id" name="account" label="Account identifier (optional):"
+            placeholder="e.g., account_123"
+            hint="Leave blank to auto-generate. Existing accounts with this ID will be updated."}}
         </div>
     </div>
-</div>
+    <div class="modal-footer">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#addServiceAccountModal"}}
+        {{> ui/btn label="Add account" type="submit" icon="icon-[tabler--user-plus]"}}
+    </div>
+</form>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        $('#addServiceAccountModal').on('shown.bs.modal', () => {
+        document.getElementById('addServiceAccountModal').addEventListener('open.overlay', () => {
             document.getElementById('service-account-name').focus();
         });
     });
@@ -481,9 +429,9 @@
         const accountInput = document.getElementById('verify-account');
 
         const ICONS = {
-            ok: '<i class="fas fa-check-circle text-success fa-fw"></i>',
-            fail: '<i class="fas fa-times-circle text-danger fa-fw"></i>',
-            skip: '<i class="fas fa-minus-circle text-muted fa-fw"></i>'
+            ok: '<span class="icon-[tabler--circle-check] text-success size-4 align-text-bottom"></span>',
+            fail: '<span class="icon-[tabler--circle-x] text-error size-4 align-text-bottom"></span>',
+            skip: '<span class="icon-[tabler--circle-minus] text-base-content/50 size-4 align-text-bottom"></span>'
         };
 
         const esc = str => {
@@ -496,31 +444,31 @@
             stepsElm.innerHTML = '';
             (data.steps || []).forEach(step => {
                 let li = document.createElement('li');
-                li.className = 'list-group-item';
+                li.className = 'p-4';
                 let html = `${ICONS[step.status] || ''} <strong>${esc(step.label)}</strong>`;
                 if (step.message) {
-                    html += `<div class="small text-muted ml-4">${esc(step.message)}</div>`;
+                    html += `<div class="text-sm text-base-content/60 ms-6">${esc(step.message)}</div>`;
                 }
                 if (step.hint) {
-                    html += `<div class="small text-info ml-4"><i class="fas fa-lightbulb fa-fw"></i> ${esc(step.hint)}</div>`;
+                    html += `<div class="text-sm text-info ms-6"><span class="icon-[tabler--bulb] size-4 align-text-bottom"></span> ${esc(step.hint)}</div>`;
                 }
                 li.innerHTML = html;
                 stepsElm.appendChild(li);
             });
 
             let failed = (data.steps || []).some(s => s.status === 'fail');
-            verdictElm.className = 'mb-3 alert ' + (failed ? 'alert-danger' : 'alert-success');
+            verdictElm.className = 'mb-[1rem] alert alert-soft ' + (failed ? 'alert-error' : 'alert-success');
             verdictElm.textContent = failed
                 ? 'Setup has problems - review the failing step(s) below.'
                 : 'Setup verified - all checks passed.';
-            verdictElm.classList.remove('d-none');
+            verdictElm.classList.remove('hidden');
         };
 
         const runVerify = async account => {
-            errorElm.classList.add('d-none');
-            verdictElm.classList.add('d-none');
+            errorElm.classList.add('hidden');
+            verdictElm.classList.add('hidden');
             stepsElm.innerHTML = '';
-            pendingElm.classList.remove('d-none');
+            pendingElm.classList.remove('hidden');
             runBtn.disabled = true;
             try {
                 let res = await fetch(`/admin/config/oauth/verify/${encodeURIComponent(appId)}`, {
@@ -539,14 +487,14 @@
                 renderResult(data);
             } catch (err) {
                 errorElm.querySelector('.error-message').textContent = err.message;
-                errorElm.classList.remove('d-none');
+                errorElm.classList.remove('hidden');
             } finally {
-                pendingElm.classList.add('d-none');
+                pendingElm.classList.add('hidden');
                 runBtn.disabled = false;
             }
         };
 
-        $('#verifySetupModal').on('shown.bs.modal', () => {
+        document.getElementById('verifySetupModal').addEventListener('open.overlay', () => {
             // Auto-run the no-mailbox checks (config + signing chain) on open.
             runVerify(accountInput.value.trim());
         });
@@ -558,12 +506,5 @@
                 runVerify(accountInput.value.trim());
             }
         });
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // not set up by default as this element has a different data-toggle
-        $('#delete-btn').tooltip();
     });
 </script>
