@@ -12,7 +12,8 @@
       class     - extra classes on the wrapper (optional)
 --}}
 <span class="tooltip [--placement:{{#if placement}}{{placement}}{{else}}top{{/if}}] inline-flex{{#if class}} {{class}}{{/if}}">
-    <span class="tooltip-toggle cursor-default">{{> @partial-block}}</span>
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    <span class="tooltip-toggle cursor-default">{{> @partial-block text="" placement="" class=""}}</span>
     <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
         <span class="tooltip-body">{{text}}</span>
     </span>

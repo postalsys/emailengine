@@ -15,7 +15,8 @@
     </h1>
     {{#if @partial-block}}
     <div class="flex flex-wrap items-center gap-2">
-        {{> @partial-block}}
+        {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block title="" icon="" class=""}}
     </div>
     {{/if}}
 </div>

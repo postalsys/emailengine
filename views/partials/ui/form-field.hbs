@@ -30,7 +30,8 @@
     <label class="label-text" for="{{id}}">{{label}}</label>
     {{/if}}
     {{#if @partial-block}}
-    {{> @partial-block}}
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    {{> @partial-block id="" label="" name="" type="" value="" placeholder="" hint="" error="" required="" options="" list="" lpignore="" class=""}}
     {{else}}
     <input type="{{#if type}}{{type}}{{else}}text{{/if}}"
         class="input{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}"

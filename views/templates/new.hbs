@@ -1,17 +1,10 @@
 {{> templates_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
-
-        {{#if account}}
-        <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
-        {{/if}}
-
-        <li class="breadcrumb-item active" aria-current="page">New</li>
-
-    </ol>
-</nav>
+{{#if account}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=accountTemplatesLink midLabel=account.name current="New" class="mt-6 mb-6"}}
+{{else}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current="New" class="mt-6 mb-6"}}
+{{/if}}
 
 
 <form method="post" action="/admin/templates/new" id="edit-form">
@@ -20,13 +13,8 @@
 
     {{>template_form}}
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-plus"></i>
-            </span>
-            <span class="text">Create template</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Create template" type="submit" icon="icon-[tabler--plus]"}}
     </div>
 </form>
 

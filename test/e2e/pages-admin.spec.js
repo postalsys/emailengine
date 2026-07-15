@@ -19,7 +19,7 @@
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { ensureAdminSession } = require('./helpers/bootstrap');
+const { ensureAdminSession, createApiToken } = require('./helpers/bootstrap');
 
 // One real login per run: the admin session cookie is captured in beforeAll and
 // reused by every test via storageState. Logging in per test trips the login
@@ -275,6 +275,75 @@ test.describe('admin shell', () => {
         await expect(page.locator('#deleteModal.open')).toHaveCount(1);
         await page.locator('#deleteModal button[type="submit"]').click();
         await page.waitForURL(/\/admin\/gateways(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('tokens: list renders, delete modal wires the description', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // guarantee at least one token exists via the shared reveal-flow helper
+        await createApiToken(page, 'e2e tokens-page token');
+        // let the overlay's opening transition finish (opacity 0 -> 1) - a close
+        // click during the animation is swallowed by the overlay plugin
+        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
+        await page.locator('#showToken button', { hasText: 'Done' }).click();
+        await expect(page.locator('#showToken.open')).toHaveCount(0);
+        // anchored: /admin/tokens/new also matches an unanchored /admin\/tokens/
+        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+
+        await expect(page.locator('h1', { hasText: 'Access Tokens' })).toBeVisible();
+        await expect(page.locator('tbody tr').first()).toBeVisible();
+
+        // delete modal carries the token description; close without deleting
+        const firstDelete = page.locator('.delete-token-btn').first();
+        const description = await firstDelete.getAttribute('data-token-description');
+        await firstDelete.click();
+        await expect(page.locator('#deleteToken.open')).toHaveCount(1);
+        await expect(page.locator('#delete-token-description')).toHaveText(description);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#deleteToken.open')).toHaveCount(0);
+
+        // usage instructions panel toggles
+        await page.locator('summary', { hasText: 'Usage instructions' }).click();
+        await expect(page.getByText('Prometheus endpoint')).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('templates: create via editor form, tabs on the detail page, delete', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/templates');
+        await expect(page.locator('h1', { hasText: 'Email Templates' })).toBeVisible();
+
+        // create through the ACE-backed form (editor content is optional)
+        await page.goto('/admin/templates/new');
+        await page.fill('#inputName', 'E2E Smoke Template');
+        await page.fill('#inputSubject', 'e2e subject');
+        // FlyonUI tabs switch the editor panes
+        await page.locator('#text-tab').click();
+        await expect(page.locator('#text')).toBeVisible();
+        await expect(page.locator('#html')).toBeHidden();
+        await page.locator('button[type="submit"]', { hasText: 'Create template' }).click();
+        await page.waitForURL(/\/admin\/templates\/template\//);
+
+        // detail page: ACE preview initialized, send-test modal opens with the
+        // send button gated on the recipient
+        await expect(page.locator('#html-preview .ace_content')).toBeAttached();
+        await page.locator('#test-btn').click();
+        await expect(page.locator('#sendTestModal.open')).toHaveCount(1);
+        expect(await page.evaluate(() => document.getElementById('send-test-btn').disabled)).toBe(true);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#sendTestModal.open')).toHaveCount(0);
+
+        // delete through the confirmation modal
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/templates(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

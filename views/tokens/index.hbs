@@ -1,71 +1,54 @@
-<div class="float-right">
-    <a href="{{newLink}}" class="btn btn-primary btn-icon-split">
-        <span class="icon text-white-50">
-            <i class="fas fa-plus"></i>
-        </span>
-        <span class="text">Create access token</span>
-    </a>
-</div>
+{{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" class="mb-6"}}
+{{> ui/btn href=newLink label="Create access token" icon="icon-[tabler--plus]"}}
+{{/ui/page-header}}
 
-{{> tokens_header}}
-
-<p>
+<p class="mb-6">
     To access EmailEngine API, you need to authenticate your API requests with an access token.
 </p>
 
 {{#if data.tokens}}
-<div class="card mt-4 mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     {{#if account}}
     <div class="card-body">
         <div>
-            Currently showing tokens for <strong><a
-                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>. These tokens cannot be
+            Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
+                    class="link link-animated">{{account.name}}</a></strong>. These tokens cannot be
             used by other accounts.
         </div>
     </div>
     {{/if}}
-    <div class="table-responsive">
+    <div class="overflow-x-auto">
         <table class="table">
-            <thead class="">
+            <thead>
                 <tr>
-                    <th class="p-0">
-                        <div class="p-2">Description</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Scopes</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Token ID</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Last used</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">&nbsp;</div>
-                    </th>
+                    <th>Description</th>
+                    <th>Scopes</th>
+                    <th>Token ID</th>
+                    <th>Last used</th>
+                    <th>&nbsp;</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each data.tokens}}
                 <tr>
-                    <td class="p-2">
+                    <td>
                         <strong>{{description}}</strong>
                     </td>
 
-                    <td class="p-2">
+                    <td>
                         {{#if scopes}}
                         {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}
                         {{/if}}
                     </td>
 
-                    <td class="p-2">
+                    <td>
                         {{#if idShort}}
-                        <code data-toggle="tooltip" data-placement="top" title="{{id}}" style="cursor: help;">{{idShort}}</code>
+                        {{#> ui/tooltip text=id}}<code class="cursor-help">{{idShort}}</code>{{/ui/tooltip}}
                         {{/if}}
                     </td>
 
-                    <td class="p-2">
+                    <td>
                         {{#if access.timeStr}}
                         <span class="relative-time" data-time="{{access.timeStr}}"></span>
                         {{else}}
@@ -73,10 +56,13 @@
                         {{/if}}
                     </td>
 
-                    <td class="p-2 text-right">
-                        <button type="button" class="btn btn-danger btn-circle btn-sm delete-token-btn"
-                            data-token="{{id}}" data-token-description="{{description}}" data-toggle="tooltip"
-                            data-placement="top" title="Delete this token"><i class="fas fa-trash-alt"></i></button>
+                    <td class="text-right">
+                        {{#> ui/tooltip text="Delete this token"}}
+                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm delete-token-btn"
+                            data-token="{{id}}" data-token-description="{{description}}" aria-label="Delete this token">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                        {{/ui/tooltip}}
                     </td>
 
                 </tr>
@@ -84,42 +70,21 @@
             </tbody>
         </table>
     </div>
+
+    {{#if showPaging}}
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+    </div>
+    {{/if}}
 </div>
-
-{{#if showPaging}}
-<div class="card-footer">
-
-    <nav aria-label="Page navigation">
-        <ul class="pagination" style="flex-wrap: wrap;">
-
-            {{#if prevPage}}
-            <li class="page-item"><a class="page-link" href="{{prevPage}}">Previous</a></li>
-            {{else}}
-            <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-            {{/if}}
-
-            {{#each pageLinks}}
-            <li class="page-item {{#if active}}active{{/if}}"><a class="page-link" href="{{url}}">{{title}}</a>
-            </li>
-            {{/each}}
-
-            {{#if nextPage}}
-            <li class="page-item"><a class="page-link" href="{{nextPage}}">Next</a></li>
-            {{else}}
-            <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-            {{/if}}
-
-        </ul>
-    </nav>
-</div>
-{{/if}}
 
 {{else}}
-<div class="list-group mt-4 mb-4">
-    <div class="list-group-item">
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-body">
         {{#if account}}
         <div>
-            Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}">{{#if
+            Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
+                    class="link link-animated">{{#if
                     account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These tokens cannot
             be used by other accounts.
         </div>
@@ -128,7 +93,8 @@
 
         <p>
             {{#if firstPage}}
-            No access tokens have been created yet. <a href="{{newLink}}">Create your first access token</a>.
+            No access tokens have been created yet. <a href="{{newLink}}" class="link link-animated">Create your first
+                access token</a>.
             {{else}}
             No tokens found.
             {{/if}}
@@ -138,69 +104,51 @@
 {{/if}}
 
 
-<div class="card mt-4 mb-4">
-    <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
-        aria-expanded="true" aria-controls="showHelp">
-        <h6 class="m-0 font-weight-bold text-primary">Usage instructions</h6>
-    </a>
-    <div class="collapse" id="showHelp">
-        <div class="card-body">
-            <p>You must use either the <em>Authorization: Bearer</em> header (recommended) or the
-                <em>access_token</em> query parameter to make API requests. Avoid using the query parameter as it is
-                not redacted from HTTP logs.
-            </p>
+{{#> ui/details summary="Usage instructions" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+        <p class="mb-[1rem]">You must use either the <em>Authorization: Bearer</em> header (recommended) or the
+            <em>access_token</em> query parameter to make API requests. Avoid using the query parameter as it is
+            not redacted from HTTP logs.
+        </p>
 
-            <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
+        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
 $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
 
-            <p>Prometheus endpoint at <code>/metrics</code> also requires an authorization token. Use the following
-                configuration for setting up the token for a scraping endpoint:
-            </p>
+        <p class="mt-[1rem] mb-[1rem]">Prometheus endpoint at <code>/metrics</code> also requires an authorization
+            token. Use the following configuration for setting up the token for a scraping endpoint:
+        </p>
 
-            <pre>authorization:
+        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">authorization:
   type: Bearer
   credentials: &lt;token&gt;</pre>
 
-            <hr>
-            <div class="text-muted">
-                <code>&lt;token&gt;</code> is the full access token string without any quoting.
-            </div>
-            <div class="text-muted">Read more about setting
-                up Prometheus and Grafana with EmailEngine from the <a
-                    href="https://emailengine.app/monitoring#prometheus" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer">documentation</a>.
-            </div>
-
+        <hr class="my-[1rem]">
+        <div class="text-base-content/60">
+            <code>&lt;token&gt;</code> is the full access token string without any quoting.
         </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteToken" tabindex="-1" aria-labelledby="deleteTokenLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteTokenLabel">Delete access token</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete <strong id="delete-token-description"></strong>? This action
-                cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/tokens/delete">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" id="token-delete" name="token" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete token</button>
-                </form>
-            </div>
-
+        <div class="text-base-content/60">Read more about setting
+            up Prometheus and Grafana with EmailEngine from the <a href="https://emailengine.app/monitoring#prometheus"
+                target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
+                class="link link-animated">documentation</a>.
         </div>
-    </div>
+
 </div>
+{{/ui/details}}
+
+{{#> ui/modal id="deleteToken" title="Delete access token"}}
+<div class="modal-body">
+    Are you sure you want to delete <strong id="delete-token-description"></strong>? This action
+    cannot be undone.
+</div>
+<div class="modal-footer">
+    <form method="post" action="/admin/tokens/delete" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" id="token-delete" name="token" value="">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteToken"}}
+        {{> ui/btn label="Delete token" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -209,7 +157,7 @@ $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v
                 e.preventDefault();
                 document.getElementById('token-delete').value = elm.dataset.token;
                 document.getElementById('delete-token-description').textContent = elm.dataset.tokenDescription;
-                $('#deleteToken').modal('show');
+                uiModal.open('#deleteToken');
             });
         }
     });

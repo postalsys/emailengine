@@ -18,7 +18,8 @@
                 <div class="text-xs font-bold uppercase mb-1 text-{{#if variant}}{{variant}}{{else}}primary{{/if}}">{{title}}</div>
                 {{/if}}
                 {{#if @partial-block}}
-                {{> @partial-block}}
+                {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+                {{> @partial-block variant="" title="" value="" icon="" id="" class=""}}
                 {{else}}
                 <div class="text-xl font-bold text-base-content">{{value}}</div>
                 {{/if}}

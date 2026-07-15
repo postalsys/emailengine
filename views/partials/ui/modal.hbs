@@ -14,8 +14,11 @@
                     modal (optional)
       dialogClass - extra classes on .modal-dialog, e.g. "max-w-4xl" (optional)
       hideClose   - true to omit the corner close button (optional)
+      static      - true to disable Escape and backdrop-click dismissal; the
+                    modal then closes only through explicit buttons (use for
+                    one-time secrets and confirmation-critical flows)
 --}}
-<div id="{{id}}" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden" role="dialog" tabindex="-1">
+<div id="{{id}}" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden{{#if static}} [--overlay-backdrop:static]{{/if}}" role="dialog" tabindex="-1"{{#if static}} data-overlay-keyboard="false"{{/if}}>
     <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300{{#if dialogClass}} {{dialogClass}}{{/if}}">
         <div class="modal-content">
             <div class="modal-header">
@@ -28,7 +31,8 @@
                 </button>
                 {{/unless}}
             </div>
-            {{> @partial-block}}
+            {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+            {{> @partial-block id="" title="" titleId="" dialogClass="" hideClose="" static=""}}
         </div>
     </div>
 </div>

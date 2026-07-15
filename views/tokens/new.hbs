@@ -1,148 +1,96 @@
 {{> tokens_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/tokens">Access tokens</a></li>
-
-        {{#if account}}
-        <li class="breadcrumb-item"><a href="{{accountTokensLink}}">{{account.name}}</a></li>
-        {{/if}}
-
-        <li class="breadcrumb-item active" aria-current="page">New</li>
-    </ol>
-</nav>
+{{#if account}}
+{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" midHref=accountTokensLink midLabel=account.name current="New" class="mt-6 mb-6"}}
+{{else}}
+{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" current="New" class="mt-6 mb-6"}}
+{{/if}}
 
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
     <input type="hidden" id="account" name="account" value="{{values.account}}" />
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
-                <label for="description">Description</label>
+            {{> ui/form-field id="description" label="Description" value=values.description error=errors.description required=true hint="This description is shown when listing active tokens."}}
 
-                <input type="text" class="form-control" id="description" name="description"
-                    value="{{values.description}}" required />
+            <div>
+                <h6 class="mb-2 font-bold">Allowed scopes</h6>
 
-                {{#if errors.description}}
-                <span class="invalid-feedback">{{errors.description}}</span>
-                {{/if}}
+                <ul class="divide-y divide-base-content/10 rounded-box border border-base-content/10">
+                    <li class="flex items-center gap-2 p-[1rem]">
+                        <input type="checkbox" class="checkbox checkbox-sm or-else-all scope-entry"
+                            data-target="scope-list" id="scopesAll" data-scope="*" name="scopesAll" {{#if
+                            values.scopesAll}}checked{{/if}} />
+                        <label class="label-text grow p-0" for="scopesAll">All scopes</label>
+                        <div class="text-base-content/60 code-link">["*"]</div>
+                    </li>
 
-                <small class="form-text text-muted">This description is shown when listing active tokens.</small>
-            </div>
-
-            <h6>Allowed scopes</h6>
-
-            <ul class="list-group">
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input or-else-all scope-entry" data-target="scope-list"
-                            id="scopesAll" data-scope="*" name="scopesAll" {{#if values.scopesAll}}checked{{/if}} />
-                        <div class="text-muted float-right code-link">["*"]</div>
-                        <label class="form-check-label" for="scopesAll">All
-                            scopes</label>
-                    </div>
-                </li>
-
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesAPI"
+                    <li class="flex items-center gap-2 p-[1rem]">
+                        <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesAPI"
                             name="scopesAPI" data-scope="api" {{#if values.scopesAPI}}checked{{/if}} />
-                        <div class="text-muted float-right code-link">["api"]</div>
-                        <label class="form-check-label" for="scopesAPI">API</label>
-                    </div>
-                </li>
+                        <label class="label-text grow p-0" for="scopesAPI">API</label>
+                        <div class="text-base-content/60 code-link">["api"]</div>
+                    </li>
 
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesSMTP"
+                    <li class="flex items-center gap-2 p-[1rem]">
+                        <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesSMTP"
                             name="scopesSMTP" data-scope="smtp" {{#if values.scopesSMTP}}checked{{/if}} />
-                        <div class="text-muted float-right code-link">["smtp"]</div>
-                        <label class="form-check-label" for="scopesSMTP">SMTP</label>
-                    </div>
-                </li>
+                        <label class="label-text grow p-0" for="scopesSMTP">SMTP</label>
+                        <div class="text-base-content/60 code-link">["smtp"]</div>
+                    </li>
 
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesImapProxy"
-                            name="scopesImapProxy" data-scope="imap-proxy" {{#if
-                            values.scopesImapProxy}}checked{{/if}} />
-                        <div class="text-muted float-right code-link">["imap-proxy"]</div>
-                        <label class="form-check-label" for="scopesImapProxy">IMAP Proxy</label>
-                    </div>
-                </li>
+                    <li class="flex items-center gap-2 p-[1rem]">
+                        <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesImapProxy"
+                            name="scopesImapProxy" data-scope="imap-proxy" {{#if values.scopesImapProxy}}checked{{/if}} />
+                        <label class="label-text grow p-0" for="scopesImapProxy">IMAP Proxy</label>
+                        <div class="text-base-content/60 code-link">["imap-proxy"]</div>
+                    </li>
 
-                <li class="list-group-item">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input scope-entry scope-list" id="scopesMetrics"
+                    <li class="flex items-center gap-2 p-[1rem]">
+                        <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMetrics"
                             name="scopesMetrics" data-scope="metrics" {{#if values.scopesMetrics}}checked{{/if}} />
-                        <div class="text-muted float-right code-link">["metrics"]</div>
-                        <label class="form-check-label" for="scopesMetrics">Metrics</label>
-                    </div>
-                </li>
-            </ul>
+                        <label class="label-text grow p-0" for="scopesMetrics">Metrics</label>
+                        <div class="text-base-content/60 code-link">["metrics"]</div>
+                    </li>
+                </ul>
+            </div>
 
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-key"></i>
-            </span>
-            <span class="text">Generate a token</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Generate a token" type="submit" icon="icon-[tabler--key]"}}
     </div>
 </form>
 
-<div class="modal fade" id="showToken" data-backdrop="static" data-keyboard="false" tabindex="-1"
-    aria-labelledby="showTokenLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="showTokenLabel">Access tokens</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="showTokenLoader">
-
-                    <div class="progress">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                            aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-                    </div>
-
-                </div>
-                <div id="showTokenContent" class="d-none">
-
-                    <div>Access token:</div>
-                    <div>
-
-                        <div class="input-group">
-                            <input type="text" id="showTokenValue" class="form-control bg-light border-0 small"
-                                aria-label="Search" aria-describedby="basic-addon2" readonly>
-                            <div class="input-group-append">
-                                <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
-                                    data-clipboard-target="#showTokenValue" title="Copy to clipboard"
-                                    data-toggle="tooltip" data-placement="top">
-                                    <i class="fas fa-copy fa-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div id="showTokenError" class="d-none alert alert-danger" style="white-space: pre-line;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Done</button>
-            </div>
-        </div>
+{{#> ui/modal id="showToken" title="Access tokens" static=true}}
+<div class="modal-body">
+    <div id="showTokenLoader" class="py-2 text-center">
+        <span class="loading loading-spinner loading-sm align-middle"></span> Generating token&hellip;
     </div>
+    <div id="showTokenContent" class="hidden">
+
+        <div class="mb-2">Access token:</div>
+        <div class="flex gap-2">
+            <input type="text" id="showTokenValue" class="input grow font-mono" aria-label="Access token" readonly>
+            {{#> ui/tooltip text="Copy to clipboard"}}
+            <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
+                data-clipboard-target="#showTokenValue" aria-label="Copy to clipboard">
+                <span class="icon-[tabler--copy] size-4"></span>
+            </button>
+            {{/ui/tooltip}}
+        </div>
+
+    </div>
+    <div id="showTokenError" class="hidden alert alert-soft alert-error whitespace-pre-line"></div>
 </div>
+<div class="modal-footer">
+    {{> ui/btn label="Done" variant="neutral" style="soft" overlay="#showToken"}}
+</div>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -175,22 +123,22 @@
 
             let wasShown = false;
 
-            $('#showToken').on('hidden.bs.modal', function (event) {
-                document.getElementById('showTokenLoader').classList.remove('d-none');
-                document.getElementById('showTokenContent').classList.add('d-none');
-                document.getElementById('showTokenError').classList.add('d-none');
+            document.getElementById('showToken').addEventListener('close.overlay', () => {
+                document.getElementById('showTokenLoader').classList.remove('hidden');
+                document.getElementById('showTokenContent').classList.add('hidden');
+                document.getElementById('showTokenError').classList.add('hidden');
                 showTokenValueElm.value = '';
 
                 if (wasShown) {
                     let account = document.getElementById('account').value || '';
                     location.assign("/admin/tokens" + (account ? '?account=' + encodeURIComponent(account) : ''));
                 }
-            });
+            }, { once: true });
 
-            document.getElementById('showTokenLoader').classList.remove('d-none');
-            document.getElementById('showTokenContent').classList.add('d-none');
-            document.getElementById('showTokenError').classList.add('d-none');
-            $('#showToken').modal('show');
+            document.getElementById('showTokenLoader').classList.remove('hidden');
+            document.getElementById('showTokenContent').classList.add('hidden');
+            document.getElementById('showTokenError').classList.add('hidden');
+            uiModal.open('#showToken');
 
             fetch('/admin/tokens/new', {
                 method: 'post',
@@ -212,16 +160,16 @@
                     throw new Error(`${data.error}\n${data.message}`);
                 }
 
-                document.getElementById('showTokenLoader').classList.add('d-none');
-                document.getElementById('showTokenContent').classList.remove('d-none');
-                document.getElementById('showTokenError').classList.add('d-none');
+                document.getElementById('showTokenLoader').classList.add('hidden');
+                document.getElementById('showTokenContent').classList.remove('hidden');
+                document.getElementById('showTokenError').classList.add('hidden');
                 showTokenValueElm.value = data.token;
 
                 wasShown = true
             }).catch(err => {
-                document.getElementById('showTokenLoader').classList.add('d-none');
-                document.getElementById('showTokenContent').classList.add('d-none');
-                document.getElementById('showTokenError').classList.remove('d-none');
+                document.getElementById('showTokenLoader').classList.add('hidden');
+                document.getElementById('showTokenContent').classList.add('hidden');
+                document.getElementById('showTokenError').classList.remove('hidden');
 
                 document.getElementById('showTokenError').textContent = err.message;
             });

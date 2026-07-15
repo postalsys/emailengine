@@ -26,7 +26,7 @@
             {{!-- icon="" keeps this section's own icon hash param from leaking
                   into ui/menu-item calls inside the block (Handlebars context
                   fallthrough); items that want an icon pass one explicitly --}}
-            {{> @partial-block icon=""}}
+            {{> @partial-block icon="" id="" label="" active=""}}
         </ul>
     </div>
 </li>

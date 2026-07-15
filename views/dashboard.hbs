@@ -122,14 +122,8 @@
 
     </div>
 
-    <details class="group card bg-base-100 shadow-md mt-6 mb-6">
-        <summary
-            class="flex cursor-pointer items-center gap-2 px-6 py-[1rem] font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
-            <span
-                class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
-            Software versions
-        </summary>
-        <div class="card-body pt-0">
+    {{#> ui/details summary="Software versions" class="card bg-base-100 shadow-md mt-6 mb-6"}}
+    <div>
             <ul class="divide-y divide-base-content/10">
                 <li class="py-2"><a href="https://emailengine.app/" target="_blank" rel="noopener noreferrer"
                         referrerpolicy="no-referrer" class="link link-animated">EmailEngine</a>
@@ -151,8 +145,8 @@
                 </li>
                 {{/if}}
             </ul>
-        </div>
-    </details>
+    </div>
+    {{/ui/details}}
 </div>
 
 <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
