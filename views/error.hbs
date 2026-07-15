@@ -1,22 +1,20 @@
-<div class="container mt-4">
-    <div class="card border-left-danger">
-        <div class="card-body">
-            <h1 class="h4 mb-3">{{_ "Something went wrong" templateLocale}}</h1>
-            <p class="mb-2">{{message}}</p>
-            <p class="text-muted small mb-3">{{_ "Error code: %s" templateLocale statusCode}}</p>
-            {{#if details}}
-            {{#each details}}
-            <div class="alert alert-danger mb-2">{{this}}</div>
-            {{/each}}
-            {{/if}}
-            <div class="mt-3">
-                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-arrow-left"></i> {{_ "Go back" templateLocale}}
-                </a>
-                <a href="/admin" class="btn btn-primary btn-sm ml-2">
-                    <i class="fas fa-home"></i> {{_ "Dashboard" templateLocale}}
-                </a>
-            </div>
-        </div>
+<div class="container mx-auto mt-6 px-4">
+    {{#> ui/stat-card variant="error"}}
+    <h1 class="text-xl font-semibold mb-4">{{_ "Something went wrong" templateLocale}}</h1>
+    <p class="mb-2">{{message}}</p>
+    <p class="text-base-content/60 text-sm mb-4">{{_ "Error code: %s" templateLocale statusCode}}</p>
+    {{#if details}}
+    {{#each details}}
+    <div class="alert alert-soft alert-error mb-2">{{this}}</div>
+    {{/each}}
+    {{/if}}
+    <div class="mt-4 flex gap-2">
+        <a href="javascript:history.back()" class="btn btn-neutral btn-soft btn-sm">
+            <span class="icon-[tabler--arrow-left] size-4"></span> {{_ "Go back" templateLocale}}
+        </a>
+        <a href="/admin" class="btn btn-primary btn-sm">
+            <span class="icon-[tabler--home] size-4"></span> {{_ "Dashboard" templateLocale}}
+        </a>
     </div>
+    {{/ui/stat-card}}
 </div>

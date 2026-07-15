@@ -687,6 +687,55 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('public pages: index and license render under the main layout', async ({ page, browser }) => {
+        // both routes are unauthenticated; use a clean context to prove that
+        const context = await browser.newContext({ storageState: undefined });
+        const anonPage = await context.newPage();
+        const errors = trackConsoleErrors(anonPage);
+
+        await anonPage.goto('/');
+        await expect(anonPage.locator('img[alt="EmailEngine"]')).toBeVisible();
+        await expect(anonPage.locator('a.btn', { hasText: 'Manage EmailEngine' })).toBeVisible();
+        await expect(anonPage.getByText(/Postal Systems/)).toBeVisible();
+
+        await anonPage.goto('/license.html');
+        await expect(anonPage.locator('img[alt="EmailEngine"]')).toBeVisible();
+        expect((await anonPage.locator('body').textContent()).length).toBeGreaterThan(500);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+        await context.close();
+    });
+
+    test('account security: status rows and 2FA/logout modals', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/account/security');
+        await expect(page.locator('h1', { hasText: 'Account Security' })).toBeVisible();
+        // auth is enabled on the e2e instance, so all status rows render
+        expect(await page.locator('.card ul > li').count()).toBeGreaterThanOrEqual(4);
+
+        // open and close the confirmation modals without submitting
+        await page.locator('#logout-all-btn').click();
+        await expect(page.locator('#logoutAllModal.open')).toHaveCount(1);
+        await expect(page.locator('#logoutAllModal')).toHaveCSS('opacity', '1');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#logoutAllModal.open')).toHaveCount(0);
+
+        await page.locator('#enable-tfa-btn').click();
+        await expect(page.locator('#enableTfaModal.open')).toHaveCount(1);
+        await expect(page.locator('#enableTfaModal img[alt="TOTP QR code"]')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#enableTfaModal.open')).toHaveCount(0);
+
+        // password page renders its form
+        await page.goto('/admin/account/password');
+        await expect(page.locator('#password')).toBeVisible();
+        await expect(page.locator('#password2')).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

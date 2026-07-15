@@ -1,30 +1,30 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">Two-Factor Authentication</h1>
+    <h1 class="text-xl font-semibold text-base-content mb-6">Two-Factor Authentication</h1>
 </div>
-<form class="user" method="post" action="/admin/totp">
+<form class="space-y-4" method="post" action="/admin/totp">
+    {{!-- the login layout renders no global #crumb, so the page provides it --}}
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="next" value="{{values.next}}" />
     <input type="hidden" name="type" value="totp" />
 
 
-    <div class="form-group">
-        <label for="code">Enter your 6-digit verification code</label>
-        <input type="text" pattern="[0-9]{6}"
-            class="form-control form-control-user {{#if errors.code}}is-invalid{{/if}}" id="code" name="code"
-            required />
+    <div>
+        <label class="label-text" for="code">Enter your 6-digit verification code</label>
+        <input type="text" pattern="[0-9]{6}" class="input rounded-full{{#if errors.code}} is-invalid{{/if}}"
+            id="code" name="code" required />
         {{#if errors.code}}
-        <span class="invalid-feedback">{{errors.code}}</span>
+        <span class="helper-text text-error">{{errors.code}}</span>
         {{/if}}
     </div>
 
     <div>
-        <button type="submit" class="btn btn-primary btn-user btn-block">
+        <button type="submit" class="btn btn-primary btn-block rounded-full">
             Verify and sign in
         </button>
     </div>
 </form>
-<hr>
+<hr class="border-base-content/10 my-4">
 <div class="text-center">
-    <a class="small" href="https://emailengine.app/reset-password" target="_blank" rel="noopener noreferrer"
-        referrerpolicy="no-referrer">Lost access to your authenticator?</a>
+    <a class="link link-animated text-sm" href="https://emailengine.app/reset-password" target="_blank"
+        rel="noopener noreferrer" referrerpolicy="no-referrer">Lost access to your authenticator?</a>
 </div>

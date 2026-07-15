@@ -1,97 +1,87 @@
 {{> security_header}}
 
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
 
 
 
     <div class="card-body">
 
-        <ul class="list-group list-group-flush">
+        <ul class="divide-base-content/10 divide-y">
 
-            <li class="list-group-item">
-                <div class="row" style="align-items: center;">
-                    <div class="col-4">Username</div>
-                    <div class="col-4">
+            <li class="py-[1rem]">
+                <div class="grid grid-cols-3 items-center gap-4">
+                    <div>Username</div>
+                    <div>
                         {{username}}
                     </div>
-                    <div class="col-4 text-right">
+                    <div class="text-end">
                         {{#if authData.enabled}}
-                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#logoutAllModal" title="Sign out all sessions" id="logout-all-btn"
-                            data-placement="top">
-                            Sign out everywhere
-                        </button>
+                        {{> ui/btn label="Sign out everywhere" variant="primary" style="outline"
+                        id="logout-all-btn" overlay="#logoutAllModal"}}
                         {{/if}}
                     </div>
                 </div>
             </li>
 
-            <li class="list-group-item">
-                <div class="row" style="justify-content: center; align-items: center;">
-                    <div class="col-4">Password</div>
-                    <div class="col-4">
+            <li class="py-[1rem]">
+                <div class="grid grid-cols-3 items-center gap-4">
+                    <div>Password</div>
+                    <div>
                         {{#if authData.enabled}} ******** {{else}}Not configured{{/if}}
                     </div>
-                    <div class="col-4 text-right">
-                        <a href="/admin/account/password" class="btn btn-outline-primary btn-xs">
-                            {{#if authData.enabled}}
-                            Change password
-                            {{else}}
-                            Create password
-                            {{/if}}
-                        </a>
+                    <div class="text-end">
+                        {{#if authData.enabled}}
+                        {{> ui/btn label="Change password" variant="primary" style="outline" size="sm"
+                        href="/admin/account/password"}}
+                        {{else}}
+                        {{> ui/btn label="Create password" variant="primary" style="outline" size="sm"
+                        href="/admin/account/password"}}
+                        {{/if}}
                     </div>
                 </div>
             </li>
 
             {{#if authData.enabled}}
-            <li class="list-group-item">
-                <div class="row" style="justify-content: center; align-items: center;">
-                    <div class="col-4">Two-Factor Authentication (2FA)</div>
-                    <div class="col-4">
+            <li class="py-[1rem]">
+                <div class="grid grid-cols-3 items-center gap-4">
+                    <div>Two-Factor Authentication (2FA)</div>
+                    <div>
                         {{#if totp.enabled}}
-                        <span class="badge badge-success">Authenticator app</span>
+                        {{> ui/badge label="Authenticator app" variant="success"}}
                         {{else}}
-                        <span class="badge badge-light">Not configured</span>
+                        {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/if}}
                     </div>
-                    <div class="col-4 text-right">
+                    <div class="text-end">
                         {{#if totp.enabled}}
-                        <button type="button" class="btn btn-outline-danger" data-toggle="modal"
-                            data-target="#disableTfaModal" title="Disable two-factor authentication"
-                            id="disable-tfa-btn" data-placement="top">
-                            Disable 2FA
-                        </button>
+                        {{> ui/btn label="Disable 2FA" variant="error" style="outline" id="disable-tfa-btn"
+                        overlay="#disableTfaModal"}}
                         {{else}}
-                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#enableTfaModal" title="Enable two-factor authentication" id="enable-tfa-btn"
-                            data-placement="top">
-                            Enable 2FA
-                        </button>
+                        {{> ui/btn label="Enable 2FA" variant="primary" style="outline" id="enable-tfa-btn"
+                        overlay="#enableTfaModal"}}
                         {{/if}}
                     </div>
                 </div>
             </li>
 
-            <li class="list-group-item">
-                <div class="row" style="align-items: flex-start;">
-                    <div class="col-4" style="padding-top: 0.4rem;">Passkeys
-                        <br><small class="text-muted">Sign in with just a passkey - no password or additional verification needed.</small>
+            <li class="py-[1rem]">
+                <div class="grid grid-cols-3 items-start gap-4">
+                    <div class="pt-1">Passkeys
+                        <br><small class="text-base-content/60">Sign in with just a passkey - no password or additional
+                            verification needed.</small>
                     </div>
-                    <div class="col-4">
+                    <div>
                         {{#if passkeys.length}}
-                        <ul class="list-unstyled mb-0">
+                        <ul class="mb-0 space-y-2">
                             {{#each passkeys}}
-                            <li class="mb-2">
+                            <li>
                                 <strong>{{this.name}}</strong><br>
-                                <small class="text-muted">Added {{this.createdAtFormatted}}</small>
-                                <form method="post" action="/admin/account/passkeys/delete" style="display:inline;"
-                                    class="ml-2">
+                                <small class="text-base-content/60">Added {{this.createdAtFormatted}}</small>
+                                <form method="post" action="/admin/account/passkeys/delete" class="inline ms-2">
                                     <input type="hidden" name="crumb" value="{{../crumb}}" />
                                     <input type="hidden" name="credentialId" value="{{this.id}}" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                        title="Remove passkey"
-                                        onclick="return confirm('Remove this passkey?');">
+                                    <button type="submit" class="btn btn-sm btn-outline btn-error"
+                                        title="Remove passkey" onclick="return confirm('Remove this passkey?');">
                                         Remove
                                     </button>
                                 </form>
@@ -99,50 +89,44 @@
                             {{/each}}
                         </ul>
                         {{else}}
-                        <span class="badge badge-light">None registered</span>
+                        {{> ui/badge label="None registered" variant="neutral" soft=true}}
                         {{/if}}
                     </div>
-                    <div class="col-4 text-right">
+                    <div class="text-end">
                         {{#if serviceUrl}}
-                        <button type="button" class="btn btn-outline-primary" id="register-passkey-btn">
-                            <i class="fas fa-fingerprint fa-sm fa-fw mr-1"></i>Add passkey
-                        </button>
+                        {{> ui/btn label="Add passkey" variant="primary" style="outline" id="register-passkey-btn"
+                        icon="icon-[tabler--fingerprint]"}}
                         {{else}}
-                        <button type="button" class="btn btn-outline-secondary" disabled
-                            title="Set a Service URL in configuration before registering passkeys">
+                        {{#> ui/tooltip text="Set a Service URL in configuration before registering passkeys"}}
+                        <button type="button" class="btn btn-outline btn-neutral" disabled>
                             Add passkey
                         </button>
-                        <br><small class="text-muted">Requires Service URL</small>
+                        {{/ui/tooltip}}
+                        <br><small class="text-base-content/60">Requires Service URL</small>
                         {{/if}}
                     </div>
                 </div>
             </li>
 
-            <li class="list-group-item">
-                <div class="row" style="justify-content: center; align-items: center;">
-                    <div class="col-4">Single Sign-On (SSO)</div>
-                    <div class="col-4">
+            <li class="py-[1rem]">
+                <div class="grid grid-cols-3 items-center gap-4">
+                    <div>Single Sign-On (SSO)</div>
+                    <div>
                         {{#if providers.okta}}
-                        <span class="badge badge-success">Okta</span>
+                        {{> ui/badge label="Okta" variant="success"}}
                         {{/if}}
                         {{#if providers.oidc}}
-                        <span class="badge badge-success">{{providers.oidc.name}}</span>
+                        {{> ui/badge label=providers.oidc.name variant="success"}}
                         {{/if}}
                         {{#unless providers.any}}
-                        <span class="badge badge-light">Not configured</span>
+                        {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/unless}}
                     </div>
-                    <div class="col-4 text-right">
-                        <button type="button" class="btn btn-outline-primary" data-toggle="modal"
-                            data-target="#ssoInstructionsModal" title="Setting up Okta SSO" id="sso-instructions"
-                            data-placement="top">
-                            Okta setup
-                        </button>
-                        <button type="button" class="btn btn-outline-primary mt-1" data-toggle="modal"
-                            data-target="#oidcInstructionsModal" title="Setting up OIDC SSO" id="oidc-instructions"
-                            data-placement="top">
-                            OIDC setup
-                        </button>
+                    <div class="text-end space-y-1">
+                        {{> ui/btn label="Okta setup" variant="primary" style="outline" id="sso-instructions"
+                        overlay="#ssoInstructionsModal"}}
+                        {{> ui/btn label="OIDC setup" variant="primary" style="outline" id="oidc-instructions"
+                        overlay="#oidcInstructionsModal"}}
                     </div>
                 </div>
             </li>
@@ -151,402 +135,332 @@
     </div>
 </div>
 
-<div class="modal fade" id="disableTfaModal" tabindex="-1" aria-labelledby="disableTfaModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="disableTfaModalLabel">Disable two-factor authentication</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Disabling two-factor authentication will make your account less secure. Are you sure you want to continue?</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/account/tfa/disable">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <input type="hidden" name="type" value="totp" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Disable 2FA</button>
-                </form>
-            </div>
-        </div>
-    </div>
+{{#> ui/modal id="disableTfaModal" title="Disable two-factor authentication" titleId="disableTfaModalLabel"}}
+<div class="modal-body">
+    <p>Disabling two-factor authentication will make your account less secure. Are you sure you want to continue?</p>
 </div>
+<div class="modal-footer">
+    <form method="post" action="/admin/account/tfa/disable" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="type" value="totp" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#disableTfaModal"}}
+        {{> ui/btn label="Disable 2FA" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
-<div class="modal fade" id="enableTfaModal" tabindex="-1" aria-labelledby="enableTfaModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form method="post" action="/admin/account/tfa/enable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="enableTfaModalLabel">Enable two-factor authentication</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
+{{#> ui/modal id="enableTfaModal" title="Enable two-factor authentication" titleId="enableTfaModalLabel"}}
+<form method="post" action="/admin/account/tfa/enable">
+    <div class="modal-body space-y-4">
 
-                    <div>
-                        <img src="{{totp.dataUrl}}" style="max-width: 200px; display: block; margin: 0 auto;">
-                    </div>
+        <div>
+            <img src="{{totp.dataUrl}}" class="mx-auto block max-w-[200px]" alt="TOTP QR code">
+        </div>
 
-                    <div class="form-group">
-                        <label for="code">Scan the QR code with your authenticator app (such as Google Authenticator or Authy), then enter the 6-digit verification code below.</label>
-                        <input type="text" pattern="[0-9]{6}" class="form-control {{#if errors.code}}is-invalid{{/if}}"
-                            id="code" name="code" required />
-                        {{#if errors.code}}
-                        <span class="invalid-feedback">{{errors.code}}</span>
+        <div>
+            {{#> ui/form-field id="code"
+            label="Scan the QR code with your authenticator app (such as Google Authenticator or Authy), then enter the 6-digit verification code below."
+            error=errors.code}}
+            <input type="text" pattern="[0-9]{6}" class="input{{#if errors.code}} is-invalid{{/if}}" id="code"
+                name="code" required />
+            {{/ui/form-field}}
+        </div>
+
+    </div>
+    <div class="modal-footer">
+
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="type" value="totp" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#enableTfaModal"}}
+        {{> ui/btn label="Enable 2FA" type="submit"}}
+    </div>
+</form>
+{{/ui/modal}}
+
+{{#> ui/modal id="logoutAllModal" title="Sign out from all devices" titleId="logoutAllModalLabel"}}
+<form method="post" action="/admin/account/logout-all">
+    <div class="modal-body">
+
+        <p>This will sign you out from all browsers and devices where you're currently signed in. You'll need to sign
+            in again on each device.</p>
+
+    </div>
+    <div class="modal-footer">
+
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#logoutAllModal"}}
+        {{> ui/btn label="Sign out everywhere" type="submit" icon="icon-[tabler--logout]"}}
+    </div>
+</form>
+{{/ui/modal}}
+
+{{#> ui/modal id="ssoInstructionsModal" title="Configure Single Sign-On with Okta" titleId="ssoInstructionsModalLabel"
+dialogClass="max-w-5xl"}}
+<div class="modal-body">
+
+    <p class="mb-2">Follow these steps to configure Single Sign-On with Okta:</p>
+    <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+        <li>Create a new web application in your Okta dashboard using the Redirect URI below</li>
+        <li>Configure the required environment variables for EmailEngine</li>
+        <li>Restart EmailEngine to apply the changes</li>
+    </ol>
+
+    <p class="mb-[1rem]"><strong>Redirect URI for your Okta application:</strong><br>
+        <code>{{serviceUrl}}/admin/login/okta</code>
+    </p>
+
+    <div class="overflow-x-auto">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Environment variable</th>
+                    <th>Current value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>
+                        <code>OKTA_OAUTH2_ISSUER</code>
+                    </th>
+                    <td>
+                        {{#if okta.OKTA_OAUTH2_ISSUER}}
+                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_ISSUER}}</code>
+                        {{else}}
+                        Not configured (enter your Okta issuer URL)
                         {{/if}}
-                    </div>
+                    </td>
+                </tr>
 
-                </div>
-                <div class="modal-footer">
+                <tr>
+                    <th><code>OKTA_OAUTH2_CLIENT_ID</code></th>
+                    <td>
+                        {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
+                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
+                        {{else}}
+                        Not configured
+                        {{/if}}
+                    </td>
+                </tr>
 
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <input type="hidden" name="type" value="totp" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Enable 2FA</button>
-                </div>
-            </div>
-        </form>
+                <tr>
+                    <th><code>OKTA_OAUTH2_CLIENT_SECRET</code></th>
+                    <td>
+                        {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
+                        <code class="inline-block overflow-hidden">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
+                        {{else}}
+                        Not configured
+                        {{/if}}
+
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#ssoInstructionsModal"}}
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="oidcInstructionsModal" title="Configure Single Sign-On with OIDC" titleId="oidcInstructionsModalLabel"
+dialogClass="max-w-5xl"}}
+<div class="modal-body">
+
+    <p class="mb-[1rem]">EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
+        Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
+        its discovery document (<code>{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
+        when EmailEngine starts.</p>
+
+    <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+        <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
+            Redirect URI below</li>
+        <li>Configure the required environment variables for EmailEngine</li>
+        <li>Restart EmailEngine to apply the changes</li>
+    </ol>
+
+    <p class="mb-[1rem]"><strong>Redirect URI for your OIDC client:</strong><br>
+        <code>{{serviceUrl}}/admin/login/oidc</code>
+    </p>
+
+    <div class="overflow-x-auto">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Environment variable</th>
+                    <th>Current value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th><code>OIDC_ISSUER</code></th>
+                    <td>
+                        {{#if oidc.OIDC_ISSUER}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ISSUER}}</code>
+                        {{else}}
+                        Not configured (enter your OIDC issuer URL)
+                        {{/if}}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_CLIENT_ID</code></th>
+                    <td>
+                        {{#if oidc.OIDC_CLIENT_ID}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_ID}}</code>
+                        {{else}}
+                        Not configured
+                        {{/if}}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_CLIENT_SECRET</code></th>
+                    <td>
+                        {{#if oidc.OIDC_CLIENT_SECRET}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_CLIENT_SECRET}}</code>
+                        {{else}}
+                        Not configured
+                        {{/if}}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_PROVIDER_NAME</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_PROVIDER_NAME}}</code>
+                        <br><small class="text-base-content/60">Label shown on the sign-in button</small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_ALLOWED_USERS</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        {{#if oidc.OIDC_ALLOWED_USERS}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_USERS}}</code>
+                        {{else}}
+                        Not set
+                        {{/if}}
+                        <br><small class="text-base-content/60">Comma-separated allow-list of emails and/or
+                            <code>@domain</code> entries</small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_ALLOWED_GROUPS</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        {{#if oidc.OIDC_ALLOWED_GROUPS}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_ALLOWED_GROUPS}}</code>
+                        {{else}}
+                        Not set
+                        {{/if}}
+                        <br><small class="text-base-content/60">Comma-separated group names. A user is allowed if their
+                            email matches <code>OIDC_ALLOWED_USERS</code> OR they belong to
+                            one of these groups. When both are empty, anyone the identity provider authenticates
+                            can sign in.</small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_GROUPS_CLAIM</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_GROUPS_CLAIM}}</code>
+                        <br><small class="text-base-content/60">userinfo claim that carries group membership (default
+                            <code>groups</code>); may be a dotted path such as
+                            <code>realm_access.roles</code></small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_FORCED</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_FORCED}}</code>
+                        <br><small class="text-base-content/60">When true, the login page redirects straight to the
+                            identity provider and local password/passkey sign-in is disabled. If discovery fails at
+                            startup the local form is shown as a fallback.</small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_LOGOUT</code><br><small class="text-base-content/60">optional</small></th>
+                    <td>
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_LOGOUT}}</code>
+                        <br><small class="text-base-content/60">When true, signing out also ends the identity-provider
+                            session (RP-initiated logout via the end_session endpoint).</small>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th><code>OIDC_POST_LOGOUT_REDIRECT_URI</code><br><small
+                            class="text-base-content/60">optional</small></th>
+                    <td>
+                        {{#if oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}
+                        <code class="inline-block overflow-hidden">{{oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}</code>
+                        {{else}}
+                        Not set - the identity provider shows its own logged-out page
+                        {{/if}}
+                        <br><small class="text-base-content/60">Where the IdP returns after logout (must be a registered
+                            post logout redirect URI). Point it at
+                            <code>{{serviceUrl}}/admin/login?loggedout=1</code> for an in-app
+                            signed-out screen.</small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="mb-1"><strong>Keycloak example</strong></p>
+    <ul class="list-disc ps-6 mb-[1rem] space-y-1">
+        <li>Issuer: <code>https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
+        <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
+        <li>Valid redirect URI: <code>{{serviceUrl}}/admin/login/oidc</code></li>
+        <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
+            <code>groups</code>, "Add to userinfo" enabled), then set
+            <code>OIDC_ALLOWED_GROUPS</code></li>
+        <li>For return-to-app after logout (optional): set
+            <code>OIDC_POST_LOGOUT_REDIRECT_URI</code> and add that URL to the client's
+            Valid post logout redirect URIs</li>
+    </ul>
+
+    <p class="text-base-content/60 text-sm mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
+        prompted, and local password/passkey management is disabled for SSO sessions. With
+        <code>OIDC_LOGOUT</code> off, signing out clears only the local EmailEngine
+        session, not the identity-provider session.</p>
+
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#oidcInstructionsModal"}}
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="registerPasskeyModal" title="Register a new passkey" titleId="registerPasskeyModalLabel"}}
+<div class="modal-body space-y-4">
+    {{#if authData.enabled}}
+    <div>
+        {{#> ui/form-field id="passkey-current-password" label="Current password"}}
+        <input type="password" class="input" id="passkey-current-password" placeholder="Enter your current password"
+            maxlength="256" autocomplete="current-password" />
+        <span class="helper-text">Confirm your identity before registering a new passkey.</span>
+        {{/ui/form-field}}
+    </div>
+    {{/if}}
+    <div>
+        {{#> ui/form-field id="passkey-name" label="Passkey name"}}
+        <input type="text" class="input" id="passkey-name" placeholder="e.g., MacBook Touch ID" maxlength="100" />
+        <span class="helper-text">A friendly name to help you identify this passkey.</span>
+        {{/ui/form-field}}
+    </div>
+    <div id="passkey-register-error" class="text-error text-sm" style="display:none;"></div>
+    <div id="passkey-register-success" class="text-success text-sm" style="display:none;">
+        Passkey registered successfully.
     </div>
 </div>
-
-<div class="modal fade" id="logoutAllModal" tabindex="-1" aria-labelledby="logoutAllModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form method="post" action="/admin/account/logout-all">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="logoutAllModalLabel">Sign out from all devices</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-
-                    <p>This will sign you out from all browsers and devices where you're currently signed in. You'll need to sign in again on each device.</p>
-
-                </div>
-                <div class="modal-footer">
-
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i
-                            class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i> Sign out everywhere</button>
-                </div>
-            </div>
-        </form>
-    </div>
+<div class="modal-footer">
+    <input type="hidden" id="security-crumb" value="{{crumb}}" />
+    {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#registerPasskeyModal"}}
+    {{> ui/btn label="Register passkey" id="passkey-register-confirm-btn"}}
 </div>
-
-<div class="modal fade" id="ssoInstructionsModal" tabindex="-1" aria-labelledby="ssoInstructionsModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ssoInstructionsModalLabel">Configure Single Sign-On with Okta</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-
-                <p>Follow these steps to configure Single Sign-On with Okta:</p>
-                <ol>
-                    <li>Create a new web application in your Okta dashboard using the Redirect URI below</li>
-                    <li>Configure the required environment variables for EmailEngine</li>
-                    <li>Restart EmailEngine to apply the changes</li>
-                </ol>
-
-                <p><strong>Redirect URI for your Okta application:</strong><br>
-                    <code style="color:#333;">{{serviceUrl}}/admin/login/okta</code>
-                </p>
-
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Environment variable</th>
-                            <th>Current value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th>
-                                <code style="color:#333;">OKTA_OAUTH2_ISSUER</code>
-                            </th>
-                            <td>
-                                {{#if okta.OKTA_OAUTH2_ISSUER}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_ISSUER}}</code>
-                                {{else}}
-                                Not configured (enter your Okta issuer URL)
-                                {{/if}}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_ID</code></th>
-                            <td>
-                                {{#if okta.OKTA_OAUTH2_CLIENT_ID}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_ID}}</code>
-                                {{else}}
-                                Not configured
-                                {{/if}}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OKTA_OAUTH2_CLIENT_SECRET</code></th>
-                            <td>
-                                {{#if okta.OKTA_OAUTH2_CLIENT_SECRET}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{okta.OKTA_OAUTH2_CLIENT_SECRET}}</code>
-                                {{else}}
-                                Not configured
-                                {{/if}}
-
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="modal fade" id="oidcInstructionsModal" tabindex="-1" aria-labelledby="oidcInstructionsModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="oidcInstructionsModalLabel">Configure Single Sign-On with OIDC</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-
-                <p>EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
-                    Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
-                    its discovery document (<code style="color:#333;">{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
-                    when EmailEngine starts.</p>
-
-                <ol>
-                    <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
-                        Redirect URI below</li>
-                    <li>Configure the required environment variables for EmailEngine</li>
-                    <li>Restart EmailEngine to apply the changes</li>
-                </ol>
-
-                <p><strong>Redirect URI for your OIDC client:</strong><br>
-                    <code style="color:#333;">{{serviceUrl}}/admin/login/oidc</code>
-                </p>
-
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Environment variable</th>
-                            <th>Current value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th><code style="color:#333;">OIDC_ISSUER</code></th>
-                            <td>
-                                {{#if oidc.OIDC_ISSUER}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ISSUER}}</code>
-                                {{else}}
-                                Not configured (enter your OIDC issuer URL)
-                                {{/if}}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_CLIENT_ID</code></th>
-                            <td>
-                                {{#if oidc.OIDC_CLIENT_ID}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_CLIENT_ID}}</code>
-                                {{else}}
-                                Not configured
-                                {{/if}}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_CLIENT_SECRET</code></th>
-                            <td>
-                                {{#if oidc.OIDC_CLIENT_SECRET}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_CLIENT_SECRET}}</code>
-                                {{else}}
-                                Not configured
-                                {{/if}}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_PROVIDER_NAME</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_PROVIDER_NAME}}</code>
-                                <br><small class="text-muted">Label shown on the sign-in button</small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_ALLOWED_USERS</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                {{#if oidc.OIDC_ALLOWED_USERS}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ALLOWED_USERS}}</code>
-                                {{else}}
-                                Not set
-                                {{/if}}
-                                <br><small class="text-muted">Comma-separated allow-list of emails and/or
-                                    <code style="color:#333;">@domain</code> entries</small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_ALLOWED_GROUPS</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                {{#if oidc.OIDC_ALLOWED_GROUPS}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_ALLOWED_GROUPS}}</code>
-                                {{else}}
-                                Not set
-                                {{/if}}
-                                <br><small class="text-muted">Comma-separated group names. A user is allowed if their
-                                    email matches <code style="color:#333;">OIDC_ALLOWED_USERS</code> OR they belong to
-                                    one of these groups. When both are empty, anyone the identity provider authenticates
-                                    can sign in.</small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_GROUPS_CLAIM</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_GROUPS_CLAIM}}</code>
-                                <br><small class="text-muted">userinfo claim that carries group membership (default
-                                    <code style="color:#333;">groups</code>); may be a dotted path such as
-                                    <code style="color:#333;">realm_access.roles</code></small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_FORCED</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_FORCED}}</code>
-                                <br><small class="text-muted">When true, the login page redirects straight to the identity
-                                    provider and local password/passkey sign-in is disabled. If discovery fails at
-                                    startup the local form is shown as a fallback.</small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_LOGOUT</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                <code style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_LOGOUT}}</code>
-                                <br><small class="text-muted">When true, signing out also ends the identity-provider session
-                                    (RP-initiated logout via the end_session endpoint).</small>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <th><code style="color:#333;">OIDC_POST_LOGOUT_REDIRECT_URI</code><br><small class="text-muted">optional</small></th>
-                            <td>
-                                {{#if oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}
-                                <code
-                                    style="display: inline-block; overflow: hidden; color:#333;">{{oidc.OIDC_POST_LOGOUT_REDIRECT_URI}}</code>
-                                {{else}}
-                                Not set - the identity provider shows its own logged-out page
-                                {{/if}}
-                                <br><small class="text-muted">Where the IdP returns after logout (must be a registered post
-                                    logout redirect URI). Point it at
-                                    <code style="color:#333;">{{serviceUrl}}/admin/login?loggedout=1</code> for an in-app
-                                    signed-out screen.</small>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <p class="mb-1"><strong>Keycloak example</strong></p>
-                <ul>
-                    <li>Issuer: <code style="color:#333;">https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
-                    <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
-                    <li>Valid redirect URI: <code style="color:#333;">{{serviceUrl}}/admin/login/oidc</code></li>
-                    <li>For group-based access: add a <em>Group Membership</em> mapper to the client (Token Claim Name
-                        <code style="color:#333;">groups</code>, "Add to userinfo" enabled), then set
-                        <code style="color:#333;">OIDC_ALLOWED_GROUPS</code></li>
-                    <li>For return-to-app after logout (optional): set
-                        <code style="color:#333;">OIDC_POST_LOGOUT_REDIRECT_URI</code> and add that URL to the client's
-                        Valid post logout redirect URIs</li>
-                </ul>
-
-                <p class="text-muted small mb-0">Note: signing in via SSO is a standalone factor - TOTP is not
-                    prompted, and local password/passkey management is disabled for SSO sessions. With
-                    <code style="color:#333;">OIDC_LOGOUT</code> off, signing out clears only the local EmailEngine
-                    session, not the identity-provider session.</p>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="modal fade" id="registerPasskeyModal" tabindex="-1" aria-labelledby="registerPasskeyModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="registerPasskeyModalLabel">Register a new passkey</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                {{#if authData.enabled}}
-                <div class="form-group">
-                    <label for="passkey-current-password">Current password</label>
-                    <input type="password" class="form-control" id="passkey-current-password"
-                        placeholder="Enter your current password" maxlength="256" autocomplete="current-password" />
-                    <small class="form-text text-muted">Confirm your identity before registering a new passkey.</small>
-                </div>
-                {{/if}}
-                <div class="form-group">
-                    <label for="passkey-name">Passkey name</label>
-                    <input type="text" class="form-control" id="passkey-name" placeholder="e.g., MacBook Touch ID"
-                        maxlength="100" />
-                    <small class="form-text text-muted">A friendly name to help you identify this passkey.</small>
-                </div>
-                <div id="passkey-register-error" class="text-danger small" style="display:none;"></div>
-                <div id="passkey-register-success" class="text-success small" style="display:none;">
-                    Passkey registered successfully.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <input type="hidden" id="security-crumb" value="{{crumb}}" />
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="passkey-register-confirm-btn">
-                    Register passkey
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{{/ui/modal}}
 
 <script src="/static/vendor/simplewebauthn/browser.min.js"></script>
 <script src="/static/js/passkey-register.js"></script>

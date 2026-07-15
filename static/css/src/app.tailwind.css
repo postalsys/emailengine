@@ -109,6 +109,13 @@
         }
     }
 
+    /* illustration half of the split login card (layout/login.hbs) */
+    .bg-login-page-image {
+        background: url(/static/logo_wide.png);
+        background-position: center;
+        background-size: cover;
+    }
+
     /* ACE editor wrapper chrome (the editors themselves style their content) */
     .code-editor {
         width: 100%;
