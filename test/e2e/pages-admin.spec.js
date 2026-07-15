@@ -591,6 +591,51 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('document store: settings, chat modal, mappings and pre-processing editors', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // the deprecated-feature gate is opened for e2e via
+        // EENGINE_DOCUMENT_STORE_ENABLED in playwright.config.js
+        await page.goto('/admin/config/document-store');
+        await expect(page.locator('h1', { hasText: 'Document Store' })).toBeVisible();
+        await expect(page.getByText('Deprecation Notice')).toBeVisible();
+        await expect(page.locator('#documentStoreUrl')).toBeVisible();
+
+        // chat page: try-it modal resets and reports errors through the hidden toggles
+        await page.goto('/admin/config/document-store/chat');
+        await page.locator('#try-chat-btn').click();
+        await expect(page.locator('#tryChatModal.open')).toHaveCount(1);
+        await expect(page.locator('#tryChatModal')).toHaveCSS('opacity', '1');
+        await page.fill('#inputAccount', 'no-such-account');
+        await page.fill('#question', 'anything?');
+        await page.locator('#send-question-btn').click();
+        await expect(page.locator('#chat-error')).toBeVisible({ timeout: 15000 });
+        // close via the button: the failed request disabled/re-enabled the
+        // submit button, which drops focus to <body>, and FlyonUI only closes
+        // on Escape while focus is inside the overlay
+        await page.locator('#tryChatModal button', { hasText: 'Close' }).click();
+        await expect(page.locator('#tryChatModal.open')).toHaveCount(0);
+
+        // mappings: built-in list renders, new-mapping confirmation modal opens
+        await page.goto('/admin/config/document-store/mappings');
+        expect(await page.locator('tbody tr').count()).toBeGreaterThan(5);
+        await page.goto('/admin/config/document-store/mappings/new');
+        await page.fill('#field', 'e2e_field');
+        await page.locator('button', { hasText: 'Add mapping' }).first().click();
+        await expect(page.locator('#submitModal.open')).toHaveCount(1);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#submitModal.open')).toHaveCount(0);
+
+        // pre-processing: ACE editors + live filter evaluation via the worker
+        await page.goto('/admin/config/document-store/pre-processing');
+        await expect(page.locator('#editor-fn .ace_content')).toBeAttached();
+        await page.evaluate(() => window.ace.edit('editor-fn').setValue('return true;'));
+        await expect(page.locator('#filter-res')).toHaveText('filter matches');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);

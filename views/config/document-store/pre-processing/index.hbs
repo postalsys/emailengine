@@ -1,59 +1,50 @@
 {{> document_store_header}}
 
 <form method="post" action="/admin/config/document-store/pre-processing" id="edit-form">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
 
     <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
     <input type="hidden" id="map-content-element" name="contentMapJson" value="{{values.contentMapJson}}">
 
-    <div class="card mb-4">
-        <ul class="list-group list-group-flush mb-3">
-            <li class="list-group-item d-flex justify-content-between align-items-top">
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+            <div>
+                {{> ui/checkbox id="enabled" name="enabled" label="Enable pre-processing." class="or-else-all"
+                dataTarget="docstore-list" dataReverse=true checked=values.enabled error=errors.enabled
+                hint="The Document Store Pre-processing feature lets you edit emails before saving them. Additionally, you can exclude certain emails from being stored altogether."}}
+            </div>
 
-                <div class="form-group form-check mb-0">
-                    <input type="checkbox" class="form-check-input or-else-all {{#if errors.enabled}}is-invalid{{/if}}"
-                        id="enabled" name="enabled" data-target="docstore-list" data-reverse="true" {{#if
-                        values.enabled}}checked{{/if}} />
-                    <label class="form-check-label" for="enabled">Enable pre-processing.</label>
-                    {{#if errors.enabled}}
-                    <span class="invalid-feedback">{{errors.enabled}}</span>
-                    {{/if}}
-                    <small class="form-text text-muted">The Document Store Pre-processing feature lets you edit emails
-                        before saving them. Additionally, you can exclude certain emails from being stored
-                        altogether.</i></small>
-                </div>
+            <div class="text-end space-y-1">
+                {{> ui/setting-ref name="documentStorePreProcessingEnabled" class="whitespace-nowrap"}}
 
-                <div class="text-right">
-                    <div class="text-muted code-link">[<a href="/admin/swagger#/Settings/postV1Settings" target="_blank"
-                            rel="noopener noreferrer">documentStorePreProcessingEnabled</a>]</div>
-
-                    {{#if
-                    values.enabled}}
-                    <span class="badge badge-success badge-pill">enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning badge-pill">disabled</span>
-                    {{/if}}
-                </div>
-            </li>
-        </ul>
-        <div class="card-body">
+                {{#if values.enabled}}
+                {{> ui/badge label="enabled" variant="success" pill=true}}
+                {{else}}
+                {{> ui/badge label="disabled" variant="warning" pill=true}}
+                {{/if}}
+            </div>
+        </div>
+        <div class="card-body space-y-4">
 
 
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a
+            <div>
+                <div class="text-base-content/60 float-right code-link">[<a
                         href="https://emailengine.app/pre-processing-functions" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">documentation</a>]
+                        rel="noopener noreferrer" referrerpolicy="no-referrer"
+                        class="link link-animated">documentation</a>]
 
                     [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
-                        referrerpolicy="no-referrer">documentStorePreProcessingFn</a>]
+                        referrerpolicy="no-referrer" class="link link-animated">documentStorePreProcessingFn</a>]
                 </div>
-                <label for="editor-fn">Filter function</label>
-                <div style="line-height: 1; margin-bottom: 10px;">
+                <label class="label-text" for="editor-fn">Filter function</label>
+                <div class="mb-2 leading-tight">
                     <small>JavaScript code to determine if the email should be stored. If the code evaluates to
                         <code>true</code> then the email is synced to the document store, otherwise it is skipped. The
                         script includes <code>payload</code> as a global variable that contains the email data.
-                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
+                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                            class="link link-animated">script variables</a>.</small>
                 </div>
                 <div id="editor-fn" class="code-editor"></div>
                 <div class="editor-embed-block">
@@ -69,7 +60,7 @@
 
                     <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
                         Evaluation result:
-                        <span id="filter-res" class="evalres text-info">no match</span>
+                        <span id="filter-res" class="text-info">no match</span>
                     </div>
 
                     <div class="editor-embed-content editor-embed-content-right">
@@ -81,21 +72,22 @@
             </div>
 
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">
+            <div>
+                <div class="text-base-content/60 float-right code-link">
                     [<a href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
-                        referrerpolicy="no-referrer">documentStorePreProcessingMap</a>]
+                        referrerpolicy="no-referrer" class="link link-animated">documentStorePreProcessingMap</a>]
                 </div>
-                <label for="editor-map">Map function</label>
-                <div style="line-height: 1; margin-bottom: 10px;">
+                <label class="label-text" for="editor-map">Map function</label>
+                <div class="mb-2 leading-tight">
                     <small>JavaScript code to modify email payload structure. Protected fields <code>id</code>,
                         <code>account</code>, <code>path</code>, <code>uid</code>, <code>specialUse</code>, and
                         <code>messageId</code> cannot be modified.
-                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv">script variables</a>.</small>
+                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                            class="link link-animated">script variables</a>.</small>
                 </div>
 
-                <div class="row">
-                    <div class="col-sm-7">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-12">
+                    <div class="sm:col-span-7">
                         <div id="editor-map" class="code-editor"></div>
                         <div class="editor-embed-block">
                             <div class="editor-embed-content editor-embed-content-left">
@@ -109,7 +101,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-sm-5">
+                    <div class="sm:col-span-5">
                         <div id="editor-map-preview" class="code-editor"></div>
                         <div class="editor-embed-block">
                             <div class="editor-embed-content editor-embed-content-left">
@@ -127,13 +119,8 @@
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-cog"></i>
-            </span>
-            <span class="text">Update settings</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Update settings" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 </form>
 
@@ -143,34 +130,24 @@
 <input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
 <input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 
-<div class="modal fade" id="setPayloadModal" tabindex="-1" aria-labelledby="setPayloadModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="setPayloadModalLabel">Set test payload</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
+{{#> ui/modal id="setPayloadModal" title="Set test payload" titleId="setPayloadModalLabel" dialogClass="max-w-3xl"}}
+<div class="modal-body">
 
-                <div>JSON payload</div>
-                <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
-                <small id="inputToHelp" class="form-text text-muted">Enter the JSON structure that will be
-                    used as the <code>payload</code> value for test evaluation.</small>
+    <div class="mb-2">JSON payload</div>
+    <div id="editor-json" class="code-editor h-40"></div>
+    <span class="helper-text" id="inputToHelp">Enter the JSON structure that will be
+        used as the <code>payload</code> value for test evaluation.</span>
 
-            </div>
-            <div class="modal-footer" style="justify-content: space-between">
-                <div>
-                    <select class="custom-select custom-select-sm" id="select-predefined-payload">
-                        <option> -- Select predefined payload -- </option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
 </div>
+<div class="modal-footer justify-between">
+    <div>
+        <select class="select select-sm" id="select-predefined-payload">
+            <option> -- Select predefined payload -- </option>
+        </select>
+    </div>
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#setPayloadModal"}}
+</div>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -273,18 +250,21 @@
         const updateFilterResult = (err, result, opts) => {
             let resultElm = document.getElementById('filter-res');
             if (err) {
-                resultElm.classList.remove('text-warning', 'text-success');
-                resultElm.classList.add('text-danger');
+                // also drop the initial text-info placeholder: the layered
+                // text-error utility sorts before text-info in the compiled
+                // CSS, so a leftover text-info would win the cascade
+                resultElm.classList.remove('text-info', 'text-warning', 'text-success');
+                resultElm.classList.add('text-error');
                 resultElm.textContent = `validation failed (${err.message})`
                 return;
             }
 
             if (result) {
-                resultElm.classList.remove('text-warning', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-warning', 'text-error');
                 resultElm.classList.add('text-success');
                 resultElm.textContent = `filter matches`
             } else {
-                resultElm.classList.remove('text-success', 'text-danger');
+                resultElm.classList.remove('text-info', 'text-success', 'text-error');
                 resultElm.classList.add('text-warning');
 
                 let truthyWarning = opts && opts.truthyWarning;
@@ -422,7 +402,7 @@ the *Set test payload* button to change the filter payload.`);
         const testPayloadBtn = document.getElementById('test-payload-btn');
         testPayloadBtn.addEventListener('click', e => {
             e.preventDefault();
-            $('#setPayloadModal').modal('show');
+            uiModal.open('#setPayloadModal');
         });
 
         let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value);
