@@ -208,14 +208,6 @@
         });
     };
 
-    // bootstrap-autocomplete detects the Bootstrap version via
-    // $.fn.button.Constructor.VERSION; nothing else uses the button plugin
-    // (removed together with bootstrap-autocomplete in the datalist migration)
-    $.fn.button = function () {
-        return this;
-    };
-    $.fn.button.Constructor = { VERSION: '4.6.2' };
-
     // --- Tooltip ---------------------------------------------------------------
 
     let tooltipElm = null;

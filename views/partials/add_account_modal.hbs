@@ -1,57 +1,37 @@
-<div class="modal fade" id="addAccount" tabindex="-1" aria-labelledby="addAccountLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addAccountLabel">Add an account</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form method="post" action="/admin/accounts/new">
-                <input type="hidden" name="crumb" value="{{crumb}}">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="account-name" class="col-form-label">Full name:</label>
-                        <input type="text" class="form-control" id="account-name" name="name"
-                            placeholder="e.g., John Smith">
-                    </div>
-                    <div class="form-group">
-                        <label for="account-id" class="col-form-label">Account identifier (optional):</label>
-                        <input type="text" class="form-control" id="account-id" name="account"
-                            placeholder="e.g., account_123">
-                        <small class="form-text text-muted">Leave blank to auto-generate. Existing accounts with this ID will be updated.</small>
-                    </div>
+{{#> ui/modal id="addAccount" title="Add an account"}}
+<form method="post" action="/admin/accounts/new">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <div class="modal-body space-y-4">
+        {{> ui/form-field id="account-name" name="name" label="Full name:" placeholder="e.g., John Smith"}}
+        {{> ui/form-field id="account-id" name="account" label="Account identifier (optional):" placeholder="e.g., account_123" hint="Leave blank to auto-generate. Existing accounts with this ID will be updated."}}
 
-                    <p><small>You'll be redirected to a hosted authentication form. You can also <a href="https://emailengine.app/hosted-authentication" target="_blank"
-                                rel="noopener noreferrer" referrerpolicy="no-referrer">use this form in your own app</a>.</small>
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-
-                    <button type="submit" class="btn btn-primary btn-icon-split">
-                        <span class="icon text-white-50">
-                            <i class="fas fa-arrow-right"></i>
-                        </span>
-                        <span class="text">Continue</span>
-                    </button>
-
-                </div>
-            </form>
-        </div>
+        <p class="text-sm text-base-content/80">You'll be redirected to a hosted authentication form. You can also <a
+                href="https://emailengine.app/hosted-authentication" target="_blank" rel="noopener noreferrer"
+                referrerpolicy="no-referrer" class="link link-animated">use this form in your own app</a>.
+        </p>
     </div>
-</div>
+    <div class="modal-footer">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#addAccount"}}
+        {{> ui/btn label="Continue" type="submit" icon="icon-[tabler--arrow-right]"}}
+    </div>
+</form>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        $('#addAccount').on('shown.bs.modal', function (event) {
+        let modalElm = document.getElementById('addAccount');
+        if (!modalElm) {
+            return;
+        }
+
+        modalElm.addEventListener('open.overlay', () => {
             document.getElementById('account-name').focus();
             document.getElementById('account-name').select();
         });
 
-        $('#addAccount').on('hidden.bs.modal', function (event) {
+        modalElm.addEventListener('close.overlay', () => {
             document.getElementById('account-name').value = '';
             document.getElementById('account-id').value = '';
-        })
+        });
     });
 </script>

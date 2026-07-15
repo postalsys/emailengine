@@ -49,7 +49,7 @@
             </button>
 
             <!-- Brand -->
-            <div class="border-base-content/20 flex items-center justify-center border-b px-4 py-5">
+            <div class="border-base-content/20 flex items-center justify-center border-b px-6 py-12">
                 <a href="/" class="flex items-center">
                     <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="block max-h-8 max-w-full">
                 </a>
@@ -76,7 +76,7 @@
 
         <!-- Topbar -->
         <header class="bg-base-100 border-base-content/20 sticky top-0 z-30 border-b">
-            <nav class="navbar flex items-center gap-2 px-4 py-2">
+            <nav class="navbar flex items-center gap-2 px-6 py-2">
 
                 <button type="button" class="btn btn-text btn-square btn-sm lg:hidden" aria-haspopup="dialog"
                     aria-expanded="false" aria-controls="layout-sidebar" data-overlay="#layout-sidebar"
@@ -224,13 +224,13 @@
                 {{#> ui/stat-card id="license-warning" variant="error" title="License key missing" icon="icon-[tabler--key]" class="mb-6"}}
 
                 {{#if licenseInfo.suspended}}
-                <div class="alert alert-error mb-4" role="alert">
+                <div class="alert alert-error mb-6" role="alert">
                     EmailEngine is currently not syncing any accounts. Please restart the application or
                     register a valid license key to enable syncing.
                 </div>
                 {{/if}}
 
-                <p class="mb-3">To use all the features of EmailEngine, you need to provide a valid license key.</p>
+                <p class="mb-[1rem]">To use all the features of EmailEngine, you need to provide a valid license key.</p>
                 <div class="flex flex-wrap gap-2">
 
                     {{#if trialPossible}}
@@ -249,7 +249,7 @@
                 {{#unless disableAuthWarning}}
                 {{#> ui/stat-card variant="error" title="Authentication not enabled" icon="icon-[tabler--shield-lock]" class="mb-6"}}
 
-                <p class="mb-3">To enable authentication for EmailEngine, please set a password for the admin
+                <p class="mb-[1rem]">To enable authentication for EmailEngine, please set a password for the admin
                     user account.</p>
                 <div>
                     {{> ui/btn href="/admin/account/password" variant="primary" icon="icon-[tabler--arrow-right]" label="Enable authentication"}}
@@ -266,7 +266,7 @@
         <!-- End of page content -->
 
         <!-- Footer -->
-        <footer class="bg-base-100 border-base-content/20 border-t py-4 mt-auto">
+        <footer class="bg-base-100 border-base-content/20 border-t py-6 mt-auto">
             <div class="text-base-content/70 text-center text-sm">
                 <a href="{{packageData.homepage}}" target="_blank" rel="noopener noreferrer" class="link link-animated">EmailEngine</a>
                 v{{packageData.version}}.
@@ -290,7 +290,6 @@
     <script src="/static/vendor/handlebars/handlebars.min-v4.7.9.js"></script>
     <script src="/static/js/clipboard.min.js"></script>
 
-    <script src="/static/js/bootstrap-autocomplete.min.js"></script>
 
     <script src="/static/js/highlight.min.js"></script>
 

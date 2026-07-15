@@ -11,45 +11,41 @@
             }
         }
 
-        $('.basicAutoComplete').autoComplete({
-            resolver: 'custom',
-            events: {
-                search: function (query, callback) {
-                    let matches = wellKnownServices.filter(entry => (`${entry.key} / ${entry.description}`).toLowerCase().indexOf(query.toLowerCase().trim()) >= 0);
-                    callback(matches.map(entry => `${entry.key} / ${entry.description}`))
-                },
-                typed: function (newValue, origJQElement) {
-                    return newValue
-                }
-            },
-            preventEnter: true,
-            minLength: 1
-        }).on('change', function (a) {
-        }).on('autocomplete.select', function (e) {
-            if (e && e.type === 'autocomplete') {
-                let selectedValue = (e.currentTarget && e.currentTarget.value || '').split(' / ').shift().trim();
-                if (selectedValue) {
-                    let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue.toLowerCase().trim())
-                    if (entry) {
-                        for (let key of Object.keys(entry)) {
-                            switch (key) {
-                                case 'host':
-                                    document.getElementById('host').value = entry[key];
-                                    break;
-                                case 'port':
-                                    document.getElementById('port').value = entry[key];
-                                    break;
-                                case 'secure':
-                                    document.getElementById('secure').checked = entry[key];
-                                    break;
-                            }
+        // native datalist suggestions (replaces the bootstrap-autocomplete plugin);
+        // picking a well-known service autofills host/port/secure
+        let serviceListElm = document.createElement('datalist');
+        serviceListElm.id = 'well-known-services-list';
+        for (let entry of wellKnownServices) {
+            let optionElm = document.createElement('option');
+            optionElm.value = entry.key + ' / ' + entry.description;
+            serviceListElm.appendChild(optionElm);
+        }
+        document.body.appendChild(serviceListElm);
 
-                        }
-                    }
-                }
-
+        let applyWellKnownService = value => {
+            let selectedValue = (value || '').split(' / ').shift().trim().toLowerCase();
+            if (!selectedValue) {
+                return;
             }
-        });
+            let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue);
+            if (!entry) {
+                return;
+            }
+            if ('host' in entry) {
+                document.getElementById('host').value = entry.host;
+            }
+            if ('port' in entry) {
+                document.getElementById('port').value = entry.port;
+            }
+            if ('secure' in entry) {
+                document.getElementById('secure').checked = entry.secure;
+            }
+        };
+
+        for (let inputElm of document.querySelectorAll('.basicAutoComplete')) {
+            inputElm.setAttribute('list', serviceListElm.id);
+            inputElm.addEventListener('input', () => applyWellKnownService(inputElm.value));
+        }
 
         const sendTestPayload = async () => {
 

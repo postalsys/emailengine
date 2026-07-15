@@ -13,10 +13,14 @@
  *
  * COLLISION LIST - class names this sheet redefines with non-Tailwind values.
  * Converted views and ui/* partials must NOT use these names:
- *   - spacing values 3/4/5: m*-3/4/5, p*-3/4/5 (use the Tailwind scale instead:
- *     1rem = *-4, 1.5rem = *-6, 3rem = *-12; values 0-2 and auto are identical)
+ *   - spacing values 3/4/5: m*-3/4/5, p*-3/4/5. While this bridge exists the
+ *     *-3/4/5 names carry Bootstrap values, so converted views spell 1rem as
+ *     *-[1rem] (arbitrary value); 1.5rem = *-6 and 3rem = *-12 are free names;
+ *     values 0-2 and auto are identical in both systems
  *   - .shadow (Bootstrap's large card float; converted views use shadow-md etc.)
  *   - .container (Bootstrap grid container; converted views use max-w-*)
+ *   - .btn-secondary / .badge-secondary (bridged to Bootstrap's neutral gray;
+ *     converted views use the neutral variant for gray actions)
  * Everything else either does not exist in Tailwind or matches its values.
  *
  * Where a Bootstrap class name collides with a FlyonUI component class
@@ -389,6 +393,13 @@ select.form-control[multiple], select.form-control[size]:not([size='1']) {
  * base .btn component (which legacy markup also carries) renders them. */
 .btn-danger { --btn-color: var(--color-error); --btn-fg: var(--color-error-content); }
 .btn-light { --btn-color: var(--color-base-200); --btn-fg: var(--color-base-content); }
+/* Bootstrap "secondary" was neutral gray; FlyonUI's secondary is the coral
+ * brand color. Keep the neutral meaning while legacy markup exists -
+ * converted views must use variant="neutral" for gray actions and avoid
+ * btn-secondary/badge-secondary until this bridge is deleted (see the
+ * collision list in the header). */
+.btn-secondary { --btn-color: var(--color-neutral); --btn-fg: var(--color-neutral-content); }
+.badge-secondary { --badge-color: var(--color-neutral); --badge-fg: var(--color-neutral-content); }
 
 .btn-link {
     background: none;
