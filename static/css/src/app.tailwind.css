@@ -1,0 +1,262 @@
+/*
+ * EmailEngine admin UI theme - Tailwind v4 + FlyonUI.
+ *
+ * This is the build SOURCE. Compile with `npm run build:css`, which writes the
+ * committed artifact static/css/flyonui.css (loaded by all layouts and bundled
+ * into the pkg binary). tailwindcss/flyonui/iconify are devDependencies only.
+ *
+ * Brand (EmailEngine_logo+info.pdf): indigo #4C5CC5 (PMS 2726C) = primary,
+ * coral #F8485E (PMS 1785C) = secondary/accent, font PT Sans (self-hosted,
+ * loaded via /static/fonts/pt-sans-font.css). The info sheet prints hex
+ * #407ec9 for the indigo, but that contradicts its own RGB 76,92,197 and the
+ * artwork - #4C5CC5 is correct.
+ */
+
+@import 'tailwindcss';
+@import './bootstrap-compat.css';
+
+@plugin "@iconify/tailwind4";
+
+@plugin "flyonui" {
+    themes: false;
+}
+@import 'flyonui/variants.css';
+
+/* Light theme: FlyonUI builtin "light" tokens merged with EmailEngine brand colors */
+@plugin "flyonui/theme" {
+    name: 'light';
+    default: true;
+    color-scheme: light;
+    --color-primary: #4c5cc5;
+    --color-primary-content: #ffffff;
+    --color-secondary: #f8485e;
+    --color-secondary-content: #ffffff;
+    --color-accent: #f8485e;
+    --color-accent-content: #ffffff;
+}
+
+/* Dark theme: FlyonUI builtin "dark" tokens with brand colors lightened for
+ * contrast on dark surfaces; content colors darkened to keep WCAG-ish ratios */
+@plugin "flyonui/theme" {
+    name: 'dark';
+    prefersdark: true;
+    color-scheme: dark;
+    --color-primary: #7b86dc;
+    --color-primary-content: #10123a;
+    --color-secondary: #f8697b;
+    --color-secondary-content: #3b070f;
+    --color-accent: #f8697b;
+    --color-accent-content: #3b070f;
+}
+
+/* Class sources: server-rendered templates plus the custom scripts that build
+ * class names. Vendored libraries are intentionally NOT scanned. */
+@source '../../../views/**/*.hbs';
+@source '../../js/app.js';
+@source '../../js/ui.js';
+@source '../../js/bootstrap-compat.js';
+@source '../../js/passkey-register.js';
+@source '../../js/login-passkey.js';
+@source '../../../node_modules/flyonui/flyonui.js';
+
+/* Safelist for classes assembled dynamically in JS (badge-${type} etc.) that
+ * the scanner cannot see as complete tokens */
+@source inline('badge-{primary,secondary,info,success,warning,error,soft}');
+@source inline('alert-{primary,secondary,info,success,warning,error,soft}');
+@source inline('{,text-,bg-}{primary,secondary,info,success,warning,error}');
+@source inline('progress progress-bar animate-spin hidden');
+
+@theme {
+    --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * EmailEngine custom components (ported from static/css/app.css, callout.css
+ * and emailengine.css; colors converted to theme tokens for light+dark)
+ * ------------------------------------------------------------------------- */
+@layer components {
+    /* ACE editor wrapper chrome (the editors themselves style their content) */
+    .code-editor {
+        width: 100%;
+        height: 14rem;
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-radius: var(--radius-field, 0.375rem);
+    }
+    .code-editor-low {
+        width: 100%;
+        height: 10rem;
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-radius: var(--radius-field, 0.375rem);
+    }
+
+    /* Template editor toolbar attached below an editor box */
+    .editor-embed-block {
+        text-align: left;
+        padding-top: 0;
+        margin-top: -2px;
+    }
+    .editor-embed-content {
+        font-weight: 300;
+        font-size: 13px;
+        display: inline-block;
+        padding: 2px 10px;
+        background: var(--color-base-100);
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-top: none;
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+        text-decoration: none;
+    }
+    .editor-embed-content-left {
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 0;
+        margin-right: -4px;
+    }
+    .editor-embed-content-right {
+        border-bottom-left-radius: 0;
+        border-top-left-radius: 0;
+        border-left: 0;
+        margin-left: 0;
+    }
+
+    .error-log-field {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+        border: var(--border, 1px) solid var(--color-base-300);
+        margin: 0;
+        padding: 1px;
+        display: block;
+        width: 100%;
+        height: 5rem;
+        color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    }
+
+    .droptxt {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+    }
+    .dragover {
+        box-shadow: 2px 2px color-mix(in oklab, var(--color-base-content) 45%, transparent);
+    }
+
+    .code-link {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+    }
+
+    .certinfo dt,
+    .certinfo dd {
+        font-size: 0.8rem;
+    }
+
+    .bg-login-page-image {
+        background: url(/static/logo_wide.png);
+        background-position: center;
+        background-size: cover;
+    }
+
+    .full-screen-div {
+        z-index: 9999;
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    .popover-list {
+        margin: 0 0 0 10px;
+        padding: 0;
+        list-style: square;
+    }
+    .popover-list li {
+        margin: 0;
+        padding: 0;
+    }
+
+    .hover-bg-light:hover {
+        background-color: var(--color-base-200);
+    }
+
+    .alert-margin .alert {
+        margin: 10px 10px 0 0;
+    }
+
+    /* Callouts (previously static/css/callout.css) */
+    .bd-callout {
+        padding: 0.25rem 0.25rem;
+        margin-top: 1.25rem;
+        margin-bottom: 1.25rem;
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-left-width: 0.25rem;
+        border-radius: var(--radius-field, 0.25rem);
+    }
+    .bd-callout h4 {
+        margin-top: 0;
+        margin-bottom: 0.25rem;
+    }
+    .bd-callout p:last-child {
+        margin-bottom: 0;
+    }
+    .bd-callout code {
+        border-radius: 0.25rem;
+    }
+    .bd-callout + .bd-callout {
+        margin-top: -0.25rem;
+    }
+    .bd-callout .small-text {
+        font-size: 0.8rem;
+    }
+    .bd-callout-info {
+        border-left-color: var(--color-info);
+    }
+    .bd-callout-info h4 {
+        color: var(--color-info);
+    }
+    .bd-callout-warning {
+        border-left-color: var(--color-warning);
+    }
+    .bd-callout-warning h4 {
+        color: var(--color-warning);
+    }
+    .bd-callout-success {
+        border-left-color: var(--color-success);
+    }
+    .bd-callout-success h4 {
+        color: var(--color-success);
+    }
+    .bd-callout-danger {
+        border-left-color: var(--color-error);
+    }
+    .bd-callout-danger h4 {
+        color: var(--color-error);
+    }
+
+    /* Fixed-layout account list table (previously static/css/emailengine.css) */
+    .users-table {
+        table-layout: fixed;
+        width: 100%;
+        white-space: nowrap;
+    }
+    .users-table td,
+    .users-table th {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .users-table .row-account {
+        width: 15%;
+    }
+    .users-table .row-name {
+        width: 15%;
+    }
+    .users-table .row-state {
+        width: 15%;
+    }
+    .users-table .row-description {
+        width: 40%;
+    }
+    .users-table .row-btn {
+        width: 15%;
+    }
+}

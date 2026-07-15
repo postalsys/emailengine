@@ -18,6 +18,7 @@
         "test:e2e:install": "playwright install --with-deps chromium",
         "lint": "npx eslint 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' server.js Gruntfile.js",
         "swagger": "./getswagger.sh",
+        "build:css": "tailwindcss -i static/css/src/app.tailwind.css -o static/css/flyonui.css --minify",
         "build-source": "rm -rf node_modules && npm install && rm -rf node_modules && npm ci --omit=dev && rm -rf node_modules/ace-builds node_modules/@postalsys/ee-client && ./update-info.sh",
         "build-dist": "pkg --compress Brotli package.json && npm install && node winconf.js",
         "build-dist-fast": "pkg --debug package.json && npm install && node winconf.js",
@@ -123,12 +124,16 @@
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
+        "@iconify-json/tabler": "1.2.35",
+        "@iconify/tailwind4": "1.2.3",
         "@playwright/test": "1.61.1",
+        "@tailwindcss/cli": "4.3.2",
         "acorn": "8.17.0",
         "acorn-walk": "8.3.5",
         "chai": "4.5.0",
         "eerawlog": "1.5.4",
         "eslint": "10.7.0",
+        "flyonui": "2.4.1",
         "grunt": "1.6.2",
         "grunt-cli": "1.5.0",
         "grunt-shell-spawn": "0.5.0",
@@ -137,6 +142,7 @@
         "resedit": "3.0.2",
         "spdx-satisfies": "6.0.0",
         "supertest": "7.2.2",
+        "tailwindcss": "4.3.2",
         "xgettext-template": "5.0.0"
     },
     "overrides": {
