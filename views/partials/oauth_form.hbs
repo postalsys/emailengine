@@ -138,7 +138,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             {{else}}
             {{!-- custom tab behavior: the script at the end of this partial
                   toggles tab-active and the auth-method sections; not a FlyonUI
-                  data-tabs instance --}}
+                  data-tabs instance, deliberately - each method toggles two
+                  .auth-method-section blocks that are interleaved with fields
+                  shared by both methods, and HSTabs maps one toggle to exactly
+                  one content element. The script also syncs the hidden
+                  #authMethod input submitted with the form. --}}
             <nav class="tabs tabs-bordered" id="auth-method-tabs" role="tablist" aria-label="Authentication method">
                 <button type="button" class="tab auth-method-tab{{#if authMethodIsServiceKey}} tab-active{{/if}}"
                     id="auth-method-tab-serviceKey" data-auth-method="serviceKey" role="tab"
