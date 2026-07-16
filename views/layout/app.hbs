@@ -20,9 +20,6 @@
 
     {{> theme_init}}
 
-    <!-- Font Awesome is still loaded for server-driven dynamic icons; removed at the end of the theme migration -->
-    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-
     <link href="/static/fonts/pt-sans-font.css" rel="stylesheet">
 
     <link rel="stylesheet" href="/static/css/highlight.min.css">
@@ -150,7 +147,7 @@
                             <li>
                                 <a class="dropdown-item flex items-start gap-3" href="{{url}}">
                                     <span class="bg-{{eeColor level}} text-white flex size-8 shrink-0 items-center justify-center rounded-full">
-                                        <i class="{{#if brand}}fab{{else}}fas{{/if}} fa-{{icon}}"></i>
+                                        <span class="{{icon}} size-4 shrink-0"></span>
                                     </span>
                                     <span class="text-sm whitespace-normal">
                                         {{#if verbatim}}

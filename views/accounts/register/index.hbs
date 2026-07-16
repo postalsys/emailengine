@@ -39,9 +39,7 @@
             {{else}}
 
             <button type="submit" class="btn btn-primary btn-block h-14 text-xl">
-                {{!-- provider logos are still Font Awesome classes served by the
-                      backend; converted to Tabler at the end of the migration --}}
-                <i class="fa {{providerData.icon}} fa-fw"></i> {{providerData.comment}}
+                <span class="{{providerData.icon}} size-5"></span> {{providerData.comment}}
             </button>
             {{/if}}
 

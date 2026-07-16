@@ -719,7 +719,7 @@ const init = async () => {
                     break;
                 case 'failed':
                     certificateData.label = {
-                        type: 'danger',
+                        type: 'error',
                         text: 'Failed',
                         title: (certificateData.lastError && certificateData.lastError.err) || 'Failed to generate a certificate'
                     };
@@ -3008,7 +3008,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/upgrade',
                     level: 'info',
-                    icon: 'exclamation-triangle',
+                    icon: 'icon-[tabler--alert-triangle]',
                     message: `An update is available: Emailengine v${upgradeInfo.available}`
                 });
             }
@@ -3020,7 +3020,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/config/license',
                     level: 'danger',
-                    icon: 'exclamation-triangle',
+                    icon: 'icon-[tabler--alert-triangle]',
                     message: `The license key needs to be renewed or replaced in ${expiresDays} day${expiresDays !== 1 ? 's' : ''}`
                 });
             }
@@ -3029,7 +3029,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: outlookAuthFlag.url || '/admin/config/oauth/app/outlook',
                     level: 'danger',
-                    icon: 'unlock-alt',
+                    icon: 'icon-[tabler--lock-open]',
                     message: outlookAuthFlag.message
                 });
             }
@@ -3038,7 +3038,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: gmailAuthFlag.url || '/admin/config/oauth/app/gmail',
                     level: 'danger',
-                    icon: 'unlock-alt',
+                    icon: 'icon-[tabler--lock-open]',
                     message: gmailAuthFlag.message
                 });
             }
@@ -3047,7 +3047,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: gmailServiceAuthFlag.url || '/admin/config/oauth/app/gmailService',
                     level: 'danger',
-                    icon: 'unlock-alt',
+                    icon: 'icon-[tabler--lock-open]',
                     message: gmailServiceAuthFlag.message
                 });
             }
@@ -3056,7 +3056,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/config/webhooks',
                     level: 'danger',
-                    icon: 'link',
+                    icon: 'icon-[tabler--link]',
                     message: 'Webhook delivery is failing'
                 });
             }
@@ -3065,7 +3065,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/config/license',
                     level: 'warning',
-                    icon: 'key',
+                    icon: 'icon-[tabler--key]',
                     message: 'No license key registered'
                 });
             }
@@ -3081,7 +3081,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/config/license',
                     level: 'warning',
-                    icon: 'key',
+                    icon: 'icon-[tabler--key]',
                     message: `Your ${licenseDetails.trial ? `trial ` : ''}license key will expire in ${licenseDetails.expiresDays} day${
                         licenseDetails.expiresDays !== 1 ? 's' : ''
                     }`
@@ -3092,7 +3092,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin/config/service#security',
                     level: 'warning',
-                    icon: 'key',
+                    icon: 'icon-[tabler--key]',
                     message: `Access tokens are disabled for API requests`
                 });
             }
@@ -3101,7 +3101,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: '/admin',
                     level: 'danger',
-                    icon: 'database',
+                    icon: 'icon-[tabler--database]',
                     message: `The Document Store is enabled in settings but unavailable. Start EmailEngine with the document store gate to use it, or disable the setting.`
                 });
             }
@@ -3110,8 +3110,7 @@ Include your token in requests using one of these methods:
                 systemAlerts.push({
                     url: 'https://emailengine.app/docker',
                     level: 'info',
-                    icon: 'docker',
-                    brand: true,
+                    icon: 'icon-[tabler--brand-docker]',
                     message: `The Docker image you are currently using is deprecated. To ensure ongoing support, please transition to <code>postalsys/emailengine</code>.`,
                     verbatim: true
                 });

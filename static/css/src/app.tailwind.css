@@ -72,6 +72,11 @@
 @source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
 /* client-side rendered delivery-test status icons (built by browser JS) */
 @source inline('icon-[tabler--circle-check] icon-[tabler--circle-off] icon-[tabler--alert-triangle]');
+/* server-driven icon classes emitted by lib/ui-routes/route-helpers.js,
+   lib/oauth2-apps.js and the systemAlerts list in workers/api.js - those
+   files are not scanned, so the classes are safelisted here */
+@source inline('icon-[tabler--send] icon-[tabler--arrow-right-circle] icon-[tabler--brand-google] icon-[tabler--brand-windows]');
+@source inline('icon-[tabler--lock-open] icon-[tabler--link] icon-[tabler--key] icon-[tabler--database] icon-[tabler--brand-docker]');
 
 @theme {
     --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

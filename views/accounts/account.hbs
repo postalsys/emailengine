@@ -103,7 +103,7 @@
             {{#> ui/tooltip text="Re-authenticate OAuth2 account"}}
             <button type="button" class="btn btn-soft btn-sm" data-overlay="#renewGrantModal" id="renew-grant-btn">
                 {{#if account.type.icon}}
-                <i class="{{account.type.icon}} fa-fw"></i>
+                <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
                 {{/if}} Re-authenticate
             </button>
             {{/ui/tooltip}}
@@ -116,19 +116,19 @@
             <dd>
                 <strong>{{account.account}}</strong>
 
-                <span class="badge badge-pill badge-{{account.stateLabel.type}} state-info"
+                <span class="badge rounded-full badge-{{account.stateLabel.type}} state-info"
                     data-account="{{account.account}}" style="cursor:default;" data-toggle="popover"
                     data-trigger="hover" {{#if account.stateLabel.error}}data-title="Connection error"
                     data-content="{{account.stateLabel.error}}" {{/if}}>
 
                     {{#if account.stateLabel.spinner}}
-                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
                     {{/if}}
 
                     {{account.stateLabel.name}}</span>
 
                 <div>
-                    <div class="text-danger">
+                    <div class="text-error">
                         {{#if account.syncError}}
                         Sync stalled in folder <em>{{account.syncError.path}}</em>.
                         {{#if account.syncError.error.responseText}}
@@ -155,7 +155,7 @@
             <dt>Account type</dt>
             <dd>
                 {{#if account.type.icon}}
-                <i class="{{account.type.icon}} fa-fw"></i>
+                <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
                 {{/if}}
 
                 {{account.type.name}}
@@ -519,7 +519,7 @@
 
         {{#if subConnectionInfo}}
         <hr>
-        <h6 class="font-weight-bold text-primary">Subconnections</h6>
+        <h6 class="font-bold text-primary">Subconnections</h6>
 
         <p>Subconnections are supplementary IMAP connections that help detect changes in secondary folders more quickly.
             By default, EmailEngine only receives real-time updates for the primary folder and uses periodic
@@ -530,12 +530,12 @@
             {{#each subConnectionInfo}}
             <dt>{{path}}</dt>
             <dd>
-                <span class="badge badge-pill badge-{{stateLabel.type}} state-info" style="cursor:default;"
+                <span class="badge rounded-full badge-{{stateLabel.type}} state-info" style="cursor:default;"
                     data-toggle="popover" data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
                     data-content="{{stateLabel.error}}" {{/if}}>
 
                     {{#if stateLabel.spinner}}
-                    <i class="fas fa-spinner fa-spin fa-fw"></i>
+                    <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
                     {{/if}}
 
                     {{stateLabel.name}}</span>
@@ -779,7 +779,7 @@
         {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#renewGrantModal"}}
         <button type="submit" class="btn btn-primary">
             {{#if account.type.icon}}
-            <i class="{{account.type.icon}} fa-fw"></i>
+            <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
             {{/if}} Re-authenticate
         </button>
     </form>

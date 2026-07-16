@@ -16,9 +16,8 @@
 
         {{#if openAiError}}
         <div class="card-body pb-0">
-            {{!-- legacy alert contract: the data-dismiss close runs through the
-                  compat shim, which fires closed.bs.alert for the app.js
-                  clear-alert-btn handler; retargeted in Phase 5 --}}
+            {{!-- dismissable error alert: app.js binds the close button
+                  directly and clears the stored error server-side --}}
             <div class="alert alert-soft alert-error clear-alert-btn block mb-0" data-clear-alert="open-ai">
                 <button type="button" class="close float-right" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>

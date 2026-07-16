@@ -1,5 +1,5 @@
 {{#each pendingMessages}}
-<div class="alert alert-{{#if type}}{{type}}{{else}}danger{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-6 transition-opacity duration-300"
+<div class="alert alert-{{#if type}}{{eeColor type}}{{else}}error{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-6 transition-opacity duration-300"
     role="alert">
     <div class="grow text-center">
         {{#if title}}
@@ -12,7 +12,7 @@
     </button>
 </div>
 {{/each}} {{#if alert}}
-<div class="alert alert-{{#if alert.type}}{{alert.type}}{{else}}danger{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-6 transition-opacity duration-300"
+<div class="alert alert-{{#if alert.type}}{{eeColor alert.type}}{{else}}error{{/if}} alert-soft flash-alert flex items-center justify-between gap-3 mb-6 transition-opacity duration-300"
     role="alert">
     <div class="grow text-center">
         {{#if alert.title}}

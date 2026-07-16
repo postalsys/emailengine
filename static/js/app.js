@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'disabled':
                 stateLabel = {
-                    type: 'secondary',
+                    type: 'neutral',
                     name: 'Disabled'
                 };
                 break;
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 stateLabel = {
-                    type: 'danger',
+                    type: 'error',
                     name: 'Connection failed',
                     error: errorMessage
                 };
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             case 'unset':
                 stateLabel = {
-                    type: 'light',
+                    type: 'neutral',
                     name: 'Not syncing'
                 };
                 break;
@@ -303,13 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'paused':
                 stateLabel = {
-                    type: 'secondary',
+                    type: 'neutral',
                     name: 'Paused'
                 };
                 break;
             default:
                 stateLabel = {
-                    type: 'secondary',
+                    type: 'neutral',
                     name: 'N/A'
                 };
                 break;
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stateInfoElms.length) {
             for (let stateInfoElm of stateInfoElms) {
                 for (let val of stateInfoElm.classList.values()) {
-                    if (/^badge-/.test(val) && val !== 'badge-pill') {
+                    if (/^badge-/.test(val)) {
                         stateInfoElm.classList.remove(val);
                     }
                 }
@@ -328,8 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 stateInfoElm.innerHTML = '';
                 if (stateLabel.spinner) {
-                    let spinnerElm = document.createElement('i');
-                    spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
+                    let spinnerElm = document.createElement('span');
+                    spinnerElm.classList.add('icon-[tabler--loader-2]', 'animate-spin', 'size-3.5', 'align-text-bottom');
                     let textElm = document.createElement('span');
                     textElm.textContent = ' ' + stateLabel.name;
                     stateInfoElm.appendChild(spinnerElm);
@@ -377,14 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'failed':
                 return {
-                    type: 'danger',
+                    type: 'error',
                     name: state,
                     error: (payload && payload.error && payload.error.message) || null
                 };
 
             default:
                 return {
-                    type: 'secondary',
+                    type: 'neutral',
                     name: 'N/A'
                 };
         }
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (stateInfoElms.length) {
             for (let stateInfoElm of stateInfoElms) {
                 for (let val of stateInfoElm.classList.values()) {
-                    if (/^badge-/.test(val) && val !== 'badge-pill') {
+                    if (/^badge-/.test(val)) {
                         stateInfoElm.classList.remove(val);
                     }
                 }
@@ -408,8 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 stateInfoElm.innerHTML = '';
                 if (stateLabel.spinner) {
-                    let spinnerElm = document.createElement('i');
-                    spinnerElm.classList.add('fas', 'fa-spinner', 'fa-spin', 'fa-fw');
+                    let spinnerElm = document.createElement('span');
+                    spinnerElm.classList.add('icon-[tabler--loader-2]', 'animate-spin', 'size-3.5', 'align-text-bottom');
                     let textElm = document.createElement('span');
                     textElm.textContent = ' ' + stateLabel.name;
                     stateInfoElm.appendChild(spinnerElm);
@@ -460,17 +460,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let crumbElm = document.getElementById('crumb');
     if (crumbElm) {
-        $('.clear-alert-btn').on('closed.bs.alert', function () {
-            fetch('/admin/config/clear-error', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    alert: $(this).data('clearAlert'), // eslint-disable-line no-invalid-this
-                    entry: $(this).data('clearEntry') || '' // eslint-disable-line no-invalid-this
-                })
-            }).catch(err => console.error(err));
-        });
+        // dismissable error alerts: the close button removes the alert and
+        // clears the stored error server-side (replaces the old Bootstrap
+        // data-dismiss="alert" + closed.bs.alert contract)
+        for (let alertElm of document.querySelectorAll('.clear-alert-btn')) {
+            let closeBtn = alertElm.querySelector('[data-dismiss="alert"]');
+            if (!closeBtn) {
+                continue;
+            }
+            closeBtn.addEventListener('click', () => {
+                alertElm.remove();
+                fetch('/admin/config/clear-error', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        crumb: document.getElementById('crumb').value,
+                        alert: alertElm.dataset.clearAlert,
+                        entry: alertElm.dataset.clearEntry || ''
+                    })
+                }).catch(err => console.error(err));
+            });
+        }
     }
 
     for (let f of document.querySelectorAll('form.pending-form')) {
@@ -478,16 +488,16 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let b of f.querySelectorAll('button[type="submit"], button:not([type])')) {
                 b.disabled = true;
                 b.classList.add('disabled');
-                let icon = b.querySelector('i.fas');
+                let icon = b.querySelector('span[class*="icon-["]');
                 if (icon) {
                     for (let [, className] of icon.classList.entries()) {
-                        if (/^fa-/.test(className)) {
+                        if (/^icon-\[/.test(className)) {
                             icon.classList.remove(className);
                             icon.dataset.oldIcon = className;
                             icon.classList.add('icon-updated');
                         }
                     }
-                    icon.classList.add('fa-spinner', 'fa-spin');
+                    icon.classList.add('icon-[tabler--loader-2]', 'animate-spin');
                 }
             }
         });
@@ -495,8 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('pageshow', () => {
-    for (let icon of document.querySelectorAll('i.icon-updated')) {
-        icon.classList.remove('fa-spinner', 'fa-spin', 'icon-updated');
+    for (let icon of document.querySelectorAll('.icon-updated')) {
+        icon.classList.remove('icon-[tabler--loader-2]', 'animate-spin', 'icon-updated');
         if (icon.dataset.oldIcon) {
             icon.classList.add(icon.dataset.oldIcon);
             icon.dataset.oldIcon = '';

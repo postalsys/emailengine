@@ -15,8 +15,14 @@ window.uiDismissFade = elm => {
 };
 
 // Toast notifications. Same signature as the legacy implementation so the
-// existing showToast(message, icon) call sites keep working; icon is the
-// basename of an svg under /static/icons/.
+// existing showToast(message, icon) call sites keep working; icon is a
+// legacy icon name mapped to an iconify class below (default: info).
+const TOAST_ICONS = {
+    'alert-triangle': 'icon-[tabler--alert-triangle] text-error',
+    'check-circle': 'icon-[tabler--circle-check] text-success',
+    info: 'icon-[tabler--info-circle] text-info'
+};
+
 window.showToast = (message, icon) => {
     let container = document.getElementById('toastContainer');
     if (!container) {
@@ -27,9 +33,8 @@ window.showToast = (message, icon) => {
     toast.className = 'alert alert-soft flex items-start gap-3 shadow-lg mb-2 transition-opacity duration-300';
     toast.setAttribute('role', 'alert');
 
-    let iconElm = document.createElement('img');
-    iconElm.src = `/static/icons/${icon ? icon : 'info'}.svg`;
-    iconElm.className = 'w-6 h-6 shrink-0';
+    let iconElm = document.createElement('span');
+    iconElm.className = `${TOAST_ICONS[icon] || TOAST_ICONS.info} size-6 shrink-0`;
     toast.appendChild(iconElm);
 
     let contentElm = document.createElement('div');

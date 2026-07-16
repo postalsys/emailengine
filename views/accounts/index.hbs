@@ -40,9 +40,7 @@
                         {{#if type.icon}}
                         {{!-- relative z-[1] lifts the tooltip trigger above the row link --}}
                         {{#> ui/tooltip text=type.label class="relative z-[1]"}}
-                        {{!-- provider logos are still Font Awesome classes served by the
-                              backend; converted to Tabler at the end of the migration --}}
-                        <i class="{{type.icon}} fa-fw"></i>
+                        <span class="{{type.icon}} size-4 align-text-bottom"></span>
                         {{/ui/tooltip}}
                         {{else}}
                         {{type.name}}
@@ -54,19 +52,19 @@
 
                     <td class="relative w-32">
                         <a href="/admin/accounts/{{account}}" class="absolute inset-0" tabindex="-1" aria-hidden="true"></a>
-                        {{!-- legacy badge classes + data-toggle popover stay until the
-                              app.js SSE state updater is retargeted (Phase 5); the shim
-                              and compat aliases keep them working on converted pages.
+                        {{!-- live state badge: app.js updates the badge-{type} class
+                              and text through the /admin/changes SSE feed; the hover
+                              popover runs through the residual shim in bootstrap-compat.js.
                               The wrapping link lifts the badge above the row overlay so
-                              the hover popover fires while clicks still navigate. --}}
+                              the popover fires while clicks still navigate. --}}
                         <a href="/admin/accounts/{{account}}" class="relative z-[1] inline-flex">
-                            <span class="badge badge-pill badge-{{stateLabel.type}} state-info"
+                            <span class="badge rounded-full badge-{{stateLabel.type}} state-info"
                                 data-account="{{account}}" style="cursor:pointer;" data-toggle="popover"
                                 data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
                                 data-content="{{stateLabel.error}}" {{/if}}>
 
                                 {{#if stateLabel.spinner}}
-                                <i class="fas fa-spinner fa-spin fa-fw"></i>
+                                <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
                                 {{/if}}
 
                                 {{stateLabel.name}}</span>

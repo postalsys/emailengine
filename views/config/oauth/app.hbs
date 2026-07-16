@@ -56,7 +56,7 @@
             {{/if}}
         </h5>
 
-        <h6 class="card-subtitle mb-6 text-base-content/60">{{app.description}}</h6>
+        <h6 class="mb-6 text-base-content/60">{{app.description}}</h6>
         {{else}}
         <h5 class="card-title mb-6">{{app.name}}
 
@@ -116,8 +116,7 @@
 
             <dt>Type</dt>
             <dd>{{providerData.comment}} {{#if providerData.icon}}
-                {{!-- legacy server-driven FA provider icon; retargeted in Phase 5 --}}
-                <i class="{{providerData.icon}} fa-fw"></i>
+                <span class="{{providerData.icon}} size-4 align-text-bottom"></span>
                 {{/if}}
             </dd>
 
