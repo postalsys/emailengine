@@ -11,45 +11,38 @@
             }
         }
 
-        $('.basicAutoComplete').autoComplete({
-            resolver: 'custom',
-            events: {
-                search: function (query, callback) {
-                    let matches = wellKnownServices.filter(entry => (`${entry.key} / ${entry.description}`).toLowerCase().indexOf(query.toLowerCase().trim()) >= 0);
-                    callback(matches.map(entry => `${entry.key} / ${entry.description}`))
-                },
-                typed: function (newValue, origJQElement) {
-                    return newValue
-                }
-            },
-            preventEnter: true,
-            minLength: 1
-        }).on('change', function (a) {
-        }).on('autocomplete.select', function (e) {
-            if (e && e.type === 'autocomplete') {
-                let selectedValue = (e.currentTarget && e.currentTarget.value || '').split(' / ').shift().trim();
-                if (selectedValue) {
-                    let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue.toLowerCase().trim())
-                    if (entry) {
-                        for (let key of Object.keys(entry)) {
-                            switch (key) {
-                                case 'host':
-                                    document.getElementById('host').value = entry[key];
-                                    break;
-                                case 'port':
-                                    document.getElementById('port').value = entry[key];
-                                    break;
-                                case 'secure':
-                                    document.getElementById('secure').checked = entry[key];
-                                    break;
-                            }
+        // native datalist suggestions; picking a well-known service autofills
+        // host/port/secure through the input listener below
+        let autoCompleteElms = document.querySelectorAll('.basicAutoComplete');
+        uiDatalist(
+            'well-known-services-list',
+            wellKnownServices.map(entry => entry.key + ' / ' + entry.description),
+            autoCompleteElms
+        );
 
-                        }
-                    }
-                }
-
+        let applyWellKnownService = value => {
+            let selectedValue = (value || '').split(' / ').shift().trim().toLowerCase();
+            if (!selectedValue) {
+                return;
             }
-        });
+            let entry = wellKnownServices.find(a => a.key.toLowerCase().trim() === selectedValue);
+            if (!entry) {
+                return;
+            }
+            if ('host' in entry) {
+                document.getElementById('host').value = entry.host;
+            }
+            if ('port' in entry) {
+                document.getElementById('port').value = entry.port;
+            }
+            if ('secure' in entry) {
+                document.getElementById('secure').checked = entry.secure;
+            }
+        };
+
+        for (let inputElm of autoCompleteElms) {
+            inputElm.addEventListener('input', () => applyWellKnownService(inputElm.value));
+        }
 
         const sendTestPayload = async () => {
 

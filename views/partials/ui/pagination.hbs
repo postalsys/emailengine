@@ -1,0 +1,26 @@
+{{!--
+    ui/pagination - server-driven page navigation (FlyonUI join group).
+    Usage:
+      {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+    Params:
+      prevPage  - URL of the previous page, falsy when on the first page
+      nextPage  - URL of the next page, falsy when on the last page
+      pageLinks - array of { url, title, active }
+--}}
+<nav aria-label="Page navigation" class="join flex-wrap">
+    {{#if prevPage}}
+    <a class="join-item btn btn-soft btn-sm" href="{{prevPage}}">Previous</a>
+    {{else}}
+    <span class="join-item btn btn-soft btn-sm btn-disabled">Previous</span>
+    {{/if}}
+
+    {{#each pageLinks}}
+    <a class="join-item btn btn-sm {{#if active}}btn-primary{{else}}btn-soft{{/if}}" href="{{url}}">{{title}}</a>
+    {{/each}}
+
+    {{#if nextPage}}
+    <a class="join-item btn btn-soft btn-sm" href="{{nextPage}}">Next</a>
+    {{else}}
+    <span class="join-item btn btn-soft btn-sm btn-disabled">Next</span>
+    {{/if}}
+</nav>

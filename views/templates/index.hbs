@@ -1,104 +1,68 @@
-<div class="float-right">
-    <a href="{{newLink}}" class="btn btn-primary btn-icon-split">
-        <span class="icon text-white-50">
-            <i class="fas fa-plus"></i>
-        </span>
-        <span class="text">Create template</span>
-    </a>
-</div>
-
-{{> templates_header}}
+{{#> ui/page-header title="Email Templates" icon="icon-[tabler--template]" class="mb-6"}}
+{{> ui/btn href=newLink label="Create template" icon="icon-[tabler--plus]"}}
+{{/ui/page-header}}
 
 {{#if account}}
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{account.name}}</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=account.name class="mb-6"}}
 {{/if}}
 
-<p>Email templating allows you to create and reuse email content efficiently.</p>
+<p class="mb-6">Email templating allows you to create and reuse email content efficiently.</p>
 
-<div class="card border-left-info shadow mt-4 mb-4">
-    <div class="card-body">
-        <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-                <p>When sending emails using the EmailEngine <a
-                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">submission API
-                        endpoint</a>, you don't need to provide the full
-                    subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
-                    EmailEngine
-                    will use that template to compile the final email.</p>
-                <p>For additional customization, you can use Handlebars syntax in templates and provide variables
-                    to populate dynamic content.</p>
+{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6" title=""}}
+<p class="mb-2">When sending emails using the EmailEngine <a
+        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
+        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submission API
+        endpoint</a>, you don't need to provide the full
+    subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
+    EmailEngine
+    will use that template to compile the final email.</p>
+<p class="mb-[1rem]">For additional customization, you can use Handlebars syntax in templates and provide variables
+    to populate dynamic content.</p>
 
-                <div>
-                    <a href="https://emailengine.app/email-templates" class="btn btn-info btn-sm" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">
-                        <i class="fa fa-arrow-circle-right fa-fw"></i>
-                        Documentation</a>
-                </div>
-
-            </div>
-
-            <div class="col-auto">
-                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
-            </div>
-        </div>
-    </div>
+<div>
+    {{> ui/btn href="https://emailengine.app/email-templates" external=true label="Documentation" variant="info" size="sm" icon="icon-[tabler--arrow-right]"}}
 </div>
+{{/ui/stat-card}}
 
 {{#if templates}}
-<div class="card mt-4 mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     {{#if account}}
     <div class="card-body">
         <div>
-            Currently showing email templates for <strong><a
-                    href="/admin/accounts/{{account.account}}">{{account.name}}</a></strong>. These templates cannot be
+            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
+                    class="link link-animated">{{account.name}}</a></strong>. These templates cannot be
             used by other accounts.
         </div>
     </div>
     {{/if}}
 
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead class="">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
                 <tr>
-                    <th class="p-0">
-                        <div class="p-2">Name</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Description</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">ID</div>
-                    </th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>ID</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each templates}}
-                <tr>
+                <tr class="hover:bg-base-200/60">
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/templates/template/{{id}}"
-                                class="stretched-link"></a><strong>{{name}}</strong>
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0"
+                            aria-label="Open template"></a><strong>{{name}}</strong>
                     </td>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/templates/template/{{id}}" class="stretched-link"></a>{{description}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>{{description}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/templates/template/{{id}}" class="stretched-link"></a>
-                            {{id}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{id}}
                     </td>
 
                 </tr>
@@ -108,39 +72,18 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer">
-
-        <nav aria-label="Page navigation">
-            <ul class="pagination" style="flex-wrap: wrap;">
-
-                {{#if prevPage}}
-                <li class="page-item"><a class="page-link" href="{{prevPage}}">Previous</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                {{/if}}
-
-                {{#each pageLinks}}
-                <li class="page-item {{#if active}}active{{/if}}"><a class="page-link" href="{{url}}">{{title}}</a>
-                </li>
-                {{/each}}
-
-                {{#if nextPage}}
-                <li class="page-item"><a class="page-link" href="{{nextPage}}">Next</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                {{/if}}
-
-            </ul>
-        </nav>
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}
 </div>
 {{else}}
-<div class="list-group mt-4 mb-4">
-    <div class="list-group-item">
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-body">
         {{#if account}}
         <div>
-            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}">{{#if
+            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
+                    class="link link-animated">{{#if
                     account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These templates cannot
             be used by other accounts.
         </div>
@@ -158,22 +101,17 @@
 </div>
 {{/if}}
 
-<div class="card mt-4 mb-4">
-    <a href="#showHelp" class="d-block card-header py-3 collapsed" data-toggle="collapse" role="button"
-        aria-expanded="true" aria-controls="showHelp">
-        <h6 class="m-0 font-weight-bold text-primary">Usage example</h6>
-    </a>
-    <div class="collapse" id="showHelp">
-        <div class="card-body">
-            <p>When sending emails using the submission API endpoint, do not set <code>"subject"</code>,
-                <code>"html"</code> and <code>"text"</code> properties. Instead, set the <code>"template"</code>
-                property with the template ID value and, optionally, <code>"render"</code> definition if you are using
-                Markdown format as the HTML source or you want to use the Handlebars variables.
-            </p>
+{{#> ui/details summary="Usage example" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+        <p class="mb-[1rem]">When sending emails using the submission API endpoint, do not set <code>"subject"</code>,
+            <code>"html"</code> and <code>"text"</code> properties. Instead, set the <code>"template"</code>
+            property with the template ID value and, optionally, <code>"render"</code> definition if you are using
+            Markdown format as the HTML source or you want to use the Handlebars variables.
+        </p>
 
-            <pre>$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/account/example/submit" \ 
-  -H "Authorization: Bearer &lt;token&gt;" \ 
-  -H "Content-type: application/json" \ 
+        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/account/example/submit" \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-type: application/json" \
   -d '{
     &quot;from&quot;: {
       &quot;name&quot;: &quot;sender name&quot;,
@@ -193,16 +131,11 @@
     }
   }'</pre>
 
-
-
-            <hr>
-            <div class="text-muted">
-                <p>This example assumes that you use <code>\{{params.key}}</code> in the subject, html or plain-text
-                    content
-                    of the template.</pre>
-            </div>
-
-
+        <hr class="my-[1rem]">
+        <div class="text-base-content/60">
+            <p>This example assumes that you use <code>\{{params.key}}</code> in the subject, html or plain-text
+                content of the template.</p>
         </div>
-    </div>
+
 </div>
+{{/ui/details}}

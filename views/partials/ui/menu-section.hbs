@@ -1,0 +1,32 @@
+{{!--
+    ui/menu-section - collapsible sidebar menu group (FlyonUI accordion item).
+    Use the block form; the block provides the submenu items (ui/menu-item calls):
+      {{#> ui/menu-section id="menu-tools" label="Tools" icon="icon-[tabler--tools] size-4.5" active=menuTools}}
+      {{> ui/menu-item ...}}
+      {{/ui/menu-section}}
+    Params:
+      id     - unique element id for the accordion wiring (required)
+      label  - group heading (required)
+      icon   - full iconify class incl. size (optional)
+      active - true when a child page is the current page (group starts expanded)
+--}}
+<li class="accordion-item{{#if active}} active{{/if}}" id="{{id}}">
+    <button
+        class="accordion-toggle accordion-item-active:bg-neutral/10 inline-flex w-full items-center p-2 text-start text-sm font-normal"
+        aria-controls="{{id}}-collapse" aria-expanded="{{#if active}}true{{else}}false{{/if}}">
+        {{#if icon}}<span class="{{icon}}"></span>{{/if}}
+        <span class="grow">{{label}}</span>
+        <span
+            class="icon-[tabler--chevron-right] accordion-item-active:rotate-90 size-4.5 shrink-0 transition-transform duration-300 rtl:rotate-180"></span>
+    </button>
+    <div id="{{id}}-collapse"
+        class="accordion-content mt-1 {{#if active}}block{{else}}hidden{{/if}} w-full overflow-hidden transition-[height] duration-300"
+        aria-labelledby="{{id}}" role="region">
+        <ul class="space-y-1 ps-7">
+            {{!-- icon="" keeps this section's own icon hash param from leaking
+                  into ui/menu-item calls inside the block (Handlebars context
+                  fallthrough); items that want an icon pass one explicitly --}}
+            {{> @partial-block icon="" id="" label="" active=""}}
+        </ul>
+    </div>
+</li>

@@ -1,23 +1,19 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><i class="fas fa-gavel fa-fw"></i></small>
-        Legal Information
-    </h1>
-</div>
+{{> ui/page-header title="Legal Information" icon="icon-[tabler--gavel]" class="mb-1"}}
 
 
-<div class="card mt-4 mb-4">
+<div class="card bg-base-100 shadow-md mt-6 mb-6">
     <div class="card-body">
 
-        <p>EmailEngine is developed by Postal Systems OÜ and distributed under the EmailEngine License Agreement.</p>
+        <p class="mb-2">EmailEngine is developed by Postal Systems OÜ and distributed under the EmailEngine License
+            Agreement.</p>
 
-        <address>
+        <address class="not-italic">
             <strong>Postal Systems OÜ</strong><br>
             Narva mnt 5<br>
             10117 Tallinn, Estonia<br>
             VAT: EE102255902<br>
-            <a href="mailto:info@postalsys.com">info@postalsys.com</a><br>
-            <a href="https://postalsys.com/">postalsys.com</a>
+            <a href="mailto:info@postalsys.com" class="link link-animated">info@postalsys.com</a><br>
+            <a href="https://postalsys.com/" class="link link-animated">postalsys.com</a>
         </address>
 
 
@@ -26,9 +22,9 @@
 
 
 
-    <ul class="list-group list-group-flush">
+    <ul class="divide-base-content/10 border-base-content/10 divide-y border-t">
 
-        <li class="list-group-item">
+        <li class="px-6 py-[1rem]">
             <strong>
                 {{#if licenseInfo.details.key}}
                 {{#if licenseInfo.details.trial}}
@@ -42,40 +38,41 @@
 
 
             </strong>
-            &mdash; <a class="" href="/admin/config/license">View license details</a>
+            &mdash; <a class="link link-animated" href="/admin/config/license">View license details</a>
         </li>
 
-        <li class="list-group-item">
-            <a href="/license.html" target="_blank" rel="noopener noreferrer">
-                <i class="fas fa-arrow-right fa-fw"></i>
+        <li class="px-6 py-[1rem]">
+            <a href="/license.html" target="_blank" rel="noopener noreferrer" class="link link-animated">
+                <span class="icon-[tabler--arrow-right] size-4 align-text-bottom"></span>
                 <strong>EmailEngine License Agreement</strong>
             </a>
         </li>
 
-        <li class="list-group-item">
-            <a href="/licenses.html" target="_blank" rel="noopener noreferrer">
-                <i class="fas fa-arrow-right fa-fw"></i>
+        <li class="px-6 py-[1rem]">
+            <a href="/licenses.html" target="_blank" rel="noopener noreferrer" class="link link-animated">
+                <span class="icon-[tabler--arrow-right] size-4 align-text-bottom"></span>
                 <strong>Third-Party Software Licenses</strong>
             </a>
         </li>
 
-        <li class="list-group-item">
-            <a href="https://postalsys.com/contact" target="_blank" rel="noopener noreferrer">
-                <i class="fas fa-arrow-right fa-fw"></i>
+        <li class="px-6 py-[1rem]">
+            <a href="https://postalsys.com/contact" target="_blank" rel="noopener noreferrer"
+                class="link link-animated">
+                <span class="icon-[tabler--arrow-right] size-4 align-text-bottom"></span>
                 <strong>Company Details</strong>
             </a>
         </li>
 
-        <li class="list-group-item">
-            <a href="https://postalsys.com/tos" target="_blank" rel="noopener noreferrer">
-                <i class="fas fa-arrow-right fa-fw"></i>
+        <li class="px-6 py-[1rem]">
+            <a href="https://postalsys.com/tos" target="_blank" rel="noopener noreferrer" class="link link-animated">
+                <span class="icon-[tabler--arrow-right] size-4 align-text-bottom"></span>
                 <strong>Terms of Service</strong>
             </a>
         </li>
 
-        <li class="list-group-item">
-            <a href="/sbom.json" download="sbom.json">
-                <i class="fas fa-cloud-download-alt fa-fw"></i>
+        <li class="px-6 py-[1rem]">
+            <a href="/sbom.json" download="sbom.json" class="link link-animated">
+                <span class="icon-[tabler--cloud-download] size-4 align-text-bottom"></span>
                 <strong>Software Bill of Materials (SBOM)</strong>
             </a>
         </li>

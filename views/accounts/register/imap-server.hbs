@@ -12,247 +12,237 @@
 
     <input type="hidden" id="tz" name="tz" value="{{values.tz}}">
 
-    <div class="container">
-        <div class="row">
-            <div class="col-sm">
-                <h6>{{_ "IMAP" templateLocale }}</h6>
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="space-y-4">
+            <h6 class="font-semibold">{{_ "IMAP" templateLocale }}</h6>
 
-                <div class="form-group">
-                    <label for="imap_auth_user">{{_ "Username" templateLocale }}</label>
-                    <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
-                        id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
-                        autocomplete="off" required tabindex="1" />
-                    {{#if errors.imap_auth_user}}
-                    <span class="invalid-feedback">{{errors.imap_auth_user}}</span>
-                    {{/if}}
+            <div>
+                {{#> ui/form-field id="imap_auth_user" label=(_ "Username" templateLocale)
+                error=errors.imap_auth_user}}
+                <input type="text" class="input{{#if errors.imap_auth_user}} is-invalid{{/if}}"
+                    id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
+                    autocomplete="off" required tabindex="1" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+
+                {{#unless values.appPassword_required}}
+
+                <label class="label-text" for="imap_auth_pass">
+                    {{_ "Password" templateLocale }}
+                </label>
+
+                {{else}}
+
+
+                {{#if values.appPassword_warning}}
+
+                <div class="float-right">
+                    {{#> ui/tooltip-rich icon="icon-[tabler--alert-circle] text-error"}}
+                    <strong>{{_ 'Important' templateLocale }}</strong><br>
+                    {{values.appPassword_warning}}
+                    {{/ui/tooltip-rich}}
                 </div>
 
-                <div class="form-group">
+                {{else}}
 
-                    {{#unless values.appPassword_required}}
-
-                    <label for="imap_auth_pass">
-                        {{_ "Password" templateLocale }}
-                    </label>
-
-                    {{else}}
-
-
-                    {{#if values.appPassword_warning}}
-
-                    <a target="_blank" rel="noopener noreferrer" class="float-right" href="#" tabindex="-1"
-                        data-toggle="popover" data-trigger="hover" data-title="{{_ 'Important' templateLocale }}"
-                        data-content="{{values.appPassword_warning}}"><i
-                            class="fas fa-exclamation-circle text-danger"></i></a>
-
-                    {{else}}
-
-                    <a target="_blank" rel="noopener noreferrer" class="float-right"
-                        href="{{values.appPassword_instructions}}" tabindex="-1" data-toggle="popover"
-                        data-trigger="hover" data-title="{{_ 'Application Password' templateLocale }}"
-                        data-content="{{_ '%s accounts require an application password for %s.' templateLocale values.appPassword_provider "
-                        IMAP" }}">{{_ 'Instructions' templateLocale }}</a>
-
-                    {{/if}}
-
-                    <label for="imap_auth_pass">
-                        {{_ "Application Password" templateLocale }}
-                    </label>
-
-                    {{/unless}}
-
-                    </label>
-                    <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
-                        id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
-                        autocomplete="off" required tabindex="2" />
-                    {{#if errors.imap_auth_pass}}
-                    <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
-                    {{/if}}
+                <div class="float-right">
+                    {{#> ui/tooltip text=(_ '%s accounts require an application password for %s.' templateLocale
+                    values.appPassword_provider "IMAP")}}
+                    <a target="_blank" rel="noopener noreferrer" class="link link-animated text-sm"
+                        href="{{values.appPassword_instructions}}" tabindex="-1">{{_ 'Instructions' templateLocale
+                        }}</a>
+                    {{/ui/tooltip}}
                 </div>
 
-                <div class="form-group">
-                    <label for="imap_host">{{_ "Hostname" templateLocale }}</label>
-                    <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}"
-                        data-lpignore="true" autocomplete="off" id="imap_host" name="imap_host"
-                        value="{{values.imap_host}}" required tabindex="3" />
-                    {{#if errors.imap_host}}
-                    <span class="invalid-feedback">{{errors.imap_host}}</span>
-                    {{/if}}
-                </div>
+                {{/if}}
 
-                <div class="form-group">
-                    <label for="imap_port">{{_ "Port" templateLocale }}</label>
-                    <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}"
-                        data-lpignore="true" autocomplete="off" id="imap_port" name="imap_port"
-                        value="{{values.imap_port}}" required tabindex="4" />
-                    {{#if errors.imap_port}}
-                    <span class="invalid-feedback">{{errors.imap_port}}</span>
-                    {{/if}}
-                </div>
+                <label class="label-text" for="imap_auth_pass">
+                    {{_ "Application Password" templateLocale }}
+                </label>
 
-                <div class="form-group form-check">
-                    <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
+                {{/unless}}
+
+                <input type="password" class="input{{#if errors.imap_auth_pass}} is-invalid{{/if}}"
+                    id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
+                    autocomplete="off" required tabindex="2" />
+                {{#if errors.imap_auth_pass}}
+                <span class="helper-text text-error">{{errors.imap_auth_pass}}</span>
+                {{/if}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="imap_host" label=(_ "Hostname" templateLocale) error=errors.imap_host}}
+                <input type="text" class="input{{#if errors.imap_host}} is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="imap_host" name="imap_host" value="{{values.imap_host}}" required
+                    tabindex="3" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="imap_port" label=(_ "Port" templateLocale) error=errors.imap_port}}
+                <input type="number" class="input{{#if errors.imap_port}} is-invalid{{/if}}"
+                    data-lpignore="true" autocomplete="off" id="imap_port" name="imap_port" value="{{values.imap_port}}"
+                    required tabindex="4" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                <div class="float-right">
+                    {{#> ui/tooltip-rich icon="icon-[tabler--help-circle]"}}
+                    <strong>{{_ 'TLS for IMAP' templateLocale }}</strong><br>
+                    {{_ 'TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption.' templateLocale }}
+                    {{/ui/tooltip-rich}}
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm{{#if errors.imap_secure}} is-invalid{{/if}}"
                         data-target="header-list" id="imap_secure" name="imap_secure" {{#if
                         values.imap_secure}}checked{{/if}} tabindex="5" />
-                    <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
-                        data-trigger="hover" data-title="{{_ 'TLS for IMAP' templateLocale }}"
-                        data-content="{{_ 'TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption.' templateLocale }}"><i
-                            class="fas fa-question-circle"></i></a>
-                    <label class="form-check-label" for="imap_secure">{{_ "Use TLS" templateLocale }}
+                    <label class="label-text p-0" for="imap_secure">{{_ "Use TLS" templateLocale }}
                     </label>
-                    {{#if errors.imap_secure}}
-                    <span class="invalid-feedback">{{errors.imap_secure}}</span>
-                    {{/if}}
                 </div>
-
+                {{#if errors.imap_secure}}
+                <span class="helper-text text-error">{{errors.imap_secure}}</span>
+                {{/if}}
             </div>
-            <div class="col-sm">
-                <h6>{{_ "SMTP" templateLocale }}</h6>
 
-                <div class="form-group">
-                    <label for="smtp_auth_user">{{_ "Username" templateLocale }}</label>
-                    <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
-                        id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
-                        autocomplete="off" required tabindex="6" />
-                    {{#if errors.smtp_auth_user}}
-                    <span class="invalid-feedback">{{errors.smtp_auth_user}}</span>
-                    {{/if}}
+        </div>
+        <div class="space-y-4">
+            <h6 class="font-semibold">{{_ "SMTP" templateLocale }}</h6>
+
+            <div>
+                {{#> ui/form-field id="smtp_auth_user" label=(_ "Username" templateLocale)
+                error=errors.smtp_auth_user}}
+                <input type="text" class="input{{#if errors.smtp_auth_user}} is-invalid{{/if}}"
+                    id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
+                    autocomplete="off" required tabindex="6" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+
+                {{#unless values.appPassword_required}}
+
+                <label class="label-text" for="smtp_auth_pass">
+                    {{_ "Password" templateLocale }}
+                </label>
+
+                {{else}}
+
+                {{#if values.appPassword_warning}}
+
+                <div class="float-right">
+                    {{#> ui/tooltip-rich icon="icon-[tabler--alert-circle] text-error"}}
+                    <strong>{{_ 'Important' templateLocale }}</strong><br>
+                    {{values.appPassword_warning}}
+                    {{/ui/tooltip-rich}}
                 </div>
 
-                <div class="form-group">
+                {{else}}
 
-                    {{#unless values.appPassword_required}}
-
-                    <label for="smtp_auth_pass">
-                        {{_ "Password" templateLocale }}
-                    </label>
-
-                    {{else}}
-
-                    {{#if values.appPassword_warning}}
-
-                    <a target="_blank" rel="noopener noreferrer" class="float-right" href="#" tabindex="-1"
-                        data-toggle="popover" data-trigger="hover" data-title="{{_ 'Important' templateLocale }}"
-                        data-content="{{values.appPassword_warning}}"><i
-                            class="fas fa-exclamation-circle text-danger"></i></a>
-
-                    {{else}}
-
-                    <a target="_blank" rel="noopener noreferrer" class="float-right"
-                        href="{{values.appPassword_instructions}}" tabindex="-1" data-toggle="popover"
-                        data-trigger="hover" data-title="{{_ 'Application Password' templateLocale }}"
-                        data-content="{{_ '%s accounts require an application password for %s.' templateLocale values.appPassword_provider 'SMTP' }}">{{_
-                        'Instructions' templateLocale }}</a>
-
-                    {{/if}}
-
-                    <label for="smtp_auth_pass">
-                        {{_ "Application Password" templateLocale }}
-                    </label>
-
-                    {{/unless}}
-
-
-                    <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
-                        id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
-                        autocomplete="off" required tabindex="7" />
-                    {{#if errors.smtp_auth_pass}}
-                    <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
-                    {{/if}}
+                <div class="float-right">
+                    {{#> ui/tooltip text=(_ '%s accounts require an application password for %s.' templateLocale
+                    values.appPassword_provider 'SMTP')}}
+                    <a target="_blank" rel="noopener noreferrer" class="link link-animated text-sm"
+                        href="{{values.appPassword_instructions}}" tabindex="-1">{{_ 'Instructions' templateLocale
+                        }}</a>
+                    {{/ui/tooltip}}
                 </div>
 
-                <div class="form-group">
-                    <label for="smtp_host">{{_ "Hostname" templateLocale }}</label>
-                    <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}"
-                        data-lpignore="true" autocomplete="off" id="smtp_host" name="smtp_host"
-                        value="{{values.smtp_host}}" required tabindex="8" />
-                    {{#if errors.smtp_host}}
-                    <span class="invalid-feedback">{{errors.smtp_host}}</span>
-                    {{/if}}
-                </div>
+                {{/if}}
 
-                <div class="form-group">
-                    <label for="smtp_port">{{_ "Port" templateLocale }}</label>
-                    <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}"
-                        data-lpignore="true" autocomplete="off" id="smtp_port" name="smtp_port"
-                        value="{{values.smtp_port}}" required tabindex="9" />
-                    {{#if errors.smtp_port}}
-                    <span class="invalid-feedback">{{errors.smtp_port}}</span>
-                    {{/if}}
-                </div>
+                <label class="label-text" for="smtp_auth_pass">
+                    {{_ "Application Password" templateLocale }}
+                </label>
 
-                <div class="form-group form-check">
-                    <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
+                {{/unless}}
+
+
+                <input type="password" class="input{{#if errors.smtp_auth_pass}} is-invalid{{/if}}"
+                    id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
+                    autocomplete="off" required tabindex="7" />
+                {{#if errors.smtp_auth_pass}}
+                <span class="helper-text text-error">{{errors.smtp_auth_pass}}</span>
+                {{/if}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="smtp_host" label=(_ "Hostname" templateLocale) error=errors.smtp_host}}
+                <input type="text" class="input{{#if errors.smtp_host}} is-invalid{{/if}}" data-lpignore="true"
+                    autocomplete="off" id="smtp_host" name="smtp_host" value="{{values.smtp_host}}" required
+                    tabindex="8" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{#> ui/form-field id="smtp_port" label=(_ "Port" templateLocale) error=errors.smtp_port}}
+                <input type="number" class="input{{#if errors.smtp_port}} is-invalid{{/if}}"
+                    data-lpignore="true" autocomplete="off" id="smtp_port" name="smtp_port" value="{{values.smtp_port}}"
+                    required tabindex="9" />
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                <div class="float-right">
+                    {{#> ui/tooltip-rich icon="icon-[tabler--help-circle]"}}
+                    <strong>{{_ 'TLS for SMTP' templateLocale }}</strong><br>
+                    {{_ 'TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption.' templateLocale }}
+                    {{/ui/tooltip-rich}}
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm{{#if errors.smtp_secure}} is-invalid{{/if}}"
                         data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
                         values.smtp_secure}}checked{{/if}} tabindex="10" />
-                    <a class="float-right" href="#" tabindex="-1" role="button" data-toggle="popover"
-                        data-trigger="hover" data-title="{{_ 'TLS for SMTP' templateLocale }}"
-                        data-content="{{_ 'TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption.' templateLocale }}"><i
-                            class="fas fa-question-circle"></i></a>
-                    <label class="form-check-label" for="smtp_secure">{{_ "Use TLS" templateLocale }}
+                    <label class="label-text p-0" for="smtp_secure">{{_ "Use TLS" templateLocale }}
                     </label>
-                    {{#if errors.smtp_secure}}
-                    <span class="invalid-feedback">{{errors.smtp_secure}}</span>
-                    {{/if}}
                 </div>
+                {{#if errors.smtp_secure}}
+                <span class="helper-text text-error">{{errors.smtp_secure}}</span>
+                {{/if}}
             </div>
         </div>
+    </div>
 
-        <div class="row mt-3">
-            <div class="col-sm">
+    <div class="mt-6 flex flex-wrap items-center gap-2">
 
-                <button type="button" id="test-settings-btn" class="btn btn-primary btn-icon-split" tabindex="11">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-question-circle"></i>
-                    </span>
-                    <span class="text">{{_ "Verify connection" templateLocale }}</span>
+        <button type="button" id="test-settings-btn" class="btn btn-primary" tabindex="11">
+            <span class="icon-[tabler--help-circle] size-4" id="test-settings-btn-icon"></span>
+            {{_ "Verify connection" templateLocale }}
+        </button>
+
+        <div class="join">
+            <button type="submit" id="submit-settings-btn" class="btn btn-neutral join-item" data-disabled="1">
+                <span class="icon-[tabler--arrow-right] size-4"></span>
+                {{_ "Save and continue" templateLocale }}
+            </button>
+            <div class="dropdown relative inline-flex [--placement:bottom-end]">
+                <button type="button" id="submit-settings-btn-down"
+                    class="dropdown-toggle btn btn-neutral join-item px-2" aria-haspopup="menu" aria-expanded="false">
+                    <span class="sr-only">Toggle Dropdown</span>
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
                 </button>
-
-                <div class="btn-group">
-                    <button type="submit" id="submit-settings-btn" class="btn btn-secondary btn-icon-split"
-                        data-disabled="1">
-                        <span class="icon text-white-50">
-                            <i class="fas fa-arrow-right"></i>
-                        </span>
-                        <span class="text">{{_ "Save and continue" templateLocale }}</span>
-                    </button>
-                    <button type="button" id="submit-settings-btn-down"
-                        class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"
-                        aria-expanded="false">
-                        <span class="sr-only">Toggle Dropdown</span>
-                    </button>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" href="#" id="submit-wo-testing">{{_ "Skip verification"
-                            templateLocale }}</a>
-                    </div>
-                </div>
-
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu"
+                    aria-orientation="vertical" aria-labelledby="submit-settings-btn-down">
+                    <li><a class="dropdown-item" href="#" id="submit-wo-testing">{{_ "Skip verification"
+                            templateLocale }}</a></li>
+                </ul>
             </div>
         </div>
+
     </div>
 </form>
 
-<div class="modal fade" id="testResponseModal" tabindex="-1" aria-labelledby="testResponseModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="testResponseModalLabel">{{_ "Connection test failed" templateLocale }}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>{{_ "We couldn't connect with these settings. Check the errors below." templateLocale}}</p>
-                <dl class="row" id="test-errors-list"></dl>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{_ "Close" templateLocale
-                    }}</button>
-            </div>
-        </div>
-    </div>
+{{#> ui/modal id="testResponseModal" title=(_ "Connection test failed" templateLocale) titleId="testResponseModalLabel"
+dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <p class="mb-[1rem]">{{_ "We couldn't connect with these settings. Check the errors below." templateLocale}}</p>
+    <dl class="ee-dl" id="test-errors-list"></dl>
 </div>
+<div class="modal-footer">
+    {{> ui/btn label=(_ "Close" templateLocale) variant="neutral" style="soft" overlay="#testResponseModal"}}
+</div>
+{{/ui/modal}}
 
 <input type="hidden" id="autoTest" value="{{#if autoTest}}true{{/if}}">
 
@@ -264,7 +254,7 @@
 
         let myForm = document.getElementById('settings-form');
         let btnElm = document.getElementById('test-settings-btn');
-        let iconElm = document.querySelector('#test-settings-btn i');
+        let iconElm = document.getElementById('test-settings-btn-icon');
         let submitElm = document.getElementById('submit-settings-btn')
         let submitDownElm = document.getElementById('submit-settings-btn-down')
         let errorsListElm = document.getElementById('test-errors-list')
@@ -349,10 +339,7 @@
             let valueContainerElm = document.createElement('dd');
             let valueElm = document.createElement('div');
 
-
-            keyElm.classList.add('col-sm-2');
-            valueContainerElm.classList.add('col-sm-10');
-            valueElm.classList.add('text-danger')
+            valueElm.classList.add('text-error')
 
             keyElm.textContent = type;
             valueElm.textContent = text;
@@ -410,32 +397,32 @@
                 }
             }
 
-            $('#testResponseModal').modal('show');
+            uiModal.open('#testResponseModal');
         }
 
         let toggleSpinner = (enabled, success) => {
 
             if (enabled) {
-                iconElm.classList.remove('fa-spinner', 'fa-spin', 'fa-question-circle', 'fa-check-circle', 'fa-times-circle');
-                iconElm.classList.add(success ? 'fa-check-circle' : 'fa-times-circle');
+                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin', 'icon-[tabler--help-circle]', 'icon-[tabler--circle-check]', 'icon-[tabler--circle-x]');
+                iconElm.classList.add(success ? 'icon-[tabler--circle-check]' : 'icon-[tabler--circle-x]');
                 btnElm.disabled = false;
 
                 submitElm.dataset.disabled = !success ? "1" : "0";
                 if (submitElm.dataset.disabled === "1") {
-                    submitElm.classList.replace('btn-primary', 'btn-secondary');
-                    submitDownElm.classList.replace('btn-primary', 'btn-secondary');
+                    submitElm.classList.replace('btn-primary', 'btn-neutral');
+                    submitDownElm.classList.replace('btn-primary', 'btn-neutral');
                 } else {
-                    submitElm.classList.replace('btn-secondary', 'btn-primary');
-                    submitDownElm.classList.replace('btn-secondary', 'btn-primary');
+                    submitElm.classList.replace('btn-neutral', 'btn-primary');
+                    submitDownElm.classList.replace('btn-neutral', 'btn-primary');
                 }
             } else {
-                iconElm.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-question-circle');
-                iconElm.classList.add('fa-spinner', 'fa-spin');
+                iconElm.classList.remove('icon-[tabler--circle-check]', 'icon-[tabler--circle-x]', 'icon-[tabler--help-circle]');
+                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
                 btnElm.disabled = true;
 
                 submitElm.dataset.disabled = "1";
-                submitElm.classList.replace('btn-primary', 'btn-secondary');
-                submitDownElm.classList.replace('btn-primary', 'btn-secondary');
+                submitElm.classList.replace('btn-primary', 'btn-neutral');
+                submitDownElm.classList.replace('btn-primary', 'btn-neutral');
             }
         }
 

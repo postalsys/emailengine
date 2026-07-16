@@ -1,30 +1,17 @@
 {{> webhooks_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/webhooks">Webhook Routing</a></li>
-
-        <li class="breadcrumb-item"><a href="/admin/webhooks/webhook/{{webhook.id}}">{{webhook.name}}</a></li>
-
-        <li class="breadcrumb-item active" aria-current="page">Edit</li>
-
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routing" midHref=(concat "/admin/webhooks/webhook/" webhook.id) midLabel=webhook.name current="Edit" class="mt-6 mb-6"}}
 
 
 <form method="post" action="/admin/webhooks/edit" id="edit-form">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element scripts read --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="webhook" value="{{values.webhook}}">
 
     {{>webhook_form}}
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-file-signature"></i>
-            </span>
-            <span class="text">Update webhook</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Update webhook" type="submit" icon="icon-[tabler--file-check]"}}
     </div>
 </form>
 

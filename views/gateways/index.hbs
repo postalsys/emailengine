@@ -1,107 +1,74 @@
-<div class="float-right">
-    <a href="/admin/gateways/new" class="btn btn-primary btn-icon-split">
-        <span class="icon text-white-50">
-            <i class="fas fa-plus"></i>
-        </span>
-        <span class="text">Add Gateway</span>
-    </a>
-</div>
+{{#> ui/page-header title="Email Gateways" icon="icon-[tabler--send]" class="mb-6"}}
+{{> ui/btn href="/admin/gateways/new" label="Add Gateway" icon="icon-[tabler--plus]"}}
+{{/ui/page-header}}
 
-{{> gateways_header}}
-
-<p>
+<p class="mb-6">
     Route outgoing emails through SMTP gateways instead of individual user email servers.
 </p>
 
-<div class="card border-left-info shadow mb-4">
-    <div class="card-body">
-        <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-
-                <p>SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
-                    third-party services like SendGrid, Amazon SES, Mailgun, and similar providers.</p>
-                <p><strong>How to use:</strong><br>
-                    * API: Add <code>gateway: "gateway-id"</code> to your <a
-                        href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">submit request</a><br>
-                    * SMTP: Include header <code>X-EE-Gateway: gateway-id</code>
-                </p>
-            </div>
-
-            <div class="col-auto">
-                <i class="fas fa-info-circle fa-2x text-gray-300"></i>
-            </div>
-        </div>
-    </div>
-</div>
+{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6" title=""}}
+<p class="mb-2">SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
+    third-party services like SendGrid, Amazon SES, Mailgun, and similar providers.</p>
+<p class="mb-1"><strong>How to use:</strong></p>
+<ul class="list-disc ps-6 space-y-1 mb-0">
+    <li>API: Add <code>gateway: "gateway-id"</code> to your <a
+            href="https://api.emailengine.app/#operation/postV1AccountAccountSubmit" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submit request</a></li>
+    <li>SMTP: Include header <code>X-EE-Gateway: gateway-id</code></li>
+</ul>
+{{/ui/stat-card}}
 
 {{#if gateways}}
 
-<div class="card mb-4 mt-4">
+<div class="card bg-base-100 shadow-md mb-6">
 
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead class="">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
                 <tr>
-                    <th class="p-0">
-                        <div class="p-2">Gateway ID</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Name</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Emails Sent</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Last Activity</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Status</div>
-                    </th>
+                    <th>Gateway ID</th>
+                    <th>Name</th>
+                    <th>Emails Sent</th>
+                    <th>Last Activity</th>
+                    <th>Status</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each gateways}}
-                <tr>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
-                            {{gateway}}
-                        </div>
+                <tr class="hover:bg-base-200/60">
+                    <td class="relative">
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0"
+                            aria-label="Open gateway"></a>
+                        {{gateway}}
                     </td>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/gateways/gateway/{{gateway}}"
-                                class="stretched-link"></a><strong>{{name}}</strong>
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a><strong>{{name}}</strong>
                     </td>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>{{deliveries}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>{{deliveries}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
-                            {{#if timeStr}}
-                            <span class="relative-time" data-time="{{timeStr}}"></span>
-                            {{else}}
-                            <small><em>Never used</em></small>
-                            {{/if}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{#if timeStr}}
+                        <span class="relative-time" data-time="{{timeStr}}"></span>
+                        {{else}}
+                        <small><em>Never used</em></small>
+                        {{/if}}
                     </td>
 
-                    <td style="width: 120px;" class="p-0">
-                        <div class="position-relative  p-2">
-                            <a href="/admin/gateways/gateway/{{gateway}}" class="stretched-link"></a>
-
-                            <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
-                                style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
-                                label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
-                                {{label.name}}</span>
-                        </div>
+                    <td class="relative w-32">
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{!-- live state badge with an error tooltip; wrapping link
+                              lifts the badge above the row overlay --}}
+                        <a href="/admin/gateways/gateway/{{gateway}}" class="relative z-[1] inline-flex">
+                            {{> ui/state-badge label=label account=gateway pointer=true}}
+                        </a>
                     </td>
 
                 </tr>
@@ -111,39 +78,18 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer">
-
-        <nav aria-label="Page navigation">
-            <ul class="pagination" style="flex-wrap: wrap;">
-
-                {{#if prevPage}}
-                <li class="page-item"><a class="page-link" href="{{prevPage}}">Previous</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                {{/if}}
-
-                {{#each pageLinks}}
-                <li class="page-item {{#if active}}active{{/if}}"><a class="page-link" href="{{url}}">{{title}}</a>
-                </li>
-                {{/each}}
-
-                {{#if nextPage}}
-                <li class="page-item"><a class="page-link" href="{{nextPage}}">Next</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                {{/if}}
-
-            </ul>
-        </nav>
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}
 </div>
 
 {{else}}
-<div class="list-group mt-4 mb-4">
-    <div class="list-group-item">
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-body">
         {{#if firstPage}}
-        No gateways have been configured yet. <a href="/admin/gateways/new">Add your first gateway</a>.
+        No gateways have been configured yet. <a href="/admin/gateways/new" class="link link-animated">Add your first
+            gateway</a>.
         {{else}}
         No gateways found.
         {{/if}}

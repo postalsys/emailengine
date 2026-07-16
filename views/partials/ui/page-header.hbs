@@ -1,0 +1,25 @@
+{{!--
+    ui/page-header - page title row with optional leading icon and action
+    buttons. Use the block form to add actions on the right:
+      {{#> ui/page-header title="Email Accounts" icon="icon-[tabler--users]"}} {{> ui/btn ...}} {{/ui/page-header}}
+    Params:
+      title        - page heading (required)
+      icon         - full iconify class for a muted icon before the title (optional)
+      badgeLabel   - status badge text rendered right after the title (optional)
+      badgeVariant - color of that badge: success|warning|error|... (default neutral)
+      class        - extra classes on the wrapper (additive). Emits no margin of
+                     its own - the caller owns spacing, same as ui/form-field.
+--}}
+<div class="flex flex-wrap items-center justify-between gap-3{{#if class}} {{class}}{{/if}}">
+    <h1 class="flex items-center gap-2 text-2xl font-semibold text-base-content">
+        {{~#if icon}}<span class="{{icon}} size-6 text-base-content/60"></span>{{/if~}}
+        {{title}}
+        {{~#if badgeLabel}} {{> ui/badge label=badgeLabel variant=badgeVariant icon="" id="" class="" soft=""}}{{/if~}}
+    </h1>
+    {{#if @partial-block}}
+    <div class="flex flex-wrap items-center gap-2">
+        {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block title="" icon="" badgeLabel="" badgeVariant="" class=""}}
+    </div>
+    {{/if}}
+</div>

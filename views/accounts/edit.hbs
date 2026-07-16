@@ -1,43 +1,20 @@
 {{> accounts_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/accounts">Accounts</a></li>
-        <li class="breadcrumb-item"><a href="/admin/accounts/{{account}}">{{account}}</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Edit</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" midHref=(concat "/admin/accounts/" account) midLabel=account current="Edit" class="mt-6 mb-6"}}
 
 <form method="post" action="/admin/accounts/{{account}}/edit">
     <input type="hidden" name="crumb" value="{{crumb}}">
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Account</h6>
+        <div class="card-header">
+            <h6 class="card-title text-primary">Account</h6>
         </div>
 
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
-                <label for="name">Full name</label>
-                <input type="text" class="form-control {{#if errors.name}}is-invalid{{/if}}" id="name" name="name"
-                    value="{{values.name}}" />
-                {{#if errors.name}}
-                <span class="invalid-feedback">{{errors.name}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Full name of the user</small>
-            </div>
-
-            <div class="form-group">
-                <label for="name">Email</label>
-                <input type="email" class="form-control {{#if errors.email}}is-invalid{{/if}}" id="email" name="email"
-                    value="{{values.email}}" />
-                {{#if errors.email}}
-                <span class="invalid-feedback">{{errors.email}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Email address of the user</small>
-            </div>
+            {{> ui/form-field id="name" label="Full name" value=values.name error=errors.name hint="Full name of the user"}}
+            {{> ui/form-field id="email" type="email" label="Email" value=values.email error=errors.email hint="Email address of the user"}}
 
         </div>
     </div>
@@ -47,116 +24,35 @@
     {{#if values.imap}}
     <input type="hidden" name="imap" value="on">
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">IMAP</h6>
+        <div class="card-header">
+            <h6 class="card-title text-primary">IMAP</h6>
         </div>
 
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
             {{#unless values.imap_disabled}}
             {{#unless values.oauth2}}
 
-            <div class="form-group">
-                <label for="imap_auth_user">Username</label>
-                <input type="text" class="form-control {{#if errors.imap_auth_user}}is-invalid{{/if}}"
-                    id="imap_auth_user" name="imap_auth_user" value="{{values.imap_auth_user}}" data-lpignore="true"
-                    autocomplete="off" required />
-                {{#if errors.imap_auth_user}}
-                <span class="invalid-feedback">{{errors.imap_auth_user}}</span>
-                {{/if}}
-            </div>
+            {{> ui/form-field id="imap_auth_user" label="Username" value=values.imap_auth_user error=errors.imap_auth_user lpignore=true required=true}}
 
-            <div class="form-group">
-                <label for="imap_auth_pass">Password</label>
-                <input type="password" class="form-control {{#if errors.imap_auth_pass}}is-invalid{{/if}}"
-                    id="imap_auth_pass" name="imap_auth_pass" value="{{values.imap_auth_pass}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasIMAPPass}} placeholder="Password is set but not shown&mldr;" {{/if}} />
-                {{#if errors.imap_auth_pass}}
-                <span class="invalid-feedback">{{errors.imap_auth_pass}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Only set if you want to change the current IMAP password</small>
-            </div>
+            {{> ui/form-field id="imap_auth_pass" type="password" label="Password" value=values.imap_auth_pass error=errors.imap_auth_pass lpignore=true placeholder=(when hasIMAPPass "Password is set but not shown...") hint="Only set if you want to change the current IMAP password"}}
 
-            <div class="form-group">
-                <label for="imap_host">Hostname</label>
-                <input type="text" class="form-control {{#if errors.imap_host}}is-invalid{{/if}}" data-lpignore="true"
-                    autocomplete="off" id="imap_host" name="imap_host" value="{{values.imap_host}}" required />
-                {{#if errors.imap_host}}
-                <span class="invalid-feedback">{{errors.imap_host}}</span>
-                {{/if}}
-            </div>
+            {{> ui/form-field id="imap_host" label="Hostname" value=values.imap_host error=errors.imap_host lpignore=true required=true}}
+            {{> ui/form-field id="imap_port" type="number" label="Port" value=values.imap_port error=errors.imap_port lpignore=true required=true}}
 
-            <div class="form-group">
-                <label for="imap_port">Port</label>
-                <input type="number" class="form-control {{#if errors.imap_port}}is-invalid{{/if}}" data-lpignore="true"
-                    autocomplete="off" id="imap_port" name="imap_port" value="{{values.imap_port}}" required />
-                {{#if errors.imap_port}}
-                <span class="invalid-feedback">{{errors.imap_port}}</span>
-                {{/if}}
-            </div>
-
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.imap_secure}}is-invalid{{/if}}"
-                    data-target="header-list" id="imap_secure" name="imap_secure" {{#if
-                    values.imap_secure}}checked{{/if}} />
-                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
-                    data-title="TLS for IMAP"
-                    data-content="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
-                        class="fas fa-question-circle"></i></a>
-                <label class="form-check-label" for="imap_secure">Use TLS
-                </label>
-                {{#if errors.imap_secure}}
-                <span class="invalid-feedback">{{errors.imap_secure}}</span>
-                {{/if}}
-            </div>
+            {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure dataTarget="header-list" tooltip="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
             {{/unless}}
 
+            {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Copies of sent emails will be uploaded to this folder. Leave empty to use the default "Sent Mail" folder for this account.'}}
 
-            <div class="form-group">
-                <label for="imap_sentMailPath">Sent Mail folder</label>
-                <input type="text"
-                    class="form-control basicAutoComplete {{#if errors.imap_sentMailPath}}is-invalid{{/if}}"
-                    data-lpignore="true" autocomplete="off" id="imap_sentMailPath" name="imap_sentMailPath"
-                    value="{{values.imap_sentMailPath}}" placeholder="Folder path like &quot;Sent Mail&quot;"
-                    data-lpignore="true" autocomplete="off" />
-                {{#if errors.imap_sentMailPath}}
-                <span class="invalid-feedback">{{errors.imap_sentMailPath}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Copies of sent emails will be uploaded to this folder. Leave empty
-                    to use the default "Sent Mail" folder for this
-                    account.</small>
-            </div>
-
-            <div class="form-group">
-                <label for="imap_resyncDelay">Resync delay</label>
-                <input type="number" class="form-control {{#if errors.imap_resyncDelay}}is-invalid{{/if}}"
-                    data-lpignore="true" autocomplete="off" id="imap_resyncDelay" name="imap_resyncDelay"
-                    value="{{values.imap_resyncDelay}}" />
-                {{#if errors.imap_resyncDelay}}
-                <span class="invalid-feedback">{{errors.imap_resyncDelay}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Keep empty for default</small>
-            </div>
+            {{> ui/form-field id="imap_resyncDelay" type="number" label="Resync delay" value=values.imap_resyncDelay error=errors.imap_resyncDelay lpignore=true hint="Keep empty for default"}}
 
             {{/unless}}
 
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.imap_disabled}}is-invalid{{/if}}"
-                    data-target="header-list" id="imap_disabled" name="imap_disabled" {{#if
-                    values.imap_disabled}}checked{{/if}} />
-                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
-                    data-title="Disable IMAP"
-                    data-content="Disable IMAP if you are using this email account only for sending emails."><i
-                        class="fas fa-question-circle"></i></a>
-                <label class="form-check-label" for="imap_disabled">Disable IMAP
-                </label>
-                {{#if errors.imap_disabled}}
-                <span class="invalid-feedback">{{errors.imap_disabled}}</span>
-                {{/if}}
-            </div>
+            {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled dataTarget="header-list" tooltip="Disable IMAP if you are using this email account only for sending emails."}}
 
         </div>
     </div>
@@ -165,69 +61,22 @@
     {{#if values.smtp}}
     <input type="hidden" name="smtp" value="on">
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">SMTP</h6>
+        <div class="card-header">
+            <h6 class="card-title text-primary">SMTP</h6>
         </div>
 
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <h6>SMTP</h6>
+            {{> ui/form-field id="smtp_auth_user" label="Username" value=values.smtp_auth_user error=errors.smtp_auth_user lpignore=true required=true}}
 
-            <div class="form-group">
-                <label for="smtp_auth_user">Username</label>
-                <input type="text" class="form-control {{#if errors.smtp_auth_user}}is-invalid{{/if}}"
-                    id="smtp_auth_user" name="smtp_auth_user" value="{{values.smtp_auth_user}}" data-lpignore="true"
-                    autocomplete="off" required />
-                {{#if errors.smtp_auth_user}}
-                <span class="invalid-feedback">{{errors.smtp_auth_user}}</span>
-                {{/if}}
-            </div>
+            {{> ui/form-field id="smtp_auth_pass" type="password" label="Password" value=values.smtp_auth_pass error=errors.smtp_auth_pass lpignore=true placeholder=(when hasSMTPPass "Password is set but not shown...") hint="Only set if you want to change the current SMTP password"}}
 
-            <div class="form-group">
-                <label for="smtp_auth_pass">Password</label>
-                <input type="password" class="form-control {{#if errors.smtp_auth_pass}}is-invalid{{/if}}"
-                    id="smtp_auth_pass" name="smtp_auth_pass" value="{{values.smtp_auth_pass}}" data-lpignore="true"
-                    autocomplete="off" {{#if hasSMTPPass}} placeholder="Password is set but not shown&mldr;" {{/if}} />
-                {{#if errors.smtp_auth_pass}}
-                <span class="invalid-feedback">{{errors.smtp_auth_pass}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Only set if you want to change the current SMTP password</small>
-            </div>
+            {{> ui/form-field id="smtp_host" label="Hostname" value=values.smtp_host error=errors.smtp_host lpignore=true required=true}}
+            {{> ui/form-field id="smtp_port" type="number" label="Port" value=values.smtp_port error=errors.smtp_port lpignore=true required=true}}
 
-            <div class="form-group">
-                <label for="smtp_host">Hostname</label>
-                <input type="text" class="form-control {{#if errors.smtp_host}}is-invalid{{/if}}" data-lpignore="true"
-                    autocomplete="off" id="smtp_host" name="smtp_host" value="{{values.smtp_host}}" required />
-                {{#if errors.smtp_host}}
-                <span class="invalid-feedback">{{errors.smtp_host}}</span>
-                {{/if}}
-            </div>
-
-            <div class="form-group">
-                <label for="smtp_port">Port</label>
-                <input type="number" class="form-control {{#if errors.smtp_port}}is-invalid{{/if}}" data-lpignore="true"
-                    autocomplete="off" id="smtp_port" name="smtp_port" value="{{values.smtp_port}}" required />
-                {{#if errors.smtp_port}}
-                <span class="invalid-feedback">{{errors.smtp_port}}</span>
-                {{/if}}
-            </div>
-
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input {{#if errors.smtp_secure}}is-invalid{{/if}}"
-                    data-target="header-list" id="smtp_secure" name="smtp_secure" {{#if
-                    values.smtp_secure}}checked{{/if}} />
-                <a class="float-right" href="#" tabindex="0" role="button" data-toggle="popover" data-trigger="hover"
-                    data-title="TLS for SMTP"
-                    data-content="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."><i
-                        class="fas fa-question-circle"></i></a>
-                <label class="form-check-label" for="smtp_secure">Use TLS
-                </label>
-                {{#if errors.smtp_secure}}
-                <span class="invalid-feedback">{{errors.smtp_secure}}</span>
-                {{/if}}
-            </div>
+            {{> ui/checkbox id="smtp_secure" label="Use TLS" checked=values.smtp_secure error=errors.smtp_secure dataTarget="header-list" tooltip="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
         </div>
     </div>
@@ -235,80 +84,41 @@
 
     {{/unless}}
 
-    <div class="card mb-4">
+    <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Advanced settings</h6>
+        <div class="card-header">
+            <h6 class="card-title text-primary">Advanced settings</h6>
         </div>
 
-        <div class="card-body">
-            <div class="form-group">
-                <label for="proxy">Proxy URL</label>
-                <input type="text" class="form-control or-else-all  {{#if errors.proxy}}is-invalid{{/if}}" id="proxy"
-                    placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;" value="{{values.proxy}}"
-                    name="proxy" data-target="proxy-status">
-                {{#if errors.proxy}}
-                <span class="invalid-feedback">{{errors.proxy}}</span>
-                {{/if}}
-                <small id="proxyHelpBlock" class="form-text text-muted">Fill this if you want to use a custom proxy
-                    for this account. Proxy URL must start with http://, https://,
-                    socks://, socks4:// or socks5://</small>
+        <div class="card-body space-y-4">
+
+            {{#> ui/form-field id="proxy" label="Proxy URL" error=errors.proxy hint="Fill this if you want to use a custom proxy for this account. Proxy URL must start with http://, https://, socks://, socks4:// or socks5://"}}
+            <input type="text" class="input or-else-all{{#if errors.proxy}} is-invalid{{/if}}" id="proxy"
+                placeholder="Connection URL like &quot;socks://localhost:1080&quot;&mldr;" value="{{values.proxy}}"
+                name="proxy" data-target="proxy-status">
+            {{/ui/form-field}}
+
+            <div>
+                {{> ui/setting-ref name="smtpEhloName"}}
+                {{> ui/form-field id="smtpEhloName" label="SMTP Greeting Hostname" value=values.smtpEhloName error=errors.smtpEhloName placeholder='Proxy hostname like "my.proxy.tld"...'}}
+                <span class="helper-text">Hostname to use for the SMTP EHLO/HELO greeting. Leave empty to use the
+                    default <code>{{defaultSmtpEhloName}}</code>. If you are using a dedicated IP address, the hostname
+                    of that IP is preferred over this value.</span>
             </div>
 
-            <div class="form-group">
+            {{> ui/form-field id="webhooks" label="Webhook URL" value=values.webhooks error=errors.webhooks placeholder='URL like "https://myservice.com/imap/webhooks"' hint="Account-specific webhook URL. If set and webhooks are enabled, EmailEngine will send webhook requests for events related to this account to this URL instead of the default webhook URL. Leave empty to clear."}}
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">smtpEhloName</a>]</div>
-
-                <label for="smtpEhloName">SMTP Greeting Hostname</label>
-                <input type="text" class="form-control {{#if errors.proxyUrl}}is-invalid{{/if}}" id="smtpEhloName"
-                    placeholder="Proxy hostname like &quot;my.proxy.tld&quot;&mldr;" value="{{values.smtpEhloName}}"
-                    name="smtpEhloName">
-                {{#if errors.smtpEhloName}}
-                <span class="invalid-feedback">{{errors.smtpEhloName}}</span>
-                {{/if}}
-                <small id="smtpEhloNameBlock" class="form-text text-muted">Hostname to use for the SMTP EHLO/HELO
-                    greeting. Leave empty to use the default <code>{{defaultSmtpEhloName}}</code>. If you are using a
-                    dedicated IP address, the hostname of that IP is preferred over this value.</small>
-            </div>
-
-            <div class="form-group">
-                <label for="webhooks">Webhook URL</label>
-                <input type="text" class="form-control {{#if errors.webhooks}}is-invalid{{/if}}" id="webhooks"
-                    value="{{values.webhooks}}" placeholder="URL like &quot;https://myservice.com/imap/webhooks&quot;"
-                    name="webhooks">
-                {{#if errors.webhooks}}
-                <span class="invalid-feedback">{{errors.webhooks}}</span>
-                {{/if}}
-                <small id="webhooksHelpBlock" class="form-text text-muted">Account-specific webhook URL. If set
-                    and <a href="/admin/config/webhooks">webhooks</a> are enabled, EmailEngine will send webhook
-                    requests for events related to this account to this URL instead of the default webhook URL.
-                    Leave empty to clear.</small>
-            </div>
-
-            <div class="form-group">
-                <label for="customHeaders">List of custom webhook request headers</label>
-
-                <textarea class="form-control text-monospace {{#if errors.customHeaders}}is-invalid{{/if}}"
-                    id="customHeaders" name="customHeaders" rows="5" spellcheck="false" data-enable-grammarly="false"
-                    placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
-                {{#if errors.customHeaders}}
-                <span class="invalid-feedback">{{errors.customHeaders}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Keep one header per line. These headers will be added to the HTTP
-                    request when posting webhooks for this email account.</small>
-            </div>
+            {{#> ui/form-field id="customHeaders" label="List of custom webhook request headers" error=errors.customHeaders hint="Keep one header per line. These headers will be added to the HTTP request when posting webhooks for this email account."}}
+            <textarea class="textarea font-mono w-full{{#if errors.customHeaders}} is-invalid{{/if}}" id="customHeaders"
+                name="customHeaders" rows="5" spellcheck="false" data-enable-grammarly="false"
+                placeholder="Custom headers like &quot;Authorization: Bearer secret_token&quot;&mldr;">{{values.customHeaders}}</textarea>
+            {{/ui/form-field}}
 
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-user-alt"></i>
-            </span>
-            <span class="text">Update account</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Update account" type="submit" icon="icon-[tabler--user]"}}
     </div>
 </form>
 
@@ -318,15 +128,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let availablePaths = JSON.parse(document.getElementById('availablePaths').value);
-        $('.basicAutoComplete').autoComplete({
-            resolver: 'custom',
-            events: {
-                search: function (query, callback) {
-                    callback(availablePaths.filter(a => a.indexOf(query) >= 0))
-                }
-            },
-            preventEnter: true,
-            minLength: 1
-        });
+        // native datalist suggestions for the Sent Mail folder input (the
+        // form-field markup references the list id directly)
+        uiDatalist('available-paths-list', availablePaths);
     })
 </script>

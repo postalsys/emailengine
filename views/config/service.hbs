@@ -1,429 +1,346 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
+{{> ui/page-header title="General Settings" icon="icon-[tabler--settings]" class="mb-1"}}
 
-        <small><i class="fas fa-cog fa-fw"></i></small>
-        General Settings
-    </h1>
-</div>
-
-<p class="mb-4">Configure core settings for your EmailEngine instance.</p>
+<p class="mb-6">Configure core settings for your EmailEngine instance.</p>
 
 <form method="post" id="settings-form" action="/admin/config/service">
-    <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
+    {{!-- no id: the layout already renders the #crumb element the script reads --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
 
-    <div class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">System Configuration</h6>
+    <div class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">System Configuration</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">serviceUrl</a>]</div>
-
-                <label for="settingsServiceUrl">Service URL</label>
-                <input type="url" class="form-control {{#if errors.serviceUrl}}is-invalid{{/if}}"
-                    id="settingsServiceUrl" name="serviceUrl" value="{{values.serviceUrl}}" data-lpignore="true"
-                    autocomplete="off" />
-                {{#if errors.serviceUrl}}
-                <span class="invalid-feedback">{{errors.serviceUrl}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Base URL where EmailEngine is accessible (without any path).</small>
+            <div>
+                {{> ui/setting-ref name="serviceUrl"}}
+                {{#> ui/form-field id="settingsServiceUrl" label="Service URL" error=errors.serviceUrl}}
+                <input type="url" class="input{{#if errors.serviceUrl}} is-invalid{{/if}}" id="settingsServiceUrl"
+                    name="serviceUrl" value="{{values.serviceUrl}}" data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">Base URL where EmailEngine is accessible (without any path).</span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">enableApiProxy</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.enableApiProxy}}is-invalid{{/if}}"
-                    id="enableApiProxy" name="enableApiProxy" {{#if values.enableApiProxy}}checked{{/if}} />
-                <label class="form-check-label" for="enableApiProxy">Behind Reverse Proxy</label>
-                {{#if errors.enableApiProxy}}
-                <span class="invalid-feedback">{{errors.enableApiProxy}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Enable if using Nginx, Caddy, or similar. Uses
-                    <code>X-Forwarded-For</code> headers to identify client IPs.</small>
+            <div>
+                {{> ui/setting-ref name="enableApiProxy"}}
+                {{> ui/checkbox id="enableApiProxy" name="enableApiProxy" label="Behind Reverse Proxy"
+                checked=values.enableApiProxy error=errors.enableApiProxy}}
+                <span class="helper-text">Enable if using Nginx, Caddy, or similar. Uses
+                    <code>X-Forwarded-For</code> headers to identify client IPs.</span>
             </div>
 
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">timezone</a>]</div>
-
-                <label for="settingsServiceTimezone">Timezone</label>
-                <select id="settingsServiceTimezone" class="custom-select custom-select-sm" name="timezone" {{#if
-                    errors.timezone}}is-invalid{{/if}}>
+            <div>
+                {{> ui/setting-ref name="timezone"}}
+                {{#> ui/form-field id="settingsServiceTimezone" label="Timezone" error=errors.timezone}}
+                <select id="settingsServiceTimezone" class="select select-sm max-w-md{{#if errors.timezone}} is-invalid{{/if}}"
+                    name="timezone">
                     {{#each timezones}}
                     <option value="{{timezone}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}
                 </select>
-                {{#if errors.timezone}}
-                <span class="invalid-feedback">{{errors.timezone}}</span>
-                {{/if}}
+                {{/ui/form-field}}
             </div>
         </div>
     </div>
 
-    <div class="card mb-4" id="language">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Language</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="language">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Language</h6>
         </div>
-        <div class="card-body">
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">locale</a>]</div>
-
-                <label for="settingsServiceLocale">Default Language</label>
-                <select id="settingsServiceLocale" class="custom-select custom-select-sm" name="locale" {{#if
-                    errors.locale}}is-invalid{{/if}}>
+        <div class="card-body space-y-4">
+            <div>
+                {{> ui/setting-ref name="locale"}}
+                {{#> ui/form-field id="settingsServiceLocale" label="Default Language" error=errors.locale}}
+                <select id="settingsServiceLocale" class="select select-sm max-w-md{{#if errors.locale}} is-invalid{{/if}}"
+                    name="locale">
                     {{#each locales}}
                     <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}} ({{locale}})</option>
                     {{/each}}
                 </select>
-                {{#if errors.locale}}
-                <span class="invalid-feedback">{{errors.locale}}</span>
-                {{/if}}
-                <small class="form-text text-muted">
+                <span class="helper-text">
                     Default language for UI and API responses.
-                    <a href="#languageDetails" data-toggle="collapse" aria-expanded="false"
-                        aria-controls="languageDetails">
-                        How to override <i class="fas fa-chevron-down fa-sm"></i>
-                    </a>
-                </small>
-            </div>
+                </span>
+                {{/ui/form-field}}
 
-            <div class="collapse" id="languageDetails">
-                <div class="alert alert-info">
-                    <h6 class="alert-heading font-weight-bold">Override Language Settings</h6>
-                    <p>Set language per request (highest to lowest priority):</p>
-                    <ol class="mb-3">
-                        <li><strong>URL parameter:</strong> <code>?locale=xx</code></li>
-                        <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API only)</li>
-                        <li><strong>Browser preference:</strong> <code>Accept-Language</code> header</li>
-                        <li><strong>Default:</strong> Language selected above</li>
-                    </ol>
+                <details id="languageDetails" class="group mt-2">
+                    <summary
+                        class="cursor-pointer text-sm text-base-content/60 list-none [&::-webkit-details-marker]:hidden inline-flex items-center gap-1">
+                        <span class="link link-animated">How to override</span>
+                        <span
+                            class="icon-[tabler--chevron-down] size-3.5 transition-transform duration-200 group-open:rotate-180"></span>
+                    </summary>
+                    <div class="alert alert-soft alert-info mt-2 block">
+                        <h6 class="font-bold mb-2">Override Language Settings</h6>
+                        <p class="mb-2">Set language per request (highest to lowest priority):</p>
+                        <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+                            <li><strong>URL parameter:</strong> <code>?locale=xx</code></li>
+                            <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API only)</li>
+                            <li><strong>Browser preference:</strong> <code>Accept-Language</code> header</li>
+                            <li><strong>Default:</strong> Language selected above</li>
+                        </ol>
 
-                    <strong>Examples:</strong>
-                    <ul class="mb-0">
-                        <li>Web: <code>/accounts/new?locale=et</code></li>
-                        <li>API: <code>GET /v1/accounts?locale=nl</code></li>
-                        <li>Header: <code>X-EE-Locale: de</code></li>
-                    </ul>
-                </div>
+                        <strong>Examples:</strong>
+                        <ul class="list-disc ps-6 mb-0 space-y-1">
+                            <li>Web: <code>/accounts/new?locale=et</code></li>
+                            <li>API: <code>GET /v1/accounts?locale=nl</code></li>
+                            <li>Header: <code>X-EE-Locale: de</code></li>
+                        </ul>
+                    </div>
+                </details>
             </div>
 
             <p class="mb-0">
                 <a href="https://github.com/postalsys/emailengine/blob/master/translations/README.md" target="_blank"
-                    rel="noopener noreferrer" referrerpolicy="no-referrer">
-                    <i class="fas fa-external-link-alt fa-sm"></i> Help us translate EmailEngine
+                    rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">
+                    <span class="icon-[tabler--external-link] size-4 align-text-bottom"></span> Help us translate
+                    EmailEngine
                 </a>
             </p>
         </div>
     </div>
 
-    <div class="card mb-4" id="security">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Security</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="security">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Security</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">serviceSecret</a>]</div>
+            <div>
+                {{> ui/setting-ref name="serviceSecret"}}
+                {{#> ui/form-field id="settingsServiceSecret" label="Service Secret" error=errors.serviceSecret}}
+                {{> ui/secret-field id="settingsServiceSecret" name="serviceSecret" value=values.serviceSecret
+                error=errors.serviceSecret toggleId="showServiceSecret" toggleLabel="Show secret"}}
+                <span class="helper-text">HMAC key for signing public requests. Changing this invalidates all existing
+                    tracking links.</span>
+                {{/ui/form-field}}
+            </div>
 
-                <label for="settingsServiceSecret">Service Secret</label>
+            <div>
+                {{> ui/setting-ref name="EENGINE_REQUIRE_API_AUTH" plain=true}}
 
-                <div class="input-group">
-                    <input type="password" class="form-control {{#if errors.serviceSecret}}is-invalid{{/if}}"
-                        id="settingsServiceSecret" name="serviceSecret" value="{{values.serviceSecret}}"
-                        data-lpignore="true" autocomplete="off" />
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm{{#if errors.enableTokens}} is-invalid{{/if}}"
+                        id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
+                    <label class="label-text p-0" for="enableTokens">Require API Authentication
 
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-primary" type="button" id="showServiceSecret"><i
-                                class="fas fa-eye"></i></button>
-                    </div>
+                        <span class="badge badge-{{#if values.enableTokens}}success{{else}}error{{/if}}">{{#if
+                            values.enableTokens}}enabled{{else}}disabled{{/if}}</span>
+                    </label>
                 </div>
-
-                {{#if errors.serviceSecret}}
-                <span class="invalid-feedback">{{errors.serviceSecret}}</span>
-                {{/if}}
-                <small class="form-text text-muted">HMAC key for signing public requests. Changing this invalidates all
-                    existing tracking links.</small>
-            </div>
-
-            <div class="form-group form-check">
-
-                <div class="text-muted float-right code-link">[EENGINE_REQUIRE_API_AUTH]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.enableTokens}}is-invalid{{/if}}"
-                    id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
-                <label class="form-check-label" for="enableTokens">Require API Authentication
-
-                    <span class="badge badge-{{#if values.enableTokens}}success{{else}}danger{{/if}}">{{#if
-                        values.enableTokens}}enabled{{else}}disabled{{/if}}</span>
-                </label>
                 {{#if errors.enableTokens}}
-                <span class="invalid-feedback">{{errors.enableTokens}}</span>
+                <span class="helper-text text-error">{{errors.enableTokens}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Disable for development only. Always enable in production for secure
-                    API access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not recommended).</small>
+                <span class="helper-text">Disable for development only. Always enable in production for secure API
+                    access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not
+                    recommended).</span>
             </div>
 
-            <div class="form-group form-check">
+            <div>
+                {{> ui/setting-ref name="EENGINE_SECRET" href="https://docs.emailengine.app/enabling-secret-encryption/"}}
 
-                <div class="text-muted float-right code-link">[<a
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm" id="encryption" {{#if encryption}}checked{{/if}}
+                        disabled />
+                    <label class="label-text p-0" for="encryption">Data Encryption
+
+                        <span class="badge badge-{{#if encryption}}success{{else}}error{{/if}}">{{#if
+                            encryption}}enabled{{else}}disabled{{/if}}</span>
+
+                    </label>
+                </div>
+                <span class="helper-text">Set <code>EENGINE_SECRET</code> environment variable at startup to enable. <a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">EENGINE_SECRET</a>]</div>
-
-                <input type="checkbox" class="form-check-input" id="encryption" {{#if encryption}}checked{{/if}}
-                    disabled />
-                <label class="form-check-label" for="encryption">Data Encryption
-
-                    <span class="badge badge-{{#if encryption}}success{{else}}danger{{/if}}">{{#if
-                        encryption}}enabled{{else}}disabled{{/if}}</span>
-
-                </label>
-                <small class="form-text text-muted">Set <code>EENGINE_SECRET</code> environment variable at startup to
-                    enable. <a href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer">Learn more</a></small>
+                        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
+                        more</a></span>
             </div>
 
 
-            <div class="form-group form-check">
+            <div>
+                {{> ui/setting-ref name="EENGINE_ADMIN_ACCESS_ADDRESSES" plain=true}}
 
-                <div class="text-muted float-right code-link">[EENGINE_ADMIN_ACCESS_ADDRESSES]</div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" class="checkbox checkbox-sm" id="adminAccessLimit" {{#if
+                        adminAccessLimit}}checked{{/if}} disabled />
+                    <label class="label-text p-0" for="adminAccessLimit">Admin IP Restrictions
 
-                <input type="checkbox" class="form-check-input" id="adminAccessLimit" {{#if
-                    adminAccessLimit}}checked{{/if}} disabled />
-                <label class="form-check-label" for="adminAccessLimit">Admin IP Restrictions
+                        <span class="badge badge-{{#if adminAccessLimit}}success{{else}}error{{/if}}">{{#if
+                            adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
 
-                    <span class="badge badge-{{#if adminAccessLimit}}success{{else}}danger{{/if}}">{{#if
-                        adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
-
-                </label>
-                <small class="form-text text-muted">Set <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> at startup with
-                    comma-separated IP addresses or CIDR ranges (e.g., "192.168.1.1,10.0.0.0/24").</small>
+                    </label>
+                </div>
+                <span class="helper-text">Set <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> at startup with
+                    comma-separated IP addresses or CIDR ranges (e.g., "192.168.1.1,10.0.0.0/24").</span>
             </div>
 
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[EENGINE_ENABLE_OAUTH_TOKENS_API]</div>
-                <input type="checkbox" class="form-check-input {{#if errors.enableOAuthTokensApi}}is-invalid{{/if}}"
-                    id="enableOAuthTokensApi" name="enableOAuthTokensApi" {{#if
-                    values.enableOAuthTokensApi}}checked{{/if}} />
-                <label class="form-check-label" for="enableOAuthTokensApi">Allow OAuth2 Token Access via API</label>
-                {{#if errors.enableOAuthTokensApi}}
-                <span class="invalid-feedback">{{errors.enableOAuthTokensApi}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Enable <a
-                        href="/admin/swagger#/Account/getV1AccountAccountOauthtoken" target="_blank"
-                        rel="noopener noreferrer">API endpoint</a> to retrieve OAuth2 tokens. Set
-                    <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
-                    by default.</small>
+            <div>
+                {{> ui/setting-ref name="EENGINE_ENABLE_OAUTH_TOKENS_API" plain=true}}
+                {{> ui/checkbox id="enableOAuthTokensApi" name="enableOAuthTokensApi"
+                label="Allow OAuth2 Token Access via API" checked=values.enableOAuthTokensApi
+                error=errors.enableOAuthTokensApi}}
+                <span class="helper-text">Enable <a href="/admin/swagger#/Account/getV1AccountAccountOauthtoken"
+                        target="_blank" rel="noopener noreferrer" class="link link-animated">API endpoint</a> to
+                    retrieve OAuth2 tokens. Set <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
+                    by default.</span>
             </div>
 
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">ignoreMailCertErrors</a>]</div>
+            <div>
+                {{> ui/setting-ref name="ignoreMailCertErrors"}}
 
-                <input type="checkbox" class="form-check-input {{#if errors.ignoreMailCertErrors}}is-invalid{{/if}}"
-                    id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
-                    values.ignoreMailCertErrors}}checked{{/if}} />
-                <label class="form-check-label" for="ignoreMailCertErrors">Allow Insecure Email Certificates
+                <div class="flex items-center gap-2">
+                    <input type="checkbox"
+                        class="checkbox checkbox-sm{{#if errors.ignoreMailCertErrors}} is-invalid{{/if}}"
+                        id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
+                        values.ignoreMailCertErrors}}checked{{/if}} />
+                    <label class="label-text p-0" for="ignoreMailCertErrors">Allow Insecure Email Certificates
 
-                    <span class="badge badge-{{#if values.ignoreMailCertErrors}}danger{{else}}success{{/if}}">{{#if
-                        values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
+                        <span class="badge badge-{{#if values.ignoreMailCertErrors}}error{{else}}success{{/if}}">{{#if
+                            values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
 
-                </label>
+                    </label>
+                </div>
                 {{#if errors.ignoreMailCertErrors}}
-                <span class="invalid-feedback">{{errors.ignoreMailCertErrors}}</span>
+                <span class="helper-text text-error">{{errors.ignoreMailCertErrors}}</span>
                 {{/if}}
-                <small class="form-text text-muted">Accept self-signed or expired certificates for IMAP/SMTP
-                    connections. Not recommended.</small>
+                <span class="helper-text">Accept self-signed or expired certificates for IMAP/SMTP connections. Not
+                    recommended.</span>
             </div>
 
         </div>
     </div>
 
-    <div id="queue_settings" class="card mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Queue Management</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Actions:</div>
-                    <a class="dropdown-item" href="#" id="clean-queues-btn">
-                        <i class="fas fa-trash-alt fa-sm clean-icon"></i> <span>Clear completed jobs</span>
-                    </a>
-                </div>
-            </div>
+    <div id="queue_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">Queue Management</h6>
+            {{> ui/btn label="Clear completed jobs" variant="neutral" style="soft" size="sm" id="clean-queues-btn"
+            icon="icon-[tabler--trash] clean-icon"}}
         </div>
 
         <div class="card-body">
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">queueKeep</a>]</div>
-
-                <label for="settingsQueueKeep">Job History Limit</label>
-                <input type="number" min="0" class="form-control {{#if errors.queueKeep}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="queueKeep"}}
+                {{#> ui/form-field id="settingsQueueKeep" label="Job History Limit" error=errors.queueKeep}}
+                <input type="number" min="0" class="input{{#if errors.queueKeep}} is-invalid{{/if}}"
                     id="settingsQueueKeep" name="queueKeep" value="{{values.queueKeep}}" data-lpignore="true"
                     autocomplete="off" />
-                {{#if errors.queueKeep}}
-                <span class="invalid-feedback">{{errors.queueKeep}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Number of completed/failed jobs to keep in <a
-                        href="/admin/bull-board" target="_blank" rel="noopener noreferrer">Bull Board</a>. Set to 0 to
-                    disable history.</small>
+                <span class="helper-text">Number of completed/failed jobs to keep in <a href="/admin/bull-board"
+                        target="_blank" rel="noopener noreferrer" class="link link-animated">Bull Board</a>. Set to 0 to
+                    disable history.</span>
+                {{/ui/form-field}}
             </div>
 
         </div>
     </div>
 
-    <div id="submission_settings" class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Email Delivery</h6>
+    <div id="submission_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Email Delivery</h6>
         </div>
         <div class="card-body">
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">deliveryAttempts</a>]</div>
-
-                <label for="settingsDeliveryAttempts">Retry Attempts</label>
-                <input type="number" min="0" class="form-control {{#if errors.deliveryAttempts}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="deliveryAttempts"}}
+                {{#> ui/form-field id="settingsDeliveryAttempts" label="Retry Attempts" error=errors.deliveryAttempts}}
+                <input type="number" min="0" class="input{{#if errors.deliveryAttempts}} is-invalid{{/if}}"
                     id="settingsDeliveryAttempts" name="deliveryAttempts" value="{{values.deliveryAttempts}}"
                     data-lpignore="true" autocomplete="off" />
-                {{#if errors.deliveryAttempts}}
-                <span class="invalid-feedback">{{errors.deliveryAttempts}}</span>
-                {{/if}}
-                <small class="form-text text-muted">How many times to retry failed email deliveries.</small>
+                <span class="helper-text">How many times to retry failed email deliveries.</span>
+                {{/ui/form-field}}
             </div>
 
         </div>
     </div>
 
-    <div id="submission_settings" class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">IMAP Processing</h6>
+    <div id="imap_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">IMAP Processing</h6>
         </div>
         <div class="card-body">
-            <div class="form-group">
-
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">imapIndexer</a>]</div>
-
-                <label for="settingsImapIndexer">Indexing Method</label>
-
-
-                <select id="settingsImapIndexer" class="custom-select custom-select-sm" name="imapIndexer" {{#if
-                    errors.imapIndexer}}is-invalid{{/if}}>
+            <div>
+                {{> ui/setting-ref name="imapIndexer"}}
+                {{#> ui/form-field id="settingsImapIndexer" label="Indexing Method" error=errors.imapIndexer}}
+                <select id="settingsImapIndexer" class="select select-sm max-w-md{{#if errors.imapIndexer}} is-invalid{{/if}}"
+                    name="imapIndexer">
                     {{#each imapIndexers}}
                     <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
                     {{/each}}
                 </select>
-
-
-                {{#if errors.imapIndexer}}
-                <span class="invalid-feedback">{{errors.imapIndexer}}</span>
-                {{/if}}
-                <small class="form-text text-muted"><strong>Full:</strong> Track all changes (new, deleted, updated
-                    emails). <strong>Fast:</strong> Track only new emails. Applies to new accounts only. To change
-                    existing accounts, perform an <a href="/admin/swagger#/Account/putV1AccountAccountFlush">account
-                        flush</a>.</small>
+                <span class="helper-text"><strong>Full:</strong> Track all changes (new, deleted, updated emails).
+                    <strong>Fast:</strong> Track only new emails. Applies to new accounts only. To change existing
+                    accounts, perform an <a href="/admin/swagger#/Account/putV1AccountAccountFlush"
+                        class="link link-animated">account flush</a>.</span>
+                {{/ui/form-field}}
             </div>
 
         </div>
     </div>
 
-    <div id="export_settings" class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Export Settings</h6>
+    <div id="export_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Export Settings</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
             <p>Configure batch sizes for bulk message export operations.</p>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">gmailExportBatchSize</a>]</div>
-                <label for="settingsGmailExportBatchSize">Gmail Export Batch Size</label>
-                <input type="number" min="1" max="50" class="form-control {{#if errors.gmailExportBatchSize}}is-invalid{{/if}}"
-                    id="settingsGmailExportBatchSize" name="gmailExportBatchSize" value="{{values.gmailExportBatchSize}}"
-                    data-lpignore="true" autocomplete="off" />
-                {{#if errors.gmailExportBatchSize}}
-                <span class="invalid-feedback">{{errors.gmailExportBatchSize}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Number of parallel requests when fetching Gmail messages for export (1-50, default: 10).</small>
+            <div>
+                {{> ui/setting-ref name="gmailExportBatchSize"}}
+                {{#> ui/form-field id="settingsGmailExportBatchSize" label="Gmail Export Batch Size"
+                error=errors.gmailExportBatchSize}}
+                <input type="number" min="1" max="50" class="input{{#if errors.gmailExportBatchSize}} is-invalid{{/if}}"
+                    id="settingsGmailExportBatchSize" name="gmailExportBatchSize"
+                    value="{{values.gmailExportBatchSize}}" data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">Number of parallel requests when fetching Gmail messages for export (1-50,
+                    default: 10).</span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">outlookExportBatchSize</a>]</div>
-                <label for="settingsOutlookExportBatchSize">Outlook Export Batch Size</label>
-                <input type="number" min="1" max="20" class="form-control {{#if errors.outlookExportBatchSize}}is-invalid{{/if}}"
-                    id="settingsOutlookExportBatchSize" name="outlookExportBatchSize" value="{{values.outlookExportBatchSize}}"
-                    data-lpignore="true" autocomplete="off" />
-                {{#if errors.outlookExportBatchSize}}
-                <span class="invalid-feedback">{{errors.outlookExportBatchSize}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Messages per batch request for Outlook exports (1-20, default: 20). Limited by Microsoft Graph API.</small>
+            <div>
+                {{> ui/setting-ref name="outlookExportBatchSize"}}
+                {{#> ui/form-field id="settingsOutlookExportBatchSize" label="Outlook Export Batch Size"
+                error=errors.outlookExportBatchSize}}
+                <input type="number" min="1" max="20"
+                    class="input{{#if errors.outlookExportBatchSize}} is-invalid{{/if}}"
+                    id="settingsOutlookExportBatchSize" name="outlookExportBatchSize"
+                    value="{{values.outlookExportBatchSize}}" data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">Messages per batch request for Outlook exports (1-20, default: 20). Limited by
+                    Microsoft Graph API.</span>
+                {{/ui/form-field}}
             </div>
         </div>
     </div>
 
-    <div id="templates_settings" class="card mb-4">
-        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-primary">Public Page Customization</h6>
-            <div class="dropdown no-arrow">
-                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                    aria-labelledby="dropdownMenuLink">
-                    <div class="dropdown-header">Actions:</div>
-                    <a class="dropdown-item" href="#" id="preview-header-btn">
-                        <i class="fas fa-eye fa-sm"></i> <span>Preview</span>
-                    </a>
-                </div>
-            </div>
+    <div id="templates_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">Public Page Customization</h6>
+            {{> ui/btn label="Preview" variant="neutral" style="soft" size="sm" icon="icon-[tabler--eye]"
+            id="preview-header-btn"}}
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
             <p>Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
 
-            <div class="form-group">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">pageBrandName</a>]</div>
-
-                <label for="settingsPageBrandName">Brand Name</label>
-                <input type="text" class="form-control {{#if errors.pageBrandName}}is-invalid{{/if}}"
+            <div>
+                {{> ui/setting-ref name="pageBrandName"}}
+                {{#> ui/form-field id="settingsPageBrandName" label="Brand Name" error=errors.pageBrandName}}
+                <input type="text" class="input{{#if errors.pageBrandName}} is-invalid{{/if}}"
                     id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
                     data-lpignore="true" autocomplete="off" placeholder="EmailEngine" />
-                {{#if errors.pageBrandName}}
-                <span class="invalid-feedback">{{errors.pageBrandName}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Appears in browser title bar</small>
+                <span class="helper-text">Appears in browser title bar</span>
+                {{/ui/form-field}}
             </div>
 
-            <div class="form-group">
+            <div>
+                {{> ui/setting-ref name="templateHeader"}}
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">templateHeader</a>]</div>
-
-                <label>Page Header HTML</label>
+                <label class="label-text">Page Header HTML</label>
 
                 <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
                     name="templateHeader" value="{{values.templateHeader}}">
 
                 <div id="editor-html" class="code-editor"></div>
                 <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-content-left">
+                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
                         Header template
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
@@ -432,28 +349,24 @@
                 </div>
 
                 {{#if errors.templateHeader}}
-                <span class="invalid-feedback">{{errors.templateHeader}}</span>
+                <span class="helper-text text-error">{{errors.templateHeader}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">HTML shown at the <u data-toggle="popover" data-trigger="hover"
-                        data-html="true"
-                        data-content="&#x3C;img src=&#x22;/static/preview/header-template.png&#x22;&#x3E;"
-                        style="cursor: default;">top of public pages</u></small>
+                <span class="helper-text">HTML shown at the {{#> ui/tooltip-rich label="top of public pages"}}<img
+                        src="/static/preview/header-template.png" alt="Header template preview">{{/ui/tooltip-rich}}</span>
             </div>
 
-            <div class="form-group">
+            <div>
+                {{> ui/setting-ref name="templateHtmlHead"}}
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">templateHtmlHead</a>]</div>
-
-                <label>Custom &lt;head&gt; HTML</label>
+                <label class="label-text">Custom &lt;head&gt; HTML</label>
 
                 <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
                     id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
 
                 <div id="editor-html-head" class="code-editor"></div>
                 <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-content-left">
+                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
                         Head content
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
@@ -462,37 +375,37 @@
                 </div>
 
                 {{#if errors.templateHtmlHead}}
-                <span class="invalid-feedback">{{errors.templateHtmlHead}}</span>
+                <span class="helper-text text-error">{{errors.templateHtmlHead}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">Add custom CSS, fonts, or analytics scripts</small>
+                <span class="helper-text">Add custom CSS, fonts, or analytics scripts</span>
             </div>
 
         </div>
     </div>
 
-    <div id="templates_settings" class="card mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Webhook Scripts</h6>
+    <div id="script_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Webhook Scripts</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
 
-            <p>Global settings for filter and map functions in <a href="/admin/webhooks">webhook routes</a>.</p>
+            <p>Global settings for filter and map functions in <a href="/admin/webhooks"
+                    class="link link-animated">webhook routes</a>.</p>
 
-            <div class="form-group" id="scriptEnv">
+            <div id="scriptEnv">
 
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">scriptEnv</a>]</div>
+                {{> ui/setting-ref name="scriptEnv"}}
 
-                <label>Script Variables (JSON)</label>
+                <label class="label-text">Script Variables (JSON)</label>
 
                 <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
                     name="scriptEnv" value="{{values.scriptEnv}}">
 
                 <div id="editor-env" class="code-editor"></div>
                 <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-content-left">
+                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
                         Global variables
                     </div>
                     <div class="editor-embed-content editor-embed-content-right">
@@ -501,10 +414,13 @@
                 </div>
 
                 {{#if errors.scriptEnv}}
-                <span class="invalid-feedback">{{errors.scriptEnv}}</span>
+                <span class="helper-text text-error">{{errors.scriptEnv}}</span>
                 {{/if}}
 
-                <small class="form-text text-muted">JSON object available as <code>env</code> variable in all filter and map functions. Use for shared secrets like API keys, access tokens, or configuration values. For example, if set to <code>{"token":"secret123"}</code>, then <code>env.token</code> in your scripts returns <code>"secret123"</code>.</small>
+                <span class="helper-text">JSON object available as <code>env</code> variable in all filter and map
+                    functions. Use for shared secrets like API keys, access tokens, or configuration values. For
+                    example, if set to <code>{"token":"secret123"}</code>, then <code>env.token</code> in your scripts
+                    returns <code>"secret123"</code>.</span>
             </div>
 
         </div>
@@ -512,80 +428,56 @@
 
     <div id="labs"></div>
 
-    <div class="card mb-4" id="tracking">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Email Tracking</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="tracking">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Email Tracking</h6>
         </div>
-        <div class="card-body">
+        <div class="card-body space-y-4">
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">trackClicks</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.trackClicks}}is-invalid{{/if}}"
-                    id="trackClicks" name="trackClicks" {{#if values.trackClicks}}checked{{/if}} />
-                <label class="form-check-label" for="trackClicks">Track Link Clicks</label>
-                {{#if errors.trackClicks}}
-                <span class="invalid-feedback">{{errors.trackClicks}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Rewrite links to track when recipients click them.</small>
+            <div>
+                {{> ui/setting-ref name="trackClicks"}}
+                {{> ui/checkbox id="trackClicks" name="trackClicks" label="Track Link Clicks"
+                checked=values.trackClicks error=errors.trackClicks
+                hint="Rewrite links to track when recipients click them."}}
             </div>
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">trackOpens</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.trackOpens}}is-invalid{{/if}}"
-                    id="trackOpens" name="trackOpens" {{#if values.trackOpens}}checked{{/if}} />
-                <label class="form-check-label" for="trackOpens">Track Email Opens</label>
-                {{#if errors.trackOpens}}
-                <span class="invalid-feedback">{{errors.trackOpens}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Add a tracking pixel to detect when emails are opened.</small>
+            <div>
+                {{> ui/setting-ref name="trackOpens"}}
+                {{> ui/checkbox id="trackOpens" name="trackOpens" label="Track Email Opens" checked=values.trackOpens
+                error=errors.trackOpens hint="Add a tracking pixel to detect when emails are opened."}}
             </div>
         </div>
 
-        <div class="card-footer">
-            <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank"
-                rel="noopener noreferrer">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
+        <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+            <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank" rel="noopener noreferrer"
+                class="link link-animated">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
             See <a href="https://emailengine.app/sending-emails#tracking" target="_blank" rel="noopener noreferrer"
-                referrerpolicy="no-referrer">documentation</a> for per-message overrides.
+                referrerpolicy="no-referrer" class="link link-animated">documentation</a> for per-message overrides.
 
         </div>
     </div>
 
-    <div class="card mb-4" id="gmail">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Gmail Features</h6>
+    <div class="card bg-base-100 shadow-md mb-6" id="gmail">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Gmail Features</h6>
         </div>
         <div class="card-body">
 
-            <div class="form-group form-check">
-                <div class="text-muted float-right code-link">[<a href="/admin/swagger#/Settings/postV1Settings"
-                        target="_blank" rel="noopener noreferrer">resolveGmailCategories</a>]</div>
-
-                <input type="checkbox" class="form-check-input {{#if errors.resolveGmailCategories}}is-invalid{{/if}}"
-                    id="resolveGmailCategories" name="resolveGmailCategories" {{#if
-                    values.resolveGmailCategories}}checked{{/if}} />
-                <label class="form-check-label" for="resolveGmailCategories">Detect Gmail Categories (IMAP)</label>
-                {{#if errors.resolveGmailCategories}}
-                <span class="invalid-feedback">{{errors.resolveGmailCategories}}</span>
-                {{/if}}
-                <small class="form-text text-muted">Identify which Gmail tab (Primary, Social, Promotions, Updates,
-                    Forums) new emails belong to. Available in <code>messageNew</code> webhook as <code>category</code>
-                    property. Gmail API accounts get this automatically.</small>
+            <div>
+                {{> ui/setting-ref name="resolveGmailCategories"}}
+                {{> ui/checkbox id="resolveGmailCategories" name="resolveGmailCategories"
+                label="Detect Gmail Categories (IMAP)" checked=values.resolveGmailCategories
+                error=errors.resolveGmailCategories}}
+                <span class="helper-text">Identify which Gmail tab (Primary, Social, Promotions, Updates, Forums) new
+                    emails belong to. Available in <code>messageNew</code> webhook as <code>category</code> property.
+                    Gmail API accounts get this automatically.</span>
             </div>
 
         </div>
     </div>
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-cog"></i>
-            </span>
-            <span class="text">Save Changes</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
@@ -599,20 +491,10 @@
 
 
 <script src="/static/js/ace/ace.js"></script>
+<script src="/static/js/ace/ext-language_tools.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-
-        let showBt = document.getElementById('showServiceSecret');
-        let serviceSecretElm = document.getElementById('settingsServiceSecret');
-
-        let showSecret = () => {
-            let current = serviceSecretElm.getAttribute('type')
-            serviceSecretElm.setAttribute('type', current === 'text' ? 'password' : 'text');
-            showBt.blur()
-        }
-
-        showBt.addEventListener('click', showSecret);
 
         const sendCleanPayload = async () => {
 
@@ -641,19 +523,19 @@
             sendingCleanRequest = true;
 
             let cleanIconElm = document.querySelector('#clean-queues-btn .clean-icon');
-            cleanIconElm.classList.remove('fa-trash-alt');
-            cleanIconElm.classList.add('fa-spinner', 'fa-spin');
+            cleanIconElm.classList.remove('icon-[tabler--trash]');
+            cleanIconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
 
             sendCleanPayload().then(data => {
                 sendingCleanRequest = false;
-                cleanIconElm.classList.add('fa-trash-alt');
-                cleanIconElm.classList.remove('fa-spinner', 'fa-spin');
+                cleanIconElm.classList.add('icon-[tabler--trash]');
+                cleanIconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
 
                 showToast(data.error ? data.error : (data.success ? 'Cleanup request sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
                 sendingCleanRequest = false;
-                cleanIconElm.classList.add('fa-trash-alt');
-                cleanIconElm.classList.remove('fa-spinner', 'fa-spin');
+                cleanIconElm.classList.add('icon-[tabler--trash]');
+                cleanIconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
 
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
@@ -721,30 +603,7 @@
             document.getElementById('templateHtmlHeadElement').value = editorHtmlHead.getValue();
         });
 
-        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
-            let target = toggleElm.dataset.target;
-            if (!editors.has(target)) {
-                continue
-            }
-            let targetElm = document.getElementById(target);
-            let editor = editors.get(target)
-
-            toggleElm.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                targetElm.classList.toggle('full-screen-div');
-                editor.resize();
-                editor.focus();
-            });
-
-            targetElm.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
-                    targetElm.classList.remove('full-screen-div')
-                    editor.resize();
-                    editor.focus();
-                }
-            });
-        }
+        uiEditorFullscreen(editors);
 
     });
 

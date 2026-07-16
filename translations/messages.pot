@@ -1,31 +1,75 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-13 13:14+0000\n"
+"POT-Creation-Date: 2026-07-16 11:48+0000\n"
 
-#: views/error.hbs:4
-#: workers/api.js:3172
+#: views/error.hbs:3
+#: workers/api.js:3187
 msgid "Something went wrong"
 msgstr ""
 
-#: views/error.hbs:6
+#: views/error.hbs:5
 msgid "Error code: %s"
 msgstr ""
 
-#: views/error.hbs:14
+#: views/error.hbs:13
 msgid "Go back"
 msgstr ""
 
-#: views/error.hbs:17
+#: views/error.hbs:16
 msgid "Dashboard"
 msgstr ""
 
-#: views/config/license.hbs:45
+#: views/config/license.hbs:28
 #: lib/ui-routes/oauth-config-routes.js:217
 msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
+
+#: views/unsubscribe.hbs:3
+#: views/unsubscribe.hbs:48
+#: views/unsubscribe.hbs:64
+msgid "Unsubscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:5
+msgid "Your email address was unsubscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:7
+msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
+msgstr ""
+
+#: views/unsubscribe.hbs:13
+msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
+msgstr ""
+
+#: views/unsubscribe.hbs:22
+#: views/accounts/register/imap-server.hbs:243
+msgid "Close"
+msgstr ""
+
+#: views/unsubscribe.hbs:23
+msgid "Subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:11
+msgid "Re-subscribe"
+msgstr ""
+
+#: views/unsubscribe.hbs:42
+msgid "Subscription resumed"
+msgstr ""
+
+#: views/unsubscribe.hbs:44
+msgid "Your email address <em>%s</em> was re-subscribed."
+msgstr ""
+
+#: views/unsubscribe.hbs:58
+#: views/accounts/register/imap.hbs:17
+msgid "Email address"
+msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -55,73 +99,29 @@ msgstr ""
 msgid "Try Again"
 msgstr ""
 
-#: views/unsubscribe.hbs:3
-#: views/unsubscribe.hbs:60
-#: views/unsubscribe.hbs:76
-msgid "Unsubscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:5
-msgid "Your email address was unsubscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:7
-msgid "Was this a mistake? Click <a%s>here</a> to re-subscribe."
-msgstr ""
-
-#: views/unsubscribe.hbs:15
-msgid "Re-subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:21
-msgid "Are you sure you want to re-subscribe your email address <em>%s</em>?"
-msgstr ""
-
-#: views/unsubscribe.hbs:30
-#: views/accounts/register/imap-server.hbs:250
-msgid "Close"
-msgstr ""
-
-#: views/unsubscribe.hbs:32
-msgid "Subscribe"
-msgstr ""
-
-#: views/unsubscribe.hbs:54
-msgid "Subscription resumed"
-msgstr ""
-
-#: views/unsubscribe.hbs:56
-msgid "Your email address <em>%s</em> was re-subscribed."
-msgstr ""
-
-#: views/unsubscribe.hbs:71
-#: views/accounts/register/imap.hbs:21
-msgid "Email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:11
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:17
+#: views/accounts/register/imap.hbs:12
 msgid "Enter your full name"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:27
+#: views/accounts/register/imap.hbs:9
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:20
 msgid "Enter your email address"
 msgstr ""
 
-#: views/accounts/register/imap.hbs:31
-#: views/accounts/register/imap-server.hbs:35
-#: views/accounts/register/imap-server.hbs:127
+#: views/accounts/register/imap.hbs:28
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:25
+#: views/accounts/register/imap-server.hbs:33
+#: views/accounts/register/imap-server.hbs:128
 msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:37
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:51
 msgid "Continue"
 msgstr ""
 
@@ -129,67 +129,65 @@ msgstr ""
 msgid "Choose your email account provider"
 msgstr ""
 
-#: views/accounts/register/index.hbs:15
+#: views/accounts/register/index.hbs:16
 msgid "Standard IMAP"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:18
+#: views/accounts/register/imap-server.hbs:17
 msgid "IMAP"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:21
-#: views/accounts/register/imap-server.hbs:113
+#: views/accounts/register/imap-server.hbs:20
+#: views/accounts/register/imap-server.hbs:115
 msgid "Username"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:44
-#: views/accounts/register/imap-server.hbs:135
+#: views/accounts/register/imap-server.hbs:43
+#: views/accounts/register/imap-server.hbs:137
 msgid "Important"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:52
-#: views/accounts/register/imap-server.hbs:59
-#: views/accounts/register/imap-server.hbs:143
-#: views/accounts/register/imap-server.hbs:150
-msgid "Application Password"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:53
-#: views/accounts/register/imap-server.hbs:144
-msgid "%s accounts require an application password for %s."
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:54
-#: views/accounts/register/imap-server.hbs:144
+#: views/accounts/register/imap-server.hbs:148
 msgid "Instructions"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:74
-#: views/accounts/register/imap-server.hbs:165
+#: views/accounts/register/imap-server.hbs:51
+#: views/accounts/register/imap-server.hbs:145
+msgid "%s accounts require an application password for %s."
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:62
+#: views/accounts/register/imap-server.hbs:156
+msgid "Application Password"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:76
+#: views/accounts/register/imap-server.hbs:171
 msgid "Hostname"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:84
-#: views/accounts/register/imap-server.hbs:175
+#: views/accounts/register/imap-server.hbs:179
 msgid "Port"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:98
+#: views/accounts/register/imap-server.hbs:94
 msgid "TLS for IMAP"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:99
+#: views/accounts/register/imap-server.hbs:95
 msgid ""
 "TLS (also known as SSL) is usually only needed when using port 993. For "
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:101
-#: views/accounts/register/imap-server.hbs:192
+#: views/accounts/register/imap-server.hbs:102
+#: views/accounts/register/imap-server.hbs:197
 msgid "Use TLS"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:110
+#: views/accounts/register/imap-server.hbs:112
 msgid "SMTP"
 msgstr ""
 
@@ -203,7 +201,7 @@ msgid ""
 "other ports EmailEngine falls back to using STARTTLS based encryption."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:208
+#: views/accounts/register/imap-server.hbs:211
 msgid "Verify connection"
 msgstr ""
 
@@ -211,40 +209,40 @@ msgstr ""
 msgid "Save and continue"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:225
+#: views/accounts/register/imap-server.hbs:227
 msgid "Skip verification"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:240
-msgid "Connection test failed"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:246
+#: views/accounts/register/imap-server.hbs:239
 msgid "We couldn't connect with these settings. Check the errors below."
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:387
+#: views/accounts/register/imap-server.hbs:236
+msgid "Connection test failed"
+msgstr ""
+
+#: views/accounts/register/imap-server.hbs:374
 msgid "Error"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:389
+#: views/accounts/register/imap-server.hbs:376
 msgid "Invalid settings"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:395
+#: views/accounts/register/imap-server.hbs:382
 msgid "Couldn't connect to IMAP server"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:397
-#: views/accounts/register/imap-server.hbs:406
+#: views/accounts/register/imap-server.hbs:384
+#: views/accounts/register/imap-server.hbs:393
 msgid "Server response:"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:404
+#: views/accounts/register/imap-server.hbs:391
 msgid "Couldn't connect to SMTP server"
 msgstr ""
 
-#: views/accounts/register/imap-server.hbs:464
+#: views/accounts/register/imap-server.hbs:451
 msgid "Request failed."
 msgstr ""
 
@@ -279,8 +277,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:785
 #: lib/ui-routes/account-routes.js:1043
 #: lib/ui-routes/account-routes.js:1135
-#: workers/api.js:2336
-#: workers/api.js:2690
+#: workers/api.js:2352
+#: workers/api.js:2706
 msgid "Email Account Setup"
 msgstr ""
 
@@ -367,23 +365,23 @@ msgstr ""
 msgid "Using credentials from \"%s\""
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:132
+#: lib/ui-routes/route-helpers.js:135
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:135
+#: lib/ui-routes/route-helpers.js:138
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:138
+#: lib/ui-routes/route-helpers.js:141
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:143
+#: lib/ui-routes/route-helpers.js:146
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
@@ -401,7 +399,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:3171
-#: workers/api.js:3286
+#: workers/api.js:3186
+#: workers/api.js:3301
 msgid "Requested page not found"
 msgstr ""

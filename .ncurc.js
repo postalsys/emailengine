@@ -19,10 +19,6 @@ module.exports = {
         // the deprecated, default-off Document Store. Even the 8.19 minor is unsafe to bundle.
         '@elastic/elasticsearch',
 
-        // v4.x adds vulnerable jquery + bootstrap runtime dependencies; v3.3.7 has none. Used only
-        // for the generated software-license listing, never executed at runtime.
-        'startbootstrap-sb-admin-2',
-
         // @asamuzakjp/css-color >=4.1.2 pulls in @csstools/* v4 which are pure ESM and break pkg bundling
         // (transitive via @postalsys/email-text-tools -> jsdom -> cssstyle; also pinned in package.json "overrides").
         '@asamuzakjp/css-color'

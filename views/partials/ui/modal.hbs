@@ -1,0 +1,38 @@
+{{!--
+    ui/modal - FlyonUI overlay modal shell. Always use the block form; the block
+    provides the body (and optional footer):
+      {{#> ui/modal id="myModal" title="Title"}}
+      <div class="modal-body">...</div>
+      <div class="modal-footer">...</div>
+      {{/ui/modal}}
+    Open/close: a trigger button with data-overlay="#myModal", or uiModal.open('#myModal') /
+    uiModal.close('#myModal') from scripts (static/js/ui.js).
+    Params:
+      id          - element id (required)
+      title       - modal heading (optional)
+      titleId     - id on the heading element, for scripts that retitle the
+                    modal (optional)
+      dialogClass - extra classes on .modal-dialog, e.g. "max-w-4xl" (optional)
+      hideClose   - true to omit the corner close button (optional)
+      static      - true to disable Escape and backdrop-click dismissal; the
+                    modal then closes only through explicit buttons (use for
+                    one-time secrets and confirmation-critical flows)
+--}}
+<div id="{{id}}" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden{{#if static}} [--overlay-backdrop:static]{{/if}}" role="dialog" tabindex="-1"{{#if static}} data-overlay-keyboard="false"{{/if}}>
+    <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300{{#if dialogClass}} {{dialogClass}}{{/if}}">
+        <div class="modal-content">
+            <div class="modal-header">
+                {{#if title}}
+                <h3 class="modal-title" {{#if titleId}}id="{{titleId}}" {{/if}}>{{title}}</h3>
+                {{/if}}
+                {{#unless hideClose}}
+                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#{{id}}">
+                    <span class="icon-[tabler--x] size-4"></span>
+                </button>
+                {{/unless}}
+            </div>
+            {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+            {{> @partial-block id="" title="" titleId="" dialogClass="" hideClose="" static=""}}
+        </div>
+    </div>
+</div>

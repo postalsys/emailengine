@@ -1,0 +1,50 @@
+{{!--
+    ui/stat-card - stat tile / notice card in the FlyonUI dashboard idiom:
+    the variant color tints a rounded icon container instead of painting a
+    Bootstrap-style edge stripe. Use the block form for custom body content:
+      {{#> ui/stat-card variant="error" title="License key missing" icon="icon-[tabler--key]"}} ...body... {{/ui/stat-card}}
+    With a title the icon+title form a header row above the content (notice
+    card); without one the icon sits at the end of the content row (KPI tile).
+    Params:
+      variant - accent color: primary|secondary|info|success|warning|error (default primary)
+      title   - header label next to the icon (optional)
+      value   - large value text; ignored when a block is given (optional)
+      icon    - full iconify class shown in the tinted container (optional)
+      id      - element id (optional)
+      class   - extra classes (optional)
+--}}
+{{#*inline "iconBox"}}
+<div class="bg-{{#if variant}}{{variant}}{{else}}primary{{/if}}/10 text-{{#if variant}}{{variant}}{{else}}primary{{/if}} rounded-field flex size-9 shrink-0 items-center justify-center">
+    <span class="{{icon}} size-5"></span>
+</div>
+{{/inline}}
+<div {{#if id}}id="{{id}}" {{/if}}class="card bg-base-100 shadow-md{{#if class}} {{class}}{{/if}}">
+    <div class="card-body">
+        {{#if title}}
+        <div class="flex items-center gap-3 mb-2">
+            {{#if icon}}{{> iconBox}}{{/if}}
+            <div class="font-semibold text-base-content">{{title}}</div>
+        </div>
+        {{#if @partial-block}}
+        {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block variant="" title="" value="" icon="" id="" class=""}}
+        {{else}}
+        <div class="text-xl font-semibold text-base-content">{{value}}</div>
+        {{/if}}
+        {{else}}
+        {{!-- items-start: the icon anchors to the first content line instead
+              of floating mid-height when the block content is tall --}}
+        <div class="flex items-start gap-4">
+            <div class="grow">
+                {{#if @partial-block}}
+                {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+                {{> @partial-block variant="" title="" value="" icon="" id="" class=""}}
+                {{else}}
+                <div class="text-xl font-semibold text-base-content">{{value}}</div>
+                {{/if}}
+            </div>
+            {{#if icon}}{{> iconBox}}{{/if}}
+        </div>
+        {{/if}}
+    </div>
+</div>

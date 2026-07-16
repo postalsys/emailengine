@@ -1,0 +1,11 @@
+<script>
+    // Apply the stored theme before first paint to avoid a flash; when unset, the
+    // stylesheet falls back to prefers-color-scheme. The "eeTheme" storage contract
+    // is shared with the theme toggle in static/js/ui.js.
+    try {
+        var eeTheme = localStorage.getItem('eeTheme');
+        if (eeTheme === 'light' || eeTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', eeTheme);
+        }
+    } catch (err) {}
+</script>

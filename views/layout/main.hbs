@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-100">
+<html lang="en" class="h-full">
 
 <head>
     <meta charset="utf-8" />
@@ -13,32 +13,24 @@
     <link rel="manifest" href="/static/favicon/manifest.json" />
     <link rel="icon" href="/favicon.ico" />
 
-    <link href="/static/css/callout.css" rel="stylesheet" />
+    {{> theme_init}}
 
+    <link href="/static/fonts/pt-sans-font.css" rel="stylesheet">
 
-    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-
-    <link href="/static/fonts/nunito-font.css" rel="stylesheet">
-
-    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="/static/css/app.css" rel="stylesheet">
-    <link href="/static/css/emailengine.css" rel="stylesheet" />
+    <link href="/static/css/flyonui.css" rel="stylesheet">
 
 </head>
 
-<body class="d-flex flex-column h-100">
-    <main role="main" class="flex-shrink-0">
+<body class="bg-base-100 flex min-h-full flex-col">
+    <main role="main" class="shrink-0 grow">
 
-        <div class="container mt-4">
-            <div class="d-flex">
-                <img src="/static/logo/EmailEngine_logo_horiz.png"
-                    style="display: block; max-height: 80px; max-width: 100%;">
+        <div class="container mx-auto px-4 mt-6">
+            <div class="flex">
+                <img src="/static/logo/EmailEngine_logo_horiz.png" class="block max-h-20 max-w-full" alt="EmailEngine">
             </div>
 
-            <div class="row mt-4">
-                <div class="col-12 col-sm-12 col-md-12 col-lg-8">
-                    {{> alerts}}
-                </div>
+            <div class="mt-6 max-w-3xl">
+                {{> alerts}}
             </div>
 
             {{{content}}}
@@ -47,21 +39,21 @@
         </div>
     </main>
 
-    <footer class="footer mt-auto py-3">
-        <div class="container">
-            <div class="row">
-                <div class="col-sm-8">
-                    EmailEngine
-                    <span class="text-muted">&copy; 2020-{{currentYear}}</span>
-                    Postal Systems OÜ.
-                    <!-- v{{packageData.version}}:{{licenseDetails.key}} -->
-                </div>
+    <footer class="mt-auto py-4">
+        <div class="container mx-auto px-4">
+            <div>
+                EmailEngine
+                <span class="text-base-content/60">&copy; 2020-{{currentYear}}</span>
+                Postal Systems OÜ.
+                {{!-- version marker only: the license key must not appear in
+                      page source - this layout serves unauthenticated pages --}}
+                <!-- v{{packageData.version}} -->
             </div>
         </div>
     </footer>
 
-    <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-    <script src="/static/bootstrap-4.6.2-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="/static/js/flyonui.js"></script>
+    <script src="/static/js/ui.js"></script>
 </body>
 
 </html>

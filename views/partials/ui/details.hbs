@@ -1,0 +1,30 @@
+{{!--
+    ui/details - collapsible card with a chevron summary (native details/summary,
+    no JS). Block form only; the block is the body:
+      {{#> ui/details summary="Usage instructions"}} ...body... {{/ui/details}}
+    Params:
+      summary      - summary label text (required)
+      summarySmall - muted suffix after the summary label (optional)
+      id           - element id, for scripts that toggle .open (optional)
+      open         - true to render expanded (optional)
+      class        - wrapper classes replacing the default card look
+                     (default "card bg-base-100 shadow-md")
+      summaryClass - extra/override padding classes on the summary
+                     (default "px-6 py-[1rem]")
+      bodyClass    - extra classes on the body (optional)
+    Not usable from browser-compiled templates (test_send.hbs) - those cannot
+    resolve server-side partials.
+--}}
+<details {{#if id}}id="{{id}}" {{/if}}class="group {{#if class}}{{class}}{{else}}card bg-base-100 shadow-md{{/if}}"
+    {{#if open}}open {{/if}}>
+    <summary
+        class="flex cursor-pointer items-center gap-2 {{#if summaryClass}}{{summaryClass}}{{else}}px-6 py-[1rem]{{/if}} font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+        <span
+            class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
+        {{summary}}{{#if summarySmall}} <small class="text-base-content/60 font-normal">{{summarySmall}}</small>{{/if}}
+    </summary>
+    <div class="card-body pt-0{{#if bodyClass}} {{bodyClass}}{{/if}}">
+        {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block summary="" summarySmall="" id="" open="" class="" summaryClass="" bodyClass=""}}
+    </div>
+</details>

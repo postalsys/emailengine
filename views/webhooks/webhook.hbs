@@ -1,46 +1,43 @@
 {{> webhooks_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/webhooks">Webhook Routing</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{webhook.name}}</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routing" current=webhook.name class="mt-6 mb-6"}}
 
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+        <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Webhook route actions">
 
-                <a type="button" class="btn btn-light" href="/admin/webhooks/webhook/{{webhook.id}}/edit"
-                    title="Edit Webhook Route contents" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-file-signature fa-fw"></i> Edit route
-                </a>
+            {{#> ui/tooltip text="Edit Webhook Route contents"}}
+            <a class="btn btn-soft btn-sm" href="/admin/webhooks/webhook/{{webhook.id}}/edit">
+                <span class="icon-[tabler--file-pencil] size-4"></span> Edit route
+            </a>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-target="#deleteModal"
-                    title="Delete this Webhook Route" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete route
-                </button>
-            </div>
+            {{#> ui/tooltip text="Delete this Webhook Route"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete route
+            </button>
+            {{/ui/tooltip}}
         </div>
 
         {{#if webhook.description}}
         <h5 class="card-title">{{webhook.name}}</h5>
-        <h6 class="card-subtitle mb-4 text-muted">{{webhook.description}}</h6>
+        <h6 class="mb-6 text-base-content/60">{{webhook.description}}</h6>
         {{else}}
-        <h5 class="card-title mb-4">{{webhook.name}}</h5>
+        <h5 class="card-title mb-6">{{webhook.name}}</h5>
         {{/if}}
 
         {{#if webhook.webhookErrorFlag.message}}
-        <div class="mt-3 mb-3 alert clear-alert-btn alert-danger" data-clear-alert="webhook-route"
+        {{!-- dismissable error alert: app.js binds the close button directly
+              and clears the stored error server-side --}}
+        <div class="alert alert-soft alert-error clear-alert-btn mb-6 block" data-clear-alert="webhook-route"
             data-clear-entry="{{webhook.id}}">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <button type="button" class="close float-right" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
 
             <p><strong>Warning:</strong> The last attempted webhook failed with the response below.</p>
-            <hr>
+            <hr class="my-2">
             <p class="mb-0">
                 <code>
             {{webhook.webhookErrorFlag.message}}
@@ -50,157 +47,140 @@
         {{/if}}
 
 
-        <dl class="row">
+        <dl class="ee-dl">
 
             {{#if webhook.targetUrlShort}}
-            <dt class="col-sm-3">Webhook Target</dt>
-            <dd class="col-sm-9">
-                <em data-toggle="tooltip" data-placement="top" style="cursor:default"
-                    title="{{webhook.targetUrl}}">{{webhook.targetUrlShort}}</em>
+            <dt>Webhook Target</dt>
+            <dd>
+                {{#> ui/tooltip text=webhook.targetUrl}}<em>{{webhook.targetUrlShort}}</em>{{/ui/tooltip}}
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Trigger count</dt>
-            <dd class="col-sm-9">
-                <span class="badge badge-pill badge-light" data-toggle="tooltip" data-placement="top"
-                    title="How many times this route has been triggered"
-                    style="cursor:default">{{webhook.tcount}}</span>
+            <dt>Trigger count</dt>
+            <dd>
+                {{#> ui/tooltip text="How many times this route has been triggered"}}
+                {{> ui/badge label=webhook.tcount variant="neutral" soft=true}}
+                {{/ui/tooltip}}
             </dd>
 
             {{#if webhook.customHeaders}}
-            <dt class="col-sm-3">Custom request headers</dt>
-            <dd class="col-sm-9">
-
-                {{#each webhook.customHeaders}}
-                <div class="badge badge-light" data-toggle="tooltip" data-placement="top" title="{{key}}: {{value}}"
-                    style="cursor:default; font-weight: 100;"><span class="text-monospace">{{key}}</span></div>
+            <dt>Custom request headers</dt>
+            <dd>
+                {{#each webhook.customHeaders as |header|}}
+                {{#> ui/tooltip text=(concat header.key ": " header.value)}}
+                {{#> ui/badge soft=true}}<span class="font-mono">{{header.key}}</span>{{/ui/badge}}
+                {{/ui/tooltip}}
                 {{/each}}
-
             </dd>
             {{/if}}
 
-            <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9">
-                <strong>
-                    {{#if webhook.enabled}}
-                    <span class="badge badge-success">Enabled</span>
-                    {{else}}
-                    <span class="badge badge-warning">Disabled</span>
-                    {{/if}}
-                </strong>
+            <dt>Status</dt>
+            <dd>
+                {{#if webhook.enabled}}
+                {{> ui/badge label="Enabled" variant="success"}}
+                {{else}}
+                {{> ui/badge label="Disabled" variant="warning"}}
+                {{/if}}
             </dd>
 
         </dl>
 
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="fn-tab" data-toggle="tab" href="#fn" role="tab" aria-controls="fn"
-                    aria-selected="true">Filter function</a>
-            </li>
+        <div class="mt-6">
+            <nav class="tabs tabs-bordered" aria-label="Webhook route functions" role="tablist" data-tabs>
+                <button type="button" class="tab active-tab:tab-active active" id="fn-tab" data-tab="#fn" role="tab"
+                    aria-controls="fn" aria-selected="true">Filter function</button>
 
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="map-tab" data-toggle="tab" href="#map" role="tab" aria-controls="map"
-                    aria-selected="false">Map function</a>
-            </li>
+                <button type="button" class="tab active-tab:tab-active" id="map-tab" data-tab="#map" role="tab" aria-controls="map"
+                    aria-selected="false">Map function</button>
 
-            {{#if errorLog}}
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="errors-tab" data-toggle="tab" href="#errors" role="tab" aria-controls="errors"
-                    aria-selected="false">Error log</a>
-            </li>
-            {{/if}}
+                {{#if errorLog}}
+                <button type="button" class="tab active-tab:tab-active" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
+                    aria-selected="false">Error log</button>
+                {{/if}}
 
-        </ul>
-        <div class="tab-content mt-3" id="myTabContent">
-            <div class="tab-pane show active" id="fn" role="tabpanel" aria-labelledby="fn-tab">
+            </nav>
+            <div class="mt-[1rem]">
+                <div id="fn" role="tabpanel" aria-labelledby="fn-tab">
 
-                <div id="fn-preview" class="code-editor">{{webhook.content.fn}}</div>
+                    <div id="fn-preview" class="code-editor">{{webhook.content.fn}}</div>
 
-            </div>
-            <div class="tab-pane" id="map" role="tabpanel" aria-labelledby="map-tab">
+                </div>
+                <div id="map" class="hidden" role="tabpanel" aria-labelledby="map-tab">
 
-                <div id="map-preview" class="code-editor">{{webhook.content.map}}</div>
+                    <div id="map-preview" class="code-editor">{{webhook.content.map}}</div>
 
-            </div>
+                </div>
 
 
-            <div class="tab-pane" id="errors" role="tabpanel" aria-labelledby="errors-tab">
+                {{#if errorLog}}
+                <div id="errors" class="hidden" role="tabpanel" aria-labelledby="errors-tab">
 
 
-                <p>The following errors were thrown when executing the functions for this route. Only the most recent
-                    errors are shown.</p>
+                    <p class="mb-[1rem]">The following errors were thrown when executing the functions for this route.
+                        Only the most recent errors are shown.</p>
 
-                <table class="table">
+                    <div class="overflow-x-auto">
+                        <table class="table">
 
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Function</th>
-                            <th width="40%">Error</th>
-                            <th width="40%">Payload</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#each errorLog}}
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Function</th>
+                                    <th width="40%">Error</th>
+                                    <th width="40%">Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each errorLog}}
 
-                        <tr>
+                                <tr>
 
-                            <td>
-                                <span class="relative-time" data-time="{{created}}"></span>
-                            </td>
+                                    <td>
+                                        <span class="relative-time" data-time="{{created}}"></span>
+                                    </td>
 
-                            <td>
-                                <strong>{{type}}</strong>
-                            </td>
+                                    <td>
+                                        <strong>{{type}}</strong>
+                                    </td>
 
-                            <td>
-                                <textarea class="error-log-field" readonly>{{error}}</textarea>
-                            </td>
+                                    <td>
+                                        <textarea class="error-log-field" readonly>{{error}}</textarea>
+                                    </td>
 
-                            <td>
-                                <textarea class="error-log-field" readonly>{{json payload}}</textarea>
-                            </td>
+                                    <td>
+                                        <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                                    </td>
 
-                        </tr>
+                                </tr>
 
-                        {{/each}}
-                    </tbody>
+                                {{/each}}
+                            </tbody>
 
-                </table>
+                        </table>
+                    </div>
 
-            </div>
+                </div>
+                {{/if}}
 
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Webhook Route</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be
-                    undone.</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/webhooks/delete">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <input type="hidden" name="webhook" value="{{webhook.id}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete route</button>
-                </form>
             </div>
         </div>
     </div>
 </div>
 
-<input type="hidden" id="crumb" value="{{crumb}}" />
-<input type="hidden" id="webhook" value="{{webhook.id}}" />
+{{#> ui/modal id="deleteModal" title="Delete Webhook Route"}}
+<div class="modal-body">
+    <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be
+        undone.</p>
+</div>
+<div class="modal-footer">
+    <form method="post" action="/admin/webhooks/delete" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="webhook" value="{{webhook.id}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
+        {{> ui/btn label="Delete route" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
 <script src="/static/js/ace/ace.js"></script>
 

@@ -40,6 +40,9 @@ module.exports = defineConfig({
         reuseExistingServer: false,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: Object.assign({}, process.env, { NODE_ENV: 'e2e' })
+        // EENGINE_DOCUMENT_STORE_ENABLED opens the deprecated Document Store
+        // gate so its admin pages render (they 404 with the gate off) - the
+        // pages-admin spec smoke-tests them
+        env: Object.assign({}, process.env, { NODE_ENV: 'e2e', EENGINE_DOCUMENT_STORE_ENABLED: 'true' })
     }
 });

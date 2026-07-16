@@ -24,6 +24,12 @@ cp node_modules/ace-builds/src-min/ext-searchbox.js static/js/ace/ext-searchbox.
 
 cp node_modules/\@postalsys/ee-client/index.js static/js/ee-client.js
 
+# FlyonUI browser bundle (vendored like ace above; committed and bundled by pkg)
+cp node_modules/flyonui/flyonui.js static/js/flyonui.js
+
+# Rebuild the compiled admin UI stylesheet (Tailwind v4 + FlyonUI)
+npm run build:css
+
 wget https://developers.google.com/static/crawling/ipranges/special-crawlers.json -O data/google-crawlers.json
 node -e 'console.log("Google crawlers updated: "+require("./data/google-crawlers.json").creationTime);'
 

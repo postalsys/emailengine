@@ -1,247 +1,168 @@
 {{> templates_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
-        {{#if account}}
-        <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
-        {{/if}}
-        <li class="breadcrumb-item active" aria-current="page">{{template.name}}</li>
-    </ol>
-</nav>
+{{#if account}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=accountTemplatesLink midLabel=account.name current=template.name class="mt-6 mb-6"}}
+{{else}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=template.name class="mt-6 mb-6"}}
+{{/if}}
 
 
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-4" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+        <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Template actions">
 
-                <a type="button" class="btn btn-light" href="/admin/templates/template/{{template.id}}/edit"
-                    title="Edit template contents" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-file-signature fa-fw"></i> Edit template
-                </a>
+            {{#> ui/tooltip text="Edit template contents"}}
+            <a class="btn btn-soft btn-sm" href="/admin/templates/template/{{template.id}}/edit">
+                <span class="icon-[tabler--file-pencil] size-4"></span> Edit template
+            </a>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-target="#deleteModal"
-                    title="Delete this template" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete template
-                </button>
+            {{#> ui/tooltip text="Delete this template"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete template
+            </button>
+            {{/ui/tooltip}}
 
-            </div>
-
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="Second group">
-                <button type="button" class="btn btn-light has-tooltip" data-toggle="modal" data-backdrop="static"
-                    data-target="#sendTestModal" title="Send test email using this template" id="test-btn"
-                    data-placement="top">
-                    <i class="fas fa-mail-bulk fa-fw"></i> Send test email
-                </button>
-            </div>
+            {{#> ui/tooltip text="Send test email using this template"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#sendTestModal" id="test-btn">
+                <span class="icon-[tabler--mail-forward] size-4"></span> Send test email
+            </button>
+            {{/ui/tooltip}}
 
         </div>
 
         {{#if template.description}}
         <h5 class="card-title">{{template.name}}</h5>
-        <h6 class="card-subtitle mb-4 text-muted">{{template.description}}</h6>
+        <h6 class="mb-6 text-base-content/60">{{template.description}}</h6>
         {{else}}
-        <h5 class="card-title mb-4">{{template.name}}</h5>
+        <h5 class="card-title mb-6">{{template.name}}</h5>
         {{/if}}
 
-        <dl class="row">
+        <dl class="ee-dl">
 
-            <dt class="col-sm-3">Template ID</dt>
-            <dd class="col-sm-9">
-                <div class="input-group">
-                    <input type="text" id="templateIdValue" class="form-control bg-light border-0 small" aria-label="ID"
-                        aria-describedby="basic-addon2" value="{{template.id}}" readonly>
-                    <div class="input-group-append">
-                        <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
-                            data-clipboard-target="#templateIdValue" title="Copy to clipboard" data-toggle="tooltip"
-                            data-placement="top">
-                            <i class="fas fa-copy fa-sm"></i>
-                        </button>
-                    </div>
-                </div>
-                <small id="inputDescriptionHelp" class="form-text text-muted">Use this ID value as the
-                    <em>"template"</em>
-                    property when sending email.</small>
+            <dt>Template ID</dt>
+            <dd>
+                {{> ui/copy-field id="templateIdValue" value=template.id ariaLabel="ID" small=true class="max-w-md"
+                inputClass="font-mono"}}
+                <span class="helper-text">Use this ID value as the <em>"template"</em>
+                    property when sending email.</span>
             </dd>
 
             {{#if account}}
 
-            <dt class="col-sm-3">Account</dt>
-            <dd class="col-sm-9"><a href="/admin/accounts/{{account.account}}">{{account.name}}</a></dd>
+            <dt>Account</dt>
+            <dd><a href="/admin/accounts/{{account.account}}" class="link link-animated">{{account.name}}</a></dd>
 
             {{/if}}
 
             {{#if template.content.subject}}
-            <dt class="col-sm-3">Subject</dt>
-            <dd class="col-sm-9"><strong>{{template.content.subject}}</strong></dd>
+            <dt>Subject</dt>
+            <dd><strong>{{template.content.subject}}</strong></dd>
             {{/if}}
 
             {{#if template.content.previewText}}
-            <dt class="col-sm-3">Preview text
-
-                <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                    data-title="Preview text"
-                    data-content="Preview text appears in the inbox after the subject line."><i
-                        class="fas fa-question-circle"></i></a>
+            <dt>Preview text
+                {{#> ui/tooltip text="Preview text appears in the inbox after the subject line."}}<span
+                    class="icon-[tabler--help-circle] size-4 text-base-content/50 align-text-bottom"></span>{{/ui/tooltip}}
             </dt>
-            <dd class="col-sm-9">{{template.content.previewText}}</dd>
+            <dd>{{template.content.previewText}}</dd>
             {{/if}}
 
             {{#if template.format}}
-            <dt class="col-sm-3">HTML source format</dt>
-            <dd class="col-sm-9"><span class="text-monospace">{{format.name}}</span></dd>
+            <dt>HTML source format</dt>
+            <dd><span class="font-mono">{{format.name}}</span></dd>
             {{/if}}
 
         </dl>
 
+        <div class="mt-6">
+            <nav class="tabs tabs-bordered" aria-label="Template content" role="tablist" data-tabs>
+                <button type="button" class="tab active-tab:tab-active active" id="html-tab" data-tab="#html" role="tab" aria-controls="html"
+                    aria-selected="true">HTML</button>
+                <button type="button" class="tab active-tab:tab-active" id="text-tab" data-tab="#text" role="tab" aria-controls="text"
+                    aria-selected="false">Plain text</button>
+            </nav>
+            <div class="mt-[1rem]">
+                <div id="html" role="tabpanel" aria-labelledby="html-tab">
 
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="html-tab" data-toggle="tab" href="#html" role="tab" aria-controls="html"
-                    aria-selected="true">HTML</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" id="text-tab" data-toggle="tab" href="#text" role="tab" aria-controls="text"
-                    aria-selected="false">Plain text</a>
-            </li>
-        </ul>
-        <div class="tab-content mt-3" id="myTabContent">
-            <div class="tab-pane show active" id="html" role="tabpanel" aria-labelledby="html-tab">
+                    <div id="html-preview" class="code-editor">{{template.content.html}}</div>
 
-                <div id="html-preview" class="code-editor">{{template.content.html}}</div>
+                </div>
+                <div id="text" class="hidden" role="tabpanel" aria-labelledby="text-tab">
 
-            </div>
-            <div class="tab-pane" id="text" role="tabpanel" aria-labelledby="text-tab">
+                    <div id="text-preview" class="code-editor">{{template.content.text}}</div>
 
-                <div id="text-preview" class="code-editor">{{template.content.text}}</div>
-
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Template</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be
-                    undone.</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/templates/delete">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <input type="hidden" name="template" value="{{template.id}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete template</button>
-                </form>
-            </div>
-        </div>
-    </div>
+{{#> ui/modal id="deleteModal" title="Delete Template"}}
+<div class="modal-body">
+    <p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be
+        undone.</p>
 </div>
+<div class="modal-footer">
+    <form method="post" action="/admin/templates/delete" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        <input type="hidden" name="template" value="{{template.id}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
+        {{> ui/btn label="Delete template" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
-<input type="hidden" id="crumb" value="{{crumb}}" />
+{{!-- no #crumb input: the layout already renders the element the script reads --}}
 <input type="hidden" id="template" value="{{template.id}}" />
 
-<div class="modal fade" id="sendTestModal" tabindex="-1" aria-labelledby="sendTestModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="sendTestModalLabel">Send test email</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
+{{#> ui/modal id="sendTestModal" title="Send test email" dialogClass="max-w-3xl"}}
+<div class="modal-body space-y-4">
 
-                {{#unless account}}
-                <div class="form-group">
-                    <label for="inputAccount">Account ID</label>
-                    <input type="text" class="form-control" name="account" id="inputAccount"
-                        aria-describedby="inputAccountHelp" value="" required>
-                    <small id="inputNameHelp" class="form-text text-muted">The account ID to send email as.</small>
-                </div>
-                {{/unless}}
+    {{#unless account}}
+    {{> ui/form-field id="inputAccount" name="account" label="Account ID" required=true hint="The account ID to send email as."}}
+    {{/unless}}
 
-                <div class="form-group">
-                    <label for="inputTo">Recipient's email address</label>
-                    <input type="email" class="form-control" name="inputTo" id="inputTo" aria-describedby="inputToHelp"
-                        value="" required>
-                    <small id="inputToHelp" class="form-text text-muted">Where to send the test email to.</small>
-                </div>
+    {{> ui/form-field id="inputTo" name="inputTo" type="email" label="Recipient's email address" required=true hint="Where to send the test email to."}}
 
-                <div class="card mb-4">
-                    <a href="#jsonStructure" id="jsonHeader" class="d-block card-header py-3 collapsed"
-                        data-toggle="collapse" role="button" aria-expanded="true" aria-controls="setupKey">
-                        <h6 class="m-0 font-weight-bold text-primary">Handlebars payload</h6>
-                    </a>
-                    <div class="collapse" id="jsonStructure">
-                        <div class="card-body">
-                            <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
-                            <small id="inputToHelp" class="form-text text-muted">Enter the JSON structure for the
-                                "render.params" API parameter.<br /><code>"keyName"</code> property in this JSON
-                                structure
-                                becomes
-                                <code>\{{params.keyName}}</code> in the template.</small>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="modal-footer">
-
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" id="send-test-btn" class="btn btn-primary btn-icon-split">
-
-                    <span class="icon text-white-50">
-                        <i class="fas fa-mail-bulk"></i>
-                    </span>
-                    <span class="text">Send email</span>
-
-                </button>
-
-            </div>
-        </div>
+    {{#> ui/details id="jsonStructure" summary="Handlebars payload" class="card border border-base-content/10" summaryClass="px-4 py-2"}}
+    <div>
+        <div id="editor-json" class="code-editor" style="height: 10rem;"></div>
+        <span class="helper-text">Enter the JSON structure for the
+            "render.params" API parameter.<br /><code>"keyName"</code> property in this JSON structure
+            becomes
+            <code>\{{params.keyName}}</code> in the template.</span>
     </div>
-</div>
+    {{/ui/details}}
 
-<div class="modal" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="alertModalLabel"></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p id="alertModalContent"></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
 </div>
+<div class="modal-footer">
+    {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#sendTestModal"}}
+    <button type="button" id="send-test-btn" class="btn btn-primary">
+        <span class="icon-[tabler--mail-forward] size-4" id="send-test-icon"></span> Send email
+    </button>
+</div>
+{{/ui/modal}}
+
+{{#> ui/modal id="alertModal" titleId="alertModalLabel" title=" "}}
+<div class="modal-body">
+    <p id="alertModalContent"></p>
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#alertModal"}}
+</div>
+{{/ui/modal}}
 
 <script src="/static/js/ace/ace.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        $('.has-tooltip').tooltip();
 
-
-        function showAlert(title, content, backdrop) {
+        function showAlert(title, content) {
             document.getElementById('alertModalLabel').textContent = title;
             document.getElementById('alertModalContent').textContent = content;
 
-            $('#alertModal').modal({ show: true, backdrop: !!backdrop })
+            uiModal.open('#alertModal');
         }
 
         const editorJson = ace.edit("editor-json");
@@ -254,7 +175,7 @@
 
         let sendTestBtn = document.getElementById("send-test-btn");
 
-        $('#sendTestModal').on('show.bs.modal', function (event) {
+        document.getElementById('sendTestModal').addEventListener('open.overlay', () => {
 
             editorJson.session.setValue('{\n    "keyName": "value"\n}');
 
@@ -263,8 +184,7 @@
             }
             inputTo.value = '';
 
-            document.getElementById('jsonStructure').classList.remove('show');
-            document.getElementById('jsonHeader').classList.add('collapsed');
+            document.getElementById('jsonStructure').open = false;
         });
 
         let hasValidJson = true;
@@ -353,22 +273,17 @@
             return data;
         }
 
-        let iconElm = document.querySelector('#send-test-btn i');
+        let iconElm = document.getElementById('send-test-icon');
         let toggleSpinner = (enabled) => {
 
             if (enabled) {
-                iconElm.classList.remove('fa-spinner', 'fa-spin');
-                iconElm.classList.add('fa-mail-bulk');
+                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
+                iconElm.classList.add('icon-[tabler--mail-forward]');
                 sendTestBtn.disabled = false;
-
-                //sendTestBtn.classList.replace('btn-secondary', 'btn-primary');
-
             } else {
-                iconElm.classList.remove('fa-mail-bulk');
-                iconElm.classList.add('fa-spinner', 'fa-spin');
+                iconElm.classList.remove('icon-[tabler--mail-forward]');
+                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
                 sendTestBtn.disabled = true;
-
-                //sendTestBtn.classList.replace('btn-primary', 'btn-secondary');
             }
         }
 
@@ -383,9 +298,9 @@
                 toggleSpinner(true);
                 sending = false;
 
-                $('#sendTestModal').modal('hide');
+                uiModal.close('#sendTestModal');
 
-                showAlert('Message sent', `${info.response} as ${info.queueId}`, true)
+                showAlert('Message sent', `${info.response} as ${info.queueId}`)
             }).catch(err => {
                 toggleSpinner(true);
                 sending = false;

@@ -1,114 +1,47 @@
-<!-- Nav Item - Dashboard -->
-<li class="nav-item {{#if menuDashboard}}active{{/if}}">
-    <a class="nav-link" href="/admin">
-        <i class="fas fa-fw fa-tachometer-alt"></i>
-        <span>Dashboard</span></a>
-</li>
+<ul class="accordion menu menu-sm w-full gap-1 p-[1rem]">
 
-<!-- Divider -->
-<hr class="sidebar-divider">
+    {{> ui/menu-item href="/admin" label="Dashboard" icon="icon-[tabler--dashboard] size-4.5" active=menuDashboard}}
 
-<!-- Heading -->
-<div class="sidebar-heading">
-    System
-</div>
+    {{> ui/menu-item href="/admin/swagger" label="API Reference" icon="icon-[tabler--file-code] size-4.5" active=menuSwagger}}
+    {{> ui/menu-item href="/admin/accounts" label="Email Accounts" icon="icon-[tabler--users] size-4.5" active=menuAccounts}}
+    {{> ui/menu-item href="/admin/gateways" label="Email Gateways" icon="icon-[tabler--send] size-4.5" active=menuGateways}}
+    {{> ui/menu-item href="/admin/tokens" label="Access Tokens" icon="icon-[tabler--key] size-4.5" active=menuTokens}}
+    {{> ui/menu-item href="/admin/templates" label="Email Templates" icon="icon-[tabler--template] size-4.5" active=menuTemplates}}
+    {{> ui/menu-item href="/admin/webhooks" label="Webhook Routing" icon="icon-[tabler--webhook] size-4.5" active=menuWebhooks}}
 
-<li class="nav-item {{#if menuSwagger}}active{{/if}}">
-    <a class="nav-link" href="/admin/swagger">
-        <i class="fas fa-fw fa-file-code"></i>
-        <span>API Reference</span></a>
-</li>
+    {{#> ui/menu-section id="menu-tools" label="Tools" icon="icon-[tabler--tools] size-4.5" active=menuTools}}
+    {{> ui/menu-item href="/admin/bull-board" label="Job Queue" icon="icon-[tabler--stack-2] size-4" active=menuToolsArena}}
+    {{> ui/menu-item href="/admin/internals" label="Workers" icon="icon-[tabler--cpu] size-4" active=menuToolsInternals}}
+    {{/ui/menu-section}}
 
-<li class="nav-item {{#if menuAccounts}}active{{/if}}">
-    <a class="nav-link" href="/admin/accounts">
-        <i class="fas fa-fw fa-users"></i>
-        <span>Email Accounts</span></a>
-</li>
+    {{#> ui/menu-section id="menu-config" label="Configuration" icon="icon-[tabler--settings] size-4.5" active=menuConfig}}
+    {{> ui/menu-item href="/admin/config/service" label="General Settings" active=menuConfigService}}
+    {{> ui/menu-item href="/admin/config/webhooks" label="Webhooks" active=menuConfigWebhooks}}
+    {{> ui/menu-item href="/admin/config/ai" label="AI Processing" active=menuConfigAi}}
+    {{> ui/menu-item href="/admin/config/oauth" label="OAuth2" active=menuConfigOauth}}
+    {{> ui/menu-item href="/admin/config/logging" label="Logging" active=menuConfigLogging}}
+    {{> ui/menu-item href="/admin/config/network" label="Network" active=menuConfigNetwork}}
+    {{> ui/menu-item href="/admin/config/smtp" label="SMTP Interface" active=menuConfigSmtp}}
+    {{> ui/menu-item href="/admin/config/imap-proxy" label="IMAP Proxy" active=menuConfigImapProxy}}
 
-<li class="nav-item {{#if menuGateways}}active{{/if}}">
-    <a class="nav-link" href="/admin/gateways">
-        <i class="fas fa-fw fa-paper-plane"></i>
-        <span>Email Gateways</span></a>
-</li>
+    {{#if showDocumentStore}}
+    {{> ui/menu-item href="/admin/config/document-store" label="Document Store" active=menuConfigDocumentStore}}
+    {{/if}}
 
+    <li>
+        <a class="inline-flex w-full items-center px-2{{#if menuConfigLicense}} menu-active{{/if}}"
+            href="/admin/config/license">
+            <span class="grow">License</span>
+            {{#unless licenseInfo.active}}
+            <span class="tooltip [--placement:top] inline-flex">
+                <span class="tooltip-toggle icon-[tabler--alert-triangle] text-warning size-4 shrink-0"></span>
+                <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
+                    <span class="tooltip-body">License not activated</span>
+                </span>
+            </span>
+            {{/unless}}
+        </a>
+    </li>
+    {{/ui/menu-section}}
 
-<li class="nav-item {{#if menuTokens}}active{{/if}}">
-    <a class="nav-link" href="/admin/tokens">
-        <i class="fas fa-fw fa-key"></i>
-        <span>Access Tokens</span></a>
-</li>
-
-<li class="nav-item {{#if menuTemplates}}active{{/if}}">
-    <a class="nav-link" href="/admin/templates">
-        <i class="fas fa-fw fa-file-code"></i>
-        <span>Email Templates</span></a>
-</li>
-
-<li class="nav-item {{#if menuWebhooks}}active{{/if}}">
-    <a class="nav-link" href="/admin/webhooks">
-        <i class="fas fa-fw fa-arrows-alt"></i>
-        <span>Webhook Routing</span></a>
-</li>
-
-<li class="nav-item">
-    <a class="nav-link {{#unless menuTools}}collapsed{{/unless}}" href="#" data-toggle="collapse"
-        data-target="#collapseTools" aria-expanded="true" aria-controls="collapseTools">
-        <i class="fas fa-fw fa-tools"></i>
-        <span>Tools</span>
-    </a>
-    <div id="collapseTools" class="collapse {{#if menuTools}}show{{/if}}" aria-labelledby="headingTools"
-        data-parent="#accordionSidebar">
-        <div class="bg-white py-2 collapse-inner rounded">
-
-            <a class="collapse-item {{#if menuToolsArena}}active{{/if}}" href="/admin/bull-board"> <i
-                    class="fas fa-fw fa-layer-group"></i>
-                <span>Job Queue</span></a>
-
-            <a class="collapse-item {{#if menuToolsInternals}}active{{/if}}" href="/admin/internals"> <i
-                    class="fas fa-fw fa-cog"></i>
-                <span>Workers</span></a>
-
-        </div>
-    </div>
-</li>
-
-
-<li class="nav-item">
-    <a class="nav-link {{#unless menuConfig}}collapsed{{/unless}}" href="#" data-toggle="collapse"
-        data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
-        <i class="fas fa-fw fa-cog"></i>
-        <span>Configuration</span>
-    </a>
-    <div id="collapseTwo" class="collapse {{#if menuConfig}}show{{/if}}" aria-labelledby="headingTwo"
-        data-parent="#accordionSidebar">
-        <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item {{#if menuConfigService}}active{{/if}}" href="/admin/config/service">General
-                Settings</a>
-            <a class="collapse-item {{#if menuConfigWebhooks}}active{{/if}}" href="/admin/config/webhooks">Webhooks</a>
-            <a class="collapse-item {{#if menuConfigAi}}active{{/if}}" href="/admin/config/ai">AI Processing</a>
-            <a class="collapse-item {{#if menuConfigOauth}}active{{/if}}" href="/admin/config/oauth">OAuth2</a>
-            <a class="collapse-item {{#if menuConfigLogging}}active{{/if}}" href="/admin/config/logging">Logging</a>
-            <a class="collapse-item {{#if menuConfigNetwork}}active{{/if}}" href="/admin/config/network">Network</a>
-            <a class="collapse-item {{#if menuConfigSmtp}}active{{/if}}" href="/admin/config/smtp">SMTP Interface</a>
-            <a class="collapse-item {{#if menuConfigImapProxy}}active{{/if}}" href="/admin/config/imap-proxy">IMAP
-                Proxy</a>
-
-            {{#if showDocumentStore}}
-            <a class="collapse-item {{#if menuConfigDocumentStore}}active{{/if}}"
-                href="/admin/config/document-store">Document Store</a>
-            {{/if}}
-
-            <a class="collapse-item {{#if menuConfigLicense}}active{{/if}}" href="/admin/config/license">
-                <div style="display: flex; justify-content: space-between;">
-                    <div>License</div>
-                    {{#unless licenseInfo.active}}
-                    <div><i class="fas fa-fw fa-exclamation-triangle tooltip-elm" data-toggle="tooltip"
-                            data-placement="top" title="License not activated"></i>
-                    </div>
-                    {{/unless}}
-                </div>
-            </a>
-
-        </div>
-    </div>
-</li>
+</ul>

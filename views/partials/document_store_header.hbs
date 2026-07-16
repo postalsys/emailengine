@@ -1,52 +1,27 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><i class="fas fa-database fa-fw"></i></small>
-        Document Store
-    </h1>
-</div>
+{{> ui/page-header title="Document Store" icon="icon-[tabler--database]" class="mb-1"}}
 
-<p class="mb-4">
+<p class="mb-6 text-base-content/80">
     EmailEngine can sync emails to a document store for caching and local processing.
 </p>
 
-<div class="card border-left-danger mb-4">
-    <div class="card-body">
-        <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Deprecation Notice
-                </div>
-                <p>The Document Store feature in EmailEngine has been deprecated. This decision was made due
-                    to ongoing challenges in maintaining consistent synchronization between email accounts and their
-                    mirrored content on the ElasticSearch server.</p>
-                <ul>
-                    <li>The Document Store feature will not be removed from EmailEngine, and you can continue to use it
-                        as per your current needs.</li>
-                    <li>However, please be aware that as a deprecated feature, it will no longer receive new
-                        updates or enhancements.</li>
-
-                </ul>
-            </div>
-            <div class="col-auto">
-                <i class="fas fa-exclamation-circle fa-2x text-gray-300"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<ul class="nav nav-tabs mb-4">
-    <li class="nav-item">
-        <a class="nav-link {{#if documentStoreSettings}}active{{/if}}" href="/admin/config/document-store">Settings</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{#if documentStorePreProcessing}}active{{/if}}"
-            href="/admin/config/document-store/pre-processing">Pre-processing</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{#if documentStoreChat}}active{{/if}}" href="/admin/config/document-store/chat">Chat with
-            emails <span class="badge badge-dark">beta</span></a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{#if documentStoreMappings}}active{{/if}}"
-            href="/admin/config/document-store/mappings">Field mappings</a>
-    </li>
+{{#> ui/stat-card variant="error" title="Deprecation Notice" icon="icon-[tabler--alert-circle]" class="mb-6"}}
+<p class="mb-2">The Document Store feature in EmailEngine has been deprecated. This decision was made due
+    to ongoing challenges in maintaining consistent synchronization between email accounts and their
+    mirrored content on the ElasticSearch server.</p>
+<ul class="list-disc ps-6">
+    <li>The Document Store feature will not be removed from EmailEngine, and you can continue to use it
+        as per your current needs.</li>
+    <li>However, please be aware that as a deprecated feature, it will no longer receive new
+        updates or enhancements.</li>
 </ul>
+{{/ui/stat-card}}
+
+<nav class="tabs tabs-bordered mb-6" aria-label="Document store sections">
+    <a class="tab{{#if documentStoreSettings}} tab-active{{/if}}" href="/admin/config/document-store">Settings</a>
+    <a class="tab{{#if documentStorePreProcessing}} tab-active{{/if}}"
+        href="/admin/config/document-store/pre-processing">Pre-processing</a>
+    <a class="tab{{#if documentStoreChat}} tab-active{{/if}}" href="/admin/config/document-store/chat">Chat with
+        emails {{> ui/badge label="beta" class="badge-sm ms-1"}}</a>
+    <a class="tab{{#if documentStoreMappings}} tab-active{{/if}}"
+        href="/admin/config/document-store/mappings">Field mappings</a>
+</nav>

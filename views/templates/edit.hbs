@@ -1,33 +1,28 @@
 {{> templates_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/templates">Templates</a></li>
+<div class="breadcrumbs mt-6 mb-6 text-sm">
+    <ul>
+        <li><a href="/admin/templates" class="link link-animated">Templates</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
         {{#if account}}
-        <li class="breadcrumb-item"><a href="{{accountTemplatesLink}}">{{account.name}}</a></li>
+        <li><a href="{{accountTemplatesLink}}" class="link link-animated">{{account.name}}</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
         {{/if}}
-
-        <li class="breadcrumb-item"><a href="/admin/templates/template/{{template.id}}">{{template.name}}</a></li>
-
-        <li class="breadcrumb-item active" aria-current="page">Edit</li>
-
-    </ol>
-</nav>
+        <li><a href="/admin/templates/template/{{template.id}}" class="link link-animated">{{template.name}}</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
+        <li aria-current="page">Edit</li>
+    </ul>
+</div>
 
 
 <form method="post" action="/admin/templates/edit" id="edit-form">
-    <input type="hidden" name="crumb" id="crumb" value="{{crumb}}" />
+    <input type="hidden" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="template" value="{{values.template}}">
 
     {{>template_form}}
 
-    <div class="mb-4">
-        <button type="submit" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-file-signature"></i>
-            </span>
-            <span class="text">Update template</span>
-        </button>
+    <div class="mb-6">
+        {{> ui/btn label="Update template" type="submit" icon="icon-[tabler--file-check]"}}
     </div>
 </form>
 
@@ -59,29 +54,6 @@
         });
 
 
-        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
-            let target = toggleElm.dataset.target;
-            if (!editors.has(target)) {
-                continue
-            }
-            let targetElm = document.getElementById(target);
-            let editor = editors.get(target)
-
-            toggleElm.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                targetElm.classList.toggle('full-screen-div');
-                editor.resize();
-                editor.focus();
-            });
-
-            targetElm.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
-                    targetElm.classList.remove('full-screen-div')
-                    editor.resize();
-                    editor.focus();
-                }
-            });
-        }
+        uiEditorFullscreen(editors);
     });
 </script>

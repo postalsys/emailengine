@@ -1,120 +1,95 @@
 {{> gateways_header}}
 
-<nav aria-label="breadcrumb" class="mt-4 mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/admin/gateways">Gateways</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{gateway.gateway}}</li>
-    </ol>
-</nav>
+{{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" current=gateway.gateway class="mt-6 mb-6"}}
 
-<div class="card mb-4">
+<div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="btn-toolbar mb-3" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2 mb-1" role="group" aria-label="First group">
+        <div class="mb-[1rem] flex flex-wrap gap-2" role="toolbar" aria-label="Gateway actions">
 
-                <a type="button" class="btn btn-light" href="/admin/gateways/edit/{{gateway.gateway}}"
-                    title="Modify gateway settings" data-toggle="tooltip" data-placement="top">
-                    <i class="fas fa-user-edit fa-fw"></i> Edit gateway
-                </a>
+            {{#> ui/tooltip text="Modify gateway settings"}}
+            <a class="btn btn-soft btn-sm" href="/admin/gateways/edit/{{gateway.gateway}}">
+                <span class="icon-[tabler--edit] size-4"></span> Edit gateway
+            </a>
+            {{/ui/tooltip}}
 
-                <button type="button" class="btn btn-light" data-toggle="modal" data-target="#deleteModal"
-                    title="Remove this gateway" id="delete-btn" data-placement="top">
-                    <i class="fas fa-trash-alt fa-fw"></i> Delete gateway
-                </button>
-
-            </div>
+            {{#> ui/tooltip text="Remove this gateway"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete gateway
+            </button>
+            {{/ui/tooltip}}
 
         </div>
 
-        <h5 class="card-title mb-4">{{gateway.name}}</h5>
+        <h5 class="card-title mb-6">{{gateway.name}}</h5>
 
         {{#if gateway.lastError}}
-        <dl class="row">
-            <dt class="col-sm-3">Connection Error</dt>
-            <dd class="col-sm-9">{{gateway.lastError.description}}</dd>
+        <dl class="ee-dl">
+            <dt>Connection Error</dt>
+            <dd>{{gateway.lastError.description}}</dd>
 
             {{#if gateway.lastError.response}}
-            <dt class="col-sm-3">Server Response</dt>
-            <dd class="col-sm-9"><code>{{gateway.lastError.response}}</code></dd>
+            <dt>Server Response</dt>
+            <dd><code>{{gateway.lastError.response}}</code></dd>
             {{/if}}
         </dl>
 
         <hr>
         {{/if}}
 
-        <dl class="row">
+        <dl class="ee-dl">
             {{#if gateway.gateway}}
-            <dt class="col-sm-3">Gateway ID</dt>
-            <dd class="col-sm-9">
+            <dt>Gateway ID</dt>
+            <dd>
                 <strong>{{gateway.gateway}}</strong>
 
-                <span class="badge badge-pill badge-{{label.type}} state-info" data-account="{{gateway}}"
-                    style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
-                    label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
-                    {{label.name}}</span>
+                {{!-- live state badge with an error tooltip --}}
+                {{> ui/state-badge label=label account=gateway.gateway}}
             </dd>
             {{/if}}
 
             {{#if gateway.deliveries}}
-            <dt class="col-sm-3">Emails Sent</dt>
-            <dd class="col-sm-9">{{gateway.deliveries}}</dd>
+            <dt>Emails Sent</dt>
+            <dd>{{gateway.deliveries}}</dd>
             {{/if}}
 
             {{#if gateway.user}}
-            <dt class="col-sm-3">Username</dt>
-            <dd class="col-sm-9">{{gateway.user}}</dd>
+            <dt>Username</dt>
+            <dd>{{gateway.user}}</dd>
             {{/if}}
 
             {{#if gateway.pass}}
-            <dt class="col-sm-3">Password</dt>
-            <dd class="col-sm-9">********</dd>
+            <dt>Password</dt>
+            <dd>********</dd>
             {{/if}}
 
             {{#if gateway.host}}
-            <dt class="col-sm-3">Server</dt>
-            <dd class="col-sm-9">{{gateway.host}}</dd>
+            <dt>Server</dt>
+            <dd>{{gateway.host}}</dd>
             {{/if}}
 
             {{#if gateway.port}}
-            <dt class="col-sm-3">Port</dt>
-            <dd class="col-sm-9">{{gateway.port}}</dd>
+            <dt>Port</dt>
+            <dd>{{gateway.port}}</dd>
             {{/if}}
 
-            <dt class="col-sm-3">Encryption</dt>
-            <dd class="col-sm-9">{{#if gateway.secure}}TLS/SSL{{else}}STARTTLS (when available){{/if}}
+            <dt>Encryption</dt>
+            <dd>{{#if gateway.secure}}TLS/SSL{{else}}STARTTLS (when available){{/if}}
             </dd>
         </dl>
 
     </div>
 </div>
 
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Gateway</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/gateways/delete/{{gateway.gateway}}">
-                    <input type="hidden" name="crumb" value="{{crumb}}" />
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete Gateway</button>
-                </form>
-            </div>
-        </div>
-    </div>
+{{#> ui/modal id="deleteModal" title="Delete Gateway"}}
+<div class="modal-body">
+    <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // not set up by default as this element has a different data-toggle
-        $('#delete-btn').tooltip();
-    });
-</script>
+<div class="modal-footer">
+    <form method="post" action="/admin/gateways/delete/{{gateway.gateway}}" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}" />
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
+        {{> ui/btn label="Delete Gateway" variant="error" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}

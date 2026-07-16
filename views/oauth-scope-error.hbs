@@ -1,29 +1,29 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">{{_ "Insufficient Permissions" templateLocale}}</h1>
+    <h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Insufficient Permissions" templateLocale}}</h1>
 </div>
 
-<div class="mb-4">
-    <div class="alert alert-danger">
-        <i class="fas fa-exclamation-triangle mr-2"></i>
-        {{_ "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in." templateLocale}}
+<div class="mb-6">
+    <div class="alert alert-soft alert-error mb-4">
+        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+        <span>{{_ "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in." templateLocale}}</span>
     </div>
 
     {{#if missingScopesList}}
-    <p class="font-weight-bold mb-2">{{_ "The following permissions were not granted:" templateLocale}}</p>
-    <ul class="mb-3">
+    <p class="font-bold mb-2">{{_ "The following permissions were not granted:" templateLocale}}</p>
+    <ul class="list-disc ps-6 mb-4">
         {{#each missingScopesList}}
         <li>{{this}}</li>
         {{/each}}
     </ul>
     {{/if}}
 
-    <p class="text-muted">
+    <p class="text-base-content/60">
         {{_ "Please try again and make sure all permission checkboxes are selected on the Google consent screen." templateLocale}}
     </p>
 </div>
 
-<div class="mt-4">
+<div class="mt-6">
     <a href="{{reAuthUrl}}" class="btn btn-primary btn-block">
-        <i class="fas fa-redo mr-2"></i>{{_ "Try Again" templateLocale}}
+        <span class="icon-[tabler--refresh] size-4"></span>{{_ "Try Again" templateLocale}}
     </a>
 </div>

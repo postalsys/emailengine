@@ -3,96 +3,82 @@
 {{> oauth_tabs}}
 
 {{#if apps}}
-<div class="card mt-4 mb-4">
-    <div class="table-responsive">
-        <table class="table table-hover">
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="overflow-x-auto">
+        <table class="table">
             <thead>
                 <tr>
-                    <th class="p-0">
-                        <div class="p-2">Name</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Project ID</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Topic</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Subscription</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Expiration</div>
-                    </th>
-                    <th class="p-0">
-                        <div class="p-2">Status</div>
-                    </th>
+                    <th>Name</th>
+                    <th>Project ID</th>
+                    <th>Topic</th>
+                    <th>Subscription</th>
+                    <th>Expiration</th>
+                    <th>Status</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each apps}}
-                <tr>
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}"
-                                class="stretched-link"></a><strong>{{name}}</strong>
-                        </div>
+                <tr class="hover:bg-base-200/60">
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0"
+                            aria-label="Open OAuth2 app"></a><strong>{{name}}</strong>
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>{{googleProjectId}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>{{googleProjectId}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{#if pubSubTopic}}
-                            <span class="badge badge-success">Created</span>
-                            {{else}}
-                            <span class="badge badge-secondary">Not set</span>
-                            {{/if}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{#if pubSubTopic}}
+                        {{> ui/badge label="Created" variant="success"}}
+                        {{else}}
+                        {{> ui/badge label="Not set" variant="neutral"}}
+                        {{/if}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{#if pubSubSubscription}}
-                            <span class="badge badge-success">Created</span>
-                            {{else}}
-                            <span class="badge badge-secondary">Not set</span>
-                            {{/if}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{#if pubSubSubscription}}
+                        {{> ui/badge label="Created" variant="success"}}
+                        {{else}}
+                        {{> ui/badge label="Not set" variant="neutral"}}
+                        {{/if}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{#if expirationLabel}}
-                            {{expirationLabel}}
-                            {{else}}
-                            <span class="text-muted">-</span>
-                            {{/if}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{#if expirationLabel}}
+                        {{expirationLabel}}
+                        {{else}}
+                        <span class="text-base-content/60">-</span>
+                        {{/if}}
                     </td>
 
-                    <td class="p-0">
-                        <div class="position-relative p-2">
-                            <a href="/admin/config/oauth/app/{{id}}" class="stretched-link"></a>
-                            {{#if meta.pubSubFlag}}
-                            <span class="badge badge-danger" title="{{meta.pubSubFlag.message}}">Error</span>
-                            {{else if meta.authFlag}}
-                            <span class="badge badge-warning" title="{{meta.authFlag.message}}">Setup Failed</span>
-                            {{else if meta.ttlWarning}}
-                            <span class="badge badge-warning" title="{{meta.ttlWarning.message}}">TTL Update Failed</span>
-                            {{else if pubSubSubscription}}
-                            <span class="badge badge-success">OK</span>
-                            {{else}}
-                            <span class="badge badge-warning">Pending</span>
-                            {{/if}}
-                        </div>
+                    <td class="relative">
+                        <a href="/admin/config/oauth/app/{{id}}" class="absolute inset-0" tabindex="-1"
+                            aria-hidden="true"></a>
+                        {{!-- z-[1] lifts the badge above the row-overlay link so
+                              the title tooltip is hoverable --}}
+                        {{#if meta.pubSubFlag}}
+                        <span class="badge badge-error relative z-[1] cursor-default"
+                            title="{{meta.pubSubFlag.message}}">Error</span>
+                        {{else if meta.authFlag}}
+                        <span class="badge badge-warning relative z-[1] cursor-default"
+                            title="{{meta.authFlag.message}}">Setup Failed</span>
+                        {{else if meta.ttlWarning}}
+                        <span class="badge badge-warning relative z-[1] cursor-default"
+                            title="{{meta.ttlWarning.message}}">TTL Update Failed</span>
+                        {{else if pubSubSubscription}}
+                        {{> ui/badge label="OK" variant="success"}}
+                        {{else}}
+                        {{> ui/badge label="Pending" variant="warning"}}
+                        {{/if}}
                     </td>
                 </tr>
                 {{/each}}
@@ -101,36 +87,14 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer">
-
-        <nav aria-label="Page navigation">
-            <ul class="pagination" style="flex-wrap: wrap;">
-
-                {{#if prevPage}}
-                <li class="page-item"><a class="page-link" href="{{prevPage}}">Previous</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                {{/if}}
-
-                {{#each pageLinks}}
-                <li class="page-item {{#if active}}active{{/if}}"><a class="page-link" href="{{url}}">{{title}}</a>
-                </li>
-                {{/each}}
-
-                {{#if nextPage}}
-                <li class="page-item"><a class="page-link" href="{{nextPage}}">Next</a></li>
-                {{else}}
-                <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-                {{/if}}
-
-            </ul>
-        </nav>
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}
 </div>
 {{else}}
-<div class="list-group mt-4 mb-4">
-    <div class="list-group-item">
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-body">
         <p>
             {{#if firstPage}}
             No Gmail Pub/Sub apps have been registered yet.
@@ -142,28 +106,28 @@
 </div>
 {{/if}}
 
-<div class="card mt-4 mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">Subscription Settings</h6>
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header">
+        <h6 class="card-title text-primary">Subscription Settings</h6>
     </div>
     <div class="card-body">
         <form method="post" action="/admin/config/oauth/subscriptions">
             <input type="hidden" name="crumb" value="{{crumb}}" />
-            <div class="form-group row">
-                <label for="gmailSubscriptionTtl" class="col-sm-3 col-form-label">Subscription TTL</label>
-                <div class="col-sm-9">
-                    <input type="number" class="form-control" id="gmailSubscriptionTtl"
-                        name="gmailSubscriptionTtl" value="{{values.gmailSubscriptionTtl}}"
-                        placeholder="31" min="0" max="365" />
-                    <small class="form-text text-muted">
-                        Inactivity expiration in days. Leave empty for Google's default (31 days). Set to 0 to disable expiration.
-                    </small>
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-12 sm:gap-4 mb-[1rem]">
+                <label for="gmailSubscriptionTtl" class="label-text sm:col-span-3 sm:pt-2">Subscription TTL</label>
+                <div class="sm:col-span-9">
+                    <input type="number" class="input w-full" id="gmailSubscriptionTtl" name="gmailSubscriptionTtl"
+                        value="{{values.gmailSubscriptionTtl}}" placeholder="31" min="0" max="365" />
+                    <span class="helper-text">
+                        Inactivity expiration in days. Leave empty for Google's default (31 days). Set to 0 to disable
+                        expiration.
+                    </span>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Update</button>
+            {{> ui/btn label="Update" type="submit"}}
         </form>
 
-        <div class="alert alert-info mt-3 mb-0">
+        <div class="alert alert-soft alert-info mt-[1rem] mb-0 block">
             <strong>Note:</strong> Google automatically deletes Pub/Sub subscriptions that receive no activity
             for a set period. This setting controls that period for both new and existing subscriptions.
             Changes take effect the next time an OAuth app is created, updated, or its subscription is recovered.

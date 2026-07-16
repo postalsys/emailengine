@@ -1,13 +1,8 @@
-<div class="d-sm-flex align-items-center justify-content-between mb-1">
-    <h1 class="h3 mb-0 text-gray-800">
-        <small><i class="fas fa-cog fa-fw"></i></small>
-        System Threads
-    </h1>
-</div>
+{{> ui/page-header title="System Threads" icon="icon-[tabler--settings]" class="mb-1"}}
 
 {{#if apiWorkerWarning}}
-<div class="alert alert-warning mt-4" role="alert">
-    <i class="fas fa-exclamation-triangle"></i>
+<div class="alert alert-soft alert-warning mt-6 block" role="alert">
+    <span class="icon-[tabler--alert-triangle] size-4 align-text-bottom"></span>
     <strong>Multiple API workers are not active.</strong>
     {{#equals apiWorkerWarning.reason "port"}}
     <code>EENGINE_WORKERS_API</code> is set to {{apiWorkerWarning.requested}}, but EmailEngine could not verify
@@ -20,82 +15,89 @@
 </div>
 {{/if}}
 
-<div class="card mb-4 mt-4">
+<div class="card bg-base-100 shadow-md mt-6 mb-6">
 
-    <div class="table-responsive">
-        <table class="table table-hover">
+    <div class="overflow-x-auto">
+        <table class="table">
 
             <thead>
                 <tr>
                     <th>Thread Type</th>
-                    <th class="text-right">ID</th>
+                    <th class="text-end">ID</th>
                     <th>Uptime</th>
-                    <th class="text-right">Memory</th>
-                    <th class="text-right">Accounts</th>
-                    <th class="text-right">Sent</th>
-                    <th class="text-right">Received</th>
+                    <th class="text-end">Memory</th>
+                    <th class="text-end">Accounts</th>
+                    <th class="text-end">Sent</th>
+                    <th class="text-end">Received</th>
                     <th>&nbsp;</th>
                 </tr>
             </thead>
 
             <tbody>
                 {{#each threads}}
-                <tr{{#if isUnresponsive}} class="table-danger"{{/if}}>
+                <tr{{#if isUnresponsive}} class="bg-error/10"{{/if}}>
                     <td>{{description}}
 
                         {{#if config}}
-                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            data-title="Configuration" data-content="{{config.key}}={{config.value}}"><i
-                                class="fas fa-info-circle"></i></a>
+                        {{#> ui/tooltip-rich icon="icon-[tabler--info-circle]"}}
+                        <strong>Configuration</strong><br>
+                        {{config.key}}={{config.value}}
+                        {{/ui/tooltip-rich}}
                         {{/if}}
 
                         {{#if isUnresponsive}}
-                        <span class="badge badge-danger">Unresponsive</span>
+                        {{> ui/badge label="Unresponsive" variant="error"}}
                         {{#if errorMessage}}
-                        <a href="#" tabindex="-1" role="button" data-toggle="popover" data-trigger="hover"
-                            data-title="Error" data-content="{{errorMessage}}"><i
-                                class="fas fa-exclamation-triangle"></i></a>
+                        {{#> ui/tooltip-rich icon="icon-[tabler--alert-triangle] text-error"}}
+                        <strong>Error</strong><br>
+                        {{errorMessage}}
+                        {{/ui/tooltip-rich}}
                         {{/if}}
                         {{else if healthBadge}}
-                        <span class="badge badge-{{healthBadgeType}}">{{healthBadge}}</span>
+                        {{> ui/badge label=healthBadge variant=healthBadgeType}}
                         {{/if}}
 
                     </td>
-                    <td class="text-right">{{formatInteger threadId userLocale}}</td>
+                    <td class="text-end">{{formatInteger threadId userLocale}}</td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                     </td>
-                    <td class="text-right">
+                    <td class="text-end">
                         {{#if isUnresponsive}}
-                        <span class="text-danger font-weight-bold">{{heapUsed}}</span>
+                        <span class="text-error font-bold">{{heapUsed}}</span>
                         {{else}}
                         {{heapUsed}}
                         {{/if}}
                     </td>
-                    <td class="text-right">
+                    <td class="text-end">
                         {{#if accounts}}
-                        <a href="/admin/internals/thread/{{threadId}}">{{formatInteger accounts userLocale}}</a>
+                        <a href="/admin/internals/thread/{{threadId}}"
+                            class="link link-animated">{{formatInteger accounts userLocale}}</a>
                         {{else}}
                         {{formatInteger accounts userLocale}}
                         {{/if}}
                     </td>
-                    <td class="text-right">{{formatInteger called userLocale}}</td>
-                    <td class="text-right">{{formatInteger messages userLocale}}</td>
-                    <td class="text-right">
+                    <td class="text-end">{{formatInteger called userLocale}}</td>
+                    <td class="text-end">{{formatInteger messages userLocale}}</td>
+                    <td class="text-end">
 
+                        {{#> ui/tooltip text="Download memory snapshot"}}
                         <button type="button" class="btn btn-info btn-circle btn-sm snapshot-thread-btn"
-                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
-                            title="Download memory snapshot"><i class="fas fa-cloud-download-alt"></i></button>
+                            data-thread="{{threadId}}" aria-label="Download memory snapshot"><span
+                                class="icon-[tabler--cloud-download] size-4"></span></button>
+                        {{/ui/tooltip}}
 
                         {{#if isMain}}
-                        <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
-                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
-                            title="Kill this thread" style="visibility: hidden;"><i
-                                class="fas fa-trash-alt"></i></button>
+                        {{!-- invisible placeholder keeps the action column aligned --}}
+                        <button type="button" class="btn btn-error btn-circle btn-sm kill-thread-btn invisible"
+                            data-thread="{{threadId}}" aria-label="Kill this thread"><span
+                                class="icon-[tabler--trash] size-4"></span></button>
                         {{else}}
-                        <button type="button" class="btn btn-danger btn-circle btn-sm kill-thread-btn"
-                            data-thread="{{threadId}}" data-toggle="tooltip" data-placement="top"
-                            title="Restart thread"><i class="fas fa-trash-alt"></i></button>
+                        {{#> ui/tooltip text="Restart thread"}}
+                        <button type="button" class="btn btn-error btn-circle btn-sm kill-thread-btn"
+                            data-thread="{{threadId}}" aria-label="Restart thread"><span
+                                class="icon-[tabler--trash] size-4"></span></button>
+                        {{/ui/tooltip}}
                         {{/if}}
                     </td>
                 </tr>
@@ -107,58 +109,34 @@
 
 </div>
 
-<div class="modal fade" id="killThread" tabindex="-1" aria-labelledby="killThreadLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title" id="killThreadLabel">Restart Thread</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Restart this thread? Any ongoing operations will be interrupted.
-            </div>
-            <div class="modal-footer">
-                <form method="post" action="/admin/internals/kill">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" id="kill-thread" name="thread" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Restart Thread</button>
-                </form>
-            </div>
-
-        </div>
-    </div>
+{{#> ui/modal id="killThread" title="Restart Thread" titleId="killThreadLabel"}}
+<div class="modal-body">
+    Restart this thread? Any ongoing operations will be interrupted.
 </div>
-
-<div class="modal fade" id="snapshotThread" tabindex="-1" aria-labelledby="snapshotThreadLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <h5 class="modal-title" id="snapshotThreadLabel">Memory Snapshot</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Generate a memory snapshot for debugging? This may briefly affect thread performance.
-            </div>
-            <div class="modal-footer">
-                <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank"
-                    rel="noopener noreferrer">
-                    <input type="hidden" name="crumb" value="{{crumb}}">
-                    <input type="hidden" id="snapshot-thread" name="thread" value="">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info">Download Snapshot</button>
-                </form>
-            </div>
-
-        </div>
-    </div>
+<div class="modal-footer">
+    <form method="post" action="/admin/internals/kill" class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" id="kill-thread" name="thread" value="">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#killThread"}}
+        {{> ui/btn label="Restart Thread" variant="error" type="submit"}}
+    </form>
 </div>
+{{/ui/modal}}
+
+{{#> ui/modal id="snapshotThread" title="Memory Snapshot" titleId="snapshotThreadLabel"}}
+<div class="modal-body">
+    Generate a memory snapshot for debugging? This may briefly affect thread performance.
+</div>
+<div class="modal-footer">
+    <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank" rel="noopener noreferrer"
+        class="flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        <input type="hidden" id="snapshot-thread" name="thread" value="">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#snapshotThread"}}
+        {{> ui/btn label="Download Snapshot" variant="info" type="submit"}}
+    </form>
+</div>
+{{/ui/modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -166,7 +144,7 @@
             elm.addEventListener('click', e => {
                 e.preventDefault();
                 document.getElementById('kill-thread').value = elm.dataset.thread;
-                $('#killThread').modal('show');
+                uiModal.open('#killThread');
             });
         }
 
@@ -174,12 +152,12 @@
             elm.addEventListener('click', e => {
                 e.preventDefault();
                 document.getElementById('snapshot-thread').value = elm.dataset.thread;
-                $('#snapshotThread').modal('show');
+                uiModal.open('#snapshotThread');
             });
         }
 
         document.getElementById('snapshot-form').addEventListener('submit', () => {
-            $('#snapshotThread').modal('hide');
+            uiModal.close('#snapshotThread');
         });
     });
 </script>

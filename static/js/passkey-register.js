@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (confirmBtn) {
             confirmBtn.disabled = false;
         }
-        $('#registerPasskeyModal').modal('show');
+        uiModal.open('#registerPasskeyModal');
     });
 
     var confirmBtn = document.getElementById('passkey-register-confirm-btn');

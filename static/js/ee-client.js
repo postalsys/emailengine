@@ -39,11 +39,18 @@ export class EmailEngineClient {
         this.keepAliveTimer = null;
         this.lastActivity = Date.now();
 
-        // Dark mode state
+        // Dark mode state. An explicit darkMode option overrides the stored
+        // preference - for hosts that manage the theme themselves (usually
+        // together with showDarkModeToggle: false to hide the builtin button
+        // and drive the mode through setDarkMode()).
         this.darkMode = false;
         if (typeof window !== 'undefined' && window.localStorage) {
             this.darkMode = localStorage.getItem('ee-client-dark-mode') === 'true';
         }
+        if (typeof options.darkMode === 'boolean') {
+            this.darkMode = options.darkMode;
+        }
+        this.showDarkModeToggle = options.showDarkModeToggle !== false;
 
         // Get page size from localStorage or options or default
         const savedPageSize =
@@ -1650,9 +1657,13 @@ export class EmailEngineClient {
 
         this.container.innerHTML = `
             <div class="ee-client${this.darkMode ? ' ee-dark-mode' : ''}">
-                <button class="ee-dark-mode-toggle" title="Toggle dark mode">
+                ${
+                    this.showDarkModeToggle
+                        ? `<button class="ee-dark-mode-toggle" title="Toggle dark mode">
                     <span class="ee-dark-mode-icon">${this.darkMode ? '☀️' : '🌙'}</span>
-                </button>
+                </button>`
+                        : ''
+                }
                 <div class="ee-sidebar">
                     <div class="ee-pane-header">
                         <span class="ee-pane-title">Folders</span>
@@ -1944,13 +1955,10 @@ export class EmailEngineClient {
         }
     }
 
-    toggleDarkMode() {
-        this.darkMode = !this.darkMode;
-
-        // Save preference
-        if (typeof window !== 'undefined' && window.localStorage) {
-            localStorage.setItem('ee-client-dark-mode', this.darkMode.toString());
-        }
+    // Set dark mode from the host application (does not touch the stored
+    // preference - the builtin toggle owns that)
+    setDarkMode(enabled) {
+        this.darkMode = !!enabled;
 
         // DOM updates only apply to the rendered UI; skip without a container
         if (!this.container) {
@@ -1971,6 +1979,15 @@ export class EmailEngineClient {
         const icon = this.container.querySelector('.ee-dark-mode-icon');
         if (icon) {
             icon.textContent = this.darkMode ? '☀️' : '🌙';
+        }
+    }
+
+    toggleDarkMode() {
+        this.setDarkMode(!this.darkMode);
+
+        // Save preference
+        if (typeof window !== 'undefined' && window.localStorage) {
+            localStorage.setItem('ee-client-dark-mode', this.darkMode.toString());
         }
     }
 

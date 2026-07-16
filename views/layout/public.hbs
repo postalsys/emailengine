@@ -18,12 +18,11 @@
     <link rel="manifest" href="/static/favicon/manifest.json" />
     <link rel="icon" href="/favicon.ico" />
 
-    <link href="/static/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    {{> theme_init}}
 
-    <link href="/static/fonts/nunito-font.css" rel="stylesheet">
+    <link href="/static/fonts/pt-sans-font.css" rel="stylesheet">
 
-    <link href="/static/css/sb-admin-2.min.css" rel="stylesheet">
-    <link href="/static/css/app.css" rel="stylesheet">
+    <link href="/static/css/flyonui.css" rel="stylesheet">
 
     {{#if httpRedirectUrl}}
     <meta http-equiv="refresh" content="0;URL='{{httpRedirectUrl}}'" />
@@ -35,34 +34,29 @@
 
 </head>
 
-<body class="bg-gradient-primary">
+<body class="from-primary to-secondary min-h-screen bg-gradient-to-br">
 
-    <div class="container">
+    <div class="container mx-auto px-4">
 
-        <!-- Outer Row -->
-        <div class="row justify-content-center">
+        <div class="flex justify-center">
 
-            <div class="col-xl-10 col-lg-12 col-md-9">
+            <div class="w-full max-w-4xl">
 
-                <div class="card o-hidden border-0 shadow-lg my-5">
-                    <div class="card-body p-0">
-                        <!-- Nested Row within Card Body -->
+                <div class="card bg-base-100 my-12 overflow-hidden shadow-lg">
 
-                        {{> alerts}}
+                    {{> alerts}}
 
-                        <div class="p-5">
+                    <div class="p-12">
 
-                            {{#if embeddedTemplateHeader}}
-                            <div>
-                                {{{embeddedTemplateHeader}}}
-                            </div>
-                            {{/if}}
-
-
-                            {{{content}}}
+                        {{#if embeddedTemplateHeader}}
+                        <div>
+                            {{{embeddedTemplateHeader}}}
                         </div>
+                        {{/if}}
 
+                        {{{content}}}
                     </div>
+
                 </div>
 
             </div>
@@ -71,17 +65,8 @@
 
     </div>
 
-    <!-- Bootstrap core JavaScript-->
-    <script src="/static/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-    <script src="/static/bootstrap-4.6.2-dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
-    <!-- Core plugin JavaScript-->
-    <script src="/static/vendor/jquery-easing/jquery.easing.min.js"></script>
-
-    <!-- Custom scripts for all pages-->
-    <script src="/static/js/sb-admin-2.min.js"></script>
-
-    <script src="/static/js/clipboard.min.js"></script>
+    <script src="/static/js/flyonui.js"></script>
+    <script src="/static/js/ui.js"></script>
 
     <script src="/static/js/app.js"></script>
 

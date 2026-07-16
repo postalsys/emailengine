@@ -1,4 +1,10 @@
-<div id="swagger-ui"></div>
+{{!-- swagger-ui has no dark mode of its own (its stylesheet assumes a light
+      page), so the reference renders as a light island: data-theme pins the
+      FlyonUI tokens and color-scheme to light for this subtree even while
+      the admin chrome around it is dark --}}
+<div data-theme="light" class="rounded-box bg-white" style="color-scheme: light">
+    <div id="swagger-ui"></div>
+</div>
 
 <script src="/admin/swagger/resources/swagger-ui-bundle.js"></script>
 <script src="/admin/swagger/resources/swagger-ui-standalone-preset.js"></script>

@@ -1,0 +1,332 @@
+/*
+ * EmailEngine admin UI theme - Tailwind v4 + FlyonUI.
+ *
+ * This is the build SOURCE. Compile with `npm run build:css`, which writes the
+ * committed artifact static/css/flyonui.css (loaded by all layouts and bundled
+ * into the pkg binary). tailwindcss/flyonui/iconify are devDependencies only.
+ *
+ * Brand (EmailEngine_logo+info.pdf): indigo #4C5CC5 (PMS 2726C) = primary,
+ * coral #F8485E (PMS 1785C) = secondary/accent, font PT Sans (self-hosted,
+ * loaded via /static/fonts/pt-sans-font.css). The info sheet prints hex
+ * #407ec9 for the indigo, but that contradicts its own RGB 76,92,197 and the
+ * artwork - #4C5CC5 is correct.
+ */
+
+@import 'tailwindcss';
+
+@plugin "@iconify/tailwind4";
+
+@plugin "flyonui" {
+    themes: false;
+}
+@import 'flyonui/variants.css';
+
+/* Light theme: FlyonUI builtin "light" tokens merged with EmailEngine brand colors */
+@plugin "flyonui/theme" {
+    name: 'light';
+    default: true;
+    color-scheme: light;
+    --color-primary: #4c5cc5;
+    --color-primary-content: #ffffff;
+    --color-secondary: #f8485e;
+    --color-secondary-content: #ffffff;
+    --color-accent: #f8485e;
+    --color-accent-content: #ffffff;
+}
+
+/* Dark theme: FlyonUI builtin "dark" tokens with brand colors lightened for
+ * contrast on dark surfaces; content colors darkened to keep WCAG-ish ratios */
+@plugin "flyonui/theme" {
+    name: 'dark';
+    prefersdark: true;
+    color-scheme: dark;
+    --color-primary: #7b86dc;
+    --color-primary-content: #10123a;
+    --color-secondary: #f8697b;
+    --color-secondary-content: #3b070f;
+    --color-accent: #f8697b;
+    --color-accent-content: #3b070f;
+}
+
+/* Class sources: server-rendered templates plus the custom scripts that build
+ * class names. Vendored libraries are intentionally NOT scanned. */
+@source '../../../views/**/*.hbs';
+@source '../../js/app.js';
+@source '../../js/ui.js';
+@source '../../js/passkey-register.js';
+@source '../../js/login-passkey.js';
+@source '../../../node_modules/flyonui/flyonui.js';
+
+/* Safelist for classes assembled dynamically - in JS (badge-${type} etc.) and
+ * in the ui/* partials (btn-{{variant}} etc.) - that the scanner cannot see as
+ * complete tokens */
+@source inline('badge-{primary,secondary,accent,neutral,info,success,warning,error,soft}');
+@source inline('alert-{primary,secondary,info,success,warning,error,soft}');
+@source inline('btn-{primary,secondary,accent,neutral,info,success,warning,error,outline,soft,text,xs,sm,lg}');
+@source inline('{text-,bg-}{primary,secondary,info,success,warning,error}');
+/* tinted icon containers in ui/stat-card (bg-{{variant}}/10 is assembled) */
+@source inline('bg-{primary,secondary,info,success,warning,error}/10');
+@source inline('[--placement:top] [--placement:bottom] [--placement:left] [--placement:right]');
+/* server-driven dashboard icons (lib/ui-routes/dashboard-routes.js is not scanned) */
+@source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
+/* client-side rendered delivery-test status icons (built by browser JS) */
+@source inline('icon-[tabler--circle-check] icon-[tabler--circle-off] icon-[tabler--alert-triangle]');
+/* server-driven icon classes emitted by lib/ui-routes/route-helpers.js,
+   lib/oauth2-apps.js and the systemAlerts list in workers/api.js - those
+   files are not scanned, so the classes are safelisted here */
+@source inline('icon-[tabler--send] icon-[tabler--arrow-right-circle] icon-[tabler--brand-google] icon-[tabler--brand-windows]');
+@source inline('icon-[tabler--lock-open] icon-[tabler--link] icon-[tabler--key] icon-[tabler--database] icon-[tabler--brand-docker]');
+
+@theme {
+    --font-sans: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* single source for the sidebar width: w-sidebar on the aside,
+     * lg:ps-sidebar on the content column */
+    --spacing-sidebar: 18rem;
+}
+
+/* Close button for the dismissable clear-alert-btn error alerts. Un-layered
+ * on purpose (unlike the components below) so it sits above the Tailwind
+ * layers. */
+.close {
+    float: right;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-base-content);
+    background: none;
+    border: 0;
+    padding: 0;
+    opacity: 0.5;
+    cursor: pointer;
+}
+.close:hover {
+    opacity: 0.75;
+}
+
+/* Tooltip overrides. Un-layered on purpose: FlyonUI emits .tooltip-content
+ * in @layer utilities, which beats any components-layer rule regardless of
+ * specificity. */
+/* tooltips float above the sidebar (lg:z-40) and topbar; FlyonUI's default
+ * z-20 leaves bubbles clipped under the drawer. The width cap makes long
+ * tooltip texts wrap (FlyonUI's width:max-content otherwise renders them as
+ * one viewport-wide line); balance keeps the wrapped lines even. */
+.tooltip .tooltip-content {
+    z-index: 60;
+    max-width: 20rem;
+}
+.tooltip .tooltip-body {
+    /* block, not inline: an inline body fragments its background into one
+     * box per wrapped line */
+    display: block;
+    text-wrap: balance;
+}
+/* empty-state gate for SSE state badges (ui/state-badge): while there is no
+ * error, the bubble must not render at all. Gated on the wrapper because
+ * HSTooltip's show() removes the hidden class from the content. */
+.tooltip.ee-tooltip-empty .tooltip-content {
+    display: none;
+}
+
+/* Fullscreen ACE editor container (uiEditorFullscreen in ui.js). Un-layered
+ * with !important on purpose: ACE injects its own un-layered
+ * .ace_editor{position:relative} stylesheet at runtime, which beats any
+ * @layer rule in the cascade and previously kept the editor collapsed.
+ * NB: un-layered !important loses to layered !important (layer order
+ * reverses for important declarations), so a !-prefixed Tailwind utility
+ * on the same element/property would override this - do not use those on
+ * the editor containers. */
+.full-screen-div {
+    z-index: 9999;
+    width: 100% !important;
+    height: 100% !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * EmailEngine custom components (ported from static/css/app.css, callout.css
+ * and emailengine.css; colors converted to theme tokens for light+dark)
+ * ------------------------------------------------------------------------- */
+@layer components {
+    /* FlyonUI ships no badge-neutral variant (the base .badge already uses
+     * neutral tokens); define it explicitly so the SSE badge updater's
+     * class swaps (badge-${type} with type "neutral") stay meaningful */
+    .badge-neutral {
+        --badge-color: var(--color-neutral);
+        --badge-fg: var(--color-neutral-content);
+    }
+
+
+    /* Description list: label column + value column (replaces the Bootstrap
+     * dl.row + dt.col-sm-3/dd.col-sm-9 pattern used across detail pages) */
+    .ee-dl {
+        display: grid;
+        grid-template-columns: 1fr;
+        row-gap: 0.25rem;
+        column-gap: 1rem;
+    }
+    .ee-dl dt {
+        font-weight: 700;
+    }
+    .ee-dl dd {
+        margin: 0 0 0.5rem 0;
+        min-width: 0;
+    }
+    @media (min-width: 640px) {
+        .ee-dl {
+            grid-template-columns: 14rem minmax(0, 1fr);
+        }
+        .ee-dl dd {
+            margin-bottom: 0.25rem;
+        }
+    }
+
+    /* illustration half of the split login card (layout/login.hbs) */
+    .bg-login-page-image {
+        background: url(/static/logo_wide.png);
+        background-position: center;
+        background-size: cover;
+    }
+
+    /* ACE editor wrapper chrome (the editors themselves style their content) */
+    .code-editor {
+        width: 100%;
+        height: 14rem;
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-radius: var(--radius-field, 0.375rem);
+    }
+
+    /* Template editor toolbar attached below an editor box */
+    .editor-embed-block {
+        text-align: left;
+        padding-top: 0;
+        margin-top: -2px;
+    }
+    .editor-embed-content {
+        font-weight: 300;
+        font-size: 13px;
+        display: inline-block;
+        padding: 2px 10px;
+        background: var(--color-base-100);
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-top: none;
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+        text-decoration: none;
+    }
+    .editor-embed-content-left {
+        border-bottom-right-radius: 0;
+        border-top-left-radius: 0;
+        margin-right: -4px;
+    }
+    .editor-embed-content-right {
+        border-bottom-left-radius: 0;
+        border-top-left-radius: 0;
+        border-left: 0;
+        margin-left: 0;
+    }
+
+    /* the toolbar's label cell (editor title) - visually distinct from the
+     * clickable action cells */
+    .editor-embed-title {
+        background: var(--color-base-200);
+        font-weight: 600;
+        color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+    }
+    /* action links in the toolbar read as interactive */
+    .editor-embed-content a {
+        color: var(--color-primary);
+    }
+    .editor-embed-content a:hover {
+        text-decoration: underline;
+    }
+
+    .error-log-field {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+        border: var(--border, 1px) solid var(--color-base-300);
+        margin: 0;
+        padding: 1px;
+        display: block;
+        width: 100%;
+        height: 5rem;
+        color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+    }
+
+    .droptxt {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+    }
+    .dragover {
+        box-shadow: 2px 2px color-mix(in oklab, var(--color-base-content) 45%, transparent);
+    }
+
+    .code-link {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8em;
+    }
+
+    .popover-list {
+        margin: 0 0 0 10px;
+        padding: 0;
+        list-style: square;
+    }
+    .popover-list li {
+        margin: 0;
+        padding: 0;
+    }
+
+    .hover-bg-light:hover {
+        background-color: var(--color-base-200);
+    }
+
+    .alert-margin .alert {
+        margin: 10px 10px 0 0;
+    }
+
+    /* Callouts (previously static/css/callout.css) */
+    .bd-callout {
+        padding: 0.25rem 0.25rem;
+        margin-top: 1.25rem;
+        margin-bottom: 1.25rem;
+        border: var(--border, 1px) solid var(--color-base-300);
+        border-left-width: 0.25rem;
+        border-radius: var(--radius-field, 0.25rem);
+    }
+    .bd-callout h4 {
+        margin-top: 0;
+        margin-bottom: 0.25rem;
+    }
+    .bd-callout p:last-child {
+        margin-bottom: 0;
+    }
+    .bd-callout code {
+        border-radius: 0.25rem;
+    }
+    .bd-callout + .bd-callout {
+        margin-top: -0.25rem;
+    }
+    .bd-callout .small-text {
+        font-size: 0.8rem;
+    }
+    .bd-callout h4 {
+        color: var(--callout-color, inherit);
+    }
+    .bd-callout-info {
+        --callout-color: var(--color-info);
+        border-left-color: var(--callout-color);
+    }
+    .bd-callout-warning {
+        --callout-color: var(--color-warning);
+        border-left-color: var(--callout-color);
+    }
+    .bd-callout-success {
+        --callout-color: var(--color-success);
+        border-left-color: var(--callout-color);
+    }
+    .bd-callout-danger {
+        --callout-color: var(--color-error);
+        border-left-color: var(--callout-color);
+    }
+}

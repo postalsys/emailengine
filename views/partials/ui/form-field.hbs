@@ -1,0 +1,55 @@
+{{!--
+    ui/form-field - label + control + optional hint and validation error.
+    Emits no outer margin: wrap consecutive fields in a "space-y-4" container
+    (or similar) in the view.
+    Text-input form:
+      {{> ui/form-field id="account-name" name="name" label="Full name:" placeholder="e.g., John Smith" value=values.name error=errors.name hint="..."}}
+    Suggestions (native datalist; replaces the bootstrap-autocomplete plugin):
+      {{> ui/form-field id="host" label="Hostname" options=serverHostnames}}
+    Block form (custom control such as select/textarea; label/hint/error still handled):
+      {{#> ui/form-field id="x" label="..." error=errors.x}}<select id="x" name="x" class="select">...</select>{{/ui/form-field}}
+    Params:
+      id          - control id (required; also the default for name)
+      label       - field label text (optional)
+      name        - input name (defaults to id)
+      type        - input type (default "text")
+      value       - current value (optional)
+      placeholder - placeholder text (optional)
+      hint        - muted helper text under the control (optional)
+      error       - validation error message; adds is-invalid + error text (optional)
+      required    - true to mark the input required (optional)
+      options     - array of suggestion strings, rendered as a <datalist> (optional)
+      list        - id of an existing shared <datalist> (optional; ignored when
+                    options is set)
+      lpignore    - true to add data-lpignore + autocomplete="off" (credential-ish
+                    fields that password managers must not autofill)
+      class       - extra classes on the input (optional)
+--}}
+<div class="w-full">
+    {{#if label}}
+    <label class="label-text" for="{{id}}">{{label}}</label>
+    {{/if}}
+    {{#if @partial-block}}
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    {{> @partial-block id="" label="" name="" type="" value="" placeholder="" hint="" error="" required="" options="" list="" lpignore="" class=""}}
+    {{else}}
+    <input type="{{#if type}}{{type}}{{else}}text{{/if}}"
+        class="input{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}" id="{{id}}"
+        name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{#if value}}value="{{value}}" {{/if}}{{#if placeholder}}placeholder="{{placeholder}}"
+        {{/if}}{{#if options}}list="{{id}}-datalist" autocomplete="off" {{else}}{{#if list}}list="{{list}}"
+        {{/if}}{{/if}}{{#if lpignore}}data-lpignore="true" autocomplete="off" {{/if}}{{#if required}}required {{/if}}>
+    {{#if options}}
+    <datalist id="{{id}}-datalist">
+        {{#each options}}
+        <option value="{{this}}"></option>
+        {{/each}}
+    </datalist>
+    {{/if}}
+    {{/if}}
+    {{#if error}}
+    <span class="helper-text text-error">{{error}}</span>
+    {{/if}}
+    {{#if hint}}
+    <span class="helper-text">{{hint}}</span>
+    {{/if}}
+</div>

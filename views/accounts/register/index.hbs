@@ -1,8 +1,9 @@
 <div class="text-center">
-    <h1 class="h4 text-gray-900 mb-4">{{_ "Choose your email account provider" templateLocale }}</h1>
+    <h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Choose your email account provider" templateLocale }}
+    </h1>
 </div>
 
-<div style="width: 270px; margin: 0 auto;">
+<div class="mx-auto w-[270px]">
 
     <div class="mb-1 p-1">
         <form method="post" action="/accounts/new">
@@ -11,8 +12,8 @@
             <input type="hidden" name="data" value="{{values.data}}">
             <input type="hidden" name="sig" value="{{values.sig}}">
 
-            <button type="submit" class="btn btn-primary btn-block" style="line-height: 2.5rem; font-size: 1.2rem;">
-                <i class="fa fa-envelope-square fa-fw"></i> {{_ "Standard IMAP" templateLocale }}
+            <button type="submit" class="btn btn-primary btn-block h-12 text-lg">
+                <span class="icon-[tabler--mail] size-5"></span> {{_ "Standard IMAP" templateLocale }}
             </button>
         </form>
     </div>
@@ -21,10 +22,10 @@
 
     {{#each oauth2apps}}
 
-    <div class="mb-1 p-1 rounded {{#if title}}hover-bg-light{{/if}}">
+    <div class="mb-1 p-1 rounded-box {{#if title}}hover-bg-light{{/if}}">
 
         {{#if title}}
-        <h5 style="cursor: default;">{{title}}</h5>
+        <h5 class="cursor-default font-semibold">{{title}}</h5>
         {{/if}}
 
         <form method="post" action="/accounts/new">
@@ -34,11 +35,11 @@
             <input type="hidden" name="sig" value="{{../values.sig}}">
 
             {{#if providerData.linkImage}}
-            <input type="image" src="{{providerData.linkImage}}" style="width: 100%; display: block;" />
+            <input type="image" src="{{providerData.linkImage}}" class="block w-full" />
             {{else}}
 
-            <button type="submit" class="btn btn-primary btn-block" style="font-size: 1.5rem;">
-                <i class="fa {{providerData.icon}} fa-fw"></i> {{providerData.comment}}
+            <button type="submit" class="btn btn-primary btn-block h-14 text-xl">
+                <span class="{{providerData.icon}} size-5"></span> {{providerData.comment}}
             </button>
             {{/if}}
 
