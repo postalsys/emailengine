@@ -136,14 +136,14 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             <span class="helper-text">The authentication method is fixed once the application has been created and
                 cannot be changed.</span>
             {{else}}
-            {{!-- custom tab behavior: the page script (new/edit) toggles the
-                  active class and the auth-method sections; not a FlyonUI
+            {{!-- custom tab behavior: the script at the end of this partial
+                  toggles tab-active and the auth-method sections; not a FlyonUI
                   data-tabs instance --}}
             <nav class="tabs tabs-bordered" id="auth-method-tabs" role="tablist" aria-label="Authentication method">
-                <button type="button" class="tab auth-method-tab{{#if authMethodIsServiceKey}} active{{/if}}"
+                <button type="button" class="tab auth-method-tab{{#if authMethodIsServiceKey}} tab-active{{/if}}"
                     id="auth-method-tab-serviceKey" data-auth-method="serviceKey" role="tab"
                     aria-selected="{{#if authMethodIsServiceKey}}true{{else}}false{{/if}}">Service account key</button>
-                <button type="button" class="tab auth-method-tab{{#if authMethodIsExternalAccount}} active{{/if}}"
+                <button type="button" class="tab auth-method-tab{{#if authMethodIsExternalAccount}} tab-active{{/if}}"
                     id="auth-method-tab-externalAccount" data-auth-method="externalAccount" role="tab"
                     aria-selected="{{#if authMethodIsExternalAccount}}true{{else}}false{{/if}}">Workload Identity
                     Federation (keyless)</button>
@@ -1391,13 +1391,13 @@ open=values.skipScopes}}
             authMethodTabs.forEach(tab => {
                 tab.addEventListener('click', e => {
                     e.preventDefault();
-                    if (tab.classList.contains('disabled') || tab.classList.contains('active')) {
+                    if (tab.classList.contains('disabled') || tab.classList.contains('tab-active')) {
                         return;
                     }
                     let selected = tab.getAttribute('data-auth-method');
                     authMethodTabs.forEach(other => {
                         let isActive = other === tab;
-                        other.classList.toggle('active', isActive);
+                        other.classList.toggle('tab-active', isActive);
                         other.setAttribute('aria-selected', isActive ? 'true' : 'false');
                     });
                     authMethodInput.value = selected;

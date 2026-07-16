@@ -26,6 +26,34 @@ const { ensureAdminSession, createApiToken } = require('./helpers/bootstrap');
 // rate limiter once the suite grows past ~10 tests.
 const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-admin-state.json');
 
+// Resolves --color-primary for the active theme into the rgb() form that
+// getComputedStyle returns, so the tab assertions below stay theme-agnostic.
+function resolvePrimaryColor(page) {
+    return page.evaluate(() => {
+        const probe = document.createElement('span');
+        probe.style.color = 'var(--color-primary)';
+        document.body.appendChild(probe);
+        const color = window.getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+    });
+}
+
+// Asserts that a FlyonUI tab strip actually *shows* which tab is selected.
+// The panes and the toggled class are checked separately; this guards the
+// styling hook specifically, which is a separate class (`tab-active`, applied
+// via the `active-tab:` variant) from the one the FlyonUI JS toggles
+// (`active`). Hovering a tab also paints it primary, so the pointer is parked
+// away from the strip before the colors are read.
+async function expectSelectedTab(page, selectedId, otherIds) {
+    const primary = await resolvePrimaryColor(page);
+    await page.mouse.move(0, 0);
+    await expect(page.locator(`#${selectedId}`)).toHaveCSS('color', primary);
+    for (const id of otherIds) {
+        await expect(page.locator(`#${id}`)).not.toHaveCSS('color', primary);
+    }
+}
+
 // Per-test console error collection; every test asserts the page stayed clean.
 function trackConsoleErrors(page) {
     const errors = [];
@@ -323,10 +351,12 @@ test.describe('admin shell', () => {
         await page.goto('/admin/templates/new');
         await page.fill('#inputName', 'E2E Smoke Template');
         await page.fill('#inputSubject', 'e2e subject');
-        // FlyonUI tabs switch the editor panes
+        // FlyonUI tabs switch the editor panes and mark the selected one
+        await expectSelectedTab(page, 'html-tab', ['text-tab']);
         await page.locator('#text-tab').click();
         await expect(page.locator('#text')).toBeVisible();
         await expect(page.locator('#html')).toBeHidden();
+        await expectSelectedTab(page, 'text-tab', ['html-tab']);
         await page.locator('button[type="submit"]', { hasText: 'Create template' }).click();
         await page.waitForURL(/\/admin\/templates\/template\//);
 
@@ -377,10 +407,13 @@ test.describe('admin shell', () => {
         await page.waitForURL(/\/admin\/webhooks\/webhook\//);
 
         // detail page: read-only ACE previews, FlyonUI tabs switch fn/map panes
+        // and mark the selected one
         await expect(page.locator('#fn-preview .ace_content')).toBeAttached();
+        await expectSelectedTab(page, 'fn-tab', ['map-tab']);
         await page.locator('#map-tab').click();
         await expect(page.locator('#map')).toBeVisible();
         await expect(page.locator('#fn')).toBeHidden();
+        await expectSelectedTab(page, 'map-tab', ['fn-tab']);
 
         // delete through the confirmation modal
         await page.locator('#delete-btn').click();
@@ -457,9 +490,11 @@ test.describe('admin shell', () => {
 
         await page.locator('summary', { hasText: 'Integration Examples' }).click();
         await expect(page.locator('#example-nodemailer-code')).toContainText('createTransport');
+        await expectSelectedTab(page, 'example-nodemailer-tab', ['example-phpmailer-tab']);
         await page.locator('#example-phpmailer-tab').click();
         await expect(page.locator('#example-phpmailer')).toBeVisible();
         await expect(page.locator('#example-phpmailer-code')).toContainText('PHPMailer');
+        await expectSelectedTab(page, 'example-phpmailer-tab', ['example-nodemailer-tab']);
 
         // editing the port re-renders the examples
         await page.fill('#smtpServerPort', '3535');
@@ -564,6 +599,19 @@ test.describe('admin shell', () => {
         expect(await page.evaluate(() => document.getElementById('select-pubsub-app').classList.contains('hidden'))).toBe(true);
         await page.locator('#baseScopesAPI').check();
         expect(await page.evaluate(() => document.getElementById('account-type-card-gmail').classList.contains('hidden'))).toBe(false);
+        await page.locator('#baseScopesImap').check();
+
+        // the service-account form carries its own auth-method tab strip (not a
+        // FlyonUI data-tabs instance): it marks the selection and swaps sections
+        await page.goto('/admin/config/oauth/new?provider=gmailService');
+        await expectSelectedTab(page, 'auth-method-tab-serviceKey', ['auth-method-tab-externalAccount']);
+        await expect(page.locator('.auth-method-section-externalAccount').first()).toBeHidden();
+        await page.locator('#auth-method-tab-externalAccount').click();
+        await expectSelectedTab(page, 'auth-method-tab-externalAccount', ['auth-method-tab-serviceKey']);
+        await expect(page.locator('.auth-method-section-externalAccount').first()).toBeVisible();
+        await expect(page.locator('.auth-method-section-serviceKey').first()).toBeHidden();
+
+        await page.goto('/admin/config/oauth/new?provider=gmail');
         await page.locator('#baseScopesImap').check();
         await page.fill('#name', 'E2E OAuth App');
         await page.fill('#clientId', '1234567890-e2e.apps.googleusercontent.com');

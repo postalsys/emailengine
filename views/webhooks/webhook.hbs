@@ -87,14 +87,14 @@
 
         <div class="mt-6">
             <nav class="tabs tabs-bordered" aria-label="Webhook route functions" role="tablist" data-tabs>
-                <button type="button" class="tab active" id="fn-tab" data-tab="#fn" role="tab" aria-controls="fn"
-                    aria-selected="true">Filter function</button>
+                <button type="button" class="tab active-tab:tab-active active" id="fn-tab" data-tab="#fn" role="tab"
+                    aria-controls="fn" aria-selected="true">Filter function</button>
 
-                <button type="button" class="tab" id="map-tab" data-tab="#map" role="tab" aria-controls="map"
+                <button type="button" class="tab active-tab:tab-active" id="map-tab" data-tab="#map" role="tab" aria-controls="map"
                     aria-selected="false">Map function</button>
 
                 {{#if errorLog}}
-                <button type="button" class="tab" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
+                <button type="button" class="tab active-tab:tab-active" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
                     aria-selected="false">Error log</button>
                 {{/if}}
 
