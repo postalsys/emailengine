@@ -109,13 +109,8 @@
             <div>
                 {{> ui/setting-ref name="serviceSecret"}}
                 {{#> ui/form-field id="settingsServiceSecret" label="Service Secret" error=errors.serviceSecret}}
-                <div class="join w-full">
-                    <input type="password" class="input join-item grow{{#if errors.serviceSecret}} is-invalid{{/if}}"
-                        id="settingsServiceSecret" name="serviceSecret" value="{{values.serviceSecret}}"
-                        data-lpignore="true" autocomplete="off" />
-                    <button class="btn btn-outline btn-primary join-item" type="button" id="showServiceSecret"
-                        aria-label="Show secret"><span class="icon-[tabler--eye] size-4"></span></button>
-                </div>
+                {{> ui/secret-field id="settingsServiceSecret" name="serviceSecret" value=values.serviceSecret
+                error=errors.serviceSecret toggleId="showServiceSecret" toggleLabel="Show secret"}}
                 <span class="helper-text">HMAC key for signing public requests. Changing this invalidates all existing
                     tracking links.</span>
                 {{/ui/form-field}}
@@ -499,17 +494,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-
-        let showBt = document.getElementById('showServiceSecret');
-        let serviceSecretElm = document.getElementById('settingsServiceSecret');
-
-        let showSecret = () => {
-            let current = serviceSecretElm.getAttribute('type')
-            serviceSecretElm.setAttribute('type', current === 'text' ? 'password' : 'text');
-            showBt.blur()
-        }
-
-        showBt.addEventListener('click', showSecret);
 
         const sendCleanPayload = async () => {
 

@@ -89,16 +89,9 @@
                 {{> ui/setting-ref name="imapProxyServerPassword"}}
                 {{#> ui/form-field id="imapProxyServerPassword" label="Global Password"
                 error=errors.imapProxyServerPassword}}
-                <div class="join w-full">
-                    <input type="password"
-                        class="input join-item grow trigger-example-render{{#if errors.imapProxyServerPassword}} is-invalid{{/if}}"
-                        id="imapProxyServerPassword" name="imapProxyServerPassword"
-                        value="{{values.imapProxyServerPassword}}" {{#unless
-                        values.imapProxyServerPassword}}placeholder="No global password set" {{/unless}}
-                        data-lpignore="true" autocomplete="off" />
-                    <button class="btn btn-outline btn-primary join-item" type="button" id="showPassword"
-                        aria-label="Show password"><span class="icon-[tabler--eye] size-4"></span></button>
-                </div>
+                {{> ui/secret-field id="imapProxyServerPassword" value=values.imapProxyServerPassword
+                error=errors.imapProxyServerPassword placeholder="No global password set"
+                inputClass="trigger-example-render" toggleId="showPassword"}}
                 <span class="helper-text">Optional shared password for all accounts. Leave empty to use only access
                     tokens.</span>
                 {{/ui/form-field}}
@@ -246,17 +239,6 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-
-        let showBt = document.getElementById('showPassword');
-        let serviceSecretElm = document.getElementById('imapProxyServerPassword');
-
-        let showSecret = () => {
-            let current = serviceSecretElm.getAttribute('type')
-            serviceSecretElm.setAttribute('type', current === 'text' ? 'password' : 'text');
-            showBt.blur()
-        }
-
-        showBt.addEventListener('click', showSecret);
 
         let availableAddresses = document.getElementById('availableAddresses').value.split(',').map(e => e.trim()).filter(e => e);
         // native datalist suggestions (replaces the bootstrap-autocomplete plugin)

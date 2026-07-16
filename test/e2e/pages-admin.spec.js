@@ -54,6 +54,28 @@ async function expectSelectedTab(page, selectedId, otherIds) {
     }
 }
 
+// Asserts the HSTogglePassword round-trip on a secret field: revealing flips
+// the input type and swaps the eye icon to eye-off, toggling again hides it.
+async function expectPasswordToggle(page, btnId, inputId) {
+    const input = page.locator(`#${inputId}`);
+    const eye = page.locator(`#${btnId} .icon-\\[tabler--eye\\]`);
+    const eyeOff = page.locator(`#${btnId} .icon-\\[tabler--eye-off\\]`);
+
+    await expect(input).toHaveAttribute('type', 'password');
+    await expect(eye).toBeVisible();
+    await expect(eyeOff).toBeHidden();
+
+    await page.locator(`#${btnId}`).click();
+    await expect(input).toHaveAttribute('type', 'text');
+    await expect(eye).toBeHidden();
+    await expect(eyeOff).toBeVisible();
+
+    await page.locator(`#${btnId}`).click();
+    await expect(input).toHaveAttribute('type', 'password');
+    await expect(eye).toBeVisible();
+    await expect(eyeOff).toBeHidden();
+}
+
 // Per-test console error collection; every test asserts the page stayed clean.
 function trackConsoleErrors(page) {
     const errors = [];
@@ -553,6 +575,9 @@ test.describe('admin shell', () => {
         await page.locator('#smtpServerPort').dispatchEvent('change');
         await expect(page.locator('#example-phpmailer-code')).toContainText('3535');
 
+        await page.fill('#smtpServerPassword', 'e2e-secret');
+        await expectPasswordToggle(page, 'showPassword', 'smtpServerPassword');
+
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
@@ -567,8 +592,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#example-node-imap-code')).toContainText('new Imap');
 
         await page.fill('#imapProxyServerPassword', 'e2e-secret');
-        await page.locator('#showPassword').click();
-        expect(await page.evaluate(() => document.getElementById('imapProxyServerPassword').type)).toBe('text');
+        await expectPasswordToggle(page, 'showPassword', 'imapProxyServerPassword');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -608,6 +632,8 @@ test.describe('admin shell', () => {
         // clear-completed-jobs posts to the server and reports through a toast
         await page.locator('#clean-queues-btn').click();
         await expect(page.locator('#toastContainer .alert', { hasText: 'Cleanup request sent' })).toBeVisible();
+
+        await expectPasswordToggle(page, 'showServiceSecret', 'settingsServiceSecret');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
