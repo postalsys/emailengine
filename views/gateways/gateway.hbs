@@ -43,12 +43,8 @@
             <dd>
                 <strong>{{gateway.gateway}}</strong>
 
-                {{!-- live state badge: hover popover runs through the residual
-                      shim in bootstrap-compat.js --}}
-                <span class="badge rounded-full badge-{{label.type}} state-info" data-account="{{gateway.gateway}}"
-                    style="cursor:default;" data-toggle="popover" data-trigger="hover" {{#if
-                    label.error}}data-title="Connection error" data-content="{{label.error}}" {{/if}}>
-                    {{label.name}}</span>
+                {{!-- live state badge with an error tooltip --}}
+                {{> ui/state-badge label=label account=gateway.gateway pill=true}}
             </dd>
             {{/if}}
 

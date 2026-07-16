@@ -42,7 +42,7 @@ EmailEngine is an email sync platform that provides REST API access to email acc
 - **Database**: Redis (ioredis) + BullMQ for job queues
 - **Email**: ImapFlow (IMAP), Nodemailer (SMTP)
 - **OAuth2**: Gmail API, Microsoft Graph, Mail.ru
-- **Web UI**: server-rendered Handlebars + jQuery, styled with Tailwind v4 + FlyonUI (see Admin UI Theme below)
+- **Web UI**: server-rendered Handlebars, styled with Tailwind v4 + FlyonUI (see Admin UI Theme below)
 
 ## Admin UI Theme
 
@@ -53,7 +53,7 @@ The web UI is styled with Tailwind v4 + FlyonUI (daisyUI/Preline based). There i
 - **Component library**: reusable parameterized partials in `views/partials/ui/` (btn, badge, modal, form-field, checkbox, tooltip, tooltip-rich, stat-card, page-header, setting-ref, details, breadcrumb, pagination, menu-*). Build missing primitives there first; never hand-roll per page. Block-form partials must neutralize their own hash params when invoking `{{> @partial-block}}` (and any nested `ui/*` call) - Handlebars hash params fall through into nested partials otherwise.
 - **Safelist trap**: class names built in JS strings (`badge-${type}`) or emitted from `lib/`/`workers/` (server-driven icons) are invisible to the Tailwind scanner - add them to the `@source inline(...)` safelists in `app.tailwind.css`.
 - **Icons**: Tabler via Iconify classes (`icon-[tabler--...]` on a span). Do not add Font Awesome back. Do not add apexcharts (restrictive license, breaks `npm run licenses`).
-- **Residual shim**: `static/js/bootstrap-compat.js` + the `.bs-compat-*`/`.close` rules in `static/css/src/bootstrap-compat.css` implement one legacy contract only - the SSE-updated state badges and TLS cert labels use `data-toggle="popover"/"tooltip"` hover bubbles repainted through `$().popover()/$().tooltip()`. Nothing else may use the shim.
+- **No jQuery**: the admin UI is jQuery-free. The SSE-updated state badges render through `ui/state-badge` (FlyonUI tooltip carries the error text; `static/js/app.js` repaints badge class/text and toggles the tooltip body), and the TLS cert labels use `ui/tooltip` repainted by `paintCertData()` in `static/js/ui.js`. Do not reintroduce jQuery or `data-toggle` attributes.
 - **Do not run prettier on .hbs files** (it mangles inline scripts), and never use HTML entities inside Handlebars partial hash strings (they double-escape; entities in plain markup are fine).
 
 ## Development Commands

@@ -1,4 +1,4 @@
-/* global document, window, $, FileReader, EventSource */
+/* global document, window, FileReader, EventSource */
 
 'use strict';
 
@@ -168,10 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
         t.textContent = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium', dateStyle: 'short' }).format(date);
     }
 
-    // enable tooltips
-    $('[data-toggle="tooltip"]').tooltip();
-    $('[data-toggle="popover"]').popover();
-
     function dropfile(elm, file) {
         const reader = new FileReader();
         reader.onload = function (e) {
@@ -213,6 +209,44 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             elm.textContent = origin;
         }
+    }
+
+    // show or hide the error tooltip attached to a state badge (the badge sits
+    // inside a ui/state-badge tooltip wrapper; no error = content stays hidden)
+    function setStateTooltip(stateInfoElm, error) {
+        let tooltipElm = stateInfoElm.closest('.tooltip');
+        let tooltipContentElm = tooltipElm && tooltipElm.querySelector('.tooltip-content');
+        if (!tooltipContentElm) {
+            return;
+        }
+        tooltipContentElm.classList.toggle('hidden', !error);
+        tooltipContentElm.querySelector('.tooltip-body').textContent = error || '';
+    }
+
+    // repaint a ui/state-badge from a state label: badge color, spinner/text
+    // content and the error tooltip
+    function repaintStateBadge(stateInfoElm, stateLabel) {
+        for (let val of stateInfoElm.classList.values()) {
+            if (/^badge-/.test(val)) {
+                stateInfoElm.classList.remove(val);
+            }
+        }
+
+        stateInfoElm.classList.add(`badge-${stateLabel.type}`);
+
+        stateInfoElm.innerHTML = '';
+        if (stateLabel.spinner) {
+            let spinnerElm = document.createElement('span');
+            spinnerElm.classList.add('icon-[tabler--loader-2]', 'animate-spin', 'size-3.5', 'align-text-bottom');
+            let textElm = document.createElement('span');
+            textElm.textContent = ' ' + stateLabel.name;
+            stateInfoElm.appendChild(spinnerElm);
+            stateInfoElm.appendChild(textElm);
+        } else {
+            stateInfoElm.textContent = stateLabel.name;
+        }
+
+        setStateTooltip(stateInfoElm, stateLabel.error);
     }
 
     function updateStateIndicators(data) {
@@ -313,35 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let stateInfoElms = document.querySelectorAll(`.state-info[data-account="${account}"]`);
         if (stateInfoElms.length) {
             for (let stateInfoElm of stateInfoElms) {
-                for (let val of stateInfoElm.classList.values()) {
-                    if (/^badge-/.test(val)) {
-                        stateInfoElm.classList.remove(val);
-                    }
-                }
-
-                stateInfoElm.classList.add(`badge-${stateLabel.type}`);
-
-                stateInfoElm.innerHTML = '';
-                if (stateLabel.spinner) {
-                    let spinnerElm = document.createElement('span');
-                    spinnerElm.classList.add('icon-[tabler--loader-2]', 'animate-spin', 'size-3.5', 'align-text-bottom');
-                    let textElm = document.createElement('span');
-                    textElm.textContent = ' ' + stateLabel.name;
-                    stateInfoElm.appendChild(spinnerElm);
-                    stateInfoElm.appendChild(textElm);
-                } else {
-                    stateInfoElm.textContent = stateLabel.name;
-                }
-
-                if (stateLabel.error) {
-                    stateInfoElm.dataset.title = 'Connection error';
-                    stateInfoElm.dataset.content = stateLabel.error;
-                    $(stateInfoElm).popover('enable');
-                } else {
-                    stateInfoElm.dataset.title = '';
-                    stateInfoElm.dataset.content = '';
-                    $(stateInfoElm).popover('disable');
-                }
+                repaintStateBadge(stateInfoElm, stateLabel);
             }
         }
     }
@@ -393,35 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let stateInfoElms = document.querySelectorAll(`.state-info[data-type="smtp"]`);
         if (stateInfoElms.length) {
             for (let stateInfoElm of stateInfoElms) {
-                for (let val of stateInfoElm.classList.values()) {
-                    if (/^badge-/.test(val)) {
-                        stateInfoElm.classList.remove(val);
-                    }
-                }
-
-                stateInfoElm.classList.add(`badge-${stateLabel.type}`);
-
-                stateInfoElm.innerHTML = '';
-                if (stateLabel.spinner) {
-                    let spinnerElm = document.createElement('span');
-                    spinnerElm.classList.add('icon-[tabler--loader-2]', 'animate-spin', 'size-3.5', 'align-text-bottom');
-                    let textElm = document.createElement('span');
-                    textElm.textContent = ' ' + stateLabel.name;
-                    stateInfoElm.appendChild(spinnerElm);
-                    stateInfoElm.appendChild(textElm);
-                } else {
-                    stateInfoElm.textContent = stateLabel.name;
-                }
-
-                if (stateLabel.error) {
-                    stateInfoElm.dataset.title = 'Connection error';
-                    stateInfoElm.dataset.content = stateLabel.error;
-                    $(stateInfoElm).popover('enable');
-                } else {
-                    stateInfoElm.dataset.title = '';
-                    stateInfoElm.dataset.content = '';
-                    $(stateInfoElm).popover('disable');
-                }
+                repaintStateBadge(stateInfoElm, stateLabel);
             }
         }
     }

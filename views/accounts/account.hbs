@@ -116,16 +116,7 @@
             <dd>
                 <strong>{{account.account}}</strong>
 
-                <span class="badge rounded-full badge-{{account.stateLabel.type}} state-info"
-                    data-account="{{account.account}}" style="cursor:default;" data-toggle="popover"
-                    data-trigger="hover" {{#if account.stateLabel.error}}data-title="Connection error"
-                    data-content="{{account.stateLabel.error}}" {{/if}}>
-
-                    {{#if account.stateLabel.spinner}}
-                    <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
-                    {{/if}}
-
-                    {{account.stateLabel.name}}</span>
+                {{> ui/state-badge label=account.stateLabel account=account.account pill=true}}
 
                 <div>
                     <div class="text-error">
@@ -530,15 +521,7 @@
             {{#each subConnectionInfo}}
             <dt>{{path}}</dt>
             <dd>
-                <span class="badge rounded-full badge-{{stateLabel.type}} state-info" style="cursor:default;"
-                    data-toggle="popover" data-trigger="hover" {{#if stateLabel.error}}data-title="Connection error"
-                    data-content="{{stateLabel.error}}" {{/if}}>
-
-                    {{#if stateLabel.spinner}}
-                    <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
-                    {{/if}}
-
-                    {{stateLabel.name}}</span>
+                {{> ui/state-badge label=stateLabel pill=true}}
             </dd>
             {{/each}}
         </dl>

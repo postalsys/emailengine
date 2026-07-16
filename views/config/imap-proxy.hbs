@@ -2,16 +2,10 @@
     <h1 class="flex items-center gap-2 text-2xl font-semibold text-base-content">
         <span class="icon-[tabler--server] size-6 text-base-content/60"></span>
         IMAP Proxy
-        {{!-- live state badge: app.js updates the badge-{type} class and
-              text through the /admin/changes SSE feed (targets
-              .state-info[data-type]); the hover popover runs through the
-              residual shim in bootstrap-compat.js --}}
-        <span class="badge badge-{{serverState.label.type}} state-info" data-type="imapProxy">
-            {{#if serverState.label.spinner}}
-            <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
-            {{/if}}
-
-            {{serverState.label.name}}</span>
+        {{!-- live state badge: app.js updates the badge-{type} class, text
+              and error tooltip through the /admin/changes SSE feed (targets
+              .state-info[data-type]) --}}
+        {{> ui/state-badge label=serverState.label dataType="imapProxy"}}
     </h1>
 </div>
 

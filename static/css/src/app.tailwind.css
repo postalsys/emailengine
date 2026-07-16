@@ -13,7 +13,6 @@
  */
 
 @import 'tailwindcss';
-@import './bootstrap-compat.css';
 
 @plugin "@iconify/tailwind4";
 
@@ -54,7 +53,6 @@
 @source '../../../views/**/*.hbs';
 @source '../../js/app.js';
 @source '../../js/ui.js';
-@source '../../js/bootstrap-compat.js';
 @source '../../js/passkey-register.js';
 @source '../../js/login-passkey.js';
 @source '../../../node_modules/flyonui/flyonui.js';
@@ -83,6 +81,25 @@
     /* single source for the sidebar width: w-sidebar on the aside,
      * lg:ps-sidebar on the content column */
     --spacing-sidebar: 18rem;
+}
+
+/* Close button for the dismissable clear-alert-btn error alerts. Un-layered
+ * on purpose (unlike the components below) so it sits above the Tailwind
+ * layers. */
+.close {
+    float: right;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-base-content);
+    background: none;
+    border: 0;
+    padding: 0;
+    opacity: 0.5;
+    cursor: pointer;
+}
+.close:hover {
+    opacity: 0.75;
 }
 
 /* ---------------------------------------------------------------------------

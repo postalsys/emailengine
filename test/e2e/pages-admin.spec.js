@@ -888,6 +888,61 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('state badge: connection error shows in the FlyonUI tooltip', async ({ page, request }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        const token = await createApiToken(page, 'e2e state-badge token');
+        const auth = { Authorization: `Bearer ${token}` };
+        const ACCOUNT_ID = 'e2e-bad-auth';
+
+        // an account with intentionally wrong IMAP credentials fails auth fast
+        // and deterministically, driving its badge into the error state (via
+        // SSE repaint while the list is open, or the server render if the
+        // failure lands first - both paths feed the same ui/state-badge)
+        await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        const res = await request.post('/v1/account', {
+            headers: auth,
+            data: {
+                account: ACCOUNT_ID,
+                name: 'E2E Bad Auth',
+                email: 'e2e-bad-auth@ethereal.email',
+                imap: {
+                    host: 'imap.ethereal.email',
+                    port: 993,
+                    secure: true,
+                    auth: { user: 'e2e-nonexistent@ethereal.email', pass: 'wrong-password' }
+                }
+            }
+        });
+        expect(res.ok(), `POST /v1/account -> ${res.status()} ${await res.text()}`).toBeTruthy();
+
+        try {
+            await page.goto('/admin/accounts');
+            const badge = page.locator(`.state-info[data-account="${ACCOUNT_ID}"]`);
+            await expect(badge).toBeVisible();
+
+            await expect(badge).toHaveText(/Connection failed/, { timeout: 90000 });
+            await expect(badge).toHaveClass(/badge-error/);
+
+            // the error text lands in the tooltip body and the content unhides
+            const wrap = page.locator(`.tooltip:has(.state-info[data-account="${ACCOUNT_ID}"])`);
+            await expect(wrap.locator('.tooltip-content')).not.toHaveClass(/hidden/);
+            expect((await wrap.locator('.tooltip-body').textContent()).trim()).not.toBe('');
+
+            await badge.hover();
+            await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+            await page.mouse.move(0, 0);
+        } finally {
+            // wait out the async teardown - a mid-deletion account transiently
+            // 404s account lookups on the internals thread pages
+            await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth });
+            await expect.poll(async () => (await request.get(`/v1/account/${ACCOUNT_ID}`, { headers: auth })).status(), { timeout: 15000 }).toBe(404);
+        }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('anonymous visitor is redirected to the login page', async ({ page, browser }) => {
         // make sure auth is enabled even when this test runs alone
         await ensureAdminSession(page);
