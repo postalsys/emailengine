@@ -218,30 +218,7 @@
         editorMapPreview.setTheme("ace/theme/kuroir");
         editorMapPreview.session.setMode("ace/mode/json");
 
-        for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
-            let target = toggleElm.dataset.target;
-            if (!editors.has(target)) {
-                continue
-            }
-            let targetElm = document.getElementById(target);
-            let editor = editors.get(target)
-
-            toggleElm.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                targetElm.classList.toggle('full-screen-div');
-                editor.resize();
-                editor.focus();
-            });
-
-            targetElm.addEventListener('keydown', e => {
-                if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
-                    targetElm.classList.remove('full-screen-div')
-                    editor.resize();
-                    editor.focus();
-                }
-            });
-        }
+        uiEditorFullscreen(editors);
 
         const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
         const updateFilterResult = (err, result, opts) => {

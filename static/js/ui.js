@@ -139,6 +139,37 @@ window.uiAutoInit = () => {
     });
 })();
 
+// Fullscreen toggle for ACE editor blocks: binds every .toggle-fullscreen
+// link whose data-target names an editor in the passed Map (element id ->
+// ace instance). Clicking toggles .full-screen-div on the editor container,
+// Escape exits; the editor is resized and refocused on both transitions.
+window.uiEditorFullscreen = editors => {
+    for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
+        let target = toggleElm.dataset.target;
+        if (!editors.has(target)) {
+            continue;
+        }
+        let targetElm = document.getElementById(target);
+        let editor = editors.get(target);
+
+        toggleElm.addEventListener('click', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            targetElm.classList.toggle('full-screen-div');
+            editor.resize();
+            editor.focus();
+        });
+
+        targetElm.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
+                targetElm.classList.remove('full-screen-div');
+                editor.resize();
+                editor.focus();
+            }
+        });
+    }
+};
+
 // Repaint the #tls-label certificate badge (config/smtp and config/imap-proxy
 // pages) from a certificate-check response: badge color, label text and the
 // FlyonUI tooltip body that carries the status details

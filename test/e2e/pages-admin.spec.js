@@ -431,6 +431,15 @@ test.describe('admin shell', () => {
         await page.goto('/admin/templates/new');
         await page.fill('#inputName', 'E2E Smoke Template');
         await page.fill('#inputSubject', 'e2e subject');
+
+        // editor fullscreen round-trip through the shared uiEditorFullscreen
+        // helper: the toggle link expands the container, Escape collapses it
+        const isFullscreen = () => page.evaluate(() => document.getElementById('editor-html').classList.contains('full-screen-div'));
+        await page.locator('.toggle-fullscreen[data-target="editor-html"]').click();
+        expect(await isFullscreen()).toBe(true);
+        await page.keyboard.press('Escape');
+        expect(await isFullscreen()).toBe(false);
+
         // FlyonUI tabs switch the editor panes and mark the selected one
         await expectSelectedTab(page, 'html-tab', ['text-tab']);
         await page.locator('#text-tab').click();
