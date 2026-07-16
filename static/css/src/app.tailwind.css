@@ -102,6 +102,23 @@
     opacity: 0.75;
 }
 
+/* Fullscreen ACE editor container (uiEditorFullscreen in ui.js). Un-layered
+ * with !important on purpose: ACE injects its own un-layered
+ * .ace_editor{position:relative} stylesheet at runtime, which beats any
+ * @layer rule in the cascade and previously kept the editor collapsed.
+ * NB: un-layered !important loses to layered !important (layer order
+ * reverses for important declarations), so a !-prefixed Tailwind utility
+ * on the same element/property would override this - do not use those on
+ * the editor containers. */
+.full-screen-div {
+    z-index: 9999;
+    width: 100% !important;
+    height: 100% !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
 /* ---------------------------------------------------------------------------
  * EmailEngine custom components (ported from static/css/app.css, callout.css
  * and emailengine.css; colors converted to theme tokens for light+dark)
@@ -184,6 +201,20 @@
         border-left: 0;
         margin-left: 0;
     }
+    /* the toolbar's label cell (editor title) - visually distinct from the
+     * clickable action cells */
+    .editor-embed-title {
+        background: var(--color-base-200);
+        font-weight: 600;
+        color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+    }
+    /* action links in the toolbar read as interactive */
+    .editor-embed-content a {
+        color: var(--color-primary);
+    }
+    .editor-embed-content a:hover {
+        text-decoration: underline;
+    }
 
     .error-log-field {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -208,15 +239,6 @@
     .code-link {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.8em;
-    }
-
-    .full-screen-div {
-        z-index: 9999;
-        width: 100%;
-        height: 100%;
-        position: fixed;
-        top: 0;
-        left: 0;
     }
 
     .popover-list {

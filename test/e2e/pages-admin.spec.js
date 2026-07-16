@@ -442,12 +442,23 @@ test.describe('admin shell', () => {
         await page.fill('#inputSubject', 'e2e subject');
 
         // editor fullscreen round-trip through the shared uiEditorFullscreen
-        // helper: the toggle link expands the container, Escape collapses it
-        const isFullscreen = () => page.evaluate(() => document.getElementById('editor-html').classList.contains('full-screen-div'));
+        // helper. Assert the effect, not the class: ACE's runtime stylesheet
+        // once overrode .full-screen-div so the class was on but the editor
+        // collapsed - the rect must actually cover the viewport.
+        const editorRect = () =>
+            page.evaluate(() => {
+                const r = document.getElementById('editor-html').getBoundingClientRect();
+                return { x: r.x, y: r.y, w: r.width, h: r.height, vw: window.innerWidth, vh: window.innerHeight };
+            });
         await page.locator('.toggle-fullscreen[data-target="editor-html"]').click();
-        expect(await isFullscreen()).toBe(true);
+        let rect = await editorRect();
+        expect(rect.x).toBe(0);
+        expect(rect.y).toBe(0);
+        expect(rect.w).toBe(rect.vw);
+        expect(rect.h).toBe(rect.vh);
         await page.keyboard.press('Escape');
-        expect(await isFullscreen()).toBe(false);
+        rect = await editorRect();
+        expect(rect.h).toBeLessThan(rect.vh / 2);
 
         // FlyonUI tabs switch the editor panes and mark the selected one
         await expectSelectedTab(page, 'html-tab', ['text-tab']);
@@ -510,6 +521,39 @@ test.describe('admin shell', () => {
         expect(await page.locator('#select-predefined-payload option').count()).toBeGreaterThan(1);
         await page.keyboard.press('Escape');
         await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
+
+        // the editor toolbar: the title cell reads as a label (distinct
+        // background from the action cells), and the scope-info tooltip
+        // renders as one solid bubble (an inline body once fragmented its
+        // background around the block list, leaving ghost text)
+        const titleBg = await page
+            .locator('.editor-embed-title')
+            .first()
+            .evaluate(el => window.getComputedStyle(el).backgroundColor);
+        const actionBg = await page
+            .locator('.editor-embed-content:not(.editor-embed-title)')
+            .first()
+            .evaluate(el => window.getComputedStyle(el).backgroundColor);
+        expect(titleBg).not.toBe(actionBg);
+
+        await page.locator('.editor-embed-content .tooltip-toggle').last().hover();
+        const bubble = await page
+            .locator('.editor-embed-content .tooltip-body')
+            .last()
+            .evaluate(el => {
+                const cs = window.getComputedStyle(el);
+                const bodyRect = el.getBoundingClientRect();
+                const listRect = el.querySelector('ul').getBoundingClientRect();
+                return {
+                    background: cs.backgroundColor,
+                    display: cs.display,
+                    enclosesList: bodyRect.top <= listRect.top && bodyRect.bottom >= listRect.bottom && bodyRect.height > 0
+                };
+            });
+        expect(bubble.background).not.toBe('rgba(0, 0, 0, 0)');
+        expect(bubble.display).toBe('block');
+        expect(bubble.enclosesList).toBe(true);
+        await page.mouse.move(0, 0);
 
         await page.locator('button[type="submit"]', { hasText: 'Create routing' }).click();
         await page.waitForURL(/\/admin\/webhooks\/webhook\//);
