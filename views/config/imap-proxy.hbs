@@ -114,14 +114,19 @@
 
                 {{!-- hand-rolled checkbox: the label carries the #tls-label
                       badge whose badge-{type} class and tooltip body are
-                      repainted by paintCertData() from ui.js --}}
+                      repainted by paintCertData() from ui.js. Certificates can
+                      only be provisioned for a real domain (serviceDomain is
+                      false when the Service URL is unset, an IP or localhost),
+                      so without one the checkbox is disabled - except when TLS
+                      is already on, so it can still be turned off. --}}
                 <div class="flex items-center gap-2">
                     <input type="checkbox"
                         class="checkbox checkbox-sm trigger-example-render{{#if errors.imapProxyServerTLSEnabled}} is-invalid{{/if}}"
                         id="imapProxyServerTLSEnabled" {{#if
                         certificateData}}data-certificate="{{certificateData.fingerprint}}" {{/if}}
-                        data-domain="{{serviceDomain}}" name="imapProxyServerTLSEnabled" {{#if
-                        values.imapProxyServerTLSEnabled}}checked{{/if}} />
+                        {{#if serviceDomain}}data-domain="{{serviceDomain}}" {{/if}}name="imapProxyServerTLSEnabled" {{#if
+                        values.imapProxyServerTLSEnabled}}checked{{/if}}
+                        {{#unless serviceDomain}}{{#unless values.imapProxyServerTLSEnabled}}disabled{{/unless}}{{/unless}} />
 
                     <label class="label-text p-0" for="imapProxyServerTLSEnabled">Enable TLS Encryption
 
@@ -216,7 +221,7 @@
     <h3 class="modal-title modal-show-error hidden mb-[1rem]">Certificate Request Failed</h3>
 
     <div class="modal-show-default">
-        Setting up TLS certificate for <em class="show-service-domain">{{serviceDomain}}</em>. This may take a
+        Setting up TLS certificate for <em class="show-service-domain">{{#if serviceDomain}}{{serviceDomain}}{{/if}}</em>. This may take a
         moment...
     </div>
     <div class="modal-show-error hidden">

@@ -665,7 +665,9 @@ const init = async () => {
 
         let hostname = (parsedUrl.hostname || '').toString().toLowerCase().trim();
         if (!hostname || net.isIP(hostname) || ['localhost'].includes(hostname) || /(\.local|\.lan)$/i.test(hostname)) {
-            return false;
+            // empty string, not false: the value is interpolated into
+            // templates, where a boolean would render as the text "false"
+            return '';
         }
         return hostname;
     };

@@ -665,6 +665,47 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('config smtp: TLS provisioning is gated on a usable service domain', async ({ page, request }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const token = await createApiToken(page, 'e2e tls-gate token');
+        const auth = { Authorization: `Bearer ${token}` };
+
+        const orig = await (await request.get('/v1/settings?serviceUrl=true', { headers: auth })).json();
+        // the TLS card is duplicated on both server config pages; gate both
+        const pages = [
+            { path: '/admin/config/smtp', box: '#smtpServerTLSEnabled' },
+            { path: '/admin/config/imap-proxy', box: '#imapProxyServerTLSEnabled' }
+        ];
+
+        try {
+            // without a usable domain the TLS checkbox must not be operable
+            // and must carry no domain for the cert-provisioning flow (it
+            // once rendered data-domain="false" - the string is truthy, so
+            // the flow tried to provision a certificate for "false")
+            const cleared = await request.post('/v1/settings', { headers: auth, data: { serviceUrl: '' } });
+            expect(cleared.ok(), `POST /v1/settings -> ${cleared.status()}`).toBeTruthy();
+
+            for (const { path: pagePath, box } of pages) {
+                await page.goto(pagePath);
+                await expect(page.locator(box)).toBeDisabled();
+                expect(await page.locator(box).getAttribute('data-domain')).toBe(null);
+            }
+        } finally {
+            const restored = await request.post('/v1/settings', { headers: auth, data: { serviceUrl: orig.serviceUrl || '' } });
+            expect(restored.ok(), `restore serviceUrl -> ${restored.status()}`).toBeTruthy();
+        }
+
+        // with the domain back the checkboxes are operable and carry it again
+        for (const { path: pagePath, box } of pages) {
+            await page.goto(pagePath);
+            await expect(page.locator(box)).toBeEnabled();
+            expect(await page.locator(box).getAttribute('data-domain')).toBeTruthy();
+        }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('config imap-proxy: client examples and password reveal', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
