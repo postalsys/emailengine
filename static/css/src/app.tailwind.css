@@ -103,6 +103,21 @@
     opacity: 0.75;
 }
 
+/* Tooltip overrides. Un-layered on purpose: FlyonUI emits .tooltip-content
+ * in @layer utilities, which beats any components-layer rule regardless of
+ * specificity. */
+/* tooltips float above the sidebar (lg:z-40) and topbar; FlyonUI's default
+ * z-20 leaves bubbles clipped under the drawer */
+.tooltip .tooltip-content {
+    z-index: 60;
+}
+/* empty-state gate for SSE state badges (ui/state-badge): while there is no
+ * error, the bubble must not render at all. Gated on the wrapper because
+ * HSTooltip's show() removes the hidden class from the content. */
+.tooltip.ee-tooltip-empty .tooltip-content {
+    display: none;
+}
+
 /* Fullscreen ACE editor container (uiEditorFullscreen in ui.js). Un-layered
  * with !important on purpose: ACE injects its own un-layered
  * .ace_editor{position:relative} stylesheet at runtime, which beats any
@@ -202,6 +217,7 @@
         border-left: 0;
         margin-left: 0;
     }
+
     /* the toolbar's label cell (editor title) - visually distinct from the
      * clickable action cells */
     .editor-embed-title {

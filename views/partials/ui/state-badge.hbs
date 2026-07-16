@@ -2,27 +2,26 @@
     ui/state-badge - live connection-state badge with an error tooltip.
     The SSE handlers in static/js/app.js repaint the badge (targeted through
     the .state-info class + data-account/data-type) and write the error text
-    into the sibling tooltip body; the tooltip-content stays hidden while
-    there is no error, so hovering an errorless badge shows nothing.
-      {{> ui/state-badge label=account.stateLabel account=account.account pill=true}}
+    into the sibling tooltip body. While there is no error the wrapper carries
+    ee-tooltip-empty, which display:nones the bubble - HSTooltip cannot be
+    gated through the hidden class, since its show() removes that class.
+      {{> ui/state-badge label=account.stateLabel account=account.account}}
     Params:
       label    - state label object: {type, name, spinner, error} (required)
       account  - value for data-account (optional; SSE per-account targeting)
       dataType - value for data-type (optional; SSE server-state targeting)
-      pill     - true for fully rounded ends
       pointer  - true when the badge sits inside a link (pointer cursor)
       class    - extra classes on the tooltip wrapper (optional)
 --}}
-<span class="tooltip [--placement:top] inline-flex{{#if class}} {{class}}{{/if}}">
+<span class="tooltip [--placement:top] inline-flex{{#unless label.error}} ee-tooltip-empty{{/unless}}{{#if class}} {{class}}{{/if}}">
     <span
-        class="tooltip-toggle badge{{#if pill}} rounded-full{{/if}} badge-{{label.type}} state-info {{#if pointer}}cursor-pointer{{else}}cursor-default{{/if}}"
+        class="tooltip-toggle badge badge-{{label.type}} state-info {{#if pointer}}cursor-pointer{{else}}cursor-default{{/if}}"
         {{#if account}}data-account="{{account}}" {{/if}}{{#if dataType}}data-type="{{dataType}}" {{/if}}>
         {{#if label.spinner}}
         <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>
         {{/if}}
         {{label.name}}</span>
-    <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible{{#unless label.error}} hidden{{/unless}}"
-        role="tooltip">
+    <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
         <span class="tooltip-body">{{label.error}}</span>
     </span>
 </span>

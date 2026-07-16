@@ -8,7 +8,7 @@
     <details class="group card bg-base-100 border border-base-content/10">
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
-            <span class="badge badge-{{statusColor spf.status.result}} badge-sm rounded-full">
+            <span class="badge badge-{{statusColor spf.status.result}} badge-sm">
                 <span class="{{statusIcon spf.status.result}} size-3.5"></span>
             </span>
             SPF
@@ -43,12 +43,12 @@
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
             {{#equals mainSig.status.result "pass"}}
-            <span class="badge badge-{{#if mainSig.status.aligned}}success{{else}}neutral{{/if}} badge-sm rounded-full">
+            <span class="badge badge-{{#if mainSig.status.aligned}}success{{else}}neutral{{/if}} badge-sm">
                 <span
                     class="{{#if mainSig.status.aligned}}icon-[tabler--circle-check]{{else}}icon-[tabler--alert-triangle]{{/if}} size-3.5"></span>
             </span>
             {{else}}
-            <span class="badge badge-{{statusColor mainSig.status.result}} badge-sm rounded-full">
+            <span class="badge badge-{{statusColor mainSig.status.result}} badge-sm">
                 <span class="{{statusIcon mainSig.status.result}} size-3.5"></span>
             </span>
             {{/equals}}
@@ -99,7 +99,7 @@
     <details class="group card bg-base-100 border border-base-content/10">
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
-            <span class="badge badge-{{statusColor dmarc.status.result}} badge-sm rounded-full">
+            <span class="badge badge-{{statusColor dmarc.status.result}} badge-sm">
                 <span class="{{statusIcon dmarc.status.result}} size-3.5"></span>
             </span>
             DMARC

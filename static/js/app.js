@@ -212,14 +212,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // show or hide the error tooltip attached to a state badge (the badge sits
-    // inside a ui/state-badge tooltip wrapper; no error = content stays hidden)
+    // inside a ui/state-badge tooltip wrapper). The empty state is gated with
+    // ee-tooltip-empty on the wrapper, not with hidden on the content -
+    // HSTooltip's show() strips the hidden class on hover.
     function setStateTooltip(stateInfoElm, error) {
         let tooltipElm = stateInfoElm.closest('.tooltip');
         let tooltipContentElm = tooltipElm && tooltipElm.querySelector('.tooltip-content');
         if (!tooltipContentElm) {
             return;
         }
-        tooltipContentElm.classList.toggle('hidden', !error);
+        tooltipElm.classList.toggle('ee-tooltip-empty', !error);
         tooltipContentElm.querySelector('.tooltip-body').textContent = error || '';
     }
 

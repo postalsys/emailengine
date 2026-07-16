@@ -4,12 +4,11 @@
       label   - badge text (required unless block form is used)
       variant - FlyonUI color: primary|secondary|accent|neutral|info|success|warning|error (default neutral)
       soft    - true for the soft (tinted) style
-      pill    - true for fully rounded ends
       icon    - full iconify class (optional)
       id      - element id (optional)
       class   - extra classes, e.g. "state-info" hooks (optional)
 --}}
-<span {{#if id}}id="{{id}}" {{/if}}class="badge badge-{{#if variant}}{{variant}}{{else}}neutral{{/if}}{{#if soft}} badge-soft{{/if}}{{#if pill}} rounded-full{{/if}}{{#if class}} {{class}}{{/if}}">
+<span {{#if id}}id="{{id}}" {{/if}}class="badge badge-{{#if variant}}{{variant}}{{else}}neutral{{/if}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
     {{~#if icon}}<span class="{{icon}} size-3.5 shrink-0"></span>{{/if~}}
-    {{~#if label includeZero=true}}{{label}}{{else}}{{> @partial-block label="" variant="" soft="" pill="" icon="" id="" class=""}}{{/if~}}
+    {{~#if label includeZero=true}}{{label}}{{else}}{{> @partial-block label="" variant="" soft="" icon="" id="" class=""}}{{/if~}}
 </span>

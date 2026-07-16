@@ -146,7 +146,7 @@
                             {{#each systemAlerts}}
                             <li>
                                 <a class="dropdown-item flex items-start gap-3" href="{{url}}">
-                                    <span class="bg-{{eeColor level}} text-white flex size-8 shrink-0 items-center justify-center rounded-full">
+                                    <span class="bg-{{eeColor level}} text-white flex size-8 shrink-0 items-center justify-center rounded-field">
                                         <span class="{{icon}} size-4 shrink-0"></span>
                                     </span>
                                     <span class="text-sm whitespace-normal">
@@ -176,7 +176,7 @@
                             {{#if authData.name}}
                             <span class="hidden lg:inline text-base-content/70 text-sm font-normal">{{authData.name}}</span>
                             {{/if}}
-                            <img class="size-7 rounded-full" src="/static/undraw_profile.svg" alt="">
+                            <img class="size-7 rounded-field" src="/static/undraw_profile.svg" alt="">
                         </button>
                         <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52 end-0" role="menu"
                             aria-orientation="vertical" aria-labelledby="userDropdown">

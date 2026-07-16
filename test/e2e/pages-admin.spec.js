@@ -664,6 +664,14 @@ test.describe('admin shell', () => {
 
         await expectTlsLabelTooltip(page);
 
+        // hovering an errorless state badge must not show a bubble; the gate
+        // is ee-tooltip-empty on the wrapper, since HSTooltip's show() strips
+        // the hidden class from the content on hover
+        await page.locator('.state-info[data-type="smtp"]').hover();
+        await page.waitForTimeout(300);
+        await expect(page.locator('.tooltip.show .tooltip-content')).not.toBeVisible();
+        await page.mouse.move(0, 0);
+
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
@@ -1040,12 +1048,35 @@ test.describe('admin shell', () => {
 
             // the error text lands in the tooltip body and the content unhides
             const wrap = page.locator(`.tooltip:has(.state-info[data-account="${ACCOUNT_ID}"])`);
-            await expect(wrap.locator('.tooltip-content')).not.toHaveClass(/hidden/);
+            await expect(wrap).not.toHaveClass(/ee-tooltip-empty/);
             expect((await wrap.locator('.tooltip-body').textContent()).trim()).not.toBe('');
 
             await badge.hover();
             await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
             await page.mouse.move(0, 0);
+
+            // live SSE repaint: watch the badge for DOM mutations, then force
+            // a state change server-side - the /admin/changes EventSource must
+            // repaint the badge with no page reload involved
+            await page.evaluate(id => {
+                window.__badgeMutations = 0;
+                const badgeElm = document.querySelector(`.state-info[data-account="${id}"]`);
+                // attributeFilter: the tooltip teardown from the hover above
+                // mutates the badge's style attribute asynchronously; the SSE
+                // repaint always touches class/children, never style
+                new window.MutationObserver(() => window.__badgeMutations++).observe(badgeElm, {
+                    childList: true,
+                    characterData: true,
+                    attributeFilter: ['class'],
+                    subtree: true
+                });
+            }, ACCOUNT_ID);
+            const reconnect = await request.put(`/v1/account/${ACCOUNT_ID}/reconnect`, {
+                headers: auth,
+                data: { reconnect: true }
+            });
+            expect(reconnect.ok(), `PUT reconnect -> ${reconnect.status()}`).toBeTruthy();
+            await expect.poll(() => page.evaluate(() => window.__badgeMutations), { timeout: 30000 }).toBeGreaterThan(0);
         } finally {
             // wait out the async teardown - a mid-deletion account transiently
             // 404s account lookups on the internals thread pages

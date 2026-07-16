@@ -35,7 +35,7 @@
             {{#> ui/tooltip text="Export messages to file"}}
             <button type="button" class="btn btn-soft btn-sm" id="request-export" data-overlay="#exportModal">
                 <span class="icon-[tabler--file-export] size-4"></span> Export
-                <span id="export-status-indicator" class="badge rounded-full badge-sm ms-1 hidden"></span>
+                <span id="export-status-indicator" class="badge badge-sm ms-1 hidden"></span>
             </button>
             {{/ui/tooltip}}
             {{/if}}
@@ -116,7 +116,7 @@
             <dd>
                 <strong>{{account.account}}</strong>
 
-                {{> ui/state-badge label=account.stateLabel account=account.account pill=true}}
+                {{> ui/state-badge label=account.stateLabel account=account.account}}
 
                 <div>
                     <div class="text-error">
@@ -291,7 +291,7 @@
             <dd>
 
                 {{#*inline "gmailWatchBadge"}}
-                <span class="badge rounded-full badge-{{#if gmailWatch.active}}success{{else}}{{#if gmailWatch.error}}error{{else}}warning{{/if}}{{/if}}">
+                <span class="badge badge-{{#if gmailWatch.active}}success{{else}}{{#if gmailWatch.error}}error{{else}}warning{{/if}}{{/if}}">
                     {{gmailWatch.stateLabel}}
                 </span>
                 {{/inline}}
@@ -341,7 +341,7 @@
             <dd>
 
                 {{#*inline "outlookWatchBadge"}}
-                <span class="badge rounded-full badge-{{#if account.outlookSubscription.isValid}}success{{else}}{{#if account.outlookSubscription.state.error}}error{{else}}warning{{/if}}{{/if}}">
+                <span class="badge badge-{{#if account.outlookSubscription.isValid}}success{{else}}{{#if account.outlookSubscription.state.error}}error{{else}}warning{{/if}}{{/if}}">
                     {{account.outlookSubscription.stateLabel}}
                 </span>
                 {{/inline}}
@@ -521,7 +521,7 @@
             {{#each subConnectionInfo}}
             <dt>{{path}}</dt>
             <dd>
-                {{> ui/state-badge label=stateLabel pill=true}}
+                {{> ui/state-badge label=stateLabel}}
             </dd>
             {{/each}}
         </dl>
@@ -1108,10 +1108,10 @@
                     const latest = data.exports[0];
                     if (latest.status === 'queued' || latest.status === 'processing') {
                         indicator.textContent = latest.status === 'queued' ? 'Queued' : 'Exporting';
-                        indicator.className = 'badge badge-info badge-sm rounded-full ms-1';
+                        indicator.className = 'badge badge-info badge-sm ms-1';
                     } else if (latest.status === 'completed') {
                         indicator.textContent = 'Ready';
-                        indicator.className = 'badge badge-success badge-sm rounded-full ms-1';
+                        indicator.className = 'badge badge-success badge-sm ms-1';
                     } else {
                         indicator.classList.add('hidden');
                         return;
