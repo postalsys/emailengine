@@ -11,12 +11,12 @@
     </div>
     {{/if}}
     {{#> ui/stat-card variant="primary" icon="icon-[tabler--refresh]" title=""}}
-    <div class="text-xs font-bold uppercase mb-1 text-primary">
+    <div class="text-sm font-medium text-base-content/60 mb-1">
         {{#> ui/tooltip text=tooltip}}
         <a href="{{href}}" class="hover:underline">{{label}}</a>
         {{/ui/tooltip}}
     </div>
-    <div class="text-xl font-bold text-base-content">
+    <div class="text-xl font-semibold text-base-content">
         {{#> ui/tooltip text="Queue entries total"}}{{formatInteger queue.total userLocale}}{{/ui/tooltip}} /
         {{#> ui/tooltip text=delayedTooltip}}{{formatInteger queue.delayed userLocale}}{{/ui/tooltip}}
     </div>
@@ -68,21 +68,21 @@
     <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
         {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
-        <div class="text-xs font-bold uppercase mb-1 text-primary">
+        <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#> ui/tooltip text="The number of accounts registered with EmailEngine"}}
             <a href="/admin/accounts" class="hover:underline">Accounts total</a>
             {{/ui/tooltip}}
         </div>
-        <div class="text-xl font-bold text-base-content">{{formatInteger stats.accounts userLocale}}</div>
+        <div class="text-xl font-semibold text-base-content">{{formatInteger stats.accounts userLocale}}</div>
         {{/ui/stat-card}}
 
         {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
-        <div class="text-xs font-bold uppercase mb-1 text-primary">
+        <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#> ui/tooltip text='The number of accounts currently in the "connected" state'}}
             <a href="/admin/accounts?state=connected" class="hover:underline">Accounts active</a>
             {{/ui/tooltip}}
         </div>
-        <div class="text-xl font-bold text-base-content">{{formatInteger stats.connectedAccounts userLocale}}</div>
+        <div class="text-xl font-semibold text-base-content">{{formatInteger stats.connectedAccounts userLocale}}</div>
         {{/ui/stat-card}}
 
         {{#each counterList as |counter|}}
@@ -90,14 +90,14 @@
               partial via context fallthrough; the block renders it through the
               |counter| block param, which shadowed hash values cannot mask --}}
         {{#> ui/stat-card variant=(eeColor counter.color) icon=counter.icon title=""}}
-        <div class="text-xs font-bold uppercase mb-1 text-base-content/80">
+        <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#if counter.comment}}
             {{#> ui/tooltip text=counter.comment}}{{counter.title}}{{/ui/tooltip}}
             {{else}}
             {{counter.title}}
             {{/if}}
         </div>
-        <div class="text-xl font-bold text-base-content">{{formatInteger counter.value userLocale}}</div>
+        <div class="text-xl font-semibold text-base-content">{{formatInteger counter.value userLocale}}</div>
         {{/ui/stat-card}}
         {{/each}}
 
@@ -110,14 +110,14 @@
         {{/if}}
 
         {{#> ui/stat-card variant=(eeColor redisPing.color) icon=redisPing.icon}}
-        <div class="text-xs font-bold uppercase mb-1 text-base-content/80">
+        <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#if redisPing.comment}}
             {{#> ui/tooltip text=redisPing.comment}}{{redisPing.title}}{{/ui/tooltip}}
             {{else}}
             {{redisPing.title}}
             {{/if}}
         </div>
-        <div class="text-xl font-bold text-base-content">{{redisPing.value}}</div>
+        <div class="text-xl font-semibold text-base-content">{{redisPing.value}}</div>
         {{/ui/stat-card}}
 
     </div>

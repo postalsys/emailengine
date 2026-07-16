@@ -249,8 +249,10 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
         await page.goto('/admin');
 
-        // stat cards with accent borders
-        await expect(page.locator('.card.border-s-4').first()).toBeVisible();
+        // stat cards in the FlyonUI idiom: the variant color tints a rounded
+        // icon container; the Bootstrap-style edge stripes are gone
+        await expect(page.locator('.card .rounded-field[class*="bg-"]').first()).toBeVisible();
+        expect(await page.locator('[class*="border-s-4"]').count()).toBe(0);
         await expect(page.getByText('Accounts total')).toBeVisible();
         await expect(page.getByText('Webhooks queue')).toBeVisible();
 
