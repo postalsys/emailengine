@@ -1,4 +1,4 @@
-/* global document, window */
+/* global document, window, navigator */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at
@@ -94,6 +94,48 @@ test.describe('admin shell', () => {
 
         // Footer
         await expect(page.getByText(/Postal Systems/)).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('copy button falls back to execCommand without the Clipboard API', async ({ page }) => {
+        // Self-hosted installs on plain HTTP get no navigator.clipboard (not a
+        // secure context); the ui.js handler must select the target and run
+        // document.execCommand('copy') instead. The API cannot be deleted from
+        // an already-secure context, so stub it out and spy on execCommand.
+        await page.addInitScript(() => {
+            Object.defineProperty(window.navigator, 'clipboard', { value: undefined });
+            window.__copyCalls = [];
+            const orig = document.execCommand.bind(document);
+            document.execCommand = cmd => {
+                window.__copyCalls.push(cmd);
+                return orig(cmd);
+            };
+        });
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        await page.goto('/admin');
+
+        // fixture exercising the real delegated .copy-btn handler from ui.js;
+        // fixed-positioned on top so the layout wrapper cannot cover the button
+        await page.evaluate(() => {
+            document.body.insertAdjacentHTML(
+                'beforeend',
+                '<div style="position:fixed;top:8px;left:8px;z-index:99999;background:#fff">' +
+                    '<input id="copy-fixture" value="fallback-copy-value">' +
+                    '<button type="button" class="copy-btn" data-copy-target="#copy-fixture">copy</button>' +
+                    '</div>'
+            );
+        });
+        await page.locator('button.copy-btn').click();
+        expect(await page.evaluate(() => window.__copyCalls)).toEqual(['copy']);
+        // the fallback selects the target input so execCommand copies it
+        expect(
+            await page.evaluate(() => {
+                const input = document.getElementById('copy-fixture');
+                return input.value.slice(input.selectionStart, input.selectionEnd);
+            })
+        ).toBe('fallback-copy-value');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -363,6 +405,16 @@ test.describe('admin shell', () => {
         // detail page: ACE preview initialized, send-test modal opens with the
         // send button gated on the recipient
         await expect(page.locator('#html-preview .ace_content')).toBeAttached();
+
+        // the copy button puts the template ID on the clipboard (ui.js handler)
+        // and briefly swaps its icon to a check mark as feedback
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        const templateId = await page.locator('#templateIdValue').inputValue();
+        expect(templateId).not.toBe('');
+        await page.locator('.copy-btn').click();
+        await expect(page.locator('.copy-btn [class*="icon-"]')).toHaveClass(/tabler--check\]/);
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(templateId);
+        await expect(page.locator('.copy-btn [class*="icon-"]')).toHaveClass(/tabler--copy\]/, { timeout: 3000 });
         await page.locator('#test-btn').click();
         await expect(page.locator('#sendTestModal.open')).toHaveCount(1);
         expect(await page.evaluate(() => document.getElementById('send-test-btn').disabled)).toBe(true);
@@ -619,8 +671,14 @@ test.describe('admin shell', () => {
         await page.locator('button[type="submit"]', { hasText: 'Register app' }).click();
         await page.waitForURL(/\/admin\/config\/oauth\/app\//);
 
-        // detail page: verify-setup modal auto-runs the configuration checks
+        // detail page: the join-variant ui/copy-field copies the provider ID
         await expect(page.locator('#appIdValue')).toBeVisible();
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.locator('.copy-btn').click();
+        const appId = await page.locator('#appIdValue').inputValue();
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(appId);
+
+        // verify-setup modal auto-runs the configuration checks
         await page.locator('#verify-btn').click();
         await expect(page.locator('#verifySetupModal.open')).toHaveCount(1);
         await expect(page.locator('#verifySetupModal')).toHaveCSS('opacity', '1');

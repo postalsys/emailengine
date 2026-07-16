@@ -1,4 +1,4 @@
-/* global document, window, $, ClipboardJS, FileReader, EventSource */
+/* global document, window, $, FileReader, EventSource */
 
 'use strict';
 
@@ -166,11 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         let date = new Date(t.dataset.time);
         t.textContent = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium', dateStyle: 'short' }).format(date);
-    }
-
-    let clip = new ClipboardJS('.copy-btn');
-    if (!clip) {
-        console.log('Can not set up clipboard');
     }
 
     // enable tooltips

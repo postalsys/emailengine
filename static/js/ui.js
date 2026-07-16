@@ -1,4 +1,4 @@
-/* global document, window, localStorage, HSStaticMethods, HSOverlay */
+/* global document, window, navigator, localStorage, HSStaticMethods, HSOverlay */
 
 'use strict';
 
@@ -138,6 +138,55 @@ window.uiAutoInit = () => {
         updateToggleIcons();
     });
 })();
+
+// Copy-to-clipboard buttons: a .copy-btn with data-copy-target="#selector"
+// copies the target's value (inputs) or text content. Delegated, so buttons
+// inside dynamically injected markup work without re-binding. Uses the async
+// Clipboard API where available; self-hosted installs served over plain HTTP
+// are not a secure context, so those fall back to select() + execCommand.
+document.addEventListener('click', e => {
+    let btn = e.target.closest('.copy-btn');
+    if (!btn) {
+        return;
+    }
+
+    let target = btn.dataset.copyTarget ? document.querySelector(btn.dataset.copyTarget) : null;
+    if (!target) {
+        return;
+    }
+
+    let value = 'value' in target ? target.value : target.textContent;
+
+    let copied;
+    if (navigator.clipboard && window.isSecureContext) {
+        copied = navigator.clipboard.writeText(value).then(
+            () => true,
+            () => false
+        );
+    } else {
+        let ok = false;
+        if (typeof target.select === 'function') {
+            target.select();
+            try {
+                ok = document.execCommand('copy');
+            } catch (err) {
+                ok = false;
+            }
+        }
+        copied = Promise.resolve(ok);
+    }
+
+    copied.then(ok => {
+        if (!ok) {
+            window.showToast('Failed to copy to clipboard', 'alert-triangle');
+            return;
+        }
+        let icon = btn.querySelector('[class*="icon-"]');
+        if (icon && icon.classList.replace('icon-[tabler--copy]', 'icon-[tabler--check]')) {
+            window.setTimeout(() => icon.classList.replace('icon-[tabler--check]', 'icon-[tabler--copy]'), 1500);
+        }
+    });
+});
 
 // Server-side flash messages (views/partials/alerts.hbs): close button plus
 // auto-dismiss after 15 seconds

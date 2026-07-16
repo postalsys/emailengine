@@ -74,15 +74,7 @@
     <div id="showTokenContent" class="hidden">
 
         <div class="mb-2">Access token:</div>
-        <div class="flex gap-2">
-            <input type="text" id="showTokenValue" class="input grow font-mono" aria-label="Access token" readonly>
-            {{#> ui/tooltip text="Copy to clipboard"}}
-            <button class="btn btn-primary copy-btn" type="button" data-clipboard-action="copy"
-                data-clipboard-target="#showTokenValue" aria-label="Copy to clipboard">
-                <span class="icon-[tabler--copy] size-4"></span>
-            </button>
-            {{/ui/tooltip}}
-        </div>
+        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" inputClass="font-mono"}}
 
     </div>
     <div id="showTokenError" class="hidden alert alert-soft alert-error whitespace-pre-line"></div>

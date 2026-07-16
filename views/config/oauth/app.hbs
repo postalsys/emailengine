@@ -100,16 +100,8 @@
         <dl class="ee-dl">
             <dt>Provider ID</dt>
             <dd>
-                <div class="join w-full max-w-md">
-                    <input type="text" id="appIdValue" class="input input-sm join-item grow bg-base-200 border-0"
-                        aria-label="ID" value="{{app.id}}" readonly>
-                    {{#> ui/tooltip text="Copy to clipboard"}}
-                    <button class="btn btn-primary btn-sm join-item copy-btn" type="button"
-                        data-clipboard-action="copy" data-clipboard-target="#appIdValue" aria-label="Copy to clipboard">
-                        <span class="icon-[tabler--copy] size-4"></span>
-                    </button>
-                    {{/ui/tooltip}}
-                </div>
+                {{> ui/copy-field id="appIdValue" value=app.id ariaLabel="ID" small=true join=true
+                class="w-full max-w-md" inputClass="bg-base-200 border-0"}}
                 <span class="helper-text" id="inputDescriptionHelp">Use this ID value as the
                     <em>"provider"</em> property in the account's OAuth2 options.</span>
             </dd>

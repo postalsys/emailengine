@@ -1,0 +1,25 @@
+{{!--
+    ui/copy-field - readonly value field with a copy-to-clipboard button
+    (the button is handled centrally by the .copy-btn listener in
+    static/js/ui.js).
+      {{> ui/copy-field id="tokenValue" value=token ariaLabel="Access token"}}
+    Params:
+      id         - input element id, also the copy target (required)
+      value      - input value (optional; omit when a page script fills it)
+      ariaLabel  - accessible name for the input (required)
+      small      - true for the compact input-sm/btn-sm variant
+      join       - true to render as a joined input group instead of a gap row
+      class      - extra classes on the wrapper (optional)
+      inputClass - extra classes on the input (optional)
+--}}
+<div class="{{#if join}}join{{else}}flex gap-2{{/if}}{{#if class}} {{class}}{{/if}}">
+    <input type="text" id="{{id}}"
+        class="input{{#if small}} input-sm{{/if}} grow{{#if join}} join-item{{/if}}{{#if inputClass}} {{inputClass}}{{/if}}"
+        aria-label="{{ariaLabel}}" {{#if value}}value="{{value}}" {{/if}}readonly>
+    {{#> ui/tooltip text="Copy to clipboard" placement="" class=""}}
+    <button class="btn btn-primary{{#if small}} btn-sm{{/if}}{{#if join}} join-item{{/if}} copy-btn" type="button"
+        data-copy-target="#{{id}}" aria-label="Copy to clipboard">
+        <span class="icon-[tabler--copy] size-4"></span>
+    </button>
+    {{/ui/tooltip}}
+</div>

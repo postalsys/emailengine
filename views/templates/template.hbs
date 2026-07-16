@@ -43,16 +43,8 @@
 
             <dt>Template ID</dt>
             <dd>
-                <div class="flex max-w-md gap-2">
-                    <input type="text" id="templateIdValue" class="input input-sm grow font-mono" aria-label="ID"
-                        value="{{template.id}}" readonly>
-                    {{#> ui/tooltip text="Copy to clipboard"}}
-                    <button class="btn btn-primary btn-sm copy-btn" type="button" data-clipboard-action="copy"
-                        data-clipboard-target="#templateIdValue" aria-label="Copy to clipboard">
-                        <span class="icon-[tabler--copy] size-4"></span>
-                    </button>
-                    {{/ui/tooltip}}
-                </div>
+                {{> ui/copy-field id="templateIdValue" value=template.id ariaLabel="ID" small=true class="max-w-md"
+                inputClass="font-mono"}}
                 <span class="helper-text">Use this ID value as the <em>"template"</em>
                     property when sending email.</span>
             </dd>
