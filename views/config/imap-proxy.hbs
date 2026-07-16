@@ -236,18 +236,7 @@
     document.addEventListener('DOMContentLoaded', () => {
 
         let availableAddresses = document.getElementById('availableAddresses').value.split(',').map(e => e.trim()).filter(e => e);
-        // native datalist suggestions (replaces the bootstrap-autocomplete plugin)
-        let addressListElm = document.createElement('datalist');
-        addressListElm.id = 'available-addresses-list';
-        for (let addr of availableAddresses) {
-            let optionElm = document.createElement('option');
-            optionElm.value = addr;
-            addressListElm.appendChild(optionElm);
-        }
-        document.body.appendChild(addressListElm);
-        for (let inputElm of document.querySelectorAll('.basicAutoComplete')) {
-            inputElm.setAttribute('list', addressListElm.id);
-        }
+        uiDatalist('available-addresses-list', availableAddresses, document.querySelectorAll('.basicAutoComplete'));
 
 
         let codeTemplates = {

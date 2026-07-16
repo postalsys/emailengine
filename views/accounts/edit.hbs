@@ -128,14 +128,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let availablePaths = JSON.parse(document.getElementById('availablePaths').value);
-        // native datalist suggestions for the Sent Mail folder input
-        let pathListElm = document.createElement('datalist');
-        pathListElm.id = 'available-paths-list';
-        for (let path of availablePaths) {
-            let optionElm = document.createElement('option');
-            optionElm.value = path;
-            pathListElm.appendChild(optionElm);
-        }
-        document.body.appendChild(pathListElm);
+        // native datalist suggestions for the Sent Mail folder input (the
+        // form-field markup references the list id directly)
+        uiDatalist('available-paths-list', availablePaths);
     })
 </script>

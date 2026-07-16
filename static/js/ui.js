@@ -139,6 +139,23 @@ window.uiAutoInit = () => {
     });
 })();
 
+// Native <datalist> autocomplete: creates a datalist with the given id and
+// option values, appends it to the body and points the given inputs at it
+// (replaces the old bootstrap-autocomplete plugin)
+window.uiDatalist = (id, values, inputs) => {
+    let listElm = document.createElement('datalist');
+    listElm.id = id;
+    for (let value of values) {
+        let optionElm = document.createElement('option');
+        optionElm.value = value;
+        listElm.appendChild(optionElm);
+    }
+    document.body.appendChild(listElm);
+    for (let inputElm of inputs || []) {
+        inputElm.setAttribute('list', id);
+    }
+};
+
 // Fullscreen toggle for ACE editor blocks: binds every .toggle-fullscreen
 // link whose data-target names an editor in the passed Map (element id ->
 // ace instance). Clicking toggles .full-screen-div on the editor container,

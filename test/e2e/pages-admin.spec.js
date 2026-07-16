@@ -366,6 +366,15 @@ test.describe('admin shell', () => {
         // create via the new-gateway form
         await page.goto('/admin/gateways/new');
         await page.fill('#gateway', 'e2e-smoke-gw');
+
+        // typing a well-known service key into the name field autofills the
+        // connection settings (uiDatalist + the gateway_js input listener)
+        await expect(page.locator('#name')).toHaveAttribute('list', 'well-known-services-list');
+        expect(await page.locator('#well-known-services-list option').count()).toBeGreaterThan(0);
+        await page.fill('#name', 'gmail');
+        await page.locator('#name').dispatchEvent('input');
+        await expect(page.locator('#host')).toHaveValue('smtp.gmail.com');
+
         await page.fill('#name', 'E2E Smoke Gateway');
         await page.fill('#host', '127.0.0.1');
         await page.fill('#port', '2525');
@@ -603,6 +612,10 @@ test.describe('admin shell', () => {
         await page.fill('#smtpServerPassword', 'e2e-secret');
         await expectPasswordToggle(page, 'showPassword', 'smtpServerPassword');
 
+        // the listen-address input gets native datalist suggestions (uiDatalist)
+        await expect(page.locator('#smtpServerHost')).toHaveAttribute('list', 'available-addresses-list');
+        expect(await page.locator('#available-addresses-list option').count()).toBeGreaterThan(0);
+
         await expectTlsLabelTooltip(page);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
@@ -620,6 +633,10 @@ test.describe('admin shell', () => {
 
         await page.fill('#imapProxyServerPassword', 'e2e-secret');
         await expectPasswordToggle(page, 'showPassword', 'imapProxyServerPassword');
+
+        // the listen-address input gets native datalist suggestions (uiDatalist)
+        await expect(page.locator('#imapProxyServerHost')).toHaveAttribute('list', 'available-addresses-list');
+        expect(await page.locator('#available-addresses-list option').count()).toBeGreaterThan(0);
 
         await expectTlsLabelTooltip(page);
 
