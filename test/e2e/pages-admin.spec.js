@@ -1,4 +1,4 @@
-/* global document, window, navigator */
+/* global document, window, navigator, localStorage */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at
@@ -265,6 +265,34 @@ test.describe('admin shell', () => {
         await expect(imapflowRow).toBeHidden();
         await page.locator('summary', { hasText: 'Software versions' }).click();
         await expect(imapflowRow).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('swagger reference renders as a light island in the dark theme', async ({ page }) => {
+        // swagger-ui ships no dark styles (its stylesheet assumes a light
+        // page); with a dark admin theme its transparent panels used to sit
+        // unreadably on the dark page background, so the reference is pinned
+        // to a light data-theme subtree
+        await page.addInitScript(() => {
+            localStorage.setItem('eeTheme', 'dark');
+        });
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        await page.goto('/admin/swagger');
+        await expect(page.locator('#swagger-ui .info')).toBeVisible({ timeout: 20000 });
+        const probe = await page.evaluate(() => {
+            const island = document.querySelector('[data-theme="light"]');
+            const cs = window.getComputedStyle(island);
+            return {
+                background: cs.backgroundColor,
+                colorScheme: cs.colorScheme,
+                pageTheme: document.documentElement.getAttribute('data-theme')
+            };
+        });
+        expect(probe.pageTheme).toBe('dark');
+        expect(probe.background).toBe('rgb(255, 255, 255)');
+        expect(probe.colorScheme).toBe('light');
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
