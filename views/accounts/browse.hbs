@@ -37,12 +37,16 @@
         uiModal.close('#alertModal');
     });
 
-    // Create client with UI container
+    // Create client with UI container. The embed follows the admin theme -
+    // its own dark mode toggle stays hidden and the mode tracks the topbar
+    // theme switch (data-theme on the root element) and the system scheme.
     const client = new EmailEngineClient({
         apiUrl: window.location.origin,
         account: '{{account}}',
         accessToken: '{{sessionToken}}',
         container: document.getElementById('email-client'),
+        darkMode: uiEffectiveTheme() === 'dark',
+        showDarkModeToggle: false,
         confirmMethod: (message, title = 'Confirm', cancelText = 'Cancel', okText = 'OK') => {
             return new Promise((resolve) => {
                 confirmResult = false;
@@ -73,4 +77,11 @@
             });
         }
     });
+
+    // keep the embed in sync: the topbar toggle stamps data-theme on the root
+    // element, and with no stored choice the effective theme follows the
+    // system scheme
+    const syncClientTheme = () => client.setDarkMode(uiEffectiveTheme() === 'dark');
+    new MutationObserver(syncClientTheme).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncClientTheme);
 </script>

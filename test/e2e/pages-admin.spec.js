@@ -354,6 +354,16 @@ test.describe('admin shell', () => {
             )
             .toBeGreaterThan(0);
 
+        // the embed follows the admin theme: its own toggle is hidden and the
+        // topbar theme switch flips the client's dark mode live
+        await expect(page.locator('.ee-dark-mode-toggle')).toHaveCount(0);
+        const isClientDark = () => page.evaluate(() => document.querySelector('.ee-client').classList.contains('ee-dark-mode'));
+        const startedDark = await isClientDark();
+        await page.locator('.theme-toggle-btn').first().click();
+        await expect.poll(isClientDark).toBe(!startedDark);
+        await page.locator('.theme-toggle-btn').first().click();
+        await expect.poll(isClientDark).toBe(startedDark);
+
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 

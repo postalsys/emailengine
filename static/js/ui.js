@@ -117,6 +117,10 @@ window.uiAutoInit = () => {
         }
     }
 
+    // resolved light/dark choice for embeds that follow the admin theme
+    // (e.g. the ee-client message browser)
+    window.uiEffectiveTheme = effectiveTheme;
+
     window.uiToggleTheme = () => {
         let next = effectiveTheme() === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
