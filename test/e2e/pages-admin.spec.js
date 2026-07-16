@@ -76,6 +76,22 @@ async function expectPasswordToggle(page, btnId, inputId) {
     await expect(eyeOff).toBeHidden();
 }
 
+// Asserts the TLS certificate label's FlyonUI tooltip: the cert status text
+// shows on hover, and the structure paintCertData() repaints through (the
+// badge's .tooltip ancestor > .tooltip-body) is present with the title text.
+async function expectTlsLabelTooltip(page) {
+    const tlsTooltipText = await page.evaluate(() => {
+        const label = document.getElementById('tls-label');
+        const wrap = label && label.closest('.tooltip');
+        const body = wrap && wrap.querySelector('.tooltip-body');
+        return body ? body.textContent.trim() : null;
+    });
+    expect(tlsTooltipText).toBeTruthy();
+    await page.locator('#tls-label').hover();
+    await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+    await page.mouse.move(0, 0);
+}
+
 // Per-test console error collection; every test asserts the page stayed clean.
 function trackConsoleErrors(page) {
     const errors = [];
@@ -578,6 +594,8 @@ test.describe('admin shell', () => {
         await page.fill('#smtpServerPassword', 'e2e-secret');
         await expectPasswordToggle(page, 'showPassword', 'smtpServerPassword');
 
+        await expectTlsLabelTooltip(page);
+
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
@@ -593,6 +611,8 @@ test.describe('admin shell', () => {
 
         await page.fill('#imapProxyServerPassword', 'e2e-secret');
         await expectPasswordToggle(page, 'showPassword', 'imapProxyServerPassword');
+
+        await expectTlsLabelTooltip(page);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

@@ -119,8 +119,8 @@
                 {{> ui/setting-ref name="smtpServerTLSEnabled"}}
 
                 {{!-- hand-rolled checkbox: the label carries the #tls-label
-                      badge whose badge-{type} class and (legacy, shim-backed)
-                      tooltip are repainted by paintCertData() below --}}
+                      badge whose badge-{type} class and tooltip body are
+                      repainted by paintCertData() from ui.js --}}
                 <div class="flex items-center gap-2">
                     <input type="checkbox"
                         class="checkbox checkbox-sm trigger-example-render{{#if errors.smtpServerTLSEnabled}} is-invalid{{/if}}"
@@ -132,9 +132,10 @@
                     <label class="label-text p-0" for="smtpServerTLSEnabled">Enable TLS Encryption
 
                         {{#if certificateData.label}}
-                        <span id="tls-label" class="badge badge-{{certificateData.label.type}} cursor-default"
-                            data-labeltype="{{certificateData.label.type}}" data-toggle="tooltip" data-placement="top"
-                            title="{{certificateData.label.title}}">{{certificateData.label.text}}</span>
+                        {{#> ui/tooltip text=certificateData.label.title}}
+                        <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
+                            data-labeltype="{{certificateData.label.type}}">{{certificateData.label.text}}</span>
+                        {{/ui/tooltip}}
                         {{/if}}
 
                     </label>
@@ -339,24 +340,6 @@ $mail->addCustomHeader('X-EE-Account', 'USERNAME');
         }
 
         renderExamples();
-
-        function paintCertData(certData) {
-            let tlsLabelElm = document.getElementById('tls-label');
-
-            if (!certData || !certData.label || !tlsLabelElm) {
-                return
-            }
-
-            tlsLabelElm.classList.remove(`badge-${tlsLabelElm.dataset.labeltype}`);
-            tlsLabelElm.classList.add(`badge-${certData.label.type}`);
-            tlsLabelElm.dataset.labeltype = certData.label.type
-
-            tlsLabelElm.title = certData.label.title;
-            tlsLabelElm.textContent = certData.label.text;
-
-            $(tlsLabelElm).tooltip('dispose');
-            $(tlsLabelElm).tooltip('enable');
-        }
 
         let loadingCertData = false;
         let loadedCertData = false;

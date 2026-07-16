@@ -139,6 +139,29 @@ window.uiAutoInit = () => {
     });
 })();
 
+// Repaint the #tls-label certificate badge (config/smtp and config/imap-proxy
+// pages) from a certificate-check response: badge color, label text and the
+// FlyonUI tooltip body that carries the status details
+window.paintCertData = certData => {
+    let tlsLabelElm = document.getElementById('tls-label');
+
+    if (!certData || !certData.label || !tlsLabelElm) {
+        return;
+    }
+
+    tlsLabelElm.classList.remove(`badge-${tlsLabelElm.dataset.labeltype}`);
+    tlsLabelElm.classList.add(`badge-${certData.label.type}`);
+    tlsLabelElm.dataset.labeltype = certData.label.type;
+
+    tlsLabelElm.textContent = certData.label.text;
+
+    let tooltipBodyElm = tlsLabelElm.closest('.tooltip');
+    tooltipBodyElm = tooltipBodyElm && tooltipBodyElm.querySelector('.tooltip-body');
+    if (tooltipBodyElm) {
+        tooltipBodyElm.textContent = certData.label.title;
+    }
+};
+
 // Copy-to-clipboard buttons: a .copy-btn with data-copy-target="#selector"
 // copies the target's value (inputs) or text content. Delegated, so buttons
 // inside dynamically injected markup work without re-binding. Uses the async
