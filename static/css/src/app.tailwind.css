@@ -90,6 +90,15 @@
  * and emailengine.css; colors converted to theme tokens for light+dark)
  * ------------------------------------------------------------------------- */
 @layer components {
+    /* FlyonUI ships no badge-neutral variant (the base .badge already uses
+     * neutral tokens); define it explicitly so the SSE badge updater's
+     * class swaps (badge-${type} with type "neutral") stay meaningful */
+    .badge-neutral {
+        --badge-color: var(--color-neutral);
+        --badge-fg: var(--color-neutral-content);
+    }
+
+
     /* Description list: label column + value column (replaces the Bootstrap
      * dl.row + dt.col-sm-3/dd.col-sm-9 pattern used across detail pages) */
     .ee-dl {

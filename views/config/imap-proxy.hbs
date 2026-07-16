@@ -36,13 +36,17 @@
         <div class="card-header">
             <h6 class="card-title text-primary">Server Configuration</h6>
         </div>
-        <div class="card-body space-y-4">
-            <div>
-                {{> ui/setting-ref name="imapProxyServerEnabled"}}
-                {{> ui/checkbox id="imapProxyServerEnabled" name="imapProxyServerEnabled" label="Enable IMAP Proxy"
-                checked=values.imapProxyServerEnabled error=errors.imapProxyServerEnabled}}
-            </div>
 
+        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+            {{> ui/checkbox id="imapProxyServerEnabled" name="imapProxyServerEnabled" label="Enable IMAP Proxy"
+            checked=values.imapProxyServerEnabled error=errors.imapProxyServerEnabled}}
+
+            <div class="text-end">
+                {{> ui/setting-ref name="imapProxyServerEnabled" class="whitespace-nowrap"}}
+            </div>
+        </div>
+
+        <div class="card-body space-y-4">
             <div>
                 {{> ui/setting-ref name="imapProxyServerPort"}}
                 {{#> ui/form-field id="imapProxyServerPort" label="Port" error=errors.imapProxyServerPort}}

@@ -3,8 +3,8 @@
     Params:
       label   - button text (required)
       variant - FlyonUI color: primary|accent|neutral|info|success|warning|error (default primary).
-                Use "neutral" for gray/cancel actions; "secondary" (brand coral) is bridged to
-                gray by bootstrap-compat.css until the migration ends - avoid it in converted views.
+                Use "neutral" for gray/cancel actions; "secondary" renders the coral brand color,
+                so reserve it for deliberate accent buttons.
       style   - optional style modifier: outline|soft|text (adds btn-<style>)
       size    - xs|sm|lg (adds btn-<size>; optional)
       icon    - full iconify class, e.g. "icon-[tabler--arrow-right]" (optional; pass the

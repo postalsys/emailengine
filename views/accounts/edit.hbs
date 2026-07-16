@@ -99,9 +99,7 @@
             {{/ui/form-field}}
 
             <div>
-                <div class="text-base-content/60 float-right code-link">[<a
-                        href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
-                        class="link link-animated">smtpEhloName</a>]</div>
+                {{> ui/setting-ref name="smtpEhloName"}}
                 {{> ui/form-field id="smtpEhloName" label="SMTP Greeting Hostname" value=values.smtpEhloName error=errors.smtpEhloName placeholder='Proxy hostname like "my.proxy.tld"...'}}
                 <span class="helper-text">Hostname to use for the SMTP EHLO/HELO greeting. Leave empty to use the
                     default <code>{{defaultSmtpEhloName}}</code>. If you are using a dedicated IP address, the hostname

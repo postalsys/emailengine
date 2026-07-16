@@ -43,12 +43,14 @@ class="mb-1"}}
         <div class="card-header">
             <h6 class="card-title text-primary">General Settings</h6>
         </div>
-        <div class="card-body">
-            <div>
-                {{> ui/setting-ref name="webhooksEnabled"}}
-                {{> ui/checkbox id="webhooks_enabled" name="webhooksEnabled" label="Enable Webhooks"
-                checked=values.webhooksEnabled error=errors.webhooksEnabled
-                hint="Turn on webhook notifications for email events."}}
+
+        <div class="px-6 py-[1rem] flex items-start justify-between gap-4">
+            {{> ui/checkbox id="webhooks_enabled" name="webhooksEnabled" label="Enable Webhooks"
+            checked=values.webhooksEnabled error=errors.webhooksEnabled
+            hint="Turn on webhook notifications for email events."}}
+
+            <div class="text-end">
+                {{> ui/setting-ref name="webhooksEnabled" class="whitespace-nowrap"}}
             </div>
         </div>
     </div>
