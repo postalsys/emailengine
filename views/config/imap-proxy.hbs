@@ -104,77 +104,7 @@
 
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Security (TLS)</h6>
-        </div>
-        <div class="card-body">
-            <div>
-                {{> ui/setting-ref name="imapProxyServerTLSEnabled"}}
-
-                {{!-- hand-rolled checkbox: the label carries the #tls-label
-                      badge whose badge-{type} class and tooltip body are
-                      repainted by paintCertData() from ui.js. Certificates can
-                      only be provisioned for a real domain (serviceDomain is
-                      false when the Service URL is unset, an IP or localhost),
-                      so without one the checkbox is disabled - except when TLS
-                      is already on, so it can still be turned off. --}}
-                <div class="flex items-center gap-2">
-                    <input type="checkbox"
-                        class="checkbox checkbox-sm trigger-example-render{{#if errors.imapProxyServerTLSEnabled}} is-invalid{{/if}}"
-                        id="imapProxyServerTLSEnabled" {{#if
-                        certificateData}}data-certificate="{{certificateData.fingerprint}}" {{/if}}
-                        {{#if serviceDomain}}data-domain="{{serviceDomain}}" {{/if}}name="imapProxyServerTLSEnabled" {{#if
-                        values.imapProxyServerTLSEnabled}}checked{{/if}}
-                        {{#unless serviceDomain}}{{#unless values.imapProxyServerTLSEnabled}}disabled{{/unless}}{{/unless}} />
-
-                    <label class="label-text p-0" for="imapProxyServerTLSEnabled">Enable TLS Encryption
-
-                        {{#if certificateData.label}}
-                        {{#> ui/tooltip text=certificateData.label.title}}
-                        <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
-                            data-labeltype="{{certificateData.label.type}}">{{certificateData.label.text}}</span>
-                        {{/ui/tooltip}}
-                        {{/if}}
-
-                    </label>
-                </div>
-
-                {{#if errors.imapProxyServerTLSEnabled}}
-                <span class="helper-text text-error">{{errors.imapProxyServerTLSEnabled}}</span>
-                {{/if}}
-
-                <span class="helper-text">
-                    {{#if serviceDomain}}
-
-                    Certificates will be provisioned for <em>{{serviceDomain}}</em>. Change the domain in <a
-                        href="/admin/config/service#settingsServiceUrl" class="link link-animated">Service URL
-                        settings</a>.
-
-                    {{else}}
-
-                    Set a domain name in <a href="/admin/config/service#settingsServiceUrl"
-                        class="link link-animated">Service URL settings</a> to enable automatic TLS certificates.
-
-                    {{/if}}
-
-                </span>
-            </div>
-
-        </div>
-
-        {{#if serviceDomain}}
-        <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
-            <small class="text-base-content/60">
-                <span class="icon-[tabler--info-circle] size-4 align-text-bottom"></span>
-                EmailEngine must be publicly accessible at <em><a href="{{serviceUrl}}" target="_blank"
-                        rel="noopener noreferrer" class="link link-animated">{{serviceUrl}}</a></em> for automatic
-                certificates. Otherwise, a self-signed certificate will be used.
-            </small>
-        </div>
-        {{/if}}
-
-    </div>
+    {{> tls_security_card field="imapProxyServerTLSEnabled"}}
 
     {{#> ui/details summary="Client Configuration Examples" class="card bg-base-100 shadow-md mb-6"}}
 
@@ -214,26 +144,7 @@
 
 </form>
 
-{{#> ui/modal id="tlsModal" hideClose=true dialogClass="max-w-3xl"}}
-<div class="modal-body">
-    <h3 class="modal-title modal-show-default mb-[1rem]">Provisioning Certificate <span
-            class="loading loading-spinner loading-sm align-middle"></span></h3>
-    <h3 class="modal-title modal-show-error hidden mb-[1rem]">Certificate Request Failed</h3>
-
-    <div class="modal-show-default">
-        Setting up TLS certificate for <em class="show-service-domain">{{#if serviceDomain}}{{serviceDomain}}{{/if}}</em>. This may take a
-        moment...
-    </div>
-    <div class="modal-show-error hidden">
-        <p class="mb-2">Unable to provision certificate:</p>
-
-        <div class="font-mono error-content alert alert-soft alert-error"></div>
-    </div>
-</div>
-<div class="modal-footer modal-show-error hidden">
-    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#tlsModal"}}
-</div>
-{{/ui/modal}}
+{{> tls_security_modal}}
 
 <input type="hidden" id="availableAddresses" value="{{availableAddresses}}">
 
@@ -302,73 +213,6 @@ $client = $cm->make([
 
         renderExamples();
 
-        let loadingCertData = false;
-        let loadedCertData = false;
-
-        function loadCertData() {
-            loadingCertData = true;
-
-            for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
-                elm.classList.add('hidden')
-            }
-
-            for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
-                elm.classList.remove('hidden')
-            }
-
-            uiModal.open('#tlsModal');
-
-            fetch('/admin/config/smtp/certificate', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
-                })
-            }).then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json()
-            }).then(data => {
-                if (!data || !data.success) {
-                    throw new Error(data && data.error || 'Request failed')
-                }
-                console.log(data)
-                uiModal.close('#tlsModal');
-                loadingCertData = false;
-                loadedCertData = true;
-                document.getElementById('imapProxyServerTLSEnabled').dataset.certificate = data.fingerprint
-
-                paintCertData(data);
-            }).catch(err => {
-                console.error(err)
-                loadingCertData = false;
-
-                document.getElementById('imapProxyServerTLSEnabled').checked = false;
-                renderExamples();
-
-                for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
-                    elm.classList.remove('hidden')
-                }
-
-                for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
-                    elm.classList.add('hidden')
-                }
-
-                document.querySelector('#tlsModal .error-content').textContent = err.message;
-            });
-        }
-
-        function checkLoadCerts() {
-            if (document.getElementById('imapProxyServerTLSEnabled').checked &&
-                !loadingCertData && !loadedCertData &&
-                document.getElementById('imapProxyServerTLSEnabled').dataset.domain) {
-
-                loadCertData();
-            }
-        }
-
-        document.getElementById('imapProxyServerTLSEnabled').addEventListener('click', checkLoadCerts);
-        document.getElementById('imapProxyServerTLSEnabled').addEventListener('change', checkLoadCerts);
+        {{> tls_security_js field="imapProxyServerTLSEnabled"}}
     });
 </script>

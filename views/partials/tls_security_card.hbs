@@ -1,0 +1,76 @@
+{{!-- Security (TLS) card shared by the SMTP and IMAP proxy config pages.
+      Renders inside the settings form; pair with tls_security_modal (after
+      the form) and tls_security_js (inside the page script).
+      Params:
+        field - the TLS-enabled setting name, also the checkbox id/name
+                (smtpServerTLSEnabled / imapProxyServerTLSEnabled) --}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header">
+        <h6 class="card-title text-primary">Security (TLS)</h6>
+    </div>
+    <div class="card-body">
+        <div>
+            {{> ui/setting-ref name=field}}
+
+            {{!-- hand-rolled checkbox: the label carries the #tls-label
+                  badge whose badge-{type} class and tooltip body are
+                  repainted by paintCertData() from ui.js. Certificates can
+                  only be provisioned for a real domain (serviceDomain is
+                  false when the Service URL is unset, an IP or localhost),
+                  so without one the checkbox is disabled - except when TLS
+                  is already on, so it can still be turned off. --}}
+            <div class="flex items-center gap-2">
+                <input type="checkbox"
+                    class="checkbox checkbox-sm trigger-example-render{{#if (lookup errors field)}} is-invalid{{/if}}"
+                    id="{{field}}" {{#if certificateData}}data-certificate="{{certificateData.fingerprint}}" {{/if}}
+                    {{#if serviceDomain}}data-domain="{{serviceDomain}}" {{/if}}name="{{field}}" {{#if (lookup values
+                    field)}}checked{{/if}}
+                    {{#unless serviceDomain}}{{#unless (lookup values field)}}disabled{{/unless}}{{/unless}} />
+
+                <label class="label-text p-0" for="{{field}}">Enable TLS Encryption
+
+                    {{#if certificateData.label}}
+                    {{#> ui/tooltip text=certificateData.label.title}}
+                    <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
+                        data-labeltype="{{certificateData.label.type}}">{{certificateData.label.text}}</span>
+                    {{/ui/tooltip}}
+                    {{/if}}
+
+                </label>
+            </div>
+
+            {{#if (lookup errors field)}}
+            <span class="helper-text text-error">{{lookup errors field}}</span>
+            {{/if}}
+
+            <span class="helper-text">
+                {{#if serviceDomain}}
+
+                Certificates will be provisioned for <em>{{serviceDomain}}</em>. Change the domain in <a
+                    href="/admin/config/service#settingsServiceUrl" class="link link-animated">Service URL
+                    settings</a>.
+
+                {{else}}
+
+                Set a domain name in <a href="/admin/config/service#settingsServiceUrl"
+                    class="link link-animated">Service URL settings</a> to enable automatic TLS certificates.
+
+                {{/if}}
+
+            </span>
+        </div>
+
+    </div>
+
+    {{#if serviceDomain}}
+    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        <small class="text-base-content/60">
+            <span class="icon-[tabler--info-circle] size-4 align-text-bottom"></span>
+            EmailEngine must be publicly accessible at <em><a href="{{serviceUrl}}" target="_blank"
+                    rel="noopener noreferrer" class="link link-animated">{{serviceUrl}}</a></em> for automatic
+            certificates. Otherwise, a self-signed certificate will be used.
+        </small>
+    </div>
+    {{/if}}
+
+</div>

@@ -1,0 +1,22 @@
+{{!-- certificate provisioning progress/error modal for tls_security_card;
+      rendered outside the settings form (its Close button must not submit) --}}
+{{#> ui/modal id="tlsModal" hideClose=true dialogClass="max-w-3xl"}}
+<div class="modal-body">
+    <h3 class="modal-title modal-show-default mb-[1rem]">Provisioning Certificate <span
+            class="loading loading-spinner loading-sm align-middle"></span></h3>
+    <h3 class="modal-title modal-show-error hidden mb-[1rem]">Certificate Request Failed</h3>
+
+    <div class="modal-show-default">
+        Setting up TLS certificate for <em class="show-service-domain">{{#if serviceDomain}}{{serviceDomain}}{{/if}}</em>. This may take a
+        moment...
+    </div>
+    <div class="modal-show-error hidden">
+        <p class="mb-2">Unable to provision certificate:</p>
+
+        <div class="font-mono error-content alert alert-soft alert-error"></div>
+    </div>
+</div>
+<div class="modal-footer modal-show-error hidden">
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#tlsModal"}}
+</div>
+{{/ui/modal}}

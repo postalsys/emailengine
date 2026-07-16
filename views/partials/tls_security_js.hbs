@@ -1,0 +1,75 @@
+{{!-- certificate provisioning logic for tls_security_card; include INSIDE
+      the page's DOMContentLoaded script block. Both config pages provision
+      through the same endpoint - the certificate belongs to the service
+      domain, not to either server. Expects the page to define
+      renderExamples() (both do).
+      Params:
+        field - the TLS checkbox id (matches tls_security_card) --}}
+        let loadingCertData = false;
+        let loadedCertData = false;
+
+        function loadCertData() {
+            loadingCertData = true;
+
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                elm.classList.add('hidden')
+            }
+
+            for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                elm.classList.remove('hidden')
+            }
+
+            uiModal.open('#tlsModal');
+
+            fetch('/admin/config/smtp/certificate', {
+                method: 'post',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    crumb: document.getElementById('crumb').value
+                })
+            }).then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json()
+            }).then(data => {
+                if (!data || !data.success) {
+                    throw new Error(data && data.error || 'Request failed')
+                }
+                console.log(data)
+                uiModal.close('#tlsModal');
+                loadingCertData = false;
+                loadedCertData = true;
+                document.getElementById('{{field}}').dataset.certificate = data.fingerprint
+
+                paintCertData(data);
+            }).catch(err => {
+                console.error(err)
+                loadingCertData = false;
+
+                document.getElementById('{{field}}').checked = false;
+                renderExamples();
+
+                for (let elm of document.querySelectorAll('#tlsModal .modal-show-error')) {
+                    elm.classList.remove('hidden')
+                }
+
+                for (let elm of document.querySelectorAll('#tlsModal .modal-show-default')) {
+                    elm.classList.add('hidden')
+                }
+
+                document.querySelector('#tlsModal .error-content').textContent = err.message;
+            });
+        }
+
+        function checkLoadCerts() {
+            if (document.getElementById('{{field}}').checked &&
+                !loadingCertData && !loadedCertData &&
+                document.getElementById('{{field}}').dataset.domain) {
+
+                loadCertData();
+            }
+        }
+
+        document.getElementById('{{field}}').addEventListener('click', checkLoadCerts);
+        document.getElementById('{{field}}').addEventListener('change', checkLoadCerts);
