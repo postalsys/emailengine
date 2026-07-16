@@ -407,6 +407,15 @@ test.describe('admin shell', () => {
         await page.goto('/admin/gateways/new');
         await page.fill('#gateway', 'e2e-smoke-gw');
 
+        // long tooltip texts wrap inside the capped bubble instead of
+        // rendering as one viewport-wide line
+        const tlsTipToggle = page.locator('#secure').locator('..').locator('.tooltip .tooltip-toggle').first();
+        await tlsTipToggle.hover();
+        await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+        const tipWidth = await page.evaluate(() => document.querySelector('.tooltip.show .tooltip-content').getBoundingClientRect().width);
+        expect(tipWidth).toBeLessThanOrEqual(320);
+        await page.mouse.move(0, 0);
+
         // typing a well-known service key into the name field autofills the
         // connection settings (uiDatalist + the gateway_js input listener)
         await expect(page.locator('#name')).toHaveAttribute('list', 'well-known-services-list');

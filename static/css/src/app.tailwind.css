@@ -107,9 +107,18 @@
  * in @layer utilities, which beats any components-layer rule regardless of
  * specificity. */
 /* tooltips float above the sidebar (lg:z-40) and topbar; FlyonUI's default
- * z-20 leaves bubbles clipped under the drawer */
+ * z-20 leaves bubbles clipped under the drawer. The width cap makes long
+ * tooltip texts wrap (FlyonUI's width:max-content otherwise renders them as
+ * one viewport-wide line); balance keeps the wrapped lines even. */
 .tooltip .tooltip-content {
     z-index: 60;
+    max-width: 20rem;
+}
+.tooltip .tooltip-body {
+    /* block, not inline: an inline body fragments its background into one
+     * box per wrapped line */
+    display: block;
+    text-wrap: balance;
 }
 /* empty-state gate for SSE state badges (ui/state-badge): while there is no
  * error, the bubble must not render at all. Gated on the wrapper because
