@@ -18,13 +18,14 @@
 
 const { test, expect, request } = require('@playwright/test');
 const { createUsableTestAccount, waitFor } = require('./helpers/ethereal');
-const { ADMIN_PASSWORD } = require('./helpers/bootstrap');
+const { ADMIN_PASSWORD, trackConsoleErrors } = require('./helpers/bootstrap');
 
 const PORT = 7099;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const ACCOUNT_ID = 'e2e-ethereal';
 
 test('fresh instance: bootstrap, register Ethereal account, send and read back', async ({ page }) => {
+    const errors = trackConsoleErrors(page);
     let token;
 
     await test.step('enable authentication (set admin password)', async () => {
@@ -177,4 +178,6 @@ test('fresh instance: bootstrap, register Ethereal account, send and read back',
     } finally {
         await api.dispose();
     }
+
+    expect(errors, errors.join('\n')).toHaveLength(0);
 });

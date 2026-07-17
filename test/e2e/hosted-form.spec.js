@@ -18,13 +18,14 @@
 
 const { test, expect, request } = require('@playwright/test');
 const { createUsableTestAccount } = require('./helpers/ethereal');
-const { ensureAdminSession, ensureTrial, createApiToken } = require('./helpers/bootstrap');
+const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
 
 const PORT = 7099;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const ACCOUNT_ID = 'e2e-hosted-imap';
 
 test('hosted auth form: add an IMAP account (Ethereal) and reach connected', async ({ page }) => {
+    const errors = trackConsoleErrors(page);
     let token;
 
     await test.step('bootstrap: admin session, trial, API token', async () => {
@@ -119,4 +120,6 @@ test('hosted auth form: add an IMAP account (Ethereal) and reach connected', asy
     } finally {
         await api.dispose();
     }
+
+    expect(errors, errors.join('\n')).toHaveLength(0);
 });

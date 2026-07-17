@@ -1,4 +1,4 @@
-/* global document, window, navigator, localStorage */
+/* global document, window, navigator, localStorage, fetch */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at
@@ -18,8 +18,8 @@
 
 const os = require('os');
 const path = require('path');
-const { test, expect } = require('@playwright/test');
-const { ensureAdminSession, createApiToken } = require('./helpers/bootstrap');
+const { test, expect, request } = require('@playwright/test');
+const { ensureAdminSession, createApiToken, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 
 // One real login per run: the admin session cookie is captured in beforeAll and
 // reused by every test via storageState. Logging in per test trips the login
@@ -92,17 +92,8 @@ async function expectTlsLabelTooltip(page) {
     await page.mouse.move(0, 0);
 }
 
-// Per-test console error collection; every test asserts the page stayed clean.
-function trackConsoleErrors(page) {
-    const errors = [];
-    page.on('console', msg => {
-        if (msg.type() === 'error') {
-            errors.push(msg.text());
-        }
-    });
-    page.on('pageerror', err => errors.push(`pageerror: ${err.message}`));
-    return errors;
-}
+// Per-test console error collection lives in helpers/bootstrap.js
+// (trackConsoleErrors); every test asserts the page stayed clean.
 
 test.describe('admin shell', () => {
     test.use({ storageState: STATE_FILE });
@@ -1130,6 +1121,417 @@ test.describe('admin shell', () => {
             await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth });
             await expect.poll(async () => (await request.get(`/v1/account/${ACCOUNT_ID}`, { headers: auth })).status(), { timeout: 15000 }).toBe(404);
         }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config pages: every settings form saves and reports through a flash alert', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // idempotent save round-trip on every config page: the forms post their
+        // rendered (persisted) values back, so nothing changes server-side
+        const configPages = [
+            '/admin/config/webhooks',
+            '/admin/config/service',
+            '/admin/config/logging',
+            '/admin/config/network',
+            '/admin/config/smtp',
+            '/admin/config/imap-proxy',
+            '/admin/config/ai'
+        ];
+        for (const configPath of configPages) {
+            await page.goto(configPath);
+            await page.getByRole('button', { name: 'Save Changes' }).click();
+            const flash = page.locator('.flash-alert', { hasText: 'Configuration updated' });
+            await expect(flash, `${configPath} save`).toBeVisible({ timeout: 15000 });
+            // the close button removes the alert (ui.js .flash-alert-close handler);
+            // wait for ui.js to have executed before relying on its binding
+            await page.waitForFunction(() => typeof window.uiDismissFade === 'function');
+            await flash.locator('.flash-alert-close').click();
+            await expect(flash, `${configPath} flash close`).toHaveCount(0);
+        }
+
+        // a changed value actually persists across the redirect
+        await page.goto('/admin/config/logging');
+        const maxLines = page.locator('#settingsLogsMaxLogLines');
+        const origLines = await maxLines.inputValue();
+        await maxLines.fill('12345');
+        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await expect(page.locator('.flash-alert', { hasText: 'Configuration updated' })).toBeVisible();
+        await expect(maxLines).toHaveValue('12345');
+        await maxLines.fill(origLines);
+        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await expect(maxLines).toHaveValue(origLines);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('gateways: edit page prefills and updates', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/gateways/new');
+        await page.fill('#gateway', 'e2e-edit-gw');
+        await page.fill('#name', 'E2E Edit Gateway');
+        await page.fill('#host', '127.0.0.1');
+        await page.fill('#port', '2525');
+        await page.locator('button[type="submit"]', { hasText: 'Create Gateway' }).click();
+        await page.waitForURL(/\/admin\/gateways\/gateway\//);
+
+        await page.goto('/admin/gateways/edit/e2e-edit-gw');
+        await expect(page.locator('#name')).toHaveValue('E2E Edit Gateway');
+        await expect(page.locator('#host')).toHaveValue('127.0.0.1');
+        await page.fill('#name', 'E2E Edited Gateway');
+        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await page.waitForURL(/\/admin\/gateways\/gateway\//);
+        await expect(page.getByRole('heading', { name: 'E2E Edited Gateway' })).toBeVisible();
+
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/gateways(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('templates: edit page prefills the ACE editors and updates', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/templates/new');
+        await page.fill('#inputName', 'E2E Edit Template');
+        await page.fill('#inputSubject', 'e2e edit subject');
+        await page.locator('button[type="submit"]', { hasText: 'Create template' }).click();
+        await page.waitForURL(/\/admin\/templates\/template\//);
+        const detailUrl = new URL(page.url()).pathname;
+
+        await page.goto(`${detailUrl}/edit`);
+        await expect(page.locator('#inputName')).toHaveValue('E2E Edit Template');
+        await expect(page.locator('#inputSubject')).toHaveValue('e2e edit subject');
+        await expect(page.locator('#editor-html .ace_content')).toBeAttached();
+        await page.fill('#inputName', 'E2E Edited Template');
+        await page.locator('button[type="submit"]', { hasText: 'Update template' }).click();
+        await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
+        await expect(page.getByRole('heading', { name: 'E2E Edited Template' })).toBeVisible();
+
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/templates(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('webhooks: edit page prefills the editors and updates', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/webhooks/new');
+        await page.fill('#inputName', 'E2E Edit Route');
+        await page.fill('#inputTargetUrl', 'https://example.com/e2e-edit-webhook');
+        await page.locator('button[type="submit"]', { hasText: 'Create routing' }).click();
+        await page.waitForURL(/\/admin\/webhooks\/webhook\//);
+        const detailUrl = new URL(page.url()).pathname;
+
+        await page.goto(`${detailUrl}/edit`);
+        await expect(page.locator('#inputName')).toHaveValue('E2E Edit Route');
+        await expect(page.locator('#inputTargetUrl')).toHaveValue('https://example.com/e2e-edit-webhook');
+        await expect(page.locator('#editor-fn .ace_content')).toBeAttached();
+        await page.fill('#inputName', 'E2E Edited Route');
+        await page.locator('button[type="submit"]', { hasText: 'Update webhook' }).click();
+        await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
+        await expect(page.getByRole('heading', { name: 'E2E Edited Route' })).toBeVisible();
+
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/webhooks(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('oauth apps: edit page prefills and updates', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/oauth/new?provider=gmail');
+        await page.locator('#baseScopesImap').check();
+        await page.fill('#name', 'E2E OAuth Edit App');
+        await page.fill('#clientId', '1234567890-e2e-edit.apps.googleusercontent.com');
+        await page.fill('#clientSecret', 'GOCSPX-e2e-edit-dummy');
+        await page.locator('button[type="submit"]', { hasText: 'Register app' }).click();
+        await page.waitForURL(/\/admin\/config\/oauth\/app\//);
+        const appId = await page.locator('#appIdValue').inputValue();
+
+        await page.goto(`/admin/config/oauth/edit/${appId}`);
+        await expect(page.locator('#name')).toHaveValue('E2E OAuth Edit App');
+        await expect(page.locator('#clientId')).toHaveValue('1234567890-e2e-edit.apps.googleusercontent.com');
+        await page.fill('#name', 'E2E OAuth Edited App');
+        await page.locator('button[type="submit"]', { hasText: 'Update app' }).click();
+        await page.waitForURL(/\/admin\/config\/oauth\/app\//);
+        await expect(page.getByRole('heading', { name: 'E2E OAuth Edited App' })).toBeVisible();
+
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+        await page.locator('#deleteModal button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/config\/oauth(\?|$)/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('tokens: delete flow actually removes the token', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await createApiToken(page, 'e2e delete-me token');
+        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
+        await page.locator('#showToken button', { hasText: 'Done' }).click();
+        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+
+        const deleteBtn = page.locator('.delete-token-btn[data-token-description="e2e delete-me token"]').first();
+        await deleteBtn.click();
+        await expect(page.locator('#deleteToken.open')).toHaveCount(1);
+        await page.locator('#deleteToken button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+        await expect(page.locator('.flash-alert')).toBeVisible();
+        await expect(page.locator('.delete-token-btn[data-token-description="e2e delete-me token"]')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('tokens: list paginates once it outgrows one page', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // 25 root tokens through the same endpoint the UI uses (page size is 20)
+        const created = await page.evaluate(async () => {
+            const crumb = document.getElementById('crumb').value;
+            const tokens = [];
+            for (let i = 0; i < 25; i++) {
+                const res = await fetch('/admin/tokens/new', {
+                    method: 'post',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ crumb, description: `e2e page filler ${i}`, scopes: ['api'], account: '' })
+                });
+                const data = await res.json();
+                if (data && data.token) {
+                    tokens.push(data.token);
+                }
+            }
+            return tokens;
+        });
+        expect(created.length).toBe(25);
+
+        const bearer = await createApiToken(page, 'e2e pagination cleanup token');
+        await page.locator('#showToken button', { hasText: 'Done' }).click();
+        const api = await request.newContext({
+            baseURL: BASE_URL,
+            extraHTTPHeaders: { Authorization: `Bearer ${bearer}` }
+        });
+
+        try {
+            await page.goto('/admin/tokens');
+            const pager = page.locator('.join', { has: page.locator('.btn', { hasText: '2' }) }).last();
+            await expect(pager).toBeVisible();
+            await pager.locator('.btn', { hasText: '2' }).click();
+            await page.waitForURL(/[?&]page=2/);
+            expect(await page.locator('tbody tr').count()).toBeGreaterThan(0);
+        } finally {
+            await Promise.all(created.map(tok => api.delete(`/v1/token/${tok}`).catch(() => {})));
+            await api.dispose();
+        }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('account edit: rename round-trip and folder-path datalist', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        await page.goto(`${url}/edit`);
+        const nameField = page.locator('#name');
+        const origName = await nameField.inputValue();
+
+        // the Sent Mail folder input carries native datalist suggestions built
+        // from the account's real folder listing (uiDatalist)
+        await expect(page.locator('#imap_sentMailPath')).toHaveAttribute('list', 'available-paths-list');
+        expect(await page.locator('#available-paths-list option').count()).toBeGreaterThan(0);
+
+        await nameField.fill('E2E Renamed Account');
+        await page.getByRole('button', { name: 'Update account' }).click();
+        await page.waitForURL(u => u.pathname === url);
+        await expect(page.getByText('E2E Renamed Account').first()).toBeVisible();
+
+        await page.goto(`${url}/edit`);
+        await page.locator('#name').fill(origName);
+        await page.getByRole('button', { name: 'Update account' }).click();
+        await page.waitForURL(u => u.pathname === url);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('account detail: reconnect, sync, logs toggle/flush and logs download', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+        await page.goto(url);
+
+        const toast = text => page.locator('#toastContainer .alert', { hasText: text });
+
+        // reconnect + sync both POST with the layout crumb and report via toast
+        const [reconnectRes] = await Promise.all([
+            page.waitForResponse(r => r.url().includes('/reconnect') && r.request().method() === 'POST'),
+            page.locator('#request-reconnect').click()
+        ]);
+        expect(reconnectRes.ok()).toBeTruthy();
+        await expect(toast('Account reconnection requested')).toBeVisible();
+
+        const [syncRes] = await Promise.all([
+            page.waitForResponse(r => r.url().includes('/sync') && r.request().method() === 'POST'),
+            page.locator('#request-sync').click()
+        ]);
+        expect(syncRes.ok()).toBeTruthy();
+        await expect(toast('Account sync requested')).toBeVisible();
+
+        // logs dropdown: enable logging, flush, then restore. The dropdown can
+        // close on its own between opening and the item click (open/close
+        // animations), so retry the whole open-then-click block until it lands.
+        const logsMenuItem = async id => {
+            await expect(async () => {
+                const item = page.locator(id);
+                if (!(await item.isVisible())) {
+                    await page.locator('#logs-info').click();
+                    await expect(item).toBeVisible({ timeout: 2000 });
+                }
+                await item.click({ timeout: 2000 });
+            }).toPass({ timeout: 30000 });
+        };
+
+        await logsMenuItem('#toggle-logs');
+        await expect(toast('Logging settings updated')).toBeVisible();
+
+        await logsMenuItem('#flush-logs');
+        await expect(toast('Stored logs were flushed')).toBeVisible();
+
+        const logsRes = await page.request.get(`${url}/logs.txt`);
+        expect(logsRes.ok(), `logs.txt -> ${logsRes.status()}`).toBeTruthy();
+
+        await logsMenuItem('#toggle-logs');
+        await expect(toast('Logging settings updated').last()).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('account detail: export flow completes and serves the download', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+        await page.goto(url);
+
+        await page.locator('#request-export').click();
+        await expect(page.locator('#exportModal.open')).toHaveCount(1);
+        await expect(page.locator('#exportModal')).toHaveCSS('opacity', '1');
+        // the date range is required (the start handler toasts and bails without it)
+        await page.fill('#export-start-date', '2020-01-01');
+        await page.fill('#export-end-date', '2030-12-31');
+        await page.locator('#export-start-btn').click();
+
+        // the modal switches to the status view and polls until completion
+        await expect(page.locator('#export-status-view')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('#export-status-badge')).toHaveText(/Completed/i, { timeout: 120000 });
+
+        const downloadHref = await page.locator('#export-download-link').getAttribute('href');
+        expect(downloadHref).toBeTruthy();
+        const dl = await page.request.get(downloadHref);
+        expect(dl.ok(), `export download -> ${dl.status()}`).toBeTruthy();
+
+        // close via the corner button: FlyonUI ignores Escape while focus sits
+        // on <body>, which is where the fetch-driven button flow leaves it
+        await page.locator('#exportModal [aria-label="Close"]').click();
+        await expect(page.locator('#exportModal.open')).toHaveCount(0);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('topbar search: query and state filter narrow the accounts list', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+        const url = await firstAccountUrl(page);
+        test.skip(!url, 'no account registered (standalone run)');
+
+        await page.goto('/admin/accounts');
+        await page.locator('header form input[name="query"]').fill('e2e');
+        await page.locator('header form button[type="submit"]').click();
+        await page.waitForURL(/[?&]query=e2e/);
+        await expect(page.getByText('Results for "e2e"')).toBeVisible();
+
+        // the state dropdown navigates with the state filter applied
+        await page.locator('#search-state-dropdown').click();
+        await page.locator('.dropdown-item', { hasText: 'Connected' }).first().click();
+        await page.waitForURL(/[?&]state=connected/);
+        await expect(page.locator('#search-state-dropdown')).toContainText('Connected');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('add-account modal: submit redirects to the signed hosted form', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // the redirect target is built from the public serviceUrl; bounce it
+        // back to the local test server (the signed blob is host-independent)
+        await page.route('https://e2e.emailengine.app/**', route => {
+            const u = new URL(route.request().url());
+            route.fulfill({ status: 302, headers: { location: `${BASE_URL}${u.pathname}${u.search}` } });
+        });
+
+        await page.goto('/admin/accounts');
+        await page.locator('[data-overlay="#addAccount"]').first().click();
+        await expect(page.locator('#addAccount.open')).toHaveCount(1);
+        await page.fill('#account-name', 'E2E Modal Smoke');
+        await page.locator('#addAccount button[type="submit"]').click();
+
+        await page.waitForURL(/\/accounts\/new\?data=/);
+        await expect(page.locator('form[action^="/accounts/new"]').first()).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('unknown admin path renders the themed error page with a 404', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        const response = await page.goto('/admin/definitely-not-a-page');
+        expect(response.status()).toBe(404);
+        await expect(page.getByRole('heading', { name: 'Something went wrong' })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Dashboard' })).toBeVisible();
+
+        // the intentional 404 itself logs a resource error; anything else is a bug
+        const unexpected = errors.filter(err => !/status of 404/.test(err));
+        expect(unexpected, unexpected.join('\n')).toHaveLength(0);
+    });
+
+    test('mobile viewport: the sidebar opens as a drawer', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/admin');
+
+        const dashboardLink = page.locator('#layout-sidebar').getByRole('link', { name: 'Dashboard' });
+        await expect(dashboardLink).toBeHidden();
+
+        await page.locator('header [data-overlay="#layout-sidebar"]').click();
+        await expect(dashboardLink).toBeVisible();
+
+        // the drawer's own close button dismisses it
+        await page.locator('#layout-sidebar [data-overlay="#layout-sidebar"]').click();
+        await expect(dashboardLink).toBeHidden();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
