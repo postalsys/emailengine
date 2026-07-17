@@ -14,14 +14,14 @@
     <input type="hidden" name="next" value="{{values.next}}" />
 
     <div>
-        <input type="text" class="input rounded-full{{#if errors.username}} is-invalid{{/if}}"
+        <input type="text" class="input{{#if errors.username}} is-invalid{{/if}}"
             id="loginUsername" name="username" placeholder="Username" value="{{values.username}}">
         {{#if errors.username}}
         <span class="helper-text text-error">{{errors.username}}</span>
         {{/if}}
     </div>
     <div>
-        <input type="password" class="input rounded-full{{#if errors.password}} is-invalid{{/if}}"
+        <input type="password" class="input{{#if errors.password}} is-invalid{{/if}}"
             id="loginPassword" name="password" placeholder="Password">
         {{#if errors.password}}
         <span class="helper-text text-error">{{errors.password}}</span>
@@ -31,7 +31,7 @@
     <!-- Always enable persistent sessions; no UI toggle for now -->
     <input type="hidden" name="remember" value="Y" />
     <div>
-        <button type="submit" class="btn btn-primary btn-block rounded-full">
+        <button type="submit" class="btn btn-primary btn-block">
             Sign in
         </button>
     </div>
@@ -40,7 +40,7 @@
 {{#if passkeysAvailable}}
 <div class="divider text-base-content/60 text-sm my-4">or</div>
 <div>
-    <button type="button" class="btn btn-primary btn-block rounded-full" id="passkey-login-btn">
+    <button type="button" class="btn btn-primary btn-block" id="passkey-login-btn">
         <span class="icon-[tabler--fingerprint] size-4"></span><span id="passkey-login-btn-label">Sign in with a passkey</span>
     </button>
     <div id="passkey-error" class="text-error text-sm mt-2 text-center hidden"></div>
@@ -54,14 +54,14 @@
 {{/unless}}
 {{#if providers.okta}}
 <div class="mt-2">
-    <a href="/admin/login/okta" class="btn btn-primary btn-block rounded-full">
+    <a href="/admin/login/okta" class="btn btn-primary btn-block">
         <span class="icon-[tabler--login-2] size-4"></span>Sign in with Okta SSO
     </a>
 </div>
 {{/if}}
 {{#if providers.oidc}}
 <div class="mt-2">
-    <a href="/admin/login/oidc" class="btn btn-primary btn-block rounded-full">
+    <a href="/admin/login/oidc" class="btn btn-primary btn-block">
         <span class="icon-[tabler--login-2] size-4"></span>Sign in with {{providers.oidc.name}}
     </a>
 </div>
