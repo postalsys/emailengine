@@ -1324,7 +1324,11 @@ test.describe('admin shell', () => {
         expect(created.length).toBe(25);
 
         const bearer = await createApiToken(page, 'e2e pagination cleanup token');
+        // settle the opening transition, then wait out the location.assign the
+        // Done button triggers - a page.goto racing it aborts with ERR_ABORTED
+        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
         await page.locator('#showToken button', { hasText: 'Done' }).click();
+        await page.waitForURL(/\/admin\/tokens(\?|$)/);
         const api = await request.newContext({
             baseURL: BASE_URL,
             extraHTTPHeaders: { Authorization: `Bearer ${bearer}` }
