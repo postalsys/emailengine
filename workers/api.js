@@ -38,7 +38,8 @@ const {
     constantTimeEqual,
     verifyServiceSignature,
     claimFormNonce,
-    releaseFormNonce
+    releaseFormNonce,
+    setAdminSession
 } = require('../lib/tools');
 const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
 
@@ -1411,7 +1412,7 @@ Include your token in requests using one of these methods:
                     error.output.payload.details = [request.auth.error.message];
                     throw error;
                 }
-                request.cookieAuth.set(request.auth.credentials);
+                setAdminSession(request, request.auth.credentials);
                 let oktaUser = request.auth.credentials && request.auth.credentials.profile && request.auth.credentials.profile.username;
                 request.logger.info({ msg: 'Admin login successful', user: oktaUser || 'unknown', method: 'okta', remoteAddress: request.app.ip });
                 return h.redirect('/admin');
@@ -1506,7 +1507,7 @@ Include your token in requests using one of these methods:
                     // `ee` cookie past the ~4KB browser limit and cause a silent login loop.
                     // Group names are kept so the per-request authorization re-check works;
                     // the id_token is kept only as the logout id_token_hint (RP-initiated logout).
-                    request.cookieAuth.set({
+                    setAdminSession(request, {
                         provider: 'oidc',
                         profile: {
                             id: profile.id,
