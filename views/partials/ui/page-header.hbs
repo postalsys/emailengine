@@ -7,6 +7,10 @@
       icon         - full iconify class for a muted icon before the title (optional)
       badgeLabel   - status badge text rendered right after the title (optional)
       badgeVariant - color of that badge: success|warning|error|... (default neutral)
+      stateLabel   - live server-state label object rendered as ui/state-badge
+                     after the title (optional; use with stateType)
+      stateType    - data-type for that state badge; app.js repaints
+                     .state-info[data-type] through the /admin/changes SSE feed
       class        - extra classes on the wrapper (additive). Emits no margin of
                      its own - the caller owns spacing, same as ui/form-field.
 --}}
@@ -15,11 +19,12 @@
         {{~#if icon}}<span class="{{icon}} size-6 text-base-content/60"></span>{{/if~}}
         {{title}}
         {{~#if badgeLabel}} {{> ui/badge label=badgeLabel variant=badgeVariant icon="" id="" class="" soft=""}}{{/if~}}
+        {{~#if stateLabel}} {{> ui/state-badge label=stateLabel dataType=stateType account="" pointer="" class=""}}{{/if~}}
     </h1>
     {{#if @partial-block}}
     <div class="flex flex-wrap items-center gap-2">
         {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
-        {{> @partial-block title="" icon="" badgeLabel="" badgeVariant="" class=""}}
+        {{> @partial-block title="" icon="" badgeLabel="" badgeVariant="" stateLabel="" stateType="" class=""}}
     </div>
     {{/if}}
 </div>

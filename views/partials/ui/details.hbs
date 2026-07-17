@@ -10,7 +10,7 @@
       class        - wrapper classes replacing the default card look
                      (default "card bg-base-100 shadow-md")
       summaryClass - extra/override padding classes on the summary
-                     (default "px-6 py-[1rem]")
+                     (default "px-6 py-4")
       bodyClass    - extra classes on the body (optional)
     Not usable from browser-compiled templates (test_send.hbs) - those cannot
     resolve server-side partials.
@@ -18,7 +18,7 @@
 <details {{#if id}}id="{{id}}" {{/if}}class="group {{#if class}}{{class}}{{else}}card bg-base-100 shadow-md{{/if}}"
     {{#if open}}open {{/if}}>
     <summary
-        class="flex cursor-pointer items-center gap-2 {{#if summaryClass}}{{summaryClass}}{{else}}px-6 py-[1rem]{{/if}} font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+        class="flex cursor-pointer items-center gap-2 {{#if summaryClass}}{{summaryClass}}{{else}}px-6 py-4{{/if}} font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
         <span
             class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
         {{summary}}{{#if summarySmall}} <small class="text-base-content/60 font-normal">{{summarySmall}}</small>{{/if}}

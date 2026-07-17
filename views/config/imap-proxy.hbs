@@ -1,13 +1,6 @@
-<div class="flex flex-wrap items-center justify-between gap-3 mb-1">
-    <h1 class="flex items-center gap-2 text-2xl font-semibold text-base-content">
-        <span class="icon-[tabler--server] size-6 text-base-content/60"></span>
-        IMAP Proxy
-        {{!-- live state badge: app.js updates the badge-{type} class, text
-              and error tooltip through the /admin/changes SSE feed (targets
-              .state-info[data-type]) --}}
-        {{> ui/state-badge label=serverState.label dataType="imapProxy"}}
-    </h1>
-</div>
+{{!-- live state badge: app.js updates the badge-{type} class, text and error
+      tooltip through the /admin/changes SSE feed (targets .state-info[data-type]) --}}
+{{> ui/page-header title="IMAP Proxy" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="imapProxy" class="mb-1"}}
 
 <p>Access any EmailEngine-managed account through standard IMAP clients. The proxy handles authentication with the real
     email server, so your IMAP client only needs an access token-no actual credentials or OAuth2 setup required.</p>
@@ -31,7 +24,7 @@
             <h6 class="card-title text-primary">Server Configuration</h6>
         </div>
 
-        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
             {{> ui/checkbox id="imapProxyServerEnabled" name="imapProxyServerEnabled" label="Enable IMAP Proxy"
             checked=values.imapProxyServerEnabled error=errors.imapProxyServerEnabled}}
 
@@ -92,7 +85,7 @@
             </div>
         </div>
 
-        <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        <div class="card-footer border-base-content/10 border-t px-6 py-4">
             <small class="text-base-content/60">
                 <span class="icon-[tabler--info-circle] size-4 align-text-bottom"></span>
 
@@ -108,7 +101,7 @@
 
     {{#> ui/details summary="Client Configuration Examples" class="card bg-base-100 shadow-md mb-6"}}
 
-    <p class="mb-[1rem]">Connect to the proxy using the account ID as your IMAP username.</p>
+    <p class="mb-4">Connect to the proxy using the account ID as your IMAP username.</p>
 
     <nav class="tabs tabs-bordered" aria-label="Client configuration examples" role="tablist" id="code-examples"
         data-tabs>
@@ -118,22 +111,22 @@
             aria-controls="example-php-imap" aria-selected="false">PHP (php-imap)</button>
     </nav>
 
-    <div class="mt-[1rem] mb-[1rem]">
+    <div class="mt-4 mb-4">
         <div id="example-node-imap" role="tabpanel" aria-labelledby="example-node-imap-tab">
 
-            <pre class="overflow-x-auto"><code id="example-node-imap-code"></code></pre>
+            <pre class="ee-code-block"><code id="example-node-imap-code"></code></pre>
 
         </div>
 
         <div id="example-php-imap" class="hidden" role="tabpanel" aria-labelledby="example-php-imap-tab">
 
-            <pre class="overflow-x-auto"><code id="example-php-imap-code"></code></pre>
+            <pre class="ee-code-block"><code id="example-php-imap-code"></code></pre>
 
         </div>
     </div>
 
     <div>
-        {{> ui/checkbox id="exampleShowPassword" label="Show password in examples" class="trigger-example-render"}}
+        {{> ui/checkbox id="exampleShowPassword" noName=true label="Show password in examples" class="trigger-example-render"}}
     </div>
 
     {{/ui/details}}

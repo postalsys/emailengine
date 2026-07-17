@@ -12,7 +12,7 @@
  * artwork - #4C5CC5 is correct.
  */
 
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 
 @plugin "@iconify/tailwind4";
 
@@ -61,11 +61,13 @@
  * in the ui/* partials (btn-{{variant}} etc.) - that the scanner cannot see as
  * complete tokens */
 @source inline('badge-{primary,secondary,accent,neutral,info,success,warning,error,soft}');
-@source inline('alert-{primary,secondary,info,success,warning,error,soft}');
+@source inline('alert-{primary,secondary,neutral,info,success,warning,error,soft}');
 @source inline('btn-{primary,secondary,accent,neutral,info,success,warning,error,outline,soft,text,xs,sm,lg}');
-@source inline('{text-,bg-}{primary,secondary,info,success,warning,error}');
-/* tinted icon containers in ui/stat-card (bg-{{variant}}/10 is assembled) */
-@source inline('bg-{primary,secondary,info,success,warning,error}/10');
+@source inline('{text-,bg-}{primary,secondary,neutral,info,success,warning,error}');
+/* tinted icon containers in ui/stat-card and the systemAlerts chips
+ * (bg-{{variant}}/10 is assembled); neutral included because it is the
+ * eeColor helper's fallback for unset color names */
+@source inline('bg-{primary,secondary,neutral,info,success,warning,error}/10');
 @source inline('[--placement:top] [--placement:bottom] [--placement:left] [--placement:right]');
 /* server-driven dashboard icons (lib/ui-routes/dashboard-routes.js is not scanned) */
 @source inline('icon-[tabler--mail] icon-[tabler--webhook] icon-[tabler--mail-forward] icon-[tabler--file-code] icon-[tabler--clock]');
@@ -82,6 +84,15 @@
     /* single source for the sidebar width: w-sidebar on the aside,
      * lg:ps-sidebar on the content column */
     --spacing-sidebar: 18rem;
+}
+
+@layer base {
+    /* Tailwind preflight leaves hr at "1px solid currentColor" - a harsh
+     * full-contrast line in both themes; default every hr to the standard
+     * content-border token instead of classing each instance */
+    hr {
+        border-color: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+    }
 }
 
 /* Close button for the dismissable clear-alert-btn error alerts. Un-layered
@@ -127,6 +138,10 @@
     display: none;
 }
 
+/* highlight.js colors live in the hand-vendored static/css/highlight.min.css,
+ * rewritten to the FlyonUI theme tokens (single source; no load-order or
+ * specificity coupling between the two sheets). */
+
 /* Fullscreen ACE editor container (uiEditorFullscreen in ui.js). Un-layered
  * with !important on purpose: ACE injects its own un-layered
  * .ace_editor{position:relative} stylesheet at runtime, which beats any
@@ -157,6 +172,71 @@
         --badge-fg: var(--color-neutral-content);
     }
 
+
+    /* Code/output panel: theme-aware block for <pre> content (integration
+     * examples, error dumps, usage snippets). One definition instead of the
+     * utility string repeated at every call site. */
+    .ee-code-block {
+        background-color: var(--color-base-200);
+        border-radius: var(--radius-box, 1rem);
+        overflow-x: auto;
+        padding: 1rem;
+        font-size: 0.875rem;
+        line-height: 1.4286;
+    }
+
+    /* Typography island for server-rendered markdown (marked output: the EULA
+     * on /license.html and the branding preview page). Preflight strips all
+     * default heading sizes, margins and list bullets, so restore a minimal
+     * document look for bare elements inside the island. */
+    .ee-prose h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 1.5rem 0 0.75rem;
+    }
+    .ee-prose h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 1.25rem 0 0.625rem;
+    }
+    .ee-prose h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 1rem 0 0.5rem;
+    }
+    .ee-prose h4,
+    .ee-prose h5,
+    .ee-prose h6 {
+        font-weight: 600;
+        margin: 1rem 0 0.5rem;
+    }
+    .ee-prose p {
+        margin: 0 0 0.75rem;
+    }
+    .ee-prose ul,
+    .ee-prose ol {
+        margin: 0 0 0.75rem;
+        padding-inline-start: 1.5rem;
+    }
+    .ee-prose ul {
+        list-style: disc;
+    }
+    .ee-prose ol {
+        list-style: decimal;
+    }
+    .ee-prose li {
+        margin: 0.25rem 0;
+    }
+    .ee-prose blockquote {
+        border-inline-start: 3px solid color-mix(in oklab, var(--color-base-content) 20%, transparent);
+        padding-inline-start: 1rem;
+        margin: 0.75rem 0;
+        color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+    }
+    .ee-prose a {
+        color: var(--color-primary);
+        text-decoration: underline;
+    }
 
     /* Description list: label column + value column (replaces the Bootstrap
      * dl.row + dt.col-sm-3/dd.col-sm-9 pattern used across detail pages) */

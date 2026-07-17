@@ -258,7 +258,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div>
             {{#> ui/form-field id="cloud" label="Azure cloud environment" error=errors.cloud}}
-            <select class="select select-sm max-w-md{{#if errors.cloud}} is-invalid{{/if}}" id="cloud" name="cloud"
+            <select class="select max-w-md{{#if errors.cloud}} is-invalid{{/if}}" id="cloud" name="cloud"
                 required>
 
                 {{#each azureClouds}}
@@ -339,7 +339,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div>
             {{#> ui/form-field id="cloud" label="Azure cloud environment" error=errors.cloud}}
-            <select class="select select-sm max-w-md{{#if errors.cloud}} is-invalid{{/if}}" id="cloud" name="cloud"
+            <select class="select max-w-md{{#if errors.cloud}} is-invalid{{/if}}" id="cloud" name="cloud"
                 required>
 
                 {{#each azureClouds}}
@@ -505,11 +505,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
     </div>
 
     <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-[1rem]{{#unless baseScopesPubsub}} hidden{{/unless}}">
+        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesPubsub}} hidden{{/unless}}">
 
         {{#if actionCreate}}
 
-        <div class="mb-[1rem]">
+        <div class="mb-4">
             {{#> ui/form-field id="googleTopicName" label="Google Pub/Sub Topic Name" error=errors.googleTopicName}}
             <input type="text" class="input{{#if errors.googleTopicName}} is-invalid{{/if}}" id="googleTopicName"
                 name="googleTopicName" value="{{values.googleTopicName}}"
@@ -643,7 +643,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
     </div>
 
     <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-[1rem]{{#unless baseScopesApi}} hidden{{/unless}}">
+        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}">
 
         <p class="mb-2">
             To enable webhooks for email accounts managed by this app, EmailEngine needs to set up a Cloud Pub/Sub
@@ -660,7 +660,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <label class="label-text" for="pubSubApp">Select service account to manage webhooks (optional). The service
             account must be for the same Google Cloud Project.</label>
-        <select class="select select-sm w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
+        <select class="select w-full{{#if errors.pubSubApp}} is-invalid{{/if}}" id="pubSubApp"
             name="pubSubApp" {{#unless baseScopesApi}}disabled{{/unless}}>
 
             <option value=""> &mdash; Select the service account for your project &mdash; </option>
@@ -764,11 +764,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
     </div>
 
     <div id="select-pubsub-app"
-        class="card-footer border-base-content/10 border-t px-6 py-[1rem]{{#unless baseScopesApi}} hidden{{/unless}}">
+        class="card-footer border-base-content/10 border-t px-6 py-4{{#unless baseScopesApi}} hidden{{/unless}}">
 
         <p class="mb-2">Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
 
-        <pre class="overflow-x-auto mb-2"><code>{{mainServiceUrl}}/oauth/msg/lifecycle
+        <pre class="ee-code-block mb-2"><code>{{mainServiceUrl}}/oauth/msg/lifecycle
 {{mainServiceUrl}}/oauth/msg/notification</code></pre>
 
         <p class="mb-2">
@@ -807,11 +807,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             <code>User.Read.All</code> application permissions with admin consent in Entra.</p>
     </div>
 
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
 
         <p class="mb-2">Microsoft Graph delivers change notifications to EmailEngine at these two endpoints:</p>
 
-        <pre class="overflow-x-auto mb-2"><code>{{mainServiceUrl}}/oauth/msg/lifecycle
+        <pre class="ee-code-block mb-2"><code>{{mainServiceUrl}}/oauth/msg/lifecycle
 {{mainServiceUrl}}/oauth/msg/notification</code></pre>
 
         <p class="mb-2">
@@ -840,9 +840,9 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <h6 class="card-title text-primary">Account Type Helper</h6>
     </div>
     <div class="card-body">
-        <p class="mb-[1rem]">Click a button to automatically populate the scope fields with preset configurations:</p>
+        <p class="mb-4">Click a button to automatically populate the scope fields with preset configurations:</p>
 
-        <div class="join mb-[1rem]" role="group">
+        <div class="join mb-4" role="group">
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="normal" data-provider="gmail">
                 Normal (Full Access)
@@ -872,7 +872,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
             </small>
         </div>
 
-        <div class="alert alert-soft alert-info mt-[1rem] mb-0 block">
+        <div class="alert alert-soft alert-info mt-4 mb-0 block">
             <p class="mb-2"><strong>Tip:</strong> Send-only accounts are useful when you only need to send emails and
                 don't want to request privileged scopes that require Google verification.</p>
             <p class="mb-0"><strong>Important limitation:</strong> Messages sent through send-only accounts cannot be
@@ -890,9 +890,9 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <h6 class="card-title text-primary">Account Type Helper</h6>
     </div>
     <div class="card-body">
-        <p class="mb-[1rem]">Click a button to automatically populate the scope fields with preset configurations:</p>
+        <p class="mb-4">Click a button to automatically populate the scope fields with preset configurations:</p>
 
-        <div class="join mb-[1rem]" role="group">
+        <div class="join mb-4" role="group">
             <button type="button" class="btn btn-outline btn-primary btn-sm join-item account-type-btn"
                 data-type="normal" data-provider="outlook">
                 Normal (Full Access)
@@ -927,11 +927,11 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 {{#> ui/details summary="Additional scopes" id="setupScopes" class="card bg-base-100 shadow-md mb-6"
 open=values.extraScopes}}
 
-<p class="mb-[1rem]">Here you can list additional OAuth2 scopes that EmailEngine should ask for. This is mainly needed
+<p class="mb-4">Here you can list additional OAuth2 scopes that EmailEngine should ask for. This is mainly needed
     when you want to re-use the access tokens generated by EmailEngine in other parts of your application.</p>
 
 {{#if activeGmail}}
-<div class="alert alert-soft alert-info mb-[1rem] block">
+<div class="alert alert-soft alert-info mb-4 block">
     <p>When adding new scopes, ensure that related APIs are
         enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
             href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
@@ -941,7 +941,7 @@ open=values.extraScopes}}
 {{/if}}
 
 {{#if activeGmailService}}
-<div class="alert alert-soft alert-info mb-[1rem]"><span>When adding new scopes, ensure that related APIs are
+<div class="alert alert-soft alert-info mb-4"><span>When adding new scopes, ensure that related APIs are
         enabled for your OAuth2 app (look for <em>Enabled APIs & services</em> in <a
             href="https://console.cloud.google.com/apis/dashboard" target="_blank" rel="noopener noreferrer"
             referrerpolicy="no-referrer" class="link link-animated">Google Cloud Console</a>)
@@ -950,7 +950,7 @@ open=values.extraScopes}}
 {{/if}}
 
 {{#if activeOutlook}}
-<div class="alert alert-soft alert-info mb-[1rem]"><span>
+<div class="alert alert-soft alert-info mb-4"><span>
 
         {{#if baseScopesImap}}
         All scopes must come exclusively from <code>https://outlook.office.com/</code>; scopes from
@@ -982,7 +982,7 @@ open=values.extraScopes}}
 {{#> ui/details summary="Disabled scopes" id="skipScopes" class="card bg-base-100 shadow-md mb-6"
 open=values.skipScopes}}
 
-<p class="mb-[1rem]">Here you can list OAuth2 scopes that EmailEngine should not use. This is mainly needed
+<p class="mb-4">Here you can list OAuth2 scopes that EmailEngine should not use. This is mainly needed
     when you want to disable some default scopes like <code>"SMTP.Send"</code> in Outlook or
     <code>"https://www.googleapis.com/auth/gmail.modify"</code> in Gmail.
 </p>

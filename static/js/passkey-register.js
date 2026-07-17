@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', function () {
         var errorEl = document.getElementById('passkey-register-error');
         var successEl = document.getElementById('passkey-register-success');
         if (errorEl) {
-            errorEl.style.display = 'none';
+            errorEl.classList.add('hidden');
         }
         if (successEl) {
-            successEl.style.display = 'none';
+            successEl.classList.add('hidden');
         }
         var confirmBtn = document.getElementById('passkey-register-confirm-btn');
         if (confirmBtn) {
@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function () {
     confirmBtn.addEventListener('click', async function () {
         var errorEl = document.getElementById('passkey-register-error');
         var successEl = document.getElementById('passkey-register-success');
-        errorEl.style.display = 'none';
-        successEl.style.display = 'none';
+        errorEl.classList.add('hidden');
+        successEl.classList.add('hidden');
         confirmBtn.disabled = true;
 
         var nameInput = document.getElementById('passkey-name');
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var verifyData = await verifyResp.json();
 
             if (verifyData.success) {
-                successEl.style.display = 'block';
+                successEl.classList.remove('hidden');
                 setTimeout(function () {
                     window.location.reload();
                 }, 1000);
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 errorEl.textContent = err.message || 'Registration failed.';
             }
-            errorEl.style.display = 'block';
+            errorEl.classList.remove('hidden');
             confirmBtn.disabled = false;
         }
     });

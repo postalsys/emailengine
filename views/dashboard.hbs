@@ -13,7 +13,7 @@
     {{#> ui/stat-card variant="primary" icon="icon-[tabler--refresh]" title=""}}
     <div class="text-sm font-medium text-base-content/60 mb-1">
         {{#> ui/tooltip text=tooltip}}
-        <a href="{{href}}" class="hover:underline">{{label}}</a>
+        <a href="{{href}}" class="link link-animated">{{label}}</a>
         {{/ui/tooltip}}
     </div>
     <div class="text-xl font-semibold text-base-content">
@@ -24,7 +24,7 @@
 </div>
 {{/inline}}
 
-<div class="mx-auto max-w-7xl mt-[1rem]">
+<div class="mx-auto max-w-7xl">
 
     <div class="flex">
         <img src="/static/logo/EmailEngine_logo_horiz.png" alt="EmailEngine" class="block max-h-14 max-w-full">
@@ -33,7 +33,7 @@
     {{#each redisWarnings}}
     {{#> ui/stat-card variant=(eeColor color) title=title icon="icon-[tabler--alert-circle]" class="mt-6"}}
     {{#each details}}
-    <p class="mb-[1rem]">{{this}}</p>
+    <p class="mb-4">{{this}}</p>
     {{/each}}
     {{/ui/stat-card}}
     {{/each}}
@@ -55,7 +55,7 @@
     <p class="mb-2">Get started by connecting your first email account. Once connected, you can send
         and receive emails through the <a href="/admin/swagger" class="link link-animated">API</a>.
     </p>
-    <p class="mb-[1rem] text-sm text-base-content/60">You can also add accounts programmatically via the <a
+    <p class="mb-4 text-sm text-base-content/60">You can also add accounts programmatically via the <a
             href="https://api.emailengine.app/#operation/postV1Account" target="_blank" rel="noopener noreferrer"
             referrerpolicy="no-referrer" class="link link-animated">API endpoint</a>.
     </p>
@@ -70,7 +70,7 @@
         {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
         <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#> ui/tooltip text="The number of accounts registered with EmailEngine"}}
-            <a href="/admin/accounts" class="hover:underline">Accounts total</a>
+            <a href="/admin/accounts" class="link link-animated">Accounts total</a>
             {{/ui/tooltip}}
         </div>
         <div class="text-xl font-semibold text-base-content">{{formatInteger stats.accounts userLocale}}</div>
@@ -79,7 +79,7 @@
         {{#> ui/stat-card variant="primary" icon="icon-[tabler--users]"}}
         <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#> ui/tooltip text='The number of accounts currently in the "connected" state'}}
-            <a href="/admin/accounts?state=connected" class="hover:underline">Accounts active</a>
+            <a href="/admin/accounts?state=connected" class="link link-animated">Accounts active</a>
             {{/ui/tooltip}}
         </div>
         <div class="text-xl font-semibold text-base-content">{{formatInteger stats.connectedAccounts userLocale}}</div>

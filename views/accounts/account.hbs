@@ -5,7 +5,7 @@
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="mb-[1rem] flex flex-wrap gap-2" role="toolbar" aria-label="Account actions">
+        <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Account actions">
 
             {{#> ui/tooltip text="Edit account configuration"}}
             <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/edit">
@@ -61,6 +61,7 @@
             </button>
             {{/ui/tooltip}}
             {{else}}
+            {{#> ui/tooltip text="Test SMTP delivery settings for this account"}}
             <div class="dropdown relative inline-flex">
                 <button type="button" class="dropdown-toggle btn btn-soft btn-sm" aria-haspopup="menu"
                     aria-expanded="false" id="test-smtp-btn">
@@ -82,6 +83,7 @@
                     {{/each}}
                 </ul>
             </div>
+            {{/ui/tooltip}}
             {{/unless}}
             {{/if}}
 
@@ -158,7 +160,7 @@
 
             <dt>Recent logs
                 {{#> ui/tooltip text=(concat "Up to last " (formatInteger logs.maxLogLines userLocale) " log lines")}}<span
-                    class="icon-[tabler--info-circle] text-info size-4 align-text-bottom"></span>{{/ui/tooltip}}
+                    class="icon-[tabler--info-circle] text-base-content/50 size-4 align-text-bottom"></span>{{/ui/tooltip}}
             </dt>
 
             <dd>
@@ -307,7 +309,7 @@
                 {{/if}}
 
                 {{#if gmailWatch.error}}
-                <div class="mt-[1rem]">
+                <div class="mt-4">
                     <div class="alert alert-soft alert-error">
                         <div>
                             <small>The last attempt to renew the change subscription failed with the following
@@ -318,7 +320,7 @@
                         </div>
 
                         {{#if gmailWatch.request}}
-                        <div class="mt-[1rem]">
+                        <div class="mt-4">
                             <button type="button" class="btn btn-error btn-sm" data-overlay="#watchDetails">
                                 Show details
                             </button>
@@ -492,7 +494,7 @@
             <dt>Syncing paths
 
                 {{#> ui/tooltip text="EmailEngine only checks for new or updated emails from the selected paths"}}<span
-                    class="icon-[tabler--info-circle] text-info size-4 align-text-bottom"></span>{{/ui/tooltip}}
+                    class="icon-[tabler--info-circle] text-base-content/50 size-4 align-text-bottom"></span>{{/ui/tooltip}}
 
             </dt>
             <dd>
@@ -510,14 +512,14 @@
 
         {{#if subConnectionInfo}}
         <hr>
-        <h6 class="font-bold text-primary">Subconnections</h6>
+        <h6 class="card-title text-primary">Subconnections</h6>
 
         <p>Subconnections are supplementary IMAP connections that help detect changes in secondary folders more quickly.
             By default, EmailEngine only receives real-time updates for the primary folder and uses periodic
             polling for secondary folders. However, when faster updates are required from
             secondary folders, subconnections can be used to ensure prompt notifications.</p>
 
-        <dl class="ee-dl mt-[1rem]">
+        <dl class="ee-dl mt-4">
             {{#each subConnectionInfo}}
             <dt>{{path}}</dt>
             <dd>
@@ -528,7 +530,7 @@
         {{/if}}
 
     </div>
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
 
         <dl class="ee-dl">
 
@@ -675,13 +677,13 @@
     </div>
 
     {{#if account.smtpServerEhlo}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
 
         <dl class="ee-dl">
             <dt>Extensions</dt>
             <dd>
                 {{#each account.smtpServerEhlo}}
-                <small style="cursor: default;">{{this}}</small>
+                <small class="cursor-default">{{this}}</small>
                 {{/each}}
             </dd>
 
@@ -840,7 +842,7 @@
 
     {{#if gmailWatch.request.response}}
 
-    <div class="mt-[1rem]">
+    <div class="mt-4">
         <textarea class="textarea font-mono w-full" rows="5" spellcheck="false" data-enable-grammarly="false"
             readonly>{{json gmailWatch.request.response}}</textarea>
     </div>
@@ -855,7 +857,7 @@
 
 {{#> ui/modal id="exportModal" title="Export Messages"}}
 <div class="modal-body">
-    <div class="alert alert-soft alert-info mb-[1rem] flex items-start gap-2">
+    <div class="alert alert-soft alert-info mb-4 flex items-start gap-2">
         <span class="icon-[tabler--flask] size-5 shrink-0"></span>
         <span><strong>Beta Feature:</strong> The export feature is currently in beta. If you encounter any issues,
             please contact <a href="mailto:support@postalsys.com" class="link link-animated">support@postalsys.com</a>.</span>
@@ -863,25 +865,18 @@
     <div id="export-form-view" class="space-y-4">
         {{> ui/form-field id="export-start-date" type="date" label="Start Date"}}
         {{> ui/form-field id="export-end-date" type="date" label="End Date"}}
-        <div>
-            <div class="flex items-center gap-2">
-                <input type="checkbox" class="checkbox checkbox-sm" id="export-include-attachments">
-                <label class="label-text p-0" for="export-include-attachments">Include attachments</label>
-            </div>
-            <span class="helper-text">Download and include attachment file contents in the export.
-                This increases export size and time.</span>
-        </div>
+        {{> ui/checkbox id="export-include-attachments" label="Include attachments" hint="Download and include attachment file contents in the export. This increases export size and time."}}
         <small class="text-base-content/60 block">Gmail accounts export from All Mail. Other accounts export all folders
             (excluding Junk and Trash).</small>
     </div>
 
     <div id="export-status-view" class="hidden">
-        <div class="mb-[1rem]">
+        <div class="mb-4">
             <strong>Status:</strong>
             <span id="export-status-badge" class="badge badge-info">Queued</span>
             <span id="export-phase-badge" class="badge badge-neutral ms-1 hidden"></span>
         </div>
-        <div class="mb-[1rem]">
+        <div class="mb-4">
             <strong>Expires:</strong>
             <span id="export-expires-at" class="text-base-content/60"></span>
         </div>
@@ -895,7 +890,7 @@
         <div id="export-error-section" class="hidden">
             <div class="alert alert-soft alert-error" id="export-error-message"></div>
         </div>
-        <div id="export-download-section" class="hidden mt-[1rem]">
+        <div id="export-download-section" class="hidden mt-4">
             <a href="#" id="export-download-link" class="btn btn-success btn-block">
                 <span class="icon-[tabler--download] size-4"></span> Download Export
             </a>
@@ -1040,7 +1035,9 @@
         }
 
         let togglingLogs = false;
-        document.getElementById('toggle-logs').addEventListener('click', e => {
+        // #toggle-logs / #flush-logs only render when the global "log all accounts"
+        // setting is off - guard so the rest of this block still gets wired
+        document.getElementById('toggle-logs')?.addEventListener('click', e => {
             e.preventDefault();
             if (togglingLogs) {
                 return
@@ -1074,7 +1071,7 @@
         }
 
         let flushingLogs = false;
-        document.getElementById('flush-logs').addEventListener('click', e => {
+        document.getElementById('flush-logs')?.addEventListener('click', e => {
             e.preventDefault();
             if (flushingLogs) {
                 return

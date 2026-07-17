@@ -16,7 +16,7 @@
     subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
     EmailEngine
     will use that template to compile the final email.</p>
-<p class="mb-[1rem]">For additional customization, you can use Handlebars syntax in templates and provide variables
+<p class="mb-4">For additional customization, you can use Handlebars syntax in templates and provide variables
     to populate dynamic content.</p>
 
 <div>
@@ -72,7 +72,7 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
         {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}
@@ -103,13 +103,13 @@
 
 {{#> ui/details summary="Usage example" class="card bg-base-100 shadow-md mb-6"}}
 <div>
-        <p class="mb-[1rem]">When sending emails using the submission API endpoint, do not set <code>"subject"</code>,
+        <p class="mb-4">When sending emails using the submission API endpoint, do not set <code>"subject"</code>,
             <code>"html"</code> and <code>"text"</code> properties. Instead, set the <code>"template"</code>
             property with the template ID value and, optionally, <code>"render"</code> definition if you are using
             Markdown format as the HTML source or you want to use the Handlebars variables.
         </p>
 
-        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/account/example/submit" \
+        <pre class="ee-code-block">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/account/example/submit" \
   -H "Authorization: Bearer &lt;token&gt;" \
   -H "Content-type: application/json" \
   -d '{
@@ -131,7 +131,7 @@
     }
   }'</pre>
 
-        <hr class="my-[1rem]">
+        <hr class="my-4">
         <div class="text-base-content/60">
             <p>This example assumes that you use <code>\{{params.key}}</code> in the subject, html or plain-text
                 content of the template.</p>

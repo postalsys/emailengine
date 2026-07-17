@@ -1,5 +1,7 @@
 <div class="container mx-auto mt-6 px-4">
-    {{#> ui/stat-card variant="error"}}
+    {{!-- the icon makes the variant actually paint the error accent (the
+          variant only tints the icon container, which needs an icon) --}}
+    {{#> ui/stat-card variant="error" icon="icon-[tabler--alert-triangle]"}}
     <h1 class="text-xl font-semibold mb-4">{{_ "Something went wrong" templateLocale}}</h1>
     <p class="mb-2">{{message}}</p>
     <p class="text-base-content/60 text-sm mb-4">{{_ "Error code: %s" templateLocale statusCode}}</p>

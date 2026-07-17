@@ -1,4 +1,4 @@
-{{> ui/page-header title="System Threads" icon="icon-[tabler--settings]" class="mb-1"}}
+{{> ui/page-header title="System Threads" icon="icon-[tabler--cpu]" class="mb-1"}}
 
 {{#if apiWorkerWarning}}
 <div class="alert alert-soft alert-warning mt-6 block" role="alert">
@@ -82,19 +82,19 @@
                     <td class="text-end">
 
                         {{#> ui/tooltip text="Download memory snapshot"}}
-                        <button type="button" class="btn btn-info btn-circle btn-sm snapshot-thread-btn"
+                        <button type="button" class="btn btn-info btn-soft btn-circle btn-sm snapshot-thread-btn"
                             data-thread="{{threadId}}" aria-label="Download memory snapshot"><span
                                 class="icon-[tabler--cloud-download] size-4"></span></button>
                         {{/ui/tooltip}}
 
                         {{#if isMain}}
                         {{!-- invisible placeholder keeps the action column aligned --}}
-                        <button type="button" class="btn btn-error btn-circle btn-sm kill-thread-btn invisible"
+                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm kill-thread-btn invisible"
                             data-thread="{{threadId}}" aria-label="Kill this thread"><span
                                 class="icon-[tabler--trash] size-4"></span></button>
                         {{else}}
                         {{#> ui/tooltip text="Restart thread"}}
-                        <button type="button" class="btn btn-error btn-circle btn-sm kill-thread-btn"
+                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm kill-thread-btn"
                             data-thread="{{threadId}}" aria-label="Restart thread"><span
                                 class="icon-[tabler--trash] size-4"></span></button>
                         {{/ui/tooltip}}

@@ -10,5 +10,5 @@
 --}}
 <span {{#if id}}id="{{id}}" {{/if}}class="badge badge-{{#if variant}}{{variant}}{{else}}neutral{{/if}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
     {{~#if icon}}<span class="{{icon}} size-3.5 shrink-0"></span>{{/if~}}
-    {{~#if label includeZero=true}}{{label}}{{else}}{{> @partial-block label="" variant="" soft="" icon="" id="" class=""}}{{/if~}}
+    {{~#if label includeZero=true}}{{label}}{{else if @partial-block}}{{> @partial-block label="" variant="" soft="" icon="" id="" class=""}}{{/if~}}
 </span>

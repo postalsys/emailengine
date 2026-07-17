@@ -2,9 +2,9 @@
       rendered outside the settings form (its Close button must not submit) --}}
 {{#> ui/modal id="tlsModal" hideClose=true dialogClass="max-w-3xl"}}
 <div class="modal-body">
-    <h3 class="modal-title modal-show-default mb-[1rem]">Provisioning Certificate <span
+    <h3 class="modal-title modal-show-default mb-4">Provisioning Certificate <span
             class="loading loading-spinner loading-sm align-middle"></span></h3>
-    <h3 class="modal-title modal-show-error hidden mb-[1rem]">Certificate Request Failed</h3>
+    <h3 class="modal-title modal-show-error hidden mb-4">Certificate Request Failed</h3>
 
     <div class="modal-show-default">
         Setting up TLS certificate for <em class="show-service-domain">{{#if serviceDomain}}{{serviceDomain}}{{/if}}</em>. This may take a

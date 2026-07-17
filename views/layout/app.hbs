@@ -63,19 +63,11 @@
     <!-- Content column -->
     <div class="flex min-h-screen flex-col lg:ps-sidebar">
 
-        {{#if iframePage}}
-
-        <div id="content" class="flex h-screen flex-col">
-            {{{content}}}
-        </div>
-
-        {{else}}
-
         <!-- Topbar -->
         <header class="bg-base-100 border-base-content/20 sticky top-0 z-30 border-b">
             <nav class="navbar flex items-center gap-2 px-6 py-2">
 
-                <button type="button" class="btn btn-text btn-square btn-sm lg:hidden" aria-haspopup="dialog"
+                <button type="button" class="btn btn-text btn-circle btn-sm lg:hidden" aria-haspopup="dialog"
                     aria-expanded="false" aria-controls="layout-sidebar" data-overlay="#layout-sidebar"
                     aria-label="Open menu">
                     <span class="icon-[tabler--menu-2] size-5"></span>
@@ -146,7 +138,10 @@
                             {{#each systemAlerts}}
                             <li>
                                 <a class="dropdown-item flex items-start gap-3" href="{{url}}">
-                                    <span class="bg-{{eeColor level}} text-white flex size-8 shrink-0 items-center justify-center rounded-field">
+                                    {{!-- tinted-container idiom (matches ui/stat-card): white-on-color fails
+                                          contrast for warning/info in light mode and for every lightened
+                                          color in the dark theme --}}
+                                    <span class="bg-{{eeColor level}}/10 text-{{eeColor level}} flex size-8 shrink-0 items-center justify-center rounded-field">
                                         <span class="{{icon}} size-4 shrink-0"></span>
                                     </span>
                                     <span class="text-sm whitespace-normal">
@@ -174,7 +169,7 @@
                         <button type="button" id="userDropdown" class="dropdown-toggle btn btn-text btn-sm flex items-center gap-2"
                             aria-haspopup="menu" aria-expanded="false" aria-label="User menu">
                             {{#if authData.name}}
-                            <span class="hidden lg:inline text-base-content/70 text-sm font-normal">{{authData.name}}</span>
+                            <span class="hidden lg:inline text-base-content/60 text-sm font-normal">{{authData.name}}</span>
                             {{/if}}
                             <img class="size-7 rounded-field" src="/static/undraw_profile.svg" alt="">
                         </button>
@@ -221,13 +216,13 @@
                 {{#> ui/stat-card id="license-warning" variant="error" title="License key missing" icon="icon-[tabler--key]" class="mb-6"}}
 
                 {{#if licenseInfo.suspended}}
-                <div class="alert alert-error mb-6" role="alert">
+                <div class="alert alert-soft alert-error mb-6" role="alert">
                     EmailEngine is currently not syncing any accounts. Please restart the application or
                     register a valid license key to enable syncing.
                 </div>
                 {{/if}}
 
-                <p class="mb-[1rem]">To use all the features of EmailEngine, you need to provide a valid license key.</p>
+                <p class="mb-4">To use all the features of EmailEngine, you need to provide a valid license key.</p>
                 <div class="flex flex-wrap gap-2">
 
                     {{#if trialPossible}}
@@ -246,7 +241,7 @@
                 {{#unless disableAuthWarning}}
                 {{#> ui/stat-card variant="error" title="Authentication not enabled" icon="icon-[tabler--shield-lock]" class="mb-6"}}
 
-                <p class="mb-[1rem]">To enable authentication for EmailEngine, please set a password for the admin
+                <p class="mb-4">To enable authentication for EmailEngine, please set a password for the admin
                     user account.</p>
                 <div>
                     {{> ui/btn href="/admin/account/password" variant="primary" icon="icon-[tabler--arrow-right]" label="Enable authentication"}}
@@ -264,7 +259,7 @@
 
         <!-- Footer -->
         <footer class="bg-base-100 border-base-content/20 border-t py-6 mt-auto">
-            <div class="text-base-content/70 text-center text-sm">
+            <div class="text-base-content/60 text-center text-sm">
                 <a href="{{packageData.homepage}}" target="_blank" rel="noopener noreferrer" class="link link-animated">EmailEngine</a>
                 v{{packageData.version}}.
                 <span>&copy; 2020-{{currentYear}}</span>
@@ -273,7 +268,6 @@
             </div>
         </footer>
         <!-- End of Footer -->
-        {{/if}}
 
     </div>
     <!-- End of content column -->

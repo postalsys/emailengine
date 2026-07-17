@@ -1,13 +1,6 @@
-<div class="flex flex-wrap items-center justify-between gap-3 mb-1">
-    <h1 class="flex items-center gap-2 text-2xl font-semibold text-base-content">
-        <span class="icon-[tabler--server] size-6 text-base-content/60"></span>
-        SMTP Interface
-        {{!-- live state badge: app.js updates the badge-{type} class, text
-              and error tooltip through the /admin/changes SSE feed (targets
-              .state-info[data-type]) --}}
-        {{> ui/state-badge label=serverState.label dataType="smtp"}}
-    </h1>
-</div>
+{{!-- live state badge: app.js updates the badge-{type} class, text and error
+      tooltip through the /admin/changes SSE feed (targets .state-info[data-type]) --}}
+{{> ui/page-header title="SMTP Interface" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="smtp" class="mb-1"}}
 
 <p>Send emails through EmailEngine using SMTP protocol. While the <a
         href="/admin/swagger#/Submit/postV1AccountAccountSubmit" target="_blank" rel="noopener noreferrer"
@@ -25,7 +18,7 @@
             <h6 class="card-title text-primary">Server Configuration</h6>
         </div>
 
-        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
             {{> ui/checkbox id="smtpServerEnabled" name="smtpServerEnabled" label="Enable SMTP Server"
             checked=values.smtpServerEnabled error=errors.smtpServerEnabled
             hint="Start the SMTP server to accept email submissions."}}
@@ -93,7 +86,7 @@
             </div>
         </div>
 
-        <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        <div class="card-footer border-base-content/10 border-t px-6 py-4">
             <small class="text-base-content/60">
                 <span class="icon-[tabler--info-circle] size-4 align-text-bottom"></span>
 
@@ -111,7 +104,7 @@
     <p><strong>With authentication enabled:</strong> Use the account ID as username and password for SMTP
         login.</p>
 
-    <p class="mb-[1rem]"><strong>With authentication disabled:</strong> Include the <code>X-EE-Account</code> header
+    <p class="mb-4"><strong>With authentication disabled:</strong> Include the <code>X-EE-Account</code> header
         with the account ID in your messages.</p>
 
     <nav class="tabs tabs-bordered" aria-label="Integration examples" role="tablist" id="code-examples" data-tabs>
@@ -121,22 +114,22 @@
             aria-controls="example-phpmailer" aria-selected="false">PHP (PHPMailer)</button>
     </nav>
 
-    <div class="mt-[1rem] mb-[1rem]">
+    <div class="mt-4 mb-4">
         <div id="example-nodemailer" role="tabpanel" aria-labelledby="example-nodemailer-tab">
 
-            <pre class="overflow-x-auto"><code id="example-nodemailer-code"></code></pre>
+            <pre class="ee-code-block"><code id="example-nodemailer-code"></code></pre>
 
         </div>
 
         <div id="example-phpmailer" class="hidden" role="tabpanel" aria-labelledby="example-phpmailer-tab">
 
-            <pre class="overflow-x-auto"><code id="example-phpmailer-code"></code></pre>
+            <pre class="ee-code-block"><code id="example-phpmailer-code"></code></pre>
 
         </div>
     </div>
 
     <div>
-        {{> ui/checkbox id="exampleShowPassword" label="Show password in examples" class="trigger-example-render"}}
+        {{> ui/checkbox id="exampleShowPassword" noName=true label="Show password in examples" class="trigger-example-render"}}
     </div>
 
     {{/ui/details}}

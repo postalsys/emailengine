@@ -43,7 +43,7 @@
         </div>
 
         {{#if app.description}}
-        <h5 class="card-title">{{app.name}}
+        <h6 class="card-title">{{app.name}}
             {{#if app.enabled}}
 
             {{#if app.meta.authFlag}}
@@ -54,11 +54,11 @@
             {{else}}
             {{> ui/badge label="Disabled" variant="warning"}}
             {{/if}}
-        </h5>
+        </h6>
 
         <h6 class="mb-6 text-base-content/60">{{app.description}}</h6>
         {{else}}
-        <h5 class="card-title mb-6">{{app.name}}
+        <h6 class="card-title mb-6">{{app.name}}
 
             {{#if app.enabled}}
 
@@ -70,7 +70,7 @@
             {{else}}
             {{> ui/badge label="Disabled" variant="warning"}}
             {{/if}}
-        </h5>
+        </h6>
         {{/if}}
 
         {{#if app.meta.authFlag}}
@@ -242,7 +242,7 @@
         <p class="text-base-content/60 text-sm mb-2">This application uses service credentials, so accounts can not be
             added through the hosted authentication form. Use the API to register email accounts instead.</p>
         <pre
-            class="bg-base-200 p-[1rem] rounded-box mb-0 whitespace-pre-wrap break-words"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
+            class="ee-code-block mb-0 whitespace-pre-wrap break-words"><code>curl -XPOST "{{serviceUrl}}/v1/account" \
   -H "Authorization: Bearer <span class="text-error">YOUR_ACCESS_TOKEN</span>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -291,7 +291,7 @@
                 {{/ui/tooltip}}
                 <small class="font-mono">{{lastVal app.pubSubTopic "/"}}</small>
                 {{else}}
-                {{> ui/badge label="Not set" variant="error"}}
+                {{> ui/badge label="Not set" variant="warning"}}
                 {{/if}}
             </dd>
 
@@ -303,7 +303,7 @@
                 {{/ui/tooltip}}
                 <small class="font-mono">{{lastVal app.pubSubSubscription "/"}}</small>
                 {{else}}
-                {{> ui/badge label="Not set" variant="error"}}
+                {{> ui/badge label="Not set" variant="warning"}}
                 {{/if}}
             </dd>
 
@@ -314,7 +314,7 @@
                 {{> ui/badge label="Created" variant="success"}}
                 {{/ui/tooltip}}
                 {{else}}
-                {{> ui/badge label="Not set" variant="error"}}
+                {{> ui/badge label="Not set" variant="warning"}}
                 {{/if}}
             </dd>
         </dl>
@@ -344,7 +344,7 @@
             what passes or fails.{{#if appShowAuthMethod}} Enter a mailbox address in your Workspace domain to also
             verify domain-wide delegation and live mailbox access.{{/if}}</small></p>
 
-    <div class="mb-[1rem]">
+    <div class="mb-4">
         <div class="join w-full">
             <input type="email" class="input join-item grow" id="verify-account"
                 placeholder="mailbox@example.com (optional)" autocomplete="off" />
@@ -361,7 +361,7 @@
     <div id="verify-error" class="hidden">
         <small class="alert alert-soft alert-error font-mono error-message block"></small>
     </div>
-    <div id="verify-verdict" class="hidden mb-[1rem]"></div>
+    <div id="verify-verdict" class="hidden mb-4"></div>
     <ul id="verify-steps" class="border-base-content/10 divide-base-content/10 rounded-box divide-y border empty:hidden">
     </ul>
 </div>
@@ -448,7 +448,7 @@
             });
 
             let failed = (data.steps || []).some(s => s.status === 'fail');
-            verdictElm.className = 'mb-[1rem] alert alert-soft ' + (failed ? 'alert-error' : 'alert-success');
+            verdictElm.className = 'mb-4 alert alert-soft ' + (failed ? 'alert-error' : 'alert-success');
             verdictElm.textContent = failed
                 ? 'Setup has problems - review the failing step(s) below.'
                 : 'Setup verified - all checks passed.';

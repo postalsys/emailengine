@@ -100,7 +100,7 @@
                         </td>
                         <td>
                             {{> ui/setting-ref name="imapStrategy"}}
-                            <select class="select select-sm max-w-xs{{#if errors.imapStrategy}} is-invalid{{/if}}"
+                            <select class="select max-w-xs{{#if errors.imapStrategy}} is-invalid{{/if}}"
                                 name="imapStrategy" aria-label="IMAP IP selection method">
                                 {{#each imapStrategies}}
                                 <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>
@@ -118,7 +118,7 @@
                         </td>
                         <td>
                             {{> ui/setting-ref name="smtpStrategy"}}
-                            <select class="select select-sm max-w-xs{{#if errors.smtpStrategy}} is-invalid{{/if}}"
+                            <select class="select max-w-xs{{#if errors.smtpStrategy}} is-invalid{{/if}}"
                                 name="smtpStrategy" aria-label="SMTP IP selection method">
                                 {{#each smtpStrategies}}
                                 <option value="{{key}}" {{#if selected}}selected{{/if}}>{{title}}</option>

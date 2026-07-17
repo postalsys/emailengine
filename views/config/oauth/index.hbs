@@ -1,22 +1,20 @@
-<div class="float-right">
-    <div class="dropdown relative inline-flex">
-        <button type="button" id="create-app-dropdown" class="dropdown-toggle btn btn-primary" aria-haspopup="menu"
-            aria-expanded="false">
-            <span class="icon-[tabler--plus] size-4"></span> Create OAuth2 app
-            <span class="icon-[tabler--chevron-down] size-4"></span>
-        </button>
-        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52" role="menu" aria-orientation="vertical"
-            aria-labelledby="create-app-dropdown">
-            <li><a class="dropdown-item" href="{{newLink}}?provider=gmail">Gmail</a></li>
-            <li><a class="dropdown-item" href="{{newLink}}?provider=gmailService">Gmail Service Accounts</a></li>
-            <li><a class="dropdown-item" href="{{newLink}}?provider=outlook">Outlook (delegated)</a></li>
-            <li><a class="dropdown-item" href="{{newLink}}?provider=outlookService">Outlook (application)</a></li>
-            <li><a class="dropdown-item" href="{{newLink}}?provider=mailRu">Mail.ru</a></li>
-        </ul>
-    </div>
+{{#> oauth_config_header}}
+<div class="dropdown relative inline-flex">
+    <button type="button" id="create-app-dropdown" class="dropdown-toggle btn btn-primary" aria-haspopup="menu"
+        aria-expanded="false">
+        <span class="icon-[tabler--plus] size-4"></span> Create OAuth2 app
+        <span class="icon-[tabler--chevron-down] size-4"></span>
+    </button>
+    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52" role="menu" aria-orientation="vertical"
+        aria-labelledby="create-app-dropdown">
+        <li><a class="dropdown-item" href="{{newLink}}?provider=gmail">Gmail</a></li>
+        <li><a class="dropdown-item" href="{{newLink}}?provider=gmailService">Gmail Service Accounts</a></li>
+        <li><a class="dropdown-item" href="{{newLink}}?provider=outlook">Outlook (delegated)</a></li>
+        <li><a class="dropdown-item" href="{{newLink}}?provider=outlookService">Outlook (application)</a></li>
+        <li><a class="dropdown-item" href="{{newLink}}?provider=mailRu">Mail.ru</a></li>
+    </ul>
 </div>
-
-{{> oauth_config_header}}
+{{/oauth_config_header}}
 
 {{> oauth_tabs}}
 
@@ -88,7 +86,7 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
         {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}

@@ -3,10 +3,17 @@
     Emits no outer margin (caller owns spacing, same as ui/form-field).
     Usage:
       {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure tooltip="TLS is usually only needed when using port 993."}}
+    Block form appends custom inline content (status badge, rich tooltip)
+    after the label:
+      {{#> ui/checkbox id="encryption" label="Data Encryption" checked=encryption disabled=true}}
+      <span class="badge badge-success">enabled</span>
+      {{/ui/checkbox}}
     Params:
       id         - control id (required; also the default for name)
       label      - label text (required)
       name       - input name (defaults to id)
+      noName     - true to render no name attribute at all (UI-only checkboxes
+                    inside a form that must not submit a value)
       labelTitle - title attribute on the label, shown on hover (optional)
       checked    - true to render checked
       tooltip    - help text shown on hover behind a question icon (optional)
@@ -21,9 +28,13 @@
 <div class="w-full">
     <div class="flex items-center gap-2">
         <input type="checkbox" class="checkbox checkbox-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}"
-            id="{{id}}" name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{#if checked}}checked {{/if}}{{#if
+            id="{{id}}" {{#unless noName}}name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{/unless}}{{#if checked}}checked {{/if}}{{#if
             dataTarget}}data-target="{{dataTarget}}" {{/if}}{{#if dataReverse}}data-reverse="true" {{/if}}{{#if disabled}}disabled {{/if}}>
         <label class="label-text p-0" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
+        {{#if @partial-block}}
+        {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block id="" label="" name="" noName="" labelTitle="" checked="" tooltip="" hint="" error="" dataTarget="" dataReverse="" disabled="" class=""}}
+        {{/if}}
         {{#if tooltip}}
         {{!-- class="" blocks this partial's own class param (meant for the
               input) from falling through onto the tooltip wrapper --}}

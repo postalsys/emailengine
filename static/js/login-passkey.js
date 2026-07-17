@@ -7,15 +7,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (typeof SimpleWebAuthnBrowser === 'undefined' || !SimpleWebAuthnBrowser.browserSupportsWebAuthn()) {
-        passkeyBtn.style.display = 'none';
+        passkeyBtn.classList.add('hidden');
         return;
     }
 
+    // the label lives in its own span so status swaps keep the fingerprint icon
+    var passkeyBtnLabel = document.getElementById('passkey-login-btn-label') || passkeyBtn;
+
     passkeyBtn.addEventListener('click', async function () {
         var errorEl = document.getElementById('passkey-error');
-        errorEl.style.display = 'none';
+        errorEl.classList.add('hidden');
         passkeyBtn.disabled = true;
-        passkeyBtn.textContent = 'Waiting for passkey...';
+        passkeyBtnLabel.textContent = 'Waiting for passkey...';
 
         try {
             var crumbInput = document.getElementById('crumb');
@@ -66,10 +69,10 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 errorEl.textContent = err.message || 'Passkey authentication failed.';
             }
-            errorEl.style.display = 'block';
+            errorEl.classList.remove('hidden');
         } finally {
             passkeyBtn.disabled = false;
-            passkeyBtn.textContent = 'Sign in with a passkey';
+            passkeyBtnLabel.textContent = 'Sign in with a passkey';
         }
     });
 });

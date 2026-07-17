@@ -236,7 +236,7 @@
 {{#> ui/modal id="testResponseModal" title=(_ "Connection test failed" templateLocale) titleId="testResponseModalLabel"
 dialogClass="max-w-3xl"}}
 <div class="modal-body">
-    <p class="mb-[1rem]">{{_ "We couldn't connect with these settings. Check the errors below." templateLocale}}</p>
+    <p class="mb-4">{{_ "We couldn't connect with these settings. Check the errors below." templateLocale}}</p>
     <dl class="ee-dl" id="test-errors-list"></dl>
 </div>
 <div class="modal-footer">
@@ -351,10 +351,10 @@ dialogClass="max-w-3xl"}}
 
             if (extraLabel && extraText) {
 
-                extraLabelElm = document.createElement('div');
+                let extraLabelElm = document.createElement('div');
                 extraLabelElm.textContent = extraLabel;
 
-                extraTextElm = document.createElement('small');
+                let extraTextElm = document.createElement('small');
                 appendLinkified(extraTextElm, extraText);
 
                 valueContainerElm.appendChild(extraLabelElm);
@@ -540,7 +540,7 @@ dialogClass="max-w-3xl"}}
 
         try {
             if (typeof Intl !== 'undefined' && Intl && typeof Intl.DateTimeFormat === 'function') {
-                tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                let tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
                 if (tz) {
                     document.getElementById('tz').value = tz;
                 }

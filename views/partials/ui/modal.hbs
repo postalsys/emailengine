@@ -17,8 +17,11 @@
       static      - true to disable Escape and backdrop-click dismissal; the
                     modal then closes only through explicit buttons (use for
                     one-time secrets and confirmation-critical flows)
+      staticBackdrop - true to disable only backdrop-click dismissal while
+                    keeping Escape (forms whose typed content a stray click
+                    outside must not discard)
 --}}
-<div id="{{id}}" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden{{#if static}} [--overlay-backdrop:static]{{/if}}" role="dialog" tabindex="-1"{{#if static}} data-overlay-keyboard="false"{{/if}}>
+<div id="{{id}}" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden{{#if static}} [--overlay-backdrop:static]{{else if staticBackdrop}} [--overlay-backdrop:static]{{/if}}" role="dialog" tabindex="-1"{{#if static}} data-overlay-keyboard="false"{{/if}}>
     <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300{{#if dialogClass}} {{dialogClass}}{{/if}}">
         <div class="modal-content">
             <div class="modal-header">
@@ -32,7 +35,7 @@
                 {{/unless}}
             </div>
             {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
-            {{> @partial-block id="" title="" titleId="" dialogClass="" hideClose="" static=""}}
+            {{> @partial-block id="" title="" titleId="" dialogClass="" hideClose="" static="" staticBackdrop=""}}
         </div>
     </div>
 </div>

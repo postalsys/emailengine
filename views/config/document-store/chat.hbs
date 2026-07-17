@@ -6,7 +6,7 @@
 
     <div class="card bg-base-100 shadow-md mb-6">
 
-        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
 
             <div>
                 <div class="flex items-center gap-2">
@@ -18,7 +18,7 @@
                         feature</label>
 
                     {{#> ui/tooltip text="Requires ElasticSearch 8.8.0+"}}<span
-                        class="icon-[tabler--info-circle] size-4 text-info"></span>{{/ui/tooltip}}
+                        class="icon-[tabler--info-circle] size-4 text-base-content/50"></span>{{/ui/tooltip}}
 
                     {{#unless documentStoreEnabled}}
                     {{#> ui/tooltip-rich icon="icon-[tabler--alert-triangle] text-error"}}
@@ -83,7 +83,7 @@
             {{#if indexInfo.error}}
             <div class="alert alert-soft alert-error block">
                 <strong>Index handling failed:</strong> <br>
-                <pre class="overflow-x-auto">{{indexInfo.error}}</pre>
+                <pre class="ee-code-block">{{indexInfo.error}}</pre>
             </div>
             {{/if}}
 
@@ -103,7 +103,7 @@
                 {{#> ui/form-field id="settingsServicedocumentStoreChatModel" label="OpenAI Model"
                 error=errors.documentStoreChatModel}}
                 <select id="settingsServicedocumentStoreChatModel"
-                    class="select select-sm max-w-md{{#if errors.documentStoreChatModel}} is-invalid{{/if}}"
+                    class="select max-w-md{{#if errors.documentStoreChatModel}} is-invalid{{/if}}"
                     name="documentStoreChatModel">
                     {{#each openAiModels}}
                     <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>

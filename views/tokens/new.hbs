@@ -20,7 +20,7 @@
                 <h6 class="mb-2 font-bold">Allowed scopes</h6>
 
                 <ul class="divide-y divide-base-content/10 rounded-box border border-base-content/10">
-                    <li class="flex items-center gap-2 p-[1rem]">
+                    <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm or-else-all scope-entry"
                             data-target="scope-list" id="scopesAll" data-scope="*" name="scopesAll" {{#if
                             values.scopesAll}}checked{{/if}} />
@@ -28,28 +28,28 @@
                         <div class="text-base-content/60 code-link">["*"]</div>
                     </li>
 
-                    <li class="flex items-center gap-2 p-[1rem]">
+                    <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesAPI"
                             name="scopesAPI" data-scope="api" {{#if values.scopesAPI}}checked{{/if}} />
                         <label class="label-text grow p-0" for="scopesAPI">API</label>
                         <div class="text-base-content/60 code-link">["api"]</div>
                     </li>
 
-                    <li class="flex items-center gap-2 p-[1rem]">
+                    <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesSMTP"
                             name="scopesSMTP" data-scope="smtp" {{#if values.scopesSMTP}}checked{{/if}} />
                         <label class="label-text grow p-0" for="scopesSMTP">SMTP</label>
                         <div class="text-base-content/60 code-link">["smtp"]</div>
                     </li>
 
-                    <li class="flex items-center gap-2 p-[1rem]">
+                    <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesImapProxy"
                             name="scopesImapProxy" data-scope="imap-proxy" {{#if values.scopesImapProxy}}checked{{/if}} />
                         <label class="label-text grow p-0" for="scopesImapProxy">IMAP Proxy</label>
                         <div class="text-base-content/60 code-link">["imap-proxy"]</div>
                     </li>
 
-                    <li class="flex items-center gap-2 p-[1rem]">
+                    <li class="flex items-center gap-2 p-4">
                         <input type="checkbox" class="checkbox checkbox-sm scope-entry scope-list" id="scopesMetrics"
                             name="scopesMetrics" data-scope="metrics" {{#if values.scopesMetrics}}checked{{/if}} />
                         <label class="label-text grow p-0" for="scopesMetrics">Metrics</label>
@@ -74,7 +74,7 @@
     <div id="showTokenContent" class="hidden">
 
         <div class="mb-2">Access token:</div>
-        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" inputClass="font-mono"}}
+        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" join=true inputClass="font-mono bg-base-200 border-0"}}
 
     </div>
     <div id="showTokenError" class="hidden alert alert-soft alert-error whitespace-pre-line"></div>
@@ -97,7 +97,6 @@
         document.getElementById('token-form').addEventListener('submit', e => {
             e.preventDefault()
 
-            let crumb = document.getElementById('crumb').value;
             let description = document.getElementById('description').value.trim();
             document.getElementById('description').value = description
 

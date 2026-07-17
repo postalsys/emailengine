@@ -8,7 +8,7 @@
 
         <ul class="divide-base-content/10 divide-y">
 
-            <li class="py-[1rem]">
+            <li class="py-4">
                 <div class="grid grid-cols-3 items-center gap-4">
                     <div>Username</div>
                     <div>
@@ -23,7 +23,7 @@
                 </div>
             </li>
 
-            <li class="py-[1rem]">
+            <li class="py-4">
                 <div class="grid grid-cols-3 items-center gap-4">
                     <div>Password</div>
                     <div>
@@ -42,7 +42,7 @@
             </li>
 
             {{#if authData.enabled}}
-            <li class="py-[1rem]">
+            <li class="py-4">
                 <div class="grid grid-cols-3 items-center gap-4">
                     <div>Two-Factor Authentication (2FA)</div>
                     <div>
@@ -64,7 +64,7 @@
                 </div>
             </li>
 
-            <li class="py-[1rem]">
+            <li class="py-4">
                 <div class="grid grid-cols-3 items-start gap-4">
                     <div class="pt-1">Passkeys
                         <br><small class="text-base-content/60">Sign in with just a passkey - no password or additional
@@ -98,7 +98,9 @@
                         icon="icon-[tabler--fingerprint]"}}
                         {{else}}
                         {{#> ui/tooltip text="Set a Service URL in configuration before registering passkeys"}}
-                        <button type="button" class="btn btn-outline btn-neutral" disabled>
+                        {{!-- pointer-events-none: disabled buttons swallow hover, which would keep
+                              the wrapping tooltip from ever showing --}}
+                        <button type="button" class="btn btn-outline btn-neutral pointer-events-none" disabled>
                             Add passkey
                         </button>
                         {{/ui/tooltip}}
@@ -108,7 +110,7 @@
                 </div>
             </li>
 
-            <li class="py-[1rem]">
+            <li class="py-4">
                 <div class="grid grid-cols-3 items-center gap-4">
                     <div>Single Sign-On (SSO)</div>
                     <div>
@@ -199,13 +201,13 @@ dialogClass="max-w-5xl"}}
 <div class="modal-body">
 
     <p class="mb-2">Follow these steps to configure Single Sign-On with Okta:</p>
-    <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+    <ol class="list-decimal ps-6 mb-4 space-y-1">
         <li>Create a new web application in your Okta dashboard using the Redirect URI below</li>
         <li>Configure the required environment variables for EmailEngine</li>
         <li>Restart EmailEngine to apply the changes</li>
     </ol>
 
-    <p class="mb-[1rem]"><strong>Redirect URI for your Okta application:</strong><br>
+    <p class="mb-4"><strong>Redirect URI for your Okta application:</strong><br>
         <code>{{serviceUrl}}/admin/login/okta</code>
     </p>
 
@@ -267,19 +269,19 @@ dialogClass="max-w-5xl"}}
 dialogClass="max-w-5xl"}}
 <div class="modal-body">
 
-    <p class="mb-[1rem]">EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
+    <p class="mb-4">EmailEngine works with any standards-compliant OpenID Connect provider - Keycloak, Authentik,
         Azure AD/Entra, Google Workspace, and others. The provider's endpoints are read automatically from
         its discovery document (<code>{{oidc.OIDC_ISSUER}}/.well-known/openid-configuration</code>)
         when EmailEngine starts.</p>
 
-    <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+    <ol class="list-decimal ps-6 mb-4 space-y-1">
         <li>Register a confidential OIDC client (authorization code flow) in your identity provider using the
             Redirect URI below</li>
         <li>Configure the required environment variables for EmailEngine</li>
         <li>Restart EmailEngine to apply the changes</li>
     </ol>
 
-    <p class="mb-[1rem]"><strong>Redirect URI for your OIDC client:</strong><br>
+    <p class="mb-4"><strong>Redirect URI for your OIDC client:</strong><br>
         <code>{{serviceUrl}}/admin/login/oidc</code>
     </p>
 
@@ -410,7 +412,7 @@ dialogClass="max-w-5xl"}}
     </div>
 
     <p class="mb-1"><strong>Keycloak example</strong></p>
-    <ul class="list-disc ps-6 mb-[1rem] space-y-1">
+    <ul class="list-disc ps-6 mb-4 space-y-1">
         <li>Issuer: <code>https://&lt;keycloak-host&gt;/realms/&lt;realm&gt;</code></li>
         <li>Client type: OpenID Connect, confidential (Client authentication on), Standard Flow enabled</li>
         <li>Valid redirect URI: <code>{{serviceUrl}}/admin/login/oidc</code></li>
@@ -450,8 +452,8 @@ dialogClass="max-w-5xl"}}
         <span class="helper-text">A friendly name to help you identify this passkey.</span>
         {{/ui/form-field}}
     </div>
-    <div id="passkey-register-error" class="text-error text-sm" style="display:none;"></div>
-    <div id="passkey-register-success" class="text-success text-sm" style="display:none;">
+    <div id="passkey-register-error" class="text-error text-sm hidden"></div>
+    <div id="passkey-register-success" class="text-success text-sm hidden">
         Passkey registered successfully.
     </div>
 </div>

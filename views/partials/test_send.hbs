@@ -4,16 +4,15 @@
     runtime (see accounts/account.hbs), which registers the statusColor and
     statusIcon helpers it relies on. Native details/summary panels - no JS.
 --}}
-<div class="space-y-2 mb-[1rem]">
-    <details class="group card bg-base-100 border border-base-content/10">
+<div class="space-y-2 mb-4">
+    <details class="group card border border-base-content/10">
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+            <span class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
             <span class="badge badge-{{statusColor spf.status.result}} badge-sm">
                 <span class="{{statusIcon spf.status.result}} size-3.5"></span>
             </span>
             SPF
-            <span
-                class="icon-[tabler--chevron-right] ms-auto size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
         </summary>
         <div class="card-body pt-0">
             <dl class="ee-dl">
@@ -39,9 +38,10 @@
         </div>
     </details>
 
-    <details class="group card bg-base-100 border border-base-content/10">
+    <details class="group card border border-base-content/10">
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+            <span class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
             {{#equals mainSig.status.result "pass"}}
             <span class="badge badge-{{#if mainSig.status.aligned}}success{{else}}neutral{{/if}} badge-sm">
                 <span
@@ -53,8 +53,6 @@
             </span>
             {{/equals}}
             DKIM
-            <span
-                class="icon-[tabler--chevron-right] ms-auto size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
         </summary>
         <div class="card-body pt-0">
             <div class="space-y-4">
@@ -96,15 +94,14 @@
         </div>
     </details>
 
-    <details class="group card bg-base-100 border border-base-content/10">
+    <details class="group card border border-base-content/10">
         <summary
             class="flex cursor-pointer items-center gap-2 px-4 py-2 font-bold text-primary list-none [&::-webkit-details-marker]:hidden">
+            <span class="icon-[tabler--chevron-right] size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
             <span class="badge badge-{{statusColor dmarc.status.result}} badge-sm">
                 <span class="{{statusIcon dmarc.status.result}} size-3.5"></span>
             </span>
             DMARC
-            <span
-                class="icon-[tabler--chevron-right] ms-auto size-4 shrink-0 transition-transform duration-200 group-open:rotate-90"></span>
         </summary>
         <div class="card-body pt-0">
             <dl class="ee-dl">

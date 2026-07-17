@@ -42,7 +42,7 @@
             {{> ui/form-field id="imap_host" label="Hostname" value=values.imap_host error=errors.imap_host lpignore=true required=true}}
             {{> ui/form-field id="imap_port" type="number" label="Port" value=values.imap_port error=errors.imap_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure dataTarget="header-list" tooltip="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
+            {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure tooltip="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
             {{/unless}}
 
@@ -52,7 +52,7 @@
 
             {{/unless}}
 
-            {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled dataTarget="header-list" tooltip="Disable IMAP if you are using this email account only for sending emails."}}
+            {{> ui/checkbox id="imap_disabled" label="Disable IMAP" checked=values.imap_disabled error=errors.imap_disabled tooltip="Disable IMAP if you are using this email account only for sending emails."}}
 
         </div>
     </div>
@@ -76,7 +76,7 @@
             {{> ui/form-field id="smtp_host" label="Hostname" value=values.smtp_host error=errors.smtp_host lpignore=true required=true}}
             {{> ui/form-field id="smtp_port" type="number" label="Port" value=values.smtp_port error=errors.smtp_port lpignore=true required=true}}
 
-            {{> ui/checkbox id="smtp_secure" label="Use TLS" checked=values.smtp_secure error=errors.smtp_secure dataTarget="header-list" tooltip="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
+            {{> ui/checkbox id="smtp_secure" label="Use TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
         </div>
     </div>
@@ -106,7 +106,15 @@
                     of that IP is preferred over this value.</span>
             </div>
 
-            {{> ui/form-field id="webhooks" label="Webhook URL" value=values.webhooks error=errors.webhooks placeholder='URL like "https://myservice.com/imap/webhooks"' hint="Account-specific webhook URL. If set and webhooks are enabled, EmailEngine will send webhook requests for events related to this account to this URL instead of the default webhook URL. Leave empty to clear."}}
+            {{!-- block form: the hint carries a link, which the escaped hint= param cannot --}}
+            {{#> ui/form-field id="webhooks" label="Webhook URL" error=errors.webhooks}}
+            <input type="text" class="input{{#if errors.webhooks}} is-invalid{{/if}}" id="webhooks" name="webhooks"
+                {{#if values.webhooks}}value="{{values.webhooks}}" {{/if}}placeholder='URL like "https://myservice.com/imap/webhooks"'>
+            <span class="helper-text">Account-specific webhook URL. If set and <a href="/admin/config/webhooks"
+                    class="link link-animated">webhooks</a> are enabled, EmailEngine will send webhook requests for
+                events related to this account to this URL instead of the default webhook URL. Leave empty to
+                clear.</span>
+            {{/ui/form-field}}
 
             {{#> ui/form-field id="customHeaders" label="List of custom webhook request headers" error=errors.customHeaders hint="Keep one header per line. These headers will be added to the HTTP request when posting webhooks for this email account."}}
             <textarea class="textarea font-mono w-full{{#if errors.customHeaders}} is-invalid{{/if}}" id="customHeaders"
@@ -118,7 +126,7 @@
     </div>
 
     <div class="mb-6">
-        {{> ui/btn label="Update account" type="submit" icon="icon-[tabler--user]"}}
+        {{> ui/btn label="Update account" type="submit" icon="icon-[tabler--device-floppy]"}}
     </div>
 </form>
 

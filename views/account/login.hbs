@@ -41,9 +41,9 @@
 <div class="divider text-base-content/60 text-sm my-4">or</div>
 <div>
     <button type="button" class="btn btn-primary btn-block rounded-full" id="passkey-login-btn">
-        <span class="icon-[tabler--fingerprint] size-4"></span>Sign in with a passkey
+        <span class="icon-[tabler--fingerprint] size-4"></span><span id="passkey-login-btn-label">Sign in with a passkey</span>
     </button>
-    <div id="passkey-error" class="text-error text-sm mt-2 text-center" style="display:none;"></div>
+    <div id="passkey-error" class="text-error text-sm mt-2 text-center hidden"></div>
 </div>
 {{/if}}
 {{/unless}}
@@ -69,7 +69,7 @@
 {{/if}}
 
 {{#unless forceLogin}}
-<hr class="border-base-content/10 my-4">
+<hr class="my-4">
 <div class="text-center">
     <a class="link link-animated text-sm" href="https://emailengine.app/reset-password" target="_blank"
         rel="noopener noreferrer" referrerpolicy="no-referrer">Forgot your password?</a>

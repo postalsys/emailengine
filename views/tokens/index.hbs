@@ -72,7 +72,7 @@
     </div>
 
     {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+    <div class="card-footer border-base-content/10 border-t px-6 py-4">
         {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     </div>
     {{/if}}
@@ -106,23 +106,23 @@
 
 {{#> ui/details summary="Usage instructions" class="card bg-base-100 shadow-md mb-6"}}
 <div>
-        <p class="mb-[1rem]">You must use either the <em>Authorization: Bearer</em> header (recommended) or the
+        <p class="mb-4">You must use either the <em>Authorization: Bearer</em> header (recommended) or the
             <em>access_token</em> query parameter to make API requests. Avoid using the query parameter as it is
             not redacted from HTTP logs.
         </p>
 
-        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
+        <pre class="ee-code-block">$ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats?access_token=&lt;token&gt;"
 $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v1/stats" --header "Authorization: Bearer &lt;token&gt;"</pre>
 
-        <p class="mt-[1rem] mb-[1rem]">Prometheus endpoint at <code>/metrics</code> also requires an authorization
+        <p class="mt-4 mb-4">Prometheus endpoint at <code>/metrics</code> also requires an authorization
             token. Use the following configuration for setting up the token for a scraping endpoint:
         </p>
 
-        <pre class="bg-base-200 rounded-box overflow-x-auto p-4 text-sm">authorization:
+        <pre class="ee-code-block">authorization:
   type: Bearer
   credentials: &lt;token&gt;</pre>
 
-        <hr class="my-[1rem]">
+        <hr class="my-4">
         <div class="text-base-content/60">
             <code>&lt;token&gt;</code> is the full access token string without any quoting.
         </div>

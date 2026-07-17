@@ -5,7 +5,7 @@
 <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body">
 
-        <div class="mb-[1rem] flex flex-wrap gap-2" role="toolbar" aria-label="Gateway actions">
+        <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Gateway actions">
 
             {{#> ui/tooltip text="Modify gateway settings"}}
             <a class="btn btn-soft btn-sm" href="/admin/gateways/edit/{{gateway.gateway}}">
@@ -21,7 +21,7 @@
 
         </div>
 
-        <h5 class="card-title mb-6">{{gateway.name}}</h5>
+        <h6 class="card-title mb-6">{{gateway.name}}</h6>
 
         {{#if gateway.lastError}}
         <dl class="ee-dl">

@@ -8,10 +8,10 @@
     <input type="hidden" id="map-content-element" name="contentMapJson" value="{{values.contentMapJson}}">
 
     <div class="card bg-base-100 shadow-md mb-6">
-        <div class="px-6 py-[1rem] border-b border-base-content/10 flex items-start justify-between gap-4">
+        <div class="px-6 py-4 border-b border-base-content/10 flex items-start justify-between gap-4">
             <div>
-                {{> ui/checkbox id="enabled" name="enabled" label="Enable pre-processing." class="or-else-all"
-                dataTarget="docstore-list" dataReverse=true checked=values.enabled error=errors.enabled
+                {{> ui/checkbox id="enabled" name="enabled" label="Enable pre-processing."
+                checked=values.enabled error=errors.enabled
                 hint="The Document Store Pre-processing feature lets you edit emails before saving them. Additionally, you can exclude certain emails from being stored altogether."}}
             </div>
 
@@ -138,7 +138,7 @@
 </div>
 <div class="modal-footer justify-between">
     <div>
-        <select class="select select-sm" id="select-predefined-payload">
+        <select class="select" id="select-predefined-payload">
             <option> -- Select predefined payload -- </option>
         </select>
     </div>

@@ -13,6 +13,6 @@
 
     {{> ui/form-field id="port" type="number" label="Port" value=values.port error=errors.port lpignore=true placeholder="587" required=true hint="Common ports: 25, 587 (STARTTLS), 465 (TLS/SSL)"}}
 
-    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure dataTarget="header-list" tooltip="Enable for port 465 (direct TLS/SSL). For ports 25 and 587, EmailEngine automatically upgrades to encrypted connections using STARTTLS when available."}}
+    {{> ui/checkbox id="secure" label="Use direct TLS" checked=values.secure error=errors.secure tooltip="Enable for port 465 (direct TLS/SSL). For ports 25 and 587, EmailEngine automatically upgrades to encrypted connections using STARTTLS when available."}}
 
 </div>

@@ -8,6 +8,8 @@
       parentLabel - label of the parent list page (required)
       midHref     - URL of an intermediate level (optional)
       midLabel    - label of the intermediate level (optional, with midHref)
+      mid2Href    - URL of a second intermediate level (optional)
+      mid2Label   - label of the second intermediate level (optional, with mid2Href)
       current     - current page label (required)
       class       - extra classes on the wrapper (additive; caller owns margins)
 --}}
@@ -17,6 +19,10 @@
         <li class="breadcrumbs-separator" aria-hidden="true">/</li>
         {{#if midHref}}
         <li><a href="{{midHref}}" class="link link-animated">{{midLabel}}</a></li>
+        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
+        {{/if}}
+        {{#if mid2Href}}
+        <li><a href="{{mid2Href}}" class="link link-animated">{{mid2Label}}</a></li>
         <li class="breadcrumbs-separator" aria-hidden="true">/</li>
         {{/if}}
         <li aria-current="page">{{current}}</li>

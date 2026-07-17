@@ -33,7 +33,7 @@
             <div>
                 {{> ui/setting-ref name="timezone"}}
                 {{#> ui/form-field id="settingsServiceTimezone" label="Timezone" error=errors.timezone}}
-                <select id="settingsServiceTimezone" class="select select-sm max-w-md{{#if errors.timezone}} is-invalid{{/if}}"
+                <select id="settingsServiceTimezone" class="select max-w-md{{#if errors.timezone}} is-invalid{{/if}}"
                     name="timezone">
                     {{#each timezones}}
                     <option value="{{timezone}}" {{#if selected}}selected{{/if}}>{{name}}</option>
@@ -52,7 +52,7 @@
             <div>
                 {{> ui/setting-ref name="locale"}}
                 {{#> ui/form-field id="settingsServiceLocale" label="Default Language" error=errors.locale}}
-                <select id="settingsServiceLocale" class="select select-sm max-w-md{{#if errors.locale}} is-invalid{{/if}}"
+                <select id="settingsServiceLocale" class="select max-w-md{{#if errors.locale}} is-invalid{{/if}}"
                     name="locale">
                     {{#each locales}}
                     <option value="{{locale}}" {{#if selected}}selected{{/if}}>{{name}} ({{locale}})</option>
@@ -73,7 +73,7 @@
                     <div class="alert alert-soft alert-info mt-2 block">
                         <h6 class="font-bold mb-2">Override Language Settings</h6>
                         <p class="mb-2">Set language per request (highest to lowest priority):</p>
-                        <ol class="list-decimal ps-6 mb-[1rem] space-y-1">
+                        <ol class="list-decimal ps-6 mb-4 space-y-1">
                             <li><strong>URL parameter:</strong> <code>?locale=xx</code></li>
                             <li><strong>Custom header:</strong> <code>X-EE-Locale: xx</code> (API only)</li>
                             <li><strong>Browser preference:</strong> <code>Accept-Language</code> header</li>
@@ -119,18 +119,10 @@
             <div>
                 {{> ui/setting-ref name="EENGINE_REQUIRE_API_AUTH" plain=true}}
 
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" class="checkbox checkbox-sm{{#if errors.enableTokens}} is-invalid{{/if}}"
-                        id="enableTokens" name="enableTokens" {{#if values.enableTokens}}checked{{/if}} />
-                    <label class="label-text p-0" for="enableTokens">Require API Authentication
-
-                        <span class="badge badge-{{#if values.enableTokens}}success{{else}}error{{/if}}">{{#if
-                            values.enableTokens}}enabled{{else}}disabled{{/if}}</span>
-                    </label>
-                </div>
-                {{#if errors.enableTokens}}
-                <span class="helper-text text-error">{{errors.enableTokens}}</span>
-                {{/if}}
+                {{#> ui/checkbox id="enableTokens" label="Require API Authentication" checked=values.enableTokens
+                error=errors.enableTokens}}
+                {{> ui/badge label=(when values.enableTokens "enabled" "disabled") variant=(when values.enableTokens "success" "error")}}
+                {{/ui/checkbox}}
                 <span class="helper-text">Disable for development only. Always enable in production for secure API
                     access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not
                     recommended).</span>
@@ -139,16 +131,9 @@
             <div>
                 {{> ui/setting-ref name="EENGINE_SECRET" href="https://docs.emailengine.app/enabling-secret-encryption/"}}
 
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" class="checkbox checkbox-sm" id="encryption" {{#if encryption}}checked{{/if}}
-                        disabled />
-                    <label class="label-text p-0" for="encryption">Data Encryption
-
-                        <span class="badge badge-{{#if encryption}}success{{else}}error{{/if}}">{{#if
-                            encryption}}enabled{{else}}disabled{{/if}}</span>
-
-                    </label>
-                </div>
+                {{#> ui/checkbox id="encryption" label="Data Encryption" checked=encryption disabled=true}}
+                {{> ui/badge label=(when encryption "enabled" "disabled") variant=(when encryption "success" "error")}}
+                {{/ui/checkbox}}
                 <span class="helper-text">Set <code>EENGINE_SECRET</code> environment variable at startup to enable. <a
                         href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
                         rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
@@ -159,16 +144,10 @@
             <div>
                 {{> ui/setting-ref name="EENGINE_ADMIN_ACCESS_ADDRESSES" plain=true}}
 
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" class="checkbox checkbox-sm" id="adminAccessLimit" {{#if
-                        adminAccessLimit}}checked{{/if}} disabled />
-                    <label class="label-text p-0" for="adminAccessLimit">Admin IP Restrictions
-
-                        <span class="badge badge-{{#if adminAccessLimit}}success{{else}}error{{/if}}">{{#if
-                            adminAccessLimit}}enabled{{else}}disabled{{/if}}</span>
-
-                    </label>
-                </div>
+                {{#> ui/checkbox id="adminAccessLimit" label="Admin IP Restrictions" checked=adminAccessLimit
+                disabled=true}}
+                {{> ui/badge label=(when adminAccessLimit "enabled" "disabled") variant=(when adminAccessLimit "success" "error")}}
+                {{/ui/checkbox}}
                 <span class="helper-text">Set <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> at startup with
                     comma-separated IP addresses or CIDR ranges (e.g., "192.168.1.1,10.0.0.0/24").</span>
             </div>
@@ -189,21 +168,10 @@
             <div>
                 {{> ui/setting-ref name="ignoreMailCertErrors"}}
 
-                <div class="flex items-center gap-2">
-                    <input type="checkbox"
-                        class="checkbox checkbox-sm{{#if errors.ignoreMailCertErrors}} is-invalid{{/if}}"
-                        id="ignoreMailCertErrors" name="ignoreMailCertErrors" {{#if
-                        values.ignoreMailCertErrors}}checked{{/if}} />
-                    <label class="label-text p-0" for="ignoreMailCertErrors">Allow Insecure Email Certificates
-
-                        <span class="badge badge-{{#if values.ignoreMailCertErrors}}error{{else}}success{{/if}}">{{#if
-                            values.ignoreMailCertErrors}}enabled{{else}}disabled{{/if}}</span>
-
-                    </label>
-                </div>
-                {{#if errors.ignoreMailCertErrors}}
-                <span class="helper-text text-error">{{errors.ignoreMailCertErrors}}</span>
-                {{/if}}
+                {{#> ui/checkbox id="ignoreMailCertErrors" label="Allow Insecure Email Certificates"
+                checked=values.ignoreMailCertErrors error=errors.ignoreMailCertErrors}}
+                {{> ui/badge label=(when values.ignoreMailCertErrors "enabled" "disabled") variant=(when values.ignoreMailCertErrors "error" "success")}}
+                {{/ui/checkbox}}
                 <span class="helper-text">Accept self-signed or expired certificates for IMAP/SMTP connections. Not
                     recommended.</span>
             </div>
@@ -260,7 +228,7 @@
             <div>
                 {{> ui/setting-ref name="imapIndexer"}}
                 {{#> ui/form-field id="settingsImapIndexer" label="Indexing Method" error=errors.imapIndexer}}
-                <select id="settingsImapIndexer" class="select select-sm max-w-md{{#if errors.imapIndexer}} is-invalid{{/if}}"
+                <select id="settingsImapIndexer" class="select max-w-md{{#if errors.imapIndexer}} is-invalid{{/if}}"
                     name="imapIndexer">
                     {{#each imapIndexers}}
                     <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
@@ -448,7 +416,7 @@
             </div>
         </div>
 
-        <div class="card-footer border-base-content/10 border-t px-6 py-[1rem]">
+        <div class="card-footer border-base-content/10 border-t px-6 py-4">
             <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank" rel="noopener noreferrer"
                 class="link link-animated">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
             See <a href="https://emailengine.app/sending-emails#tracking" target="_blank" rel="noopener noreferrer"

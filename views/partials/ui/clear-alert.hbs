@@ -1,0 +1,19 @@
+{{!--
+    ui/clear-alert - dismissable server-persisted error alert. The close button
+    removes the alert and POSTs /admin/config/clear-error to clear the stored
+    error (the .clear-alert-btn / .clear-alert-close contract bound centrally
+    in static/js/app.js). Block form only; the block is the alert body:
+      {{#> ui/clear-alert alert="webhook-default" class="mb-6"}}...body...{{/ui/clear-alert}}
+    Params:
+      alert - data-clear-alert value, the stored-error key (required)
+      entry - data-clear-entry value for per-entity errors, e.g. a webhook
+              route id (optional)
+      class - extra classes on the alert, e.g. margins (optional)
+--}}
+<div class="alert alert-soft alert-error clear-alert-btn block{{#if class}} {{class}}{{/if}}" data-clear-alert="{{alert}}"{{#if entry}} data-clear-entry="{{entry}}"{{/if}}>
+    <button type="button" class="close clear-alert-close float-right" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+    {{> @partial-block alert="" entry="" class=""}}
+</div>

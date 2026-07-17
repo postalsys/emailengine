@@ -78,15 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allSelected = allElementsElm.getAttribute('type') === 'checkbox' ? allElementsElm.checked : !allElementsElm.value.trim();
         for (let elm of otherElements) {
-            if (elm.classList.contains('dropdown-item')) {
-                if (direction && allSelected) {
-                    elm.classList.add('disabled');
-                } else {
-                    elm.classList.remove('disabled');
-                }
-            } else {
-                elm.disabled = direction ? allSelected : !allSelected;
-            }
+            elm.disabled = direction ? allSelected : !allSelected;
         }
     };
 
@@ -393,12 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateSmtpStateIndicators(data) {
+    function updateServerStateIndicators(type, data) {
         let { key: state, payload } = data;
 
         let stateLabel = formatSmtpState(state, payload);
 
-        let stateInfoElms = document.querySelectorAll(`.state-info[data-type="smtp"]`);
+        let stateInfoElms = document.querySelectorAll(`.state-info[data-type="${type}"]`);
         if (stateInfoElms.length) {
             for (let stateInfoElm of stateInfoElms) {
                 repaintStateBadge(stateInfoElm, stateLabel);
@@ -423,7 +415,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateStateIndicators(data);
                     break;
                 case 'smtpServerState':
-                    updateSmtpStateIndicators(data);
+                    updateServerStateIndicators('smtp', data);
+                    break;
+                case 'imapProxyServerState':
+                    updateServerStateIndicators('imapProxy', data);
                     break;
             }
         };
@@ -439,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // clears the stored error server-side (replaces the old Bootstrap
         // data-dismiss="alert" + closed.bs.alert contract)
         for (let alertElm of document.querySelectorAll('.clear-alert-btn')) {
-            let closeBtn = alertElm.querySelector('[data-dismiss="alert"]');
+            let closeBtn = alertElm.querySelector('.clear-alert-close');
             if (!closeBtn) {
                 continue;
             }

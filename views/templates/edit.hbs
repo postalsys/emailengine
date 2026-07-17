@@ -1,18 +1,9 @@
 {{> templates_header}}
 
-<div class="breadcrumbs mt-6 mb-6 text-sm">
-    <ul>
-        <li><a href="/admin/templates" class="link link-animated">Templates</a></li>
-        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
-        {{#if account}}
-        <li><a href="{{accountTemplatesLink}}" class="link link-animated">{{account.name}}</a></li>
-        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
-        {{/if}}
-        <li><a href="/admin/templates/template/{{template.id}}" class="link link-animated">{{template.name}}</a></li>
-        <li class="breadcrumbs-separator" aria-hidden="true">/</li>
-        <li aria-current="page">Edit</li>
-    </ul>
-</div>
+{{!-- the account level renders only for account-scoped templates (ui/breadcrumb skips empty levels) --}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=(when account accountTemplatesLink)
+midLabel=account.name mid2Href=(concat "/admin/templates/template/" template.id) mid2Label=template.name current="Edit"
+class="mt-6 mb-6"}}
 
 
 <form method="post" action="/admin/templates/edit" id="edit-form">
@@ -22,7 +13,7 @@
     {{>template_form}}
 
     <div class="mb-6">
-        {{> ui/btn label="Update template" type="submit" icon="icon-[tabler--file-check]"}}
+        {{> ui/btn label="Update template" type="submit" icon="icon-[tabler--device-floppy]"}}
     </div>
 </form>
 
