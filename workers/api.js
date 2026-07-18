@@ -8,6 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
+const { accountStateLabel, formatServerState } = require('../lib/ui-routes/route-helpers');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const featureFlags = require('../lib/feature-flags');
@@ -443,9 +444,22 @@ async function onCommand(command) {
 function publishChangeEvent(data) {
     let { account, type, key, payload } = data;
 
+    // resolve the badge descriptor server-side so the SSE repaint in app.js uses
+    // the exact same mapping (and translations) as the server-rendered views
+    let stateLabel = null;
+    switch (type) {
+        case 'state':
+            stateLabel = accountStateLabel(key, { lastErrorState: payload && payload.error }, gt);
+            break;
+        case 'smtpServerState':
+        case 'imapProxyServerState':
+            stateLabel = formatServerState(key, payload);
+            break;
+    }
+
     for (let stream of registeredPublishers) {
         try {
-            stream.sendMessage({ account, type, key, payload });
+            stream.sendMessage({ account, type, key, payload, stateLabel });
         } catch (err) {
             logger.error({ msg: 'Failed to publish change event', err, account, type, key, payload });
         }
@@ -1382,13 +1396,23 @@ Include your token in requests using one of these methods:
         }
     });
 
-    if (USE_OKTA_AUTH) {
-        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+    // Shared by the SSO strategies. The redirect URL is captured at strategy registration;
+    // the validators re-read it from settings so an origin change after startup (which would
+    // break the registered callback URL) disables the SSO button instead of failing mid-flow.
+    let getServiceRedirectUrl = async () => new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+    let serviceOriginUnchanged = async redirectUrl => (await getServiceRedirectUrl()).origin === redirectUrl.origin;
+    let assertSsoAuthenticated = request => {
+        if (!request.auth.isAuthenticated) {
+            let error = Boom.unauthorized('Failed to authorize user');
+            error.output.payload.details = [request.auth.error.message];
+            throw error;
+        }
+    };
 
-        server.decorate('toolkit', 'validateOktaConfig', async () => {
-            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
-            return activeRedirectUrl.origin === redirectUrl.origin && USE_OKTA_AUTH;
-        });
+    if (USE_OKTA_AUTH) {
+        let redirectUrl = await getServiceRedirectUrl();
+
+        server.decorate('toolkit', 'validateOktaConfig', () => serviceOriginUnchanged(redirectUrl));
 
         server.auth.strategy('okta', 'bell', {
             provider: 'okta',
@@ -1407,11 +1431,7 @@ Include your token in requests using one of these methods:
             method: ['GET', 'POST'],
             path: '/admin/login/okta',
             handler(request, h) {
-                if (!request.auth.isAuthenticated) {
-                    let error = Boom.unauthorized('Failed to authorize user');
-                    error.output.payload.details = [request.auth.error.message];
-                    throw error;
-                }
+                assertSsoAuthenticated(request);
                 setAdminSession(request, request.auth.credentials);
                 let oktaUser = request.auth.credentials && request.auth.credentials.profile && request.auth.credentials.profile.username;
                 request.logger.info({ msg: 'Admin login successful', user: oktaUser || 'unknown', method: 'okta', remoteAddress: request.app.ip });
@@ -1427,7 +1447,7 @@ Include your token in requests using one of these methods:
     }
 
     if (USE_OIDC_AUTH) {
-        let redirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
+        let redirectUrl = await getServiceRedirectUrl();
 
         // Fetch the discovery document once at startup. bell needs static auth/token
         // URLs at strategy-registration time, so this must precede registration. A
@@ -1443,10 +1463,7 @@ Include your token in requests using one of these methods:
 
         // Registered unconditionally so the login/security views can call it; returns
         // false when discovery failed or the serviceUrl origin drifted from startup.
-        server.decorate('toolkit', 'validateOidcConfig', async () => {
-            let activeRedirectUrl = new URL((await settings.get('serviceUrl')) || `http://${API_HOST}${API_PORT !== 80 ? `:${API_PORT}` : ''}`);
-            return !!oidcDiscovery && activeRedirectUrl.origin === redirectUrl.origin && USE_OIDC_AUTH;
-        });
+        server.decorate('toolkit', 'validateOidcConfig', async () => !!oidcDiscovery && (await serviceOriginUnchanged(redirectUrl)));
 
         // RP-initiated logout URL for the /admin/logout handler. Returns null unless
         // OIDC_LOGOUT is enabled and the IdP advertised an end_session_endpoint.
@@ -1479,11 +1496,7 @@ Include your token in requests using one of these methods:
                 method: ['GET', 'POST'],
                 path: '/admin/login/oidc',
                 async handler(request, h) {
-                    if (!request.auth.isAuthenticated) {
-                        let error = Boom.unauthorized('Failed to authorize user');
-                        error.output.payload.details = [request.auth.error.message];
-                        throw error;
-                    }
+                    assertSsoAuthenticated(request);
 
                     let profile = (request.auth.credentials && request.auth.credentials.profile) || {};
 

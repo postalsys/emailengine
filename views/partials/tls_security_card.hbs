@@ -31,7 +31,7 @@
 
                     {{#if certificateData.label}}
                     {{#> ui/tooltip text=certificateData.label.title}}
-                    <span id="tls-label" class="badge badge-{{certificateData.label.type}}"
+                    <span id="tls-label" class="badge badge-{{eeColor certificateData.label.type}}"
                         data-labeltype="{{certificateData.label.type}}">{{certificateData.label.text}}</span>
                     {{/ui/tooltip}}
                     {{/if}}

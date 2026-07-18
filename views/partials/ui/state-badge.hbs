@@ -15,7 +15,7 @@
 --}}
 <span class="tooltip [--placement:top] inline-flex{{#unless label.error}} ee-tooltip-empty{{/unless}}{{#if class}} {{class}}{{/if}}">
     <span
-        class="tooltip-toggle badge badge-{{label.type}} state-info {{#if pointer}}cursor-pointer{{else}}cursor-default{{/if}}"
+        class="tooltip-toggle badge badge-{{eeColor label.type}} state-info {{#if pointer}}cursor-pointer{{else}}cursor-default{{/if}}"
         {{#if account}}data-account="{{account}}" {{/if}}{{#if dataType}}data-type="{{dataType}}" {{/if}}>
         {{#if label.spinner}}
         <span class="icon-[tabler--loader-2] animate-spin size-3.5 align-text-bottom"></span>

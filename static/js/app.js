@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        stateInfoElm.classList.add(`badge-${stateLabel.type}`);
+        stateInfoElm.classList.add(`badge-${stateLabel.type === 'danger' ? 'error' : stateLabel.type || 'neutral'}`);
 
         stateInfoElm.innerHTML = '';
         if (stateLabel.spinner) {
@@ -243,158 +243,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setStateTooltip(stateInfoElm, stateLabel.error);
     }
 
+    // the SSE payload carries the server-formatted badge descriptor (stateLabel,
+    // attached in publishChangeEvent), so the client only repaints - the mapping
+    // itself lives in lib/ui-routes/route-helpers.js
     function updateStateIndicators(data) {
-        let { account, key: state, payload } = data;
-        let error = payload && payload.error;
-
-        let stateLabel;
-
-        switch (state) {
-            case 'init':
-                stateLabel = {
-                    type: 'info',
-                    name: 'Initializing',
-                    spinner: true
-                };
-                break;
-            case 'connecting':
-                stateLabel = {
-                    type: 'info',
-                    name: 'Connecting'
-                };
-                break;
-            case 'syncing':
-                stateLabel = {
-                    type: 'info',
-                    name: 'Syncing',
-                    spinner: true
-                };
-                break;
-            case 'connected':
-                stateLabel = {
-                    type: 'success',
-                    name: 'Connected'
-                };
-                break;
-            case 'disabled':
-                stateLabel = {
-                    type: 'neutral',
-                    name: 'Disabled'
-                };
-                break;
-
-            case 'authenticationError':
-            case 'connectError': {
-                let errorMessage = error ? error.response : false;
-                if (error) {
-                    switch (error.serverResponseCode) {
-                        case 'ETIMEDOUT':
-                            errorMessage = 'Connection timed out. Check your firewall settings and verify the port number.';
-                            break;
-                        case 'ClosedAfterConnectTLS':
-                            errorMessage = 'Server closed the connection unexpectedly. Try again or check server status.';
-                            break;
-                        case 'ClosedAfterConnectText':
-                            errorMessage =
-                                'Server closed the connection. This often means TLS is required but not enabled.';
-                            break;
-                        case 'ECONNREFUSED':
-                            errorMessage =
-                                'Connection refused. Verify the server is running and check the hostname and port.';
-                            break;
-                    }
-                }
-
-                stateLabel = {
-                    type: 'error',
-                    name: 'Connection failed',
-                    error: errorMessage
-                };
-                break;
-            }
-            case 'unset':
-                stateLabel = {
-                    type: 'neutral',
-                    name: 'Not syncing'
-                };
-                break;
-            case 'disconnected':
-                stateLabel = {
-                    type: 'warning',
-                    name: 'Disconnected'
-                };
-                break;
-            case 'paused':
-                stateLabel = {
-                    type: 'neutral',
-                    name: 'Paused'
-                };
-                break;
-            default:
-                stateLabel = {
-                    type: 'neutral',
-                    name: 'N/A'
-                };
-                break;
+        let { account, stateLabel } = data;
+        if (!stateLabel) {
+            return;
         }
 
-        let stateInfoElms = document.querySelectorAll(`.state-info[data-account="${account}"]`);
-        if (stateInfoElms.length) {
-            for (let stateInfoElm of stateInfoElms) {
-                repaintStateBadge(stateInfoElm, stateLabel);
-            }
-        }
-    }
-
-    function formatSmtpState(state, payload) {
-        switch (state) {
-            case 'suspended':
-            case 'exited':
-            case 'disabled':
-                return {
-                    type: 'warning',
-                    name: state
-                };
-
-            case 'spawning':
-            case 'initializing':
-                return {
-                    type: 'info',
-                    name: state,
-                    spinner: true
-                };
-
-            case 'listening':
-                return {
-                    type: 'success',
-                    name: state
-                };
-
-            case 'failed':
-                return {
-                    type: 'error',
-                    name: state,
-                    error: (payload && payload.error && payload.error.message) || null
-                };
-
-            default:
-                return {
-                    type: 'neutral',
-                    name: 'N/A'
-                };
+        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-account="${account}"]`)) {
+            repaintStateBadge(stateInfoElm, stateLabel);
         }
     }
 
     function updateServerStateIndicators(type, data) {
-        let { key: state, payload } = data;
+        let { stateLabel } = data;
+        if (!stateLabel) {
+            return;
+        }
 
-        let stateLabel = formatSmtpState(state, payload);
-
-        let stateInfoElms = document.querySelectorAll(`.state-info[data-type="${type}"]`);
-        if (stateInfoElms.length) {
-            for (let stateInfoElm of stateInfoElms) {
-                repaintStateBadge(stateInfoElm, stateLabel);
-            }
+        for (let stateInfoElm of document.querySelectorAll(`.state-info[data-type="${type}"]`)) {
+            repaintStateBadge(stateInfoElm, stateLabel);
         }
     }
 
