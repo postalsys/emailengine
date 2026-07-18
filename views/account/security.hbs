@@ -119,7 +119,10 @@
                         {{> ui/badge label="Not configured" variant="neutral" soft=true}}
                         {{/unless}}
                     </div>
-                    <div class="text-end space-y-1">
+                    {{!-- flex row, not text-end space-y: with two inline buttons on one
+                          line the space-y margin lands on the second button only and
+                          knocks the pair out of vertical alignment --}}
+                    <div class="flex flex-wrap items-center justify-end gap-2">
                         {{> ui/btn label="Okta setup" variant="primary" style="outline" id="sso-instructions"
                         overlay="#ssoInstructionsModal"}}
                         {{> ui/btn label="OIDC setup" variant="primary" style="outline" id="oidc-instructions"
