@@ -1,0 +1,301 @@
+{{!--
+    Shared filter/map editor test machinery: the ACE editors, the evaluation web
+    worker, live filter-result painting and the "set test payload" modal. Used by
+    the webhook routing pages (via webhooks_editor_functions), the AI pre-filter
+    page and the Document Store pre-processing page.
+    Hash params (all optional):
+      hasMap             - truthy to include the output-mapping editor/preview pair
+                           and the map evaluation chain
+      formId             - form whose submit syncs editor content into the hidden
+                           fields (default "edit-form")
+      modalTitle         - payload modal title (default "Set test payload")
+      payloadLabel       - label above the JSON payload editor
+      payloadHelp        - helper line under the JSON payload editor
+      selectPlaceholder  - placeholder option of the predefined payload select
+      defaultTestPayload - JSON string used as the initial test payload
+                           (default {"data":{}})
+    Page markup contract: #editor-fn and #fn-content-element (+ #editor-map,
+    #editor-map-preview, #map-content-element when hasMap), #test-payload-btn, and
+    #filter-res, which may carry data-match-text / data-nomatch-text attributes to
+    override the "filter matches" / "no match" result wording.
+    Render context: examplePayloadsJson, scriptEnvJson and (webhooks pages only)
+    notificationTypesJson, which switches on the event-name autocompleter.
+--}}
+<script src="/static/js/ace/ace.js"></script>
+<script src="/static/js/ace/ext-language_tools.js"></script>
+
+{{#if notificationTypesJson}}
+<input type="hidden" id="notificationTypesJson" value="{{notificationTypesJson}}">
+{{/if}}
+<input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
+<input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
+<input type="hidden" id="defaultTestPayloadJson" value="{{defaultTestPayload}}">
+
+{{#> ui/modal id="setPayloadModal" title=(when modalTitle modalTitle "Set test payload") dialogClass="max-w-3xl"}}
+<div class="modal-body">
+
+    <div class="mb-2">{{#if payloadLabel}}{{payloadLabel}}{{else}}JSON payload{{/if}}</div>
+    <div id="editor-json" class="code-editor h-40"></div>
+    <span class="helper-text">{{#if payloadHelp}}{{payloadHelp}}{{else}}Enter the JSON structure that will be
+        used as the <code>payload</code> value for test evaluation.{{/if}}</span>
+
+</div>
+<div class="modal-footer justify-between">
+    <div>
+        <select class="select" id="select-predefined-payload">
+            <option>{{#if selectPlaceholder}}{{selectPlaceholder}}{{else}} -- Select predefined payload -- {{/if}}</option>
+        </select>
+    </div>
+    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#setPayloadModal"}}
+</div>
+{{/ui/modal}}
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        let scriptEnv = JSON.parse(document.getElementById('scriptEnvJson').value);
+
+        const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
+
+        const editors = new Map();
+
+        const editorFn = uiAceEditor("editor-fn", "javascript", JSON.parse(document.getElementById('fn-content-element').value), {
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            useWorker: false
+        });
+        editors.set("editor-fn", editorFn);
+
+        {{#if hasMap}}
+        const editorMap = uiAceEditor("editor-map", "javascript", JSON.parse(document.getElementById('map-content-element').value), {
+            enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true,
+            useWorker: false
+        });
+        editors.set("editor-map", editorMap);
+
+        const editorMapPreview = uiAcePreview("editor-map-preview", "json");
+        editors.set("editor-map-preview", editorMapPreview);
+        {{/if}}
+
+        uiEditorFullscreen(editors);
+
+        {{#if notificationTypesJson}}
+        const notificationTypes = JSON.parse(document.getElementById('notificationTypesJson').value.trim())
+        const notificationTypesCompleter = {
+            getCompletions: function (editor, session, pos, prefix, callback) {
+                callback(null, notificationTypes.map((notificationType) => {
+                    return {
+                        caption: notificationType.description,
+                        value: `"${notificationType.name}"`,
+                        meta: "Event"
+                    };
+                }));
+            }
+        };
+
+        const langTools = ace.require('ace/ext/language_tools');
+        langTools.addCompleter(notificationTypesCompleter);
+        {{/if}}
+
+        const testPayload = {
+            content: JSON.parse(document.getElementById('defaultTestPayloadJson').value || '{"data":{}}'),
+            error: null
+        };
+
+        const resultElm = document.getElementById('filter-res');
+        const matchText = resultElm.dataset.matchText || 'filter matches';
+        const noMatchText = resultElm.dataset.nomatchText || 'no match';
+
+        const updateFilterResult = (err, result, opts) => {
+            // always drop the previous state class before adding the new one: with
+            // two of these utilities present, compiled CSS order (not DOM order)
+            // decides which wins
+            if (err) {
+                resultElm.classList.remove('text-info', 'text-warning', 'text-success');
+                resultElm.classList.add('text-error');
+                resultElm.textContent = `validation failed (${err.message})`
+                return;
+            }
+
+            if (result) {
+                resultElm.classList.remove('text-info', 'text-warning', 'text-error');
+                resultElm.classList.add('text-success');
+                resultElm.textContent = matchText;
+            } else {
+                resultElm.classList.remove('text-info', 'text-success', 'text-error');
+                resultElm.classList.add('text-warning');
+
+                let truthyWarning = opts && opts.truthyWarning;
+                resultElm.textContent = `${noMatchText}${truthyWarning ? ` (function must return \`true\`, but returned a ${typeof truthyWarning} value)` : ''} `
+            }
+        }
+
+        {{#if hasMap}}
+        const updateMapResult = (err, result) => {
+            if (err) {
+                editorMapPreview.session.setMode("ace/mode/markdown");
+                editorMapPreview.setValue(`** Mapping failed **
+
+                Error message:
+        \`\`\`
+${err.message}
+\`\`\``);
+            } else if (err === false) {
+                editorMapPreview.session.setMode("ace/mode/markdown");
+                editorMapPreview.setValue(`Filter function must return \`true\` to activate output mapping.
+
+Either modify the filter function or click on
+the *Set test payload* button to change the filter payload.`);
+            } else {
+                editorMapPreview.session.setMode("ace/mode/json");
+                editorMapPreview.setValue(JSON.stringify(result, false, 2));
+            }
+
+            editorMapPreview.clearSelection(1);
+        }
+        {{/if}}
+
+        evaluationWorker.onmessage = e => {
+            const { type, result, error } = e && e.data || {};
+
+            switch (type) {
+                case 'filter':
+                    if (!error) {
+                        updateFilterResult(null, result === true, { truthyWarning: result && result !== true ? result : false });
+                        {{#if hasMap}}
+                        if (result === true) {
+                            try {
+                                evaluationWorker.postMessage({ type: 'map', code: editorMap.getValue(), payload: testPayload.content, env: scriptEnv });
+                            } catch (err) {
+                                updateMapResult(err);
+                            }
+                        } else {
+                            updateMapResult(false);
+                        }
+                        {{/if}}
+                    } else {
+                        updateFilterResult(new Error(error));
+                    }
+                    break;
+
+                {{#if hasMap}}
+                case 'map':
+                    if (!error) {
+                        updateMapResult(null, result);
+                    } else {
+                        updateMapResult(new Error(error));
+                    }
+                    break;
+                {{/if}}
+
+                case 'log': {
+                    console.log(`[Worker Log] ${result.level.toUpperCase()}`, result.msg);
+                    break;
+                }
+            }
+        }
+
+        const updateExampleResult = () => {
+            const filterVal = editorFn.getValue();
+
+            try {
+                if (testPayload.error) {
+                    throw testPayload.error;
+                }
+                evaluationWorker.postMessage({
+                    type: 'filter', code: filterVal, payload: testPayload.content, env: scriptEnv
+                });
+            } catch (err) {
+                updateFilterResult(err);
+            }
+        }
+
+        let validateTimer = false;
+        editorFn.session.on('change', function () {
+            clearTimeout(validateTimer);
+            validateTimer = setTimeout(updateExampleResult, 100);
+        });
+        editorFn.clearSelection(1);
+
+        {{#if hasMap}}
+        editorMap.session.on('change', function () {
+            clearTimeout(validateTimer);
+            validateTimer = setTimeout(updateExampleResult, 100)
+        });
+        editorMap.clearSelection(1);
+        editorMapPreview.clearSelection(1);
+        {{/if}}
+
+        document.getElementById('{{#if formId}}{{formId}}{{else}}edit-form{{/if}}').addEventListener('submit', () => {
+            document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
+            {{#if hasMap}}
+            document.getElementById('map-content-element').value = JSON.stringify(editorMap.getValue());
+            {{/if}}
+        });
+
+        const editorJson = uiAceEditor("editor-json", "json", JSON.stringify(testPayload.content, false, 4));
+
+        editorJson.session.on('change', function () {
+            let curval = editorJson.getValue().trim();
+            try {
+                if (curval) {
+                    let parsed = JSON.parse(curval);
+                    if (parsed && typeof parsed !== 'object') {
+                        throw new Error('Not an object')
+                    }
+                    testPayload.content = parsed;
+                }
+                testPayload.error = null;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
+            } catch (err) {
+                console.error(err);
+                testPayload.error = err;
+                clearTimeout(validateTimer);
+                validateTimer = setTimeout(updateExampleResult, 10);
+            }
+        });
+
+        const testPayloadBtn = document.getElementById('test-payload-btn');
+        testPayloadBtn.addEventListener('click', e => {
+            e.preventDefault();
+            uiModal.open('#setPayloadModal');
+        });
+
+        let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value || '[]');
+        const payloadSelectElm = document.getElementById('select-predefined-payload');
+
+        try {
+            if (examplePayloads && Array.isArray(examplePayloads)) {
+
+                examplePayloads.forEach(example => {
+                    let optionElm = document.createElement('option');
+                    optionElm.textContent = example.name;
+                    optionElm.dataset.exampleKey = example.key
+                    payloadSelectElm.appendChild(optionElm)
+                });
+            }
+        } catch (err) {
+            console.error(err)
+        }
+
+        payloadSelectElm.addEventListener('change', () => {
+            if (!payloadSelectElm.selectedIndex) {
+                return
+            }
+            let key = payloadSelectElm.options[payloadSelectElm.selectedIndex].dataset.exampleKey;
+            if (key) {
+                let example = examplePayloads.find(data => data.key === key);
+                if (example) {
+                    editorJson.session.setValue(JSON.stringify(example.content, false, 4))
+                }
+            }
+            payloadSelectElm.selectedIndex = 0;
+        });
+
+        updateExampleResult();
+    });
+</script>

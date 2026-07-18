@@ -1,0 +1,17 @@
+{{!--
+    ui/row-link - overlay link that makes a whole list-row cell (position:
+    relative td) clickable. Two modes:
+      label set     - the row's one accessible link (focusable, aria-labeled);
+                      use it on the primary cell
+      label omitted - invisible duplicate for the remaining cells, kept out of
+                      the tab order and hidden from assistive tech
+      {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway) label="Open gateway"}}
+    Params:
+      href  - link target (required)
+      label - aria-label for the accessible variant (optional)
+--}}
+{{#if label}}
+<a href="{{href}}" class="absolute inset-0" aria-label="{{label}}"></a>
+{{else}}
+<a href="{{href}}" class="absolute inset-0" tabindex="-1" aria-hidden="true"></a>
+{{/if}}

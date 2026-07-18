@@ -1,0 +1,29 @@
+{{!--
+    ui/code-editor - ACE editor mount plus its toolbar strip (the title cell and
+    the fullscreen toggle wired to uiEditorFullscreen). The optional block
+    appends extra toolbar cells after the standard ones:
+      {{#> ui/code-editor id="editor-fn" title="Filter function"}}
+      <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+          <a href="#" id="test-payload-btn">Set test payload</a>
+      </div>
+      {{/ui/code-editor}}
+    Params:
+      id    - editor element id; also the fullscreen toggle target (required)
+      title - toolbar title cell text (required)
+      class - extra classes on the editor div, e.g. "h-40" (optional)
+    The page script owns the ACE init (uiAceEditor/uiAcePreview) and any hidden
+    inputs or validation errors around the editor.
+--}}
+<div id="{{id}}" class="code-editor{{#if class}} {{class}}{{/if}}"></div>
+<div class="editor-embed-block">
+    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
+        {{title}}
+    </div>
+    <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+        <a href="#" class="toggle-fullscreen" data-target="{{id}}">Toggle fullscreen</a>
+    </div>
+    {{#if @partial-block}}
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    {{> @partial-block id="" title="" class=""}}
+    {{/if}}
+</div>

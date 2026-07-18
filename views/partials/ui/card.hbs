@@ -1,0 +1,26 @@
+{{!--
+    ui/card - standard content card (base surface, shadow, bottom margin).
+    Block form; the block is the card body content:
+      {{#> ui/card title="Queue Management" id="queue_settings" bodyClass="space-y-4"}}
+      ...fields...
+      {{/ui/card}}
+    Params:
+      title     - card-header heading; omit for a headerless body-only card
+      id        - element id on the card (optional)
+      class     - extra classes on the card (optional)
+      bodyClass - extra classes on the card-body, e.g. "space-y-4" (optional)
+    Cards with header actions, composed titles, or table/footer bodies (the
+    list pages) keep hand-rolled markup - this partial covers the plain
+    title + body case.
+--}}
+<div class="card bg-base-100 shadow-md mb-6{{#if class}} {{class}}{{/if}}"{{#if id}} id="{{id}}"{{/if}}>
+    {{#if title}}
+    <div class="card-header">
+        <h6 class="card-title text-primary">{{title}}</h6>
+    </div>
+    {{/if}}
+    <div class="card-body{{#if bodyClass}} {{bodyClass}}{{/if}}">
+        {{!-- own hash params neutralized against fallthrough into the block --}}
+        {{> @partial-block title="" id="" class="" bodyClass=""}}
+    </div>
+</div>

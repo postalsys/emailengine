@@ -9,9 +9,13 @@
                the bundled Swagger UI)
       plain  - true to render the name without a link (env-var refs that have
                no docs anchor)
+      prefix - literal text inside the brackets before the link, e.g.
+               prefix="API Reference: " (optional)
+      nofloat - true to render in flow instead of float-right (stacked
+               reference columns) (optional)
       class  - extra classes on the wrapper, e.g. "whitespace-nowrap" for
                flex-row placements where the float is inert (optional)
 --}}
-<div class="text-base-content/60 float-right code-link{{#if class}} {{class}}{{/if}}">[{{#if plain}}{{name}}{{else}}<a
+<div class="text-base-content/60{{#unless nofloat}} float-right{{/unless}} code-link{{#if class}} {{class}}{{/if}}">[{{prefix}}{{#if plain}}{{name}}{{else}}<a
         href="{{#if href}}{{href}}{{else}}/admin/swagger#/Settings/postV1Settings{{/if}}" target="_blank"
         rel="noopener noreferrer" class="link link-animated">{{name}}</a>{{/if}}{{suffix}}]</div>

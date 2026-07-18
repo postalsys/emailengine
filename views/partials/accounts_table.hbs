@@ -1,0 +1,76 @@
+{{!-- Shared accounts list table (accounts index + internals thread detail): a card
+      with the account rows, live SSE state badges and pagination, or an empty-state
+      card when there is nothing to list.
+      Params:
+        emptyText - message shown when the accounts array is empty
+      Context: accounts (row objects incl. stateLabel/type), plus the
+      showPaging/prevPage/nextPage/pageLinks pagination values. --}}
+{{#if accounts}}
+<div class="card bg-base-100 shadow-md mb-6">
+
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each accounts}}
+                <tr class="hover:bg-base-200/60">
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/accounts/" account) label="Open account"}}
+                        {{account}}
+                    </td>
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}<strong>{{name}}</strong>
+                    </td>
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}{{email}}
+                    </td>
+
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}
+                        {{#if type.icon}}
+                        {{!-- relative z-[1] lifts the tooltip trigger above the row link --}}
+                        {{#> ui/tooltip text=type.label class="relative z-[1]"}}
+                        <span class="{{type.icon}} size-4 align-text-bottom"></span>
+                        {{/ui/tooltip}}
+                        {{else}}
+                        {{type.name}}
+                        {{#if type.comment}}
+                        <span class="text-base-content/60">({{type.comment}})</span>
+                        {{/if}}
+                        {{/if}}
+                    </td>
+
+                    <td class="relative w-32">
+                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}
+                        {{!-- live state badge: app.js updates the badge-{type} class,
+                              text and error tooltip through the /admin/changes SSE
+                              feed. The wrapping link lifts the badge above the row
+                              overlay so the tooltip fires while clicks still
+                              navigate. --}}
+                        <a href="/admin/accounts/{{account}}" class="relative z-[1] inline-flex">
+                            {{> ui/state-badge label=stateLabel account=account pointer=true}}
+                        </a>
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+</div>
+{{else}}
+{{#> ui/card}}
+        {{emptyText}}
+    
+{{/ui/card}}
+{{/if}}

@@ -284,3 +284,123 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 15 * 1000);
 });
+
+// POST a JSON payload to an admin endpoint with the page CSRF crumb included.
+// Throws on HTTP errors; returns the parsed response body.
+window.uiPostJson = async (url, payload) => {
+    const res = await fetch(url, {
+        method: 'post',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(Object.assign({ crumb: document.getElementById('crumb').value }, payload))
+    });
+    if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    return await res.json();
+};
+
+// Toggle an async action button's busy state: disable the button and swap its
+// icon span to a spinner while busy, restoring the original icon after
+window.uiButtonBusy = (btn, busy) => {
+    btn.disabled = !!busy;
+    const icon = btn.querySelector('[class*="icon-["]');
+    if (!icon) {
+        return;
+    }
+    if (busy) {
+        if (!('idleIcon' in icon.dataset)) {
+            icon.dataset.idleIcon = Array.from(icon.classList).find(c => c.startsWith('icon-[')) || '';
+        }
+        if (icon.dataset.idleIcon) {
+            icon.classList.remove(icon.dataset.idleIcon);
+        }
+        icon.classList.add('icon-[tabler--loader-2]', 'animate-spin');
+    } else {
+        icon.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
+        if (icon.dataset.idleIcon) {
+            icon.classList.add(icon.dataset.idleIcon);
+        }
+    }
+};
+
+// ACE editor bootstrap: xcode theme, the given mode, and the initial value
+// loaded into the session. Extra ace options pass through via opts.
+window.uiAceEditor = (id, mode, value, opts) => {
+    const editor = opts ? ace.edit(id, opts) : ace.edit(id);
+    editor.setTheme('ace/theme/xcode');
+    editor.session.setMode(`ace/mode/${mode}`);
+    if (value !== undefined) {
+        editor.session.setValue(value);
+    }
+    return editor;
+};
+
+// Read-only preview pane variant: kuroir theme, gutter, no print margin or
+// active-line highlight
+window.uiAcePreview = (id, mode, opts) => {
+    const editor = ace.edit(id, Object.assign({ showGutter: true }, opts));
+    editor.setReadOnly(true);
+    editor.setShowPrintMargin(false);
+    editor.setHighlightActiveLine(false);
+    editor.setTheme('ace/theme/kuroir');
+    editor.session.setMode(`ace/mode/${mode}`);
+    return editor;
+};
+
+// Client code-example engine for the server-config pages (config/smtp,
+// config/imap-proxy): renders each code template with live form values
+// substituted, highlights it via hljs, and re-renders whenever a
+// .trigger-example-render control changes. Returns the render function so page
+// scripts (e.g. the TLS provisioning error path) can re-render on demand.
+// config = {
+//   header:           comment block prepended to every example
+//   portField:        id of the port input backing the PORT placeholder
+//   passwordField:    id of the password input backing the PASSWORD placeholder
+//   passwordFallback: placeholder shown while no password is configured
+//   authField:        id of a checkbox choosing codeAuth/codeNoAuth (optional;
+//                     without it codeAuth is always used)
+//   replacements:     extra { PLACEHOLDER: () => value } substitutions
+//   templates:        { key: { lang, target, codeAuth, codeNoAuth } }
+// }
+window.uiCodeExamples = config => {
+    const value = id => document.getElementById(id).value;
+    const checked = id => document.getElementById(id).checked;
+
+    const renderTemplate = template => {
+        const useAuth = !config.authField || checked(config.authField);
+
+        const password = !value(config.passwordField)
+            ? config.passwordFallback
+            : checked('exampleShowPassword')
+              ? value(config.passwordField)
+              : '******';
+
+        let code = (config.header + (useAuth ? template.codeAuth : template.codeNoAuth))
+            .replace(/HOST/g, window.location.hostname)
+            .replace(/PORT/g, Number(value(config.portField)) || 0)
+            .replace(/USERNAME/g, 'account_id')
+            .replace(/PASSWORD/g, password);
+
+        for (const [placeholder, resolve] of Object.entries(config.replacements || {})) {
+            code = code.replace(new RegExp(placeholder, 'g'), resolve());
+        }
+
+        return hljs.highlight(code, { language: template.lang }).value;
+    };
+
+    const renderExamples = () => {
+        for (const template of Object.values(config.templates)) {
+            document.getElementById(template.target).innerHTML = renderTemplate(template);
+        }
+
+        document.getElementById('exampleShowPassword').disabled = (config.authField && !checked(config.authField)) || !value(config.passwordField);
+    };
+
+    for (const elm of document.querySelectorAll('.trigger-example-render')) {
+        elm.addEventListener('change', renderExamples);
+    }
+
+    renderExamples();
+    return renderExamples;
+};
+

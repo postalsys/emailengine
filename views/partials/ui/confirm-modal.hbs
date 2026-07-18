@@ -1,0 +1,39 @@
+{{!--
+    ui/confirm-modal - confirmation dialog whose footer submits a POST form
+    (the standard delete/restart flow). Block form; the block is the
+    confirmation text (markup allowed):
+      {{#> ui/confirm-modal id="deleteModal" title="Delete Template" action="/admin/templates/delete"
+      fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
+      Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be undone.
+      {{/ui/confirm-modal}}
+    Params:
+      id            - modal element id (required)
+      title         - modal heading (required)
+      titleId       - id on the heading, for scripts that retitle the modal (optional)
+      action        - form POST target; the CSRF crumb is included automatically (required)
+      submitLabel   - confirming button label (required)
+      submitVariant - confirming button variant (default "error")
+      submitIcon    - icon class on the confirming button (optional)
+      fieldName     - name of an extra hidden input (optional)
+      fieldValue    - its value; omit when a page script fills it (optional)
+      fieldId       - id on the hidden input, for script-filled modals (optional)
+      formId        - id on the form element (optional)
+      formTarget    - form target, e.g. "_blank" for download responses (optional)
+      formClass     - extra classes on the form, e.g. "pending-form" (optional)
+--}}
+{{#> ui/modal id=id title=title titleId=titleId}}
+<div class="modal-body">
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    {{> @partial-block id="" title="" titleId="" action="" submitLabel="" submitVariant="" submitIcon="" fieldName="" fieldValue="" fieldId="" formId="" formTarget="" formClass=""}}
+</div>
+<div class="modal-footer">
+    <form method="post" action="{{action}}"{{#if formId}} id="{{formId}}"{{/if}}{{#if formTarget}} target="{{formTarget}}" rel="noopener noreferrer"{{/if}} class="{{#if formClass}}{{formClass}} {{/if}}flex gap-2">
+        <input type="hidden" name="crumb" value="{{crumb}}">
+        {{#if fieldName}}
+        <input type="hidden"{{#if fieldId}} id="{{fieldId}}"{{/if}} name="{{fieldName}}" value="{{fieldValue}}">
+        {{/if}}
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=(concat "#" id)}}
+        {{> ui/btn label=submitLabel variant=(when submitVariant submitVariant "error") type="submit" icon=submitIcon}}
+    </form>
+</div>
+{{/ui/modal}}

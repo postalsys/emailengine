@@ -1,0 +1,9 @@
+{{!--
+    ui/tab - one tab button inside a ui/tabs strip.
+    Params:
+      target - id of the tabpanel this button controls; the button id becomes
+               "<target>-tab" (required)
+      label  - button text (required)
+      active - true for the initially selected tab
+--}}
+<button type="button" class="tab active-tab:tab-active{{#if active}} active{{/if}}" id="{{target}}-tab" data-tab="#{{target}}" role="tab" aria-controls="{{target}}" aria-selected="{{#if active}}true{{else}}false{{/if}}">{{label}}</button>
