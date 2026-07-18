@@ -33,12 +33,9 @@
             href="/admin/config/license">
             <span class="grow">License</span>
             {{#unless licenseInfo.active}}
-            <span class="tooltip [--placement:top] inline-flex">
-                <span class="tooltip-toggle icon-[tabler--alert-triangle] text-warning size-4 shrink-0"></span>
-                <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
-                    <span class="tooltip-body">License not activated</span>
-                </span>
-            </span>
+            {{#> ui/tooltip text="License not activated" class="shrink-0"}}
+            <span class="icon-[tabler--alert-triangle] text-warning size-4 shrink-0"></span>
+            {{/ui/tooltip}}
             {{/unless}}
         </a>
     </li>

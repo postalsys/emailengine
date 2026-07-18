@@ -11,7 +11,7 @@ const { expect } = require('@playwright/test');
 // booted instance, so there must be exactly one source for this value.
 const ADMIN_PASSWORD = 'E2e-Test-Password-123!';
 
-// The webServer origin from playwright.config.js - single source for specs that
+// The webServer origin - single source for playwright.config.js and for specs that
 // need an absolute URL (API request contexts, redirect rewrites).
 const PORT = 7099;
 const BASE_URL = `http://127.0.0.1:${PORT}`;

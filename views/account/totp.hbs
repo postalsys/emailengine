@@ -8,14 +8,10 @@
     <input type="hidden" name="type" value="totp" />
 
 
-    <div>
-        <label class="label-text" for="code">Enter your 6-digit verification code</label>
-        <input type="text" pattern="[0-9]{6}" class="input{{#if errors.code}} is-invalid{{/if}}"
-            id="code" name="code" required />
-        {{#if errors.code}}
-        <span class="helper-text text-error">{{errors.code}}</span>
-        {{/if}}
-    </div>
+    {{#> ui/form-field id="code" label="Enter your 6-digit verification code" error=errors.code}}
+    <input type="text" pattern="[0-9]{6}" class="input{{#if errors.code}} is-invalid{{/if}}" id="code" name="code"
+        required />
+    {{/ui/form-field}}
 
     <div>
         <button type="submit" class="btn btn-primary btn-block">

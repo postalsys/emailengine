@@ -18,10 +18,8 @@
 
 const { test, expect, request } = require('@playwright/test');
 const { createUsableTestAccount, waitFor, etherealAccountPayload } = require('./helpers/ethereal');
-const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
+const { ensureAdminSession, ensureTrial, createApiToken, trackConsoleErrors, BASE_URL } = require('./helpers/bootstrap');
 
-const PORT = 7099;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
 const ACCOUNT_ID = 'e2e-unsub';
 
 test('List-Unsubscribe: unsubscribe then resubscribe through the browser', async ({ page }) => {

@@ -30,13 +30,8 @@
                         {{#if authData.enabled}} ******** {{else}}Not configured{{/if}}
                     </div>
                     <div class="text-end">
-                        {{#if authData.enabled}}
-                        {{> ui/btn label="Change password" variant="primary" style="outline" size="sm"
-                        href="/admin/account/password"}}
-                        {{else}}
-                        {{> ui/btn label="Create password" variant="primary" style="outline" size="sm"
-                        href="/admin/account/password"}}
-                        {{/if}}
+                        {{> ui/btn label=(when authData.enabled "Change password" "Create password") variant="primary"
+                        style="outline" size="sm" href="/admin/account/password"}}
                     </div>
                 </div>
             </li>

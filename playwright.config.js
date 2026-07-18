@@ -9,8 +9,7 @@
 
 const { defineConfig, devices } = require('@playwright/test');
 
-const PORT = 7099;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+const { BASE_URL } = require('./test/e2e/helpers/bootstrap');
 
 module.exports = defineConfig({
     testDir: './test/e2e',

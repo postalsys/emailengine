@@ -20,9 +20,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let modalElm = document.getElementById('addAccount');
-        if (!modalElm) {
-            return;
-        }
 
         modalElm.addEventListener('open.overlay', () => {
             document.getElementById('account-name').focus();

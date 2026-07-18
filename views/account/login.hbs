@@ -13,20 +13,8 @@
     <input type="hidden" id="crumb" name="crumb" value="{{crumb}}" />
     <input type="hidden" name="next" value="{{values.next}}" />
 
-    <div>
-        <input type="text" class="input{{#if errors.username}} is-invalid{{/if}}"
-            id="loginUsername" name="username" placeholder="Username" value="{{values.username}}">
-        {{#if errors.username}}
-        <span class="helper-text text-error">{{errors.username}}</span>
-        {{/if}}
-    </div>
-    <div>
-        <input type="password" class="input{{#if errors.password}} is-invalid{{/if}}"
-            id="loginPassword" name="password" placeholder="Password">
-        {{#if errors.password}}
-        <span class="helper-text text-error">{{errors.password}}</span>
-        {{/if}}
-    </div>
+    {{> ui/form-field id="loginUsername" name="username" placeholder="Username" value=values.username error=errors.username}}
+    {{> ui/form-field id="loginPassword" name="password" type="password" placeholder="Password" error=errors.password}}
 
     <!-- Always enable persistent sessions; no UI toggle for now -->
     <input type="hidden" name="remember" value="Y" />

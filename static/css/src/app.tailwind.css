@@ -323,7 +323,7 @@
     }
 
     .error-log-field {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-family: var(--font-mono);
         font-size: 0.8em;
         border: var(--border, 1px) solid var(--color-base-300);
         margin: 0;
@@ -334,17 +334,13 @@
         color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
     }
 
-    .droptxt {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    .droptxt,
+    .code-link {
+        font-family: var(--font-mono);
         font-size: 0.8em;
     }
     .dragover {
         box-shadow: 2px 2px color-mix(in oklab, var(--color-base-content) 45%, transparent);
-    }
-
-    .code-link {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 0.8em;
     }
 
     .popover-list {
@@ -357,56 +353,7 @@
         padding: 0;
     }
 
-    .hover-bg-light:hover {
-        background-color: var(--color-base-200);
-    }
-
     .alert-margin .alert {
         margin: 10px 10px 0 0;
-    }
-
-    /* Callouts (previously static/css/callout.css) */
-    .bd-callout {
-        padding: 0.25rem 0.25rem;
-        margin-top: 1.25rem;
-        margin-bottom: 1.25rem;
-        border: var(--border, 1px) solid var(--color-base-300);
-        border-left-width: 0.25rem;
-        border-radius: var(--radius-field, 0.25rem);
-    }
-    .bd-callout h4 {
-        margin-top: 0;
-        margin-bottom: 0.25rem;
-    }
-    .bd-callout p:last-child {
-        margin-bottom: 0;
-    }
-    .bd-callout code {
-        border-radius: 0.25rem;
-    }
-    .bd-callout + .bd-callout {
-        margin-top: -0.25rem;
-    }
-    .bd-callout .small-text {
-        font-size: 0.8rem;
-    }
-    .bd-callout h4 {
-        color: var(--callout-color, inherit);
-    }
-    .bd-callout-info {
-        --callout-color: var(--color-info);
-        border-left-color: var(--callout-color);
-    }
-    .bd-callout-warning {
-        --callout-color: var(--color-warning);
-        border-left-color: var(--callout-color);
-    }
-    .bd-callout-success {
-        --callout-color: var(--color-success);
-        border-left-color: var(--callout-color);
-    }
-    .bd-callout-danger {
-        --callout-color: var(--color-error);
-        border-left-color: var(--callout-color);
     }
 }

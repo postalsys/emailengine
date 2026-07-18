@@ -76,6 +76,40 @@ async function expectPasswordToggle(page, btnId, inputId) {
     await expect(eyeOff).toBeHidden();
 }
 
+// Hovers a trigger and asserts a FlyonUI tooltip bubble shows, then parks the
+// pointer away again so the tooltip (and any hover paint) clears.
+async function expectTooltipOnHover(page, trigger) {
+    await trigger.hover();
+    await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+    await page.mouse.move(0, 0);
+}
+
+// Waits for a FlyonUI overlay to be open and fully faded in - a click or key
+// press during the opening transition is swallowed by the overlay plugin.
+async function expectModalOpen(page, id) {
+    await expect(page.locator(`#${id}.open`)).toHaveCount(1);
+    await expect(page.locator(`#${id}`)).toHaveCSS('opacity', '1');
+}
+
+// Drives the standard delete-confirmation flow on a detail page: open the modal
+// with #delete-btn, submit it, and wait for the redirect back to the list page.
+async function deleteViaModal(page, listUrlRe) {
+    await page.locator('#delete-btn').click();
+    await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+    await page.locator('#deleteModal button[type="submit"]').click();
+    await page.waitForURL(listUrlRe);
+}
+
+// Dismisses the one-time token reveal modal createApiToken leaves open: settle
+// the opening transition (a click mid-animation is swallowed), then wait out the
+// location.assign the Done button triggers - navigating while it is in flight
+// aborts with ERR_ABORTED.
+async function dismissTokenReveal(page) {
+    await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
+    await page.locator('#showToken button', { hasText: 'Done' }).click();
+    await page.waitForURL(/\/admin\/tokens(\?|$)/);
+}
+
 // Asserts the TLS certificate label's FlyonUI tooltip: the cert status text
 // shows on hover, and the structure paintCertData() repaints through (the
 // badge's .tooltip ancestor > .tooltip-body) is present with the title text.
@@ -87,9 +121,7 @@ async function expectTlsLabelTooltip(page) {
         return body ? body.textContent.trim() : null;
     });
     expect(tlsTooltipText).toBeTruthy();
-    await page.locator('#tls-label').hover();
-    await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
-    await page.mouse.move(0, 0);
+    await expectTooltipOnHover(page, page.locator('#tls-label'));
 }
 
 // Per-test console error collection lives in helpers/bootstrap.js
@@ -248,8 +280,7 @@ test.describe('admin shell', () => {
         await expect(page.getByText('Webhooks queue')).toBeVisible();
 
         // FlyonUI tooltip on a stat-card label
-        await page.locator('.tooltip-toggle', { hasText: 'Accounts total' }).hover();
-        await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
+        await expectTooltipOnHover(page, page.locator('.tooltip-toggle', { hasText: 'Accounts total' }));
 
         // software versions panel toggles open
         const imapflowRow = page.getByText('ImapFlow');
@@ -328,9 +359,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#delete-btn')).toBeVisible();
 
         // toolbar tooltip on hover
-        await page.locator('#request-reconnect').hover();
-        await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
-        await page.mouse.move(0, 0);
+        await expectTooltipOnHover(page, page.locator('#request-reconnect'));
 
         // delete confirmation modal opens and closes without submitting
         await page.locator('#delete-btn').click();
@@ -427,11 +456,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('.ee-dl dt', { hasText: 'Gateway ID' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'E2E Smoke Gateway' })).toBeVisible();
 
-        // delete through the confirmation modal
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/gateways(\?|$)/);
+        await deleteViaModal(page, /\/admin\/gateways(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -442,13 +467,7 @@ test.describe('admin shell', () => {
 
         // guarantee at least one token exists via the shared reveal-flow helper
         await createApiToken(page, 'e2e tokens-page token');
-        // let the overlay's opening transition finish (opacity 0 -> 1) - a close
-        // click during the animation is swallowed by the overlay plugin
-        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
-        await page.locator('#showToken button', { hasText: 'Done' }).click();
-        await expect(page.locator('#showToken.open')).toHaveCount(0);
-        // anchored: /admin/tokens/new also matches an unanchored /admin\/tokens/
-        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+        await dismissTokenReveal(page);
 
         await expect(page.locator('h1', { hasText: 'Access Tokens' })).toBeVisible();
         await expect(page.locator('tbody tr').first()).toBeVisible();
@@ -528,11 +547,7 @@ test.describe('admin shell', () => {
         await page.keyboard.press('Escape');
         await expect(page.locator('#sendTestModal.open')).toHaveCount(0);
 
-        // delete through the confirmation modal
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/templates(\?|$)/);
+        await deleteViaModal(page, /\/admin\/templates(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -556,8 +571,7 @@ test.describe('admin shell', () => {
 
         // test-payload modal opens and offers predefined payloads
         await page.locator('#test-payload-btn').click();
-        await expect(page.locator('#setPayloadModal.open')).toHaveCount(1);
-        await expect(page.locator('#setPayloadModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'setPayloadModal');
         expect(await page.locator('#select-predefined-payload option').count()).toBeGreaterThan(1);
         await page.keyboard.press('Escape');
         await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
@@ -607,11 +621,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#fn')).toBeHidden();
         await expectSelectedTab(page, 'map-tab', ['fn-tab']);
 
-        // delete through the confirmation modal
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/webhooks(\?|$)/);
+        await deleteViaModal(page, /\/admin\/webhooks(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -788,8 +798,7 @@ test.describe('admin shell', () => {
         await expect(page.locator('#filter-res')).toHaveText('match - will process');
 
         await page.locator('#test-payload-btn').click();
-        await expect(page.locator('#setPayloadModal.open')).toHaveCount(1);
-        await expect(page.locator('#setPayloadModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'setPayloadModal');
         await page.keyboard.press('Escape');
         await expect(page.locator('#setPayloadModal.open')).toHaveCount(0);
 
@@ -885,19 +894,14 @@ test.describe('admin shell', () => {
 
         // verify-setup modal auto-runs the configuration checks
         await page.locator('#verify-btn').click();
-        await expect(page.locator('#verifySetupModal.open')).toHaveCount(1);
-        await expect(page.locator('#verifySetupModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'verifySetupModal');
         // the run finishes (dummy credentials, so the verdict may report failures)
         await page.waitForFunction(() => !document.getElementById('verify-run-btn').disabled);
         expect(await page.locator('#verify-steps li').count()).toBeGreaterThan(0);
         await page.keyboard.press('Escape');
         await expect(page.locator('#verifySetupModal.open')).toHaveCount(0);
 
-        // delete through the confirmation modal
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/config\/oauth(\?|$)/);
+        await deleteViaModal(page, /\/admin\/config\/oauth(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -916,8 +920,7 @@ test.describe('admin shell', () => {
         // chat page: try-it modal resets and reports errors through the hidden toggles
         await page.goto('/admin/config/document-store/chat');
         await page.locator('#try-chat-btn').click();
-        await expect(page.locator('#tryChatModal.open')).toHaveCount(1);
-        await expect(page.locator('#tryChatModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'tryChatModal');
         await page.fill('#inputAccount', 'no-such-account');
         await page.fill('#question', 'anything?');
         await page.locator('#send-question-btn').click();
@@ -1028,8 +1031,7 @@ test.describe('admin shell', () => {
 
         // open and close the confirmation modals without submitting
         await page.locator('#logout-all-btn').click();
-        await expect(page.locator('#logoutAllModal.open')).toHaveCount(1);
-        await expect(page.locator('#logoutAllModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'logoutAllModal');
         await page.keyboard.press('Escape');
         await expect(page.locator('#logoutAllModal.open')).toHaveCount(0);
 
@@ -1089,9 +1091,7 @@ test.describe('admin shell', () => {
             await expect(wrap).not.toHaveClass(/ee-tooltip-empty/);
             expect((await wrap.locator('.tooltip-body').textContent()).trim()).not.toBe('');
 
-            await badge.hover();
-            await expect(page.locator('.tooltip.show')).toHaveCount(1, { timeout: 5000 });
-            await page.mouse.move(0, 0);
+            await expectTooltipOnHover(page, badge);
 
             // live SSE repaint: watch the badge for DOM mutations, then force
             // a state change server-side - the /admin/changes EventSource must
@@ -1187,10 +1187,7 @@ test.describe('admin shell', () => {
         await page.waitForURL(/\/admin\/gateways\/gateway\//);
         await expect(page.getByRole('heading', { name: 'E2E Edited Gateway' })).toBeVisible();
 
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/gateways(\?|$)/);
+        await deleteViaModal(page, /\/admin\/gateways(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -1215,10 +1212,7 @@ test.describe('admin shell', () => {
         await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
         await expect(page.getByRole('heading', { name: 'E2E Edited Template' })).toBeVisible();
 
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/templates(\?|$)/);
+        await deleteViaModal(page, /\/admin\/templates(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -1243,10 +1237,7 @@ test.describe('admin shell', () => {
         await page.waitForURL(new RegExp(`${detailUrl.replace(/[/]/g, '\\/')}(\\?|$)`));
         await expect(page.getByRole('heading', { name: 'E2E Edited Route' })).toBeVisible();
 
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/webhooks(\?|$)/);
+        await deleteViaModal(page, /\/admin\/webhooks(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -1272,10 +1263,7 @@ test.describe('admin shell', () => {
         await page.waitForURL(/\/admin\/config\/oauth\/app\//);
         await expect(page.getByRole('heading', { name: 'E2E OAuth Edited App' })).toBeVisible();
 
-        await page.locator('#delete-btn').click();
-        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
-        await page.locator('#deleteModal button[type="submit"]').click();
-        await page.waitForURL(/\/admin\/config\/oauth(\?|$)/);
+        await deleteViaModal(page, /\/admin\/config\/oauth(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -1285,9 +1273,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
 
         await createApiToken(page, 'e2e delete-me token');
-        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
-        await page.locator('#showToken button', { hasText: 'Done' }).click();
-        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+        await dismissTokenReveal(page);
 
         const deleteBtn = page.locator('.delete-token-btn[data-token-description="e2e delete-me token"]').first();
         await deleteBtn.click();
@@ -1324,11 +1310,7 @@ test.describe('admin shell', () => {
         expect(created.length).toBe(25);
 
         const bearer = await createApiToken(page, 'e2e pagination cleanup token');
-        // settle the opening transition, then wait out the location.assign the
-        // Done button triggers - a page.goto racing it aborts with ERR_ABORTED
-        await expect(page.locator('#showToken')).toHaveCSS('opacity', '1');
-        await page.locator('#showToken button', { hasText: 'Done' }).click();
-        await page.waitForURL(/\/admin\/tokens(\?|$)/);
+        await dismissTokenReveal(page);
         const api = await request.newContext({
             baseURL: BASE_URL,
             extraHTTPHeaders: { Authorization: `Bearer ${bearer}` }
@@ -1438,8 +1420,7 @@ test.describe('admin shell', () => {
         await page.goto(url);
 
         await page.locator('#request-export').click();
-        await expect(page.locator('#exportModal.open')).toHaveCount(1);
-        await expect(page.locator('#exportModal')).toHaveCSS('opacity', '1');
+        await expectModalOpen(page, 'exportModal');
         // the date range is required (the start handler toasts and bails without it)
         await page.fill('#export-start-date', '2020-01-01');
         await page.fill('#export-end-date', '2030-12-31');
