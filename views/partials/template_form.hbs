@@ -4,8 +4,7 @@
 <input type="hidden" id="contentHtml" name="contentHtml" value="">
 <input type="hidden" id="contentText" name="contentText" value="">
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body space-y-4">
+{{#> ui/card bodyClass="space-y-4"}}
 
         {{> ui/form-field id="inputName" name="name" label="Name" value=values.name error=errors.name required=true hint="Name for this template."}}
 
@@ -24,53 +23,60 @@
         {{/ui/form-field}}
 
         <div>
-            <nav class="tabs tabs-bordered" aria-label="Template content" role="tablist" data-tabs>
-                <button type="button" class="tab active-tab:tab-active active" id="html-tab" data-tab="#html" role="tab" aria-controls="html"
-                    aria-selected="true">HTML</button>
-                <button type="button" class="tab active-tab:tab-active" id="text-tab" data-tab="#text" role="tab" aria-controls="text"
-                    aria-selected="false">Plain text</button>
-            </nav>
+            {{#> ui/tabs label="Template content"}}
+            {{> ui/tab target="html" label="HTML" active=true}}
+            {{> ui/tab target="text" label="Plain text"}}
+            {{/ui/tabs}}
             <div class="mt-4">
                 <div id="html" role="tabpanel" aria-labelledby="html-tab">
 
-                    <div id="editor-html" class="code-editor"></div>
-                    <div class="editor-embed-block">
-                        <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                            HTML content
-                        </div>
-
-                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                            <a href="#" class="toggle-fullscreen" data-target="editor-html">Toggle fullscreen</a>
-                        </div>
-
-                        <div class="editor-embed-content editor-embed-content-right">
-                            <a href="https://emailengine.app/email-templates#handlebars" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Variables syntax
-                                help</a>
-                        </div>
-
+                    {{#> ui/code-editor id="editor-html" title="HTML content"}}
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="https://emailengine.app/email-templates#handlebars" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Variables syntax
+                            help</a>
                     </div>
+
+                    
+                    {{/ui/code-editor}}
 
                 </div>
                 <div id="text" class="hidden" role="tabpanel" aria-labelledby="text-tab">
 
-                    <div id="editor-text" class="code-editor"></div>
-                    <div class="editor-embed-block">
-                        <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                            Text content
-                        </div>
-                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                            <a href="#" class="toggle-fullscreen" data-target="editor-text">Toggle fullscreen</a>
-                        </div>
-
-                        <div class="editor-embed-content editor-embed-content-right">
-                            <a href="https://emailengine.app/email-templates#handlebars" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Variables syntax
-                                help</a>
-                        </div>
+                    {{#> ui/code-editor id="editor-text" title="Text content"}}
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="https://emailengine.app/email-templates#handlebars" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Variables syntax
+                            help</a>
                     </div>
+                    
+                    {{/ui/code-editor}}
 
                 </div>
             </div>
         </div>
 
-    </div>
-</div>
+    
+{{/ui/card}}
+
+{{!-- Shared by templates/new and templates/edit: both render this exact form
+      (ids included), so the ACE editor bootstrap lives here instead of per page. --}}
+<script src="/static/js/ace/ace.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const editors = new Map();
+
+        const editorHtml = uiAceEditor("editor-html", "handlebars", JSON.parse(document.getElementById('contentHtmlJson').value || '""'));
+        editors.set("editor-html", editorHtml);
+
+        const editorText = uiAceEditor("editor-text", "handlebars", JSON.parse(document.getElementById('contentTextJson').value || '""'));
+        editors.set("editor-text", editorText);
+
+        document.getElementById('edit-form').addEventListener('submit', () => {
+            document.getElementById('contentHtml').value = editorHtml.getValue();
+            document.getElementById('contentText').value = editorText.getValue();
+        });
+
+        uiEditorFullscreen(editors);
+    });
+</script>

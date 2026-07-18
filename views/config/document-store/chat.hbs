@@ -51,14 +51,11 @@
                 <div class="space-y-1">
                     {{> ui/setting-ref name="documentStoreGenerateEmbeddings" class="whitespace-nowrap"}}
 
-                    <div class="text-base-content/60 code-link whitespace-nowrap">[<a
-                            href="/admin/swagger#/Chat/postV1ChatAccount" target="_blank" rel="noopener noreferrer"
-                            class="link link-animated">Chat&nbsp;with&nbsp;emails</a>]</div>
+                    {{> ui/setting-ref name="Chat with emails" href="/admin/swagger#/Chat/postV1ChatAccount"
+                    nofloat=true class="whitespace-nowrap"}}
 
-                    <div class="text-base-content/60 code-link whitespace-nowrap">[<a
-                            href="/admin/swagger#/Account/putV1AccountAccountFlush" target="_blank"
-                            rel="noopener noreferrer" class="link link-animated">Request&nbsp;account&nbsp;flush</a>]
-                    </div>
+                    {{> ui/setting-ref name="Request account flush" href="/admin/swagger#/Account/putV1AccountAccountFlush"
+                    nofloat=true class="whitespace-nowrap"}}
 
                     <div>
                         {{#if values.documentStoreGenerateEmbeddings}}
@@ -128,10 +125,7 @@
 <form id="chatPayloadForm" method="post" action=".">
     <div class="modal-body space-y-4">
         <div>
-            <div class="text-base-content/60 float-right code-link">[API Reference: <a
-                    href="/admin/swagger#/Chat/postV1ChatAccount" target="_blank" rel="noopener noreferrer"
-                    class="link link-animated">/v1/chat/{account}</a>]
-            </div>
+            {{> ui/setting-ref prefix="API Reference: " name="/v1/chat/{account}" href="/admin/swagger#/Chat/postV1ChatAccount"}}
             {{#> ui/form-field id="inputAccount" label="Account ID"}}
             <input type="text" class="input" name="account" id="inputAccount" aria-describedby="inputAccountHelp"
                 value="" required>
@@ -181,33 +175,10 @@
     document.addEventListener('DOMContentLoaded', () => {
 
         const sendQuestionPayload = async () => {
-            const payload = {
-                crumb: document.getElementById('crumb').value,
+            const data = await uiPostJson('/admin/config/document-store/chat/test', {
                 account: document.getElementById('inputAccount').value,
                 question: document.getElementById('question').value
-            }
-
-            const res = await fetch('/admin/config/document-store/chat/test', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(payload)
             });
-
-            if (!res.ok) {
-                let data;
-                try {
-                    data = await res.json()
-                } catch (err) {
-                    // ignore
-                }
-
-                console.log(data)
-                console.log(res)
-
-                throw new Error(`HTTP request failed with the ${res.status} status code.`);
-            }
-
-            const data = await res.json();
 
             if (data.error) {
                 throw new Error(data.error);
@@ -217,20 +188,6 @@
         }
 
         let sendQuestionBtn = document.getElementById('send-question-btn')
-
-        let iconElm = document.getElementById('send-question-btn-icon');
-        let toggleSpinner = (enabled) => {
-
-            if (enabled) {
-                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
-                iconElm.classList.add('icon-[tabler--message]');
-                sendQuestionBtn.disabled = false;
-            } else {
-                iconElm.classList.remove('icon-[tabler--message]');
-                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
-                sendQuestionBtn.disabled = true;
-            }
-        }
 
 
         let chatErrorElm = document.getElementById('chat-error')
@@ -295,10 +252,8 @@
             clearMessages();
 
             sending = true;
-            toggleSpinner(false);
+            uiButtonBusy(sendQuestionBtn, true);
             sendQuestionPayload().then(info => {
-                toggleSpinner(true);
-                sending = false;
                 if (info.error) {
                     return showError(info.error);
                 }
@@ -306,9 +261,10 @@
                 showChatResponse(info);
 
             }).catch(err => {
-                toggleSpinner(true);
-                sending = false;
                 showError(err.message);
+            }).finally(() => {
+                sending = false;
+                uiButtonBusy(sendQuestionBtn, false);
             });
         }
 

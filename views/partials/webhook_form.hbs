@@ -1,8 +1,7 @@
 <input type="hidden" id="fn-content-element" name="contentFnJson" value="{{values.contentFnJson}}">
 <input type="hidden" id="map-content-element" name="contentMapJson" value="{{values.contentMapJson}}">
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body space-y-4">
+{{#> ui/card bodyClass="space-y-4"}}
 
         {{> ui/form-field id="inputName" name="name" label="Name" value=values.name error=errors.name required=true hint="Name for this routing."}}
 
@@ -38,25 +37,19 @@
                     payload. Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
                         class="link link-animated">script variables</a>.</small>
             </div>
-            <div id="editor-fn" class="code-editor"></div>
-            <div class="editor-embed-block">
-                <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                    Filter function
-                </div>
-                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                    <a href="#" class="toggle-fullscreen" data-target="editor-fn">Toggle fullscreen</a>
-                </div>
-                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                    <a href="#" id="test-payload-btn">Set test payload</a>
-                </div>
-                <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                    Evaluation result:
-                    <span id="filter-res" class="text-info">no match</span>
-                </div>
-                <div class="editor-embed-content editor-embed-content-right">
-                    {{> editor_scope_info}}
-                </div>
+            {{#> ui/code-editor id="editor-fn" title="Filter function"}}
+            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                <a href="#" id="test-payload-btn">Set test payload</a>
             </div>
+            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                Evaluation result:
+                <span id="filter-res" class="text-info">no match</span>
+            </div>
+            <div class="editor-embed-content editor-embed-content-right">
+                {{> editor_scope_info}}
+            </div>
+            
+            {{/ui/code-editor}}
 
         </div>
 
@@ -71,35 +64,23 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-12">
                 <div class="sm:col-span-7">
-                    <div id="editor-map" class="code-editor"></div>
-                    <div class="editor-embed-block">
-                        <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                            Mapping function
-                        </div>
-                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                            <a href="#" class="toggle-fullscreen" data-target="editor-map">Toggle fullscreen</a>
-                        </div>
-                        <div class="editor-embed-content editor-embed-content-right">
-                            {{> editor_scope_info}}
-                        </div>
+                    {{#> ui/code-editor id="editor-map" title="Mapping function"}}
+                    <div class="editor-embed-content editor-embed-content-right">
+                        {{> editor_scope_info}}
                     </div>
+                    
+                    {{/ui/code-editor}}
                 </div>
                 <div class="sm:col-span-5">
-                    <div id="editor-map-preview" class="code-editor"></div>
-                    <div class="editor-embed-block">
-                        <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                            Mapping preview
-                        </div>
-                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                            <a href="#" class="toggle-fullscreen" data-target="editor-map-preview">Toggle fullscreen</a>
-                        </div>
-                        <div class="editor-embed-content editor-embed-content-right">
-                            <a href="#" id="test-send-btn">Send webhook preview</a>
-                        </div>
+                    {{#> ui/code-editor id="editor-map-preview" title="Mapping preview"}}
+                    <div class="editor-embed-content editor-embed-content-right">
+                        <a href="#" id="test-send-btn">Send webhook preview</a>
                     </div>
+                    
+                    {{/ui/code-editor}}
                 </div>
             </div>
         </div>
 
-    </div>
-</div>
+    
+{{/ui/card}}

@@ -12,15 +12,7 @@
     <title>{{#if pageTitleFull}}{{pageTitleFull}}{{else}}{{pageBrandName}}{{#if pageTitle}} &ndash;
         {{pageTitle}}{{/if}}{{/if}}</title>
 
-    <link rel="apple-touch-icon" href="/static/favicon/apple-touch-icon.png" sizes="180x180" />
-    <link rel="icon" href="/static/favicon/favicon-32x32.png" sizes="32x32" type="image/png" />
-    <link rel="icon" href="/static/favicon/favicon-16x16.png" sizes="16x16" type="image/png" />
-    <link rel="manifest" href="/static/favicon/manifest.json" />
-    <link rel="icon" href="/favicon.ico" />
-
-    {{> theme_init}}
-
-    <link href="/static/fonts/pt-sans-font.css" rel="stylesheet">
+    {{> head_assets}}
 
     <link rel="stylesheet" href="/static/css/highlight.min.css">
 
@@ -112,16 +104,13 @@
                 <div class="ms-auto flex items-center gap-1">
 
                     {{#if licenseInfo.suspended}}
-                    <div class="tooltip [--placement:left] inline-flex me-2">
-                        <div class="tooltip-toggle text-error flex cursor-default items-center gap-1">
-                            <span class="icon-[tabler--heartbeat] size-5"></span>
-                            <span class="text-sm">Engine is <strong>stopped</strong></span>
-                        </div>
-                        <span class="tooltip-content tooltip-shown:opacity-100 tooltip-shown:visible" role="tooltip">
-                            <span class="tooltip-body">EmailEngine is currently not running and does not process any
-                                email accounts</span>
-                        </span>
-                    </div>
+                    {{#> ui/tooltip text="EmailEngine is currently not running and does not process any email accounts"
+                    placement="left" class="me-2"}}
+                    <span class="text-error flex items-center gap-1">
+                        <span class="icon-[tabler--heartbeat] size-5"></span>
+                        <span class="text-sm">Engine is <strong>stopped</strong></span>
+                    </span>
+                    {{/ui/tooltip}}
                     {{/if}}
 
                     {{#if systemAlerts}}
@@ -301,19 +290,7 @@
 
             let handleActivation = async () => {
 
-                const res = await fetch('/admin/config/license/trial', {
-                    method: 'post',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({
-                        crumb: document.getElementById('crumb').value
-                    })
-                });
-
-                if (!res.ok) {
-                    throw new Error('Request failed with status ' + res.status);
-                }
-
-                let data = await res.json();
+                let data = await uiPostJson('/admin/config/license/trial');
 
                 if (!data || !data.success) {
                     console.log(data)

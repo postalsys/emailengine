@@ -38,22 +38,18 @@
                 {{#each gateways}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0"
-                            aria-label="Open gateway"></a>
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway) label="Open gateway"}}
                         {{gateway}}
                     </td>
                     <td class="relative">
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a><strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}<strong>{{name}}</strong>
                     </td>
                     <td class="relative">
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a>{{deliveries}}
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}{{deliveries}}
                     </td>
 
                     <td class="relative">
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a>
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}
                         {{#if timeStr}}
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                         {{else}}
@@ -62,8 +58,7 @@
                     </td>
 
                     <td class="relative w-32">
-                        <a href="/admin/gateways/gateway/{{gateway}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a>
+                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}
                         {{!-- live state badge with an error tooltip; wrapping link
                               lifts the badge above the row overlay --}}
                         <a href="/admin/gateways/gateway/{{gateway}}" class="relative z-[1] inline-flex">
@@ -77,22 +72,17 @@
         </table>
     </div>
 
-    {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-4">
-        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
-    </div>
-    {{/if}}
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 
 {{else}}
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
         {{#if firstPage}}
         No gateways have been configured yet. <a href="/admin/gateways/new" class="link link-animated">Add your first
             gateway</a>.
         {{else}}
         No gateways found.
         {{/if}}
-    </div>
-</div>
+    
+{{/ui/card}}
 {{/if}}

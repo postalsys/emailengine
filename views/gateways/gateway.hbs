@@ -2,21 +2,16 @@
 
 {{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" current=gateway.gateway class="mt-6 mb-6"}}
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
 
         <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Gateway actions">
 
             {{#> ui/tooltip text="Modify gateway settings"}}
-            <a class="btn btn-soft btn-sm" href="/admin/gateways/edit/{{gateway.gateway}}">
-                <span class="icon-[tabler--edit] size-4"></span> Edit gateway
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/gateways/edit/" gateway.gateway) icon="icon-[tabler--edit]" label="Edit gateway"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Remove this gateway"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
-                <span class="icon-[tabler--trash] size-4"></span> Delete gateway
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete gateway"}}
             {{/ui/tooltip}}
 
         </div>
@@ -78,18 +73,10 @@
             </dd>
         </dl>
 
-    </div>
-</div>
+    
+{{/ui/card}}
 
-{{#> ui/modal id="deleteModal" title="Delete Gateway"}}
-<div class="modal-body">
-    <p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/gateways/delete/{{gateway.gateway}}" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}" />
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
-        {{> ui/btn label="Delete Gateway" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete Gateway" action=(concat "/admin/gateways/delete/" gateway.gateway)
+submitLabel="Delete Gateway"}}
+<p>Delete gateway "{{gateway.name}}"? This action cannot be undone.</p>
+{{/ui/confirm-modal}}

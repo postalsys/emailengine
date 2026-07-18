@@ -71,16 +71,11 @@
         </table>
     </div>
 
-    {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-4">
-        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
-    </div>
-    {{/if}}
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 
 {{else}}
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
         {{#if account}}
         <div>
             Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
@@ -99,8 +94,8 @@
             No tokens found.
             {{/if}}
         </p>
-    </div>
-</div>
+    
+{{/ui/card}}
 {{/if}}
 
 
@@ -135,20 +130,10 @@ $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v
 </div>
 {{/ui/details}}
 
-{{#> ui/modal id="deleteToken" title="Delete access token"}}
-<div class="modal-body">
-    Are you sure you want to delete <strong id="delete-token-description"></strong>? This action
-    cannot be undone.
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/tokens/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" id="token-delete" name="token" value="">
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteToken"}}
-        {{> ui/btn label="Delete token" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteToken" title="Delete access token" action="/admin/tokens/delete"
+fieldName="token" fieldId="token-delete" submitLabel="Delete token"}}
+Are you sure you want to delete <strong id="delete-token-description"></strong>? This action cannot be undone.
+{{/ui/confirm-modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

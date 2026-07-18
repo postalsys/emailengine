@@ -21,18 +21,7 @@
 
             uiModal.open('#tlsModal');
 
-            fetch('/admin/config/smtp/certificate', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
-                })
-            }).then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json()
-            }).then(data => {
+            uiPostJson('/admin/config/smtp/certificate').then(data => {
                 if (!data || !data.success) {
                     throw new Error(data && data.error || 'Request failed')
                 }

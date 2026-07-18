@@ -1,10 +1,7 @@
 {{> templates_header}}
 
-{{#if account}}
-{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=accountTemplatesLink midLabel=account.name current="New" class="mt-6 mb-6"}}
-{{else}}
-{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current="New" class="mt-6 mb-6"}}
-{{/if}}
+{{!-- the account level renders only for account-scoped templates (ui/breadcrumb skips empty levels) --}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=(when account accountTemplatesLink) midLabel=account.name current="New" class="mt-6 mb-6"}}
 
 
 <form method="post" action="/admin/templates/new" id="edit-form">
@@ -17,34 +14,3 @@
         {{> ui/btn label="Create template" type="submit" icon="icon-[tabler--plus]"}}
     </div>
 </form>
-
-<script src="/static/js/ace/ace.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        const editors = new Map();
-
-        const editorHtml = ace.edit("editor-html");
-        editorHtml.setTheme("ace/theme/xcode");
-        editorHtml.session.setMode("ace/mode/handlebars");
-        editorHtml.session.setValue(JSON.parse(document.getElementById('contentHtmlJson').value || '""'));
-
-        editors.set("editor-html", editorHtml);
-
-        const editorText = ace.edit("editor-text");
-        editorText.setTheme("ace/theme/xcode");
-        editorText.session.setMode("ace/mode/handlebars");
-        editorText.session.setValue(JSON.parse(document.getElementById('contentTextJson').value || '""'));
-
-        editors.set("editor-text", editorText);
-
-        document.getElementById('edit-form').addEventListener('submit', () => {
-            document.getElementById('contentHtml').value = editorHtml.getValue();
-            document.getElementById('contentText').value = editorText.getValue();
-        });
-
-        uiEditorFullscreen(editors);
-    });
-
-</script>

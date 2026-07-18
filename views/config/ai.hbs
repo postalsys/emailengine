@@ -97,22 +97,16 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6" id="filtering_settings">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Email Filtering</h6>
-        </div>
-        <div class="card-body">
+    {{#> ui/card title="Email Filtering" id="filtering_settings"}}
 
             {{#if errorLog}}
-            <nav class="tabs tabs-bordered mb-4" aria-label="Email filtering" role="tablist" id="myTab" data-tabs>
-                <button type="button" class="tab active-tab:tab-active active" id="fn-tab" data-tab="#fn" role="tab" aria-controls="fn"
-                    aria-selected="true">Filter Rules</button>
-                <button type="button" class="tab active-tab:tab-active" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
-                    aria-selected="false">Error Log</button>
-            </nav>
+            {{#> ui/tabs label="Email filtering" class="mb-4"}}
+            {{> ui/tab target="fn" label="Filter Rules" active=true}}
+            {{> ui/tab target="errors" label="Error Log"}}
+            {{/ui/tabs}}
             {{/if}}
 
-            <div id="myTabContent">
+            <div>
                 <div id="fn" role="tabpanel" aria-labelledby="fn-tab">
 
                     <div>
@@ -130,28 +124,22 @@
                                 process the email, <code>false</code> to skip. The email data is available as
                                 <code>payload</code>.</small>
                         </div>
-                        <div id="editor-fn" class="code-editor"></div>
-                        <div class="editor-embed-block">
-                            <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                                Email filter
-                            </div>
-                            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                                <a href="#" class="toggle-fullscreen" data-target="editor-fn">Toggle fullscreen</a>
-                            </div>
-                            <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                                <a href="#" id="test-payload-btn">Test with sample data</a>
-                            </div>
-
-                            <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
-                                Result:
-                                <span id="filter-res" class="text-info">no match</span>
-                            </div>
-
-                            <div class="editor-embed-content editor-embed-content-right">
-                                {{> editor_scope_info}}
-                            </div>
-
+                        {{#> ui/code-editor id="editor-fn" title="Email filter"}}
+                        <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+                            <a href="#" id="test-payload-btn">Test with sample data</a>
                         </div>
+
+                        <div class="editor-embed-content editor-embed-content-right editor-embed-content-left">
+                            Result:
+                            <span id="filter-res" class="text-info" data-match-text="match - will process" data-nomatch-text="no match - will skip">no match</span>
+                        </div>
+
+                        <div class="editor-embed-content editor-embed-content-right">
+                            {{> editor_scope_info}}
+                        </div>
+
+                        
+                        {{/ui/code-editor}}
 
                     </div>
 
@@ -184,11 +172,11 @@
                                     </td>
 
                                     <td>
-                                        <textarea class="error-log-field" readonly>{{error}}</textarea>
+                                        <textarea class="error-log-field autoselect" readonly>{{error}}</textarea>
                                     </td>
 
                                     <td>
-                                        <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                                        <textarea class="error-log-field autoselect" readonly>{{json payload}}</textarea>
                                     </td>
 
                                 </tr>
@@ -204,8 +192,8 @@
 
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div id="prompt_settings" class="card bg-base-100 shadow-md mb-6">
         <div class="card-header flex items-center justify-between">
@@ -223,19 +211,12 @@
                 <input type="hidden" class="{{#if errors.openAiPromptElement}}is-invalid{{/if}}"
                     id="openAiPromptElement" name="openAiPrompt" value="{{values.openAiPrompt}}">
 
-                <div id="editor-prompt" class="code-editor"></div>
-
-                <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                        System prompt
-                    </div>
-                    <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
-                        <a href="#" class="toggle-fullscreen" data-target="editor-prompt">Toggle fullscreen</a>
-                    </div>
-                    <div class="editor-embed-content editor-embed-content-right">
-                        <a href="#" id="prompt-try-btn">Test with email file</a>
-                    </div>
+                {{#> ui/code-editor id="editor-prompt" title="System prompt"}}
+                <div class="editor-embed-content editor-embed-content-right">
+                    <a href="#" id="prompt-try-btn">Test with email file</a>
                 </div>
+                
+                {{/ui/code-editor}}
 
                 {{#if errors.openAiPrompt}}
                 <span class="helper-text text-error">{{errors.openAiPrompt}}</span>
@@ -320,127 +301,34 @@
 </div>
 {{/ui/modal}}
 
-{{#> ui/modal id="setPayloadModal" title="Test Filter" titleId="setPayloadModalLabel" dialogClass="max-w-3xl"}}
-<div class="modal-body">
+{{> filter_editor_js formId="settings-form" modalTitle="Test Filter" payloadLabel="Sample email data (JSON)"
+payloadHelp="Edit the test data to see if your filter matches." selectPlaceholder="Load example..."
+defaultTestPayload='{"account":"test","path":"INBOX","subject":"test email"}'}}
 
-    <div class="mb-2">Sample email data (JSON)</div>
-    <div id="editor-json" class="code-editor h-40"></div>
-    <span class="helper-text" id="inputToHelp">Edit the test data to see if your filter matches.</span>
-
-</div>
-<div class="modal-footer justify-between">
-    <div>
-        <select class="select" id="select-predefined-payload">
-            <option>Load example...</option>
-        </select>
-    </div>
-    {{> ui/btn label="Close" variant="neutral" style="soft" overlay="#setPayloadModal"}}
-</div>
-{{/ui/modal}}
-
-<script src="/static/js/ace/ace.js"></script>
-<script src="/static/js/ace/ext-language_tools.js"></script>
-
-<input type="hidden" id="examplePayloadsJson" value="{{examplePayloadsJson}}">
-<input type="hidden" id="scriptEnvJson" value="{{scriptEnvJson}}">
 <input type="hidden" id="defaultPromptJson" value="{{defaultPromptJson}}">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        let scriptEnv = JSON.parse(document.getElementById('scriptEnvJson').value);
-        const evaluationWorker = new Worker('/static/js/evaluation-worker.js');
-
-        const editors = new Map();
-
-        const editorFn = ace.edit("editor-fn", {
-            enableBasicAutocompletion: true,
-            enableSnippets: true,
-            enableLiveAutocompletion: true,
-            useWorker: false
-        });
-        editors.set("editor-fn", editorFn);
-
-        editorFn.setTheme("ace/theme/xcode");
-        editorFn.session.setMode("ace/mode/javascript");
-        editorFn.setValue(JSON.parse(document.getElementById('fn-content-element').value));
-
-        editorFn.session.on('changeMode', function (e, session) {
-            if ("ace/mode/javascript" === session.getMode().$id) {
-                if (!!session.$worker) {
-                    session.$worker.send("setOptions", [JSHINT_OPTS]);
-                }
-            }
-        });
-
-        const editorPrompt = ace.edit("editor-prompt", {
+        const editorPrompt = uiAceEditor("editor-prompt", "markdown", document.getElementById('openAiPromptElement').value, {
             enableBasicAutocompletion: true,
             enableSnippets: false,
             enableLiveAutocompletion: false,
             useWorker: true
         });
-        editors.set("editor-prompt", editorPrompt);
 
-        editorPrompt.setTheme("ace/theme/xcode");
-        editorPrompt.session.setMode("ace/mode/markdown");
-        editorPrompt.session.setValue(document.getElementById('openAiPromptElement').value);
+        uiEditorFullscreen(new Map([['editor-prompt', editorPrompt]]));
 
+        // the shared filter_editor_js submit handler syncs the filter function;
+        // this one owns the AI prompt
         document.getElementById('settings-form').addEventListener('submit', () => {
-            document.getElementById('fn-content-element').value = JSON.stringify(editorFn.getValue());
             document.getElementById('openAiPromptElement').value = editorPrompt.getValue();
         });
-
-        uiEditorFullscreen(editors);
 
         document.getElementById('prompt-try-btn').addEventListener('click', e => {
             e.preventDefault()
             uiModal.open('#testPromptModal');
         })
-
-        const testPayload = { content: { account: 'test', path: 'INBOX', subject: 'test email' }, error: null };
-
-        const updateFilterResult = (err, result, opts) => {
-            let resultElm = document.getElementById('filter-res');
-            if (err) {
-                // also drop the initial text-info placeholder: the layered
-                // text-error utility sorts before text-info in the compiled
-                // CSS, so a leftover text-info would win the cascade
-                resultElm.classList.remove('text-info', 'text-warning', 'text-success');
-                resultElm.classList.add('text-error');
-                resultElm.textContent = `error: ${err.message}`
-                return;
-            }
-
-            if (result) {
-                resultElm.classList.remove('text-info', 'text-warning', 'text-error');
-                resultElm.classList.add('text-success');
-                resultElm.textContent = `match - will process`
-            } else {
-                resultElm.classList.remove('text-info', 'text-success', 'text-error');
-                resultElm.classList.add('text-warning');
-
-                let truthyWarning = opts && opts.truthyWarning;
-                resultElm.textContent = `no match - will skip${truthyWarning ? ` (must return true, got ${typeof truthyWarning})` : ''} `
-            }
-        }
-
-        const updateExampleResult = () => {
-            const filterVal = editorFn.getValue();
-
-            let filtered;
-            let mapping;
-
-            try {
-                if (testPayload.error) {
-                    throw testPayload.error;
-                }
-                evaluationWorker.postMessage({
-                    type: 'filter', code: filterVal, payload: testPayload.content, env: scriptEnv
-                });
-            } catch (err) {
-                updateFilterResult(err);
-            }
-        }
 
         let testPromptBtn = document.getElementById('prompt-test-btn');
 
@@ -484,43 +372,17 @@
                 openAiTopP: document.getElementById('settingsOpenAiTopP').value
             };
 
-            let res;
+            let data;
             try {
-                res = await fetch('/admin/config/ai/test-prompt', {
-                    method: 'post',
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({
-                        crumb: document.getElementById('crumb').value,
-                        ...payload
-                    })
-                });
+                data = await uiPostJson('/admin/config/ai/test-prompt', payload);
             } catch (err) {
                 return showError(err.message)
             }
-
-            if (!res.ok) {
-                return showError(`HTTP error! status: ${res.status}`)
-            }
-
-            const data = await res.json();
             if (!data.success) {
                 return showError(data.error || 'Request failed')
             }
 
             showResponse(JSON.stringify(data.response, false, 2));
-        }
-
-        let iconElm = document.getElementById('prompt-test-btn-icon');
-        let toggleSpinner = (enabled) => {
-            if (enabled) {
-                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
-                iconElm.classList.add('icon-[tabler--flask]');
-                testPromptBtn.disabled = false;
-            } else {
-                iconElm.classList.remove('icon-[tabler--flask]');
-                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
-                testPromptBtn.disabled = true;
-            }
         }
 
         document.getElementById('prompt-reset-btn').addEventListener('click', e => {
@@ -530,109 +392,15 @@
         });
 
         let runFileTest = () => {
-            toggleSpinner(false)
+            uiButtonBusy(testPromptBtn, true);
             testPromptFn().catch(() => { }).finally(() => {
-                toggleSpinner(true)
+                uiButtonBusy(testPromptBtn, false);
             });
         }
 
         testPromptBtn.addEventListener('click', e => {
             e.preventDefault();
             runFileTest();
-        });
-
-
-        evaluationWorker.onmessage = e => {
-            const { type, result, error } = e && e.data || {};
-
-            switch (type) {
-                case 'filter':
-                    if (!error) {
-                        updateFilterResult(null, result === true, { truthyWarning: result && result !== true ? result : false });
-                    } else {
-                        updateFilterResult(new Error(error));
-                    }
-                    break;
-
-                case 'log': {
-                    console.log(`[Worker Log] ${result.level.toUpperCase()}`, result.msg);
-                    break;
-                }
-            }
-        }
-
-        let validateTimer = false;
-        editorFn.session.on('change', function () {
-            clearTimeout(validateTimer);
-            validateTimer = setTimeout(updateExampleResult, 100);
-        });
-        editorFn.clearSelection(1);
-
-        updateExampleResult();
-
-
-        const testPayloadBtn = document.getElementById('test-payload-btn');
-        testPayloadBtn.addEventListener('click', e => {
-            e.preventDefault();
-            uiModal.open('#setPayloadModal');
-        });
-
-        const editorJson = ace.edit("editor-json");
-        editorJson.setTheme("ace/theme/xcode");
-        editorJson.session.setMode("ace/mode/json");
-        editorJson.session.setValue(JSON.stringify(testPayload.content, false, 4));
-
-        editorJson.session.on('change', function (delta) {
-            // delta.start, delta.end, delta.lines, delta.action
-            let curval = editorJson.getValue().trim();
-            try {
-                if (curval) {
-                    let parsed = JSON.parse(curval);
-                    if (parsed && typeof parsed !== 'object') {
-                        throw new Error('Not an object')
-                    }
-                    testPayload.content = parsed;
-                }
-                testPayload.error = null;
-                clearTimeout(validateTimer);
-                validateTimer = setTimeout(updateExampleResult, 10);
-            } catch (err) {
-                console.error(err);
-                testPayload.error = err;
-                clearTimeout(validateTimer);
-                validateTimer = setTimeout(updateExampleResult, 10);
-            }
-        });
-
-        let examplePayloads = JSON.parse(document.getElementById('examplePayloadsJson').value || '[]');
-        const payloadSelectElm = document.getElementById('select-predefined-payload');
-
-        try {
-            if (examplePayloads && Array.isArray(examplePayloads)) {
-
-                examplePayloads.forEach(example => {
-                    let optionElm = document.createElement('option');
-                    optionElm.textContent = example.name;
-                    optionElm.dataset.exampleKey = example.key
-                    payloadSelectElm.appendChild(optionElm)
-                });
-            }
-        } catch (err) {
-            console.error(err)
-        }
-
-        payloadSelectElm.addEventListener('change', e => {
-            if (!payloadSelectElm.selectedIndex) {
-                return
-            }
-            let key = payloadSelectElm.options[payloadSelectElm.selectedIndex].dataset.exampleKey;
-            if (key) {
-                let example = examplePayloads.find(data => data.key === key);
-                if (example) {
-                    editorJson.session.setValue(JSON.stringify(example.content, false, 4))
-                }
-            }
-            payloadSelectElm.selectedIndex = 0;
         });
 
         function redrawModelList(models) {
@@ -653,39 +421,20 @@
         }
 
         let reloadBtn = document.getElementById('reload-models-btn');
-        let reloadBtnIcon = document.querySelector('#reload-models-btn .reload-icon');
 
         const requestReload = async () => {
-            const res = await fetch('/admin/config/ai/reload-models', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
-                    openAiAPIKey: document.getElementById('openAiAPIKey').value,
-                })
+            const data = await uiPostJson('/admin/config/ai/reload-models', {
+                openAiAPIUrl: document.getElementById('openAiAPIUrl').value,
+                openAiAPIKey: document.getElementById('openAiAPIKey').value
             });
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
 
             return data;
         }
 
-        let loading = false;
         let reloadModels = () => {
-            if (loading) {
-                return
-            }
-            loading = true
-            reloadBtnIcon.classList.add('animate-spin');
-            reloadBtn.disabled = true;
+            uiButtonBusy(reloadBtn, true);
 
             requestReload().then(data => {
-                loading = false
-                reloadBtnIcon.classList.remove('animate-spin');
-                reloadBtn.disabled = false;
                 if (data.error) {
                     showToast('Failed to send payload', 'alert-triangle')
                     return;
@@ -696,15 +445,10 @@
                 }
 
             }).catch(err => {
-                loading = false
-                reloadBtnIcon.classList.remove('animate-spin');
-                reloadBtn.disabled = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
-            });
+            }).finally(() => uiButtonBusy(reloadBtn, false));
         }
 
         reloadBtn.addEventListener('click', reloadModels);
     });
-
-
 </script>

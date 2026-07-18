@@ -125,21 +125,12 @@
             const documentStoreUsername = document.getElementById('documentStoreUsername').value;
             const documentStorePassword = document.getElementById('documentStorePassword').value;
 
-            const res = await fetch('/admin/config/document-store/test', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    documentStoreUrl,
-                    documentStoreAuthEnabled,
-                    documentStoreUsername,
-                    documentStorePassword
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson('/admin/config/document-store/test', {
+                documentStoreUrl,
+                documentStoreAuthEnabled,
+                documentStoreUsername,
+                documentStorePassword
+            });
 
             return data;
         }

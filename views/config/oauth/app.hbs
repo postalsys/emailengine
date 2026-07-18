@@ -6,27 +6,20 @@
 {{>scope_info}}
 {{/ui/stat-card}}
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
 
         <div class="mb-6 flex flex-wrap items-center gap-2" role="toolbar" aria-label="OAuth2 app actions">
 
             {{#> ui/tooltip text="Edit OAuth2 application"}}
-            <a class="btn btn-soft btn-sm" href="/admin/config/oauth/edit/{{app.id}}">
-                <span class="icon-[tabler--user-edit] size-4"></span> Edit app
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/config/oauth/edit/" app.id) icon="icon-[tabler--user-edit]" label="Edit app"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Run live checks against the provider"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#verifySetupModal" id="verify-btn">
-                <span class="icon-[tabler--clipboard-check] size-4"></span> Verify setup
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#verifySetupModal" id="verify-btn" icon="icon-[tabler--clipboard-check]" label="Verify setup"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Delete this application"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
-                <span class="icon-[tabler--trash] size-4"></span> Delete app
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete app"}}
             {{/ui/tooltip}}
 
             {{#if canAddServiceAccount}}
@@ -42,35 +35,20 @@
 
         </div>
 
-        {{#if app.description}}
-        <h6 class="card-title">{{app.name}}
-            {{#if app.enabled}}
-
-            {{#if app.meta.authFlag}}
-            {{> ui/badge label="Failing" variant="error"}}
-            {{else}}
-            {{> ui/badge label="Enabled" variant="success"}}
-            {{/if}}
-            {{else}}
-            {{> ui/badge label="Disabled" variant="warning"}}
-            {{/if}}
-        </h6>
-
-        <h6 class="mb-6 text-base-content/60">{{app.description}}</h6>
+        {{#*inline "appStatusBadge"}}
+        {{#if app.enabled}}
+        {{#if app.meta.authFlag}}
+        {{> ui/badge label="Failing" variant="error"}}
         {{else}}
-        <h6 class="card-title mb-6">{{app.name}}
-
-            {{#if app.enabled}}
-
-            {{#if app.meta.authFlag}}
-            {{> ui/badge label="Failing" variant="error"}}
-            {{else}}
-            {{> ui/badge label="Enabled" variant="success"}}
-            {{/if}}
-            {{else}}
-            {{> ui/badge label="Disabled" variant="warning"}}
-            {{/if}}
-        </h6>
+        {{> ui/badge label="Enabled" variant="success"}}
+        {{/if}}
+        {{else}}
+        {{> ui/badge label="Disabled" variant="warning"}}
+        {{/if}}
+        {{/inline}}
+        <h6 class="card-title{{#unless app.description}} mb-6{{/unless}}">{{app.name}} {{> appStatusBadge}}</h6>
+        {{#if app.description}}
+        <h6 class="mb-6 text-base-content/60">{{app.description}}</h6>
         {{/if}}
 
         {{#if app.meta.authFlag}}
@@ -230,15 +208,11 @@
 
         </dl>
 
-    </div>
-</div>
+    
+{{/ui/card}}
 
 {{#if isServiceAccount}}
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-header">
-        <h6 class="card-title text-primary">API usage example</h6>
-    </div>
-    <div class="card-body">
+{{#> ui/card title="API usage example"}}
         <p class="text-base-content/60 text-sm mb-2">This application uses service credentials, so accounts can not be
             added through the hosted authentication form. Use the API to register email accounts instead.</p>
         <pre
@@ -258,16 +232,12 @@
         <span class="helper-text mt-2">Replace <span class="text-error">highlighted values</span> with your own. The
             access token is an API token generated in <a href="/admin/tokens" class="link link-animated">access
                 tokens</a>.</span>
-    </div>
-</div>
+    
+{{/ui/card}}
 {{/if}}
 
 {{#if baseScopesPubsub}}
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-header">
-        <h6 class="card-title text-primary">Cloud Pub/Sub configuration</h6>
-    </div>
-    <div class="card-body">
+{{#> ui/card title="Cloud Pub/Sub configuration"}}
 
         {{#if app.meta.pubSubFlag}}
         <div class="alert alert-soft alert-error mb-6 block">{{app.meta.pubSubFlag.message}}
@@ -318,24 +288,15 @@
                 {{/if}}
             </dd>
         </dl>
-    </div>
-</div>
+    
+{{/ui/card}}
 {{/if}}
 
 
-{{#> ui/modal id="deleteModal" title="Delete OAuth2 App" titleId="deleteModalLabel"}}
-<div class="modal-body">
-    <p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action cannot be undone.</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/config/oauth/delete" class="pending-form flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}" />
-        <input type="hidden" name="app" value="{{app.id}}" />
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
-        {{> ui/btn label="Delete app" variant="error" type="submit" icon="icon-[tabler--trash]"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete OAuth2 App" action="/admin/config/oauth/delete"
+fieldName="app" fieldValue=app.id submitLabel="Delete app" submitIcon="icon-[tabler--trash]" formClass="pending-form"}}
+<p>Are you sure you want to delete the OAuth2 application "{{app.name}}"? This action cannot be undone.</p>
+{{/ui/confirm-modal}}
 
 {{#> ui/modal id="verifySetupModal" title="Verify OAuth2 setup" titleId="verifySetupModalLabel" dialogClass="max-w-3xl"}}
 <div class="modal-body">

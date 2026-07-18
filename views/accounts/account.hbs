@@ -2,21 +2,16 @@
 
 {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=account.account class="mt-6 mb-6"}}
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
 
         <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Account actions">
 
             {{#> ui/tooltip text="Edit account configuration"}}
-            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/edit">
-                <span class="icon-[tabler--user-edit] size-4"></span> Edit account
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/accounts/" account.account "/edit") icon="icon-[tabler--user-edit]" label="Edit account"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Delete this account and all associated data"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
-                <span class="icon-[tabler--trash] size-4"></span> Delete account
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete account"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Close and re-open IMAP connection"}}
@@ -41,31 +36,26 @@
             {{/if}}
 
             {{#> ui/tooltip text="Email templates for this account"}}
-            <a class="btn btn-soft btn-sm" href="/admin/templates/?account={{account.account}}">
-                <span class="icon-[tabler--template] size-4"></span> Email templates
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/templates/?account=" account.account) icon="icon-[tabler--template]" label="Email templates"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Access tokens for this account"}}
-            <a class="btn btn-soft btn-sm" href="/admin/tokens/?account={{account.account}}">
-                <span class="icon-[tabler--key] size-4"></span> Access tokens
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/tokens/?account=" account.account) icon="icon-[tabler--key]" label="Access tokens"}}
             {{/ui/tooltip}}
 
             {{#if canSend}}
             {{#unless gateways}}
             {{#> ui/tooltip text="Test SMTP delivery settings for this account"}}
-            <button type="button" class="btn btn-soft btn-sm test-send-trigger" data-account="{{account.account}}"
-                id="test-smtp-btn">
-                <span class="icon-[tabler--mail-opened] size-4" id="test-smtp-icon"></span> Delivery test
+            <button type="button" class="btn btn-soft btn-sm test-send-trigger" data-account="{{account.account}}">
+                <span class="icon-[tabler--mail-opened] size-4"></span> Delivery test
             </button>
             {{/ui/tooltip}}
             {{else}}
             {{#> ui/tooltip text="Test SMTP delivery settings for this account"}}
             <div class="dropdown relative inline-flex">
                 <button type="button" class="dropdown-toggle btn btn-soft btn-sm" aria-haspopup="menu"
-                    aria-expanded="false" id="test-smtp-btn">
-                    <span class="icon-[tabler--mail-opened] size-4" id="test-smtp-icon"></span> Delivery test
+                    aria-expanded="false">
+                    <span class="icon-[tabler--mail-opened] size-4"></span> Delivery test
                     <span class="icon-[tabler--chevron-down] size-3.5"></span>
                 </button>
                 <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52" role="menu"
@@ -95,9 +85,7 @@
 
             {{#if canReadMail}}
             {{#> ui/tooltip text="Browse messages"}}
-            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/browse">
-                <span class="icon-[tabler--folder-open] size-4"></span> Browse messages
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/accounts/" account.account "/browse") icon="icon-[tabler--folder-open]" label="Browse messages"}}
             {{/ui/tooltip}}
             {{/if}}
 
@@ -190,8 +178,8 @@
             </dd>
         </dl>
 
-    </div>
-</div>
+    
+{{/ui/card}}
 
 {{#if account._app}}
 
@@ -771,19 +759,10 @@
 </div>
 {{/ui/modal}}
 
-{{#> ui/modal id="deleteModal" title="Delete Account"}}
-<div class="modal-body">
-    <p>Are you sure you want to delete the account for {{account.name}}? This action cannot be
-        undone.</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/accounts/{{account.account}}/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}" />
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
-        {{> ui/btn label="Delete account" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete Account" action=(concat "/admin/accounts/" account.account "/delete")
+submitLabel="Delete account"}}
+<p>Are you sure you want to delete the account for {{account.name}}? This action cannot be undone.</p>
+{{/ui/confirm-modal}}
 
 {{#> ui/modal id="testSendModal" title="Email delivery test" dialogClass="max-w-3xl"}}
 <div class="modal-body">
@@ -917,18 +896,9 @@
         const reconnectAccount = async () => {
             const account = document.getElementById('account-id').value.trim();
 
-            const res = await fetch(`/admin/accounts/${account}/reconnect`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    reconnect: true
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson(`/admin/accounts/${account}/reconnect`, {
+                reconnect: true
+            });
 
             return data;
         }
@@ -961,18 +931,9 @@
         const syncAccount = async () => {
             const account = document.getElementById('account-id').value.trim();
 
-            const res = await fetch(`/admin/accounts/${account}/sync`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    sync: true
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson(`/admin/accounts/${account}/sync`, {
+                sync: true
+            });
 
             return data;
         }
@@ -1008,18 +969,9 @@
             let current = document.getElementById('logs-info').dataset.logs;
             let toggled = current === 'enabled' ? false : true;
 
-            const res = await fetch(`/admin/accounts/${account}/logs`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    enabled: toggled
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson(`/admin/accounts/${account}/logs`, {
+                enabled: toggled
+            });
             if (data.enabled) {
                 // mark as enabled
                 document.getElementById('logs-info-label').textContent = 'Enabled';
@@ -1056,17 +1008,7 @@
         const flushLogs = async () => {
             const account = document.getElementById('account-id').value.trim();
 
-            const res = await fetch(`/admin/accounts/${account}/logs-flush`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson(`/admin/accounts/${account}/logs-flush`);
             return data;
         }
 
@@ -1291,16 +1233,14 @@
         }
 
         const exportModalElm = document.getElementById('exportModal');
-        if (exportModalElm) {
-            exportModalElm.addEventListener('open.overlay', () => {
-                checkExistingExport().catch(err => console.error(err));
-            });
+        exportModalElm.addEventListener('open.overlay', () => {
+            checkExistingExport().catch(err => console.error(err));
+        });
 
-            exportModalElm.addEventListener('close.overlay', () => {
-                stopPolling();
-                updateExportIndicator();
-            });
-        }
+        exportModalElm.addEventListener('close.overlay', () => {
+            stopPolling();
+            updateExportIndicator();
+        });
 
         document.getElementById('export-start-btn').addEventListener('click', async function () {
             const account = document.getElementById('account-id').value.trim();
@@ -1316,18 +1256,11 @@
             document.getElementById('export-start-icon').classList.add('animate-spin');
 
             try {
-                const res = await fetch(`/admin/accounts/${account}/export`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        crumb: document.getElementById('crumb').value,
-                        startDate: startDate + 'T00:00:00Z',
-                        endDate: endDate + 'T23:59:59Z',
-                        includeAttachments
-                    })
+                const data = await uiPostJson(`/admin/accounts/${account}/export`, {
+                    startDate: startDate + 'T00:00:00Z',
+                    endDate: endDate + 'T23:59:59Z',
+                    includeAttachments
                 });
-
-                const data = await res.json();
                 if (data.exportId) {
                     currentExportId = data.exportId;
                     showStatusView();
@@ -1415,19 +1348,10 @@
 
         const createSmtpTestAccount = async (account, gateway) => {
             aborted = false;
-            const res = await fetch(`/admin/smtp/create-test`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    account,
-                    gateway
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson(`/admin/smtp/create-test`, {
+                account,
+                gateway
+            });
 
             return data;
         }
@@ -1438,20 +1362,9 @@
                 return false
             }
 
-            const res = await fetch(`/admin/smtp/check-test`, {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    user
-                })
+            const data = await uiPostJson(`/admin/smtp/check-test`, {
+                user
             });
-
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-
-            const data = await res.json();
 
             return data;
         }
@@ -1520,11 +1433,8 @@
             });
         }
 
-        const testSendModalElm = document.getElementById('testSendModal');
-        if (testSendModalElm) {
-            testSendModalElm.addEventListener('close.overlay', () => {
-                aborted = true;
-            });
-        }
+        document.getElementById('testSendModal').addEventListener('close.overlay', () => {
+            aborted = true;
+        });
     })
 </script>

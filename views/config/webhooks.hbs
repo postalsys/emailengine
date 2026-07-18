@@ -1,10 +1,7 @@
-{{#if values.webhooksEnabled}}
-{{> ui/page-header title="Webhooks" icon="icon-[tabler--webhook]" badgeLabel="enabled" badgeVariant="success"
+{{> ui/page-header title="Webhooks" icon="icon-[tabler--webhook]"
+badgeLabel=(when values.webhooksEnabled "enabled" "disabled")
+badgeVariant=(when values.webhooksEnabled "success" "warning")
 class="mb-1"}}
-{{else}}
-{{> ui/page-header title="Webhooks" icon="icon-[tabler--webhook]" badgeLabel="disabled" badgeVariant="warning"
-class="mb-1"}}
-{{/if}}
 
 <p class="mb-6">Get real-time notifications when email events occur. Webhooks send HTTP POST requests to your server
     whenever events happen in connected accounts.</p>
@@ -244,19 +241,10 @@ class="mb-1"}}
             const webhooks = document.getElementById('settingsWebhooks').value.trim();
             const customHeaders = document.getElementById('customHeaders').value.trim();
 
-            const res = await fetch('/admin/config/webhooks/test', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    webhooks,
-                    customHeaders
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson('/admin/config/webhooks/test', {
+                webhooks,
+                customHeaders
+            });
 
             return data;
         }

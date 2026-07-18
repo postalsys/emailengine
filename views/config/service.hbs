@@ -6,11 +6,7 @@
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">System Configuration</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="System Configuration" bodyClass="space-y-4"}}
 
             <div>
                 {{> ui/setting-ref name="serviceUrl"}}
@@ -41,14 +37,10 @@
                 </select>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div class="card bg-base-100 shadow-md mb-6" id="language">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Language</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Language" id="language" bodyClass="space-y-4"}}
             <div>
                 {{> ui/setting-ref name="locale"}}
                 {{#> ui/form-field id="settingsServiceLocale" label="Default Language" error=errors.locale}}
@@ -97,14 +89,10 @@
                     EmailEngine
                 </a>
             </p>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div class="card bg-base-100 shadow-md mb-6" id="security">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Security</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Security" id="security" bodyClass="space-y-4"}}
 
             <div>
                 {{> ui/setting-ref name="serviceSecret"}}
@@ -176,8 +164,8 @@
                     recommended.</span>
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div id="queue_settings" class="card bg-base-100 shadow-md mb-6">
         <div class="card-header flex items-center justify-between">
@@ -202,11 +190,7 @@
         </div>
     </div>
 
-    <div id="submission_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Email Delivery</h6>
-        </div>
-        <div class="card-body">
+    {{#> ui/card title="Email Delivery" id="submission_settings"}}
             <div>
                 {{> ui/setting-ref name="deliveryAttempts"}}
                 {{#> ui/form-field id="settingsDeliveryAttempts" label="Retry Attempts" error=errors.deliveryAttempts}}
@@ -217,14 +201,10 @@
                 {{/ui/form-field}}
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div id="imap_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">IMAP Processing</h6>
-        </div>
-        <div class="card-body">
+    {{#> ui/card title="IMAP Processing" id="imap_settings"}}
             <div>
                 {{> ui/setting-ref name="imapIndexer"}}
                 {{#> ui/form-field id="settingsImapIndexer" label="Indexing Method" error=errors.imapIndexer}}
@@ -241,14 +221,10 @@
                 {{/ui/form-field}}
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div id="export_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Export Settings</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Export Settings" id="export_settings" bodyClass="space-y-4"}}
             <p>Configure batch sizes for bulk message export operations.</p>
 
             <div>
@@ -275,8 +251,8 @@
                     Microsoft Graph API.</span>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div id="templates_settings" class="card bg-base-100 shadow-md mb-6">
         <div class="card-header flex items-center justify-between">
@@ -306,15 +282,7 @@
                 <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
                     name="templateHeader" value="{{values.templateHeader}}">
 
-                <div id="editor-html" class="code-editor"></div>
-                <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                        Header template
-                    </div>
-                    <div class="editor-embed-content editor-embed-content-right">
-                        <a href="#" class="toggle-fullscreen" data-target="editor-html">Toggle fullscreen</a>
-                    </div>
-                </div>
+                {{> ui/code-editor id="editor-html" title="Header template"}}
 
                 {{#if errors.templateHeader}}
                 <span class="helper-text text-error">{{errors.templateHeader}}</span>
@@ -332,15 +300,7 @@
                 <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
                     id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
 
-                <div id="editor-html-head" class="code-editor"></div>
-                <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                        Head content
-                    </div>
-                    <div class="editor-embed-content editor-embed-content-right">
-                        <a href="#" class="toggle-fullscreen" data-target="editor-html-head">Toggle fullscreen</a>
-                    </div>
-                </div>
+                {{> ui/code-editor id="editor-html-head" title="Head content"}}
 
                 {{#if errors.templateHtmlHead}}
                 <span class="helper-text text-error">{{errors.templateHtmlHead}}</span>
@@ -352,11 +312,7 @@
         </div>
     </div>
 
-    <div id="script_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Webhook Scripts</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Webhook Scripts" id="script_settings" bodyClass="space-y-4"}}
 
 
             <p>Global settings for filter and map functions in <a href="/admin/webhooks"
@@ -371,15 +327,7 @@
                 <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
                     name="scriptEnv" value="{{values.scriptEnv}}">
 
-                <div id="editor-env" class="code-editor"></div>
-                <div class="editor-embed-block">
-                    <div class="editor-embed-content editor-embed-title editor-embed-content-left">
-                        Global variables
-                    </div>
-                    <div class="editor-embed-content editor-embed-content-right">
-                        <a href="#" class="toggle-fullscreen" data-target="editor-env">Toggle fullscreen</a>
-                    </div>
-                </div>
+                {{> ui/code-editor id="editor-env" title="Global variables"}}
 
                 {{#if errors.scriptEnv}}
                 <span class="helper-text text-error">{{errors.scriptEnv}}</span>
@@ -391,8 +339,8 @@
                     returns <code>"secret123"</code>.</span>
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div id="labs"></div>
 
@@ -425,11 +373,7 @@
         </div>
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6" id="gmail">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Gmail Features</h6>
-        </div>
-        <div class="card-body">
+    {{#> ui/card title="Gmail Features" id="gmail"}}
 
             <div>
                 {{> ui/setting-ref name="resolveGmailCategories"}}
@@ -441,8 +385,8 @@
                     Gmail API accounts get this automatically.</span>
             </div>
 
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div class="mb-6">
         {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
@@ -466,47 +410,21 @@
 
         const sendCleanPayload = async () => {
 
-            const res = await fetch('/admin/config/service/clean', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
-                })
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson('/admin/config/service/clean');
 
             return data;
         }
 
-        let sendingCleanRequest = false;
-        document.getElementById('clean-queues-btn').addEventListener('click', e => {
+        const cleanQueuesBtn = document.getElementById('clean-queues-btn');
+        cleanQueuesBtn.addEventListener('click', e => {
             e.preventDefault();
-            if (sendingCleanRequest) {
-                e.stopPropagation();
-                return
-            }
-            sendingCleanRequest = true;
-
-            let cleanIconElm = document.querySelector('#clean-queues-btn .clean-icon');
-            cleanIconElm.classList.remove('icon-[tabler--trash]');
-            cleanIconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
+            uiButtonBusy(cleanQueuesBtn, true);
 
             sendCleanPayload().then(data => {
-                sendingCleanRequest = false;
-                cleanIconElm.classList.add('icon-[tabler--trash]');
-                cleanIconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
-
                 showToast(data.error ? data.error : (data.success ? 'Cleanup request sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
             }).catch(err => {
-                sendingCleanRequest = false;
-                cleanIconElm.classList.add('icon-[tabler--trash]');
-                cleanIconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
-
                 showToast('Request failed\n' + err.message, 'alert-triangle');
-            })
+            }).finally(() => uiButtonBusy(cleanQueuesBtn, false));
         });
 
 
@@ -515,7 +433,7 @@
 
         const editors = new Map();
 
-        const editorHtml = ace.edit("editor-html", {
+        const editorHtml = uiAceEditor("editor-html", "handlebars", document.getElementById('templateHeaderElement').value, {
             enableBasicAutocompletion: true,
             enableSnippets: false,
             enableLiveAutocompletion: false,
@@ -523,11 +441,7 @@
         });
         editors.set("editor-html", editorHtml);
 
-        editorHtml.setTheme("ace/theme/xcode");
-        editorHtml.session.setMode("ace/mode/handlebars");
-        editorHtml.session.setValue(document.getElementById('templateHeaderElement').value);
-
-        const editorEnv = ace.edit("editor-env", {
+        const editorEnv = uiAceEditor("editor-env", "json", document.getElementById('scriptEnvElement').value, {
             enableBasicAutocompletion: true,
             enableSnippets: false,
             enableLiveAutocompletion: false,
@@ -535,21 +449,13 @@
         });
         editors.set("editor-env", editorEnv);
 
-        editorEnv.setTheme("ace/theme/xcode");
-        editorEnv.session.setMode("ace/mode/json");
-        editorEnv.session.setValue(document.getElementById('scriptEnvElement').value);
-
-        const editorHtmlHead = ace.edit("editor-html-head", {
+        const editorHtmlHead = uiAceEditor("editor-html-head", "handlebars", document.getElementById('templateHtmlHeadElement').value, {
             enableBasicAutocompletion: true,
             enableSnippets: false,
             enableLiveAutocompletion: false,
             useWorker: true
         });
         editors.set("editor-html-head", editorHtmlHead);
-
-        editorHtmlHead.setTheme("ace/theme/xcode");
-        editorHtmlHead.session.setMode("ace/mode/handlebars");
-        editorHtmlHead.session.setValue(document.getElementById('templateHtmlHeadElement').value);
 
 
         document.getElementById('preview-header-btn').addEventListener('click', e => {

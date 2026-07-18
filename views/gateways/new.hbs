@@ -9,18 +9,8 @@
 
         <div class="card-header flex items-center justify-between">
             <h6 class="card-title text-primary">New Gateway</h6>
-            <div class="dropdown relative inline-flex">
-                <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" id="gateway-actions-menu"
-                    aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
-                    <span class="icon-[tabler--dots-vertical] size-4"></span>
-                </button>
-                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44 end-0" role="menu"
-                    aria-orientation="vertical" aria-labelledby="gateway-actions-menu">
-                    <li class="dropdown-header">Actions:</li>
-                    <li><a class="dropdown-item" href="#" id="test-verify-btn">
-                            <span class="icon-[tabler--send] size-4"></span> <span>Test Connection</span></a></li>
-                </ul>
-            </div>
+            {{> ui/btn label="Test Connection" variant="neutral" style="soft" size="sm" id="test-verify-btn"
+            icon="icon-[tabler--send]"}}
         </div>
 
         <div class="card-body space-y-4">

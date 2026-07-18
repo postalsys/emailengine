@@ -24,9 +24,7 @@
 
         <div class="flex flex-wrap gap-2" role="toolbar" aria-label="Mapping actions">
             {{#> ui/tooltip text="Create mapping for a new field"}}
-            <a class="btn btn-soft btn-sm" href="/admin/config/document-store/mappings/new">
-                <span class="icon-[tabler--plus] size-4"></span> Add new mapping
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href="/admin/config/document-store/mappings/new" icon="icon-[tabler--plus]" label="Add new mapping"}}
             {{/ui/tooltip}}
         </div>
     </div>

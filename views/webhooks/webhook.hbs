@@ -2,21 +2,16 @@
 
 {{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routing" current=webhook.name class="mt-6 mb-6"}}
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
 
         <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Webhook route actions">
 
             {{#> ui/tooltip text="Edit Webhook Route contents"}}
-            <a class="btn btn-soft btn-sm" href="/admin/webhooks/webhook/{{webhook.id}}/edit">
-                <span class="icon-[tabler--file-pencil] size-4"></span> Edit route
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/webhooks/webhook/" webhook.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit route"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Delete this Webhook Route"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
-                <span class="icon-[tabler--trash] size-4"></span> Delete route
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete route"}}
             {{/ui/tooltip}}
         </div>
 
@@ -79,19 +74,13 @@
         </dl>
 
         <div class="mt-6">
-            <nav class="tabs tabs-bordered" aria-label="Webhook route functions" role="tablist" data-tabs>
-                <button type="button" class="tab active-tab:tab-active active" id="fn-tab" data-tab="#fn" role="tab"
-                    aria-controls="fn" aria-selected="true">Filter function</button>
-
-                <button type="button" class="tab active-tab:tab-active" id="map-tab" data-tab="#map" role="tab" aria-controls="map"
-                    aria-selected="false">Map function</button>
-
-                {{#if errorLog}}
-                <button type="button" class="tab active-tab:tab-active" id="errors-tab" data-tab="#errors" role="tab" aria-controls="errors"
-                    aria-selected="false">Error log</button>
-                {{/if}}
-
-            </nav>
+            {{#> ui/tabs label="Webhook route functions"}}
+            {{> ui/tab target="fn" label="Filter function" active=true}}
+            {{> ui/tab target="map" label="Map function"}}
+            {{#if errorLog}}
+            {{> ui/tab target="errors" label="Error log"}}
+            {{/if}}
+            {{/ui/tabs}}
             <div class="mt-4">
                 <div id="fn" role="tabpanel" aria-labelledby="fn-tab">
 
@@ -137,11 +126,11 @@
                                     </td>
 
                                     <td>
-                                        <textarea class="error-log-field" readonly>{{error}}</textarea>
+                                        <textarea class="error-log-field autoselect" readonly>{{error}}</textarea>
                                     </td>
 
                                     <td>
-                                        <textarea class="error-log-field" readonly>{{json payload}}</textarea>
+                                        <textarea class="error-log-field autoselect" readonly>{{json payload}}</textarea>
                                     </td>
 
                                 </tr>
@@ -157,82 +146,23 @@
 
             </div>
         </div>
-    </div>
-</div>
+    
+{{/ui/card}}
 
-{{#> ui/modal id="deleteModal" title="Delete Webhook Route"}}
-<div class="modal-body">
-    <p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be
-        undone.</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/webhooks/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}" />
-        <input type="hidden" name="webhook" value="{{webhook.id}}" />
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
-        {{> ui/btn label="Delete route" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete Webhook Route" action="/admin/webhooks/delete"
+fieldName="webhook" fieldValue=webhook.id submitLabel="Delete route"}}
+<p>Are you sure you want to delete <strong>{{webhook.name}}</strong>? This action cannot be undone.</p>
+{{/ui/confirm-modal}}
 
 <script src="/static/js/ace/ace.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        const JSHINT_OPTS = {
-            esversion: 11,
-            module: true,
-            globals: ['payload', 'URL', 'logger', 'fetch']
-        }
-
-        const editorFn = ace.edit("fn-preview", {
-            showGutter: true,
-            useWorker: false
-        });
-
-        const editorMap = ace.edit("map-preview", {
-            showGutter: true,
-            useWorker: false
-        });
-
-        editorFn.setReadOnly(true);
-        editorFn.setShowPrintMargin(false);
-        editorFn.setHighlightActiveLine(false);
-
-        editorMap.setReadOnly(true);
-        editorMap.setShowPrintMargin(false);
-        editorMap.setHighlightActiveLine(false);
-
-        editorFn.setTheme("ace/theme/kuroir");
-        editorFn.session.setMode("ace/mode/javascript");
-
-        editorMap.setTheme("ace/theme/kuroir");
-        editorMap.session.setMode("ace/mode/javascript");
-
-        editorFn.session.on('changeMode', function (e, session) {
-            if ("ace/mode/javascript" === session.getMode().$id) {
-                if (!!session.$worker) {
-                    session.$worker.send("setOptions", [JSHINT_OPTS]);
-                }
-            }
-        });
-
-        editorMap.session.on('changeMode', function (e, session) {
-            if ("ace/mode/javascript" === session.getMode().$id) {
-                if (!!session.$worker) {
-                    session.$worker.send("setOptions", [JSHINT_OPTS]);
-                }
-            }
-        });
-
-        let errorFields = document.querySelectorAll('.error-log-field');
-        for (let i = 0; i < errorFields.length; i++) {
-            let errorField = errorFields[i];
-            errorField.addEventListener('focus', e => {
-                errorField.select();
-            });
-        }
+        {{!-- useWorker is false, so the JSHint options machinery the editable
+              variants carry would be inert here - plain read-only previews --}}
+        uiAcePreview("fn-preview", "javascript", { useWorker: false });
+        uiAcePreview("map-preview", "javascript", { useWorker: false });
 
     })
 </script>

@@ -103,13 +103,10 @@
 
     <p class="mb-4">Connect to the proxy using the account ID as your IMAP username.</p>
 
-    <nav class="tabs tabs-bordered" aria-label="Client configuration examples" role="tablist" id="code-examples"
-        data-tabs>
-        <button type="button" class="tab active-tab:tab-active active" id="example-node-imap-tab" data-tab="#example-node-imap" role="tab"
-            aria-controls="example-node-imap" aria-selected="true">Node.js (node-imap)</button>
-        <button type="button" class="tab active-tab:tab-active" id="example-php-imap-tab" data-tab="#example-php-imap" role="tab"
-            aria-controls="example-php-imap" aria-selected="false">PHP (php-imap)</button>
-    </nav>
+    {{#> ui/tabs label="Client configuration examples" id="code-examples"}}
+    {{> ui/tab target="example-node-imap" label="Node.js (node-imap)" active=true}}
+    {{> ui/tab target="example-php-imap" label="PHP (php-imap)"}}
+    {{/ui/tabs}}
 
     <div class="mt-4 mb-4">
         <div id="example-node-imap" role="tabpanel" aria-labelledby="example-node-imap-tab">
@@ -148,19 +145,34 @@
         uiDatalist('available-addresses-list', availableAddresses, document.querySelectorAll('.basicAutoComplete'));
 
 
-        let codeTemplates = {
-            nodeImap: {
-                lang: 'javascript',
-                codeAuth: `const imap = new Imap({
+        let renderExamples = uiCodeExamples({
+            header: `// Replace "USERNAME" with the account id of a registered user you want to connect as.
+// Replace "HOST" with the hostname or IP address of the IMAP proxy interface.
+// NB! Make sure that firewall settings allow accessing the IMAP proxy interface.
+
+`,
+            portField: 'imapProxyServerPort',
+            passwordField: 'imapProxyServerPassword',
+            passwordFallback: '<imap-proxy-access-token>',
+            replacements: {
+                USE_TLS: () => document.getElementById('imapProxyServerTLSEnabled').checked ? 'true' : 'false',
+                PHPIMAP_TLS: () => document.getElementById('imapProxyServerTLSEnabled').checked ? "'ssl'" : 'false'
+            },
+            templates: {
+                nodeImap: {
+                    lang: 'javascript',
+                    target: 'example-node-imap-code',
+                    codeAuth: `const imap = new Imap({
   user: 'USERNAME',
   password: 'PASSWORD',
   host: 'HOST',
   port: PORT,
   tls: USE_TLS
 });`},
-            phpImap: {
-                lang: 'php',
-                codeAuth: `// https://www.php-imap.com/configuration/account/account
+                phpImap: {
+                    lang: 'php',
+                    target: 'example-php-imap-code',
+                    codeAuth: `// https://www.php-imap.com/configuration/account/account
 $client = $cm->make([
     'host' => 'HOST',
     'port' => PORT,
@@ -169,42 +181,8 @@ $client = $cm->make([
     'password' => 'PASSWORD',
     'protocol' => 'imap'
 ]);`}
-        };
-
-        let renderTemplate = (templateKey) => {
-            let template = codeTemplates[templateKey]['codeAuth'];
-
-            template = `// Replace "USERNAME" with the account id of a registered user you want to connect as.
-// Replace "HOST" with the hostname or IP address of the IMAP proxy interface.
-// NB! Make sure that firewall settings allow accessing the IMAP proxy interface.
-
-` + template;
-
-            let password = !document.getElementById('imapProxyServerPassword').value ? '<imap-proxy-access-token>' : (document.getElementById('exampleShowPassword').checked ? document.getElementById('imapProxyServerPassword').value : '******')
-
-            let code = template.
-                replace(/HOST/g, window.location.hostname).
-                replace(/PORT/g, Number(document.getElementById('imapProxyServerPort').value) || 0).
-                replace(/USE_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? 'true' : 'false').
-                replace(/PHPIMAP_TLS/g, document.getElementById('imapProxyServerTLSEnabled').checked ? "'ssl'" : 'false').
-                replace(/USERNAME/g, 'account_id').
-                replace(/PASSWORD/g, password);
-
-            return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
-        }
-
-        let renderExamples = () => {
-            document.getElementById('example-node-imap-code').innerHTML = renderTemplate('nodeImap');
-            document.getElementById('example-php-imap-code').innerHTML = renderTemplate('phpImap');
-
-            document.getElementById('exampleShowPassword').disabled = !document.getElementById('imapProxyServerPassword').value;
-        }
-
-        for (let elm of document.querySelectorAll('.trigger-example-render')) {
-            elm.addEventListener('change', renderExamples);
-        }
-
-        renderExamples();
+            }
+        });
 
         {{> tls_security_js field="imapProxyServerTLSEnabled"}}
     });

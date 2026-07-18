@@ -6,11 +6,7 @@
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Proxy Settings</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Proxy Settings" bodyClass="space-y-4"}}
             <p>Route all email server connections through a proxy. Supports HTTP CONNECT, SOCKS4, and SOCKS5.</p>
 
             <div>
@@ -41,14 +37,10 @@
                     <code>{{defaultSmtpEhloName}}</code>. For dedicated IPs, use the IP's reverse DNS hostname.</span>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">HTTP Proxy Settings</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="HTTP Proxy Settings" bodyClass="space-y-4"}}
             <p>Route all outbound HTTP/HTTPS requests through a proxy. This applies to webhook delivery, OAuth token
                 exchange, and API calls to Gmail/Outlook. This is separate from the IMAP/SMTP proxy above.</p>
 
@@ -69,8 +61,8 @@
                     <code>socks4://</code>, or <code>socks5://</code> followed by host:port</span>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div class="card bg-base-100 shadow-md mb-6">
         <div class="card-header">
@@ -181,19 +173,10 @@
 </form>
 
 
-{{#> ui/modal id="deleteAddress" title="Remove IP Address" titleId="deleteAddressLabel"}}
-<div class="modal-body">
-    Remove this IP from the list? It will be re-added if found during the next scan.
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/config/network/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="localAddress" value="">
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteAddress"}}
-        {{> ui/btn label="Remove" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteAddress" title="Remove IP Address" titleId="deleteAddressLabel"
+action="/admin/config/network/delete" fieldName="localAddress" submitLabel="Remove"}}
+Remove this IP from the list? It will be re-added if found during the next scan.
+{{/ui/confirm-modal}}
 
 
 <script id="address-list-template" type="text/x-handlebars-template">
@@ -203,20 +186,9 @@
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         let reloadBtn = document.getElementById('reload-btn');
-        let reloadBtnIcon = document.querySelector('#reload-btn .reload-icon');
 
         const requestReload = async () => {
-            const res = await fetch('/admin/config/network/reload', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value
-                })
-            });
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
+            const data = await uiPostJson('/admin/config/network/reload');
 
             return data;
         }
@@ -267,19 +239,10 @@
             uiAutoInit();
         }
 
-        let loading = false;
         let reloadAddresses = () => {
-            if (loading) {
-                return
-            }
-            loading = true
-            reloadBtnIcon.classList.add('animate-spin');
-            reloadBtn.disabled = true;
+            uiButtonBusy(reloadBtn, true);
 
             requestReload().then(data => {
-                loading = false
-                reloadBtnIcon.classList.remove('animate-spin');
-                reloadBtn.disabled = false;
                 if (data.error) {
                     showToast('Failed to send payload', 'alert-triangle')
                     return;
@@ -290,11 +253,8 @@
                 }
 
             }).catch(err => {
-                loading = false
-                reloadBtnIcon.classList.remove('animate-spin');
-                reloadBtn.disabled = false;
                 showToast('Request failed\n' + err.message, 'alert-triangle');
-            });
+            }).finally(() => uiButtonBusy(reloadBtn, false));
         }
 
         reloadBtn.addEventListener('click', reloadAddresses);

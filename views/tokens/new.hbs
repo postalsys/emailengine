@@ -1,10 +1,7 @@
 {{> tokens_header}}
 
-{{#if account}}
-{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" midHref=accountTokensLink midLabel=account.name current="New" class="mt-6 mb-6"}}
-{{else}}
-{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" current="New" class="mt-6 mb-6"}}
-{{/if}}
+{{!-- the account level renders only for account-scoped tokens (ui/breadcrumb skips empty levels) --}}
+{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" midHref=(when account accountTokensLink) midLabel=account.name current="New" class="mt-6 mb-6"}}
 
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" value="{{crumb}}" />
@@ -74,7 +71,7 @@
     <div id="showTokenContent" class="hidden">
 
         <div class="mb-2">Access token:</div>
-        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" join=true inputClass="font-mono bg-base-200 border-0"}}
+        {{> ui/copy-field id="showTokenValue" ariaLabel="Access token" join=true inputClass="font-mono bg-base-200 border-0 autoselect"}}
 
     </div>
     <div id="showTokenError" class="hidden alert alert-soft alert-error whitespace-pre-line"></div>
@@ -88,11 +85,6 @@
     document.addEventListener('DOMContentLoaded', () => {
 
         let showTokenValueElm = document.getElementById('showTokenValue');
-
-        showTokenValueElm.addEventListener('click', () => {
-            showTokenValueElm.focus();
-            showTokenValueElm.select();
-        })
 
         document.getElementById('token-form').addEventListener('submit', e => {
             e.preventDefault()
@@ -131,20 +123,10 @@
             document.getElementById('showTokenError').classList.add('hidden');
             uiModal.open('#showToken');
 
-            fetch('/admin/tokens/new', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify({
-                    crumb: document.getElementById('crumb').value,
-                    description,
-                    scopes,
-                    account: document.getElementById('account').value || ''
-                })
-            }).then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json()
+            uiPostJson('/admin/tokens/new', {
+                description,
+                scopes,
+                account: document.getElementById('account').value || ''
             }).then(data => {
 
                 if (!data.success) {

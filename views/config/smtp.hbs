@@ -107,12 +107,10 @@
     <p class="mb-4"><strong>With authentication disabled:</strong> Include the <code>X-EE-Account</code> header
         with the account ID in your messages.</p>
 
-    <nav class="tabs tabs-bordered" aria-label="Integration examples" role="tablist" id="code-examples" data-tabs>
-        <button type="button" class="tab active-tab:tab-active active" id="example-nodemailer-tab" data-tab="#example-nodemailer" role="tab"
-            aria-controls="example-nodemailer" aria-selected="true">Node.js (Nodemailer)</button>
-        <button type="button" class="tab active-tab:tab-active" id="example-phpmailer-tab" data-tab="#example-phpmailer" role="tab"
-            aria-controls="example-phpmailer" aria-selected="false">PHP (PHPMailer)</button>
-    </nav>
+    {{#> ui/tabs label="Integration examples" id="code-examples"}}
+    {{> ui/tab target="example-nodemailer" label="Node.js (Nodemailer)" active=true}}
+    {{> ui/tab target="example-phpmailer" label="PHP (PHPMailer)"}}
+    {{/ui/tabs}}
 
     <div class="mt-4 mb-4">
         <div id="example-nodemailer" role="tabpanel" aria-labelledby="example-nodemailer-tab">
@@ -151,10 +149,25 @@
         uiDatalist('available-addresses-list', availableAddresses, document.querySelectorAll('.basicAutoComplete'));
 
 
-        let codeTemplates = {
-            nodemailer: {
-                lang: 'javascript',
-                codeAuth: `const transporter = nodemailer.createTransport({
+        let renderExamples = uiCodeExamples({
+            header: `// Replace "USERNAME" with the account id of a registered user you want to send mail as
+// Replace "HOST" with the hostname or IP address of the SMTP interface
+// NB! Make sure that firewall settings allow accessing the SMTP interface
+
+`,
+            portField: 'smtpServerPort',
+            passwordField: 'smtpServerPassword',
+            passwordFallback: '<smtp-access-token>',
+            authField: 'smtpServerAuthEnabled',
+            replacements: {
+                NODEMAILER_TLS: () => document.getElementById('smtpServerTLSEnabled').checked ? 'true' : 'false',
+                PHPMAILER_TLS: () => document.getElementById('smtpServerTLSEnabled').checked ? 'tls' : ''
+            },
+            templates: {
+                nodemailer: {
+                    lang: 'javascript',
+                    target: 'example-nodemailer-code',
+                    codeAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
     secure: NODEMAILER_TLS,
@@ -163,7 +176,7 @@
         pass: 'PASSWORD'
     }
 }});`,
-                codeNoAuth: `const transporter = nodemailer.createTransport({
+                    codeNoAuth: `const transporter = nodemailer.createTransport({
     host: 'HOST',
     port: PORT,
     secure: NODEMAILER_TLS,
@@ -176,9 +189,10 @@
     }
 });`},
 
-            phpmailer: {
-                lang: 'php',
-                codeAuth: `$mail = new PHPMailer(true);
+                phpmailer: {
+                    lang: 'php',
+                    target: 'example-phpmailer-code',
+                    codeAuth: `$mail = new PHPMailer(true);
 $mail->isSMTP();
 $mail->Host = 'HOST';
 $mail->SMTPAuth = true;
@@ -186,7 +200,7 @@ $mail->Username = 'USERNAME';
 $mail->Password = 'PASSWORD';
 $mail->SMTPSecure = 'PHPMAILER_TLS';
 $mail->Port = PORT;`,
-                codeNoAuth: `$mail = new PHPMailer(true);
+                    codeNoAuth: `$mail = new PHPMailer(true);
 $mail->isSMTP();
 $mail->Host = 'HOST';
 $mail->SMTPAuth = false;
@@ -196,42 +210,8 @@ $mail->Port = PORT;
 // provide sending account id via this header
 $mail->addCustomHeader('X-EE-Account', 'USERNAME');
 `}
-        };
-
-        let renderTemplate = (templateKey) => {
-            let template = codeTemplates[templateKey][document.getElementById('smtpServerAuthEnabled').checked ? 'codeAuth' : 'codeNoAuth'];
-
-            template = `// Replace "USERNAME" with the account id of a registered user you want to send mail as
-// Replace "HOST" with the hostname or IP address of the SMTP interface
-// NB! Make sure that firewall settings allow accessing the SMTP interface
-
-` + template;
-
-            let password = !document.getElementById('smtpServerPassword').value ? '<smtp-access-token>' : (document.getElementById('exampleShowPassword').checked ? document.getElementById('smtpServerPassword').value : '******')
-
-            let code = template.
-                replace(/HOST/g, window.location.hostname).
-                replace(/PORT/g, Number(document.getElementById('smtpServerPort').value) || 0).
-                replace(/NODEMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'true' : 'false').
-                replace(/PHPMAILER_TLS/g, document.getElementById('smtpServerTLSEnabled').checked ? 'tls' : '').
-                replace(/USERNAME/g, 'account_id').
-                replace(/PASSWORD/g, password);
-
-            return hljs.highlight(code, { language: codeTemplates[templateKey].lang }).value;
-        }
-
-        let renderExamples = () => {
-            document.getElementById('example-nodemailer-code').innerHTML = renderTemplate('nodemailer');
-            document.getElementById('example-phpmailer-code').innerHTML = renderTemplate('phpmailer');
-
-            document.getElementById('exampleShowPassword').disabled = !document.getElementById('smtpServerAuthEnabled').checked || !document.getElementById('smtpServerPassword').value;
-        }
-
-        for (let elm of document.querySelectorAll('.trigger-example-render')) {
-            elm.addEventListener('change', renderExamples);
-        }
-
-        renderExamples();
+            }
+        });
 
         {{> tls_security_js field="smtpServerTLSEnabled"}}
     });

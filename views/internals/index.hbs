@@ -109,34 +109,16 @@
 
 </div>
 
-{{#> ui/modal id="killThread" title="Restart Thread" titleId="killThreadLabel"}}
-<div class="modal-body">
-    Restart this thread? Any ongoing operations will be interrupted.
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/internals/kill" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" id="kill-thread" name="thread" value="">
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#killThread"}}
-        {{> ui/btn label="Restart Thread" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="killThread" title="Restart Thread" action="/admin/internals/kill"
+fieldName="thread" fieldId="kill-thread" submitLabel="Restart Thread"}}
+Restart this thread? Any ongoing operations will be interrupted.
+{{/ui/confirm-modal}}
 
-{{#> ui/modal id="snapshotThread" title="Memory Snapshot" titleId="snapshotThreadLabel"}}
-<div class="modal-body">
-    Generate a memory snapshot for debugging? This may briefly affect thread performance.
-</div>
-<div class="modal-footer">
-    <form method="post" id="snapshot-form" action="/admin/internals/snapshot" target="_blank" rel="noopener noreferrer"
-        class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" id="snapshot-thread" name="thread" value="">
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#snapshotThread"}}
-        {{> ui/btn label="Download Snapshot" variant="info" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="snapshotThread" title="Memory Snapshot" action="/admin/internals/snapshot"
+formId="snapshot-form" formTarget="_blank" fieldName="thread" fieldId="snapshot-thread"
+submitLabel="Download Snapshot" submitVariant="info"}}
+Generate a memory snapshot for debugging? This may briefly affect thread performance.
+{{/ui/confirm-modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

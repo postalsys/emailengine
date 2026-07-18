@@ -1,33 +1,23 @@
 {{> templates_header}}
 
-{{#if account}}
-{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=accountTemplatesLink midLabel=account.name current=template.name class="mt-6 mb-6"}}
-{{else}}
-{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=template.name class="mt-6 mb-6"}}
-{{/if}}
+{{!-- the account level renders only for account-scoped templates (ui/breadcrumb skips empty levels) --}}
+{{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" midHref=(when account accountTemplatesLink) midLabel=account.name current=template.name class="mt-6 mb-6"}}
 
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
 
         <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Template actions">
 
             {{#> ui/tooltip text="Edit template contents"}}
-            <a class="btn btn-soft btn-sm" href="/admin/templates/template/{{template.id}}/edit">
-                <span class="icon-[tabler--file-pencil] size-4"></span> Edit template
-            </a>
+            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/templates/template/" template.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit template"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Delete this template"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#deleteModal" id="delete-btn">
-                <span class="icon-[tabler--trash] size-4"></span> Delete template
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete template"}}
             {{/ui/tooltip}}
 
             {{#> ui/tooltip text="Send test email using this template"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#sendTestModal" id="test-btn">
-                <span class="icon-[tabler--mail-forward] size-4"></span> Send test email
-            </button>
+            {{> ui/btn bare=true style="soft" size="sm" overlay="#sendTestModal" id="test-btn" icon="icon-[tabler--mail-forward]" label="Send test email"}}
             {{/ui/tooltip}}
 
         </div>
@@ -77,12 +67,10 @@
         </dl>
 
         <div class="mt-6">
-            <nav class="tabs tabs-bordered" aria-label="Template content" role="tablist" data-tabs>
-                <button type="button" class="tab active-tab:tab-active active" id="html-tab" data-tab="#html" role="tab" aria-controls="html"
-                    aria-selected="true">HTML</button>
-                <button type="button" class="tab active-tab:tab-active" id="text-tab" data-tab="#text" role="tab" aria-controls="text"
-                    aria-selected="false">Plain text</button>
-            </nav>
+            {{#> ui/tabs label="Template content"}}
+            {{> ui/tab target="html" label="HTML" active=true}}
+            {{> ui/tab target="text" label="Plain text"}}
+            {{/ui/tabs}}
             <div class="mt-4">
                 <div id="html" role="tabpanel" aria-labelledby="html-tab">
 
@@ -96,23 +84,13 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    
+{{/ui/card}}
 
-{{#> ui/modal id="deleteModal" title="Delete Template"}}
-<div class="modal-body">
-    <p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be
-        undone.</p>
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/templates/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}" />
-        <input type="hidden" name="template" value="{{template.id}}" />
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteModal"}}
-        {{> ui/btn label="Delete template" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteModal" title="Delete Template" action="/admin/templates/delete"
+fieldName="template" fieldValue=template.id submitLabel="Delete template"}}
+<p>Are you sure you want to delete <strong>{{template.name}}</strong>? This action cannot be undone.</p>
+{{/ui/confirm-modal}}
 
 {{!-- no #crumb input: the layout already renders the element the script reads --}}
 <input type="hidden" id="template" value="{{template.id}}" />
@@ -167,10 +145,7 @@
             uiModal.open('#alertModal');
         }
 
-        const editorJson = ace.edit("editor-json");
-        editorJson.setTheme("ace/theme/xcode");
-        editorJson.session.setMode("ace/mode/json");
-        editorJson.session.setValue('{\n    "keyName": "key value"\n}');
+        const editorJson = uiAceEditor("editor-json", "json", '{\n    "keyName": "key value"\n}');
 
         let inputAccount = document.getElementById('inputAccount')
         let inputTo = document.getElementById('inputTo')
@@ -238,7 +213,6 @@
         const sendTestPayload = async () => {
 
             const payload = {
-                crumb: document.getElementById('crumb').value,
                 template: document.getElementById('template').value
             }
 
@@ -257,16 +231,7 @@
                 payload.params = templateVars
             }
 
-            const res = await fetch('/admin/templates/test', {
-                method: 'post',
-                headers: { 'content-type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-
-            const data = await res.json();
+            const data = await uiPostJson('/admin/templates/test', payload);
 
             if (data.error) {
                 throw new Error(data.error);
@@ -275,66 +240,22 @@
             return data;
         }
 
-        let iconElm = document.getElementById('send-test-icon');
-        let toggleSpinner = (enabled) => {
-
-            if (enabled) {
-                iconElm.classList.remove('icon-[tabler--loader-2]', 'animate-spin');
-                iconElm.classList.add('icon-[tabler--mail-forward]');
-                sendTestBtn.disabled = false;
-            } else {
-                iconElm.classList.remove('icon-[tabler--mail-forward]');
-                iconElm.classList.add('icon-[tabler--loader-2]', 'animate-spin');
-                sendTestBtn.disabled = true;
-            }
-        }
-
-        let sending = false;
         function sendTestEmail() {
-            if (sending) {
-                return;
-            }
-            sending = true;
-            toggleSpinner(false);
+            uiButtonBusy(sendTestBtn, true);
             sendTestPayload().then(info => {
-                toggleSpinner(true);
-                sending = false;
-
                 uiModal.close('#sendTestModal');
 
                 showAlert('Message sent', `${info.response} as ${info.queueId}`)
             }).catch(err => {
-                toggleSpinner(true);
-                sending = false;
                 showAlert('Error', err.message);
-            })
+            }).finally(() => uiButtonBusy(sendTestBtn, false));
         }
 
         sendTestBtn.addEventListener('click', sendTestEmail);
 
 
-        const editorHtml = ace.edit("html-preview", {
-            showGutter: true
-        });
-
-        const editorText = ace.edit("text-preview", {
-            showGutter: true
-        });
-
-
-        editorHtml.setReadOnly(true);
-        editorHtml.setShowPrintMargin(false);
-        editorHtml.setHighlightActiveLine(false);
-
-        editorText.setReadOnly(true);
-        editorText.setShowPrintMargin(false);
-        editorText.setHighlightActiveLine(false);
-
-        editorHtml.setTheme("ace/theme/kuroir");
-        editorHtml.session.setMode("ace/mode/handlebars");
-
-        editorText.setTheme("ace/theme/kuroir");
-        editorText.session.setMode("ace/mode/handlebars");
+        const editorHtml = uiAcePreview("html-preview", "handlebars");
+        const editorText = uiAcePreview("text-preview", "handlebars");
 
     });
 </script>

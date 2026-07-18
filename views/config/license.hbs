@@ -1,15 +1,7 @@
-{{#if licenseInfo.details.trial}}
-{{> ui/page-header title="License" icon="icon-[tabler--settings]" badgeLabel="trial" badgeVariant="warning"
+{{> ui/page-header title="License" icon="icon-[tabler--settings]"
+badgeLabel=(when licenseInfo.details.trial "trial" (when licenseInfo.active "active" "not activated"))
+badgeVariant=(when licenseInfo.details.trial "warning" (when licenseInfo.active "success" "error"))
 class="mb-1"}}
-{{else}}
-{{#if licenseInfo.active}}
-{{> ui/page-header title="License" icon="icon-[tabler--settings]" badgeLabel="active" badgeVariant="success"
-class="mb-1"}}
-{{else}}
-{{> ui/page-header title="License" icon="icon-[tabler--settings]" badgeLabel="not activated" badgeVariant="error"
-class="mb-1"}}
-{{/if}}
-{{/if}}
 
 <p class="mb-6">
     EmailEngine requires a valid license key after the free trial period. Licensed under the <a href="/license.html"
@@ -39,8 +31,7 @@ class="mb-1"}}
 
 {{#unless licenseInfo.active}}
 
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
         <div class="float-right ms-4">
             {{> ui/btn href="https://postalsys.com/licenses" external=true label="Get a License"
             icon="icon-[tabler--arrow-right]"}}
@@ -51,8 +42,8 @@ class="mb-1"}}
                 Central</a> (subscription required).
         </p>
 
-    </div>
-</div>
+    
+{{/ui/card}}
 
 {{/unless}}
 
@@ -126,18 +117,10 @@ class="mb-1"}}
 </form>
 {{/ui/details}}
 
-{{#> ui/modal id="deleteLicense" title="Remove License"}}
-<div class="modal-body">
-    Remove the current license key from this EmailEngine instance?
-</div>
-<div class="modal-footer">
-    <form method="post" action="/admin/config/license/delete" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay="#deleteLicense"}}
-        {{> ui/btn label="Remove License" variant="error" type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{#> ui/confirm-modal id="deleteLicense" title="Remove License" action="/admin/config/license/delete"
+submitLabel="Remove License"}}
+Remove the current license key from this EmailEngine instance?
+{{/ui/confirm-modal}}
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

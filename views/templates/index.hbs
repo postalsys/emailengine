@@ -51,17 +51,14 @@
                 <tr class="hover:bg-base-200/60">
 
                     <td class="relative">
-                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0"
-                            aria-label="Open template"></a><strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/templates/template/" id) label="Open template"}}<strong>{{name}}</strong>
                     </td>
                     <td class="relative">
-                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a>{{description}}
+                        {{> ui/row-link href=(concat "/admin/templates/template/" id)}}{{description}}
                     </td>
 
                     <td class="relative">
-                        <a href="/admin/templates/template/{{id}}" class="absolute inset-0" tabindex="-1"
-                            aria-hidden="true"></a>
+                        {{> ui/row-link href=(concat "/admin/templates/template/" id)}}
                         {{id}}
                     </td>
 
@@ -71,15 +68,10 @@
         </table>
     </div>
 
-    {{#if showPaging}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-4">
-        {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
-    </div>
-    {{/if}}
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-<div class="card bg-base-100 shadow-md mb-6">
-    <div class="card-body">
+{{#> ui/card}}
         {{#if account}}
         <div>
             Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
@@ -97,8 +89,8 @@
             No templates found.
             {{/if}}
         </p>
-    </div>
-</div>
+    
+{{/ui/card}}
 {{/if}}
 
 {{#> ui/details summary="Usage example" class="card bg-base-100 shadow-md mb-6"}}

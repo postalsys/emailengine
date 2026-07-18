@@ -1,26 +1,33 @@
 {{!--
-    ui/pagination - server-driven page navigation (FlyonUI join group).
-    Usage:
-      {{> ui/pagination prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+    ui/pagination - server-driven page navigation for the list pages: the
+    standard card-footer strip with a FlyonUI join group. Renders nothing
+    unless showPaging is true, so callers need no guard of their own.
+    Usage (as the last child of the list card):
+      {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
     Params:
-      prevPage  - URL of the previous page, falsy when on the first page
-      nextPage  - URL of the next page, falsy when on the last page
-      pageLinks - array of { url, title, active }
+      showPaging - falsy when there is only one page; suppresses all output
+      prevPage   - URL of the previous page, falsy when on the first page
+      nextPage   - URL of the next page, falsy when on the last page
+      pageLinks  - array of { url, title, active }
 --}}
-<nav aria-label="Page navigation" class="join flex-wrap">
-    {{#if prevPage}}
-    <a class="join-item btn btn-soft btn-sm" href="{{prevPage}}">Previous</a>
-    {{else}}
-    <span class="join-item btn btn-soft btn-sm btn-disabled">Previous</span>
-    {{/if}}
+{{#if showPaging}}
+<div class="card-footer border-base-content/10 border-t px-6 py-4">
+    <nav aria-label="Page navigation" class="join flex-wrap">
+        {{#if prevPage}}
+        <a class="join-item btn btn-soft btn-sm" href="{{prevPage}}">Previous</a>
+        {{else}}
+        <span class="join-item btn btn-soft btn-sm btn-disabled">Previous</span>
+        {{/if}}
 
-    {{#each pageLinks}}
-    <a class="join-item btn btn-sm {{#if active}}btn-primary{{else}}btn-soft{{/if}}" href="{{url}}">{{title}}</a>
-    {{/each}}
+        {{#each pageLinks}}
+        <a class="join-item btn btn-sm {{#if active}}btn-primary{{else}}btn-soft{{/if}}" href="{{url}}">{{title}}</a>
+        {{/each}}
 
-    {{#if nextPage}}
-    <a class="join-item btn btn-soft btn-sm" href="{{nextPage}}">Next</a>
-    {{else}}
-    <span class="join-item btn btn-soft btn-sm btn-disabled">Next</span>
-    {{/if}}
-</nav>
+        {{#if nextPage}}
+        <a class="join-item btn btn-soft btn-sm" href="{{nextPage}}">Next</a>
+        {{else}}
+        <span class="join-item btn btn-soft btn-sm btn-disabled">Next</span>
+        {{/if}}
+    </nav>
+</div>
+{{/if}}

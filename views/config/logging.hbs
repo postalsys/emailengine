@@ -9,8 +9,7 @@
     {{!-- no id: the layout already renders the #crumb element scripts read --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-body space-y-4">
+    {{#> ui/card bodyClass="space-y-4"}}
             <div>
                 {{> ui/setting-ref name="logs.all"}}
                 {{> ui/checkbox id="settingsLogsAll" name="all" label="Enable Logging for All Accounts"
@@ -31,14 +30,10 @@
                     choose wisely to avoid running out of RAM.</span>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
-    <div class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Error Reporting</h6>
-        </div>
-        <div class="card-body space-y-4">
+    {{#> ui/card title="Error Reporting" bodyClass="space-y-4"}}
 
             {{#if sentryEnvManaged}}
             <div class="alert alert-soft alert-info">Error reporting is currently managed by the
@@ -65,8 +60,8 @@
                     problems with your installation. Set your own DSN to keep reports in-house.</span>
                 {{/ui/form-field}}
             </div>
-        </div>
-    </div>
+        
+    {{/ui/card}}
 
     <div class="mb-6">
         {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
