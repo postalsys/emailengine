@@ -98,9 +98,12 @@ test('hosted auth form: add an IMAP account (Ethereal) and reach connected', asy
             await page.click('#submit-settings-btn-down');
             await page.click('#submit-wo-testing');
 
-            // The server creates the account and renders redirect.hbs (a link only). Its continue
-            // link points at redirectUrl?account=<id>&state=... - proof the account was created.
-            await expect(page.locator(`a[href*="account=${ACCOUNT_ID}"]`)).toBeVisible({ timeout: 30000 });
+            // The server creates the account and renders redirect.hbs, whose meta refresh forwards
+            // to redirectUrl?account=<id>&state=... - waiting for that URL proves the account was
+            // created AND the redirect works. (Asserting the interstitial page's continue link is
+            // racy: the browser fires the 0-delay refresh as soon as the lightweight page finishes
+            // loading, often before the assertion polls.)
+            await page.waitForURL(url => url.search.includes(`account=${ACCOUNT_ID}`), { timeout: 30000 });
         });
 
         await test.step('account exists and reaches connected', async () => {

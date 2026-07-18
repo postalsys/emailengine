@@ -1,0 +1,23 @@
+<script>
+    // Apply the theme before first paint to avoid a flash. Public-page twin of
+    // theme_init.hbs with one extra source, a ?theme= query argument, so the
+    // application that linked or redirected here can make these pages match its
+    // own theme. Sources, highest priority first:
+    //   1. a ?theme=light|dark query argument; remembered for the rest of the
+    //      browser session (sessionStorage) so it survives the multi-step form
+    //      POSTs that drop the query string
+    //   2. the browser-wide "eeTheme" choice saved by the admin UI theme
+    //      toggle in static/js/ui.js
+    //   3. nothing - the stylesheet falls back to prefers-color-scheme
+    try {
+        var eeTheme = new URLSearchParams(window.location.search).get('theme');
+        if (eeTheme === 'light' || eeTheme === 'dark') {
+            sessionStorage.setItem('eeTheme', eeTheme);
+        } else {
+            eeTheme = sessionStorage.getItem('eeTheme') || localStorage.getItem('eeTheme');
+        }
+        if (eeTheme === 'light' || eeTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', eeTheme);
+        }
+    } catch (err) {}
+</script>

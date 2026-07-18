@@ -1,0 +1,1074 @@
+/*
+ * EmailEngine public pages stylesheet.
+ *
+ * This file styles every end-user facing page rendered with the "public"
+ * layout: the hosted authentication form (/accounts/new and its steps), the
+ * unsubscribe/re-subscribe pages, OAuth2 redirect/error pages, and generic
+ * error pages. It is intentionally self-contained: no Tailwind, no FlyonUI,
+ * no build step - just this one hand-written file.
+ *
+ * Customizing the look
+ * --------------------
+ * The pages support two injection points (Configuration -> Service):
+ *   - "HTML code for the head" is inserted at the end of <head>, AFTER this
+ *     stylesheet, so any CSS you add there wins the cascade.
+ *   - "Header HTML" is inserted at the top of the page card (inside
+ *     .ee-card-body, wrapped in .ee-custom-header).
+ *
+ * The easiest override is redefining the design tokens below, e.g.:
+ *
+ *   <style>
+ *     :root {
+ *       --ee-primary: #0d6efd;
+ *       --ee-page-background: #f4f4f4;
+ *     }
+ *   </style>
+ *
+ * For deeper changes, target the component classes directly (.ee-card,
+ * .ee-btn, .ee-input, ...). Every element on the public pages uses a stable,
+ * human-readable class name with the ee- prefix.
+ *
+ * Forcing a theme from a link
+ * ---------------------------
+ * Append ?theme=light or ?theme=dark (or &theme=... on already-signed URLs)
+ * to make the page match the theme of the application linking here. The
+ * choice sticks for the rest of the browser session; without it the pages
+ * follow the visitor's stored admin-UI choice or system preference. See
+ * views/partials/public_theme_init.hbs.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Design tokens
+ *
+ * Light theme is the default. The dark values are applied when the visitor's
+ * system prefers a dark color scheme, or when <html data-theme="dark"> is set
+ * explicitly (the same "eeTheme" contract as the admin UI). Setting
+ * <html data-theme="light"> forces the light theme.
+ * ------------------------------------------------------------------------- */
+
+:root {
+    /* brand */
+    --ee-primary: #4c5cc5; /* EmailEngine indigo */
+    --ee-primary-content: #ffffff; /* text on top of --ee-primary */
+    --ee-secondary: #f8485e; /* EmailEngine coral */
+
+    /* neutrals and state colors */
+    --ee-neutral: oklch(37.57% 0.0222 281.8);
+    --ee-neutral-content: oklch(98% 0.0013 286.38);
+    --ee-info: oklch(71.48% 0.126 215.22);
+    --ee-success: oklch(73.11% 0.217 147.04);
+    --ee-warning: oklch(79.87% 0.164 73.09);
+    --ee-error: oklch(65.39% 0.222 25.86);
+
+    /* surfaces and text */
+    --ee-surface: #ffffff; /* card, modal and menu background */
+    --ee-surface-muted: oklch(97.8% 0.005 297.73); /* hover background */
+    --ee-text: oklch(37.57% 0.022 281.8); /* main text color */
+
+    /* page background behind the card: the solid blue of the classic
+     * Bootstrap-era public pages */
+    --ee-page-background: #407ec9;
+
+    /* shape */
+    --ee-radius-box: 0.5rem; /* cards, modals, alerts, menus */
+    --ee-radius-field: 0.375rem; /* buttons, inputs */
+    --ee-radius-selector: 0.25rem; /* checkboxes, tooltips */
+
+    /* elevation */
+    --ee-shadow-sm:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1); /* inner panels */
+    --ee-shadow-md:
+        0 4px 6px -1px rgb(0 0 0 / 0.15),
+        0 2px 4px -2px rgb(0 0 0 / 0.15); /* menus, tooltips */
+    --ee-shadow-lg:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1); /* the page card */
+    --ee-shadow-xl:
+        0 20px 25px -5px rgb(0 0 0 / 0.2),
+        0 8px 10px -6px rgb(0 0 0 / 0.2); /* modals */
+
+    /* typography */
+    --ee-font: 'PT Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    color-scheme: light;
+}
+
+/* Dark theme tokens. The block is duplicated on purpose between the class
+ * selector and the media query below: light-dark() could express both from a
+ * single definition, but it needs newer browsers (Safari 17.5+) than anything
+ * else in this file, and these pages are served to arbitrary end users - keep
+ * the two blocks identical when editing. */
+:root[data-theme='dark'] {
+    --ee-primary: #7b86dc;
+    --ee-primary-content: #10123a;
+    --ee-secondary: #f8697b;
+    --ee-page-background: #23456f; /* the light-theme backdrop blue, dimmed */
+    --ee-neutral: oklch(65.75% 0.022 294.95);
+    --ee-neutral-content: oklch(18.51% 0.017 301.92);
+    --ee-info: oklch(60.89% 0.111 221.72);
+    --ee-success: oklch(67.35% 0.201 146.84);
+    --ee-warning: oklch(72.59% 0.152 69.05);
+    --ee-error: oklch(59.54% 0.208 26.28);
+    --ee-surface: oklch(31.23% 0.026 301.24);
+    --ee-surface-muted: oklch(25.39% 0.025 298.72);
+    --ee-text: oklch(84.98% 0.014 295.28);
+    color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+        --ee-primary: #7b86dc;
+        --ee-primary-content: #10123a;
+        --ee-secondary: #f8697b;
+        --ee-page-background: #23456f; /* the light-theme backdrop blue, dimmed */
+        --ee-neutral: oklch(65.75% 0.022 294.95);
+        --ee-neutral-content: oklch(18.51% 0.017 301.92);
+        --ee-info: oklch(60.89% 0.111 221.72);
+        --ee-success: oklch(67.35% 0.201 146.84);
+        --ee-warning: oklch(72.59% 0.152 69.05);
+        --ee-error: oklch(59.54% 0.208 26.28);
+        --ee-surface: oklch(31.23% 0.026 301.24);
+        --ee-surface-muted: oklch(25.39% 0.025 298.72);
+        --ee-text: oklch(84.98% 0.014 295.28);
+        color-scheme: dark;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* .ee-page is the <body>: full-height gradient backdrop behind the card */
+body.ee-page {
+    margin: 0;
+    min-height: 100vh;
+    padding: 3rem 1rem;
+    background: var(--ee-page-background);
+    font-family: var(--ee-font);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--ee-text);
+    -webkit-text-size-adjust: 100%;
+}
+
+/* The white content card that holds the whole page */
+.ee-card {
+    max-width: 56rem;
+    margin: 0 auto;
+    background-color: var(--ee-surface);
+    border-radius: var(--ee-radius-box);
+    box-shadow: var(--ee-shadow-lg);
+    /* no overflow:hidden here - the dropdown menu on the server settings form
+     * must be able to extend past the card edge */
+}
+
+.ee-card-body {
+    padding: 3rem;
+}
+
+/* Wrapper around the operator-provided "Header HTML" block */
+.ee-custom-header {
+    margin-bottom: 1.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Typography defaults inside the card
+ *
+ * Bare elements get sensible document styling so injected custom HTML looks
+ * right without needing any classes. Every rule is wrapped in :where() so it
+ * has zero specificity: any component class, layout rule or operator CSS
+ * overrides these defaults without a fight.
+ * ------------------------------------------------------------------------- */
+
+:where(.ee-card-body h1) {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+}
+
+:where(.ee-card-body h2) {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+}
+
+:where(.ee-card-body h3, .ee-card-body h4, .ee-card-body h5, .ee-card-body h6) {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+}
+
+:where(.ee-card-body p) {
+    margin: 0 0 0.75rem;
+}
+
+:where(.ee-card-body ul, .ee-card-body ol) {
+    margin: 0 0 1rem;
+    padding-inline-start: 1.5rem;
+}
+
+/* classless links only, so links styled as components (.ee-btn, .ee-link,
+ * .ee-dropdown-item, anything an operator classes themselves) keep their own
+ * styling */
+:where(.ee-card-body a:not([class])) {
+    color: var(--ee-primary);
+    text-decoration: underline;
+}
+
+/* Links styled explicitly as .ee-link get an animated underline on hover
+ * (grows from the left; matches the admin theme's link style) */
+a.ee-link {
+    position: relative;
+    color: var(--ee-primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+a.ee-link::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset-inline-start: 0;
+    bottom: 0;
+    width: 100%;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+    transition: transform 0.3s ease-in-out;
+}
+
+a.ee-link:hover::before {
+    transform: scaleX(1);
+    transform-origin: 0 50%;
+}
+
+/* Muted secondary text (error codes, explanatory notes) */
+.ee-muted {
+    color: color-mix(in oklab, var(--ee-text) 60%, transparent);
+}
+
+/* Error-colored text (used e.g. for rows in the connection test dialog) */
+.ee-error-text {
+    color: var(--ee-error);
+}
+
+.ee-center {
+    text-align: center;
+}
+
+/* Visually hidden, still available to screen readers */
+.ee-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Buttons
+ *
+ * Compose: .ee-btn + a color (.ee-btn-primary / .ee-btn-neutral) + optional
+ * modifiers (.ee-btn-soft, .ee-btn-block, .ee-btn-sm/.ee-btn-lg/.ee-btn-xl).
+ * ------------------------------------------------------------------------- */
+
+.ee-btn {
+    /* color variants override these two custom properties */
+    --ee-btn-color: var(--ee-neutral);
+    --ee-btn-fg: var(--ee-neutral-content);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    height: 2.375rem;
+    padding-inline: 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--ee-radius-field);
+    background-color: var(--ee-btn-color);
+    color: var(--ee-btn-fg);
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.ee-btn:hover {
+    background-color: color-mix(in oklab, var(--ee-btn-color) 90%, #000);
+}
+
+.ee-btn:focus-visible {
+    outline: 2px solid var(--ee-btn-color);
+    outline-offset: 2px;
+}
+
+.ee-btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* color variants */
+.ee-btn-primary {
+    --ee-btn-color: var(--ee-primary);
+    --ee-btn-fg: var(--ee-primary-content);
+}
+
+.ee-btn-neutral {
+    --ee-btn-color: var(--ee-neutral);
+    --ee-btn-fg: var(--ee-neutral-content);
+}
+
+/* soft style: tinted background, colored text (pair with a color variant) */
+.ee-btn-soft {
+    background-color: color-mix(in oklab, var(--ee-btn-color) 10%, var(--ee-surface));
+    color: var(--ee-btn-color);
+}
+
+.ee-btn-soft:hover {
+    background-color: color-mix(in oklab, var(--ee-btn-color) 20%, var(--ee-surface));
+}
+
+/* sizes */
+.ee-btn-sm {
+    height: 1.875rem;
+    padding-inline: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.ee-btn-lg {
+    height: 3rem;
+    font-size: 1.125rem;
+}
+
+.ee-btn-xl {
+    height: 3.5rem;
+    font-size: 1.25rem;
+}
+
+.ee-btn-block {
+    width: 100%;
+}
+
+/* ---------------------------------------------------------------------------
+ * Split button + dropdown menu
+ *
+ * Markup: a .ee-split wrapper holding the main button and a
+ * <details class="ee-dropdown"> whose <summary> is the toggle half. The
+ * <details> element provides open/close for free; static/js/public.js only
+ * adds "close on outside click / Escape".
+ * ------------------------------------------------------------------------- */
+
+.ee-split {
+    display: inline-flex;
+    align-items: stretch;
+}
+
+.ee-split > .ee-btn:first-child {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+}
+
+.ee-dropdown {
+    position: relative;
+    display: inline-flex;
+}
+
+.ee-dropdown-toggle {
+    list-style: none; /* hide the default details marker */
+}
+
+.ee-dropdown-toggle::-webkit-details-marker {
+    display: none;
+}
+
+.ee-split .ee-dropdown-toggle {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    padding-inline: 0.5rem;
+    height: 100%;
+}
+
+.ee-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    inset-inline-end: 0;
+    z-index: 10;
+    min-width: 10rem;
+    margin: 0;
+    padding: 0.5rem;
+    list-style: none;
+    background-color: var(--ee-surface);
+    border-radius: var(--ee-radius-box);
+    box-shadow: var(--ee-shadow-md);
+    white-space: nowrap;
+}
+
+.ee-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    border-radius: var(--ee-radius-field);
+    color: var(--ee-text);
+    text-decoration: none;
+}
+
+.ee-dropdown-item:hover,
+.ee-dropdown-item:focus {
+    background-color: var(--ee-surface-muted);
+    outline: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * Forms
+ * ------------------------------------------------------------------------- */
+
+/* vertical stack of fields */
+.ee-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* the stack owns the spacing: the flex gap replaces the children's own
+ * vertical margins (headings, button rows, anything added later) */
+.ee-form-col > * {
+    margin-block: 0;
+}
+
+/* two-column section grid (IMAP | SMTP); stacks on narrow screens */
+.ee-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .ee-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.ee-field {
+    width: 100%;
+}
+
+.ee-label {
+    display: block;
+    padding: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+/* the whole field turns red when its input carries .ee-invalid */
+.ee-field:has(.ee-invalid) .ee-label,
+.ee-field:has(.ee-invalid) .ee-hint {
+    color: var(--ee-error);
+}
+
+.ee-input {
+    display: block;
+    width: 100%;
+    height: 2.375rem;
+    padding-inline: 0.75rem;
+    background-color: var(--ee-surface);
+    border: 1px solid color-mix(in oklab, var(--ee-text) 40%, transparent);
+    border-radius: var(--ee-radius-field);
+    color: var(--ee-text);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.ee-input:hover:not(:focus) {
+    border-color: var(--ee-text);
+}
+
+.ee-input:focus {
+    border-color: var(--ee-primary);
+    outline: 1px solid var(--ee-primary);
+}
+
+.ee-input[readonly] {
+    background-color: var(--ee-surface-muted);
+}
+
+.ee-input.ee-invalid {
+    border-color: var(--ee-error);
+}
+
+.ee-input.ee-invalid:focus {
+    outline-color: var(--ee-error);
+}
+
+/* helper text under an input */
+.ee-hint {
+    display: block;
+    padding: 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* validation error text under an input */
+.ee-field-error {
+    display: block;
+    padding: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--ee-error);
+}
+
+/* custom-drawn checkbox (native element, styled) */
+.ee-checkbox {
+    appearance: none;
+    position: relative;
+    flex-shrink: 0;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    border: 1px solid color-mix(in oklab, var(--ee-neutral) 40%, transparent);
+    border-radius: var(--ee-radius-selector);
+    background-color: var(--ee-surface);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.ee-checkbox:checked {
+    background-color: var(--ee-neutral);
+    border-color: var(--ee-neutral);
+}
+
+/* the check mark is a masked overlay so its color follows the theme token
+ * (light mark on a dark box in the light theme, and vice versa) */
+.ee-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--ee-neutral-content);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m5 13l4 4L19 7'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m5 13l4 4L19 7'/%3E%3C/svg%3E");
+    -webkit-mask-size: 0.875rem;
+    mask-size: 0.875rem;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+.ee-checkbox:focus-visible {
+    outline: 2px solid var(--ee-neutral);
+    outline-offset: 1px;
+}
+
+.ee-checkbox.ee-invalid {
+    border-color: var(--ee-error);
+}
+
+/* checkbox + label on one line */
+.ee-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ee-checkbox-row .ee-label {
+    padding: 0;
+}
+
+/* button row at the end of a form */
+.ee-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+/* helper floated to the right edge of a label line (tooltips, links) */
+.ee-label-aside {
+    float: inline-end;
+}
+
+/* narrow single-column form (unsubscribe page) */
+.ee-narrow {
+    max-width: 28rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Alerts and flash messages
+ * ------------------------------------------------------------------------- */
+
+.ee-alert {
+    --ee-alert-color: var(--ee-neutral);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: var(--ee-radius-box);
+    background-color: color-mix(in oklab, var(--ee-alert-color) 10%, var(--ee-surface));
+    color: var(--ee-alert-color);
+    text-align: start;
+}
+
+.ee-alert-info {
+    --ee-alert-color: var(--ee-info);
+}
+
+.ee-alert-success {
+    --ee-alert-color: var(--ee-success);
+}
+
+.ee-alert-warning {
+    --ee-alert-color: var(--ee-warning);
+}
+
+.ee-alert-error {
+    --ee-alert-color: var(--ee-error);
+}
+
+/* alerts inside the page content flow space themselves from the next block
+ * (:where() so layout stacks like .ee-form-col can zero the margin) */
+:where(.ee-card-body .ee-alert) {
+    margin-bottom: 1rem;
+}
+
+/* server-side flash messages: full-width bar at the top of the card
+ * (close button and 15s auto-dismiss live in static/js/public.js) */
+.ee-flash {
+    margin-bottom: 1.5rem;
+    transition: opacity 0.3s ease;
+}
+
+.ee-flash-message {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.ee-flash-close {
+    flex-shrink: 0;
+    border: 0;
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.ee-flash-close:hover {
+    opacity: 1;
+}
+
+/* fading out before removal */
+.ee-fade-out {
+    opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Modal (native <dialog> element)
+ *
+ * Open with dialogElement.showModal(). Escape closes it natively; buttons
+ * carrying data-modal-close and clicks on the backdrop are handled by
+ * static/js/public.js.
+ * ------------------------------------------------------------------------- */
+
+dialog.ee-modal {
+    width: calc(100% - 2rem);
+    max-width: 32rem;
+    max-height: calc(100vh - 2rem);
+    /* anchored near the top of the viewport, horizontally centered */
+    margin: 1rem auto auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ee-radius-box);
+    background-color: var(--ee-surface);
+    color: var(--ee-text);
+    box-shadow: var(--ee-shadow-xl);
+    font-family: var(--ee-font);
+}
+
+dialog.ee-modal::backdrop {
+    background: rgb(0 0 0 / 0.5);
+}
+
+/* the dialog itself takes focus when opened (autofocus attribute in the
+ * markup); it does not need a visible focus ring */
+dialog.ee-modal:focus {
+    outline: none;
+}
+
+dialog.ee-modal[open] {
+    animation: ee-modal-in 0.2s ease-out;
+}
+
+@keyframes ee-modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+}
+
+/* wider dialog for content-heavy modals (connection test errors) */
+dialog.ee-modal.ee-modal-wide {
+    max-width: 48rem;
+}
+
+.ee-modal-header {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    position: relative;
+}
+
+.ee-modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* round icon button in the modal's top corner */
+.ee-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    inset-inline-end: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+.ee-modal-close:hover {
+    background-color: var(--ee-surface-muted);
+}
+
+/* showModal() may focus the close button; show the hover background instead
+ * of the default focus ring */
+.ee-modal-close:focus {
+    outline: none;
+}
+
+.ee-modal-close:focus-visible {
+    background-color: var(--ee-surface-muted);
+}
+
+.ee-modal-body {
+    padding: 0 1.5rem 1.5rem;
+    overflow-y: auto;
+}
+
+.ee-modal-body p {
+    margin: 0 0 1rem;
+}
+
+.ee-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0 1.5rem 1.5rem;
+}
+
+/* a <form> inside the footer lays out its buttons the same way */
+.ee-modal-footer form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tooltips (pure CSS, shown on hover - and on keyboard focus when the
+ * trigger content is focusable, e.g. a link)
+ *
+ * Markup:
+ *   <span class="ee-tooltip">
+ *     <span class="ee-tooltip-trigger">...</span>
+ *     <span class="ee-tooltip-content" role="tooltip">...</span>
+ *   </span>
+ *
+ * The bubble opens above the trigger, aligned to its right edge (the public
+ * pages only use tooltips near the right edge of the card).
+ * ------------------------------------------------------------------------- */
+
+.ee-tooltip {
+    position: relative;
+    display: inline-flex;
+}
+
+.ee-tooltip-trigger {
+    cursor: default;
+}
+
+.ee-tooltip-content {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    inset-inline-end: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: 20rem;
+    padding: 0.5rem;
+    border-radius: var(--ee-radius-selector);
+    background-color: var(--ee-neutral);
+    color: var(--ee-neutral-content);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-align: start;
+    box-shadow: var(--ee-shadow-md);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.ee-tooltip:hover .ee-tooltip-content,
+.ee-tooltip:focus-within .ee-tooltip-content {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * Description list (connection test error details)
+ *
+ * NB: the admin theme defines its own, wider .ee-dl in app.tailwind.css; the
+ * two stylesheets are never loaded together, but keep the class contracts in
+ * mind when renaming either.
+ * ------------------------------------------------------------------------- */
+
+.ee-dl {
+    display: grid;
+    grid-template-columns: 1fr;
+    row-gap: 0.25rem;
+    column-gap: 1rem;
+    margin: 0;
+}
+
+.ee-dl dt {
+    font-weight: 700;
+}
+
+.ee-dl dd {
+    margin: 0 0 0.5rem;
+    min-width: 0;
+}
+
+@media (min-width: 640px) {
+    .ee-dl {
+        grid-template-columns: 8rem minmax(0, 1fr);
+    }
+
+    .ee-dl dd {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Provider chooser (hosted auth form, first step)
+ * ------------------------------------------------------------------------- */
+
+.ee-providers {
+    width: 270px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.ee-provider {
+    margin-bottom: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--ee-radius-box);
+}
+
+/* entries carrying a display title (an optional per-app label that tells
+ * apart multiple OAuth2 apps of the same provider) highlight on hover so the
+ * title and its button read as one unit */
+.ee-provider-titled:hover {
+    background-color: var(--ee-surface-muted);
+}
+
+.ee-provider-title {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+    cursor: default;
+}
+
+/* provider sign-in images (e.g. the Google / Microsoft branded buttons) */
+.ee-provider-image {
+    display: block;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+ * Error page panel
+ * ------------------------------------------------------------------------- */
+
+.ee-error-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin: 1.5rem 1rem 0;
+    padding: 1.5rem;
+    background-color: var(--ee-surface);
+    border-radius: var(--ee-radius-box);
+    box-shadow: var(--ee-shadow-sm);
+}
+
+.ee-error-card-content {
+    flex-grow: 1;
+}
+
+.ee-error-card-content h1 {
+    margin-bottom: 1rem;
+}
+
+/* tinted warning icon container on the right */
+.ee-error-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--ee-radius-field);
+    background-color: color-mix(in oklab, var(--ee-error) 10%, transparent);
+    color: var(--ee-error);
+}
+
+.ee-error-details .ee-alert {
+    margin-bottom: 0.5rem;
+}
+
+.ee-error-card .ee-form-actions {
+    margin-top: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Icons
+ *
+ * Same Tabler icon artwork as the admin UI, embedded as data-URI masks so the
+ * icons render in the surrounding text color. Use as:
+ *   <span class="ee-icon ee-icon-mail"></span>
+ * ------------------------------------------------------------------------- */
+
+.ee-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-image: var(--ee-svg);
+    mask-image: var(--ee-svg);
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+/* fixed larger icon (alerts, error panel) */
+.ee-icon-lg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* half-strength icon (tooltip help triggers) */
+.ee-icon-muted {
+    opacity: 0.5;
+}
+
+/* spinning state for the loader icon */
+.ee-spin {
+    animation: ee-spin 1s linear infinite;
+}
+
+@keyframes ee-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ee-icon-mail {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cg fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpath d='m3 7l9 6l9-6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ee-icon-arrow-right {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 12h14m-6 6l6-6m-6-6l6 6'/%3E%3C/svg%3E");
+}
+
+.ee-icon-arrow-left {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 12h14M5 12l6 6m-6-6l6-6'/%3E%3C/svg%3E");
+}
+
+.ee-icon-alert-circle {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0m9-4v4m0 4h.01'/%3E%3C/svg%3E");
+}
+
+.ee-icon-alert-triangle {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 9v4m-1.637-9.409L2.257 17.125a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87L13.637 3.59a1.914 1.914 0 0 0-3.274 0M12 16h.01'/%3E%3C/svg%3E");
+}
+
+.ee-icon-help-circle {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cg fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0m9 4v.01'/%3E%3Cpath d='M12 13a2 2 0 0 0 .914-3.782a1.98 1.98 0 0 0-2.414.483'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ee-icon-chevron-down {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9l6 6l6-6'/%3E%3C/svg%3E");
+}
+
+.ee-icon-loader {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 3a9 9 0 1 0 9 9'/%3E%3C/svg%3E");
+}
+
+.ee-icon-circle-check {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cg fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0'/%3E%3Cpath d='m9 12l2 2l4-4'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ee-icon-circle-x {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0m7-2l4 4m0-4l-4 4'/%3E%3C/svg%3E");
+}
+
+.ee-icon-x {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M18 6L6 18M6 6l12 12'/%3E%3C/svg%3E");
+}
+
+.ee-icon-home {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cg fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'%3E%3Cpath d='M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.ee-icon-refresh {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4'/%3E%3C/svg%3E");
+}
+
+.ee-icon-brand-google {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M20.945 11a9 9 0 1 1-3.284-5.997l-2.655 2.392A5.5 5.5 0 1 0 17.125 14H13v-3z'/%3E%3C/svg%3E");
+}
+
+.ee-icon-brand-windows {
+    --ee-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='none' stroke='black' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m17.8 20l-12-1.5c-1-.1-1.8-.9-1.8-1.9V7.4c0-1 .8-1.8 1.8-1.9l12-1.5c1.2-.1 2.2.8 2.2 1.9V18c0 1.2-1.1 2.1-2.2 1.9zM12 5v14m-8-7h16'/%3E%3C/svg%3E");
+}

@@ -18,11 +18,14 @@
     <link rel="manifest" href="/static/favicon/manifest.json" />
     <link rel="icon" href="/favicon.ico" />
 
-    {{> theme_init}}
+    {{> public_theme_init}}
 
     <link href="/static/fonts/pt-sans-font.css" rel="stylesheet">
 
-    <link href="/static/css/flyonui.css" rel="stylesheet">
+    {{!-- Public pages use a standalone, framework-free stylesheet so operators
+    can restyle them through the head/header injection blocks below - see the
+    override notes at the top of static/css/public.css --}}
+    <link href="/static/css/public.css" rel="stylesheet">
 
     {{#if httpRedirectUrl}}
     <meta http-equiv="refresh" content="0;URL='{{httpRedirectUrl}}'" />
@@ -34,41 +37,26 @@
 
 </head>
 
-<body class="from-primary to-secondary min-h-screen bg-gradient-to-br">
+<body class="ee-page">
 
-    <div class="container mx-auto px-4">
+    <main class="ee-card">
 
-        <div class="flex justify-center">
+        {{> public_alerts}}
 
-            <div class="w-full max-w-4xl">
+        <div class="ee-card-body">
 
-                <div class="card bg-base-100 my-12 overflow-hidden shadow-lg">
-
-                    {{> alerts}}
-
-                    <div class="p-12">
-
-                        {{#if embeddedTemplateHeader}}
-                        <div>
-                            {{{embeddedTemplateHeader}}}
-                        </div>
-                        {{/if}}
-
-                        {{{content}}}
-                    </div>
-
-                </div>
-
+            {{#if embeddedTemplateHeader}}
+            <div class="ee-custom-header">
+                {{{embeddedTemplateHeader}}}
             </div>
+            {{/if}}
 
+            {{{content}}}
         </div>
 
-    </div>
+    </main>
 
-    <script src="/static/js/flyonui.js"></script>
-    <script src="/static/js/ui.js"></script>
-
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/public.js"></script>
 
 </body>
 

@@ -1,36 +1,48 @@
+{{!-- Public unsubscribe page (List-Unsubscribe links). Three states: the
+confirmation form, the "unsubscribed" state with a re-subscribe modal, and
+the "subscription resumed" state. --}}
+
 {{#if unsubscribed}}
 
-<h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Unsubscribe" templateLocale }}</h1>
+<h1>{{_ "Unsubscribe" templateLocale }}</h1>
 
-<p class="mb-2">{{_ "Your email address was unsubscribed." templateLocale }}</p>
+<p>{{_ "Your email address was unsubscribed." templateLocale }}</p>
 
 <p>{{_ "Was this a mistake? Click <a%s>here</a> to re-subscribe." templateLocale
-" id='resubscribe-link' href='#' class='link link-animated'"}}</p>
+" id='resubscribe-link' href='#' class='ee-link'"}}</p>
 
-
-{{#> ui/modal id="resubscribeModal" title=(_ "Re-subscribe" templateLocale) titleId="resubscribeModalLabel"}}
-<div class="modal-body">
-    {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" templateLocale
-    (escapeHtml values.email) }}
-</div>
-<div class="modal-footer">
-    <form method="post" action="/unsubscribe/address" class="flex gap-2">
-        <input type="hidden" name="crumb" value="{{crumb}}">
-        <input type="hidden" name="action" value="subscribe">
-        <input type="hidden" name="data" value="{{values.data}}">
-        <input type="hidden" name="sig" value="{{values.sig}}">
-        {{> ui/btn label=(_ "Close" templateLocale) variant="neutral" style="soft" overlay="#resubscribeModal"}}
-        {{> ui/btn label=(_ "Subscribe" templateLocale) type="submit"}}
-    </form>
-</div>
-{{/ui/modal}}
+{{!-- autofocus on the dialog keeps showModal() from focusing (and drawing a
+focus ring on) the corner close button --}}
+<dialog id="resubscribeModal" class="ee-modal" aria-labelledby="resubscribeModalLabel" autofocus>
+    <div class="ee-modal-header">
+        <h3 class="ee-modal-title" id="resubscribeModalLabel">{{_ "Re-subscribe" templateLocale }}</h3>
+        <button type="button" class="ee-modal-close" aria-label="Close" data-modal-close>
+            <span class="ee-icon ee-icon-x"></span>
+        </button>
+    </div>
+    <div class="ee-modal-body">
+        {{_ "Are you sure you want to re-subscribe your email address <em>%s</em>?" templateLocale
+        (escapeHtml values.email) }}
+    </div>
+    <div class="ee-modal-footer">
+        <form method="post" action="/unsubscribe/address">
+            <input type="hidden" name="crumb" value="{{crumb}}">
+            <input type="hidden" name="action" value="subscribe">
+            <input type="hidden" name="data" value="{{values.data}}">
+            <input type="hidden" name="sig" value="{{values.sig}}">
+            <button type="button" class="ee-btn ee-btn-neutral ee-btn-soft" data-modal-close>{{_ "Close"
+                templateLocale }}</button>
+            <button type="submit" class="ee-btn ee-btn-primary">{{_ "Subscribe" templateLocale }}</button>
+        </form>
+    </div>
+</dialog>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('resubscribe-link').addEventListener('click', e => {
             e.preventDefault();
-            uiModal.open('#resubscribeModal');
+            document.getElementById('resubscribeModal').showModal();
         });
     });
 </script>
@@ -39,29 +51,28 @@
 
 {{#if reSubscribed}}
 
-<h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Subscription resumed" templateLocale }}</h1>
+<h1>{{_ "Subscription resumed" templateLocale }}</h1>
 
 <p>{{_ "Your email address <em>%s</em> was re-subscribed." templateLocale (escapeHtml values.email)}}</p>
 
 {{else}}
 
-<h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Unsubscribe" templateLocale }}</h1>
+<h1>{{_ "Unsubscribe" templateLocale }}</h1>
 
-<div class="max-w-md">
+<div class="ee-narrow">
     <form method="post" action="/unsubscribe/address">
         <input type="hidden" name="crumb" value="{{crumb}}" />
         <input type="hidden" name="action" value="unsubscribe">
         <input type="hidden" name="data" value="{{values.data}}">
         <input type="hidden" name="sig" value="{{values.sig}}">
 
-        <div>
-            {{#> ui/form-field id="email" label=(_ "Email address" templateLocale)}}
-            <input type="email" class="input" id="email" value="{{values.email}}" readonly />
-            {{/ui/form-field}}
+        <div class="ee-field">
+            <label class="ee-label" for="email">{{_ "Email address" templateLocale }}</label>
+            <input type="email" class="ee-input" id="email" value="{{values.email}}" readonly />
         </div>
 
-        <div class="mt-4">
-            <button type="submit" class="btn btn-primary">{{_ "Unsubscribe" templateLocale }}</button>
+        <div class="ee-form-actions">
+            <button type="submit" class="ee-btn ee-btn-primary">{{_ "Unsubscribe" templateLocale }}</button>
         </div>
     </form>
 </div>

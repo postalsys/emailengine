@@ -1,29 +1,30 @@
-<div class="text-center">
-    <h1 class="text-xl font-semibold text-base-content mb-6">{{_ "Insufficient Permissions" templateLocale}}</h1>
+{{!-- Shown after an OAuth2 sign-in where the user did not grant all requested
+permissions; offers a link to restart the consent flow. --}}
+
+<div class="ee-center">
+    <h1>{{_ "Insufficient Permissions" templateLocale}}</h1>
 </div>
 
-<div class="mb-6">
-    <div class="alert alert-soft alert-error mb-4">
-        <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-        <span>{{_ "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in." templateLocale}}</span>
-    </div>
-
-    {{#if missingScopesList}}
-    <p class="font-bold mb-2">{{_ "The following permissions were not granted:" templateLocale}}</p>
-    <ul class="list-disc ps-6 mb-4">
-        {{#each missingScopesList}}
-        <li>{{this}}</li>
-        {{/each}}
-    </ul>
-    {{/if}}
-
-    <p class="text-base-content/60">
-        {{_ "Please try again and make sure all permission checkboxes are selected on the Google consent screen." templateLocale}}
-    </p>
+<div class="ee-alert ee-alert-error">
+    <span class="ee-icon ee-icon-alert-triangle ee-icon-lg"></span>
+    <span>{{_ "All requested permissions are required for this service to function properly. Some required permissions were not granted during sign-in." templateLocale}}</span>
 </div>
 
-<div class="mt-6">
-    <a href="{{reAuthUrl}}" class="btn btn-primary btn-block">
-        <span class="icon-[tabler--refresh] size-4"></span>{{_ "Try Again" templateLocale}}
+{{#if missingScopesList}}
+<p><strong>{{_ "The following permissions were not granted:" templateLocale}}</strong></p>
+<ul>
+    {{#each missingScopesList}}
+    <li>{{this}}</li>
+    {{/each}}
+</ul>
+{{/if}}
+
+<p class="ee-muted">
+    {{_ "Please try again and make sure all permission checkboxes are selected on the Google consent screen." templateLocale}}
+</p>
+
+<div class="ee-form-actions">
+    <a href="{{reAuthUrl}}" class="ee-btn ee-btn-primary ee-btn-block">
+        <span class="ee-icon ee-icon-refresh"></span>{{_ "Try Again" templateLocale}}
     </a>
 </div>

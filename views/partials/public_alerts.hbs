@@ -1,0 +1,15 @@
+{{!-- Server-side flash messages for the public pages (framework-free twin of
+alerts.hbs, using the ee-* classes from static/css/public.css). The close
+button and the 15 second auto-dismiss live in static/js/public.js. --}}
+{{#each pendingMessages}}
+<div class="ee-alert ee-alert-{{#if type}}{{eeColor type}}{{else}}error{{/if}} ee-flash" role="alert">
+    <div class="ee-flash-message">
+        {{#if title}}
+        <strong>{{title}}</strong>
+        {{/if}} {{message}}
+    </div>
+    <button type="button" class="ee-flash-close" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+{{/each}}

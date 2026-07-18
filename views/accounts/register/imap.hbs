@@ -1,39 +1,47 @@
+{{!-- Hosted authentication form, step 2 (IMAP path): the user's name, email
+address and account password. Submitting continues to the server settings
+step (/accounts/new/imap/server). --}}
+
 <form method="post" action="/accounts/new/imap">
     <input type="hidden" name="crumb" value="{{crumb}}">
     <input type="hidden" name="data" value="{{values.data}}">
     <input type="hidden" name="sig" value="{{values.sig}}">
 
-    <div class="space-y-4">
+    <div class="ee-form-col">
 
-        <div>
-            {{#> ui/form-field id="name" label=(_ "Your name" templateLocale) error=errors.name}}
-            <input type="text" class="input{{#if errors.name}} is-invalid{{/if}}" id="name" name="name"
+        <div class="ee-field">
+            <label class="ee-label" for="name">{{_ "Your name" templateLocale }}</label>
+            <input type="text" class="ee-input{{#if errors.name}} ee-invalid{{/if}}" id="name" name="name"
                 value="{{values.name}}" {{#unless values.name}}autofocus{{/unless}} />
-            <span class="helper-text">{{_ "Enter your full name" templateLocale }}</span>
-            {{/ui/form-field}}
+            {{#if errors.name}}
+            <span class="ee-field-error">{{errors.name}}</span>
+            {{/if}}
+            <span class="ee-hint">{{_ "Enter your full name" templateLocale }}</span>
         </div>
 
-        <div>
-            {{#> ui/form-field id="email" label=(_ "Email address" templateLocale) error=errors.email}}
-            <input type="email" class="input{{#if errors.email}} is-invalid{{/if}}" id="email" name="email"
+        <div class="ee-field">
+            <label class="ee-label" for="email">{{_ "Email address" templateLocale }}</label>
+            <input type="email" class="ee-input{{#if errors.email}} ee-invalid{{/if}}" id="email" name="email"
                 value="{{values.email}}" {{#if values.name}}autofocus{{/if}} required />
-            <span class="helper-text">{{_ "Enter your email address" templateLocale }}</span>
-            {{/ui/form-field}}
+            {{#if errors.email}}
+            <span class="ee-field-error">{{errors.email}}</span>
+            {{/if}}
+            <span class="ee-hint">{{_ "Enter your email address" templateLocale }}</span>
         </div>
 
-        <div>
-            {{#> ui/form-field id="password" label=(_ "Password" templateLocale) error=errors.password}}
-            <input type="password" class="input{{#if errors.password}} is-invalid{{/if}}" id="password"
+        <div class="ee-field">
+            <label class="ee-label" for="password">{{_ "Password" templateLocale }}</label>
+            <input type="password" class="ee-input{{#if errors.password}} ee-invalid{{/if}}" id="password"
                 name="password" value="{{values.password}}" required />
-            <span class="helper-text">{{_ "Enter your account password" templateLocale }}</span>
-            {{/ui/form-field}}
+            {{#if errors.password}}
+            <span class="ee-field-error">{{errors.password}}</span>
+            {{/if}}
+            <span class="ee-hint">{{_ "Enter your account password" templateLocale }}</span>
         </div>
 
-
-        <div class="mt-4">
-
-            <button type="submit" class="btn btn-primary">
-                <span class="icon-[tabler--arrow-right] size-4"></span>
+        <div class="ee-form-actions">
+            <button type="submit" class="ee-btn ee-btn-primary">
+                <span class="ee-icon ee-icon-arrow-right"></span>
                 {{_ "Continue" templateLocale }}
             </button>
         </div>
