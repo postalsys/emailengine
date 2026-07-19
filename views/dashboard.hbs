@@ -106,7 +106,7 @@
         {{#> ui/stat-card variant=(when attentionCount "error" "success") icon="icon-[tabler--alert-triangle]"}}
         <div class="text-sm font-medium text-base-content/60 mb-1">
             {{#> ui/tooltip text="Accounts with authentication or connection failures"}}
-            <a href="/admin/accounts" class="link link-animated">Needs attention</a>
+            <a href="/admin/accounts?state=errors" class="link link-animated">Needs attention</a>
             {{/ui/tooltip}}
         </div>
         <div class="text-xl font-semibold text-base-content">{{formatInteger attentionCount userLocale}}</div>

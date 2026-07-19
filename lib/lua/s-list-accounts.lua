@@ -6,7 +6,8 @@ KEYS:
   [1] listKey - Set key containing account IDs
 
 ARGV:
-  [1] filterState - Account state to filter by ('*' for all states)
+  [1] filterState - Account state to filter by: '*' for all states, a single state,
+      or a comma-separated list of states (entry matches any listed state)
   [2] skip - Number of matching entries to skip (pagination offset)
   [3] count - Maximum number of entries to return
   [4] prefix - Key prefix for account data hashes (e.g., "ee:")
@@ -28,6 +29,15 @@ local skip = tonumber(ARGV[2]) or 0;
 local count = tonumber(ARGV[3]) or 0;
 local prefix = ARGV[4];
 local strsearch = ARGV[5];
+
+-- filterState may be a comma-separated list; build a lookup set once
+local stateSet = nil;
+if filterState ~= '*' then
+    stateSet = {};
+    for stateEntry in string.gmatch(filterState, "([^,]+)") do
+        stateSet[stateEntry] = true;
+    end
+end
 
 local total = redis.call("SCARD", listKey);  -- Get total account count
 
@@ -75,7 +85,7 @@ for index, account in ipairs(list) do
     end
 
     -- Check if account matches filter criteria
-    if (filterState == '*' or filterState == state) and strmatch then      
+    if (filterState == '*' or (state and stateSet[state])) and strmatch then      
 
         if shouldSkip == 0 then
             -- Pagination offset reached, can include this entry

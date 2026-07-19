@@ -1215,6 +1215,30 @@ test.describe('admin shell', () => {
 
             await expectTooltipOnHover(page, badge);
 
+            // the failing account rolls up into the dashboard "Needs attention"
+            // card (the connections gauge refreshes on the metrics interval, so
+            // poll across reloads) and its link opens the combined errors filter
+            await expect
+                .poll(
+                    async () => {
+                        await page.goto('/admin');
+                        let value = await page.locator('.card', { hasText: 'Needs attention' }).locator('.text-xl').textContent();
+                        return Number(value.trim()) || 0;
+                    },
+                    { timeout: 60000 }
+                )
+                .toBeGreaterThan(0);
+
+            const attentionLink = page.getByRole('link', { name: 'Needs attention' });
+            await expect(attentionLink).toHaveAttribute('href', '/admin/accounts?state=errors');
+            await attentionLink.click();
+            await page.waitForURL(/\/admin\/accounts\?state=errors/);
+            await expect(page.locator(`.state-info[data-account="${ACCOUNT_ID}"]`)).toBeVisible();
+            await expect(page.locator('#search-state-dropdown')).toHaveText(/Needs attention/);
+
+            await page.goto('/admin/accounts');
+            await expect(badge).toBeVisible();
+
             // live SSE repaint: watch the badge for DOM mutations, then force
             // a state change server-side - the /admin/changes EventSource must
             // repaint the badge with no page reload involved
