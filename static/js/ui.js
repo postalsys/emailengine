@@ -251,22 +251,33 @@ window.paintCertData = certData => {
 };
 
 // Copy-to-clipboard buttons: a .copy-btn with data-copy-target="#selector"
-// copies the target's value (inputs) or text content. Delegated, so buttons
-// inside dynamically injected markup work without re-binding. Uses the async
+// copies the target's value (inputs), ACE editor content (a mounted
+// ui/code-editor div) or text content. Delegated, so buttons inside
+// dynamically injected markup work without re-binding. Uses the async
 // Clipboard API where available; self-hosted installs served over plain HTTP
-// are not a secure context, so those fall back to select() + execCommand.
+// are not a secure context, so those fall back to execCommand on a throwaway
+// textarea (a selection on the target itself would not work for password
+// inputs or ACE editors, which only render the visible lines).
 document.addEventListener('click', e => {
     let btn = e.target.closest('.copy-btn');
     if (!btn) {
         return;
     }
+    // toolbar copy controls are <a href="#"> links
+    e.preventDefault();
 
     let target = btn.dataset.copyTarget ? document.querySelector(btn.dataset.copyTarget) : null;
     if (!target) {
         return;
     }
 
-    let value = 'value' in target ? target.value : target.textContent;
+    let aceEntry = uiAceInstances.get(target);
+    let value;
+    if (aceEntry) {
+        value = aceEntry.editor.getValue();
+    } else {
+        value = 'value' in target ? target.value : target.textContent;
+    }
 
     let copied;
     if (navigator.clipboard && window.isSecureContext) {
@@ -275,15 +286,20 @@ document.addEventListener('click', e => {
             () => false
         );
     } else {
+        let helper = document.createElement('textarea');
+        helper.value = value;
+        helper.setAttribute('readonly', '');
+        helper.style.position = 'fixed';
+        helper.style.top = '-1000px';
+        document.body.appendChild(helper);
+        helper.select();
         let ok = false;
-        if (typeof target.select === 'function') {
-            target.select();
-            try {
-                ok = document.execCommand('copy');
-            } catch (err) {
-                ok = false;
-            }
+        try {
+            ok = document.execCommand('copy');
+        } catch (err) {
+            ok = false;
         }
+        helper.remove();
         copied = Promise.resolve(ok);
     }
 
@@ -368,13 +384,15 @@ const uiAceThemes = {
     preview: { light: 'ace/theme/kuroir', dark: 'ace/theme/tomorrow_night_eighties' }
 };
 
-const uiAceInstances = new Set();
+// container element -> { editor, kind }; also the lookup the .copy-btn
+// handler uses to read the full session value of a targeted editor
+const uiAceInstances = new Map();
 
 const uiAceApplyTheme = entry => entry.editor.setTheme(uiAceThemes[entry.kind][window.uiEffectiveTheme()]);
 
 const uiAceRegister = (editor, kind) => {
     const entry = { editor, kind };
-    uiAceInstances.add(entry);
+    uiAceInstances.set(editor.container, entry);
     uiAceApplyTheme(entry);
     if (uiAceInstances.size === 1) {
         window.uiOnThemeChange(() => uiAceInstances.forEach(uiAceApplyTheme));

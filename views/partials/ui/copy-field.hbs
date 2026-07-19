@@ -16,10 +16,5 @@
     <input type="text" id="{{id}}"
         class="input{{#if small}} input-sm{{/if}} grow{{#if join}} join-item{{/if}}{{#if inputClass}} {{inputClass}}{{/if}}"
         aria-label="{{ariaLabel}}" {{#if value}}value="{{value}}" {{/if}}readonly>
-    {{#> ui/tooltip text="Copy to clipboard" placement="" class=""}}
-    <button class="btn btn-primary{{#if small}} btn-sm{{/if}}{{#if join}} join-item{{/if}} copy-btn" type="button"
-        data-copy-target="#{{id}}" aria-label="Copy to clipboard">
-        <span class="icon-[tabler--copy] size-4"></span>
-    </button>
-    {{/ui/tooltip}}
+    {{> ui/copy-btn target=id small=small join=join}}
 </div>

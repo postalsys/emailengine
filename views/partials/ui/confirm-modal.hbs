@@ -32,7 +32,8 @@
         {{#if fieldName}}
         <input type="hidden"{{#if fieldId}} id="{{fieldId}}"{{/if}} name="{{fieldName}}" value="{{fieldValue}}">
         {{/if}}
-        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=(concat "#" id)}}
+        {{!-- id is neutralized inside the ui/modal block, so the close target comes from the closeOverlay param ui/modal provides --}}
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=closeOverlay}}
         {{> ui/btn label=submitLabel variant=(when submitVariant submitVariant "error") type="submit" icon=submitIcon}}
     </form>
 </div>

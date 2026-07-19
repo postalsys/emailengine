@@ -46,9 +46,9 @@ $ emailengine license
 
 ## Documentation
 
--   [API Reference](https://api.emailengine.app/)
--   [Blog Posts](https://docs.emailengine.app/tag/email-engine/)
--   OpenAPI specification for Postman: [Swagger.json](https://api.emailengine.app/swagger.json)
+-   [Documentation](https://learn.emailengine.app/)
+-   [API Reference](https://learn.emailengine.app/docs/api/emailengine-api)
+-   OpenAPI specification for Postman: [swagger.json](https://emailengine.dev/swagger.json)
 
 ## Configuring EmailEngine
 

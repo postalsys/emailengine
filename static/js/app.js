@@ -96,8 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         for (let elm of [allElementsElm].concat(Array.from(otherElements))) {
-            elm.addEventListener('change', () => toggleAllElements(allElementsElm, otherElements, direction));
-            elm.addEventListener('click', () => toggleAllElements(allElementsElm, otherElements, direction));
+            // input keeps text-driven rules live per keystroke (e.g. the
+            // reveal/copy buttons of ui/secret-field)
+            for (let eventName of ['change', 'click', 'input']) {
+                elm.addEventListener(eventName, () => toggleAllElements(allElementsElm, otherElements, direction));
+            }
         }
 
         if (allElementsElm) {
@@ -201,6 +204,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             elm.textContent = origin;
         }
+    }
+
+    // topbar search: the clear button (rendered only while a query is active)
+    // resubmits the search form without the query, keeping any other filters
+    let searchClearBtn = document.getElementById('topbar-search-clear');
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            let form = searchClearBtn.closest('form');
+            let queryElm = form.querySelector('input[name="query"]');
+            // disabled fields are not submitted, so the query parameter is dropped
+            queryElm.disabled = true;
+            form.submit();
+        });
     }
 
     // show or hide the error tooltip attached to a state badge (the badge sits

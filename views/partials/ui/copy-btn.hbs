@@ -1,0 +1,19 @@
+{{!--
+    ui/copy-btn - tooltip-wrapped copy-to-clipboard button (the button is
+    handled centrally by the .copy-btn listener in static/js/ui.js). Used by
+    ui/copy-field and ui/secret-field.
+      {{> ui/copy-btn target="tokenValue" join=true}}
+    Params:
+      target   - id of the element whose value/content is copied (required)
+      small    - true for the compact btn-sm variant
+      join     - true when rendered inside a join group
+      btnClass - extra classes on the button (optional; named btnClass because
+                 a param named class would be wiped by ui/tooltip neutralizing
+                 its own class hash param inside the block)
+--}}
+{{#> ui/tooltip text="Copy to clipboard" placement="" class=""}}
+<button class="btn btn-primary{{#if small}} btn-sm{{/if}}{{#if join}} join-item{{/if}}{{#if btnClass}} {{btnClass}}{{/if}} copy-btn"
+    type="button" data-copy-target="#{{target}}" aria-label="Copy to clipboard">
+    <span class="icon-[tabler--copy] size-4"></span>
+</button>
+{{/ui/tooltip}}

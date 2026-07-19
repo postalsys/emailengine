@@ -57,13 +57,13 @@
             </div>
 
             <div>
-                {{> ui/setting-ref name="EENGINE_SECRET" href="https://docs.emailengine.app/enabling-secret-encryption/"}}
+                {{> ui/setting-ref name="EENGINE_SECRET" href="https://learn.emailengine.app/docs/advanced/encryption"}}
 
                 {{#> ui/checkbox id="encryption" label="Data Encryption" checked=encryption disabled=true}}
                 {{> ui/badge label=(when encryption "enabled" "disabled") variant=(when encryption "success" "error")}}
                 {{/ui/checkbox}}
                 <span class="helper-text">Set <code>EENGINE_SECRET</code> environment variable at startup to enable. <a
-                        href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
+                        href="https://learn.emailengine.app/docs/advanced/encryption" target="_blank"
                         rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
                         more</a></span>
             </div>

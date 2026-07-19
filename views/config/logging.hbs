@@ -44,7 +44,7 @@
             <div>
                 {{> ui/setting-ref name="sentryEnabled"}}
                 {{> ui/checkbox id="settingsSentryEnabled" name="sentryEnabled"
-                label="Report Unhandled Errors to Sentry" checked=values.sentryEnabled error=errors.sentryEnabled
+                label="Report Unhandled Errors to Sentry" checked=sentryChecked error=errors.sentryEnabled
                 disabled=sentryEnvManaged
                 hint="Send unhandled errors to a Sentry server. Reports include stack traces, account IDs, and error details, but never credentials or message content. Changes apply within a minute - no restart needed."}}
             </div>

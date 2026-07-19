@@ -1,7 +1,8 @@
 {{!--
-    ui/code-editor - ACE editor mount plus its toolbar strip (the title cell and
-    the fullscreen toggle wired to uiEditorFullscreen). The optional block
-    appends extra toolbar cells after the standard ones:
+    ui/code-editor - ACE editor mount plus its toolbar strip (the title cell,
+    a copy-to-clipboard control handled by the central .copy-btn listener in
+    static/js/ui.js, and the fullscreen toggle wired to uiEditorFullscreen).
+    The optional block appends extra toolbar cells after the standard ones:
       {{#> ui/code-editor id="editor-fn" title="Filter function"}}
       <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
           <a href="#" id="test-payload-btn">Set test payload</a>
@@ -18,6 +19,10 @@
 <div class="editor-embed-block">
     <div class="editor-embed-content editor-embed-title editor-embed-content-left">
         {{title}}
+    </div>
+    <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
+        <a href="#" class="copy-btn" data-copy-target="#{{id}}" aria-label="Copy content to clipboard"><span
+                class="icon-[tabler--copy] size-3 me-1 inline-block align-[-2px]"></span>Copy</a>
     </div>
     <div class="editor-embed-content editor-embed-content-left editor-embed-content-right">
         <a href="#" class="toggle-fullscreen" data-target="{{id}}">Toggle fullscreen</a>

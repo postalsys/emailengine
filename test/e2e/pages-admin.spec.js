@@ -100,9 +100,22 @@ async function searchTopbar(page, target, query) {
     await page.waitForURL(url => url.pathname === target && url.searchParams.get('query') === query);
 }
 
-async function deleteViaModal(page, listUrlRe) {
+async function deleteViaModal(page, listUrlRe, opts) {
     await page.locator('#delete-btn').click();
     await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+    if (opts && opts.checkCancel) {
+        // the footer Cancel closes without submitting; its data-overlay target
+        // is the closeOverlay value ui/modal hands to the block (it once
+        // rendered as a dead "#" because the id hash param is neutralized
+        // inside the block). The shared ui/confirm-modal partial renders
+        // identically on every page, so one call site opting in covers all
+        // confirm modals without slowing the other delete flows down.
+        await page.locator('#deleteModal button', { hasText: 'Cancel' }).click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(0);
+        await expect(page.locator('.overlay-backdrop')).toHaveCount(0);
+        await page.locator('#delete-btn').click();
+        await expect(page.locator('#deleteModal.open')).toHaveCount(1);
+    }
     await page.locator('#deleteModal button[type="submit"]').click();
     await page.waitForURL(listUrlRe);
 }
@@ -168,15 +181,19 @@ test.describe('admin shell', () => {
 
     test('copy button falls back to execCommand without the Clipboard API', async ({ page }) => {
         // Self-hosted installs on plain HTTP get no navigator.clipboard (not a
-        // secure context); the ui.js handler must select the target and run
-        // document.execCommand('copy') instead. The API cannot be deleted from
-        // an already-secure context, so stub it out and spy on execCommand.
+        // secure context); the ui.js handler must stage the value in a
+        // throwaway textarea and run document.execCommand('copy') on it
+        // (selecting the target itself would not work for password inputs or
+        // ACE editors, which only render the visible lines). The API cannot be
+        // deleted from an already-secure context, so stub it out and spy on
+        // execCommand, capturing the staged value from the focused element.
         await page.addInitScript(() => {
             Object.defineProperty(window.navigator, 'clipboard', { value: undefined });
             window.__copyCalls = [];
             const orig = document.execCommand.bind(document);
             document.execCommand = cmd => {
-                window.__copyCalls.push(cmd);
+                const active = document.activeElement;
+                window.__copyCalls.push({ cmd, value: active && 'value' in active ? active.value : null });
                 return orig(cmd);
             };
         });
@@ -196,14 +213,7 @@ test.describe('admin shell', () => {
             );
         });
         await page.locator('button.copy-btn').click();
-        expect(await page.evaluate(() => window.__copyCalls)).toEqual(['copy']);
-        // the fallback selects the target input so execCommand copies it
-        expect(
-            await page.evaluate(() => {
-                const input = document.getElementById('copy-fixture');
-                return input.value.slice(input.selectionStart, input.selectionEnd);
-            })
-        ).toBe('fallback-copy-value');
+        expect(await page.evaluate(() => window.__copyCalls)).toEqual([{ cmd: 'copy', value: 'fallback-copy-value' }]);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -489,8 +499,14 @@ test.describe('admin shell', () => {
         await page.goto('/admin/gateways?query=no-such-gateway-zzz');
         await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toHaveCount(0);
 
+        // the clear button in the topbar search input drops the query and
+        // returns the unfiltered list
+        await page.locator('#topbar-search-clear').click();
+        await page.waitForURL(url => url.pathname === '/admin/gateways' && !url.searchParams.has('query'));
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toBeVisible();
+
         await page.goto(gatewayUrl);
-        await deleteViaModal(page, /\/admin\/gateways(\?|$)/);
+        await deleteViaModal(page, /\/admin\/gateways(\?|$)/, { checkCancel: true });
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -570,6 +586,17 @@ test.describe('admin shell', () => {
         await page.keyboard.press('Escape');
         rect = await editorRect();
         expect(rect.h).toBeLessThan(rect.vh / 2);
+
+        // the toolbar copy control puts the full editor content on the
+        // clipboard (the ACE branch of the ui.js .copy-btn handler); compare
+        // against the editor's own value - ACE auto-closes typed tags
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.locator('#editor-html').click();
+        await page.keyboard.type('<p>e2e copy</p>');
+        await page.locator('.copy-btn[data-copy-target="#editor-html"]').click();
+        const editorContent = await page.evaluate(() => document.getElementById('editor-html').env.editor.getValue());
+        expect(editorContent).toContain('e2e copy');
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(editorContent);
 
         // FlyonUI tabs switch the editor panes and mark the selected one
         await expectSelectedTab(page, 'html-tab', ['text-tab']);
@@ -772,8 +799,19 @@ test.describe('admin shell', () => {
         await page.locator('#smtpServerPort').dispatchEvent('change');
         await expect(page.locator('#example-phpmailer-code')).toContainText('3535');
 
+        // the reveal and copy buttons are disabled while the password field is
+        // empty and enable as soon as a value is typed (ui.js .secret-field)
+        await expect(page.locator('#showPassword')).toBeDisabled();
+        await expect(page.locator('.secret-field .copy-btn')).toBeDisabled();
         await page.fill('#smtpServerPassword', 'e2e-secret');
+        await expect(page.locator('#showPassword')).toBeEnabled();
+        await expect(page.locator('.secret-field .copy-btn')).toBeEnabled();
         await expectPasswordToggle(page, 'showPassword', 'smtpServerPassword');
+
+        // the copy button puts the secret on the clipboard without revealing it
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.locator('.secret-field .copy-btn').click();
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('e2e-secret');
 
         // the listen-address input gets native datalist suggestions (uiDatalist)
         await expect(page.locator('#smtpServerHost')).toHaveAttribute('list', 'available-addresses-list');

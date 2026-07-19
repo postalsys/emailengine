@@ -98,6 +98,13 @@
                         <span class="icon-[tabler--search] text-base-content/60 my-auto me-2 size-4 shrink-0"></span>
                         <input type="text" class="grow" placeholder="{{searchPlaceholder}}" aria-label="Search"
                             name="query" value="{{query}}">
+                        {{#if query}}
+                        <button type="button" id="topbar-search-clear"
+                            class="my-auto shrink-0 cursor-pointer text-base-content/60 hover:text-base-content"
+                            aria-label="Clear search">
+                            <span class="icon-[tabler--x] size-4"></span>
+                        </button>
+                        {{/if}}
                     </div>
 
                     <button class="btn btn-primary btn-sm" type="submit">Search</button>

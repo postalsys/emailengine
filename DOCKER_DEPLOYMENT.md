@@ -490,6 +490,6 @@ docker-compose restart
 
 ## Support
 
-- Documentation: https://emailengine.app/
-- API Reference: https://api.emailengine.app/
+- Documentation: https://learn.emailengine.app/
+- API Reference: https://learn.emailengine.app/docs/api/emailengine-api
 - Issues: https://github.com/postalsys/emailengine/issues
