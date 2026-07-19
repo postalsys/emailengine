@@ -2,9 +2,7 @@
 {{> ui/btn label="Add an account" icon="icon-[tabler--user-plus]" overlay="#addAccount"}}
 {{/ui/page-header}}
 
-{{#if query}}
-{{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=(concat 'Results for "' query '"') class="mb-6"}}
-{{/if}}
+{{> ui/search-crumb parentHref="/admin/accounts" parentLabel="Accounts" query=query}}
 
 {{> accounts_table emptyText="No accounts found."}}
 

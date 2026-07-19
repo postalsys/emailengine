@@ -2,6 +2,8 @@
 {{> ui/btn href=newLink label="Create webhook route" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
+{{> ui/search-crumb parentHref="/admin/webhooks" parentLabel="Webhook Routes" query=query}}
+
 
 {{#unless webhooksEnabled}}
 <div class="alert alert-soft alert-warning mb-6"><span><strong>Note:</strong> Webhook processing is currently disabled

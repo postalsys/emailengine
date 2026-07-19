@@ -2,6 +2,8 @@
 {{> ui/btn href=newLink label="Create access token" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
+{{> ui/search-crumb parentHref="/admin/tokens" parentLabel="Access Tokens" query=query}}
+
 <p class="mb-6">
     To access EmailEngine API, you need to authenticate your API requests with an access token.
 </p>

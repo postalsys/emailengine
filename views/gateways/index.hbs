@@ -2,6 +2,8 @@
 {{> ui/btn href="/admin/gateways/new" label="Add Gateway" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
+{{> ui/search-crumb parentHref="/admin/gateways" parentLabel="Gateways" query=query}}
+
 <p class="mb-6">
     Route outgoing emails through SMTP gateways instead of individual user email servers.
 </p>

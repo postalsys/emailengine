@@ -90,6 +90,10 @@
                     <input type="hidden" name="state" value="{{state}}">
                     {{/if}}
 
+                    {{#each searchHidden}}
+                    <input type="hidden" name="{{name}}" value="{{value}}">
+                    {{/each}}
+
                     <div class="input input-sm grow">
                         <span class="icon-[tabler--search] text-base-content/60 my-auto me-2 size-4 shrink-0"></span>
                         <input type="text" class="grow" placeholder="{{searchPlaceholder}}" aria-label="Search"

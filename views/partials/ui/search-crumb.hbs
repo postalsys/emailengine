@@ -1,0 +1,12 @@
+{{!--
+    ui/search-crumb - "Results for" breadcrumb shown on a list page while a topbar
+    search query is active; renders nothing when the query is empty.
+      {{> ui/search-crumb parentHref="/admin/gateways" parentLabel="Gateways" query=query}}
+    Params:
+      parentHref  - list page URL without the query (required)
+      parentLabel - list page name (required)
+      query       - active search term (required; empty hides the crumb)
+--}}
+{{#if query}}
+{{> ui/breadcrumb parentHref=parentHref parentLabel=parentLabel current=(concat 'Results for "' query '"') class="mb-6"}}
+{{/if}}

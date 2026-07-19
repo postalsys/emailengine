@@ -93,6 +93,13 @@ async function expectModalOpen(page, id) {
 
 // Drives the standard delete-confirmation flow on a detail page: open the modal
 // with #delete-btn, submit it, and wait for the redirect back to the list page.
+// Submit a search through the topbar form and wait for the filtered list page
+async function searchTopbar(page, target, query) {
+    await page.fill(`header form[action="${target}"] input[name="query"]`, query);
+    await page.locator(`header form[action="${target}"] button[type="submit"]`).click();
+    await page.waitForURL(url => url.pathname === target && url.searchParams.get('query') === query);
+}
+
 async function deleteViaModal(page, listUrlRe) {
     await page.locator('#delete-btn').click();
     await expect(page.locator('#deleteModal.open')).toHaveCount(1);
@@ -473,6 +480,16 @@ test.describe('admin shell', () => {
         await expect(page.locator('.ee-dl dt', { hasText: 'Gateway ID' })).toBeVisible();
         await expect(page.getByRole('heading', { name: 'E2E Smoke Gateway' })).toBeVisible();
 
+        // topbar search filters the list; a miss renders an empty result set
+        const gatewayUrl = page.url();
+        await page.goto('/admin/gateways');
+        await searchTopbar(page, '/admin/gateways', 'e2e-smoke');
+        await expect(page.getByText('Results for "e2e-smoke"')).toBeVisible();
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toBeVisible();
+        await page.goto('/admin/gateways?query=no-such-gateway-zzz');
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toHaveCount(0);
+
+        await page.goto(gatewayUrl);
         await deleteViaModal(page, /\/admin\/gateways(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
@@ -488,6 +505,11 @@ test.describe('admin shell', () => {
 
         await expect(page.locator('h1', { hasText: 'Access Tokens' })).toBeVisible();
         await expect(page.locator('tbody tr').first()).toBeVisible();
+
+        // topbar search filters the token list by description (case-insensitive)
+        await searchTopbar(page, '/admin/tokens', 'TOKENS-page');
+        await expect(page.locator('tbody tr', { hasText: 'e2e tokens-page token' }).first()).toBeVisible();
+        await page.goto('/admin/tokens');
 
         // delete modal carries the token description; close without deleting
         const firstDelete = page.locator('.delete-token-btn').first();
@@ -564,6 +586,13 @@ test.describe('admin shell', () => {
         await page.keyboard.press('Escape');
         await expect(page.locator('#sendTestModal.open')).toHaveCount(0);
 
+        // topbar search matches the name with normalized case and whitespace
+        const templateUrl = page.url();
+        await page.goto('/admin/templates');
+        await searchTopbar(page, '/admin/templates', 'e2e  smoke');
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Template' })).toBeVisible();
+        await page.goto(templateUrl);
+
         await deleteViaModal(page, /\/admin\/templates(\?|$)/);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
@@ -637,6 +666,13 @@ test.describe('admin shell', () => {
         await expect(page.locator('#map')).toBeVisible();
         await expect(page.locator('#fn')).toBeHidden();
         await expectSelectedTab(page, 'map-tab', ['fn-tab']);
+
+        // topbar search also matches the target URL of a route
+        const routeUrl = page.url();
+        await page.goto('/admin/webhooks');
+        await searchTopbar(page, '/admin/webhooks', 'e2e-webhook');
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Route' })).toBeVisible();
+        await page.goto(routeUrl);
 
         await deleteViaModal(page, /\/admin\/webhooks(\?|$)/);
 

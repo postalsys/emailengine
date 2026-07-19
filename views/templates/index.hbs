@@ -2,7 +2,9 @@
 {{> ui/btn href=newLink label="Create template" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
-{{#if account}}
+{{#if query}}
+{{> ui/search-crumb parentHref="/admin/templates" parentLabel="Templates" query=query}}
+{{else if account}}
 {{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=account.name class="mb-6"}}
 {{/if}}
 
