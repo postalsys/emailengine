@@ -842,6 +842,32 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('config forms: a validation error keeps the submitted values and the menu highlight', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // the content-size field takes free text ("1MB"), so an invalid value reaches
+        // the server-side Joi validation instead of being blocked by the browser
+        await page.goto('/admin/config/webhooks');
+        const sizeField = page.locator('#settingsNotifyTextSize');
+        const origSize = await sizeField.inputValue();
+        await sizeField.fill('not-a-size');
+        await page.getByRole('button', { name: 'Save Changes' }).click();
+
+        await expect(page.locator('.flash-alert', { hasText: "Couldn't save settings" })).toBeVisible();
+        // the submitted value stays in the field instead of resetting to the stored one
+        await expect(sizeField).toHaveValue('not-a-size');
+        // and the sidebar still highlights the page being edited
+        await expect(page.locator('#menu-config .menu-active', { hasText: 'Webhooks' })).toBeVisible();
+
+        // restore and confirm the form still saves
+        await sizeField.fill(origSize);
+        await page.getByRole('button', { name: 'Save Changes' }).click();
+        await expect(page.locator('.flash-alert', { hasText: 'Configuration updated' })).toBeVisible();
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('config security: status badges and service secret reveal', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
