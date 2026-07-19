@@ -207,11 +207,14 @@ test('mapUserinfoProfile', async t => {
     await t.test('normalizes email_verified to a strict tri-state', () => {
         assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: true }).emailVerified, true);
         assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'true' }).emailVerified, true);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 1 }).emailVerified, true);
         assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: false }).emailVerified, false);
         assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'false' }).emailVerified, false);
-        // Missing or non-boolean claim stays "unknown" so trust behavior is unchanged
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 0 }).emailVerified, false);
+        // A missing claim stays "unknown" (undefined) so trust behavior is unchanged, but any
+        // present-but-unrecognized value resolves to false rather than being trusted as unknown.
         assert.equal(sso.mapUserinfoProfile({ sub: 's' }).emailVerified, undefined);
-        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'yes' }).emailVerified, undefined);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'yes' }).emailVerified, false);
     });
 
     await t.test('username precedence email > preferred_username > sub', () => {
