@@ -138,6 +138,17 @@
     display: none;
 }
 
+/* FlyonUI's .link keeps the surrounding text color (the only resting cue is
+ * a font-weight bump) and .link-animated hides the underline until hover, so
+ * links read as plain text. Color them with the brand primary so they are
+ * recognizable at rest; hover keeps the animated underline. Un-layered on
+ * purpose: FlyonUI sets --link-color in @layer utilities. NB: this also
+ * outranks FlyonUI's link-{primary,error,...} color modifiers (unused so
+ * far) - a semantic-colored link would need an explicit color override. */
+.link {
+    --link-color: var(--color-primary);
+}
+
 /* highlight.js colors live in the hand-vendored static/css/highlight.min.css,
  * rewritten to the FlyonUI theme tokens (single source; no load-order or
  * specificity coupling between the two sheets). */
