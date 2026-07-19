@@ -176,9 +176,35 @@ window.uiDatalist = (id, values, inputs) => {
 
 // Fullscreen toggle for ACE editor blocks: binds every .toggle-fullscreen
 // link whose data-target names an editor in the passed Map (element id ->
-// ace instance). Clicking toggles .full-screen-div on the editor container,
-// Escape exits; the editor is resized and refocused on both transitions.
+// ace instance). Clicking toggles .full-screen-div on the editor container;
+// Escape or the layout's floating #fullscreen-close-btn exits. The editor is
+// resized and refocused on both transitions.
 window.uiEditorFullscreen = editors => {
+    // floating exit button from the layout: Escape has no key on touch devices.
+    // The fullscreen editor is derived from the DOM instead of tracked state, so
+    // pages that call uiEditorFullscreen more than once (e.g. config/ai) stay
+    // correct: only the listener whose editors Map owns the element acts.
+    const closeBtn = document.getElementById('fullscreen-close-btn');
+
+    const setFullscreen = (targetElm, editor, on) => {
+        targetElm.classList.toggle('full-screen-div', on);
+        if (closeBtn) {
+            closeBtn.classList.toggle('hidden', !on);
+        }
+        editor.resize();
+        editor.focus();
+    };
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', e => {
+            e.preventDefault();
+            let targetElm = document.querySelector('.full-screen-div');
+            if (targetElm && editors.has(targetElm.id)) {
+                setFullscreen(targetElm, editors.get(targetElm.id), false);
+            }
+        });
+    }
+
     for (let toggleElm of document.querySelectorAll('.toggle-fullscreen')) {
         let target = toggleElm.dataset.target;
         if (!editors.has(target)) {
@@ -190,16 +216,12 @@ window.uiEditorFullscreen = editors => {
         toggleElm.addEventListener('click', e => {
             e.preventDefault();
             e.stopPropagation();
-            targetElm.classList.toggle('full-screen-div');
-            editor.resize();
-            editor.focus();
+            setFullscreen(targetElm, editor, !targetElm.classList.contains('full-screen-div'));
         });
 
         targetElm.addEventListener('keydown', e => {
             if (e.key === 'Escape' && targetElm.classList.contains('full-screen-div')) {
-                targetElm.classList.remove('full-screen-div');
-                editor.resize();
-                editor.focus();
+                setFullscreen(targetElm, editor, false);
             }
         });
     }

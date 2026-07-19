@@ -548,11 +548,24 @@ test.describe('admin shell', () => {
                 const r = document.getElementById('editor-html').getBoundingClientRect();
                 return { x: r.x, y: r.y, w: r.width, h: r.height, vw: window.innerWidth, vh: window.innerHeight };
             });
+        await expect(page.locator('#fullscreen-close-btn')).toBeHidden();
         await page.locator('.toggle-fullscreen[data-target="editor-html"]').click();
         let rect = await editorRect();
         expect(rect.x).toBe(0);
         expect(rect.y).toBe(0);
         expect(rect.w).toBe(rect.vw);
+        expect(rect.h).toBe(rect.vh);
+
+        // the floating close button is the touch-device exit (no Escape key there)
+        await expect(page.locator('#fullscreen-close-btn')).toBeVisible();
+        await page.locator('#fullscreen-close-btn').click();
+        rect = await editorRect();
+        expect(rect.h).toBeLessThan(rect.vh / 2);
+        await expect(page.locator('#fullscreen-close-btn')).toBeHidden();
+
+        // Escape still exits for keyboard users
+        await page.locator('.toggle-fullscreen[data-target="editor-html"]').click();
+        rect = await editorRect();
         expect(rect.h).toBe(rect.vh);
         await page.keyboard.press('Escape');
         rect = await editorRect();

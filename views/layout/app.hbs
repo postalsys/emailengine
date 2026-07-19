@@ -202,6 +202,14 @@
 
                 <div id="toastContainer" class="fixed top-16 right-6 z-[10000] w-80 max-w-[90vw]"></div>
 
+                {{!-- floating exit for the ACE editor fullscreen mode (uiEditorFullscreen):
+                      touch devices have no Escape key, so this is their only way out --}}
+                <button type="button" id="fullscreen-close-btn"
+                    class="btn btn-circle btn-neutral fixed end-4 top-4 z-[10000] hidden shadow-lg"
+                    aria-label="Exit full screen">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+
                 {{> alerts}}
 
                 {{#unless licenseInfo.active}}
