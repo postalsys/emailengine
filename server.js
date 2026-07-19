@@ -1401,7 +1401,7 @@ let spawnWorker = async (type, opts) => {
                             .multi()
                             .hincrby(hkey, timeStr, 1)
                             .sadd(`${REDIS_PREFIX}stats:keys`, statUpdateKey)
-                            .expire(hkey, MAX_DAYS_STATS + 1 * 24 * 3600); // Keep for configured days + 1
+                            .expire(hkey, (MAX_DAYS_STATS + 1) * 24 * 3600); // Keep for configured days + 1
 
                         if (account && accountUpdateKey) {
                             // Update account-specific counter
