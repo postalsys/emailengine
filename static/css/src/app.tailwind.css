@@ -130,6 +130,9 @@
      * box per wrapped line */
     display: block;
     text-wrap: balance;
+    /* FlyonUI centers via .tooltip; multi-line bubbles read better
+     * left-aligned (matches the public-page ee-tooltip) */
+    text-align: start;
 }
 /* empty-state gate for SSE state badges (ui/state-badge): while there is no
  * error, the bubble must not render at all. Gated on the wrapper because
