@@ -1,0 +1,127 @@
+{{> ui/page-header title="Branding" icon="icon-[tabler--palette]" class="mb-1"}}
+
+<p class="mb-6">Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
+
+<form method="post" id="settings-form" action="/admin/config/branding">
+    {{!-- no id: the layout already renders the #crumb element the script reads --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    <div id="templates_settings" class="card bg-base-100 shadow-md mb-6">
+        <div class="card-header flex items-center justify-between">
+            <h6 class="card-title text-primary">Public Page Customization</h6>
+            {{> ui/btn label="Preview" variant="neutral" style="soft" size="sm" icon="icon-[tabler--eye]"
+            id="preview-header-btn"}}
+        </div>
+        <div class="card-body space-y-4">
+
+            <div>
+                {{> ui/setting-ref name="pageBrandName"}}
+                {{#> ui/form-field id="settingsPageBrandName" label="Brand Name" error=errors.pageBrandName}}
+                <input type="text" class="input{{#if errors.pageBrandName}} is-invalid{{/if}}"
+                    id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
+                    data-lpignore="true" autocomplete="off" placeholder="EmailEngine" />
+                <span class="helper-text">Appears in browser title bar</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="templateHeader"}}
+
+                <label class="label-text">Page Header HTML</label>
+
+                <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
+                    name="templateHeader" value="{{values.templateHeader}}">
+
+                {{> ui/code-editor id="editor-html" title="Header template"}}
+
+                {{#if errors.templateHeader}}
+                <span class="helper-text text-error">{{errors.templateHeader}}</span>
+                {{/if}}
+
+                <span class="helper-text">HTML shown at the {{#> ui/tooltip-rich label="top of public pages"}}<img
+                        src="/static/preview/header-template.png" alt="Header template preview">{{/ui/tooltip-rich}}</span>
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="templateHtmlHead"}}
+
+                <label class="label-text">Custom &lt;head&gt; HTML</label>
+
+                <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
+                    id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
+
+                {{> ui/code-editor id="editor-html-head" title="Head content"}}
+
+                {{#if errors.templateHtmlHead}}
+                <span class="helper-text text-error">{{errors.templateHtmlHead}}</span>
+                {{/if}}
+
+                <span class="helper-text">Add custom CSS, fonts, or analytics scripts</span>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+    </div>
+
+</form>
+
+<form id="preview-form" method="post" action="/admin/config/branding/preview">
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+    <input type="hidden" name="templateHeader" id="preview-header-elm">
+    <input type="hidden" name="templateHtmlHead" id="preview-head-elm">
+    <input type="hidden" name="pageBrandName" id="preview-brand-name-elm">
+</form>
+
+
+<script src="/static/js/ace/ace.js"></script>
+<script src="/static/js/ace/ext-language_tools.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const editors = new Map();
+
+        const editorHtml = uiAceEditor("editor-html", "handlebars", document.getElementById('templateHeaderElement').value, {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-html", editorHtml);
+
+        const editorHtmlHead = uiAceEditor("editor-html-head", "handlebars", document.getElementById('templateHtmlHeadElement').value, {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-html-head", editorHtmlHead);
+
+
+        document.getElementById('preview-header-btn').addEventListener('click', e => {
+            e.preventDefault();
+            let previewWindow = window.open('about:blank', 'preview-window', '');
+            let previewForm = document.getElementById('preview-form');
+            previewForm.target = 'preview-window';
+
+            document.getElementById('preview-brand-name-elm').value = document.getElementById('settingsPageBrandName').value;
+            document.getElementById('preview-header-elm').value = editorHtml.getValue();
+            document.getElementById('preview-head-elm').value = editorHtmlHead.getValue();
+
+            previewForm.submit();
+        });
+
+        document.getElementById('settings-form').addEventListener('submit', () => {
+            document.getElementById('templateHeaderElement').value = editorHtml.getValue();
+            document.getElementById('templateHtmlHeadElement').value = editorHtmlHead.getValue();
+        });
+
+        uiEditorFullscreen(editors);
+
+    });
+
+
+</script>

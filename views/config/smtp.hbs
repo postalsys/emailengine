@@ -1,6 +1,6 @@
 {{!-- live state badge: app.js updates the badge-{type} class, text and error
       tooltip through the /admin/changes SSE feed (targets .state-info[data-type]) --}}
-{{> ui/page-header title="SMTP Interface" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="smtp" class="mb-1"}}
+{{> ui/page-header title="SMTP Server" icon="icon-[tabler--server]" stateLabel=serverState.label stateType="smtp" class="mb-1"}}
 
 <p>Send emails through EmailEngine using SMTP protocol. While the <a
         href="/admin/swagger#/Submit/postV1AccountAccountSubmit" target="_blank" rel="noopener noreferrer"

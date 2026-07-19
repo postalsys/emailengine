@@ -1,44 +1,43 @@
+{{!-- Menu flags mirror menu PLACEMENT, not route paths: items in the flat groups use a
+      top-level menuX flag (menuOauthApps, menuLicense - even though their URLs live under
+      /admin/config/), while Configuration accordion children set menuConfig + menuConfigX. --}}
 <ul class="accordion menu menu-sm w-full gap-1 p-4">
 
     {{> ui/menu-item href="/admin" label="Dashboard" icon="icon-[tabler--dashboard] size-4.5" active=menuDashboard}}
 
-    {{> ui/menu-item href="/admin/swagger" label="API Reference" icon="icon-[tabler--file-code] size-4.5" active=menuSwagger}}
-    {{> ui/menu-item href="/admin/accounts" label="Email Accounts" icon="icon-[tabler--users] size-4.5" active=menuAccounts}}
-    {{> ui/menu-item href="/admin/gateways" label="Email Gateways" icon="icon-[tabler--send] size-4.5" active=menuGateways}}
-    {{> ui/menu-item href="/admin/tokens" label="Access Tokens" icon="icon-[tabler--key] size-4.5" active=menuTokens}}
-    {{> ui/menu-item href="/admin/templates" label="Email Templates" icon="icon-[tabler--template] size-4.5" active=menuTemplates}}
-    {{> ui/menu-item href="/admin/webhooks" label="Webhook Routing" icon="icon-[tabler--webhook] size-4.5" active=menuWebhooks}}
+    {{> ui/menu-title label="Email"}}
+    {{> ui/menu-item href="/admin/accounts" label="Accounts" icon="icon-[tabler--users] size-4.5" active=menuAccounts}}
+    {{> ui/menu-item href="/admin/gateways" label="Gateways" icon="icon-[tabler--send] size-4.5" active=menuGateways}}
+    {{> ui/menu-item href="/admin/templates" label="Templates" icon="icon-[tabler--template] size-4.5" active=menuTemplates}}
 
-    {{#> ui/menu-section id="menu-tools" label="Tools" icon="icon-[tabler--tools] size-4.5" active=menuTools}}
-    {{> ui/menu-item href="/admin/bull-board" label="Job Queue"}}
-    {{> ui/menu-item href="/admin/internals" label="Workers" active=menuToolsInternals}}
-    {{/ui/menu-section}}
+    {{> ui/menu-title label="Integrations"}}
+    {{> ui/menu-item href="/admin/swagger" label="API Reference" icon="icon-[tabler--file-code] size-4.5" active=menuSwagger}}
+    {{> ui/menu-item href="/admin/tokens" label="Access Tokens" icon="icon-[tabler--key] size-4.5" active=menuTokens}}
+    {{> ui/menu-item href="/admin/config/oauth" label="OAuth2 Apps" icon="icon-[tabler--brand-oauth] size-4.5" active=menuOauthApps}}
+    {{> ui/menu-item href="/admin/webhooks" label="Webhook Routes" icon="icon-[tabler--webhook] size-4.5" active=menuWebhooks}}
+
+    {{> ui/menu-title label="System"}}
+    {{> ui/menu-item href="/admin/bull-board" label="Queues" icon="icon-[tabler--stack-2] size-4.5"}}
+    {{> ui/menu-item href="/admin/internals" label="Workers" icon="icon-[tabler--cpu] size-4.5" active=menuWorkers}}
 
     {{#> ui/menu-section id="menu-config" label="Configuration" icon="icon-[tabler--settings] size-4.5" active=menuConfig}}
-    {{> ui/menu-item href="/admin/config/service" label="General Settings" active=menuConfigService}}
+    {{> ui/menu-item href="/admin/config/service" label="General" active=menuConfigService}}
+    {{> ui/menu-item href="/admin/config/security" label="Security" active=menuConfigSecurity}}
+    {{> ui/menu-item href="/admin/config/email-processing" label="Email Processing" active=menuConfigEmailProcessing}}
     {{> ui/menu-item href="/admin/config/webhooks" label="Webhooks" active=menuConfigWebhooks}}
     {{> ui/menu-item href="/admin/config/ai" label="AI Processing" active=menuConfigAi}}
-    {{> ui/menu-item href="/admin/config/oauth" label="OAuth2" active=menuConfigOauth}}
-    {{> ui/menu-item href="/admin/config/logging" label="Logging" active=menuConfigLogging}}
     {{> ui/menu-item href="/admin/config/network" label="Network" active=menuConfigNetwork}}
-    {{> ui/menu-item href="/admin/config/smtp" label="SMTP Interface" active=menuConfigSmtp}}
+    {{> ui/menu-item href="/admin/config/smtp" label="SMTP Server" active=menuConfigSmtp}}
     {{> ui/menu-item href="/admin/config/imap-proxy" label="IMAP Proxy" active=menuConfigImapProxy}}
+    {{> ui/menu-item href="/admin/config/branding" label="Branding" active=menuConfigBranding}}
+    {{> ui/menu-item href="/admin/config/logging" label="Logging" active=menuConfigLogging}}
 
     {{#if showDocumentStore}}
     {{> ui/menu-item href="/admin/config/document-store" label="Document Store" active=menuConfigDocumentStore}}
     {{/if}}
-
-    <li>
-        <a class="inline-flex w-full items-center px-2{{#if menuConfigLicense}} menu-active{{/if}}"
-            href="/admin/config/license">
-            <span class="grow">License</span>
-            {{#unless licenseInfo.active}}
-            {{#> ui/tooltip text="License not activated" class="shrink-0"}}
-            <span class="icon-[tabler--alert-triangle] text-warning size-4 shrink-0"></span>
-            {{/ui/tooltip}}
-            {{/unless}}
-        </a>
-    </li>
     {{/ui/menu-section}}
+
+    {{> ui/menu-item href="/admin/config/license" label="License" icon="icon-[tabler--license] size-4.5"
+    active=menuLicense warnText=(when licenseInfo.active "" "License not activated")}}
 
 </ul>

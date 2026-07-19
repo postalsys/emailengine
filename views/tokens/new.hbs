@@ -1,7 +1,7 @@
 {{> tokens_header}}
 
 {{!-- the account level renders only for account-scoped tokens (ui/breadcrumb skips empty levels) --}}
-{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access tokens" midHref=(when account accountTokensLink) midLabel=account.name current="New" class="mt-6 mb-6"}}
+{{> ui/breadcrumb parentHref="/admin/tokens" parentLabel="Access Tokens" midHref=(when account accountTokensLink) midLabel=account.name current="New" class="mt-6 mb-6"}}
 
 <form method="post" id="token-form" action="/admin/tokens/new">
     <input type="hidden" name="crumb" value="{{crumb}}" />

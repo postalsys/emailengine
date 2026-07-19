@@ -1,6 +1,6 @@
 {{> webhooks_header}}
 
-{{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routing" midHref=(concat "/admin/webhooks/webhook/" webhook.id) midLabel=webhook.name current="Edit" class="mt-6 mb-6"}}
+{{> ui/breadcrumb parentHref="/admin/webhooks" parentLabel="Webhook Routes" midHref=(concat "/admin/webhooks/webhook/" webhook.id) midLabel=webhook.name current="Edit" class="mt-6 mb-6"}}
 
 
 <form method="post" action="/admin/webhooks/edit" id="edit-form">

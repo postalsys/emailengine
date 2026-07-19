@@ -1,0 +1,17 @@
+{{!--
+    ui/section-title - small uppercase heading labeling a group of cards on a page.
+    Use the block form to place actions on the right side of the heading row:
+      {{#> ui/section-title label="Activity" class="mt-8 mb-3"}} ...actions... {{/ui/section-title}}
+    Params:
+      label - heading text (required)
+      class - margin/extra classes on the wrapper (optional; the caller owns spacing)
+--}}
+{{#if @partial-block}}
+<div class="flex items-center justify-between{{#if class}} {{class}}{{/if}}">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">{{label}}</h2>
+    {{!-- own hash params neutralized against fallthrough into the block --}}
+    <div>{{> @partial-block label="" class=""}}</div>
+</div>
+{{else}}
+<h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50{{#if class}} {{class}}{{/if}}">{{label}}</h2>
+{{/if}}

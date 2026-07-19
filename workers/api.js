@@ -3106,7 +3106,7 @@ Include your token in requests using one of these methods:
 
             if (disableTokens) {
                 systemAlerts.push({
-                    url: '/admin/config/service#security',
+                    url: '/admin/config/security',
                     level: 'warning',
                     icon: 'icon-[tabler--key]',
                     message: `Access tokens are disabled for API requests`

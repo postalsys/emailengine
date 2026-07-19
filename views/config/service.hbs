@@ -1,8 +1,8 @@
-{{> ui/page-header title="General Settings" icon="icon-[tabler--settings]" class="mb-1"}}
+{{> ui/page-header title="General" icon="icon-[tabler--settings]" class="mb-1"}}
 
 <p class="mb-6">Configure core settings for your EmailEngine instance.</p>
 
-<form method="post" id="settings-form" action="/admin/config/service">
+<form method="post" action="/admin/config/service">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
@@ -37,7 +37,7 @@
                 </select>
                 {{/ui/form-field}}
             </div>
-        
+
     {{/ui/card}}
 
     {{#> ui/card title="Language" id="language" bodyClass="space-y-4"}}
@@ -89,82 +89,7 @@
                     EmailEngine
                 </a>
             </p>
-        
-    {{/ui/card}}
 
-    {{#> ui/card title="Security" id="security" bodyClass="space-y-4"}}
-
-            <div>
-                {{> ui/setting-ref name="serviceSecret"}}
-                {{#> ui/form-field id="settingsServiceSecret" label="Service Secret" error=errors.serviceSecret}}
-                {{> ui/secret-field id="settingsServiceSecret" name="serviceSecret" value=values.serviceSecret
-                error=errors.serviceSecret toggleId="showServiceSecret" toggleLabel="Show secret"}}
-                <span class="helper-text">HMAC key for signing public requests. Changing this invalidates all existing
-                    tracking links.</span>
-                {{/ui/form-field}}
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="EENGINE_REQUIRE_API_AUTH" plain=true}}
-
-                {{#> ui/checkbox id="enableTokens" label="Require API Authentication" checked=values.enableTokens
-                error=errors.enableTokens}}
-                {{> ui/badge label=(when values.enableTokens "enabled" "disabled") variant=(when values.enableTokens "success" "error")}}
-                {{/ui/checkbox}}
-                <span class="helper-text">Disable for development only. Always enable in production for secure API
-                    access. Set <code>EENGINE_REQUIRE_API_AUTH=false</code> at startup to disable by default (not
-                    recommended).</span>
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="EENGINE_SECRET" href="https://docs.emailengine.app/enabling-secret-encryption/"}}
-
-                {{#> ui/checkbox id="encryption" label="Data Encryption" checked=encryption disabled=true}}
-                {{> ui/badge label=(when encryption "enabled" "disabled") variant=(when encryption "success" "error")}}
-                {{/ui/checkbox}}
-                <span class="helper-text">Set <code>EENGINE_SECRET</code> environment variable at startup to enable. <a
-                        href="https://docs.emailengine.app/enabling-secret-encryption/" target="_blank"
-                        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn
-                        more</a></span>
-            </div>
-
-
-            <div>
-                {{> ui/setting-ref name="EENGINE_ADMIN_ACCESS_ADDRESSES" plain=true}}
-
-                {{#> ui/checkbox id="adminAccessLimit" label="Admin IP Restrictions" checked=adminAccessLimit
-                disabled=true}}
-                {{> ui/badge label=(when adminAccessLimit "enabled" "disabled") variant=(when adminAccessLimit "success" "error")}}
-                {{/ui/checkbox}}
-                <span class="helper-text">Set <code>EENGINE_ADMIN_ACCESS_ADDRESSES</code> at startup with
-                    comma-separated IP addresses or CIDR ranges (e.g., "192.168.1.1,10.0.0.0/24").</span>
-            </div>
-
-
-            <div>
-                {{> ui/setting-ref name="EENGINE_ENABLE_OAUTH_TOKENS_API" plain=true}}
-                {{> ui/checkbox id="enableOAuthTokensApi" name="enableOAuthTokensApi"
-                label="Allow OAuth2 Token Access via API" checked=values.enableOAuthTokensApi
-                error=errors.enableOAuthTokensApi}}
-                <span class="helper-text">Enable <a href="/admin/swagger#/Account/getV1AccountAccountOauthtoken"
-                        target="_blank" rel="noopener noreferrer" class="link link-animated">API endpoint</a> to
-                    retrieve OAuth2 tokens. Set <code>EENGINE_ENABLE_OAUTH_TOKENS_API=true</code> at startup to enable
-                    by default.</span>
-            </div>
-
-
-            <div>
-                {{> ui/setting-ref name="ignoreMailCertErrors"}}
-
-                {{#> ui/checkbox id="ignoreMailCertErrors" label="Allow Insecure Email Certificates"
-                checked=values.ignoreMailCertErrors error=errors.ignoreMailCertErrors}}
-                {{> ui/badge label=(when values.ignoreMailCertErrors "enabled" "disabled") variant=(when values.ignoreMailCertErrors "error" "success")}}
-                {{/ui/checkbox}}
-                <span class="helper-text">Accept self-signed or expired certificates for IMAP/SMTP connections. Not
-                    recommended.</span>
-            </div>
-
-        
     {{/ui/card}}
 
     <div id="queue_settings" class="card bg-base-100 shadow-md mb-6">
@@ -190,220 +115,11 @@
         </div>
     </div>
 
-    {{#> ui/card title="Email Delivery" id="submission_settings"}}
-            <div>
-                {{> ui/setting-ref name="deliveryAttempts"}}
-                {{#> ui/form-field id="settingsDeliveryAttempts" label="Retry Attempts" error=errors.deliveryAttempts}}
-                <input type="number" min="0" class="input{{#if errors.deliveryAttempts}} is-invalid{{/if}}"
-                    id="settingsDeliveryAttempts" name="deliveryAttempts" value="{{values.deliveryAttempts}}"
-                    data-lpignore="true" autocomplete="off" />
-                <span class="helper-text">How many times to retry failed email deliveries.</span>
-                {{/ui/form-field}}
-            </div>
-
-        
-    {{/ui/card}}
-
-    {{#> ui/card title="IMAP Processing" id="imap_settings"}}
-            <div>
-                {{> ui/setting-ref name="imapIndexer"}}
-                {{#> ui/form-field id="settingsImapIndexer" label="Indexing Method" error=errors.imapIndexer}}
-                <select id="settingsImapIndexer" class="select max-w-md{{#if errors.imapIndexer}} is-invalid{{/if}}"
-                    name="imapIndexer">
-                    {{#each imapIndexers}}
-                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
-                    {{/each}}
-                </select>
-                <span class="helper-text"><strong>Full:</strong> Track all changes (new, deleted, updated emails).
-                    <strong>Fast:</strong> Track only new emails. Applies to new accounts only. To change existing
-                    accounts, perform an <a href="/admin/swagger#/Account/putV1AccountAccountFlush"
-                        class="link link-animated">account flush</a>.</span>
-                {{/ui/form-field}}
-            </div>
-
-        
-    {{/ui/card}}
-
-    {{#> ui/card title="Export Settings" id="export_settings" bodyClass="space-y-4"}}
-            <p>Configure batch sizes for bulk message export operations.</p>
-
-            <div>
-                {{> ui/setting-ref name="gmailExportBatchSize"}}
-                {{#> ui/form-field id="settingsGmailExportBatchSize" label="Gmail Export Batch Size"
-                error=errors.gmailExportBatchSize}}
-                <input type="number" min="1" max="50" class="input{{#if errors.gmailExportBatchSize}} is-invalid{{/if}}"
-                    id="settingsGmailExportBatchSize" name="gmailExportBatchSize"
-                    value="{{values.gmailExportBatchSize}}" data-lpignore="true" autocomplete="off" />
-                <span class="helper-text">Number of parallel requests when fetching Gmail messages for export (1-50,
-                    default: 10).</span>
-                {{/ui/form-field}}
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="outlookExportBatchSize"}}
-                {{#> ui/form-field id="settingsOutlookExportBatchSize" label="Outlook Export Batch Size"
-                error=errors.outlookExportBatchSize}}
-                <input type="number" min="1" max="20"
-                    class="input{{#if errors.outlookExportBatchSize}} is-invalid{{/if}}"
-                    id="settingsOutlookExportBatchSize" name="outlookExportBatchSize"
-                    value="{{values.outlookExportBatchSize}}" data-lpignore="true" autocomplete="off" />
-                <span class="helper-text">Messages per batch request for Outlook exports (1-20, default: 20). Limited by
-                    Microsoft Graph API.</span>
-                {{/ui/form-field}}
-            </div>
-        
-    {{/ui/card}}
-
-    <div id="templates_settings" class="card bg-base-100 shadow-md mb-6">
-        <div class="card-header flex items-center justify-between">
-            <h6 class="card-title text-primary">Public Page Customization</h6>
-            {{> ui/btn label="Preview" variant="neutral" style="soft" size="sm" icon="icon-[tabler--eye]"
-            id="preview-header-btn"}}
-        </div>
-        <div class="card-body space-y-4">
-
-            <p>Customize public pages like authentication forms, error pages, and unsubscribe pages.</p>
-
-            <div>
-                {{> ui/setting-ref name="pageBrandName"}}
-                {{#> ui/form-field id="settingsPageBrandName" label="Brand Name" error=errors.pageBrandName}}
-                <input type="text" class="input{{#if errors.pageBrandName}} is-invalid{{/if}}"
-                    id="settingsPageBrandName" name="pageBrandName" value="{{values.pageBrandName}}"
-                    data-lpignore="true" autocomplete="off" placeholder="EmailEngine" />
-                <span class="helper-text">Appears in browser title bar</span>
-                {{/ui/form-field}}
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="templateHeader"}}
-
-                <label class="label-text">Page Header HTML</label>
-
-                <input type="hidden" class="{{#if errors.templateHeader}}is-invalid{{/if}}" id="templateHeaderElement"
-                    name="templateHeader" value="{{values.templateHeader}}">
-
-                {{> ui/code-editor id="editor-html" title="Header template"}}
-
-                {{#if errors.templateHeader}}
-                <span class="helper-text text-error">{{errors.templateHeader}}</span>
-                {{/if}}
-
-                <span class="helper-text">HTML shown at the {{#> ui/tooltip-rich label="top of public pages"}}<img
-                        src="/static/preview/header-template.png" alt="Header template preview">{{/ui/tooltip-rich}}</span>
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="templateHtmlHead"}}
-
-                <label class="label-text">Custom &lt;head&gt; HTML</label>
-
-                <input type="hidden" class="{{#if errors.templateHtmlHead}}is-invalid{{/if}}"
-                    id="templateHtmlHeadElement" name="templateHtmlHead" value="{{values.templateHtmlHead}}">
-
-                {{> ui/code-editor id="editor-html-head" title="Head content"}}
-
-                {{#if errors.templateHtmlHead}}
-                <span class="helper-text text-error">{{errors.templateHtmlHead}}</span>
-                {{/if}}
-
-                <span class="helper-text">Add custom CSS, fonts, or analytics scripts</span>
-            </div>
-
-        </div>
-    </div>
-
-    {{#> ui/card title="Webhook Scripts" id="script_settings" bodyClass="space-y-4"}}
-
-
-            <p>Global settings for filter and map functions in <a href="/admin/webhooks"
-                    class="link link-animated">webhook routes</a>.</p>
-
-            <div id="scriptEnv">
-
-                {{> ui/setting-ref name="scriptEnv"}}
-
-                <label class="label-text">Script Variables (JSON)</label>
-
-                <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
-                    name="scriptEnv" value="{{values.scriptEnv}}">
-
-                {{> ui/code-editor id="editor-env" title="Global variables"}}
-
-                {{#if errors.scriptEnv}}
-                <span class="helper-text text-error">{{errors.scriptEnv}}</span>
-                {{/if}}
-
-                <span class="helper-text">JSON object available as <code>env</code> variable in all filter and map
-                    functions. Use for shared secrets like API keys, access tokens, or configuration values. For
-                    example, if set to <code>{"token":"secret123"}</code>, then <code>env.token</code> in your scripts
-                    returns <code>"secret123"</code>.</span>
-            </div>
-
-        
-    {{/ui/card}}
-
-    <div id="labs"></div>
-
-    <div class="card bg-base-100 shadow-md mb-6" id="tracking">
-        <div class="card-header">
-            <h6 class="card-title text-primary">Email Tracking</h6>
-        </div>
-        <div class="card-body space-y-4">
-
-            <div>
-                {{> ui/setting-ref name="trackClicks"}}
-                {{> ui/checkbox id="trackClicks" name="trackClicks" label="Track Link Clicks"
-                checked=values.trackClicks error=errors.trackClicks
-                hint="Rewrite links to track when recipients click them."}}
-            </div>
-
-            <div>
-                {{> ui/setting-ref name="trackOpens"}}
-                {{> ui/checkbox id="trackOpens" name="trackOpens" label="Track Email Opens" checked=values.trackOpens
-                error=errors.trackOpens hint="Add a tracking pixel to detect when emails are opened."}}
-            </div>
-        </div>
-
-        <div class="card-footer border-base-content/10 border-t px-6 py-4">
-            <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank" rel="noopener noreferrer"
-                class="link link-animated">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
-            See <a href="https://emailengine.app/sending-emails#tracking" target="_blank" rel="noopener noreferrer"
-                referrerpolicy="no-referrer" class="link link-animated">documentation</a> for per-message overrides.
-
-        </div>
-    </div>
-
-    {{#> ui/card title="Gmail Features" id="gmail"}}
-
-            <div>
-                {{> ui/setting-ref name="resolveGmailCategories"}}
-                {{> ui/checkbox id="resolveGmailCategories" name="resolveGmailCategories"
-                label="Detect Gmail Categories (IMAP)" checked=values.resolveGmailCategories
-                error=errors.resolveGmailCategories}}
-                <span class="helper-text">Identify which Gmail tab (Primary, Social, Promotions, Updates, Forums) new
-                    emails belong to. Available in <code>messageNew</code> webhook as <code>category</code> property.
-                    Gmail API accounts get this automatically.</span>
-            </div>
-
-        
-    {{/ui/card}}
-
     <div class="mb-6">
         {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
-
-<form id="preview-form" method="post" action="/admin/config/service/preview">
-    <input type="hidden" name="crumb" value="{{crumb}}" />
-    <input type="hidden" name="templateHeader" id="preview-header-elm">
-    <input type="hidden" name="templateHtmlHead" id="preview-head-elm">
-    <input type="hidden" name="pageBrandName" id="preview-brand-name-elm">
-</form>
-
-
-<script src="/static/js/ace/ace.js"></script>
-<script src="/static/js/ace/ext-language_tools.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -427,59 +143,5 @@
             }).finally(() => uiButtonBusy(cleanQueuesBtn, false));
         });
 
-
-
-
-
-        const editors = new Map();
-
-        const editorHtml = uiAceEditor("editor-html", "handlebars", document.getElementById('templateHeaderElement').value, {
-            enableBasicAutocompletion: true,
-            enableSnippets: false,
-            enableLiveAutocompletion: false,
-            useWorker: true
-        });
-        editors.set("editor-html", editorHtml);
-
-        const editorEnv = uiAceEditor("editor-env", "json", document.getElementById('scriptEnvElement').value, {
-            enableBasicAutocompletion: true,
-            enableSnippets: false,
-            enableLiveAutocompletion: false,
-            useWorker: true
-        });
-        editors.set("editor-env", editorEnv);
-
-        const editorHtmlHead = uiAceEditor("editor-html-head", "handlebars", document.getElementById('templateHtmlHeadElement').value, {
-            enableBasicAutocompletion: true,
-            enableSnippets: false,
-            enableLiveAutocompletion: false,
-            useWorker: true
-        });
-        editors.set("editor-html-head", editorHtmlHead);
-
-
-        document.getElementById('preview-header-btn').addEventListener('click', e => {
-            e.preventDefault();
-            let previewWindow = window.open('about:blank', 'preview-window', '');
-            let previewForm = document.getElementById('preview-form');
-            previewForm.target = 'preview-window';
-
-            document.getElementById('preview-brand-name-elm').value = document.getElementById('settingsPageBrandName').value;
-            document.getElementById('preview-header-elm').value = editorHtml.getValue();
-            document.getElementById('preview-head-elm').value = editorHtmlHead.getValue();
-
-            previewForm.submit();
-        });
-
-        document.getElementById('settings-form').addEventListener('submit', () => {
-            document.getElementById('templateHeaderElement').value = editorHtml.getValue();
-            document.getElementById('scriptEnvElement').value = editorEnv.getValue();
-            document.getElementById('templateHtmlHeadElement').value = editorHtmlHead.getValue();
-        });
-
-        uiEditorFullscreen(editors);
-
     });
-
-
 </script>

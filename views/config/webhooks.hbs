@@ -27,13 +27,13 @@ class="mb-1"}}
 {{/if}}
 {{/if}}
 
-<form method="post" action="/admin/config/webhooks">
+<form method="post" id="settings-form" action="/admin/config/webhooks">
     {{!-- no id: the layout already renders the #crumb element the script reads --}}
     <input type="hidden" name="crumb" value="{{crumb}}" />
 
     <div class="card bg-base-100 shadow-md mb-6">
         <div class="card-header">
-            <h6 class="card-title text-primary">General Settings</h6>
+            <h6 class="card-title text-primary">Webhook Processing</h6>
         </div>
 
         <div class="px-6 py-4 flex items-start justify-between gap-4">
@@ -228,11 +228,44 @@ class="mb-1"}}
     </div>
 
 
+    {{#> ui/card title="Webhook Scripts" id="script_settings" bodyClass="space-y-4"}}
+
+
+            <p>Global settings for filter and map functions in <a href="/admin/webhooks"
+                    class="link link-animated">webhook routes</a>.</p>
+
+            <div id="scriptEnv">
+
+                {{> ui/setting-ref name="scriptEnv"}}
+
+                <label class="label-text">Script Variables (JSON)</label>
+
+                <input type="hidden" class="{{#if errors.scriptEnv}}is-invalid{{/if}}" id="scriptEnvElement"
+                    name="scriptEnv" value="{{values.scriptEnv}}">
+
+                {{> ui/code-editor id="editor-env" title="Global variables"}}
+
+                {{#if errors.scriptEnv}}
+                <span class="helper-text text-error">{{errors.scriptEnv}}</span>
+                {{/if}}
+
+                <span class="helper-text">JSON object available as <code>env</code> variable in all filter and map
+                    functions. Use for shared secrets like API keys, access tokens, or configuration values. For
+                    example, if set to <code>{"token":"secret123"}</code>, then <code>env.token</code> in your scripts
+                    returns <code>"secret123"</code>.</span>
+            </div>
+
+
+    {{/ui/card}}
+
     <div class="mb-6">
         {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
     </div>
 
 </form>
+
+<script src="/static/js/ace/ace.js"></script>
+<script src="/static/js/ace/ext-language_tools.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -257,5 +290,21 @@ class="mb-1"}}
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })
         });
+
+        const editors = new Map();
+
+        const editorEnv = uiAceEditor("editor-env", "json", document.getElementById('scriptEnvElement').value, {
+            enableBasicAutocompletion: true,
+            enableSnippets: false,
+            enableLiveAutocompletion: false,
+            useWorker: true
+        });
+        editors.set("editor-env", editorEnv);
+
+        document.getElementById('settings-form').addEventListener('submit', () => {
+            document.getElementById('scriptEnvElement').value = editorEnv.getValue();
+        });
+
+        uiEditorFullscreen(editors);
     })
 </script>

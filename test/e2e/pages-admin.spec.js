@@ -146,8 +146,8 @@ test.describe('admin shell', () => {
         // Sidebar: brand + primary menu entries
         const sidebar = page.locator('#layout-sidebar');
         await expect(sidebar.getByRole('link', { name: 'Dashboard' })).toBeVisible();
-        await expect(sidebar.getByRole('link', { name: 'Email Accounts' })).toBeVisible();
-        await expect(sidebar.getByRole('link', { name: 'Webhook Routing' })).toBeVisible();
+        await expect(sidebar.getByRole('link', { name: 'Accounts' })).toBeVisible();
+        await expect(sidebar.getByRole('link', { name: 'Webhook Routes' })).toBeVisible();
 
         // Topbar: theme toggle and user menu
         await expect(page.locator('.theme-toggle-btn')).toBeVisible();
@@ -206,7 +206,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
         await page.goto('/admin');
 
-        const generalSettings = page.getByRole('link', { name: 'General Settings' });
+        const generalSettings = page.getByRole('link', { name: 'General', exact: true });
         await expect(generalSettings).toBeHidden();
 
         await page.locator('#menu-config .accordion-toggle').click();
@@ -276,11 +276,28 @@ test.describe('admin shell', () => {
         // icon container; the Bootstrap-style edge stripes are gone
         await expect(page.locator('.card .rounded-field[class*="bg-"]').first()).toBeVisible();
         expect(await page.locator('[class*="border-s-4"]').count()).toBe(0);
-        await expect(page.getByText('Accounts total')).toBeVisible();
+
+        // grouped sections: Accounts cards, Activity counters, System queues
+        await expect(page.locator('h1', { hasText: 'Dashboard' })).toBeVisible();
+        await expect(page.getByText('Total accounts')).toBeVisible();
+        await expect(page.getByText('Needs attention')).toBeVisible();
         await expect(page.getByText('Webhooks queue')).toBeVisible();
 
         // FlyonUI tooltip on a stat-card label
-        await expectTooltipOnHover(page, page.locator('.tooltip-toggle', { hasText: 'Accounts total' }));
+        await expectTooltipOnHover(page, page.locator('.tooltip-toggle', { hasText: 'Total accounts' }));
+
+        // the Activity window switcher reloads with the ?seconds= argument
+        await page.getByRole('link', { name: '1h', exact: true }).click();
+        await page.waitForURL(/\/admin\?seconds=3600/);
+        await expect(page.getByText('New emails', { exact: true })).toBeVisible();
+        await page.getByRole('link', { name: '24h', exact: true }).click();
+        await page.waitForURL(url => url.pathname === '/admin' && !url.search);
+
+        // the header Add account button opens the add-account modal
+        await page.getByRole('button', { name: 'Add account', exact: true }).click();
+        await expectModalOpen(page, 'addAccount');
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#addAccount.open')).toHaveCount(0);
 
         // software versions panel toggles open
         const imapflowRow = page.getByText('ImapFlow');
@@ -324,7 +341,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
         await page.goto('/admin/accounts');
 
-        await expect(page.locator('h1', { hasText: 'Email Accounts' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'Accounts' })).toBeVisible();
 
         // FlyonUI overlay opens with focus on the name field, Escape closes and clears
         await page.locator('[data-overlay="#addAccount"]').first().click();
@@ -421,7 +438,7 @@ test.describe('admin shell', () => {
 
         // list page renders
         await page.goto('/admin/gateways');
-        await expect(page.locator('h1', { hasText: 'Email Gateways' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'Gateways' })).toBeVisible();
 
         // create via the new-gateway form
         await page.goto('/admin/gateways/new');
@@ -493,7 +510,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
 
         await page.goto('/admin/templates');
-        await expect(page.locator('h1', { hasText: 'Email Templates' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'Templates' })).toBeVisible();
 
         // create through the ACE-backed form (editor content is optional)
         await page.goto('/admin/templates/new');
@@ -557,7 +574,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
 
         await page.goto('/admin/webhooks');
-        await expect(page.locator('h1', { hasText: 'Webhook Routing' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'Webhook Routes' })).toBeVisible();
 
         // create through the ACE-backed editor form
         await page.goto('/admin/webhooks/new');
@@ -665,6 +682,9 @@ test.describe('admin shell', () => {
         await expect(page.locator('h1', { hasText: 'Webhooks' })).toBeVisible();
         expect(await page.locator('.event-type').count()).toBeGreaterThan(10);
 
+        // the script-variables (env) ACE editor lives on this page now
+        await expect(page.locator('#editor-env .ace_content')).toBeAttached();
+
         // "All events" disables the individual event checkboxes
         await page.locator('#notifyAll').check();
         expect(await page.evaluate(() => [...document.querySelectorAll('.event-type')].every(e => e.disabled))).toBe(true);
@@ -687,7 +707,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
 
         await page.goto('/admin/config/smtp');
-        await expect(page.locator('h1', { hasText: 'SMTP Interface' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'SMTP Server' })).toBeVisible();
         await expect(page.locator('h1 .state-info')).toBeVisible();
 
         await page.locator('summary', { hasText: 'Integration Examples' }).click();
@@ -805,14 +825,12 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
-    test('config service: editors, language override details and queue cleanup toast', async ({ page }) => {
+    test('config service: language override details and queue cleanup toast', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
 
         await page.goto('/admin/config/service');
-        await expect(page.locator('h1', { hasText: 'General Settings' })).toBeVisible();
-        await expect(page.locator('#editor-html .ace_content')).toBeAttached();
-        await expect(page.locator('#editor-env .ace_content')).toBeAttached();
+        await expect(page.locator('h1', { hasText: 'General' })).toBeVisible();
 
         await page.locator('#languageDetails summary').click();
         await expect(page.locator('#languageDetails .alert')).toBeVisible();
@@ -821,7 +839,49 @@ test.describe('admin shell', () => {
         await page.locator('#clean-queues-btn').click();
         await expect(page.locator('#toastContainer .alert', { hasText: 'Cleanup request sent' })).toBeVisible();
 
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config security: status badges and service secret reveal', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/security');
+        await expect(page.locator('h1', { hasText: 'Security' })).toBeVisible();
+        await expect(page.locator('#enableTokens')).toBeVisible();
+        await expect(page.locator('#encryption')).toBeDisabled();
+
         await expectPasswordToggle(page, 'showServiceSecret', 'settingsServiceSecret');
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config email-processing: form renders with effective export defaults', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/email-processing');
+        await expect(page.locator('h1', { hasText: 'Email Processing' })).toBeVisible();
+        await expect(page.locator('#settingsImapIndexer')).toBeVisible();
+        await expect(page.locator('#trackOpens')).toBeVisible();
+        // the export batch inputs render the effective defaults (they were
+        // dead fields before the page split - never loaded, silently dropped)
+        await expect(page.locator('#settingsGmailExportBatchSize')).toHaveValue(/^\d+$/);
+        await expect(page.locator('#settingsOutlookExportBatchSize')).toHaveValue(/^\d+$/);
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
+    test('config branding: ACE editors and public-page preview form', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        await page.goto('/admin/config/branding');
+        await expect(page.locator('h1', { hasText: 'Branding' })).toBeVisible();
+        await expect(page.locator('#editor-html .ace_content')).toBeAttached();
+        await expect(page.locator('#editor-html-head .ace_content')).toBeAttached();
+        await expect(page.locator('#settingsPageBrandName')).toBeVisible();
+        await expect(page.locator('#preview-header-btn')).toBeVisible();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -854,7 +914,7 @@ test.describe('admin shell', () => {
 
         // apps list with the create-app dropdown
         await page.goto('/admin/config/oauth');
-        await expect(page.locator('h1', { hasText: 'OAuth2' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'OAuth2 Apps' })).toBeVisible();
         await page.locator('#create-app-dropdown').click();
         await expect(page.locator('#create-app-dropdown ~ ul .dropdown-item', { hasText: 'Gmail Service Accounts' })).toBeVisible();
         await page.keyboard.press('Escape');
@@ -955,7 +1015,7 @@ test.describe('admin shell', () => {
         await ensureAdminSession(page);
 
         await page.goto('/admin/internals');
-        await expect(page.locator('h1', { hasText: 'System Threads' })).toBeVisible();
+        await expect(page.locator('h1', { hasText: 'Workers' })).toBeVisible();
         expect(await page.locator('tbody tr').count()).toBeGreaterThan(3);
 
         // row buttons fill the hidden thread input before opening the modal
@@ -1134,6 +1194,9 @@ test.describe('admin shell', () => {
         const configPages = [
             '/admin/config/webhooks',
             '/admin/config/service',
+            '/admin/config/security',
+            '/admin/config/email-processing',
+            '/admin/config/branding',
             '/admin/config/logging',
             '/admin/config/network',
             '/admin/config/smtp',

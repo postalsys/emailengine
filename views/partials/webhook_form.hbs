@@ -9,7 +9,7 @@
 
         {{> ui/form-field id="inputTargetUrl" name="targetUrl" type="url" label="Target URL" value=values.targetUrl error=errors.targetUrl required=true placeholder='URL like "https://myservice.com/imap/webhooks"' hint="Webhook target URL for this routing."}}
 
-        {{> ui/checkbox id="enabled" label="Enable this Webhook Routing" checked=values.enabled error=errors.enabled hint="Webhook routings are not enabled by default."}}
+        {{> ui/checkbox id="enabled" label="Enable this webhook route" checked=values.enabled error=errors.enabled hint="Webhook routes are not enabled by default."}}
 
         {{#> ui/details summary="Custom request headers" class="card border border-base-content/10" summaryClass="px-4 py-2" open=values.customHeaders}}
         <div>
@@ -34,7 +34,7 @@
                 <small>JavaScript code to determine if the webhook should be sent. If the code evaluates to
                     <code>true</code> then the webhook is sent, otherwise it is skipped.
                     The script includes <code>payload</code> as a global variable that contains the webhook
-                    payload. Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                    payload. Use <code>env</code> to access <a href="/admin/config/webhooks#scriptEnv"
                         class="link link-animated">script variables</a>.</small>
             </div>
             {{#> ui/code-editor id="editor-fn" title="Filter function"}}
@@ -58,7 +58,7 @@
             <div class="mb-2 leading-tight">
                 <small>JavaScript code to modify webhook payload output. Some services might expect incoming data using
                     a specific format. Whatever is returned by this function will be used as the webhook
-                    payload. Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                    payload. Use <code>env</code> to access <a href="/admin/config/webhooks#scriptEnv"
                         class="link link-animated">script variables</a>.</small>
             </div>
 

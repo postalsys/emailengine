@@ -43,7 +43,7 @@
                     <small>JavaScript code to determine if the email should be stored. If the code evaluates to
                         <code>true</code> then the email is synced to the document store, otherwise it is skipped. The
                         script includes <code>payload</code> as a global variable that contains the email data.
-                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                        Use <code>env</code> to access <a href="/admin/config/webhooks#scriptEnv"
                             class="link link-animated">script variables</a>.</small>
                 </div>
                 {{#> ui/code-editor id="editor-fn" title="Filter function"}}
@@ -73,7 +73,7 @@
                     <small>JavaScript code to modify email payload structure. Protected fields <code>id</code>,
                         <code>account</code>, <code>path</code>, <code>uid</code>, <code>specialUse</code>, and
                         <code>messageId</code> cannot be modified.
-                        Use <code>env</code> to access <a href="/admin/config/service#scriptEnv"
+                        Use <code>env</code> to access <a href="/admin/config/webhooks#scriptEnv"
                             class="link link-animated">script variables</a>.</small>
                 </div>
 

@@ -1,0 +1,118 @@
+{{> ui/page-header title="Email Processing" icon="icon-[tabler--mail-cog]" class="mb-1"}}
+
+<p class="mb-6">Control how EmailEngine delivers, indexes, and tracks email messages.</p>
+
+<form method="post" action="/admin/config/email-processing">
+    {{!-- no id: the layout already renders the #crumb element the script reads --}}
+    <input type="hidden" name="crumb" value="{{crumb}}" />
+
+    {{#> ui/card title="Email Delivery" id="submission_settings"}}
+            <div>
+                {{> ui/setting-ref name="deliveryAttempts"}}
+                {{#> ui/form-field id="settingsDeliveryAttempts" label="Retry Attempts" error=errors.deliveryAttempts}}
+                <input type="number" min="0" class="input{{#if errors.deliveryAttempts}} is-invalid{{/if}}"
+                    id="settingsDeliveryAttempts" name="deliveryAttempts" value="{{values.deliveryAttempts}}"
+                    data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">How many times to retry failed email deliveries.</span>
+                {{/ui/form-field}}
+            </div>
+
+    {{/ui/card}}
+
+    {{#> ui/card title="IMAP Processing" id="imap_settings"}}
+            <div>
+                {{> ui/setting-ref name="imapIndexer"}}
+                {{#> ui/form-field id="settingsImapIndexer" label="Indexing Method" error=errors.imapIndexer}}
+                <select id="settingsImapIndexer" class="select max-w-md{{#if errors.imapIndexer}} is-invalid{{/if}}"
+                    name="imapIndexer">
+                    {{#each imapIndexers}}
+                    <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
+                    {{/each}}
+                </select>
+                <span class="helper-text"><strong>Full:</strong> Track all changes (new, deleted, updated emails).
+                    <strong>Fast:</strong> Track only new emails. Applies to new accounts only. To change existing
+                    accounts, perform an <a href="/admin/swagger#/Account/putV1AccountAccountFlush"
+                        class="link link-animated">account flush</a>.</span>
+                {{/ui/form-field}}
+            </div>
+
+    {{/ui/card}}
+
+    <div class="card bg-base-100 shadow-md mb-6" id="tracking">
+        <div class="card-header">
+            <h6 class="card-title text-primary">Email Tracking</h6>
+        </div>
+        <div class="card-body space-y-4">
+
+            <div>
+                {{> ui/setting-ref name="trackClicks"}}
+                {{> ui/checkbox id="trackClicks" name="trackClicks" label="Track Link Clicks"
+                checked=values.trackClicks error=errors.trackClicks
+                hint="Rewrite links to track when recipients click them."}}
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="trackOpens"}}
+                {{> ui/checkbox id="trackOpens" name="trackOpens" label="Track Email Opens" checked=values.trackOpens
+                error=errors.trackOpens hint="Add a tracking pixel to detect when emails are opened."}}
+            </div>
+        </div>
+
+        <div class="card-footer border-base-content/10 border-t px-6 py-4">
+            <strong>Important:</strong> <a href="{{values.serviceUrl}}" target="_blank" rel="noopener noreferrer"
+                class="link link-animated">{{values.serviceUrl}}</a> must be publicly accessible for tracking to work.
+            See <a href="https://emailengine.app/sending-emails#tracking" target="_blank" rel="noopener noreferrer"
+                referrerpolicy="no-referrer" class="link link-animated">documentation</a> for per-message overrides.
+
+        </div>
+    </div>
+
+    {{#> ui/card title="Gmail Features" id="gmail"}}
+
+            <div>
+                {{> ui/setting-ref name="resolveGmailCategories"}}
+                {{> ui/checkbox id="resolveGmailCategories" name="resolveGmailCategories"
+                label="Detect Gmail Categories (IMAP)" checked=values.resolveGmailCategories
+                error=errors.resolveGmailCategories}}
+                <span class="helper-text">Identify which Gmail tab (Primary, Social, Promotions, Updates, Forums) new
+                    emails belong to. Available in <code>messageNew</code> webhook as <code>category</code> property.
+                    Gmail API accounts get this automatically.</span>
+            </div>
+
+    {{/ui/card}}
+
+    {{#> ui/card title="Export Settings" id="export_settings" bodyClass="space-y-4"}}
+            <p>Configure batch sizes for bulk message export operations.</p>
+
+            <div>
+                {{> ui/setting-ref name="gmailExportBatchSize"}}
+                {{#> ui/form-field id="settingsGmailExportBatchSize" label="Gmail Export Batch Size"
+                error=errors.gmailExportBatchSize}}
+                <input type="number" min="1" max="50" class="input{{#if errors.gmailExportBatchSize}} is-invalid{{/if}}"
+                    id="settingsGmailExportBatchSize" name="gmailExportBatchSize"
+                    value="{{values.gmailExportBatchSize}}" data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">Number of parallel requests when fetching Gmail messages for export (1-50,
+                    default: 10).</span>
+                {{/ui/form-field}}
+            </div>
+
+            <div>
+                {{> ui/setting-ref name="outlookExportBatchSize"}}
+                {{#> ui/form-field id="settingsOutlookExportBatchSize" label="Outlook Export Batch Size"
+                error=errors.outlookExportBatchSize}}
+                <input type="number" min="1" max="20"
+                    class="input{{#if errors.outlookExportBatchSize}} is-invalid{{/if}}"
+                    id="settingsOutlookExportBatchSize" name="outlookExportBatchSize"
+                    value="{{values.outlookExportBatchSize}}" data-lpignore="true" autocomplete="off" />
+                <span class="helper-text">Messages per batch request for Outlook exports (1-20, default: 20). Limited by
+                    Microsoft Graph API.</span>
+                {{/ui/form-field}}
+            </div>
+
+    {{/ui/card}}
+
+    <div class="mb-6">
+        {{> ui/btn label="Save Changes" type="submit" icon="icon-[tabler--settings]"}}
+    </div>
+
+</form>
