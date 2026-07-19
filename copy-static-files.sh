@@ -15,6 +15,9 @@ cp node_modules/ace-builds/src-min/mode-javascript.js static/js/ace/
 cp node_modules/ace-builds/src-min/mode-markdown.js static/js/ace/
 cp node_modules/ace-builds/src-min/theme-xcode.js static/js/ace/
 cp node_modules/ace-builds/src-min/theme-kuroir.js static/js/ace/
+# dark-theme counterparts applied by uiAceEditor/uiAcePreview (static/js/ui.js)
+cp node_modules/ace-builds/src-min/theme-tomorrow_night.js static/js/ace/
+cp node_modules/ace-builds/src-min/theme-tomorrow_night_eighties.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-html.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-json.js static/js/ace/
 cp node_modules/ace-builds/src-min/worker-javascript.js static/js/ace/

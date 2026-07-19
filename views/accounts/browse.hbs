@@ -82,6 +82,5 @@
     // element, and with no stored choice the effective theme follows the
     // system scheme
     const syncClientTheme = () => client.setDarkMode(uiEffectiveTheme() === 'dark');
-    new MutationObserver(syncClientTheme).observe(document.documentElement, { attributeFilter: ['data-theme'] });
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncClientTheme);
+    uiOnThemeChange(syncClientTheme);
 </script>

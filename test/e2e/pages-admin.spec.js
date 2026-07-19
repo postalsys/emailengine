@@ -945,6 +945,17 @@ test.describe('admin shell', () => {
         await expect(page.locator('#settingsPageBrandName')).toBeVisible();
         await expect(page.locator('#preview-header-btn')).toBeVisible();
 
+        // the ACE editors follow the admin theme: toggling swaps in the dark
+        // theme (ace marks the container with ace_dark) and back again
+        const editorIsDark = id => page.evaluate(id => document.getElementById(id).classList.contains('ace_dark'), id);
+        const startedDark = await page.evaluate(() => window.uiEffectiveTheme() === 'dark');
+        await expect.poll(() => editorIsDark('editor-html')).toBe(startedDark);
+        await page.locator('.theme-toggle-btn').first().click();
+        await expect.poll(() => editorIsDark('editor-html')).toBe(!startedDark);
+        await expect.poll(() => editorIsDark('editor-html-head')).toBe(!startedDark);
+        await page.locator('.theme-toggle-btn').first().click();
+        await expect.poll(() => editorIsDark('editor-html')).toBe(startedDark);
+
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 

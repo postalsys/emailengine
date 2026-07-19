@@ -132,6 +132,20 @@ window.uiAutoInit = () => {
         updateToggleIcons();
     };
 
+    // Run fn whenever the effective light/dark theme may have changed: the topbar
+    // toggle rewrites data-theme on the root element, and with no stored choice
+    // the effective theme follows the system scheme. Used by embeds that cannot
+    // follow the theme through CSS alone (ACE editors, the message browser).
+    window.uiOnThemeChange = fn => {
+        new MutationObserver(() => fn()).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => fn());
+    };
+
+    // keep the sun/moon toggle icons in sync when the system scheme flips
+    // while no explicit theme is stored (the toggle click path already updates
+    // them directly; the extra run is idempotent)
+    window.uiOnThemeChange(updateToggleIcons);
+
     document.addEventListener('DOMContentLoaded', () => {
         for (let btn of document.querySelectorAll('.theme-toggle-btn')) {
             btn.addEventListener('click', e => {
@@ -323,11 +337,35 @@ window.uiButtonBusy = (btn, busy) => {
     }
 };
 
-// ACE editor bootstrap: xcode theme, the given mode, and the initial value
-// loaded into the session. Extra ace options pass through via opts.
+// ACE editor theming: light and dark variants per editor kind, applied on
+// creation and re-applied whenever the admin theme changes. The theme files
+// must exist under static/js/ace/ - they are copied from ace-builds by
+// copy-static-files.sh and ship in the pkg binary via the static/**/* asset glob.
+const uiAceThemes = {
+    editor: { light: 'ace/theme/xcode', dark: 'ace/theme/tomorrow_night' },
+    preview: { light: 'ace/theme/kuroir', dark: 'ace/theme/tomorrow_night_eighties' }
+};
+
+const uiAceInstances = new Set();
+
+const uiAceApplyTheme = entry => entry.editor.setTheme(uiAceThemes[entry.kind][window.uiEffectiveTheme()]);
+
+const uiAceRegister = (editor, kind) => {
+    const entry = { editor, kind };
+    uiAceInstances.add(entry);
+    uiAceApplyTheme(entry);
+    if (uiAceInstances.size === 1) {
+        window.uiOnThemeChange(() => uiAceInstances.forEach(uiAceApplyTheme));
+    }
+    return editor;
+};
+
+// ACE editor bootstrap: theme following the admin theme, the given mode, and
+// the initial value loaded into the session. Extra ace options pass through
+// via opts.
 window.uiAceEditor = (id, mode, value, opts) => {
     const editor = opts ? ace.edit(id, opts) : ace.edit(id);
-    editor.setTheme('ace/theme/xcode');
+    uiAceRegister(editor, 'editor');
     editor.session.setMode(`ace/mode/${mode}`);
     if (value !== undefined) {
         editor.session.setValue(value);
@@ -335,14 +373,14 @@ window.uiAceEditor = (id, mode, value, opts) => {
     return editor;
 };
 
-// Read-only preview pane variant: kuroir theme, gutter, no print margin or
-// active-line highlight
+// Read-only preview pane variant: gutter, no print margin or active-line
+// highlight, with its own theme pair to keep previews visually distinct
 window.uiAcePreview = (id, mode, opts) => {
     const editor = ace.edit(id, Object.assign({ showGutter: true }, opts));
     editor.setReadOnly(true);
     editor.setShowPrintMargin(false);
     editor.setHighlightActiveLine(false);
-    editor.setTheme('ace/theme/kuroir');
+    uiAceRegister(editor, 'preview');
     editor.session.setMode(`ace/mode/${mode}`);
     return editor;
 };
