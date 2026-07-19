@@ -964,7 +964,7 @@ Include your token in requests using one of these methods:
 
             contact: {
                 name: 'EmailEngine Support',
-                url: 'https://emailengine.app/support',
+                url: 'https://learn.emailengine.app/docs/support',
                 email: 'support@emailengine.app'
             },
 
@@ -976,7 +976,7 @@ Include your token in requests using one of these methods:
 
         externalDocs: {
             description: 'EmailEngine Documentation',
-            url: 'https://emailengine.app/'
+            url: 'https://learn.emailengine.app/'
         },
 
         securityDefinitions: {
@@ -1016,7 +1016,7 @@ Include your token in requests using one of these methods:
                     'Send emails with attachments, reply to threads, forward messages, and upload to folders. Supports both immediate and scheduled sending',
                 externalDocs: {
                     description: 'Sending Emails Documentation',
-                    url: 'https://emailengine.app/sending-emails'
+                    url: 'https://learn.emailengine.app/docs/sending'
                 }
             },
             {
@@ -1040,7 +1040,7 @@ Include your token in requests using one of these methods:
                 description: 'Create and manage reusable email templates with variable substitution, HTML/text content, and attachments',
                 externalDocs: {
                     description: 'Email Templates Documentation',
-                    url: 'https://emailengine.app/email-templates'
+                    url: 'https://learn.emailengine.app/docs/sending/templates'
                 }
             },
             {
@@ -1052,7 +1052,7 @@ Include your token in requests using one of these methods:
                 description: 'Retrieve usage statistics, performance metrics, and account activity data',
                 externalDocs: {
                     description: 'Monitoring and Analytics',
-                    url: 'https://emailengine.app/monitoring'
+                    url: 'https://learn.emailengine.app/docs/advanced/monitoring'
                 }
             },
             {
@@ -1064,7 +1064,7 @@ Include your token in requests using one of these methods:
                 description: 'Configure webhook endpoints, manage event subscriptions, and monitor webhook delivery status',
                 externalDocs: {
                     description: 'Webhooks Guide',
-                    url: 'https://emailengine.app/webhooks'
+                    url: 'https://learn.emailengine.app/docs/webhooks/overview'
                 }
             },
             {
@@ -1072,7 +1072,7 @@ Include your token in requests using one of these methods:
                 description: 'Configure OAuth2 applications for Gmail, Outlook, and other providers. Manage client credentials and authentication flows',
                 externalDocs: {
                     description: 'OAuth2 Configuration Guide',
-                    url: 'https://emailengine.app/oauth2-configuration'
+                    url: 'https://learn.emailengine.app/docs/configuration/oauth2-configuration'
                 }
             },
             {
@@ -3133,7 +3133,7 @@ Include your token in requests using one of these methods:
 
             if (consts.EE_DOCKER_LEGACY) {
                 systemAlerts.push({
-                    url: 'https://emailengine.app/docker',
+                    url: 'https://learn.emailengine.app/docs/installation/docker',
                     level: 'info',
                     icon: 'icon-[tabler--brand-docker]',
                     message: `The Docker image you are currently using is deprecated. To ensure ongoing support, please transition to <code>postalsys/emailengine</code>.`,

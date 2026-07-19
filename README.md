@@ -4,7 +4,7 @@
 
 A headless email client application that provides access to IMAP, SMTP, Gmail API, and MS Graph API resources via a unified REST API. Easily integrate email accounts with your service!
 
--   Full documentation: [EmailEngine.app](https://emailengine.app/)
+-   Full documentation: [learn.emailengine.app](https://learn.emailengine.app/)
 
 > [!WARNING]
 > EmailEngine is not free open-source software. It is "source available" software, meaning you can view and copy the source code, but you need a <a href="https://postalsys.com/plans">paid subscription</a> to run it beyond the free 14-day trial. Each EmailEngine instance comes with this trial, so you can test EmailEngine without any commitment.
@@ -13,12 +13,12 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 
 -   Sync users' emails with your service and send emails on their behalf.
 -   Integrate your app with a dedicated email account, such as your support email.
--   [Monitor INBOX and Junk folders](https://docs.emailengine.app/measuging-inbox-spam-placement/) of a test email account to track where sent emails land.
+-   [Monitor INBOX and Junk folders](https://learn.emailengine.app/docs/advanced/inbox-placement-testing) of a test email account to track where sent emails land.
 -   Ideal for lightweight webmail and mobile email apps that prefer to avoid direct IMAP and MIME processing.
 
 ## Quickstart
 
--   [Setup Instructions](https://emailengine.app/set-up)
+-   [Setup Instructions](https://learn.emailengine.app/docs/getting-started/quick-start)
 
 ## Screenshots
 
@@ -52,7 +52,7 @@ $ emailengine license
 
 ## Configuring EmailEngine
 
-Refer to the [configuration documentation](https://emailengine.app/configuration) for details on setting up EmailEngine.
+Refer to the [configuration documentation](https://learn.emailengine.app/docs/configuration) for details on setting up EmailEngine.
 
 ## App Access
 
@@ -80,7 +80,7 @@ Where **example.com** is the domain name for EmailEngine.
 
 ### SystemD
 
-Learn more about running EmailEngine as a SystemD service [here](https://emailengine.app/system-d-service).
+Learn more about running EmailEngine as a SystemD service [here](https://learn.emailengine.app/docs/deployment/systemd).
 
 ### Docker
 
@@ -100,7 +100,7 @@ To execute EmailEngine-CLI commands within a Docker container:
     $ node bin/emailengine.js <command>
     ```
 
-For full Docker usage documentation, visit [here](https://emailengine.app/docker).
+For full Docker usage documentation, visit [here](https://learn.emailengine.app/docs/installation/docker).
 
 ## Resolving Issues with Redis
 
@@ -121,7 +121,7 @@ EmailEngine provides Prometheus metrics, available at the `/metrics` URL path.
 
 ## Log Analysis
 
-For information on logging options, read the documentation [here](https://emailengine.app/logging).
+For information on logging options, read the documentation [here](https://learn.emailengine.app/docs/advanced/logging).
 
 To trace IMAP traffic for a specific account, use the following command:
 
@@ -131,7 +131,7 @@ $ npm run raw -- --filter.account=account1
 
 ## Security and Data Compliance
 
-For detailed security and data compliance information, refer to [this guide](https://docs.emailengine.app/data-compliance/).
+For detailed security and data compliance information, refer to [this guide](https://learn.emailengine.app/docs/deployment/compliance).
 
 ## Licensing
 
