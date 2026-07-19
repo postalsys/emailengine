@@ -35,6 +35,10 @@ const EENGINE_TIMEOUT = getDuration(readEnvValue('EENGINE_TIMEOUT') || config.se
 
 const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EENGINE_NOTIFY_QC'))) || config.queues.notify || 1;
 
+// Wall-clock cap for a single webhook delivery attempt; falls back to the
+// DEFAULT_WEBHOOK_REQUEST_TIMEOUT baked into sendWebhookRequest when unset
+const WEBHOOK_TIMEOUT = getDuration(readEnvValue('EENGINE_WEBHOOK_TIMEOUT')) || false;
+
 let callQueue = new Map();
 let mids = 0;
 
@@ -408,7 +412,8 @@ const notifyWorker = new Worker(
                     method: 'post',
                     body,
                     headers,
-                    dispatcher: httpAgent.retry
+                    dispatcher: httpAgent.retry,
+                    timeout: WEBHOOK_TIMEOUT
                 });
                 duration = Date.now() - start;
             } catch (err) {

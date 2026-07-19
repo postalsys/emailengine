@@ -250,6 +250,7 @@ The webhooks system (`workers/webhooks.js`, `lib/webhooks.js`) delivers real-tim
 - Authentication: Basic auth via URL credentials, custom headers, or HMAC-SHA256 signature
 - Signature header: `X-EE-Wh-Signature` (HMAC-SHA256 of body using service secret)
 - Concurrency: Configurable via `EENGINE_NOTIFY_QC` (default: 1)
+- Timeout: each delivery attempt is capped at 30s wall-clock (`EENGINE_WEBHOOK_TIMEOUT` to override); a timed-out attempt fails with `ETIMEDOUT` and retries like any other transient error
 
 **Custom routes** (`lib/webhooks.js`):
 - `fn` - JavaScript filter function returning boolean (include/exclude event)
