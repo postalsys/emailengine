@@ -129,6 +129,21 @@ test('isAuthorized', async t => {
         assert.equal(sso.isAuthorized({}, emails, groups), false);
         assert.equal(sso.isAuthorized(null, emails, groups), false);
     });
+
+    await t.test('email allow-list rejects an explicitly unverified address', () => {
+        // An address the IdP reports as unverified must not satisfy the email allow-list,
+        // even when it would otherwise match exactly or by domain.
+        assert.equal(sso.isAuthorized({ email: 'alice@example.com', emailVerified: false }, emails, []), false);
+        assert.equal(sso.isAuthorized({ email: 'someone@corp.example.com', emailVerified: false }, emails, []), false);
+        // A verified or unknown (missing claim) address keeps matching as before.
+        assert.equal(sso.isAuthorized({ email: 'alice@example.com', emailVerified: true }, emails, []), true);
+        assert.equal(sso.isAuthorized({ email: 'alice@example.com' }, emails, []), true);
+    });
+
+    await t.test('unverified email still authorized via group membership', () => {
+        // Rejecting the email match must not block a legitimate group-based grant.
+        assert.equal(sso.isAuthorized({ email: 'alice@example.com', emailVerified: false, groups: ['emailengine-admins'] }, emails, groups), true);
+    });
 });
 
 test('getDiscoveryUrl', async t => {
@@ -184,8 +199,19 @@ test('mapUserinfoProfile', async t => {
             username: 'alice@example.com',
             displayName: 'Alice A',
             email: 'alice@example.com',
+            emailVerified: undefined,
             groups: ['ops']
         });
+    });
+
+    await t.test('normalizes email_verified to a strict tri-state', () => {
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: true }).emailVerified, true);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'true' }).emailVerified, true);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: false }).emailVerified, false);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'false' }).emailVerified, false);
+        // Missing or non-boolean claim stays "unknown" so trust behavior is unchanged
+        assert.equal(sso.mapUserinfoProfile({ sub: 's' }).emailVerified, undefined);
+        assert.equal(sso.mapUserinfoProfile({ sub: 's', email_verified: 'yes' }).emailVerified, undefined);
     });
 
     await t.test('username precedence email > preferred_username > sub', () => {
@@ -201,7 +227,14 @@ test('mapUserinfoProfile', async t => {
     });
 
     await t.test('tolerates empty input', () => {
-        assert.deepEqual(sso.mapUserinfoProfile(), { id: undefined, username: undefined, displayName: undefined, email: undefined, groups: [] });
+        assert.deepEqual(sso.mapUserinfoProfile(), {
+            id: undefined,
+            username: undefined,
+            displayName: undefined,
+            email: undefined,
+            emailVerified: undefined,
+            groups: []
+        });
     });
 });
 
@@ -273,6 +306,7 @@ test('buildOidcBellProvider', async t => {
             username: 'alice@example.com',
             displayName: 'Alice A',
             email: 'alice@example.com',
+            emailVerified: undefined,
             groups: ['emailengine-admins']
         });
     });

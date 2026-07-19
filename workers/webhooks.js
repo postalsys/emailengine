@@ -525,7 +525,9 @@ const notifyWorker = new Worker(
         {
             concurrency: Number(NOTIFY_QC) || 1,
 
-            // Webhook HTTP requests have 90s timeout, lock should exceed this
+            // Each webhook HTTP attempt is capped at EENGINE_WEBHOOK_TIMEOUT (default 30s);
+            // keep this lock comfortably above that cap so an in-flight attempt cannot outlive
+            // the lock and let BullMQ mark the job stalled (which would re-deliver the webhook).
             lockDuration: 3 * 60 * 1000, // 3 minutes
 
             // Check for stalled jobs every 60 seconds
