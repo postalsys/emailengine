@@ -442,6 +442,12 @@ async function onCommand(command) {
 }
 
 function publishChangeEvent(data) {
+    // Nothing to do (and no reason to compute the badge label) when no SSE client is
+    // subscribed - the common case whenever no admin browser has the dashboard open.
+    if (!registeredPublishers.size) {
+        return;
+    }
+
     let { account, type, key, payload } = data;
 
     // resolve the badge descriptor server-side so the SSE repaint in app.js uses
@@ -1527,6 +1533,9 @@ Include your token in requests using one of these methods:
                             username: profile.username,
                             displayName: profile.displayName,
                             email: profile.email,
+                            // Carried so the per-request isAuthorized() re-check enforces email
+                            // verification the same way the login gate above does.
+                            emailVerified: profile.emailVerified,
                             groups: profile.groups
                         },
                         idToken: (request.auth.artifacts && request.auth.artifacts.id_token) || null
