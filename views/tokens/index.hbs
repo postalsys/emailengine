@@ -1,12 +1,8 @@
-{{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" subtitle="Bearer tokens that authenticate requests to the EmailEngine API." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create access token" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/tokens" parentLabel="Access Tokens" query=query}}
-
-<p class="mb-6">
-    To access EmailEngine API, you need to authenticate your API requests with an access token.
-</p>
 
 {{#if data.tokens}}
 <div class="card bg-base-100 shadow-md mb-6">

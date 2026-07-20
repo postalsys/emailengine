@@ -1,24 +1,8 @@
-{{#> ui/page-header title="Gateways" icon="icon-[tabler--send]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Gateways" icon="icon-[tabler--send]" subtitle="Route outgoing email through your own SMTP servers or third-party providers." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href="/admin/gateways/new" label="Add Gateway" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/gateways" parentLabel="Gateways" query=query}}
-
-<p class="mb-6">
-    Route outgoing emails through SMTP gateways instead of individual user email servers.
-</p>
-
-{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6" title=""}}
-<p class="mb-2">SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
-    third-party services like SendGrid, Amazon SES, Mailgun, and similar providers.</p>
-<p class="mb-1"><strong>How to use:</strong></p>
-<ul class="list-disc ps-6 space-y-1 mb-0">
-    <li>API: Add <code>gateway: "gateway-id"</code> to your <a
-            href="https://learn.emailengine.app/docs/api/post-v-1-account-account-submit" target="_blank"
-            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submit request</a></li>
-    <li>SMTP: Include header <code>X-EE-Gateway: gateway-id</code></li>
-</ul>
-{{/ui/stat-card}}
 
 {{#if gateways}}
 
@@ -83,5 +67,20 @@
 {{else}}
 {{> ui/list-empty noun="gateways" query=query firstPage=firstPage createHref="/admin/gateways/new" createLabel="Add your first gateway" clearHref="/admin/gateways"}}
 {{/if}}
+
+{{#> ui/details summary="How to use gateways" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+    <p class="mb-4">SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
+        third-party services like SendGrid, Amazon SES, Mailgun, and similar providers.</p>
+    <p class="mb-1"><strong>To route a message through a gateway:</strong></p>
+    <ul class="list-disc ps-6 space-y-1 mb-0">
+        <li>API: Add <code>gateway: "gateway-id"</code> to your <a
+                href="https://learn.emailengine.app/docs/api/post-v-1-account-account-submit" target="_blank"
+                rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submit request</a>
+        </li>
+        <li>SMTP: Include header <code>X-EE-Gateway: gateway-id</code></li>
+    </ul>
+</div>
+{{/ui/details}}
 
 {{> ui/delete-modal id="deleteGateway" noun="gateway" action="/admin/gateways"}}

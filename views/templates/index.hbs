@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Templates" icon="icon-[tabler--template]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Templates" icon="icon-[tabler--template]" subtitle="Reusable subject and body content you can reference by ID when sending." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create template" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
@@ -7,24 +7,6 @@
 {{else if account}}
 {{> ui/breadcrumb parentHref="/admin/templates" parentLabel="Templates" current=account.name class="mb-6"}}
 {{/if}}
-
-<p class="mb-6">Email templating allows you to create and reuse email content efficiently.</p>
-
-{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6" title=""}}
-<p class="mb-2">When sending emails using the EmailEngine <a
-        href="https://learn.emailengine.app/docs/api/post-v-1-account-account-submit" target="_blank"
-        rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submission API
-        endpoint</a>, you don't need to provide the full
-    subject line, HTML content, and plain-text content. Instead, you can specify a template ID, and
-    EmailEngine
-    will use that template to compile the final email.</p>
-<p class="mb-4">For additional customization, you can use Handlebars syntax in templates and provide variables
-    to populate dynamic content.</p>
-
-<div>
-    {{> ui/btn href="https://learn.emailengine.app/docs/sending/templates" external=true label="Documentation" variant="info" size="sm" icon="icon-[tabler--arrow-right]"}}
-</div>
-{{/ui/stat-card}}
 
 {{#if templates}}
 <div class="card bg-base-100 shadow-md mb-6">
@@ -119,9 +101,13 @@
   }'</pre>
 
         <hr class="my-4">
-        <div class="text-base-content/60">
+        <div class="text-base-content/60 mb-4">
             <p>This example assumes that you use <code>\{{params.key}}</code> in the subject, html or plain-text
                 content of the template.</p>
+        </div>
+
+        <div>
+            {{> ui/btn href="https://learn.emailengine.app/docs/sending/templates" external=true label="Documentation" variant="info" size="sm" icon="icon-[tabler--arrow-right]"}}
         </div>
 
 </div>

@@ -2,11 +2,7 @@
       actions in the header row (same idiom as ui/page-header). Pass badgeLabel
       to show a count badge after the title (e.g. the apps total). --}}
 {{#if @partial-block}}
-{{#> ui/page-header title="OAuth2 Apps" icon="icon-[tabler--brand-oauth]" badgeLabel=badgeLabel badgeVariant="neutral" class="mb-1"}}{{> @partial-block}}{{/ui/page-header}}
+{{#> ui/page-header title="OAuth2 Apps" icon="icon-[tabler--brand-oauth]" subtitle="Connect Gmail, Outlook, and other providers so users can authorize their accounts." badgeLabel=badgeLabel badgeVariant="neutral" class="mb-6"}}{{> @partial-block}}{{/ui/page-header}}
 {{else}}
-{{> ui/page-header title="OAuth2 Apps" icon="icon-[tabler--brand-oauth]" badgeLabel=badgeLabel badgeVariant="neutral" class="mb-1"}}
+{{> ui/page-header title="OAuth2 Apps" icon="icon-[tabler--brand-oauth]" subtitle="Connect Gmail, Outlook, and other providers so users can authorize their accounts." badgeLabel=badgeLabel badgeVariant="neutral" class="mb-6"}}
 {{/if}}
-
-<p class="mb-6">
-    Configure OAuth2 apps for supported services.
-</p>

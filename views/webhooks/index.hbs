@@ -1,9 +1,8 @@
-{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" subtitle="Send HTTP callbacks to custom targets when email events match your filters." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create webhook route" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/webhooks" parentLabel="Webhook Routes" query=query}}
-
 
 {{#unless webhooksEnabled}}
 <div class="alert alert-soft alert-warning mb-6"><span><strong>Note:</strong> Webhook processing is currently disabled
@@ -11,19 +10,6 @@
         <a href="/admin/config/webhooks" class="link link-animated">Enable webhooks in configuration
             settings</a>.</span></div>
 {{/unless}}
-
-<p class="mb-6">Webhook routing allows you to define custom conditions that trigger webhooks to specific targets.</p>
-
-{{#> ui/stat-card variant="info" icon="icon-[tabler--info-circle]" class="mb-6" title=""}}
-<p class="mb-2">
-    EmailEngine tests all events against <em>filter functions</em> of webhook routes. When
-    a filter matches, EmailEngine sends a webhook to the target URL of that route. If
-    the webhook target requires a specific payload format, you can define a <em>mapping
-        function</em> to modify the payload before sending.
-</p>
-<p><a href="https://learn.emailengine.app/docs/integrations/low-code" target="_blank" rel="noopener noreferrer"
-        referrerpolicy="no-referrer" class="link link-animated">Learn more about webhook routes</a>.</p>
-{{/ui/stat-card}}
 
 {{#if webhooks}}
 <div class="card bg-base-100 shadow-md mb-6">
@@ -85,5 +71,19 @@
 {{else}}
 {{> ui/list-empty noun="webhook routes" query=query firstPage=firstPage createHref=newLink createLabel="Create your first webhook route" clearHref="/admin/webhooks"}}
 {{/if}}
+
+{{#> ui/details summary="How webhook routes work" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+    <p class="mb-2">
+        EmailEngine tests all events against <em>filter functions</em> of webhook routes. When
+        a filter matches, EmailEngine sends a webhook to the target URL of that route. If
+        the webhook target requires a specific payload format, you can define a <em>mapping
+            function</em> to modify the payload before sending.
+    </p>
+    <p class="mb-0"><a href="https://learn.emailengine.app/docs/integrations/low-code" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about webhook
+            routes</a>.</p>
+</div>
+{{/ui/details}}
 
 {{> ui/delete-modal id="deleteWebhook" noun="webhook route" action="/admin/webhooks/delete" fieldName="webhook"}}
