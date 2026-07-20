@@ -6,8 +6,11 @@
     right-aligned, position-relative <td>.
 
     The dropdown uses [--strategy:fixed] so the menu escapes the table's
-    overflow-x-auto clip, [--placement:bottom-end] to align to the row's right
-    edge, and relative z-[1] to sit above the ui/row-link overlay.
+    overflow-x-auto clip and [--placement:bottom-end] to align to the row's
+    right edge. The wrapper carries no z-index on purpose: a per-row stacking
+    context would trap the open menu (FlyonUI gives .dropdown-menu z-index:10)
+    so the next row's kebab would paint over it. The actions cell has no
+    ui/row-link overlay, so nothing needs lifting here.
       {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" gateway)
             deleteModal="#deleteGateway" deleteName=name
             deleteAction=(concat "/admin/gateways/delete/" gateway)}}
@@ -24,7 +27,7 @@
       deleteLabel  - "Delete" item label (default "Delete")
       label        - aria-label on the kebab toggle (default "Row actions")
 --}}
-<div class="dropdown relative z-[1] inline-flex [--strategy:fixed] [--placement:bottom-end]">
+<div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
     <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
         aria-expanded="false" aria-label="{{#if label}}{{label}}{{else}}Row actions{{/if}}">
         <span class="icon-[tabler--dots-vertical] size-4.5"></span>

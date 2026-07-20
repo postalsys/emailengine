@@ -528,6 +528,48 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
+    test('row-actions: the kebab wrapper does not trap the open menu', async ({ page, request }) => {
+        // Regression: the row-actions wrapper must not carry a z-index. A per-row
+        // stacking context traps the open menu (FlyonUI gives .dropdown-menu
+        // z-index:10) inside it, so the next row's kebab painted over the menu.
+        // Asserted structurally (computed z-index) rather than by pixel occlusion,
+        // which depends on floating-ui's viewport-driven flip direction.
+        const errors = trackConsoleErrors(page);
+        await ensureAdminSession(page);
+
+        // seed two gateways so the list renders row-actions kebabs
+        const token = await createApiToken(page, 'e2e kebab-z token');
+        const auth = { Authorization: `Bearer ${token}`, 'Content-type': 'application/json' };
+        const seeded = ['e2e-zorder-1', 'e2e-zorder-2'];
+        for (const g of seeded) {
+            await request.post('/v1/gateway', { headers: auth, data: { gateway: g, name: g, host: '127.0.0.1', port: 2525 } });
+        }
+
+        try {
+            await page.goto('/admin/gateways');
+            const rows = page.locator('tbody tr');
+            expect(await rows.count()).toBeGreaterThanOrEqual(2);
+
+            // the wrapper must resolve to z-index:auto (no stacking context) while
+            // FlyonUI keeps the open menu at z-index:10, position:fixed
+            const wrap = rows.nth(0).locator('.dropdown').first();
+            expect(await wrap.evaluate(el => getComputedStyle(el).zIndex)).toBe('auto');
+
+            await rows.nth(0).locator('.dropdown-toggle').click();
+            const menu = rows.nth(0).locator('.dropdown-menu');
+            await expect(menu.locator('.list-delete-btn')).toBeVisible();
+            const menuStyle = await menu.evaluate(el => ({ z: getComputedStyle(el).zIndex, pos: getComputedStyle(el).position }));
+            expect(menuStyle.pos).toBe('fixed');
+            expect(Number(menuStyle.z)).toBeGreaterThan(1);
+        } finally {
+            for (const g of seeded) {
+                await request.delete(`/v1/gateway/${g}`, { headers: auth }).catch(() => {});
+            }
+        }
+
+        expect(errors, errors.join('\n')).toHaveLength(0);
+    });
+
     test('tokens: list renders, delete modal wires the description', async ({ page }) => {
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
