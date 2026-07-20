@@ -1,0 +1,42 @@
+{{!--
+    ui/overflow-menu - page-level "more actions" kebab dropdown for a detail-view
+    action toolbar. This is the toolbar counterpart to ui/row-actions (which is
+    scoped to a resource-list table row): it keeps secondary and destructive
+    actions (Delete, etc.) out of the primary button row.
+
+    Uses the fixed positioning strategy + bottom-end placement so the menu opens
+    downward and escapes the surrounding card's overflow:hidden clip (a plain
+    absolute dropdown flips up and gets clipped when the toolbar sits near the
+    top of a card).
+
+    Most detail views only need the standard destructive Delete item: pass
+    deleteLabel and it is emitted with the shared contract the delete flow keys on
+    (id="delete-btn", opening the page's #deleteModal, styled text-error). Block
+    form adds extra <li> items above Delete:
+      {{> ui/overflow-menu label="More gateway actions" deleteLabel="Delete gateway"}}
+      {{#> ui/overflow-menu label="More actions" deleteLabel="Delete"}}
+        <li><a class="dropdown-item" href="...">Something else</a></li>
+      {{/ui/overflow-menu}}
+
+    Params:
+      label       - aria-label on the kebab toggle (default "More actions")
+      deleteLabel - text for the standard Delete item (optional; omit to supply your
+                    own items via the block only)
+      deleteModal - overlay the Delete item opens (default "#deleteModal")
+--}}
+<div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
+    <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
+        aria-expanded="false" aria-label="{{#if label}}{{label}}{{else}}More actions{{/if}}">
+        <span class="icon-[tabler--dots-vertical] size-4.5"></span>
+    </button>
+    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu" aria-orientation="vertical">
+        {{#if @partial-block}}
+        {{!-- extra <li> items; own hash params neutralized against fallthrough into nested ui/* calls --}}
+        {{> @partial-block label="" deleteLabel="" deleteModal=""}}
+        {{/if}}
+        {{#if deleteLabel}}
+        <li><button type="button" class="dropdown-item text-error" id="delete-btn"
+                data-overlay="{{#if deleteModal}}{{deleteModal}}{{else}}#deleteModal{{/if}}">{{deleteLabel}}</button></li>
+        {{/if}}
+    </ul>
+</div>

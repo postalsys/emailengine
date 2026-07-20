@@ -3,20 +3,17 @@
 {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=account.account class="mt-6 mb-6"}}
 
 {{#if accountAlert}}
-<div class="alert alert-soft alert-error mb-6 flex items-start gap-3" role="alert">
-    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-    <div class="min-w-0">
-        <div class="font-semibold">{{accountAlert.title}}{{#if accountAlert.path}} in folder <em>{{accountAlert.path}}</em>{{/if}}</div>
-        {{#if accountAlert.message}}
-        <div class="break-words"><small>{{accountAlert.message}}</small></div>
-        {{/if}}
-    </div>
-</div>
+{{#> ui/alert-banner variant="error"}}
+<div class="font-semibold">{{accountAlert.title}}{{#if accountAlert.path}} in folder <em>{{accountAlert.path}}</em>{{/if}}</div>
+{{#if accountAlert.message}}
+<div class="break-words"><small>{{accountAlert.message}}</small></div>
+{{/if}}
+{{/ui/alert-banner}}
 {{/if}}
 
 {{#> ui/card}}
 
-        <div class="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Account actions">
+        {{#> ui/detail-toolbar label="Account actions"}}
 
             {{!-- Primary: the two most common reasons to open an account --}}
             {{#if canReadMail}}
@@ -121,21 +118,9 @@
                 </ul>
             </div>
 
-            {{!-- Overflow: the destructive action kept out of the primary row. Hand-rolled rather
-                 than ui/row-actions - that partial is scoped to list table rows (forces a fixed
-                 strategy and wires Delete through the list-delete-btn contract); here we open the
-                 page-level #deleteModal directly. --}}
-            <div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
-                <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
-                    aria-expanded="false" aria-label="More account actions">
-                    <span class="icon-[tabler--dots-vertical] size-4.5"></span>
-                </button>
-                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu" aria-orientation="vertical">
-                    <li><button type="button" class="dropdown-item text-error" data-overlay="#deleteModal"
-                            id="delete-btn">Delete account</button></li>
-                </ul>
-            </div>
-        </div>
+            {{!-- destructive action kept out of the primary row --}}
+            {{> ui/overflow-menu label="More account actions" deleteLabel="Delete account"}}
+        {{/ui/detail-toolbar}}
 
         {{!-- Related resources scoped to this account (these navigate elsewhere) --}}
         <div class="mb-4 text-base-content/60 text-sm">

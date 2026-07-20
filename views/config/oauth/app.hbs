@@ -8,32 +8,28 @@
 
 {{#> ui/card}}
 
-        <div class="mb-6 flex flex-wrap items-center gap-2" role="toolbar" aria-label="OAuth2 app actions">
+        {{#> ui/detail-toolbar label="OAuth2 app actions"}}
 
-            {{#> ui/tooltip text="Edit OAuth2 application"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/config/oauth/edit/" app.id) icon="icon-[tabler--user-edit]" label="Edit app"}}
-            {{/ui/tooltip}}
+        {{#if canAddServiceAccount}}
+        {{!-- registering an account is the primary action for a service application --}}
+        {{#> ui/tooltip text="Register an email account that authenticates through this service application"}}
+        <button type="button" class="btn btn-primary btn-sm" data-overlay="#addServiceAccountModal"
+            id="add-service-account-btn">
+            <span class="icon-[tabler--user-plus] size-4"></span> Add account
+        </button>
+        {{/ui/tooltip}}
+        {{/if}}
 
-            {{#> ui/tooltip text="Run live checks against the provider"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#verifySetupModal" id="verify-btn" icon="icon-[tabler--clipboard-check]" label="Verify setup"}}
-            {{/ui/tooltip}}
+        {{#> ui/tooltip text="Edit OAuth2 application"}}
+        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/config/oauth/edit/" app.id) icon="icon-[tabler--user-edit]" label="Edit app"}}
+        {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Delete this application"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete app"}}
-            {{/ui/tooltip}}
+        {{#> ui/tooltip text="Run live checks against the provider"}}
+        {{> ui/btn bare=true style="soft" size="sm" overlay="#verifySetupModal" id="verify-btn" icon="icon-[tabler--clipboard-check]" label="Verify setup"}}
+        {{/ui/tooltip}}
 
-            {{#if canAddServiceAccount}}
-            <div class="ms-auto">
-                {{#> ui/tooltip text="Register an email account that authenticates through this service application"}}
-                <button type="button" class="btn btn-primary btn-sm" data-overlay="#addServiceAccountModal"
-                    id="add-service-account-btn">
-                    <span class="icon-[tabler--user-plus] size-4"></span> Add account
-                </button>
-                {{/ui/tooltip}}
-            </div>
-            {{/if}}
-
-        </div>
+        {{> ui/overflow-menu label="More OAuth2 app actions" deleteLabel="Delete app"}}
+        {{/ui/detail-toolbar}}
 
         {{#*inline "appStatusBadge"}}
         {{#if app.enabled}}

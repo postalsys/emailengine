@@ -1,0 +1,23 @@
+{{!--
+    ui/alert-banner - page-level notice banner (leading icon + optional bold title +
+    body) for a detail view's primary problem or status. Block form; the block is the
+    body content rendered below the title:
+      {{#> ui/alert-banner variant="error" title="Connection error"}}
+        <div class="break-words"><small>{{message}}</small></div>
+      {{/ui/alert-banner}}
+    When the title itself needs markup (a link, an <em>), omit the title param and
+    render it as the first element of the block instead.
+    Params:
+      variant - error|warning|info|success (default error); sets alert-<variant>
+      title   - bold heading text (optional)
+      icon    - override the leading icon (default icon-[tabler--alert-triangle])
+--}}
+<div class="alert alert-soft alert-{{#if variant}}{{variant}}{{else}}error{{/if}} mb-6 flex items-start gap-3"
+    role="alert">
+    <span class="{{#if icon}}{{icon}}{{else}}icon-[tabler--alert-triangle]{{/if}} size-5 shrink-0"></span>
+    <div class="min-w-0">
+        {{#if title}}<div class="font-semibold">{{title}}</div>{{/if}}
+        {{!-- body content; own hash params neutralized so they do not fall through into nested ui/* calls --}}
+        {{> @partial-block variant="" title="" icon=""}}
+    </div>
+</div>

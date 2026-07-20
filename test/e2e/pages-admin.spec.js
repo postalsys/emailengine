@@ -100,8 +100,23 @@ async function searchTopbar(page, target, query) {
     await page.waitForURL(url => url.pathname === target && url.searchParams.get('query') === query);
 }
 
+// On detail views the destructive Delete now lives inside a ui/overflow-menu kebab
+// (id="delete-btn" on the dropdown item), so it is hidden until the kebab is opened.
+// Open the containing dropdown if collapsed, then click the item. Retry the whole
+// open-then-click since the dropdown can close on its own between the two (animations).
+async function openDeleteAction(page) {
+    const del = page.locator('#delete-btn');
+    await expect(async () => {
+        if (!(await del.isVisible())) {
+            await page.locator('.dropdown:has(#delete-btn) .dropdown-toggle').click();
+            await expect(del).toBeVisible({ timeout: 2000 });
+        }
+        await del.click({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+}
+
 async function deleteViaModal(page, listUrlRe, opts) {
-    await page.locator('#delete-btn').click();
+    await openDeleteAction(page);
     await expect(page.locator('#deleteModal.open')).toHaveCount(1);
     if (opts && opts.checkCancel) {
         // the footer Cancel closes without submitting; its data-overlay target
@@ -113,7 +128,7 @@ async function deleteViaModal(page, listUrlRe, opts) {
         await page.locator('#deleteModal button', { hasText: 'Cancel' }).click();
         await expect(page.locator('#deleteModal.open')).toHaveCount(0);
         await expect(page.locator('.overlay-backdrop')).toHaveCount(0);
-        await page.locator('#delete-btn').click();
+        await openDeleteAction(page);
         await expect(page.locator('#deleteModal.open')).toHaveCount(1);
     }
     await page.locator('#deleteModal button[type="submit"]').click();
@@ -395,16 +410,8 @@ test.describe('admin shell', () => {
         await expectTooltipOnHover(page, page.locator('#request-reconnect'));
 
         // delete now lives in the overflow (kebab) menu; open it, then the confirm
-        // modal opens and closes without submitting. Retry the open-then-click since
-        // the dropdown can close on its own between opening and the item click.
-        await expect(async () => {
-            const deleteBtn = page.locator('#delete-btn');
-            if (!(await deleteBtn.isVisible())) {
-                await page.locator('button[aria-label="More account actions"]').click();
-                await expect(deleteBtn).toBeVisible({ timeout: 2000 });
-            }
-            await deleteBtn.click({ timeout: 2000 });
-        }).toPass({ timeout: 30000 });
+        // modal opens and closes without submitting.
+        await openDeleteAction(page);
         await expect(page.locator('#deleteModal.open')).toHaveCount(1);
         await page.keyboard.press('Escape');
         await expect(page.locator('#deleteModal.open')).toHaveCount(0);

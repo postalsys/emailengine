@@ -1,0 +1,21 @@
+{{!--
+    ui/detail-toolbar - the action row at the top of a detail view. Centralizes the
+    toolbar container (wrapping flex row, spacing, role/aria) so every detail page
+    lays its actions out identically. Compose the buttons inside, leading with the
+    primary action (ui/btn variant="primary"), then operational buttons, and end
+    with ui/overflow-menu for secondary/destructive actions:
+      {{#> ui/detail-toolbar label="Gateway actions"}}
+        {{> ui/btn variant="primary" size="sm" href="..." icon="..." label="Edit"}}
+        <button type="button" class="btn btn-soft btn-sm" ...>Test</button>
+        {{#> ui/overflow-menu label="More gateway actions"}}
+          <li><button class="dropdown-item text-error" data-overlay="#deleteModal">Delete</button></li>
+        {{/ui/overflow-menu}}
+      {{/ui/detail-toolbar}}
+    Params:
+      label - aria-label on the toolbar (default "Actions")
+--}}
+<div class="mb-4 flex flex-wrap items-center gap-2" role="toolbar"
+    aria-label="{{#if label}}{{label}}{{else}}Actions{{/if}}">
+    {{!-- own hash param neutralized so it does not fall through into nested ui/* calls --}}
+    {{> @partial-block label=""}}
+</div>

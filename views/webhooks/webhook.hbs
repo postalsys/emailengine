@@ -4,16 +4,13 @@
 
 {{#> ui/card}}
 
-        <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Webhook route actions">
+        {{#> ui/detail-toolbar label="Webhook route actions"}}
+        {{#> ui/tooltip text="Edit Webhook Route contents"}}
+        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/webhooks/webhook/" webhook.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit route"}}
+        {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Edit Webhook Route contents"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/webhooks/webhook/" webhook.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit route"}}
-            {{/ui/tooltip}}
-
-            {{#> ui/tooltip text="Delete this Webhook Route"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete route"}}
-            {{/ui/tooltip}}
-        </div>
+        {{> ui/overflow-menu label="More webhook route actions" deleteLabel="Delete route"}}
+        {{/ui/detail-toolbar}}
 
         {{#if webhook.description}}
         <h6 class="card-title">{{webhook.name}}</h6>

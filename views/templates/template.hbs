@@ -6,21 +6,17 @@
 
 {{#> ui/card}}
 
-        <div class="mb-6 flex flex-wrap gap-2" role="toolbar" aria-label="Template actions">
+        {{#> ui/detail-toolbar label="Template actions"}}
+        {{#> ui/tooltip text="Edit template contents"}}
+        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/templates/template/" template.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit template"}}
+        {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Edit template contents"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/templates/template/" template.id "/edit") icon="icon-[tabler--file-pencil]" label="Edit template"}}
-            {{/ui/tooltip}}
+        {{#> ui/tooltip text="Send test email using this template"}}
+        {{> ui/btn bare=true style="soft" size="sm" overlay="#sendTestModal" id="test-btn" icon="icon-[tabler--mail-forward]" label="Send test email"}}
+        {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Delete this template"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete template"}}
-            {{/ui/tooltip}}
-
-            {{#> ui/tooltip text="Send test email using this template"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#sendTestModal" id="test-btn" icon="icon-[tabler--mail-forward]" label="Send test email"}}
-            {{/ui/tooltip}}
-
-        </div>
+        {{> ui/overflow-menu label="More template actions" deleteLabel="Delete template"}}
+        {{/ui/detail-toolbar}}
 
         {{#if template.description}}
         <h6 class="card-title">{{template.name}}</h6>

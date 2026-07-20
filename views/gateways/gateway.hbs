@@ -2,35 +2,26 @@
 
 {{> ui/breadcrumb parentHref="/admin/gateways" parentLabel="Gateways" current=gateway.gateway class="mt-6 mb-6"}}
 
+{{#if gateway.lastError}}
+{{#> ui/alert-banner variant="error" title="Connection error"}}
+<div class="break-words"><small>{{gateway.lastError.description}}</small></div>
+{{#if gateway.lastError.response}}
+<div class="break-words"><small>Server response: <code>{{gateway.lastError.response}}</code></small></div>
+{{/if}}
+{{/ui/alert-banner}}
+{{/if}}
+
 {{#> ui/card}}
 
-        <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Gateway actions">
+        {{#> ui/detail-toolbar label="Gateway actions"}}
+        {{#> ui/tooltip text="Modify gateway settings"}}
+        {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/gateways/edit/" gateway.gateway) icon="icon-[tabler--edit]" label="Edit gateway"}}
+        {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Modify gateway settings"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/gateways/edit/" gateway.gateway) icon="icon-[tabler--edit]" label="Edit gateway"}}
-            {{/ui/tooltip}}
-
-            {{#> ui/tooltip text="Remove this gateway"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete gateway"}}
-            {{/ui/tooltip}}
-
-        </div>
+        {{> ui/overflow-menu label="More gateway actions" deleteLabel="Delete gateway"}}
+        {{/ui/detail-toolbar}}
 
         <h6 class="card-title mb-6">{{gateway.name}}</h6>
-
-        {{#if gateway.lastError}}
-        <dl class="ee-dl">
-            <dt>Connection Error</dt>
-            <dd>{{gateway.lastError.description}}</dd>
-
-            {{#if gateway.lastError.response}}
-            <dt>Server Response</dt>
-            <dd><code>{{gateway.lastError.response}}</code></dd>
-            {{/if}}
-        </dl>
-
-        <hr>
-        {{/if}}
 
         <dl class="ee-dl">
             {{#if gateway.gateway}}
@@ -73,7 +64,7 @@
             </dd>
         </dl>
 
-    
+
 {{/ui/card}}
 
 {{#> ui/confirm-modal id="deleteModal" title="Delete Gateway" action=(concat "/admin/gateways/delete/" gateway.gateway)
