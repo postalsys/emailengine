@@ -1,7 +1,7 @@
-{{> ui/page-header title="Workers" icon="icon-[tabler--cpu]" class="mb-1"}}
+{{> ui/page-header title="Workers" icon="icon-[tabler--cpu]" subtitle="Live status of the worker threads EmailEngine uses to sync accounts, deliver mail, and serve the API." badgeLabel=threadCount badgeVariant="neutral" class="mb-6"}}
 
 {{#if apiWorkerWarning}}
-<div class="alert alert-soft alert-warning mt-6 block" role="alert">
+<div class="alert alert-soft alert-warning mb-6 block" role="alert">
     <span class="icon-[tabler--alert-triangle] size-4 align-text-bottom"></span>
     <strong>Multiple API workers are not active.</strong>
     {{#equals apiWorkerWarning.reason "port"}}
@@ -15,7 +15,7 @@
 </div>
 {{/if}}
 
-<div class="card bg-base-100 shadow-md mt-6 mb-6">
+<div class="card bg-base-100 shadow-md mb-6">
 
     <div class="overflow-x-auto">
         <table class="table">
@@ -29,7 +29,7 @@
                     <th class="text-end">Accounts</th>
                     <th class="text-end">Sent</th>
                     <th class="text-end">Received</th>
-                    <th>&nbsp;</th>
+                    <th><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -108,6 +108,20 @@
     </div>
 
 </div>
+
+{{#> ui/details summary="About workers" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+    <p class="mb-4">EmailEngine spreads its work across worker threads - IMAP sync, the API and web server, webhook
+        delivery, message submission, and exports. Their counts are set at startup with environment variables such as
+        <code>EENGINE_WORKERS</code> (IMAP sync), <code>EENGINE_WORKERS_API</code>, <code>EENGINE_WORKERS_WEBHOOKS</code>,
+        and <code>EENGINE_WORKERS_SUBMIT</code>.</p>
+    <p class="mb-4">Use the row actions to restart an individual thread or download a memory snapshot for debugging; a
+        row highlighted in red is unresponsive.</p>
+    <p class="mb-0"><a href="https://learn.emailengine.app/docs/advanced/performance-tuning" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about scaling
+            workers</a>.</p>
+</div>
+{{/ui/details}}
 
 {{#> ui/confirm-modal id="killThread" title="Restart Thread" action="/admin/internals/kill"
 fieldName="thread" fieldId="kill-thread" submitLabel="Restart Thread"}}
