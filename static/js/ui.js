@@ -266,17 +266,23 @@ document.addEventListener('click', e => {
     // toolbar copy controls are <a href="#"> links
     e.preventDefault();
 
-    let target = btn.dataset.copyTarget ? document.querySelector(btn.dataset.copyTarget) : null;
-    if (!target) {
-        return;
-    }
-
-    let aceEntry = uiAceInstances.get(target);
     let value;
-    if (aceEntry) {
-        value = aceEntry.editor.getValue();
+    if ('copyValue' in btn.dataset) {
+        // literal value carried on the button itself (e.g. the per-row ids in
+        // ui/entity-id) - no target element needed
+        value = btn.dataset.copyValue;
     } else {
-        value = 'value' in target ? target.value : target.textContent;
+        let target = btn.dataset.copyTarget ? document.querySelector(btn.dataset.copyTarget) : null;
+        if (!target) {
+            return;
+        }
+
+        let aceEntry = uiAceInstances.get(target);
+        if (aceEntry) {
+            value = aceEntry.editor.getValue();
+        } else {
+            value = 'value' in target ? target.value : target.textContent;
+        }
     }
 
     let copied;
@@ -313,6 +319,47 @@ document.addEventListener('click', e => {
             window.setTimeout(() => icon.classList.replace('icon-[tabler--check]', 'icon-[tabler--copy]'), 1500);
         }
     });
+});
+
+// Resource-list row delete: a .list-delete-btn (rendered by ui/row-actions in
+// a kebab menu) opens the page's shared confirm modal, filling in the resource
+// name and either the modal form's hidden id field (payload-based delete
+// routes such as /admin/webhooks/delete) or the form action (path-param delete
+// routes such as /admin/gateways/delete/{id}). Delegated, so it covers every
+// list page without per-page wiring.
+document.addEventListener('click', e => {
+    let btn = e.target.closest('.list-delete-btn');
+    if (!btn) {
+        return;
+    }
+    e.preventDefault();
+
+    let modalSel = btn.dataset.deleteModal;
+    let modal = modalSel ? document.querySelector(modalSel) : null;
+    if (!modal) {
+        return;
+    }
+
+    let nameEl = modal.querySelector('.delete-target-name');
+    if (nameEl) {
+        nameEl.textContent = btn.dataset.deleteName || '';
+    }
+
+    let form = modal.querySelector('form');
+    if (form) {
+        if (btn.dataset.deleteAction) {
+            // path-param delete routes carry the id in the URL
+            form.setAttribute('action', btn.dataset.deleteAction);
+        }
+        // payload-based delete routes fill the hidden id field (ui/delete-modal
+        // tags it with .delete-target-id)
+        let field = form.querySelector('.delete-target-id');
+        if (field) {
+            field.value = btn.dataset.deleteId || '';
+        }
+    }
+
+    window.uiModal.open(modalSel);
 });
 
 // Server-side flash messages (views/partials/alerts.hbs): close button plus

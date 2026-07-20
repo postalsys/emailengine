@@ -1,0 +1,47 @@
+{{!--
+    ui/row-actions - trailing actions cell for a resource-list row: a kebab
+    (vertical dots) dropdown with an "Open" link to the detail page and a
+    "Delete" item that opens the page's shared ui/confirm-modal (wired centrally
+    by the .list-delete-btn handler in static/js/ui.js). Render inside a
+    right-aligned, position-relative <td>.
+
+    The dropdown uses [--strategy:fixed] so the menu escapes the table's
+    overflow-x-auto clip, [--placement:bottom-end] to align to the row's right
+    edge, and relative z-[1] to sit above the ui/row-link overlay.
+      {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" gateway)
+            deleteModal="#deleteGateway" deleteName=name
+            deleteAction=(concat "/admin/gateways/delete/" gateway)}}
+    Params:
+      openHref     - detail-page URL for the "Open" item (optional; omit to hide Open)
+      openLabel    - "Open" item label (default "Open")
+      deleteModal  - selector of the confirm modal to open, e.g. "#deleteGateway"
+                     (optional; omit to hide Delete)
+      deleteId     - id passed to the modal's hidden field, for payload-based
+                     delete routes (optional)
+      deleteName   - human name shown in the confirmation text (optional)
+      deleteAction - full POST action, for path-param delete routes; overrides
+                     the modal form action (optional)
+      deleteLabel  - "Delete" item label (default "Delete")
+      label        - aria-label on the kebab toggle (default "Row actions")
+--}}
+<div class="dropdown relative z-[1] inline-flex [--strategy:fixed] [--placement:bottom-end]">
+    <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
+        aria-expanded="false" aria-label="{{#if label}}{{label}}{{else}}Row actions{{/if}}">
+        <span class="icon-[tabler--dots-vertical] size-4.5"></span>
+    </button>
+    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-32" role="menu" aria-orientation="vertical">
+        {{#if openHref}}
+        <li><a class="dropdown-item" href="{{openHref}}">{{#if openLabel}}{{openLabel}}{{else}}Open{{/if}}</a></li>
+        {{/if}}
+        {{#if deleteModal}}
+        <li>
+            <button type="button" class="dropdown-item text-error list-delete-btn" data-delete-modal="{{deleteModal}}"
+                {{~#if deleteId}} data-delete-id="{{deleteId}}"{{/if~}}
+                {{~#if deleteName}} data-delete-name="{{deleteName}}"{{/if~}}
+                {{~#if deleteAction}} data-delete-action="{{deleteAction}}"{{/if}}>
+                {{~#if deleteLabel}}{{deleteLabel}}{{else}}Delete{{/if~}}
+            </button>
+        </li>
+        {{/if}}
+    </ul>
+</div>

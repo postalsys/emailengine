@@ -1,4 +1,4 @@
-{{#> oauth_config_header}}
+{{#> oauth_config_header badgeLabel=total}}
 <div class="dropdown relative inline-flex">
     <button type="button" id="create-app-dropdown" class="dropdown-toggle btn btn-primary" aria-haspopup="menu"
         aria-expanded="false">
@@ -28,11 +28,8 @@
                     <th>Description</th>
                     <th>Type</th>
                     <th>Base scopes</th>
-                    <th>Provider ID
-                        {{#> ui/tooltip text='Use this value as the "oauth2.provider" property, when registering email accounts using the API.'}}<span
-                            class="icon-[tabler--help-circle] size-4 align-text-bottom text-base-content/50"></span>{{/ui/tooltip}}
-                    </th>
                     <th>Status</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -40,7 +37,9 @@
                 {{#each apps}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/config/oauth/app/" id) label="Open OAuth2 app"}}<strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/config/oauth/app/" id) label="Open OAuth2 app"}}
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=id prefix="Provider ID"}}
                     </td>
 
                     <td class="relative">
@@ -57,11 +56,6 @@
 
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
-                        {{id}}
-                    </td>
-
-                    <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
                         {{#if enabled}}
 
                         {{#if meta.authFlag}}
@@ -73,6 +67,11 @@
                         {{> ui/badge label="Disabled" variant="warning"}}
                         {{/if}}
                     </td>
+
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/config/oauth/app/" id) label="OAuth2 app actions"
+                        deleteModal="#deleteOauthApp" deleteId=id deleteName=name}}
+                    </td>
                 </tr>
                 {{/each}}
             </tbody>
@@ -82,14 +81,9 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{#> ui/card}}
-        <p>
-            {{#if firstPage}}
-            No OAuth2 apps have been registered yet.
-            {{else}}
-            No OAuth2 apps found.
-            {{/if}}
-        </p>
-    
-{{/ui/card}}
+{{> ui/list-empty noun="OAuth2 apps" query=query firstPage=firstPage clearHref="/admin/config/oauth"}}
 {{/if}}
+
+{{#> ui/delete-modal id="deleteOauthApp" noun="OAuth2 app" action="/admin/config/oauth/delete" fieldName="app"}}
+Are you sure you want to delete <strong class="delete-target-name"></strong>? Accounts using this app will stop working until reconfigured. This action cannot be undone.
+{{/ui/delete-modal}}

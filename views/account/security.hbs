@@ -69,17 +69,12 @@
                         {{#if passkeys.length}}
                         <ul class="mb-0 space-y-2">
                             {{#each passkeys}}
-                            <li>
-                                <strong>{{this.name}}</strong><br>
-                                <small class="text-base-content/60">Added {{this.createdAtFormatted}}</small>
-                                <form method="post" action="/admin/account/passkeys/delete" class="inline ms-2">
-                                    <input type="hidden" name="crumb" value="{{../crumb}}" />
-                                    <input type="hidden" name="credentialId" value="{{this.id}}" />
-                                    <button type="submit" class="btn btn-sm btn-outline btn-error"
-                                        title="Remove passkey" onclick="return confirm('Remove this passkey?');">
-                                        Remove
-                                    </button>
-                                </form>
+                            <li class="flex items-start justify-between gap-2">
+                                <div>
+                                    <strong>{{this.name}}</strong><br>
+                                    <small class="text-base-content/60">Added {{this.createdAtFormatted}}</small>
+                                </div>
+                                {{> ui/row-actions label="Passkey actions" deleteModal="#deletePasskey" deleteId=this.id deleteName=this.name}}
                             </li>
                             {{/each}}
                         </ul>
@@ -134,6 +129,10 @@
         </ul>
     </div>
 </div>
+
+{{#> ui/confirm-modal id="deletePasskey" title="Remove passkey" action="/admin/account/passkeys/delete" fieldName="credentialId" fieldClass="delete-target-id" submitLabel="Remove passkey"}}
+Are you sure you want to remove <strong class="delete-target-name"></strong>? You will no longer be able to sign in with this passkey.
+{{/ui/confirm-modal}}
 
 {{#> ui/modal id="disableTfaModal" title="Disable two-factor authentication" titleId="disableTfaModalLabel"}}
 <div class="modal-body">

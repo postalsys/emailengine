@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" class="mb-6"}}
+{{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create access token" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
@@ -25,9 +25,8 @@
                 <tr>
                     <th>Description</th>
                     <th>Scopes</th>
-                    <th>Token ID</th>
                     <th>Last used</th>
-                    <th>&nbsp;</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -35,18 +34,13 @@
                 {{#each data.tokens}}
                 <tr>
                     <td>
-                        <strong>{{description}}</strong>
+                        <div><strong>{{description}}</strong></div>
+                        {{> ui/entity-id id=id short=idShort label="Token ID"}}
                     </td>
 
                     <td>
                         {{#if scopes}}
                         {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}
-                        {{/if}}
-                    </td>
-
-                    <td>
-                        {{#if idShort}}
-                        {{#> ui/tooltip text=id}}<code class="cursor-help">{{idShort}}</code>{{/ui/tooltip}}
                         {{/if}}
                     </td>
 
@@ -58,13 +52,8 @@
                         {{/if}}
                     </td>
 
-                    <td class="text-right">
-                        {{#> ui/tooltip text="Delete this token"}}
-                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm delete-token-btn"
-                            data-token="{{id}}" data-token-description="{{description}}" aria-label="Delete this token">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
-                        {{/ui/tooltip}}
+                    <td class="text-end">
+                        {{> ui/row-actions label="Token actions" deleteModal="#deleteToken" deleteId=id deleteName=description}}
                     </td>
 
                 </tr>
@@ -77,27 +66,15 @@
 </div>
 
 {{else}}
-{{#> ui/card}}
-        {{#if account}}
-        <div>
-            Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
-                    class="link link-animated">{{#if
-                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These tokens cannot
-            be used by other accounts.
-        </div>
-        <hr>
-        {{/if}}
-
-        <p>
-            {{#if firstPage}}
-            No access tokens have been created yet. <a href="{{newLink}}" class="link link-animated">Create your first
-                access token</a>.
-            {{else}}
-            No tokens found.
-            {{/if}}
-        </p>
-    
-{{/ui/card}}
+{{#> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{#if account}}
+<div class="mb-2">
+    Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
+            class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
+    These tokens cannot be used by other accounts.
+</div>
+{{/if}}
+{{/ui/list-empty}}
 {{/if}}
 
 
@@ -132,20 +109,4 @@ $ curl "<span class="cur-base-url" data-origin="">http://127.0.0.1:3000</span>/v
 </div>
 {{/ui/details}}
 
-{{#> ui/confirm-modal id="deleteToken" title="Delete access token" action="/admin/tokens/delete"
-fieldName="token" fieldId="token-delete" submitLabel="Delete token"}}
-Are you sure you want to delete <strong id="delete-token-description"></strong>? This action cannot be undone.
-{{/ui/confirm-modal}}
-
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        for (let elm of document.querySelectorAll('.delete-token-btn')) {
-            elm.addEventListener('click', e => {
-                e.preventDefault();
-                document.getElementById('token-delete').value = elm.dataset.token;
-                document.getElementById('delete-token-description').textContent = elm.dataset.tokenDescription;
-                uiModal.open('#deleteToken');
-            });
-        }
-    });
-</script>
+{{> ui/delete-modal id="deleteToken" noun="access token" action="/admin/tokens/delete" fieldName="token"}}

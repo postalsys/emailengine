@@ -1,0 +1,37 @@
+{{!--
+    ui/list-empty - standard empty-state card for a resource list. Distinguishes
+    a search that matched nothing from a genuinely empty first page (which gets
+    a create call-to-action mirroring the header button). Block form; the block,
+    when present, renders above the message (e.g. an account-scoped note).
+      {{> ui/list-empty noun="gateways" query=query firstPage=firstPage
+            createHref="/admin/gateways/new" createLabel="Add your first gateway"
+            clearHref="/admin/gateways"}}
+    Params:
+      noun        - plural resource noun for the fallback copy, e.g. "gateways" (required)
+      query       - active search term; when set, shows the no-results message
+      filterActive- truthy when a non-search filter is active (e.g. the accounts
+                    state filter); shows a "no matches" message with the clear
+                    link instead of the create CTA (optional)
+      firstPage   - true on page 1; gates the create CTA (hidden on later pages)
+      createHref  - create-action URL for the CTA (optional)
+      createOverlay - ui/modal selector to open instead of navigating, e.g.
+                    "#addAccount" (optional; alternative to createHref)
+      createLabel - CTA link text (optional; used with createHref/createOverlay)
+      clearHref   - list URL without the query, for the "Clear search" link (optional)
+--}}
+{{#> ui/card}}
+{{#if @partial-block}}
+{{> @partial-block noun="" query="" filterActive="" firstPage="" createHref="" createOverlay="" createLabel="" clearHref=""}}
+{{/if}}
+<p class="mb-0">
+    {{~#if query}}
+    No results for <strong>&ldquo;{{query}}&rdquo;</strong>.{{#if clearHref}} <a href="{{clearHref}}" class="link link-animated">Clear search</a>.{{/if}}
+    {{~else if filterActive~}}
+    No {{noun}} match the current filter.{{#if clearHref}} <a href="{{clearHref}}" class="link link-animated">Show all {{noun}}</a>.{{/if}}
+    {{~else if firstPage~}}
+    No {{noun}} yet.{{#if createHref}} <a href="{{createHref}}" class="link link-animated">{{createLabel}}</a>.{{else if createOverlay}} <a href="#" data-overlay="{{createOverlay}}" class="link link-animated">{{createLabel}}</a>.{{/if~}}
+    {{~else~}}
+    No {{noun}} found.
+    {{~/if~}}
+</p>
+{{/ui/card}}

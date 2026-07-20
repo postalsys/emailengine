@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Templates" icon="icon-[tabler--template]" class="mb-6"}}
+{{#> ui/page-header title="Templates" icon="icon-[tabler--template]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create template" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
@@ -44,7 +44,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    <th>ID</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -53,15 +53,17 @@
                 <tr class="hover:bg-base-200/60">
 
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/templates/template/" id) label="Open template"}}<strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/templates/template/" id) label="Open template"}}
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=id label="Template ID"}}
                     </td>
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/templates/template/" id)}}{{description}}
                     </td>
 
-                    <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/templates/template/" id)}}
-                        {{id}}
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/templates/template/" id) label="Template actions"
+                        deleteModal="#deleteTemplate" deleteId=id deleteName=name}}
                     </td>
 
                 </tr>
@@ -73,27 +75,18 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{#> ui/card}}
-        {{#if account}}
-        <div>
-            Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
-                    class="link link-animated">{{#if
-                    account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>. These templates cannot
-            be used by other accounts.
-        </div>
-        <hr>
-        {{/if}}
-
-        <p>
-            {{#if firstPage}}
-            No templates have been created yet.
-            {{else}}
-            No templates found.
-            {{/if}}
-        </p>
-    
-{{/ui/card}}
+{{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
+{{#if account}}
+<div class="mb-2">
+    Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
+            class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
+    These templates cannot be used by other accounts.
+</div>
 {{/if}}
+{{/ui/list-empty}}
+{{/if}}
+
+{{> ui/delete-modal id="deleteTemplate" noun="template" action="/admin/templates/delete" fieldName="template"}}
 
 {{#> ui/details summary="Usage example" class="card bg-base-100 shadow-md mb-6"}}
 <div>

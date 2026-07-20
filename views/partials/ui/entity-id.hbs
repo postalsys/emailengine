@@ -1,0 +1,28 @@
+{{!--
+    ui/entity-id - secondary identifier line for a resource-list row: a small
+    muted monospace id with a click-to-copy button and a native title carrying
+    the full value. This is the standard demoted treatment for the opaque ids
+    (account / gateway / app / template / webhook ids) that operators paste into
+    API calls but that should not lead the row - the human name leads, this sits
+    under it. Interactive, so it is lifted above the ui/row-link overlay with
+    relative z-[1].
+      {{> ui/entity-id id=account label="Account ID"}}
+      {{> ui/entity-id id=id prefix="Provider ID"}}
+    Params:
+      id     - full identifier value (required; the native title + copied text)
+      short  - truncated display text (optional; defaults to id)
+      prefix - small muted label before the value, e.g. "id" (default "id");
+               also the copy button's aria label when `label` is omitted
+      label  - accessible suffix for the copy button aria-label (optional;
+               defaults to prefix)
+--}}
+{{#if id}}
+<span class="relative z-[1] inline-flex items-center gap-1 text-xs text-base-content/60 font-normal">
+    <span class="shrink-0">{{#if prefix}}{{prefix}}{{else}}id{{/if}}</span>
+    <code class="font-mono truncate max-w-[16rem]" title="{{id}}">{{#if short}}{{short}}{{else}}{{id}}{{/if}}</code>
+    <button type="button" class="copy-btn shrink-0 cursor-pointer hover:text-base-content" data-copy-value="{{id}}"
+        aria-label="Copy {{#if label}}{{label}}{{else if prefix}}{{prefix}}{{else}}ID{{/if}}">
+        <span class="icon-[tabler--copy] size-3.5"></span>
+    </button>
+</span>
+{{/if}}

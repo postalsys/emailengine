@@ -491,7 +491,6 @@ test.describe('admin shell', () => {
         await expect(page.getByRole('heading', { name: 'E2E Smoke Gateway' })).toBeVisible();
 
         // topbar search filters the list; a miss renders an empty result set
-        const gatewayUrl = page.url();
         await page.goto('/admin/gateways');
         await searchTopbar(page, '/admin/gateways', 'e2e-smoke');
         await expect(page.getByText('Results for "e2e-smoke"')).toBeVisible();
@@ -505,8 +504,26 @@ test.describe('admin shell', () => {
         await page.waitForURL(url => url.pathname === '/admin/gateways' && !url.searchParams.has('query'));
         await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toBeVisible();
 
-        await page.goto(gatewayUrl);
-        await deleteViaModal(page, /\/admin\/gateways(\?|$)/, { checkCancel: true });
+        // delete from the list via the row-actions kebab. This exercises the
+        // path-param delete route wired through data-delete-action (the shared
+        // .list-delete-btn handler rewrites the confirm-modal form action), plus
+        // the Open item and the confirm-modal Cancel button on a list page.
+        const gwRow = page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' }).first();
+        await gwRow.locator('.dropdown-toggle').click();
+        await expect(gwRow.locator('.dropdown-menu a', { hasText: 'Open' })).toHaveAttribute('href', /\/admin\/gateways\/gateway\/e2e-smoke-gw$/);
+        await gwRow.locator('.list-delete-btn').click();
+        await expect(page.locator('#deleteGateway.open')).toHaveCount(1);
+        await expect(page.locator('#deleteGateway .delete-target-name')).toHaveText('E2E Smoke Gateway');
+        // Cancel closes without submitting
+        await page.locator('#deleteGateway button', { hasText: 'Cancel' }).click();
+        await expect(page.locator('#deleteGateway.open')).toHaveCount(0);
+        // reopen and confirm - the gateway is actually removed
+        await gwRow.locator('.dropdown-toggle').click();
+        await gwRow.locator('.list-delete-btn').click();
+        await expect(page.locator('#deleteGateway.open')).toHaveCount(1);
+        await page.locator('#deleteGateway button[type="submit"]').click();
+        await page.waitForURL(/\/admin\/gateways(\?|$)/);
+        await expect(page.locator('tbody tr', { hasText: 'E2E Smoke Gateway' })).toHaveCount(0);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
@@ -522,17 +539,30 @@ test.describe('admin shell', () => {
         await expect(page.locator('h1', { hasText: 'Access Tokens' })).toBeVisible();
         await expect(page.locator('tbody tr').first()).toBeVisible();
 
+        // the ui/entity-id copy button copies the full row id via the
+        // data-copy-value branch of the ui.js .copy-btn handler
+        await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+        const idBtn = page.locator('tbody tr').first().locator('.copy-btn[data-copy-value]');
+        const idValue = await idBtn.getAttribute('data-copy-value');
+        expect(idValue).toBeTruthy();
+        await idBtn.click();
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(idValue);
+
         // topbar search filters the token list by description (case-insensitive)
         await searchTopbar(page, '/admin/tokens', 'TOKENS-page');
         await expect(page.locator('tbody tr', { hasText: 'e2e tokens-page token' }).first()).toBeVisible();
         await page.goto('/admin/tokens');
 
-        // delete modal carries the token description; close without deleting
-        const firstDelete = page.locator('.delete-token-btn').first();
-        const description = await firstDelete.getAttribute('data-token-description');
-        await firstDelete.click();
+        // the row-actions kebab opens the shared delete modal, which the
+        // .list-delete-btn handler fills with the token description; close
+        // without deleting
+        const firstRow = page.locator('tbody tr').first();
+        const deleteItem = firstRow.locator('.list-delete-btn');
+        const description = await deleteItem.getAttribute('data-delete-name');
+        await firstRow.locator('.dropdown-toggle').click();
+        await deleteItem.click();
         await expect(page.locator('#deleteToken.open')).toHaveCount(1);
-        await expect(page.locator('#delete-token-description')).toHaveText(description);
+        await expect(page.locator('#deleteToken .delete-target-name')).toHaveText(description);
         await page.keyboard.press('Escape');
         await expect(page.locator('#deleteToken.open')).toHaveCount(0);
 
@@ -1486,13 +1516,14 @@ test.describe('admin shell', () => {
         await createApiToken(page, 'e2e delete-me token');
         await dismissTokenReveal(page);
 
-        const deleteBtn = page.locator('.delete-token-btn[data-token-description="e2e delete-me token"]').first();
-        await deleteBtn.click();
+        const row = page.locator('tbody tr', { hasText: 'e2e delete-me token' }).first();
+        await row.locator('.dropdown-toggle').click();
+        await row.locator('.list-delete-btn').click();
         await expect(page.locator('#deleteToken.open')).toHaveCount(1);
         await page.locator('#deleteToken button[type="submit"]').click();
         await page.waitForURL(/\/admin\/tokens(\?|$)/);
         await expect(page.locator('.flash-alert')).toBeVisible();
-        await expect(page.locator('.delete-token-btn[data-token-description="e2e delete-me token"]')).toHaveCount(0);
+        await expect(page.locator('tbody tr', { hasText: 'e2e delete-me token' })).toHaveCount(0);
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

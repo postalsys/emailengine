@@ -1,4 +1,4 @@
-{{> oauth_config_header}}
+{{> oauth_config_header badgeLabel=total}}
 
 {{> oauth_tabs}}
 
@@ -14,6 +14,7 @@
                     <th>Subscription</th>
                     <th>Expiration</th>
                     <th>Status</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -21,7 +22,9 @@
                 {{#each apps}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/config/oauth/app/" id) label="Open OAuth2 app"}}<strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/config/oauth/app/" id) label="Open OAuth2 app"}}
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=id prefix="Provider ID"}}
                     </td>
 
                     <td class="relative">
@@ -57,22 +60,23 @@
 
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/config/oauth/app/" id)}}
-                        {{!-- z-[1] lifts the badge above the row-overlay link so
-                              the title tooltip is hoverable --}}
+                        {{!-- relative z-[1] on the tooltip lifts the badge above the
+                              row-overlay link so the error tooltip stays hoverable --}}
                         {{#if meta.pubSubFlag}}
-                        <span class="badge badge-error relative z-[1] cursor-default"
-                            title="{{meta.pubSubFlag.message}}">Error</span>
+                        {{#> ui/tooltip text=meta.pubSubFlag.message class="relative z-[1]"}}{{> ui/badge label="Error" variant="error"}}{{/ui/tooltip}}
                         {{else if meta.authFlag}}
-                        <span class="badge badge-warning relative z-[1] cursor-default"
-                            title="{{meta.authFlag.message}}">Setup Failed</span>
+                        {{#> ui/tooltip text=meta.authFlag.message class="relative z-[1]"}}{{> ui/badge label="Setup Failed" variant="warning"}}{{/ui/tooltip}}
                         {{else if meta.ttlWarning}}
-                        <span class="badge badge-warning relative z-[1] cursor-default"
-                            title="{{meta.ttlWarning.message}}">TTL Update Failed</span>
+                        {{#> ui/tooltip text=meta.ttlWarning.message class="relative z-[1]"}}{{> ui/badge label="TTL Update Failed" variant="warning"}}{{/ui/tooltip}}
                         {{else if pubSubSubscription}}
                         {{> ui/badge label="OK" variant="success"}}
                         {{else}}
                         {{> ui/badge label="Pending" variant="warning"}}
                         {{/if}}
+                    </td>
+
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/config/oauth/app/" id) label="OAuth2 app actions"}}
                     </td>
                 </tr>
                 {{/each}}
@@ -83,16 +87,7 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{#> ui/card}}
-        <p>
-            {{#if firstPage}}
-            No Gmail Pub/Sub apps have been registered yet.
-            {{else}}
-            No Gmail Pub/Sub apps found.
-            {{/if}}
-        </p>
-    
-{{/ui/card}}
+{{> ui/list-empty noun="Gmail Pub/Sub apps" firstPage=firstPage}}
 {{/if}}
 
 {{#> ui/card title="Subscription Settings"}}

@@ -1,9 +1,12 @@
-{{!-- Shared accounts list table (accounts index + internals thread detail): a card
-      with the account rows, live SSE state badges and pagination, or an empty-state
-      card when there is nothing to list.
+{{!-- Shared accounts list card (accounts index + internals thread detail): the
+      card with account rows, live SSE state badges and pagination. Renders
+      nothing when `accounts` is empty - each caller owns its own empty state
+      (accounts index -> ui/list-empty; thread detail -> a plain card).
       Params:
-        emptyText - message shown when the accounts array is empty
-      Context: accounts (row objects incl. stateLabel/type), plus the
+        showActions - true to render the trailing kebab (Open / Delete) column;
+                      the page must then also provide a #deleteAccount confirm
+                      modal (accounts index only; omitted on the thread reuse)
+      Context: accounts (row objects incl. stateLabel/type) plus the
       showPaging/prevPage/nextPage/pageLinks pagination values. --}}
 {{#if accounts}}
 <div class="card bg-base-100 shadow-md mb-6">
@@ -12,11 +15,13 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Type</th>
                     <th>Status</th>
+                    {{#if showActions}}
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
+                    {{/if}}
                 </tr>
             </thead>
 
@@ -25,10 +30,8 @@
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/accounts/" account) label="Open account"}}
-                        {{account}}
-                    </td>
-                    <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/accounts/" account)}}<strong>{{name}}</strong>
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=account label="Account ID"}}
                     </td>
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/accounts/" account)}}{{email}}
@@ -60,6 +63,13 @@
                             {{> ui/state-badge label=stateLabel account=account pointer=true}}
                         </a>
                     </td>
+
+                    {{#if showActions}}
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/accounts/" account) label="Account actions"
+                        deleteModal="#deleteAccount" deleteName=(when name name email) deleteAction=(concat "/admin/accounts/" account "/delete")}}
+                    </td>
+                    {{/if}}
                 </tr>
                 {{/each}}
             </tbody>
@@ -68,9 +78,4 @@
 
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
-{{else}}
-{{#> ui/card}}
-        {{emptyText}}
-    
-{{/ui/card}}
 {{/if}}

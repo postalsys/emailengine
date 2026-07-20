@@ -1,9 +1,17 @@
-{{#> ui/page-header title="Accounts" icon="icon-[tabler--users]" class="mb-6"}}
+{{#> ui/page-header title="Accounts" icon="icon-[tabler--users]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn label="Add an account" icon="icon-[tabler--user-plus]" overlay="#addAccount"}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/accounts" parentLabel="Accounts" query=query}}
 
-{{> accounts_table emptyText="No accounts found."}}
+{{#if accounts}}
+{{> accounts_table showActions=true}}
+{{else}}
+{{> ui/list-empty noun="accounts" query=query filterActive=state firstPage=firstPage createOverlay="#addAccount" createLabel="Add your first account" clearHref="/admin/accounts"}}
+{{/if}}
+
+{{#> ui/delete-modal id="deleteAccount" noun="account" action="/admin/accounts"}}
+Are you sure you want to delete <strong class="delete-target-name"></strong>? All synced data for this account will be removed and this action cannot be undone.
+{{/ui/delete-modal}}
 
 {{>add_account_modal}}

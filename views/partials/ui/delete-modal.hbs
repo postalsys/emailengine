@@ -1,0 +1,26 @@
+{{!--
+    ui/delete-modal - confirmation dialog for deleting a resource from a list
+    row, wired to the shared .list-delete-btn handler in static/js/ui.js (which
+    fills the resource name into .delete-target-name and either the hidden
+    .delete-target-id field or, for path-param routes, the form action). Derives
+    the title and submit label from `noun` ("Delete <noun>"); the body defaults
+    to the standard "cannot be undone" warning and is overridable via the block.
+      {{> ui/delete-modal id="deleteGateway" noun="gateway" action="/admin/gateways"}}
+      {{#> ui/delete-modal id="deleteAccount" noun="account" action="/admin/accounts"}}
+      Custom warning mentioning <strong class="delete-target-name"></strong>.
+      {{/ui/delete-modal}}
+    Params:
+      id        - modal element id, targeted by the row's data-delete-modal (required)
+      noun      - resource noun; forms the "Delete <noun>" title + button label (required)
+      action    - form POST target; overridden per-row by data-delete-action on
+                  path-param delete routes (required)
+      fieldName - hidden id field name for payload-based delete routes (optional;
+                  omit for path-param routes that carry data-delete-action)
+--}}
+{{#> ui/confirm-modal id=id title=(concat "Delete " noun) action=action fieldName=fieldName fieldClass="delete-target-id" submitLabel=(concat "Delete " noun)}}
+{{~#if @partial-block~}}
+{{> @partial-block id="" noun="" action="" fieldName=""}}
+{{~else~}}
+Are you sure you want to delete <strong class="delete-target-name"></strong>? This action cannot be undone.
+{{~/if~}}
+{{/ui/confirm-modal}}

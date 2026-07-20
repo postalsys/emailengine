@@ -15,4 +15,8 @@ class="mt-6 mb-6"}}
     </div>
 </div>
 
-{{> accounts_table emptyText="No accounts assigned to this thread."}}
+{{#if accounts}}
+{{> accounts_table}}
+{{else}}
+{{#> ui/card}}No accounts assigned to this thread.{{/ui/card}}
+{{/if}}

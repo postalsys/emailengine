@@ -17,6 +17,8 @@
       fieldName     - name of an extra hidden input (optional)
       fieldValue    - its value; omit when a page script fills it (optional)
       fieldId       - id on the hidden input, for script-filled modals (optional)
+      fieldClass    - class on the hidden input, e.g. "delete-target-id" so the
+                      shared .list-delete-btn handler can fill it (optional)
       formId        - id on the form element (optional)
       formTarget    - form target, e.g. "_blank" for download responses (optional)
       formClass     - extra classes on the form, e.g. "pending-form" (optional)
@@ -24,13 +26,13 @@
 {{#> ui/modal id=id title=title titleId=titleId}}
 <div class="modal-body">
     {{!-- own hash params neutralized against fallthrough into the block --}}
-    {{> @partial-block id="" title="" titleId="" action="" submitLabel="" submitVariant="" submitIcon="" fieldName="" fieldValue="" fieldId="" formId="" formTarget="" formClass=""}}
+    {{> @partial-block id="" title="" titleId="" action="" submitLabel="" submitVariant="" submitIcon="" fieldName="" fieldValue="" fieldId="" fieldClass="" formId="" formTarget="" formClass=""}}
 </div>
 <div class="modal-footer">
     <form method="post" action="{{action}}"{{#if formId}} id="{{formId}}"{{/if}}{{#if formTarget}} target="{{formTarget}}" rel="noopener noreferrer"{{/if}} class="{{#if formClass}}{{formClass}} {{/if}}flex gap-2">
         <input type="hidden" name="crumb" value="{{crumb}}">
         {{#if fieldName}}
-        <input type="hidden"{{#if fieldId}} id="{{fieldId}}"{{/if}} name="{{fieldName}}" value="{{fieldValue}}">
+        <input type="hidden"{{#if fieldId}} id="{{fieldId}}"{{/if}}{{#if fieldClass}} class="{{fieldClass}}"{{/if}} name="{{fieldName}}" value="{{fieldValue}}">
         {{/if}}
         {{!-- id is neutralized inside the ui/modal block, so the close target comes from the closeOverlay param ui/modal provides --}}
         {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=closeOverlay}}

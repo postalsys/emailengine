@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" class="mb-6"}}
+{{#> ui/page-header title="Webhook Routes" icon="icon-[tabler--webhook]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href=newLink label="Create webhook route" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
@@ -35,6 +35,7 @@
                     <th>Description</th>
                     <th>Triggered</th>
                     <th>Status</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -42,7 +43,9 @@
                 {{#each webhooks}}
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/webhooks/webhook/" id) label="Open webhook route"}}<strong>{{name}}</strong>
+                        {{> ui/row-link href=(concat "/admin/webhooks/webhook/" id) label="Open webhook route"}}
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=id label="Webhook Route ID"}}
                     </td>
 
                     <td class="relative">
@@ -66,6 +69,11 @@
                         {{> ui/badge label="Disabled" variant="warning"}}
                         {{/if}}
                     </td>
+
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/webhooks/webhook/" id) label="Webhook route actions"
+                        deleteModal="#deleteWebhook" deleteId=id deleteName=name}}
+                    </td>
                 </tr>
                 {{/each}}
             </tbody>
@@ -75,14 +83,7 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{#> ui/card}}
-        <p>
-            {{#if firstPage}}
-            No webhook routes have been created yet.
-            {{else}}
-            No webhook routes found.
-            {{/if}}
-        </p>
-    
-{{/ui/card}}
+{{> ui/list-empty noun="webhook routes" query=query firstPage=firstPage createHref=newLink createLabel="Create your first webhook route" clearHref="/admin/webhooks"}}
 {{/if}}
+
+{{> ui/delete-modal id="deleteWebhook" noun="webhook route" action="/admin/webhooks/delete" fieldName="webhook"}}

@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Gateways" icon="icon-[tabler--send]" class="mb-6"}}
+{{#> ui/page-header title="Gateways" icon="icon-[tabler--send]" badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn href="/admin/gateways/new" label="Add Gateway" icon="icon-[tabler--plus]"}}
 {{/ui/page-header}}
 
@@ -28,11 +28,11 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Gateway ID</th>
                     <th>Name</th>
                     <th>Emails Sent</th>
                     <th>Last Activity</th>
                     <th>Status</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
 
@@ -41,10 +41,8 @@
                 <tr class="hover:bg-base-200/60">
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway) label="Open gateway"}}
-                        {{gateway}}
-                    </td>
-                    <td class="relative">
-                        {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}<strong>{{name}}</strong>
+                        <div><strong>{{name}}</strong></div>
+                        {{> ui/entity-id id=gateway label="Gateway ID"}}
                     </td>
                     <td class="relative">
                         {{> ui/row-link href=(concat "/admin/gateways/gateway/" gateway)}}{{deliveries}}
@@ -68,6 +66,11 @@
                         </a>
                     </td>
 
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" gateway) label="Gateway actions"
+                        deleteModal="#deleteGateway" deleteName=name deleteAction=(concat "/admin/gateways/delete/" gateway)}}
+                    </td>
+
                 </tr>
                 {{/each}}
             </tbody>
@@ -78,13 +81,7 @@
 </div>
 
 {{else}}
-{{#> ui/card}}
-        {{#if firstPage}}
-        No gateways have been configured yet. <a href="/admin/gateways/new" class="link link-animated">Add your first
-            gateway</a>.
-        {{else}}
-        No gateways found.
-        {{/if}}
-    
-{{/ui/card}}
+{{> ui/list-empty noun="gateways" query=query firstPage=firstPage createHref="/admin/gateways/new" createLabel="Add your first gateway" clearHref="/admin/gateways"}}
 {{/if}}
+
+{{> ui/delete-modal id="deleteGateway" noun="gateway" action="/admin/gateways"}}
