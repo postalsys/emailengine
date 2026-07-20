@@ -70,16 +70,20 @@
 
 {{#> ui/details summary="How to use gateways" class="card bg-base-100 shadow-md mb-6"}}
 <div>
-    <p class="mb-4">SMTP gateways are independent mail servers for sending emails. Use your own infrastructure or
-        third-party services like SendGrid, Amazon SES, Mailgun, and similar providers.</p>
+    <p class="mb-4">A gateway is a shared SMTP account - your own mail server or a third-party service like SendGrid,
+        Amazon SES, or Mailgun - that EmailEngine sends through on behalf of any account, instead of routing the
+        message through that account's own email server.</p>
     <p class="mb-1"><strong>To route a message through a gateway:</strong></p>
-    <ul class="list-disc ps-6 space-y-1 mb-0">
+    <ul class="list-disc ps-6 space-y-1 mb-4">
         <li>API: Add <code>gateway: "gateway-id"</code> to your <a
                 href="https://learn.emailengine.app/docs/api/post-v-1-account-account-submit" target="_blank"
                 rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">submit request</a>
         </li>
-        <li>SMTP: Include header <code>X-EE-Gateway: gateway-id</code></li>
+        <li>SMTP: Include the header <code>X-EE-Gateway: gateway-id</code></li>
     </ul>
+    <p class="mb-0"><a href="https://learn.emailengine.app/docs/sending/basic-sending#smtp-gateway" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about
+            gateways</a>.</p>
 </div>
 {{/ui/details}}
 
