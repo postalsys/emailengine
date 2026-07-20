@@ -63,7 +63,9 @@
             {{/ui/tooltip}}
             {{else}}
             {{#> ui/tooltip text="Test SMTP delivery settings for this account"}}
-            <div class="dropdown relative inline-flex">
+            {{!-- fixed strategy + bottom placement so the (potentially tall) gateway menu opens
+                 downward and escapes the card's overflow:hidden clip instead of flipping up --}}
+            <div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
                 <button type="button" class="dropdown-toggle btn btn-soft btn-sm" aria-haspopup="menu"
                     aria-expanded="false">
                     <span class="icon-[tabler--mail-opened] size-4"></span> Delivery test
@@ -98,7 +100,7 @@
             {{/if}}
 
             {{!-- Logs: download, enable/disable and clear consolidated into one control --}}
-            <div class="dropdown relative inline-flex">
+            <div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
                 <button type="button" class="dropdown-toggle btn btn-soft btn-sm" id="logs-info" aria-haspopup="menu"
                     aria-expanded="false" data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
                     <span class="icon-[tabler--file-text] size-4"></span> Logs
@@ -120,10 +122,10 @@
             </div>
 
             {{!-- Overflow: the destructive action kept out of the primary row. Hand-rolled rather
-                 than ui/row-actions - that partial is table-row scoped (forces [--strategy:fixed]
-                 and wires Delete through the list-delete-btn contract); here we open the page-level
-                 #deleteModal directly. --}}
-            <div class="dropdown relative inline-flex [--placement:bottom-end]">
+                 than ui/row-actions - that partial is scoped to list table rows (forces a fixed
+                 strategy and wires Delete through the list-delete-btn contract); here we open the
+                 page-level #deleteModal directly. --}}
+            <div class="dropdown relative inline-flex [--strategy:fixed] [--placement:bottom-end]">
                 <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
                     aria-expanded="false" aria-label="More account actions">
                     <span class="icon-[tabler--dots-vertical] size-4.5"></span>
