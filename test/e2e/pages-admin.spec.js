@@ -390,13 +390,21 @@ test.describe('admin shell', () => {
         test.skip(!url, 'no account registered (standalone run)');
 
         await page.goto(url);
-        await expect(page.locator('#delete-btn')).toBeVisible();
 
         // toolbar tooltip on hover
         await expectTooltipOnHover(page, page.locator('#request-reconnect'));
 
-        // delete confirmation modal opens and closes without submitting
-        await page.locator('#delete-btn').click();
+        // delete now lives in the overflow (kebab) menu; open it, then the confirm
+        // modal opens and closes without submitting. Retry the open-then-click since
+        // the dropdown can close on its own between opening and the item click.
+        await expect(async () => {
+            const deleteBtn = page.locator('#delete-btn');
+            if (!(await deleteBtn.isVisible())) {
+                await page.locator('button[aria-label="More account actions"]').click();
+                await expect(deleteBtn).toBeVisible({ timeout: 2000 });
+            }
+            await deleteBtn.click({ timeout: 2000 });
+        }).toPass({ timeout: 30000 });
         await expect(page.locator('#deleteModal.open')).toHaveCount(1);
         await page.keyboard.press('Escape');
         await expect(page.locator('#deleteModal.open')).toHaveCount(0);
@@ -1667,31 +1675,38 @@ test.describe('admin shell', () => {
         expect(syncRes.ok()).toBeTruthy();
         await expect(toast('Account sync requested')).toBeVisible();
 
-        // logs dropdown: enable logging, flush, then restore. The dropdown can
-        // close on its own between opening and the item click (open/close
-        // animations), so retry the whole open-then-click block until it lands.
-        const logsMenuItem = async id => {
+        // logs controls are consolidated into the toolbar "Logs" dropdown (#logs-info):
+        // enable logging, flush, then restore. Tie each action to its POST response
+        // rather than the auto-dismissing toast, and retry the open-then-click since the
+        // dropdown can close on its own between opening and the item click (animations).
+        const clickLogsItem = async (id, pathRe) => {
             await expect(async () => {
-                const item = page.locator(id);
-                if (!(await item.isVisible())) {
+                if (!(await page.locator(id).isVisible())) {
                     await page.locator('#logs-info').click();
-                    await expect(item).toBeVisible({ timeout: 2000 });
+                    await expect(page.locator(id)).toBeVisible({ timeout: 2000 });
                 }
-                await item.click({ timeout: 2000 });
+                const [res] = await Promise.all([
+                    page.waitForResponse(r => r.request().method() === 'POST' && pathRe.test(new URL(r.url()).pathname), { timeout: 4000 }),
+                    page.locator(id).click({ timeout: 2000 })
+                ]);
+                expect(res.ok(), `${id} -> ${res.status()}`).toBeTruthy();
             }).toPass({ timeout: 30000 });
         };
 
-        await logsMenuItem('#toggle-logs');
+        await clickLogsItem('#toggle-logs', /\/logs$/);
         await expect(toast('Logging settings updated')).toBeVisible();
 
-        await logsMenuItem('#flush-logs');
+        await clickLogsItem('#flush-logs', /\/logs-flush$/);
         await expect(toast('Stored logs were flushed')).toBeVisible();
 
+        // restore the original (disabled) logging state
+        await clickLogsItem('#toggle-logs', /\/logs$/);
+
+        // download last: the logs.txt GET rotates the CSRF crumb cookie, so a
+        // crumb-protected POST issued afterwards from this already-rendered page
+        // (whose #crumb is now stale) would 403.
         const logsRes = await page.request.get(`${url}/logs.txt`);
         expect(logsRes.ok(), `logs.txt -> ${logsRes.status()}`).toBeTruthy();
-
-        await logsMenuItem('#toggle-logs');
-        await expect(toast('Logging settings updated').last()).toBeVisible();
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
