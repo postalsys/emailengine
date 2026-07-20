@@ -79,26 +79,21 @@
                     </td>
                     <td class="text-end">{{formatInteger called userLocale}}</td>
                     <td class="text-end">{{formatInteger messages userLocale}}</td>
-                    <td class="text-end">
-
-                        {{#> ui/tooltip text="Download memory snapshot"}}
-                        <button type="button" class="btn btn-info btn-soft btn-circle btn-sm snapshot-thread-btn"
-                            data-thread="{{threadId}}" aria-label="Download memory snapshot"><span
-                                class="icon-[tabler--cloud-download] size-4"></span></button>
-                        {{/ui/tooltip}}
-
-                        {{#if isMain}}
-                        {{!-- invisible placeholder keeps the action column aligned --}}
-                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm kill-thread-btn invisible"
-                            data-thread="{{threadId}}" aria-label="Kill this thread"><span
-                                class="icon-[tabler--trash] size-4"></span></button>
-                        {{else}}
-                        {{#> ui/tooltip text="Restart thread"}}
-                        <button type="button" class="btn btn-error btn-soft btn-circle btn-sm kill-thread-btn"
-                            data-thread="{{threadId}}" aria-label="Restart thread"><span
-                                class="icon-[tabler--trash] size-4"></span></button>
-                        {{/ui/tooltip}}
-                        {{/if}}
+                    <td class="relative text-end">
+                        {{#> ui/row-actions label="Worker actions"}}
+                        <li>
+                            <button type="button" class="dropdown-item snapshot-thread-btn" data-thread="{{threadId}}">
+                                Download memory snapshot
+                            </button>
+                        </li>
+                        {{#unless isMain}}
+                        <li>
+                            <button type="button" class="dropdown-item text-error kill-thread-btn" data-thread="{{threadId}}">
+                                Restart thread
+                            </button>
+                        </li>
+                        {{/unless}}
+                        {{/ui/row-actions}}
                     </td>
                 </tr>
                 {{/each}}

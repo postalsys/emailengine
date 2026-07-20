@@ -14,6 +14,12 @@
       {{> ui/row-actions openHref=(concat "/admin/gateways/gateway/" gateway)
             deleteModal="#deleteGateway" deleteName=name
             deleteAction=(concat "/admin/gateways/delete/" gateway)}}
+    Block form appends custom menu items (each a <li> with a .dropdown-item)
+    between Open and Delete - use it for row actions beyond open/delete, e.g.
+    the Workers page restart/snapshot items:
+      {{#> ui/row-actions label="Worker actions"}}
+        <li><button type="button" class="dropdown-item ...">Restart thread</button></li>
+      {{/ui/row-actions}}
     Params:
       openHref     - detail-page URL for the "Open" item (optional; omit to hide Open)
       openLabel    - "Open" item label (default "Open")
@@ -35,6 +41,10 @@
     <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-32" role="menu" aria-orientation="vertical">
         {{#if openHref}}
         <li><a class="dropdown-item" href="{{openHref}}">{{#if openLabel}}{{openLabel}}{{else}}Open{{/if}}</a></li>
+        {{/if}}
+        {{#if @partial-block}}
+        {{!-- extra <li> menu items; own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+        {{> @partial-block openHref="" openLabel="" deleteModal="" deleteId="" deleteName="" deleteAction="" deleteLabel="" label=""}}
         {{/if}}
         {{#if deleteModal}}
         <li>
