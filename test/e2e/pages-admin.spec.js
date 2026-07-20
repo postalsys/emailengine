@@ -553,12 +553,12 @@ test.describe('admin shell', () => {
             // the wrapper must resolve to z-index:auto (no stacking context) while
             // FlyonUI keeps the open menu at z-index:10, position:fixed
             const wrap = rows.nth(0).locator('.dropdown').first();
-            expect(await wrap.evaluate(el => getComputedStyle(el).zIndex)).toBe('auto');
+            expect(await wrap.evaluate(el => window.getComputedStyle(el).zIndex)).toBe('auto');
 
             await rows.nth(0).locator('.dropdown-toggle').click();
             const menu = rows.nth(0).locator('.dropdown-menu');
             await expect(menu.locator('.list-delete-btn')).toBeVisible();
-            const menuStyle = await menu.evaluate(el => ({ z: getComputedStyle(el).zIndex, pos: getComputedStyle(el).position }));
+            const menuStyle = await menu.evaluate(el => ({ z: window.getComputedStyle(el).zIndex, pos: window.getComputedStyle(el).position }));
             expect(menuStyle.pos).toBe('fixed');
             expect(Number(menuStyle.z)).toBeGreaterThan(1);
         } finally {
