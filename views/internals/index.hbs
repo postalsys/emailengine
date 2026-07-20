@@ -106,9 +106,9 @@
 
 {{#> ui/details summary="About workers" class="card bg-base-100 shadow-md mb-6"}}
 <div>
-    <p class="mb-4">EmailEngine spreads its work across worker threads - IMAP sync, the API and web server, webhook
+    <p class="mb-4">EmailEngine spreads its work across worker threads - account sync, the API and web server, webhook
         delivery, message submission, and exports. Their counts are set at startup with environment variables such as
-        <code>EENGINE_WORKERS</code> (IMAP sync), <code>EENGINE_WORKERS_API</code>, <code>EENGINE_WORKERS_WEBHOOKS</code>,
+        <code>EENGINE_WORKERS</code> (account sync), <code>EENGINE_WORKERS_API</code>, <code>EENGINE_WORKERS_WEBHOOKS</code>,
         and <code>EENGINE_WORKERS_SUBMIT</code>.</p>
     <p class="mb-4">Use the row actions to restart an individual thread or download a memory snapshot for debugging; a
         row highlighted in red is unresponsive.</p>
