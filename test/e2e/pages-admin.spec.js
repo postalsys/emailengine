@@ -375,6 +375,20 @@ test.describe('admin shell', () => {
 
         await expect(page.locator('h1', { hasText: 'Accounts' })).toBeVisible();
 
+        // regression: every account row must render its trailing actions kebab, and the
+        // header/body column counts must match. The cell once silently vanished because
+        // {{#if showActions}} inside {{#each}} resolved against the row, not the partial
+        // params, leaving a phantom empty trailing column that showed on row hover.
+        const rowCount = await page.locator('tbody tr').count();
+        if (rowCount) {
+            await expect(page.locator('tbody tr [aria-label="Account actions"]')).toHaveCount(rowCount);
+            const cols = await page.evaluate(() => ({
+                th: document.querySelectorAll('table thead th').length,
+                td: document.querySelectorAll('table tbody tr:first-child td').length
+            }));
+            expect(cols.td, 'header/body column count mismatch (phantom cell)').toBe(cols.th);
+        }
+
         // FlyonUI overlay opens with focus on the name field, Escape closes and clears
         await page.locator('[data-overlay="#addAccount"]').first().click();
         await expect(page.locator('#addAccount.open')).toHaveCount(1);

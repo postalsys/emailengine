@@ -64,7 +64,9 @@
                         </a>
                     </td>
 
-                    {{#if showActions}}
+                    {{!-- ../showActions: inside {{#each}} the bare name would resolve against the
+                          row, not the partial params, so the cell silently vanished (phantom column) --}}
+                    {{#if ../showActions}}
                     <td class="relative text-end">
                         {{> ui/row-actions openHref=(concat "/admin/accounts/" account) label="Account actions"
                         deleteModal="#deleteAccount" deleteName=(when name name email) deleteAction=(concat "/admin/accounts/" account "/delete")}}
