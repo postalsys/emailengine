@@ -2,19 +2,37 @@
 
 {{> ui/breadcrumb parentHref="/admin/accounts" parentLabel="Accounts" current=account.account class="mt-6 mb-6"}}
 
+{{#if accountAlert}}
+<div class="alert alert-soft alert-error mb-6 flex items-start gap-3" role="alert">
+    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+    <div class="min-w-0">
+        <div class="font-semibold">{{accountAlert.title}}{{#if accountAlert.path}} in folder <em>{{accountAlert.path}}</em>{{/if}}</div>
+        {{#if accountAlert.message}}
+        <div class="break-words"><small>{{accountAlert.message}}</small></div>
+        {{/if}}
+    </div>
+</div>
+{{/if}}
+
 {{#> ui/card}}
 
-        <div class="mb-4 flex flex-wrap gap-2" role="toolbar" aria-label="Account actions">
+        <div class="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Account actions">
+
+            {{!-- Primary: the two most common reasons to open an account --}}
+            {{#if canReadMail}}
+            {{#> ui/tooltip text="Browse messages in this account"}}
+            {{> ui/btn variant="primary" size="sm" href=(concat "/admin/accounts/" account.account "/browse") icon="icon-[tabler--folder-open]" label="Browse messages"}}
+            {{/ui/tooltip}}
+            {{/if}}
 
             {{#> ui/tooltip text="Edit account configuration"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/accounts/" account.account "/edit") icon="icon-[tabler--user-edit]" label="Edit account"}}
+            {{> ui/btn variant="primary" style="outline" size="sm" href=(concat "/admin/accounts/" account.account "/edit") icon="icon-[tabler--user-edit]" label="Edit"}}
             {{/ui/tooltip}}
 
-            {{#> ui/tooltip text="Delete this account and all associated data"}}
-            {{> ui/btn bare=true style="soft" size="sm" overlay="#deleteModal" id="delete-btn" icon="icon-[tabler--trash]" label="Delete account"}}
-            {{/ui/tooltip}}
+            <div class="bg-base-content/10 mx-1 hidden h-6 w-px self-center sm:block" aria-hidden="true"></div>
 
-            {{#> ui/tooltip text="Close and re-open IMAP connection"}}
+            {{!-- Operations: act on this account now --}}
+            {{#> ui/tooltip text="Close and re-open the connection"}}
             <button type="button" class="btn btn-soft btn-sm" id="request-reconnect">
                 <span class="icon-[tabler--refresh] size-4" id="reconnect-icon"></span> Reconnect
             </button>
@@ -26,22 +44,15 @@
             </button>
             {{/ui/tooltip}}
 
-            {{#if canReadMail}}
-            {{#> ui/tooltip text="Export messages to file"}}
-            <button type="button" class="btn btn-soft btn-sm" id="request-export" data-overlay="#exportModal">
-                <span class="icon-[tabler--file-export] size-4"></span> Export
-                <span id="export-status-indicator" class="badge badge-sm ms-1 hidden"></span>
+            {{#if account.oauth2.provider}}
+            {{#> ui/tooltip text="Re-authenticate OAuth2 account"}}
+            <button type="button" class="btn btn-soft btn-sm" data-overlay="#renewGrantModal" id="renew-grant-btn">
+                {{#if account.type.icon}}
+                <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
+                {{/if}} Re-authenticate
             </button>
             {{/ui/tooltip}}
             {{/if}}
-
-            {{#> ui/tooltip text="Email templates for this account"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/templates/?account=" account.account) icon="icon-[tabler--template]" label="Email templates"}}
-            {{/ui/tooltip}}
-
-            {{#> ui/tooltip text="Access tokens for this account"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/tokens/?account=" account.account) icon="icon-[tabler--key]" label="Access tokens"}}
-            {{/ui/tooltip}}
 
             {{#if canSend}}
             {{#unless gateways}}
@@ -77,27 +88,59 @@
             {{/unless}}
             {{/if}}
 
-            {{#> ui/tooltip text="Download stored logs for this account"}}
-            <a class="btn btn-soft btn-sm" href="/admin/accounts/{{account.account}}/logs.txt" download>
-                <span class="icon-[tabler--cloud-download] size-4"></span> Logs
-            </a>
-            {{/ui/tooltip}}
-
             {{#if canReadMail}}
-            {{#> ui/tooltip text="Browse messages"}}
-            {{> ui/btn bare=true style="soft" size="sm" href=(concat "/admin/accounts/" account.account "/browse") icon="icon-[tabler--folder-open]" label="Browse messages"}}
-            {{/ui/tooltip}}
-            {{/if}}
-
-            {{#if account.oauth2.provider}}
-            {{#> ui/tooltip text="Re-authenticate OAuth2 account"}}
-            <button type="button" class="btn btn-soft btn-sm" data-overlay="#renewGrantModal" id="renew-grant-btn">
-                {{#if account.type.icon}}
-                <span class="{{account.type.icon}} size-4 align-text-bottom"></span>
-                {{/if}} Re-authenticate
+            {{#> ui/tooltip text="Export messages to file"}}
+            <button type="button" class="btn btn-soft btn-sm" id="request-export" data-overlay="#exportModal">
+                <span class="icon-[tabler--file-export] size-4"></span> Export
+                <span id="export-status-indicator" class="badge badge-sm ms-1 hidden"></span>
             </button>
             {{/ui/tooltip}}
             {{/if}}
+
+            {{!-- Logs: download, enable/disable and clear consolidated into one control --}}
+            <div class="dropdown relative inline-flex">
+                <button type="button" class="dropdown-toggle btn btn-soft btn-sm" id="logs-info" aria-haspopup="menu"
+                    aria-expanded="false" data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
+                    <span class="icon-[tabler--file-text] size-4"></span> Logs
+                    <span class="icon-[tabler--chevron-down] size-3.5"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-56" role="menu"
+                    aria-orientation="vertical" aria-labelledby="logs-info">
+                    <li><a class="dropdown-item" href="/admin/accounts/{{account.account}}/logs.txt" download>Download stored logs</a></li>
+                    <li>
+                        <div class="divider my-1"></div>
+                    </li>
+                    {{#if logs.all}}
+                    <li><span class="text-base-content/60 block px-4 py-2 text-sm">Logging is enabled for all accounts</span></li>
+                    {{else}}
+                    <li><a class="dropdown-item" href="#" id="toggle-logs">{{#if account.logs}}Disable logging{{else}}Enable logging{{/if}}</a></li>
+                    <li><a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a></li>
+                    {{/if}}
+                </ul>
+            </div>
+
+            {{!-- Overflow: the destructive action kept out of the primary row. Hand-rolled rather
+                 than ui/row-actions - that partial is table-row scoped (forces [--strategy:fixed]
+                 and wires Delete through the list-delete-btn contract); here we open the page-level
+                 #deleteModal directly. --}}
+            <div class="dropdown relative inline-flex [--placement:bottom-end]">
+                <button type="button" class="dropdown-toggle btn btn-text btn-circle btn-sm" aria-haspopup="menu"
+                    aria-expanded="false" aria-label="More account actions">
+                    <span class="icon-[tabler--dots-vertical] size-4.5"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu" aria-orientation="vertical">
+                    <li><button type="button" class="dropdown-item text-error" data-overlay="#deleteModal"
+                            id="delete-btn">Delete account</button></li>
+                </ul>
+            </div>
+        </div>
+
+        {{!-- Related resources scoped to this account (these navigate elsewhere) --}}
+        <div class="mb-4 text-base-content/60 text-sm">
+            <span class="font-semibold">Related:</span>
+            <a class="link link-animated" href="/admin/templates/?account={{account.account}}">Email templates</a>
+            <span class="text-base-content/30 mx-1">&middot;</span>
+            <a class="link link-animated" href="/admin/tokens/?account={{account.account}}">Access tokens</a>
         </div>
 
         <dl class="ee-dl">
@@ -105,21 +148,7 @@
             <dt>ID</dt>
             <dd>
                 <strong>{{account.account}}</strong>
-
                 {{> ui/state-badge label=account.stateLabel account=account.account}}
-
-                <div>
-                    <div class="text-error">
-                        {{#if account.syncError}}
-                        Sync stalled in folder <em>{{account.syncError.path}}</em>.
-                        {{#if account.syncError.error.responseText}}
-                        {{account.syncError.error.responseText}}
-                        {{else}}
-                        {{account.syncError.error.error}}
-                        {{/if}}
-                        {{/if}}
-                    </div>
-                </div>
             </dd>
             {{/if}}
 
@@ -146,36 +175,12 @@
                 {{/if}}
             </dd>
 
-            <dt>Recent logs
-                {{#> ui/tooltip text=(concat "Up to last " (formatInteger logs.maxLogLines userLocale) " log lines")}}<span
-                    class="icon-[tabler--info-circle] text-base-content/50 size-4 align-text-bottom"></span>{{/ui/tooltip}}
-            </dt>
-
+            {{#if account.sync}}
+            <dt>Last synced</dt>
             <dd>
-                {{#if logs.all}}
-                <div>
-                    Enabled by default for all accounts
-                </div>
-                {{else}}
-
-                <div class="dropdown relative inline-flex">
-                    <button type="button" class="dropdown-toggle link link-animated" id="logs-info"
-                        aria-haspopup="menu" aria-expanded="false"
-                        data-logs="{{#if account.logs}}enabled{{else}}disabled{{/if}}">
-                        <span id="logs-info-label">{{#if account.logs}}Enabled{{else}}Disabled{{/if}}</span>
-                        <span class="icon-[tabler--chevron-down] size-3.5"></span>
-                    </button>
-
-                    <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44" role="menu"
-                        aria-orientation="vertical" aria-labelledby="logs-info">
-                        <li><a class="dropdown-item" href="#" id="toggle-logs">{{#if
-                                account.logs}}Disable{{else}}Enable{{/if}}</a></li>
-                        <li><a class="dropdown-item" href="#" id="flush-logs">Clear stored logs</a></li>
-                    </ul>
-                </div>
-
-                {{/if}}
+                <span class="local-date-time code-link" data-time="{{account.sync}}" title="{{account.sync}}"></span>
             </dd>
+            {{/if}}
         </dl>
 
     
@@ -372,7 +377,11 @@
 
 {{#unless account.isApi}}
 
-<div class="card bg-base-100 shadow-md mb-6">
+{{!-- IMAP and SMTP sit side by side on wide screens; the deep-technical server
+     info moves into the collapsed detail cards below the grid --}}
+<div class="grid gap-6 {{#if showSmtp}}lg:grid-cols-2 {{/if}}items-start mb-6">
+
+<div class="card bg-base-100 shadow-md">
     <div class="card-header"><h6 class="card-title text-primary">IMAP {{#if account.lastErrorState}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
@@ -436,21 +445,8 @@
             </dd>
 
             {{else}}
-
-            {{#if account.oauth2.auth.user}}
-            <dt>Username</dt>
-            <dd>
-                {{account.oauth2.auth.user}}
-                {{#if account.oauth2.auth.delegatedUser}}
-                <em>as</em>
-                {{account.oauth2.auth.delegatedUser}}
-                {{/if}}
-            </dd>
-            {{/if}}
-
-            <dt>Authentication</dt>
-            <dd>Bearer token</dd>
-
+            {{!-- OAuth account: username and auth method already appear in the OAuth2 card above;
+                 list only the provider-derived endpoint here to avoid repeating them --}}
             {{#if account.oauth2.providerData.imap.host}}
             <dt>Hostname</dt>
             <dd>{{account.oauth2.providerData.imap.host}}</dd>
@@ -518,68 +514,10 @@
         {{/if}}
 
     </div>
-    <div class="card-footer border-base-content/10 border-t px-6 py-4">
-
-        <dl class="ee-dl">
-
-            {{#if account.imapServerInfo.name}}
-            <dt>Server Software</dt>
-            <dd>{{account.imapServerInfo.name}}</dd>
-            {{/if}}
-
-            {{#if account.imapServerInfo.vendor}}
-            <dt>Vendor</dt>
-            <dd>{{account.imapServerInfo.vendor}}</dd>
-            {{/if}}
-
-            {{#if account.imapServerInfo.version}}
-            <dt>Version</dt>
-            <dd>{{account.imapServerInfo.version}}</dd>
-            {{/if}}
-
-            {{#if account.imapServerInfo.[support-url]}}
-            <dt>Support URL</dt>
-            <dd><a href="{{account.imapServerInfo.[support-url]}}" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer" class="link link-animated">{{account.imapServerInfo.[support-url]}}</a>
-            </dd>
-            {{/if}}
-
-            <dt>Capabilities</dt>
-            <dd>
-                {{#each capabilities}}
-                {{#if url}}
-                {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer" class="link link-animated"><small>{{capability}}</small></a>{{/ui/tooltip}}
-                {{else}}
-                <small class="cursor-default">{{capability}}</small>
-                {{/if}}
-                {{/each}}
-            </dd>
-
-            <dt>Authentication</dt>
-            <dd>
-                {{#each authCapabilities}}
-                {{#if url}}
-                {{#if lastUsed}}
-                {{#> ui/tooltip text=(concat "Active method | " rfc)}}<a href="{{url}}" class="badge badge-neutral badge-sm"
-                    target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
-                {{else}}
-                {{#> ui/tooltip text=rfc}}<a href="{{url}}" class="link link-animated"
-                    target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
-                {{/if}}
-                {{else}}
-                <small class="cursor-default">{{capability}}</small>
-                {{/if}}
-                {{/each}}
-            </dd>
-
-        </dl>
-
-    </div>
 </div>
 
 {{#if showSmtp}}
-<div class="card bg-base-100 shadow-md mb-6">
+<div class="card bg-base-100 shadow-md">
     <div class="card-header"><h6 class="card-title text-primary">SMTP {{#if smtpError}}<span class="badge badge-error badge-sm">errored</span>{{/if}}</h6>
     </div>
     <div class="card-body">
@@ -628,21 +566,8 @@
             </dd>
 
             {{else}}
-
-            {{#if account.oauth2.auth.user}}
-            <dt>Username</dt>
-            <dd>
-                {{account.oauth2.auth.user}}
-                {{#if account.oauth2.auth.delegatedUser}}
-                <em>as</em>
-                {{account.oauth2.auth.delegatedUser}}
-                {{/if}}
-            </dd>
-            {{/if}}
-
-            <dt>Authentication</dt>
-            <dd>Bearer token</dd>
-
+            {{!-- OAuth account: username and auth method already appear in the OAuth2 card above;
+                 list only the provider-derived endpoint here to avoid repeating them --}}
             {{#if account.oauth2.providerData.smtp.host}}
             <dt>Hostname</dt>
             <dd>{{account.oauth2.providerData.smtp.host}}</dd>
@@ -663,35 +588,94 @@
         </dl>
 
     </div>
-
-    {{#if account.smtpServerEhlo}}
-    <div class="card-footer border-base-content/10 border-t px-6 py-4">
-
-        <dl class="ee-dl">
-            <dt>Extensions</dt>
-            <dd>
-                {{#each account.smtpServerEhlo}}
-                <small class="cursor-default">{{this}}</small>
-                {{/each}}
-            </dd>
-
-            <dt>Authentication</dt>
-            <dd>
-                {{#each account.smtpAuthMechanisms}}
-                {{#if url}}
-                {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
-                    referrerpolicy="no-referrer" class="link link-animated"><small>{{auth}}</small></a>{{/ui/tooltip}}
-                {{else}}
-                <small class="cursor-default">{{this}}</small>
-                {{/if}}
-                {{/each}}
-            </dd>
-        </dl>
-
-    </div>
-    {{/if}}
 </div>
+{{/if}}
 
+</div>
+{{!-- /IMAP + SMTP grid --}}
+
+{{#if account.imapServerInfo}}
+{{#> ui/details summary="IMAP server details" class="card bg-base-100 shadow-md mb-6"}}
+<dl class="ee-dl">
+
+    {{#if account.imapServerInfo.name}}
+    <dt>Server Software</dt>
+    <dd>{{account.imapServerInfo.name}}</dd>
+    {{/if}}
+
+    {{#if account.imapServerInfo.vendor}}
+    <dt>Vendor</dt>
+    <dd>{{account.imapServerInfo.vendor}}</dd>
+    {{/if}}
+
+    {{#if account.imapServerInfo.version}}
+    <dt>Version</dt>
+    <dd>{{account.imapServerInfo.version}}</dd>
+    {{/if}}
+
+    {{#if account.imapServerInfo.[support-url]}}
+    <dt>Support URL</dt>
+    <dd><a href="{{account.imapServerInfo.[support-url]}}" target="_blank" rel="noopener noreferrer"
+            referrerpolicy="no-referrer" class="link link-animated">{{account.imapServerInfo.[support-url]}}</a>
+    </dd>
+    {{/if}}
+
+    <dt>Capabilities</dt>
+    <dd>
+        {{#each capabilities}}
+        {{#if url}}
+        {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
+            referrerpolicy="no-referrer" class="link link-animated"><small>{{capability}}</small></a>{{/ui/tooltip}}
+        {{else}}
+        <small class="cursor-default">{{capability}}</small>
+        {{/if}}
+        {{/each}}
+    </dd>
+
+    <dt>Authentication</dt>
+    <dd>
+        {{#each authCapabilities}}
+        {{#if url}}
+        {{#if lastUsed}}
+        {{#> ui/tooltip text=(concat "Active method | " rfc)}}<a href="{{url}}" class="badge badge-neutral badge-sm"
+            target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
+        {{else}}
+        {{#> ui/tooltip text=rfc}}<a href="{{url}}" class="link link-animated"
+            target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"><small>{{capability}}</small></a>{{/ui/tooltip}}
+        {{/if}}
+        {{else}}
+        <small class="cursor-default">{{capability}}</small>
+        {{/if}}
+        {{/each}}
+    </dd>
+
+</dl>
+{{/ui/details}}
+{{/if}}
+
+{{#if account.smtpServerEhlo}}
+{{#> ui/details summary="SMTP server details" class="card bg-base-100 shadow-md mb-6"}}
+<dl class="ee-dl">
+    <dt>Extensions</dt>
+    <dd>
+        {{#each account.smtpServerEhlo}}
+        <small class="cursor-default">{{this}}</small>
+        {{/each}}
+    </dd>
+
+    <dt>Authentication</dt>
+    <dd>
+        {{#each account.smtpAuthMechanisms}}
+        {{#if url}}
+        {{#> ui/tooltip text=rfc}}<a href="{{url}}" target="_blank" rel="noopener noreferrer"
+            referrerpolicy="no-referrer" class="link link-animated"><small>{{auth}}</small></a>{{/ui/tooltip}}
+        {{else}}
+        <small class="cursor-default">{{this}}</small>
+        {{/if}}
+        {{/each}}
+    </dd>
+</dl>
+{{/ui/details}}
 {{/if}}
 
 {{/unless}}
@@ -974,14 +958,12 @@ submitLabel="Delete account"}}
             });
             if (data.enabled) {
                 // mark as enabled
-                document.getElementById('logs-info-label').textContent = 'Enabled';
                 document.getElementById('logs-info').dataset.logs = 'enabled'
-                document.getElementById('toggle-logs').textContent = 'Disable';
+                document.getElementById('toggle-logs').textContent = 'Disable logging';
             } else {
                 // mark as disabled
-                document.getElementById('logs-info-label').textContent = 'Disabled';
                 document.getElementById('logs-info').dataset.logs = 'disabled'
-                document.getElementById('toggle-logs').textContent = 'Enable';
+                document.getElementById('toggle-logs').textContent = 'Enable logging';
             }
             return data;
         }

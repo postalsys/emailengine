@@ -269,7 +269,7 @@
     }
     @media (min-width: 640px) {
         .ee-dl {
-            grid-template-columns: 14rem minmax(0, 1fr);
+            grid-template-columns: 11rem minmax(0, 1fr);
         }
         .ee-dl dd {
             margin-bottom: 0.25rem;
