@@ -1222,16 +1222,30 @@ test.describe('admin shell', () => {
         await expect(page.locator('h1', { hasText: 'Workers' })).toBeVisible();
         expect(await page.locator('tbody tr').count()).toBeGreaterThan(3);
 
-        // row buttons fill the hidden thread input before opening the modal
-        await page.locator('.snapshot-thread-btn').first().click();
+        // row actions live in a per-row kebab (ui/row-actions) now: open the row's
+        // menu, then the item fills the hidden thread input and opens the modal. Retry
+        // the open-then-click since the dropdown can close on its own (animations).
+        const openRowActionAndClick = async itemLocator => {
+            const toggle = itemLocator.locator('xpath=ancestor::tr[1]').locator('button[aria-label="Worker actions"]');
+            await expect(async () => {
+                if (!(await itemLocator.isVisible())) {
+                    await toggle.click();
+                    await expect(itemLocator).toBeVisible({ timeout: 2000 });
+                }
+                await itemLocator.click({ timeout: 2000 });
+            }).toPass({ timeout: 15000 });
+        };
+
+        await openRowActionAndClick(page.locator('.snapshot-thread-btn').first());
         await expect(page.locator('#snapshotThread.open')).toHaveCount(1);
         expect(await page.evaluate(() => document.getElementById('snapshot-thread').value)).not.toBe('');
         await page.keyboard.press('Escape');
         await expect(page.locator('#snapshotThread.open')).toHaveCount(0);
 
-        const killBtn = page.locator('.kill-thread-btn:not(.invisible)').first();
+        // the kill/restart action only renders for non-main threads
+        const killBtn = page.locator('.kill-thread-btn').first();
         const killThread = await killBtn.getAttribute('data-thread');
-        await killBtn.click();
+        await openRowActionAndClick(killBtn);
         await expect(page.locator('#killThread.open')).toHaveCount(1);
         expect(await page.evaluate(() => document.getElementById('kill-thread').value)).toBe(killThread);
         await page.keyboard.press('Escape');
