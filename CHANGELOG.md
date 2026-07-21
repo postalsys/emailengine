@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.73.1](https://github.com/postalsys/emailengine/compare/v2.73.0...v2.73.1) (2026-07-21)
+
+
+### Bug Fixes
+
+* **imap:** stop the OAuth token renewal reconnect loop that pinned the CPU ([eff5727](https://github.com/postalsys/emailengine/commit/eff5727f4a328326609856861465f524e381689c))
+* restore the scan CLI command and stop packing secrets into the tarball ([edddb4e](https://github.com/postalsys/emailengine/commit/edddb4e70e96a7267880e295f0d9448b16ed214e))
+
 ## [2.73.0](https://github.com/postalsys/emailengine/compare/v2.72.4...v2.73.0) (2026-07-20)
 
 
