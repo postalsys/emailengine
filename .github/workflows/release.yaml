@@ -97,11 +97,14 @@ jobs:
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Build and push
+              id: build
               uses: docker/build-push-action@v7
               with:
                   context: .
                   platforms: ${{ steps.buildx.outputs.platforms }}
                   push: true
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
                   tags: |
                       ${{ github.repository }}:latest
                       ${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
@@ -111,3 +114,22 @@ jobs:
                       ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}.${{needs.release_please.outputs.patch}}
                       ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}.${{needs.release_please.outputs.minor}}
                       ghcr.io/${{ github.repository }}:v${{needs.release_please.outputs.major}}
+
+            # Same guard as deploy.yml, on the images users actually pull. The Dockerfile copies an
+            # explicit allowlist of root-level files, so a CLI subcommand that dispatches to one can
+            # be missing from the image while the build and the server both stay green.
+            - name: Smoke test the CLI inside the image
+              run: |
+                  set -euo pipefail
+                  image="ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}"
+                  docker pull -q "$image"
+                  status=0
+                  for cmd in scan encrypt; do
+                      out=$(docker run --rm --entrypoint node "$image" bin/emailengine.js "$cmd" 2>&1 || true)
+                      if grep -q "Cannot find module" <<<"$out"; then
+                          echo "::error::emailengine $cmd cannot resolve its module inside the image"
+                          printf '%s\n' "$out"
+                          status=1
+                      fi
+                  done
+                  exit $status
