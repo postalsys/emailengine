@@ -521,12 +521,18 @@ function run() {
                             }
                             let account = argv.account || argv.a || '';
                             tokens
-                                .provision({
-                                    account,
-                                    description,
-                                    scopes,
-                                    nolog: true
-                                })
+                                .provision(
+                                    {
+                                        account,
+                                        description,
+                                        scopes,
+                                        nolog: true
+                                    },
+                                    // Issuing a token before an admin password exists is a normal
+                                    // setup flow here - reaching this command already requires
+                                    // shell access to the host.
+                                    { allowWithoutAdminAuth: true }
+                                )
                                 .then(token => {
                                     process.stdout.write(token);
                                     process.exit();

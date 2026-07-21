@@ -15,6 +15,7 @@ const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { secureInstance } = require('./helpers/with-auth-data');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT = 'imap-proxy-acct';
@@ -28,6 +29,7 @@ let apiScopeToken;
 let ipRestrictedToken;
 let apiAppId;
 let prevPassword;
+let restoreAuthData;
 const accountKeys = [];
 
 async function seedAccount(account, fields) {
@@ -38,6 +40,8 @@ async function seedAccount(account, fields) {
 
 test.before(async () => {
     prevPassword = await settings.get('imapProxyServerPassword');
+    // provision() needs an admin password - see lib/tokens.js
+    restoreAuthData = await secureInstance();
 
     proxyToken = await tokens.provision({ account: ACCOUNT, scopes: ['imap-proxy'], description: 'proxy test', nolog: true });
     apiScopeToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'proxy wrong scope', nolog: true });
@@ -59,6 +63,7 @@ test.before(async () => {
 });
 
 registerRedisTeardown(redis, async () => {
+    await restoreAuthData();
     for (const tok of [proxyToken, apiScopeToken, ipRestrictedToken]) {
         if (tok) {
             try {
