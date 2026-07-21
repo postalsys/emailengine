@@ -3,8 +3,7 @@ name: E2E Tests
 # Browser-driven happy-path end-to-end suite (test/e2e), kept separate from the unit and
 # integration tiers so it is easy to re-run on its own and has its own requirements: it drives a
 # real browser (Playwright/Chromium) and reaches external services (Ethereal for the test mailbox,
-# postalsys.com for the 14-day trial). The trial rate limit is bypassed for the e2e serviceUrl
-# (https://e2e.emailengine.app/) - see the postalsys-web trial allowlist.
+# postalsys.com for the 14-day trial).
 
 on:
     workflow_dispatch:
