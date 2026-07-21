@@ -9,7 +9,6 @@ ee-dist/
 config/development*
 .vscode
 .okta.env
-system.env
 keylog.txt
 .claude
 issue*

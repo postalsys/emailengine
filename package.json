@@ -24,7 +24,6 @@
         "build-dist-fast": "pkg --debug package.json && npm install && node winconf.js",
         "licenses": "node list-generate.js",
         "gettext": "find ./views -name \"*.hbs\" -print0 | xargs -0 xgettext-template -L Handlebars -o translations/messages.pot --force-po && node gettext-extract.js",
-        "prepare-docker": "echo \"EE_DOCKER_LEGACY=$EE_DOCKER_LEGACY\" >> system.env && cat system.env",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install && ./copy-static-files.sh && npm run licenses && npm run gettext",
         "test-gmail-api": "node lib/email-client/gmail-client.js --dbs.redis=redis://127.0.0.1/11",
         "format": "prettier --write 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' '*.js'",

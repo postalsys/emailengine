@@ -42,7 +42,6 @@ COPY .git/refs/heads/master .git/refs/heads/master
 COPY update-info.sh update-info.sh
 
 RUN npm ci --omit=dev
-RUN npm run prepare-docker
 RUN chmod +x ./update-info.sh
 RUN ./update-info.sh
 

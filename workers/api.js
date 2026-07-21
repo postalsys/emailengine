@@ -3131,16 +3131,6 @@ Include your token in requests using one of these methods:
                 });
             }
 
-            if (consts.EE_DOCKER_LEGACY) {
-                systemAlerts.push({
-                    url: 'https://learn.emailengine.app/docs/installation/docker',
-                    level: 'info',
-                    icon: 'icon-[tabler--brand-docker]',
-                    message: `The Docker image you are currently using is deprecated. To ensure ongoing support, please transition to <code>postalsys/emailengine</code>.`,
-                    verbatim: true
-                });
-            }
-
             // Check if setup warnings should be disabled (for documentation screenshots, CI, etc.)
             const disableSetupWarnings = hasEnvValue('EENGINE_DISABLE_SETUP_WARNINGS') ? getBoolean(readEnvValue('EENGINE_DISABLE_SETUP_WARNINGS')) : false;
 
