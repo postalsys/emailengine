@@ -212,7 +212,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
 
 **Error handling:**
-- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`)
+- Auth failures tracked; the account is parked after the threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the system-owned `authFailureDisabled` account field (`ACCOUNT_AUTH_FAILURE_DISABLED_KEY`), honoured on connect by all three transports and cleared on the next successful authentication - not the operator-owned `imap.disabled` setting, which OAuth2 accounts do not have
 - Transient errors (timeout, DNS) trigger reconnection with backoff
 - Permanent errors (5xx) fail immediately
 - Excessive reconnection detection (>20/min triggers warning)
