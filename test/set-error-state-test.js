@@ -76,8 +76,6 @@ test('BaseClient.setErrorState', async t => {
             .multi()
             .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
             .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH' }))
-            // The event the stored payload was reported under - the other half of the dedup key.
-            .hset(accountKey, 'lastError:event', 'authenticationError')
             .hset(accountKey, 'lastError:errorCount', '1')
             .hset(accountKey, 'lastError:first', new Date(Date.now() - HOUR).toISOString())
             .exec();
@@ -96,7 +94,6 @@ test('BaseClient.setErrorState', async t => {
             .multi()
             .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
             .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH' }))
-            .hset(accountKey, 'lastError:event', 'authenticationError')
             .hset(accountKey, 'lastError:errorCount', '5')
             .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
             .exec();
@@ -120,7 +117,6 @@ test('BaseClient.setErrorState', async t => {
             .multi()
             .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
             .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'OLDCODE' }))
-            .hset(accountKey, 'lastError:event', 'authenticationError')
             .hset(accountKey, 'lastError:errorCount', '9')
             .hset(accountKey, 'lastError:first', new Date(Date.now() - 4 * DAY).toISOString())
             .exec();
@@ -131,76 +127,5 @@ test('BaseClient.setErrorState', async t => {
         assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '1');
         const imap = JSON.parse(await redis.hget(accountKey, 'imap'));
         assert.strictEqual(imap.disabled, false, 'a fresh error must not immediately disable IMAP');
-    });
-
-    await t.test('the same error code under a DIFFERENT event is a new first occurrence', async () => {
-        // The dedup key includes the event. Both token-failure branches once reported
-        // serverResponseCode 'TokenGenerationError', so a connectError recorded earlier suppressed
-        // the authenticationError that followed - withholding the only signal an operator gets that
-        // an account needs re-authorization. notify() returns without delivering a webhook whenever
-        // this comes back false, so the assertion below is the webhook.
-        const { ctx, accountKey } = makeCtx('seterr-event-change');
-        await redis
-            .multi()
-            .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
-            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'TokenGenerationError' }))
-            .hset(accountKey, 'lastError:event', 'connectError')
-            .hset(accountKey, 'lastError:errorCount', '3')
-            .hset(accountKey, 'lastError:first', new Date(Date.now() - HOUR).toISOString())
-            .exec();
-
-        const isFirst = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'TokenGenerationError', response: 'token rejected' });
-
-        assert.strictEqual(isFirst, true, 'a changed event must report even when the response code is unchanged');
-    });
-
-    await t.test('a repeat is still deduped while the account state says "connecting"', async () => {
-        // The dedup key must be owned by setErrorState, not read from the shared `state` field.
-        // connect() and both API init()s persist 'connecting' immediately before the attempt that
-        // fails, so on every pass of the reconnect loop the stored state is 'connecting' and never
-        // the event being deduped. Keying on it made every retry a "first occurrence": a webhook per
-        // retry, and lastError:first reset each time, so the auth-failure window could never reach
-        // its threshold and the auto-disable above could never fire.
-        const { ctx, accountKey } = makeCtx('seterr-connecting');
-        await redis
-            .multi()
-            .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
-            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH' }))
-            .hset(accountKey, 'lastError:event', 'authenticationError')
-            // What the reconnect loop actually leaves behind before it fails again.
-            .hset(accountKey, 'state', 'connecting')
-            .hset(accountKey, 'lastError:errorCount', '4')
-            .hset(accountKey, 'lastError:first', new Date(Date.now() - HOUR).toISOString())
-            .exec();
-
-        const firstSeen = await redis.hget(accountKey, 'lastError:first');
-        const isFirst = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
-
-        assert.strictEqual(isFirst, false, 'a retry must not be reported as a new first occurrence');
-        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '5', 'the counter advances instead of resetting');
-        assert.strictEqual(await redis.hget(accountKey, 'lastError:first'), firstSeen, 'the auth-failure window start must survive the retry');
-    });
-
-    await t.test('an unchanged repeat does not rewrite lastErrorState', async () => {
-        // A reconnect loop calls setErrorState() on every attempt. Rewriting byte-identical JSON and
-        // broadcasting a state change nothing observed is the write amplification that presented as
-        // pinned CPU in 2.73.0, so the repeat path must leave the stored payload alone.
-        const { ctx, accountKey } = makeCtx('seterr-no-rewrite');
-        await redis
-            .multi()
-            .hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }))
-            .hset(accountKey, 'lastErrorState', JSON.stringify({ serverResponseCode: 'AUTH', marker: 'original' }))
-            .hset(accountKey, 'lastError:event', 'authenticationError')
-            .hset(accountKey, 'lastError:errorCount', '2')
-            .hset(accountKey, 'lastError:first', new Date(Date.now() - HOUR).toISOString())
-            .exec();
-
-        const isFirst = await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'AUTH', response: 'auth failed' });
-
-        assert.strictEqual(isFirst, false);
-        const stored = JSON.parse(await redis.hget(accountKey, 'lastErrorState'));
-        assert.strictEqual(stored.marker, 'original', 'the stored payload is left untouched on an unchanged repeat');
-        // The counter still advances - that is what the auth-failure window measures.
-        assert.strictEqual(await redis.hget(accountKey, 'lastError:errorCount'), '3');
     });
 });

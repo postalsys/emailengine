@@ -257,10 +257,6 @@ test('IMAP null guard tests', async t => {
             setStateVal: async () => {},
             getAccountKey: () => 'test:account',
             redis: mockRedis,
-            // Inherited from BaseClient - clears the auth-failure marker and error counters on a
-            // successful sync. Real implementation only touches redis; stubbed here because this
-            // fake receiver is a plain object rather than an IMAPClient instance.
-            clearAuthFailureState: async () => {},
             isConnected: () => !!ctx.imapClient && ctx.imapClient.usable
         };
 

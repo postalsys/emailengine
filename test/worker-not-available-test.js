@@ -127,10 +127,13 @@ test('submit worker delivery-error classification', async t => {
         }
     });
 
-    await t.test("Outlook's malformed-message rejection is permanent", () => {
-        // outlook-client.js turns a Graph HTTP 400 "Invalid message format" into an explicit
-        // permanentDeliveryError. A malformed message fails every retry, and this is the one case
-        // that is genuinely permanent without being an SMTP reply - so it has to say so itself.
+    await t.test('an explicit permanentDeliveryError marker is honoured', () => {
+        // Contract test for the predicate only - nothing sets this marker today. It is the escape
+        // hatch for a rejection that is genuinely permanent without being an SMTP reply, but it
+        // cannot be used yet: submitMessage() runs in the IMAP worker and the RPC hop to the submit
+        // worker copies only {error, code, statusCode, info}, so a marker set at the throw site is
+        // stripped before shouldDiscardJob() ever sees it. Widen the RPC envelope before relying on
+        // it, and add a test that crosses the worker boundary rather than building the error here.
         let job = { attemptsMade: 1, opts: { attempts: 10 } };
 
         let err = new Error('Invalid message format');

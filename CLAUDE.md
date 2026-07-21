@@ -211,7 +211,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - IMAP: Persistent IDLE connection for real-time change detection
 - Full mailbox sync on connect, then 15-minute periodic resync
 - UID tracking with UIDValidity validation (full resync if changed)
-- Exponential backoff reconnection (2s initial, 30s max), with additive jitter on every delay. Jitter matters more than the curve: all accounts of one OAuth2 app share a provider quota, so an outage breaks them at the same instant and un-jittered retries arrive as synchronized waves. Jitter is always ADDITIVE - it must spread delays, never shorten them, or de-synchronizing raises the fleet-wide retry rate
+- Exponential backoff reconnection (2s initial, 30s max)
 
 **Operations supported:**
 - Message: `listMessages`, `getMessage`, `getText`, `getRawMessage`, `getAttachment`
@@ -220,7 +220,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
 
 **Error handling:**
-- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the operator-owned `imap.disabled` setting, so this only applies to password IMAP accounts - it is a no-op for OAuth2 accounts, which have no `imap` object. **This asymmetry is deliberate - do not propose extending the auto-disable to OAuth2.** It was built and reverted: the API transports do not retry at all (so there is nothing to stop), the OAuth2-IMAP retry loop is already capped at 10 min and reported as `authenticationError`, and a terminal park silently killed healthy accounts while failing to un-park on three of the four recovery routes. Full reasoning in the comment above the `authenticationError` case in `setErrorState()` (`lib/email-client/base-client.js`); if retry load ever matters, escalate the backoff for permanent rejections instead
+- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the operator-owned `imap.disabled` setting, so this only applies to password IMAP accounts - it is a no-op for OAuth2 accounts, which have no `imap` object. **This asymmetry is deliberate - do not propose extending the auto-disable to OAuth2.** It was built and reverted: the API transports do not retry at all (so there is nothing to stop), the OAuth2-IMAP retry loop is already capped at 10 min and reported as `authenticationError`, and a terminal park silently killed healthy accounts while failing to un-park on three of the four recovery routes. If retry load ever matters, escalate the backoff for permanent rejections instead
 - Transient errors (timeout, DNS) trigger reconnection with backoff
 - Permanent errors (5xx) fail immediately
 - Excessive reconnection detection (>20/min triggers warning)
@@ -285,7 +285,9 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Default: 10 attempts (`deliveryAttempts` setting)
 - Backoff: Exponential starting at 5s (`5s, 10s, 20s, 40s...`)
 - Retries on transient errors (< 500 status code)
-- No retry on permanent 5xx errors (message rejected). "Permanent" is decided in `lib/delivery-error.js` by PROVENANCE, not by `statusCode`: only a real SMTP reply carries nodemailer's `responseCode`, and that is the field the 5xx rule reads. `statusCode` is a copy made for the API and webhook payloads, and everywhere else in the codebase a 5xx `statusCode` means the opposite of a rejected message (503 "no active handler", 504 RPC timeouts, 500 Redis lock failures, and every API transport's passthrough of the provider's HTTP status) - reading it as an SMTP verdict silently discarded good mail. Do not "fix" a discarded-message report by adding an error code to an allowlist; make sure the throw site is not forging an SMTP reply code. The one genuinely permanent non-SMTP case, Outlook rejecting a malformed message, sets `err.permanentDeliveryError = true` explicitly
+- No retry on permanent 5xx errors (message rejected). "Permanent" is decided in `lib/delivery-error.js` by PROVENANCE, not by `statusCode`: only a real SMTP reply carries nodemailer's `responseCode`, and that is the field the 5xx rule reads. `statusCode` is a copy made for the API and webhook payloads, and everywhere else in the codebase a 5xx `statusCode` means the opposite of a rejected message (503 "no active handler", 504 RPC timeouts, 500 Redis lock failures, and every API transport's passthrough of the provider's HTTP status) - reading it as an SMTP verdict silently discarded good mail (a 504 RPC timeout during send dropped the queued message outright). Do not "fix" a discarded-message report by adding an error code to an allowlist; make sure the throw site is not forging an SMTP reply code.
+
+  **Known gap:** `submitMessage()` runs in the IMAP worker and the error reaches the submit worker through two `postMessage` hops that copy only `{error, code, statusCode, info}` (`workers/imap.js`, `server.js`, `workers/submit.js`). So `responseCode` and `permanentDeliveryError` are stripped in transit and only `NON_RETRYABLE_CODES` actually classifies in production. Ordinary SMTP rejections still fail fast because nodemailer sets `EENVELOPE`/`EMESSAGE` and `code` does survive; the cost is that a provider rejection carrying neither (e.g. Outlook/Graph 400 "Invalid message format") is retried to exhaustion instead of discarded. The fix is to widen the RPC envelope to carry one permanence verdict, and to test through the worker boundary rather than against the pure predicate
 
 **Webhook events:**
 - `messageSent` - Message accepted by SMTP server
