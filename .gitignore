@@ -12,7 +12,6 @@ config/development*
 system.env
 keylog.txt
 .claude
-.vscode
 issue*
 patch*
 manual-test/
@@ -21,3 +20,12 @@ test-results/
 blob-report/
 playwright/.cache/
 *-plan.md
+
+# Profiling and crash artifacts - never commit these, they capture process memory
+*.heapsnapshot
+*.cpuprofile
+*.heapprofile
+core.*
+
+# Local logs
+*.log
