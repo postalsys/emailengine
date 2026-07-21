@@ -14,25 +14,26 @@ const settings = require('../../lib/settings');
 // presence of authData is checked.
 const SECURED_AUTH_DATA = { user: 'admin', password: 'hash', passwordVersion: 1 };
 
-// Runs fn with authData forced to `value`, restoring the previous value afterwards.
-async function withAuthData(value, fn) {
-    const previous = await settings.get('authData');
-    try {
-        await settings.set('authData', value);
-        return await fn();
-    } finally {
-        await settings.set('authData', previous);
-    }
-}
-
-// For suites that need the instance secured for their whole lifetime: call setAuthData() in a
-// before hook and pass the returned restore function to the teardown.
+// For suites that need the instance secured for their whole lifetime: call secureInstance() in a
+// before hook and pass the returned restore function to the teardown. The single implementation of
+// the save/set/restore sequence - withAuthData() below is defined in terms of it, so the rule in
+// the header comment is enforced by construction rather than by keeping two copies in step.
 async function secureInstance(value = SECURED_AUTH_DATA) {
     const previous = await settings.get('authData');
     await settings.set('authData', value);
     return async () => {
         await settings.set('authData', previous);
     };
+}
+
+// Runs fn with authData forced to `value`, restoring the previous value afterwards.
+async function withAuthData(value, fn) {
+    const restore = await secureInstance(value);
+    try {
+        return await fn();
+    } finally {
+        await restore();
+    }
 }
 
 module.exports = { withAuthData, secureInstance, SECURED_AUTH_DATA };
