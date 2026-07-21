@@ -30,10 +30,15 @@ COPY views views
 COPY workers workers
 
 # Copy required root level files
+# NB: bin/emailengine.js requires ../encrypt and ../scan for the `encrypt` and `scan`
+# subcommands. This COPY list is an allowlist, so any root-level module the CLI dispatches
+# to must be named here or the command fails with MODULE_NOT_FOUND inside the container.
 COPY LICENSE_EMAILENGINE.txt LICENSE_EMAILENGINE.txt
+COPY encrypt.js encrypt.js
 COPY package.json package.json
 COPY package-lock.json package-lock.json
 COPY sbom.json sbom.json
+COPY scan.js scan.js
 COPY server.js server.js
 
 RUN mkdir -p .git/refs/heads
