@@ -19,6 +19,15 @@ RUN addgroup -S emailenginegroup && adduser -S emailengineuser -G emailenginegro
 
 WORKDIR /emailengine
 
+# Install dependencies before copying any source. npm ci is by far the slowest step in this
+# build - it runs under QEMU emulation for the non-native architecture - and Docker invalidates
+# every layer below a changed one. With the sources copied first, an edit to any file busted
+# this layer and re-ran the whole install; keeping it above them means it is only re-run when
+# the lockfile actually changes.
+COPY package.json package.json
+COPY package-lock.json package-lock.json
+RUN npm ci --omit=dev
+
 # Copy app folders
 COPY bin bin
 COPY config config
@@ -35,8 +44,6 @@ COPY workers workers
 # to must be named here or the command fails with MODULE_NOT_FOUND inside the container.
 COPY LICENSE_EMAILENGINE.txt LICENSE_EMAILENGINE.txt
 COPY encrypt.js encrypt.js
-COPY package.json package.json
-COPY package-lock.json package-lock.json
 COPY sbom.json sbom.json
 COPY scan.js scan.js
 COPY server.js server.js
@@ -45,8 +52,6 @@ RUN mkdir -p .git/refs/heads
 COPY .git/refs/heads/master .git/refs/heads/master
 
 COPY update-info.sh update-info.sh
-
-RUN npm ci --omit=dev
 RUN chmod +x ./update-info.sh
 RUN ./update-info.sh
 

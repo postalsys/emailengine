@@ -118,3 +118,26 @@ jobs:
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
+
+            # The Dockerfile copies an explicit allowlist of root-level files, so a CLI subcommand
+            # that dispatches to one can be missing from the image while the build and the server
+            # both stay green - CMD only runs server.js. Both `scan` and `encrypt` shipped broken
+            # that way. Exercising the commands catches it regardless of how the module is
+            # referenced, which a source-level check cannot.
+            - name: Smoke test the CLI inside the image
+              run: |
+                  set -euo pipefail
+                  image="ghcr.io/${{ github.repository }}:edge"
+                  docker pull -q "$image"
+                  status=0
+                  for cmd in version license password scan encrypt tokens export check-bounce; do
+                      # These need Redis or arguments and are expected to fail; we only assert that
+                      # the module resolved, so a missing COPY cannot pass silently.
+                      out=$(docker run --rm --entrypoint node "$image" bin/emailengine.js "$cmd" 2>&1 || true)
+                      if grep -q "Cannot find module" <<<"$out"; then
+                          echo "::error::emailengine $cmd cannot resolve its module inside the image"
+                          grep -o "Cannot find module '[^']*'" <<<"$out" | head -1
+                          status=1
+                      fi
+                  done
+                  exit $status
