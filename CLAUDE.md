@@ -212,7 +212,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
 
 **Error handling:**
-- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the operator-owned `imap.disabled` setting, so this only applies to password IMAP accounts - it is a no-op for OAuth2 accounts, which have no `imap` object. Extending it to OAuth2 needs a transport-neutral marker plus a working un-park path on every recovery route (`Account.create`, the admin Reconnect button and the edit form all bypassed it on the first attempt)
+- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the operator-owned `imap.disabled` setting, so this only applies to password IMAP accounts - it is a no-op for OAuth2 accounts, which have no `imap` object. **This asymmetry is deliberate - do not propose extending the auto-disable to OAuth2.** It was built and reverted: the API transports do not retry at all (so there is nothing to stop), the OAuth2-IMAP retry loop is already capped at 10 min and reported as `authenticationError`, and a terminal park silently killed healthy accounts while failing to un-park on three of the four recovery routes. Full reasoning in the comment above the `authenticationError` case in `setErrorState()` (`lib/email-client/base-client.js`); if retry load ever matters, escalate the backoff for permanent rejections instead
 - Transient errors (timeout, DNS) trigger reconnection with backoff
 - Permanent errors (5xx) fail immediately
 - Excessive reconnection detection (>20/min triggers warning)
