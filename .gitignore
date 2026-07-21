@@ -1,6 +1,13 @@
 .DS_Store
 node_modules
-.env
+# Cover every local env file, not just the exact name: setup-production.sh writes generated
+# EENGINE_SECRET/REDIS_PASSWORD/SMTP_PASSWORD into .env and then backs it up as
+# .env.backup.<timestamp>, which a bare `.env` rule does not match.
+.env*
+# ...except the two committed templates. They carry only self-labelled dev defaults and
+# CHANGE_ME placeholders, never real credentials, and are already tracked.
+!.env.development
+!.env.production
 dist/
 yarn.lock
 swagger.json
