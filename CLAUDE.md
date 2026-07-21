@@ -277,7 +277,7 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Default: 10 attempts (`deliveryAttempts` setting)
 - Backoff: Exponential starting at 5s (`5s, 10s, 20s, 40s...`)
 - Retries on transient errors (< 500 status code)
-- No retry on permanent 5xx errors (message rejected), except an OAuth2 token-refresh failure (`err.code === 'ETokenRefresh'`), which always retries - its `statusCode` is the token endpoint's, not an SMTP reply code, so a 5xx there says nothing about the message (see `lib/delivery-error.js`)
+- No retry on permanent 5xx errors (message rejected), except for the codes in `RETRYABLE_CODES` (`lib/delivery-error.js`), which always retry. Only the SMTP path puts a real SMTP reply code in `statusCode`; the API transports and the inter-thread RPC stamp the same field with an HTTP status, so a 5xx from a token endpoint (`ETokenRefresh`), a Gmail `INTERNAL` (`InternalError`) or an IMAP-worker RPC timeout (`Timeout`) says nothing about the message and must not discard it. Codes that are genuinely permanent stay out of that set - Outlook forges a 500 for a malformed message on purpose
 
 **Webhook events:**
 - `messageSent` - Message accepted by SMTP server

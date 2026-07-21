@@ -110,6 +110,51 @@ test('submit worker delivery-error classification', async t => {
         }
     });
 
+    await t.test('a transient Gmail API 5xx does not discard the queued message', () => {
+        // Same class as the token-endpoint regression: GMAIL_ERROR_MAP maps INTERNAL to
+        // {code:'InternalError', status:500} (gmail/gmail-api.js). That 500 is a Google-side server
+        // error during send - the textbook case for a retry - but it matched the SMTP 5xx rule and
+        // dropped the message.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('Backend error');
+        err.code = 'InternalError';
+        err.statusCode = 500;
+
+        assert.strictEqual(isPermanentDeliveryError(err), false, 'a Gmail INTERNAL must not be permanent');
+        assert.strictEqual(shouldDiscardJob(err, job), false, 'a Gmail INTERNAL must not discard the job');
+    });
+
+    await t.test('an RPC timeout to the IMAP worker does not discard the queued message', () => {
+        // workers/submit.js call() rejects with {code:'Timeout', statusCode:504} when the IMAP
+        // worker does not answer in time. The message never reached a mail server, but 504 matched
+        // the SMTP 5xx rule, so a loaded instance silently discarded queued mail. The sibling "no
+        // active handler" error already uses 503 for exactly this reason.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('Timeout waiting for command response [T5]');
+        err.code = 'Timeout';
+        err.statusCode = 504;
+
+        assert.strictEqual(isPermanentDeliveryError(err), false, 'an RPC timeout must not be permanent');
+        assert.strictEqual(shouldDiscardJob(err, job), false, 'an RPC timeout must not discard the job');
+    });
+
+    await t.test("Outlook's deliberate 500 for a malformed message is still permanent", () => {
+        // outlook-client.js forges `statusCode = 500 // do not retry sending` for a Graph HTTP 400
+        // "Invalid message format". A malformed message fails every retry, so this must stay
+        // permanent - it is the case that keeps the retryable set a deliberate allowlist rather
+        // than a blanket "API 5xx is transient" rule.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('Invalid message format');
+        err.code = 'InvalidMessage';
+        err.statusCode = 500;
+
+        assert.strictEqual(isPermanentDeliveryError(err), true);
+        assert.strictEqual(shouldDiscardJob(err, job), true);
+    });
+
     await t.test('a genuine SMTP 5xx is still permanent', () => {
         // Guards against over-fixing: the carve-out is keyed on the token-refresh code, so an
         // ordinary 5xx from the mail server must still discard.
