@@ -36,9 +36,16 @@ registerRedisTeardown();
 
 test('API token scope and account binding', async t => {
     t.before(async () => {
-        apiToken = await tokens.provision({ scopes: ['api'], description: 'scope-test api', nolog: true });
-        smtpToken = await tokens.provision({ scopes: ['smtp'], description: 'scope-test smtp', nolog: true });
-        accountToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'scope-test account', nolog: true });
+        // provision() refuses to mint a token unless an admin password is set, so that a credential
+        // issued during the unprotected first-run window cannot outlive it (see lib/tokens.js).
+        // This harness provisions in-process against the shared test Redis rather than over HTTP,
+        // which is the same trusted-local position the CLI is exempted for. Setting authData
+        // instead would gate the live server's admin UI mid-run and break the UI smoke tests that
+        // share it.
+        const local = { allowWithoutAdminAuth: true };
+        apiToken = await tokens.provision({ scopes: ['api'], description: 'scope-test api', nolog: true }, local);
+        smtpToken = await tokens.provision({ scopes: ['smtp'], description: 'scope-test smtp', nolog: true }, local);
+        accountToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'scope-test account', nolog: true }, local);
     });
 
     t.after(async () => {
