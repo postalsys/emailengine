@@ -14,7 +14,6 @@ const tokens = require('../lib/tokens');
 const settings = require('../lib/settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { secureInstance } = require('./helpers/with-auth-data');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 const ACCOUNT = 'smtp-auth-acct';
@@ -27,7 +26,6 @@ let smtpToken;
 let apiScopeToken;
 let ipRestrictedToken;
 let prevSmtpPassword;
-let restoreAuthData;
 const accountKeys = [];
 
 async function seedAccount(account) {
@@ -38,8 +36,6 @@ async function seedAccount(account) {
 
 test.before(async () => {
     prevSmtpPassword = await settings.get('smtpServerPassword');
-    // provision() needs an admin password - see lib/tokens.js
-    restoreAuthData = await secureInstance();
     smtpToken = await tokens.provision({ account: ACCOUNT, scopes: ['smtp'], description: 'smtp-auth test', nolog: true });
     apiScopeToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'smtp-auth wrong scope', nolog: true });
     ipRestrictedToken = await tokens.provision({
@@ -53,7 +49,6 @@ test.before(async () => {
 });
 
 registerRedisTeardown(redis, async () => {
-    await restoreAuthData();
     for (const tok of [smtpToken, apiScopeToken, ipRestrictedToken]) {
         if (tok) {
             try {

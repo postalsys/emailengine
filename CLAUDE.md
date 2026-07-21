@@ -203,7 +203,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - IMAP: Persistent IDLE connection for real-time change detection
 - Full mailbox sync on connect, then 15-minute periodic resync
 - UID tracking with UIDValidity validation (full resync if changed)
-- Exponential backoff reconnection (2s initial, 30s max)
+- Exponential backoff reconnection (2s initial, 30s max), with additive jitter on every delay. Jitter matters more than the curve: all accounts of one OAuth2 app share a provider quota, so an outage breaks them at the same instant and un-jittered retries arrive as synchronized waves. Jitter is always ADDITIVE - it must spread delays, never shorten them, or de-synchronizing raises the fleet-wide retry rate
 
 **Operations supported:**
 - Message: `listMessages`, `getMessage`, `getText`, `getRawMessage`, `getAttachment`
@@ -277,7 +277,7 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Default: 10 attempts (`deliveryAttempts` setting)
 - Backoff: Exponential starting at 5s (`5s, 10s, 20s, 40s...`)
 - Retries on transient errors (< 500 status code)
-- No retry on permanent 5xx errors (message rejected), except for the codes in `RETRYABLE_CODES` (`lib/delivery-error.js`), which always retry. Only the SMTP path puts a real SMTP reply code in `statusCode`; the API transports and the inter-thread RPC stamp the same field with an HTTP status, so a 5xx from a token endpoint (`ETokenRefresh`), a Gmail `INTERNAL` (`InternalError`) or an IMAP-worker RPC timeout (`Timeout`) says nothing about the message and must not discard it. Codes that are genuinely permanent stay out of that set - Outlook forges a 500 for a malformed message on purpose
+- No retry on permanent 5xx errors (message rejected). "Permanent" is decided in `lib/delivery-error.js` by PROVENANCE, not by `statusCode`: only a real SMTP reply carries nodemailer's `responseCode`, and that is the field the 5xx rule reads. `statusCode` is a copy made for the API and webhook payloads, and everywhere else in the codebase a 5xx `statusCode` means the opposite of a rejected message (503 "no active handler", 504 RPC timeouts, 500 Redis lock failures, and every API transport's passthrough of the provider's HTTP status) - reading it as an SMTP verdict silently discarded good mail. Do not "fix" a discarded-message report by adding an error code to an allowlist; make sure the throw site is not forging an SMTP reply code. The one genuinely permanent non-SMTP case, Outlook rejecting a malformed message, sets `err.permanentDeliveryError = true` explicitly
 
 **Webhook events:**
 - `messageSent` - Message accepted by SMTP server

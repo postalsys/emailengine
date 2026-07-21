@@ -3,81 +3,162 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-// Exercise the real submit-worker discard predicate (lib/delivery-error.js),
-// the exact code path workers/submit.js uses to decide whether a failed
-// delivery job should be discarded (permanent failure) or left for BullMQ to
-// retry. Previously this test re-implemented the predicate inline and never
-// covered the NON_RETRYABLE_CODES (EAUTH/EOAUTH2/...) branch at all.
+// Exercise the real submit-worker discard predicate (lib/delivery-error.js), the exact code path
+// workers/submit.js uses to decide whether a failed delivery job should be discarded (permanent
+// failure) or left for BullMQ to retry.
+//
+// The cases below deliberately build their errors the way the production code builds them, rather
+// than hand-setting whichever field the predicate happens to read. An earlier version of this suite
+// asserted on codes that nothing in the codebase ever emits, so it passed while the bug it was
+// written for was still live.
 const { shouldDiscardJob, isPermanentDeliveryError, NON_RETRYABLE_CODES } = require('../lib/delivery-error');
 
+// How base-client.js stamps a real nodemailer SMTP failure: `responseCode` is nodemailer's, and
+// `statusCode` is a copy of it made for the API response and webhook payload.
+function smtpError(message, responseCode) {
+    let err = new Error(message);
+    err.responseCode = responseCode;
+    err.statusCode = Number(responseCode) || null;
+    return err;
+}
+
 test('submit worker delivery-error classification', async t => {
-    await t.test('does not discard jobs with 503 status code', () => {
-        let err503 = new Error('No active handler');
-        err503.statusCode = 503;
-
-        let err500 = new Error('Internal server error');
-        err500.statusCode = 500;
-
-        let err502 = new Error('Bad gateway');
-        err502.statusCode = 502;
-
+    await t.test('a genuine SMTP 5xx is permanent', () => {
         let job = { attemptsMade: 1, opts: { attempts: 10 } };
 
-        assert.strictEqual(shouldDiscardJob(err503, job), false, '503 errors should NOT be discarded (allows BullMQ retry)');
-        assert.strictEqual(shouldDiscardJob(err500, job), true, '500 errors should be discarded');
-        assert.strictEqual(shouldDiscardJob(err502, job), true, '502 errors should be discarded');
-    });
-
-    await t.test('still discards 5xx errors other than 503', () => {
-        let statusCodes = [500, 501, 502, 504, 505];
-        let job = { attemptsMade: 0, opts: { attempts: 5 } };
-
-        for (let code of statusCodes) {
-            let err = new Error(`Error ${code}`);
-            err.statusCode = code;
-            assert.strictEqual(shouldDiscardJob(err, job), true, `${code} errors should still be discarded`);
+        for (let responseCode of [500, 501, 502, 550, 554]) {
+            let err = smtpError(`Error ${responseCode}`, responseCode);
+            assert.strictEqual(isPermanentDeliveryError(err), true, `SMTP ${responseCode} should be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), true, `SMTP ${responseCode} should be discarded`);
         }
     });
 
-    await t.test('does not discard transient codes below 500', () => {
+    await t.test('an SMTP 503 is transient', () => {
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+        let err = smtpError('Try again later', 503);
+
+        assert.strictEqual(isPermanentDeliveryError(err), false, '503 is a transient "try again later"');
+        assert.strictEqual(shouldDiscardJob(err, job), false);
+    });
+
+    await t.test('an SMTP 4xx is transient', () => {
         let job = { attemptsMade: 0, opts: { attempts: 5 } };
 
-        for (let code of [421, 450, 451, 452]) {
-            let err = new Error(`Error ${code}`);
-            err.statusCode = code;
-            assert.strictEqual(shouldDiscardJob(err, job), false, `${code} errors should be retried`);
+        for (let responseCode of [421, 450, 451, 452]) {
+            let err = smtpError(`Error ${responseCode}`, responseCode);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `SMTP ${responseCode} should be retried`);
         }
     });
 
-    await t.test('does not discard when all attempts are exhausted', () => {
-        let err500 = new Error('Internal server error');
-        err500.statusCode = 500;
+    await t.test('a 5xx that is NOT an SMTP reply does not discard the queued message', () => {
+        // The regression this guards. Only the SMTP path sets `responseCode`; everywhere else a 5xx
+        // `statusCode` describes infrastructure, not the message - 503 "no active handler", 504 RPC
+        // timeouts, 500 Redis lock failures, and every API transport's passthrough of the provider's
+        // HTTP status. Reading it as an SMTP verdict silently discarded perfectly good mail.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
 
-        let job = { attemptsMade: 10, opts: { attempts: 10 } };
+        for (let statusCode of [500, 502, 504]) {
+            let err = new Error(`Infrastructure failure ${statusCode}`);
+            err.statusCode = statusCode;
 
-        assert.strictEqual(shouldDiscardJob(err500, job), false, 'Should not discard when attempts are exhausted');
+            assert.strictEqual(isPermanentDeliveryError(err), false, `a non-SMTP ${statusCode} must not be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `a non-SMTP ${statusCode} must not discard the job`);
+        }
+    });
+
+    await t.test('a Gmail/Graph API 5xx during send does not discard the queued message', () => {
+        // Built exactly as lib/oauth/gmail.js and lib/oauth/outlook.js build it: only `statusCode`,
+        // never a `code`. An allowlist keyed on `code` could not cover this, which is why the
+        // classification is keyed on provenance instead.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        for (let statusCode of [500, 502, 503]) {
+            let err = new Error('OAuth2 request failed');
+            err.statusCode = statusCode;
+            err.oauthRequest = { status: statusCode, provider: 'gmail' };
+
+            assert.strictEqual(isPermanentDeliveryError(err), false, `a provider ${statusCode} must not be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `a provider ${statusCode} must not discard the job`);
+        }
+    });
+
+    await t.test('an OAuth2 token-endpoint 5xx does not discard the queued message', () => {
+        // {code:'ETokenRefresh', statusCode:<token endpoint's HTTP status>} - the status belongs to
+        // the token endpoint, not to the mail server, so it says nothing about the message.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        for (let statusCode of [500, 502, 504]) {
+            let err = new Error('Token request failed');
+            err.code = 'ETokenRefresh';
+            err.statusCode = statusCode;
+
+            assert.strictEqual(isPermanentDeliveryError(err), false, `a token endpoint ${statusCode} must not be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `a token endpoint ${statusCode} must not discard the job`);
+        }
+    });
+
+    await t.test('an RPC timeout to the IMAP worker does not discard the queued message', () => {
+        // workers/submit.js call() rejects with {code:'Timeout', statusCode:504} when the IMAP
+        // worker does not answer in time. Retrying is safe because the submit worker checks the
+        // job's own 'smtp-completed'/'submitted' progress before treating a failure as a failure.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('Timeout waiting for command response [T5]');
+        err.code = 'Timeout';
+        err.statusCode = 504;
+
+        assert.strictEqual(isPermanentDeliveryError(err), false, 'an RPC timeout must not be permanent');
+        assert.strictEqual(shouldDiscardJob(err, job), false, 'an RPC timeout must not discard the job');
+    });
+
+    await t.test('a Workload Identity Federation token failure does not discard the queued message', () => {
+        // ESTSExchange / ESignJwt / ESubjectTokenRead carry the responding Google endpoint's HTTP
+        // status. Under the old allowlist every one of these discarded queued mail during a
+        // Google-side blip; keying on provenance covers them without naming them.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        for (let code of ['ESTSExchange', 'ESignJwt', 'ESubjectTokenRead']) {
+            let err = new Error(`${code} request failed`);
+            err.code = code;
+            err.statusCode = 500;
+
+            assert.strictEqual(isPermanentDeliveryError(err), false, `${code} must not be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `${code} must not discard the job`);
+        }
+    });
+
+    await t.test("Outlook's malformed-message rejection is permanent", () => {
+        // outlook-client.js turns a Graph HTTP 400 "Invalid message format" into an explicit
+        // permanentDeliveryError. A malformed message fails every retry, and this is the one case
+        // that is genuinely permanent without being an SMTP reply - so it has to say so itself.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('Invalid message format');
+        err.code = 'ErrorInvalidRecipients';
+        err.statusCode = 500;
+        err.permanentDeliveryError = true;
+
+        assert.strictEqual(isPermanentDeliveryError(err), true);
+        assert.strictEqual(shouldDiscardJob(err, job), true);
     });
 
     await t.test('discards non-retryable error codes regardless of status', () => {
-        // This branch (NON_RETRYABLE_CODES) was previously untested entirely.
         let job = { attemptsMade: 0, opts: { attempts: 10 } };
 
         for (let code of NON_RETRYABLE_CODES) {
             let err = new Error(`Permanent failure: ${code}`);
             err.code = code;
-            // No statusCode at all - must still be permanent because of the code.
+            // No status at all - must still be permanent because of the code.
             assert.strictEqual(isPermanentDeliveryError(err), true, `${code} should be a permanent error`);
             assert.strictEqual(shouldDiscardJob(err, job), true, `${code} jobs should be discarded`);
         }
     });
 
-    await t.test('non-retryable code is discarded even with a transient status code', () => {
-        // A permanent code wins over a transient (sub-500 or 503) status code.
+    await t.test('a non-retryable code wins over a transient SMTP reply', () => {
         let job = { attemptsMade: 1, opts: { attempts: 10 } };
 
-        let err = new Error('Auth failed mid-handshake');
+        let err = smtpError('Auth failed mid-handshake', 503);
         err.code = 'EAUTH';
-        err.statusCode = 503; // transient on its own
 
         assert.strictEqual(isPermanentDeliveryError(err), true);
         assert.strictEqual(shouldDiscardJob(err, job), true);
@@ -93,78 +174,11 @@ test('submit worker delivery-error classification', async t => {
         assert.strictEqual(shouldDiscardJob(err, job), false);
     });
 
-    await t.test('a token-endpoint 5xx does not discard the queued message', () => {
-        // The regression: an OAuth2 token refresh failing with a 5xx surfaced as
-        // {code:'ETokenRefresh', statusCode:502}. That statusCode is the token endpoint's, not the
-        // SMTP server's, but the 5xx rule read it as a permanent delivery rejection and discarded a
-        // perfectly good queued message over a provider blip.
-        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+    await t.test('does not discard when all attempts are exhausted', () => {
+        // BullMQ fails the job naturally at that point, so there is nothing to discard.
+        let job = { attemptsMade: 10, opts: { attempts: 10 } };
 
-        for (let statusCode of [500, 502, 504]) {
-            let err = new Error('Token request failed');
-            err.code = 'ETokenRefresh';
-            err.statusCode = statusCode;
-
-            assert.strictEqual(isPermanentDeliveryError(err), false, `a token endpoint ${statusCode} must not be permanent`);
-            assert.strictEqual(shouldDiscardJob(err, job), false, `a token endpoint ${statusCode} must not discard the job`);
-        }
-    });
-
-    await t.test('a transient Gmail API 5xx does not discard the queued message', () => {
-        // Same class as the token-endpoint regression: GMAIL_ERROR_MAP maps INTERNAL to
-        // {code:'InternalError', status:500} (gmail/gmail-api.js). That 500 is a Google-side server
-        // error during send - the textbook case for a retry - but it matched the SMTP 5xx rule and
-        // dropped the message.
-        let job = { attemptsMade: 1, opts: { attempts: 10 } };
-
-        let err = new Error('Backend error');
-        err.code = 'InternalError';
-        err.statusCode = 500;
-
-        assert.strictEqual(isPermanentDeliveryError(err), false, 'a Gmail INTERNAL must not be permanent');
-        assert.strictEqual(shouldDiscardJob(err, job), false, 'a Gmail INTERNAL must not discard the job');
-    });
-
-    await t.test('an RPC timeout to the IMAP worker does not discard the queued message', () => {
-        // workers/submit.js call() rejects with {code:'Timeout', statusCode:504} when the IMAP
-        // worker does not answer in time. The message never reached a mail server, but 504 matched
-        // the SMTP 5xx rule, so a loaded instance silently discarded queued mail. The sibling "no
-        // active handler" error already uses 503 for exactly this reason.
-        let job = { attemptsMade: 1, opts: { attempts: 10 } };
-
-        let err = new Error('Timeout waiting for command response [T5]');
-        err.code = 'Timeout';
-        err.statusCode = 504;
-
-        assert.strictEqual(isPermanentDeliveryError(err), false, 'an RPC timeout must not be permanent');
-        assert.strictEqual(shouldDiscardJob(err, job), false, 'an RPC timeout must not discard the job');
-    });
-
-    await t.test("Outlook's deliberate 500 for a malformed message is still permanent", () => {
-        // outlook-client.js forges `statusCode = 500 // do not retry sending` for a Graph HTTP 400
-        // "Invalid message format". A malformed message fails every retry, so this must stay
-        // permanent - it is the case that keeps the retryable set a deliberate allowlist rather
-        // than a blanket "API 5xx is transient" rule.
-        let job = { attemptsMade: 1, opts: { attempts: 10 } };
-
-        let err = new Error('Invalid message format');
-        err.code = 'InvalidMessage';
-        err.statusCode = 500;
-
-        assert.strictEqual(isPermanentDeliveryError(err), true);
-        assert.strictEqual(shouldDiscardJob(err, job), true);
-    });
-
-    await t.test('a genuine SMTP 5xx is still permanent', () => {
-        // Guards against over-fixing: the carve-out is keyed on the token-refresh code, so an
-        // ordinary 5xx from the mail server must still discard.
-        let job = { attemptsMade: 1, opts: { attempts: 10 } };
-
-        let err = new Error('550 mailbox unavailable');
-        err.statusCode = 550;
-
-        assert.strictEqual(isPermanentDeliveryError(err), true);
-        assert.strictEqual(shouldDiscardJob(err, job), true);
+        assert.strictEqual(shouldDiscardJob(smtpError('Internal server error', 550), job), false);
     });
 
     await t.test('isPermanentDeliveryError tolerates a missing error object', () => {

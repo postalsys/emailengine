@@ -24,10 +24,22 @@ test('shouldInvalidateAccessToken', async t => {
         assert.strictEqual(shouldInvalidateAccessToken({ status: 'insufficient_scope' }), false);
     });
 
-    await t.test('a numeric XOAUTH2 status does not invalidate', () => {
-        // Documents a known gap rather than desired behaviour: XOAUTH2 servers (Microsoft 365) put
-        // the HTTP status here instead of a symbolic code, so stale tokens go uncleared there.
-        assert.strictEqual(shouldInvalidateAccessToken({ status: '401', schemes: 'Bearer' }), false);
+    await t.test('a numeric XOAUTH2 401 invalidates', () => {
+        // XOAUTH2 is what Gmail and Exchange Online actually negotiate - ImapFlow only sends
+        // OAUTHBEARER when the server advertises it - and XOAUTH2 puts an HTTP status here instead
+        // of a symbolic code. Matching only the symbolic codes made the stale-token fix a no-op for
+        // the two providers that dominate OAuth2-IMAP.
+        assert.strictEqual(shouldInvalidateAccessToken({ status: '401', schemes: 'Bearer' }), true);
+        assert.strictEqual(shouldInvalidateAccessToken({ status: 401 }), true);
+    });
+
+    await t.test('a non-401 numeric status does not invalidate', () => {
+        // 401 is the only status that means "this token was rejected". A 400 is a malformed request
+        // and a 5xx is the server's own problem; a fresh token fixes neither, and refetching on
+        // those would add a token-endpoint round trip to every pass of the reconnect loop.
+        for (let status of ['400', '403', '500', '503']) {
+            assert.strictEqual(shouldInvalidateAccessToken({ status }), false, `status ${status} must not invalidate`);
+        }
     });
 
     await t.test('a missing or empty payload does not invalidate', () => {

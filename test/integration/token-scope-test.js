@@ -19,6 +19,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const tokens = require('../../lib/tokens');
+const settings = require('../../lib/settings');
 const { redis } = require('../../lib/db');
 const registerRedisTeardown = require('../helpers/redis-teardown');
 
@@ -36,16 +37,9 @@ registerRedisTeardown();
 
 test('API token scope and account binding', async t => {
     t.before(async () => {
-        // provision() refuses to mint a token unless an admin password is set, so that a credential
-        // issued during the unprotected first-run window cannot outlive it (see lib/tokens.js).
-        // This harness provisions in-process against the shared test Redis rather than over HTTP,
-        // which is the same trusted-local position the CLI is exempted for. Setting authData
-        // instead would gate the live server's admin UI mid-run and break the UI smoke tests that
-        // share it.
-        const local = { allowWithoutAdminAuth: true };
-        apiToken = await tokens.provision({ scopes: ['api'], description: 'scope-test api', nolog: true }, local);
-        smtpToken = await tokens.provision({ scopes: ['smtp'], description: 'scope-test smtp', nolog: true }, local);
-        accountToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'scope-test account', nolog: true }, local);
+        apiToken = await tokens.provision({ scopes: ['api'], description: 'scope-test api', nolog: true });
+        smtpToken = await tokens.provision({ scopes: ['smtp'], description: 'scope-test smtp', nolog: true });
+        accountToken = await tokens.provision({ account: ACCOUNT, scopes: ['api'], description: 'scope-test account', nolog: true });
     });
 
     t.after(async () => {
@@ -102,5 +96,42 @@ test('API token scope and account binding', async t => {
         const res = await get(`/v1/account/${ACCOUNT}/mailboxes`, accountToken);
         assert.notEqual(res.status, 401, 'should pass authentication');
         assert.notEqual(res.body && res.body.message, 'Unauthorized account', 'should pass account binding');
+    });
+
+    await t.test('a credential-less caller cannot mint a token while the instance is unprotected', async () => {
+        // With `disableTokens` on, workers/api.js rewrites a request carrying no Authorization
+        // header to `access_token=preauth` and the api-token strategy accepts it - so this route,
+        // which normally requires a real credential, is reachable unauthenticated. A token minted
+        // there would outlive the unprotected window, because nothing invalidates tokens when the
+        // admin password is finally set. That combination has to be refused.
+        //
+        // Safe to flip a global setting here: the integration tier runs serially
+        // (--test-concurrency=1), and it is restored in the finally below.
+        const previous = await settings.get('disableTokens');
+        await settings.set('disableTokens', true);
+        try {
+            const res = await supertest(baseUrl)
+                .post('/v1/token')
+                .send({ account: ACCOUNT, description: 'unauthenticated mint attempt', scopes: ['api'] });
+
+            assert.equal(res.status, 403, `expected 403, got ${res.status}`);
+            assert.match(res.body.message, /admin password/, 'should name the missing precondition');
+        } finally {
+            await settings.set('disableTokens', previous);
+        }
+    });
+
+    await t.test('a real token is not blocked by that gate while the instance is unprotected', async () => {
+        // The other half of the boundary: minting with no admin password set is a supported
+        // headless configuration, so a caller presenting an actual credential must get PAST the
+        // gate. ACCOUNT does not exist, so the handler fails later at loadAccountData() - reaching
+        // that failure is the proof, because the gate runs before it.
+        const res = await supertest(baseUrl)
+            .post('/v1/token')
+            .auth(apiToken, { type: 'bearer' })
+            .send({ account: ACCOUNT, description: 'authenticated mint', scopes: ['api'] });
+
+        assert.notEqual(res.status, 403, 'an authenticated caller must not be refused by the admin-password gate');
+        assert.equal(res.status, 404, `expected the account lookup to be what fails, got ${res.status}`);
     });
 });

@@ -10,18 +10,12 @@ process.env.EENGINE_REDIS_PREFIX = 'test_tokens';
 const tokens = require('../lib/tokens');
 const { redis } = require('../lib/db');
 const { REDIS_PREFIX } = require('../lib/consts');
-const { secureInstance } = require('./helpers/with-auth-data');
 
 test('Token management tests', async t => {
     // Track created tokens for cleanup
     const createdTokens = [];
 
-    // provision() needs an admin password - see lib/tokens.js
-    const restoreAuthData = await secureInstance();
-
     t.after(async () => {
-        await restoreAuthData();
-
         // Cleanup test tokens
         for (const token of createdTokens) {
             try {

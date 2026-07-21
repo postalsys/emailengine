@@ -97,4 +97,21 @@ test('Settings AI text coupling', async t => {
         assert.strictEqual(await settings.get('serviceSecret'), 'keep-me-multi', 'setMulti must not clear the stored secret');
         assert.strictEqual(await settings.get('pageBrandName'), 'Example', 'other keys in the same setMulti must still be stored');
     });
+
+    // isInstanceSecured() is the single spelling of the test that gates
+    // `server.auth.default('session')` in workers/api.js. Routes protected only by that default -
+    // POST /admin/tokens/new mints a '*'-scope API token - are reachable with no credential at all
+    // while it returns false, so they have to gate on it explicitly.
+    //
+    // Safe to exercise here because this suite runs under its own EENGINE_REDIS_PREFIX; authData is
+    // a global setting and mutating it under the shared prefix would race the parallel unit tier.
+    await t.test('isInstanceSecured reports whether an admin password is set', async () => {
+        await settings.set('authData', false);
+        assert.strictEqual(await settings.isInstanceSecured(), false, 'an instance with no admin password is not secured');
+
+        await settings.set('authData', { user: 'admin', password: 'hash', passwordVersion: 1 });
+        assert.strictEqual(await settings.isInstanceSecured(), true, 'an instance with an admin password is secured');
+
+        await settings.set('authData', false);
+    });
 });

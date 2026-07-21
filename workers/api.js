@@ -1109,10 +1109,12 @@ Include your token in requests using one of these methods:
         validate: async (request, token /*, h*/) => {
             let disableTokens = await settings.get('disableTokens');
             if (disableTokens && (!token || token === 'preauth')) {
-                // tokens checks are disabled, allow all if token is not set
+                // tokens checks are disabled, allow all if token is not set.
+                // `preauth` marks a caller that presented NO credential at all - routes that hand
+                // out lasting privilege have to be able to tell that apart from a real token.
                 return {
                     isValid: true,
-                    credentials: {},
+                    credentials: { preauth: true },
                     artifacts: {}
                 };
             }
@@ -1554,8 +1556,7 @@ Include your token in requests using one of these methods:
         }
     }
 
-    const authData = await settings.get('authData');
-    if (authData) {
+    if (await settings.isInstanceSecured()) {
         server.auth.default('session');
     }
 
