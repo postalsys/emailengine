@@ -13,6 +13,7 @@ ee-dist/
 
 # Development configuration
 config/development*
+.env*
 .okta.env
 keylog.txt
 
@@ -24,3 +25,15 @@ manual-test/
 # Build artifacts
 swagger.json
 yarn.lock
+
+# README artwork - served from GitHub, not needed by the package
+screenshots/
+
+# Profiling and crash artifacts - never publish these, they capture process memory
+*.heapsnapshot
+*.cpuprofile
+*.heapprofile
+core.*
+
+# Local logs
+*.log
