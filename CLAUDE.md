@@ -212,7 +212,7 @@ The IMAP worker (`workers/imap.js`) manages all email account connections and sy
 - Account: `pause`, `resume`, `delete`, `getQuota` (IMAP only)
 
 **Error handling:**
-- Auth failures tracked; the account is parked after the threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the system-owned `authFailureDisabled` account field (`ACCOUNT_AUTH_FAILURE_DISABLED_KEY`), honoured on connect by all three transports and cleared on the next successful authentication - not the operator-owned `imap.disabled` setting, which OAuth2 accounts do not have
+- Auth failures tracked; auto-disable after threshold (3-day window, `EENGINE_MAX_IMAP_AUTH_FAILURE_TIME`). The marker is the operator-owned `imap.disabled` setting, so this only applies to password IMAP accounts - it is a no-op for OAuth2 accounts, which have no `imap` object. Extending it to OAuth2 needs a transport-neutral marker plus a working un-park path on every recovery route (`Account.create`, the admin Reconnect button and the edit form all bypassed it on the first attempt)
 - Transient errors (timeout, DNS) trigger reconnection with backoff
 - Permanent errors (5xx) fail immediately
 - Excessive reconnection detection (>20/min triggers warning)
@@ -277,7 +277,7 @@ The submit worker (`workers/submit.js`) processes queued outbound emails via Bul
 - Default: 10 attempts (`deliveryAttempts` setting)
 - Backoff: Exponential starting at 5s (`5s, 10s, 20s, 40s...`)
 - Retries on transient errors (< 500 status code)
-- No retry on permanent 5xx errors (message rejected)
+- No retry on permanent 5xx errors (message rejected), except an OAuth2 token-refresh failure (`err.code === 'ETokenRefresh'`), which always retries - its `statusCode` is the token endpoint's, not an SMTP reply code, so a 5xx there says nothing about the message (see `lib/delivery-error.js`)
 
 **Webhook events:**
 - `messageSent` - Message accepted by SMTP server

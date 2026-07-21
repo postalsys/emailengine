@@ -395,10 +395,7 @@
 
             <dt>Enabled</dt>
 
-            {{!-- connectionBlocked covers both the operator-owned "Disable IMAP" setting and the
-            system park after sustained authentication failures, so this row cannot contradict the
-            state badge above it. --}}
-            {{#if account.connectionBlocked}}
+            {{#if account.imap.disabled}}
             <dd>No</dd>
             {{else}}
             <dd>Yes</dd>
