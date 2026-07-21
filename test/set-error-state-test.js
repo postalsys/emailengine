@@ -21,7 +21,7 @@ const assert = require('node:assert').strict;
 const { BaseClient } = require('../lib/email-client/base-client');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { REDIS_PREFIX, ACCOUNT_AUTH_FAILURE_DISABLED_KEY } = require('../lib/consts');
+const { REDIS_PREFIX, ACCOUNT_AUTH_FAILURE_DISABLED_KEY, ACCOUNT_TOKEN_ERROR_FIRST_KEY } = require('../lib/consts');
 const { clearAuthFailurePark, isConnectionBlocked } = require('../lib/account/account-state');
 
 const noopLogger = { trace() {}, debug() {}, info() {}, warn() {}, error() {}, fatal() {}, child: () => noopLogger };
@@ -51,6 +51,7 @@ function makeCtx(account) {
 }
 
 const setErrorState = (ctx, event, data) => BaseClient.prototype.setErrorState.call(ctx, event, data);
+const clearAuthFailureState = ctx => BaseClient.prototype.clearAuthFailureState.call(ctx);
 const isDisabled = async accountKey => !!(await redis.hget(accountKey, ACCOUNT_AUTH_FAILURE_DISABLED_KEY));
 
 registerRedisTeardown(redis, async () => {
@@ -173,6 +174,68 @@ test('BaseClient.setErrorState', async t => {
 
         assert.strictEqual(await isDisabled(accountKey), false, 'an explicit reconnect or re-authorization must lift the park');
         assert.strictEqual(isConnectionBlocked({ oauth2: { provider: 'gmail' } }), false, 'and the connect gates must let it through again');
+    });
+
+    await t.test('a sustained token-endpoint failure parks the account even as connectError', async () => {
+        // connectError never reaches the authenticationError park switch, so without a separate
+        // window a token endpoint that is down rather than rejecting credentials would retry
+        // forever against a provider quota shared by every account on the same OAuth2 app.
+        const { ctx, accountKey } = makeCtx('seterr-tokenwindow');
+        await redis
+            .multi()
+            .hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail' }))
+            .hset(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY, new Date(Date.now() - 4 * DAY).toISOString())
+            .exec();
+
+        await setErrorState(ctx, 'connectError', { serverResponseCode: 'OauthRenewNetworkError', response: 'fetch failed' });
+        await new Promise(resolve => setImmediate(resolve));
+
+        assert.strictEqual(await isDisabled(accountKey), true, 'a token endpoint failing for the threshold must park the account');
+        assert.strictEqual(await redis.hget(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY), null, 'the window is cleared when the park fires');
+        assert.strictEqual(ctx.closeCalls, 1);
+    });
+
+    await t.test('the token window opens on the first failure and is not restarted by flapping', async () => {
+        // The regression this exists for: setErrorState resets lastError:first whenever
+        // serverResponseCode changes, so a provider alternating between error classes could reset
+        // the auto-disable window on every flip and never park. The token window must not move.
+        const { ctx, accountKey } = makeCtx('seterr-tokenflap');
+        await redis.hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail' }));
+
+        await setErrorState(ctx, 'connectError', { serverResponseCode: 'OauthRenewNetworkError', response: 'fetch failed' });
+        const opened = await redis.hget(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY);
+        assert.ok(opened, 'the first token failure opens the window');
+
+        // Flap to a different classification, then back
+        await setErrorState(ctx, 'authenticationError', { serverResponseCode: 'OauthRenewError', response: 'invalid_grant' });
+        await setErrorState(ctx, 'connectError', { serverResponseCode: 'OauthRenewNetworkError', response: 'fetch failed' });
+
+        assert.strictEqual(await redis.hget(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY), opened, 'reclassification must not restart the token window');
+        assert.strictEqual(await isDisabled(accountKey), false, 'and nothing is parked before the threshold');
+    });
+
+    await t.test('a non-token error does not open the token window', async () => {
+        // Guards against over-reach: an unreachable mail server is not a token endpoint failure and
+        // must keep its existing retry-forever semantics.
+        const { ctx, accountKey } = makeCtx('seterr-nontoken');
+        await redis.hset(accountKey, 'imap', JSON.stringify({ host: 'imap.test', disabled: false }));
+
+        await setErrorState(ctx, 'connectError', { serverResponseCode: 'ECONNREFUSED', response: 'connection refused' });
+
+        assert.strictEqual(await redis.hget(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY), null, 'a mail server failure must not open the token window');
+    });
+
+    await t.test('a successful authentication closes the token window', async () => {
+        const { ctx, accountKey } = makeCtx('seterr-tokenclear');
+        await redis
+            .multi()
+            .hset(accountKey, 'oauth2', JSON.stringify({ provider: 'gmail' }))
+            .hset(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY, new Date(Date.now() - HOUR).toISOString())
+            .exec();
+
+        await clearAuthFailureState(ctx);
+
+        assert.strictEqual(await redis.hget(accountKey, ACCOUNT_TOKEN_ERROR_FIRST_KEY), null, 'recovering must not leave a stale window to park on later');
     });
 
     await t.test('a different error code is treated as a new first occurrence', async () => {

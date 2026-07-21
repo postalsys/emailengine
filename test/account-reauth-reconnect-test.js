@@ -273,3 +273,87 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'reconnect was attempted');
     });
 });
+
+// The auth-failure park (ACCOUNT_AUTH_FAILURE_DISABLED_KEY) is the only terminal backstop on the
+// reconnect loop, so what lifts it matters as much as what sets it.
+const { ACCOUNT_AUTH_FAILURE_DISABLED_KEY } = require('../lib/consts');
+
+function createParkCtx(oldAccountData) {
+    const hdelFields = [];
+    const redis = Object.assign(createMockRedis(), {
+        hdel: async (key, ...fields) => {
+            hdelFields.push(...fields);
+        }
+    });
+
+    const ctx = {
+        account: oldAccountData.account,
+        timeout: 1000,
+        logger: createMockLogger(),
+        redis,
+        getAccountKey: () => `iad:${oldAccountData.account}`,
+        serializeAccountData: () => ({}),
+        loadAccountData: async () => oldAccountData,
+        call: async () => true
+    };
+
+    return { ctx, parkCleared: () => hdelFields.includes(ACCOUNT_AUTH_FAILURE_DISABLED_KEY) };
+}
+
+test('Account.update auth-failure park clearing', async t => {
+    await t.test('an unrelated update does not lift the park', async () => {
+        // The regression: PUT /v1/account/{account} passes reauthorized:true on every call
+        // regardless of payload. Because the park write also clears the error counters, re-parking
+        // needs a fresh three-day window - so if a bare `{name}` PUT lifted the park, anything
+        // PUTing an account periodically would keep a broken account retrying forever.
+        const { ctx, parkCleared } = createParkCtx({
+            account: 'park1',
+            state: 'unset',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'park1', name: 'Renamed' }, REAUTHORIZED);
+
+        assert.strictEqual(parkCleared(), false, 'a payload with no credential change must leave the park in place');
+    });
+
+    await t.test('re-authorized OAuth2 credentials lift the park', async () => {
+        const { ctx, parkCleared } = createParkCtx({
+            account: 'park2',
+            state: 'unset',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'park2', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.strictEqual(parkCleared(), true, 'fresh OAuth2 tokens must revive a parked account');
+    });
+
+    await t.test('a changed IMAP password lifts the park', async () => {
+        // The park is transport-neutral, so a password account must be recoverable the same way -
+        // this is the admin UI "save credentials" path.
+        const { ctx, parkCleared } = createParkCtx({
+            account: 'park3',
+            state: 'unset',
+            imap: { auth: { user: 'u', pass: 'OLDPASS' } }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'park3', imap: { auth: { user: 'u', pass: 'NEWPASS' } } }, REAUTHORIZED);
+
+        assert.strictEqual(parkCleared(), true, 'a corrected IMAP password must revive a parked account');
+    });
+
+    await t.test('an unflagged update never lifts the park', async () => {
+        // Unattended writers (renewAccessToken, invalidateAccessToken, the Gmail/Outlook init()
+        // rewrites) all reach update() without the flag and must stay inert here.
+        const { ctx, parkCleared } = createParkCtx({
+            account: 'park4',
+            state: 'unset',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'park4', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } });
+
+        assert.strictEqual(parkCleared(), false, 'an unattended credential write must not lift the park');
+    });
+});

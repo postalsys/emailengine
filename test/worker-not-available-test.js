@@ -93,6 +93,35 @@ test('submit worker delivery-error classification', async t => {
         assert.strictEqual(shouldDiscardJob(err, job), false);
     });
 
+    await t.test('a token-endpoint 5xx does not discard the queued message', () => {
+        // The regression: an OAuth2 token refresh failing with a 5xx surfaced as
+        // {code:'ETokenRefresh', statusCode:502}. That statusCode is the token endpoint's, not the
+        // SMTP server's, but the 5xx rule read it as a permanent delivery rejection and discarded a
+        // perfectly good queued message over a provider blip.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        for (let statusCode of [500, 502, 504]) {
+            let err = new Error('Token request failed');
+            err.code = 'ETokenRefresh';
+            err.statusCode = statusCode;
+
+            assert.strictEqual(isPermanentDeliveryError(err), false, `a token endpoint ${statusCode} must not be permanent`);
+            assert.strictEqual(shouldDiscardJob(err, job), false, `a token endpoint ${statusCode} must not discard the job`);
+        }
+    });
+
+    await t.test('a genuine SMTP 5xx is still permanent', () => {
+        // Guards against over-fixing: the carve-out is keyed on the token-refresh code, so an
+        // ordinary 5xx from the mail server must still discard.
+        let job = { attemptsMade: 1, opts: { attempts: 10 } };
+
+        let err = new Error('550 mailbox unavailable');
+        err.statusCode = 550;
+
+        assert.strictEqual(isPermanentDeliveryError(err), true);
+        assert.strictEqual(shouldDiscardJob(err, job), true);
+    });
+
     await t.test('isPermanentDeliveryError tolerates a missing error object', () => {
         assert.strictEqual(isPermanentDeliveryError(null), false);
         assert.strictEqual(isPermanentDeliveryError(undefined), false);
