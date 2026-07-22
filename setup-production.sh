@@ -55,6 +55,10 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
+# Everything this script writes from here on (the .env file and its backup) holds EENGINE_SECRET and
+# generated passwords, so create them owner-only from birth instead of tightening after the fact.
+umask 077
+
 # Create .env file if it doesn't exist
 if [ -f ".env" ]; then
     print_message $YELLOW "Warning: .env file already exists"
@@ -64,8 +68,9 @@ if [ -f ".env" ]; then
         print_message $YELLOW "Setup cancelled. Existing .env file preserved."
         exit 0
     fi
-    # Backup existing .env
-    cp .env .env.backup.$(date +%Y%m%d-%H%M%S)
+    # Backup existing .env. It holds EENGINE_SECRET and generated passwords; umask 077 (set above)
+    # keeps the copy owner-only from creation rather than leaving a world-readable window.
+    cp .env ".env.backup.$(date +%Y%m%d-%H%M%S)"
     print_message $GREEN "✓ Existing .env backed up"
 fi
 
