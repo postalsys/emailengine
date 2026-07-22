@@ -20,6 +20,7 @@ const { Account } = require('../lib/account');
 const { oauth2Apps, isApiBasedApp } = require('../lib/oauth2-apps');
 const { redis, notifyQueue, submitQueue, documentsQueue, getFlowProducer } = require('../lib/db');
 const { MessagePortWritable, pipeToMessagePort } = require('../lib/message-port-stream');
+const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
 const msgpack = require('msgpack5')();
@@ -965,14 +966,7 @@ parentPort.on('message', message => {
         clearTimeout(timer);
         connectionHandler.callQueue.delete(message.mid);
         if (message.error) {
-            let err = new Error(message.error);
-            if (message.code) {
-                err.code = message.code;
-            }
-            if (message.statusCode) {
-                err.statusCode = message.statusCode;
-            }
-            return reject(err);
+            return reject(unpackRpcError(message));
         } else {
             return resolve(message.response);
         }
@@ -993,14 +987,7 @@ parentPort.on('message', message => {
                     message.message.data.raw = message.message.data.raw.length;
                 }
                 logger.error(Object.assign({ msg: 'Command failed' }, message, { err }));
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    error: err.message,
-                    code: err.code,
-                    statusCode: err.statusCode,
-                    info: err.info
-                });
+                parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
             });
     }
 

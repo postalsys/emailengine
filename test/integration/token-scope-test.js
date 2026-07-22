@@ -98,12 +98,12 @@ test('API token scope and account binding', async t => {
         assert.notEqual(res.body && res.body.message, 'Unauthorized account', 'should pass account binding');
     });
 
-    await t.test('a credential-less caller cannot mint a token while the instance is unprotected', async () => {
+    await t.test('a credential-less (preauth) caller cannot mint a token', async () => {
         // With `disableTokens` on, workers/api.js rewrites a request carrying no Authorization
-        // header to `access_token=preauth` and the api-token strategy accepts it - so this route,
-        // which normally requires a real credential, is reachable unauthenticated. A token minted
-        // there would outlive the unprotected window, because nothing invalidates tokens when the
-        // admin password is finally set. That combination has to be refused.
+        // header to `access_token=preauth` and the api-token strategy accepts it, marking the
+        // credentials `{preauth: true}` - so this route, which normally requires a real credential,
+        // becomes reachable unauthenticated. A token minted there is never invalidated, so an
+        // anonymous caller must be refused regardless of whether an admin password is set.
         //
         // Safe to flip a global setting here: the integration tier runs serially
         // (--test-concurrency=1), and it is restored in the finally below.
@@ -115,17 +115,17 @@ test('API token scope and account binding', async t => {
                 .send({ account: ACCOUNT, description: 'unauthenticated mint attempt', scopes: ['api'] });
 
             assert.equal(res.status, 403, `expected 403, got ${res.status}`);
-            assert.match(res.body.message, /admin password/, 'should name the missing precondition');
+            assert.match(res.body.message, /unauthenticated/i, 'should name the missing precondition');
         } finally {
             await settings.set('disableTokens', previous);
         }
     });
 
-    await t.test('a real token is not blocked by that gate while the instance is unprotected', async () => {
-        // The other half of the boundary: minting with no admin password set is a supported
-        // headless configuration, so a caller presenting an actual credential must get PAST the
-        // gate. ACCOUNT does not exist, so the handler fails later at loadAccountData() - reaching
-        // that failure is the proof, because the gate runs before it.
+    await t.test('a real token is not blocked by the preauth gate', async () => {
+        // The other half of the boundary: a caller presenting an actual credential is trusted and
+        // must get PAST the gate (its credentials do not carry the `preauth` marker). ACCOUNT does
+        // not exist, so the handler fails later at loadAccountData() - reaching that failure is the
+        // proof, because the gate runs before it.
         const res = await supertest(baseUrl)
             .post('/v1/token')
             .auth(apiToken, { type: 'bearer' })

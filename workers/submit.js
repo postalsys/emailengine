@@ -43,6 +43,7 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
 const { shouldDiscardJob } = require('../lib/delivery-error');
+const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 let callQueue = new Map();
 let mids = 0;
@@ -444,17 +445,7 @@ parentPort.on('message', message => {
         clearTimeout(timer);
         callQueue.delete(message.mid);
         if (message.error) {
-            let err = new Error(message.error);
-            if (message.code) {
-                err.code = message.code;
-            }
-            if (message.statusCode) {
-                err.statusCode = message.statusCode;
-            }
-            if (message.info) {
-                err.info = message.info;
-            }
-            return reject(err);
+            return reject(unpackRpcError(message));
         } else {
             return resolve(message.response);
         }
@@ -470,13 +461,7 @@ parentPort.on('message', message => {
                 });
             })
             .catch(err => {
-                parentPort.postMessage({
-                    cmd: 'resp',
-                    mid: message.mid,
-                    error: err.message,
-                    code: err.code,
-                    statusCode: err.statusCode
-                });
+                parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
             });
     }
 

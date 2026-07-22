@@ -114,6 +114,7 @@ initSentry('main');
 // Import additional dependencies
 const pathlib = require('path');
 const { redis, queueConf, notifyQueue, submitQueue, documentsQueue, exportQueue } = require('./lib/db');
+const { packRpcError, unpackRpcError } = require('./lib/worker-rpc-error');
 const promClient = require('prom-client');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -1262,17 +1263,7 @@ let spawnWorker = async (type, opts) => {
                 clearTimeout(timer);
                 callQueue.delete(message.mid);
                 if (message.error) {
-                    let err = new Error(message.error);
-                    if (message.code) {
-                        err.code = message.code;
-                    }
-                    if (message.statusCode) {
-                        err.statusCode = message.statusCode;
-                    }
-                    if (message.info) {
-                        err.info = message.info;
-                    }
-                    return reject(err);
+                    return reject(unpackRpcError(message));
                 } else {
                     return resolve(message.response);
                 }
@@ -1309,14 +1300,7 @@ let spawnWorker = async (type, opts) => {
                         }
                     })
                     .catch(err => {
-                        let callPayload = {
-                            cmd: 'resp',
-                            mid: message.mid,
-                            error: err.message,
-                            code: err.code,
-                            statusCode: err.statusCode,
-                            info: err.info
-                        };
+                        let callPayload = Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err));
 
                         try {
                             postMessage(worker, callPayload);
