@@ -21,6 +21,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { IMAPClient } = require('../lib/email-client/imap-client');
+const { STABLE_CONNECTION_TIME } = require('../lib/consts');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -196,5 +197,48 @@ test('IMAPClient.reconnect() guards', async t => {
 
         assert.strictEqual(loadCalls, 2, 'the account data load must be retried after the transient failure');
         assert.strictEqual(client._connecting, false);
+    });
+});
+
+// The two post-drop reconnect paths (the 'error' and 'close' handlers) share
+// one age policy: only surviving STABLE_CONNECTION_TIME validates a
+// connection. A server that accepts the full connection setup and then drops
+// the connection passes a "successful" setup on every cycle, which resets the
+// sync-gated backoffs - the survival-gated close backoff is the only thing
+// standing between such a server and an unthrottled login loop (measured ~17
+// logins/sec pre-fix), so both handlers must consult it no matter whether the
+// drop surfaces as an error event or a bare close.
+test('IMAPClient drop-path reconnect throttle', async t => {
+    await t.test('only connection survival validates and resets the close backoff', () => {
+        const client = makeClient();
+
+        assert.equal(client.validateConnectionAge({ connectionStartTime: Date.now() }), false, 'a fresh connection must not count as validated');
+
+        client.closeReconnectBackoff.nextDelay();
+        assert.ok(client.closeReconnectBackoff.attempts > 0);
+
+        assert.equal(
+            client.validateConnectionAge({ connectionStartTime: Date.now() - STABLE_CONNECTION_TIME - 1000 }),
+            true,
+            'a connection that outlived the stability threshold must count as validated'
+        );
+        assert.equal(client.closeReconnectBackoff.attempts, 0, 'proven survival must reset the close backoff');
+    });
+
+    await t.test('scheduleReconnect debounces into the single reconnect timer slot', () => {
+        const client = makeClient();
+        client.reconnect = async () => {};
+
+        client.scheduleReconnect(client.closeReconnectBackoff, 'test scheduling');
+        const timer = client.reconnectTimer;
+        assert.ok(timer, 'a reconnect timer must be armed');
+        assert.equal(client.closeReconnectBackoff.attempts, 1, 'scheduling must advance the backoff');
+
+        client.scheduleReconnect(client.closeReconnectBackoff, 'test scheduling');
+        assert.equal(client.reconnectTimer, timer, 'a pending timer must not be replaced');
+        assert.equal(client.closeReconnectBackoff.attempts, 1, 'a debounced call must not advance the backoff');
+
+        clearTimeout(client.reconnectTimer);
+        client.reconnectTimer = null;
     });
 });

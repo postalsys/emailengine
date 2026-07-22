@@ -35,7 +35,11 @@ const CONNECT_TIMEOUT = 30000;
 //   SELECT is rejected with NO [NONEXISTENT] - the bug scenario
 // - sharedStatus 'no': STATUS is rejected as well - control scenario
 // - listNonExistent: the root is listed with a \NonExistent flag (RFC 5258)
-function startMockImap({ sharedStatus = 'ok', listNonExistent = false } = {}) {
+// - killOnPhantomSelect: the NO reply is followed by the server dropping the
+//   connection, like a Dovecot session dying on the failed SELECT of a broken
+//   shared namespace root (seen in the wild; the drop used to cause an
+//   unthrottled reconnect loop)
+function startMockImap({ sharedStatus = 'ok', listNonExistent = false, killOnPhantomSelect = false } = {}) {
     const counters = { connects: 0, logins: 0, sharedSelects: 0, sharedStatuses: 0 };
     const sockets = new Set();
 
@@ -136,6 +140,11 @@ function startMockImap({ sharedStatus = 'ok', listNonExistent = false } = {}) {
                     if (path === SHARED) {
                         counters.sharedSelects++;
                         send(`${tag} NO [NONEXISTENT] Mailbox doesn't exist: ${SHARED}`);
+                        if (killOnPhantomSelect) {
+                            // let the NO reach the client first, then drop the
+                            // connection like a dying server session would
+                            setTimeout(() => socket.destroy(), 25);
+                        }
                     } else {
                         selectOk(tag);
                     }
@@ -234,7 +243,8 @@ test('Phantom folder handling', async t => {
     const accounts = {
         selectNo: `phantom-ok-${suffix}`,
         statusNo: `phantom-statusno-${suffix}`,
-        nonExistent: `phantom-nonexistent-${suffix}`
+        nonExistent: `phantom-nonexistent-${suffix}`,
+        killer: `phantom-killer-${suffix}`
     };
     const mocks = [];
 
@@ -324,5 +334,41 @@ test('Phantom folder handling', async t => {
 
         assert.equal(nonExistentMock.counters.sharedStatuses, 0, 'the \\NonExistent folder must not be queried with STATUS');
         assert.equal(nonExistentMock.counters.sharedSelects, 0, 'the \\NonExistent folder must not be selected');
+    });
+
+    await t.test('server that drops the connection on a failed SELECT settles instead of login-storming', { timeout: 120000 }, async () => {
+        const killMock = await startMockImap({ killOnPhantomSelect: true });
+        mocks.push(killMock);
+
+        await server.post(`/v1/account`).send(accountPayload(accounts.killer, killMock.port)).expect(200);
+
+        // Every connection dies right after the phantom SELECT, so the account
+        // can only settle once (a) close-triggered reconnects of short-lived
+        // connections are throttled instead of immediate, and (b) the phantom
+        // marker parks the folder after PHANTOM_SELECT_FAIL_THRESHOLD failed
+        // passes, letting the next connection survive. Pre-fix this looped at
+        // roughly 17 logins per second indefinitely.
+        let stable = { logins: -1, since: 0 };
+        await waitForCondition(
+            async () => {
+                const response = await server.get(`/v1/account/${accounts.killer}`).expect(200);
+                if (killMock.counters.logins !== stable.logins) {
+                    stable = { logins: killMock.counters.logins, since: Date.now() };
+                    return false;
+                }
+                // connected with no new logins for 6 seconds = settled
+                return response.body.state === 'connected' && Date.now() - stable.since >= 6000;
+            },
+            { timeout: 90000, message: `Account ${accounts.killer} did not settle` }
+        );
+
+        assert.ok(killMock.counters.logins <= 8, `settling must take a handful of logins, not a storm (got ${killMock.counters.logins})`);
+        assert.ok(killMock.counters.sharedSelects <= 8, `the phantom folder must stop being probed (got ${killMock.counters.sharedSelects} SELECTs)`);
+
+        // the folder is parked for syncing but must still show up in listings
+        const response = await server.get(`/v1/account/${accounts.killer}/mailboxes`).expect(200);
+        const paths = response.body.mailboxes.map(entry => entry.path);
+        assert.ok(paths.includes('INBOX'), 'INBOX must be listed');
+        assert.ok(paths.includes(SHARED), 'the phantom folder must still be listed');
     });
 });

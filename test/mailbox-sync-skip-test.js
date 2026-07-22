@@ -47,7 +47,7 @@ require.cache[getSecretPath] = {
 
 // Now safe to import
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
-const { MAILBOX_NEW_NOTIFY } = require('../lib/consts');
+const { MAILBOX_NEW_NOTIFY, PHANTOM_SELECT_FAIL_THRESHOLD, PHANTOM_REPROBE_INTERVAL } = require('../lib/consts');
 
 // Regression tests for promise settlement in the Mailbox sync flow:
 // sync() SELECT-failure handling, sync()/select() behavior when a concurrent
@@ -75,6 +75,8 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
     let listingCalls = 0;
     const mockListing = [{ path: 'Other Folder' }];
     const processedListings = [];
+    // In-memory stand-in for the mailbox state hash (phantom marker storage)
+    const mailboxHash = new Map();
 
     const ctx = {
         path: 'Shared Folders',
@@ -91,6 +93,7 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
             error() {}
         },
         getNotificationsKey: () => 'test-notifications-key',
+        getMailboxKey: () => 'iam:test-account:h:KEY',
         connection: {
             account: 'test-account',
             getCurrentListing: async () => {
@@ -108,7 +111,14 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
                 return await this.processListing(listing);
             },
             redis: {
-                exists: async () => 0
+                exists: async () => 0,
+                hget: async (key, field) => (mailboxHash.has(field) ? mailboxHash.get(field) : null),
+                hset: async (key, field, value) => {
+                    mailboxHash.set(field, value);
+                },
+                hdel: async (key, field) => {
+                    mailboxHash.delete(field);
+                }
             },
             imapClient: {
                 currentLock: null,
@@ -139,10 +149,13 @@ function createMockContext({ selectError, statusResult, statusError, listingErro
         // Use the real select/getMailboxLock implementations so the rejection
         // travels the same path as in production
         select: Mailbox.prototype.select,
-        getMailboxLock: Mailbox.prototype.getMailboxLock
+        getMailboxLock: Mailbox.prototype.getMailboxLock,
+        getPhantomState: Mailbox.prototype.getPhantomState,
+        setPhantomState: Mailbox.prototype.setPhantomState,
+        clearPhantomState: Mailbox.prototype.clearPhantomState
     };
 
-    return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls, processedListings, mockListing };
+    return { ctx, warnCalls, lockCalls: () => lockCalls, listingCalls: () => listingCalls, processedListings, mockListing, mailboxHash };
 }
 
 test('Mailbox.sync() select failure handling', async t => {
@@ -233,6 +246,95 @@ test('Mailbox.sync() select failure handling', async t => {
         assert.equal(lockCalls(), 0, 'SELECT must not be attempted for a folder missing at STATUS');
         assert.equal(listingCalls(), 1, 'listing must be refreshed');
         assert.equal(processedListings.length, 1, 'refreshed listing must be processed so new folders are registered and synced');
+    });
+});
+
+// --- phantom marker: repeated SELECT failures park the folder instead of probing forever ---
+//
+// On some servers (Dovecot shared namespace roots) the failed SELECT poisons
+// the server-side session, which then gets killed and tears down the whole
+// account connection - re-attempting the SELECT on every sync pass turns that
+// into a permanent reconnect loop. After PHANTOM_SELECT_FAIL_THRESHOLD
+// consecutive failures the folder is treated like \Noselect: the SELECT is
+// skipped until the re-probe interval passes or the STATUS counters change,
+// and a successful SELECT clears the marker.
+
+test('Mailbox.sync() phantom folder marker', async t => {
+    const phantomSelectError = () =>
+        Object.assign(new Error('Command failed'), {
+            responseStatus: 'NO',
+            serverResponseCode: 'NONEXISTENT',
+            responseText: "Mailbox doesn't exist: Shared Folders"
+        });
+
+    // Seed a marker at the park threshold; the default statusKey matches the
+    // mock STATUS (uidValidity 1, uidNext 1, messages 0), so each subtest only
+    // overrides the one dimension it exercises
+    const seedMarker = (mailboxHash, overrides = {}) =>
+        mailboxHash.set(
+            'phantomState',
+            JSON.stringify(Object.assign({ count: PHANTOM_SELECT_FAIL_THRESHOLD, time: Date.now(), statusKey: '1:1:0' }, overrides))
+        );
+
+    await t.test('parks the folder after repeated SELECT failures', async () => {
+        const { ctx, warnCalls, lockCalls, mailboxHash } = createMockContext({ selectError: phantomSelectError() });
+
+        for (let i = 0; i < PHANTOM_SELECT_FAIL_THRESHOLD; i++) {
+            await Mailbox.prototype.sync.call(ctx, true);
+        }
+        assert.equal(lockCalls(), PHANTOM_SELECT_FAIL_THRESHOLD, 'every SELECT below the threshold must be attempted');
+
+        const marker = JSON.parse(mailboxHash.get('phantomState'));
+        assert.equal(marker.count, PHANTOM_SELECT_FAIL_THRESHOLD, 'each failure must be counted');
+
+        // the folder is now parked - no further SELECT attempts
+        await Mailbox.prototype.sync.call(ctx, true);
+        await Mailbox.prototype.sync.call(ctx, true);
+        assert.equal(lockCalls(), PHANTOM_SELECT_FAIL_THRESHOLD, 'a parked folder must not be selected again');
+        assert.equal(
+            warnCalls.filter(entry => entry.msg === 'Skipped mailbox that can not be selected').length,
+            PHANTOM_SELECT_FAIL_THRESHOLD,
+            'parked passes must not log new skip warnings'
+        );
+    });
+
+    await t.test('re-probes the folder after the interval passes', async () => {
+        const { ctx, lockCalls, mailboxHash } = createMockContext({ selectError: phantomSelectError() });
+
+        seedMarker(mailboxHash, { time: Date.now() - PHANTOM_REPROBE_INTERVAL - 1000 });
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 1, 'an expired marker must allow a re-probe');
+        const marker = JSON.parse(mailboxHash.get('phantomState'));
+        assert.equal(marker.count, PHANTOM_SELECT_FAIL_THRESHOLD + 1, 'the failed re-probe must extend the marker');
+    });
+
+    await t.test('re-probes right away when the STATUS counters change', async () => {
+        const { ctx, lockCalls, mailboxHash } = createMockContext({ selectError: phantomSelectError() });
+
+        // marker is fresh, but the folder now reports different counters -
+        // something appeared in it, so it may have become selectable
+        seedMarker(mailboxHash, { statusKey: '1:5:2' });
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 1, 'changed STATUS counters must trigger an immediate re-probe');
+    });
+
+    await t.test('a successful SELECT clears the marker', async () => {
+        const { ctx, lockCalls, mailboxHash } = createMockContext();
+
+        seedMarker(mailboxHash, { time: Date.now() - PHANTOM_REPROBE_INTERVAL - 1000 });
+
+        // the re-probe succeeds: the granted lock finds the mailbox already
+        // selected, which settles the armed sync resolver
+        ctx.connection.imapClient.mailbox = { path: 'Shared Folders' };
+
+        await Mailbox.prototype.sync.call(ctx, true);
+
+        assert.equal(lockCalls(), 1, 'the re-probe SELECT must be attempted');
+        assert.equal(mailboxHash.has('phantomState'), false, 'a successful SELECT must clear the marker');
     });
 });
 
