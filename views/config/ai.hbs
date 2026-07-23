@@ -90,7 +90,9 @@
                 {{#> ui/form-field id="openAiAPIUrl" label="API Endpoint" error=errors.openAiAPIUrl}}
                 <input type="url" class="input{{#if errors.openAiAPIUrl}} is-invalid{{/if}}" id="openAiAPIUrl"
                     name="openAiAPIUrl" value="{{values.openAiAPIUrl}}" placeholder="https://api.openai.com" />
-                <span class="helper-text">Custom API endpoint. Leave empty for default OpenAI servers.</span>
+                <span class="helper-text">Custom API endpoint for OpenAI-compatible services. Leave empty for the default
+                    OpenAI servers. Include the URL path if the service mounts the API under one - for Azure OpenAI, use
+                    https://&lt;your-resource&gt;.openai.azure.com/openai/v1</span>
                 {{/ui/form-field}}
             </div>
 
