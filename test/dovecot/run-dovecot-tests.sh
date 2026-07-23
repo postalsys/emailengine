@@ -25,7 +25,9 @@ PLATFORM_ARG="${EENGINE_DOVECOT_PLATFORM:+--platform=$EENGINE_DOVECOT_PLATFORM}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-SERVER_LOG="$(mktemp -t emailengine-dovecot-server)"
+# explicit template instead of -t: GNU mktemp requires the X's and treats -t
+# differently from BSD/macOS mktemp
+SERVER_LOG="$(mktemp "${TMPDIR:-/tmp}/emailengine-dovecot-server.XXXXXX")"
 SERVER_PID=""
 
 cd "$PROJECT_DIR"
