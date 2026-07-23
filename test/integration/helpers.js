@@ -5,7 +5,8 @@
 // sendonly-test.js predate this module and keep their own inline copies on purpose (they run as
 // standalone files and are left untouched). The Ethereal/polling implementations live in the
 // cross-tier module test/helpers/ethereal.js (shared with test/e2e); this wrapper only bakes in
-// the integration-tier polling defaults.
+// the integration-tier polling defaults. The Dovecot tier (test/dovecot) also imports
+// ACCESS_TOKEN and waitForCondition from here - it runs against the same test-server setup.
 
 const crypto = require('node:crypto');
 const net = require('node:net');

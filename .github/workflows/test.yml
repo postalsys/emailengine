@@ -100,6 +100,37 @@ jobs:
                   GMAIL_API_ACCOUNT_EMAIL_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_EMAIL_1 }}
                   GMAIL_API_ACCOUNT_REFRESH_1: ${{ secrets.TEST_GMAIL_API_ACCOUNT_REFRESH_1 }}
 
+    dovecot:
+        # Live IMAP tier against a real IMAP4rev2 server (Dovecot 2.4 in Docker);
+        # fully hermetic - needs no external mail accounts. See test/dovecot/README.md
+        name: Live Dovecot Tests (IMAP4rev2)
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 15
+        runs-on: ubuntu-24.04
+        services:
+            redis:
+                image: redis
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm install
+            - name: Run live Dovecot tests
+              run: |
+                  npm run test:dovecot
+              env:
+                  EENGINE_DOVECOT_PLATFORM: linux/amd64
+
     integration:
         name: Integration Tests
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}

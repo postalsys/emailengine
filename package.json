@@ -14,6 +14,7 @@
         "test": "NODE_ENV=test grunt",
         "test:unit": "NODE_ENV=test grunt test-unit",
         "test:integration": "NODE_ENV=test grunt test-integration",
+        "test:dovecot": "./test/dovecot/run-dovecot-tests.sh",
         "test:e2e": "playwright test",
         "test:e2e:install": "playwright install --with-deps chromium",
         "lint": "npx eslint 'lib/**/*.js' 'workers/**/*.js' 'test/**/*.js' server.js Gruntfile.js",
