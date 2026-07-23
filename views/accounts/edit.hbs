@@ -82,6 +82,8 @@
 
             {{> ui/checkbox id="smtp_secure" label="Use TLS" checked=values.smtp_secure error=errors.smtp_secure tooltip="TLS (also known as SSL) is usually only needed when using port 465. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
+            {{> ui/checkbox id="smtp_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.smtp_tls_ignoreCertErrors error=errors.smtp_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the SMTP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
+
         </div>
     </div>
     {{/if}}
