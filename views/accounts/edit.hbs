@@ -44,6 +44,10 @@
 
             {{> ui/checkbox id="imap_secure" label="Use TLS" checked=values.imap_secure error=errors.imap_secure tooltip="TLS (also known as SSL) is usually only needed when using port 993. For other ports EmailEngine falls back to using STARTTLS based encryption."}}
 
+            {{> ui/checkbox id="imap_tls_ignoreCertErrors" label="Allow invalid certificates" checked=values.imap_tls_ignoreCertErrors error=errors.imap_tls_ignoreCertErrors tooltip="Accept self-signed or otherwise invalid TLS certificates when connecting to the IMAP server of this account. The Allow Insecure Email Certificates option on the Security configuration page applies the same override to all accounts."}}
+
+            {{> ui/checkbox id="imap_disableIMAP4rev2" label="Disable IMAP4rev2" checked=values.imap_disableIMAP4rev2 error=errors.imap_disableIMAP4rev2 tooltip="Do not use the IMAP4rev2 protocol revision even if the server supports it. Enable this option if the server advertises IMAP4rev2 but fails when EmailEngine uses it."}}
+
             {{/unless}}
 
             {{> ui/form-field id="imap_sentMailPath" label="Sent Mail folder" value=values.imap_sentMailPath error=errors.imap_sentMailPath lpignore=true placeholder='Folder path like "Sent Mail"' list="available-paths-list" hint='Copies of sent emails will be uploaded to this folder. Leave empty to use the default "Sent Mail" folder for this account.'}}

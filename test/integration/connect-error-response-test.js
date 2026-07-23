@@ -18,11 +18,10 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const net = require('net');
 const crypto = require('crypto');
 const supertest = require('supertest');
 const config = require('@zone-eu/wild-config');
-const { ACCESS_TOKEN, waitForCondition } = require('./helpers');
+const { ACCESS_TOKEN, waitForCondition, startMockImapServer } = require('./helpers');
 
 const server = supertest.agent(`http://127.0.0.1:${config.api.port}`).auth(ACCESS_TOKEN, { type: 'bearer' });
 
@@ -32,94 +31,20 @@ const BAD_TEXT = 'Command Argument Error. 12';
 
 const ERROR_TIMEOUT = 30000;
 
-// Scripted mock IMAP server, just enough protocol for ImapFlow: authentication
-// succeeds, but every LIST/LSUB is rejected with BAD, so the connection setup
-// fails after login and the account lands in the connectError state.
-function startMockImap() {
-    const sockets = new Set();
-
-    const mockServer = net.createServer(socket => {
-        sockets.add(socket);
-        socket.on('close', () => sockets.delete(socket));
-        let buf = '';
-
-        const send = line => {
-            if (!socket.destroyed) {
-                socket.write(line + '\r\n');
-            }
-        };
-
-        send('* OK [CAPABILITY IMAP4rev1 IDLE ID UIDPLUS] Mock IMAP ready.');
-
-        const handle = line => {
-            const m = line.match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/);
-            if (!m) {
-                return;
-            }
-            const [, tag, cmdRaw] = m;
-            const cmd = cmdRaw.toUpperCase();
-
-            switch (cmd) {
-                case 'CAPABILITY':
-                    send('* CAPABILITY IMAP4rev1 IDLE ID UIDPLUS');
-                    send(`${tag} OK Capability completed.`);
-                    break;
-                case 'ID':
-                    send('* ID ("name" "MockIMAP")');
-                    send(`${tag} OK ID completed.`);
-                    break;
-                case 'LOGIN':
-                    send(`${tag} OK [CAPABILITY IMAP4rev1 IDLE ID UIDPLUS] Logged in`);
-                    break;
-                case 'LIST':
-                case 'LSUB':
-                    send(`${tag} BAD ${BAD_TEXT}`);
-                    break;
-                case 'LOGOUT':
-                    send('* BYE Logging out');
-                    send(`${tag} OK Logout completed.`);
-                    socket.end();
-                    break;
-                default:
-                    send(`${tag} OK ${cmd} completed.`);
-            }
-        };
-
-        socket.on('data', chunk => {
-            buf += chunk.toString('binary');
-            let idx;
-            while ((idx = buf.indexOf('\r\n')) >= 0) {
-                const line = buf.slice(0, idx);
-                buf = buf.slice(idx + 2);
-                handle(line);
-            }
-        });
-
-        socket.on('error', () => {});
-    });
-
-    return new Promise(resolve => {
-        mockServer.listen(0, '127.0.0.1', () => {
-            resolve({
-                port: mockServer.address().port,
-                close: () =>
-                    new Promise(done => {
-                        // Destroy lingering client connections first - server.close()
-                        // fires its callback only after every socket has ended, and the
-                        // account keeps retrying against this mock until it is deleted
-                        for (const socket of sockets) {
-                            socket.destroy();
-                        }
-                        mockServer.close(() => done());
-                    })
-            });
-        });
-    });
-}
-
 test('Connection error response is stored as text', async t => {
     const account = `connect-error-${crypto.randomBytes(4).toString('hex')}`;
-    const mock = await startMockImap();
+
+    // Authentication succeeds, but every LIST/LSUB is rejected with BAD, so the
+    // connection setup fails after login and the account lands in connectError
+    const mock = await startMockImapServer({
+        onCommand({ tag, cmd, send }) {
+            if (cmd === 'LIST' || cmd === 'LSUB') {
+                send(`${tag} BAD ${BAD_TEXT}`);
+                return true;
+            }
+            return false;
+        }
+    });
 
     t.after(async () => {
         try {

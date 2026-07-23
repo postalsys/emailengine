@@ -8,6 +8,7 @@
 // the integration-tier polling defaults.
 
 const crypto = require('node:crypto');
+const net = require('node:net');
 const testConfig = require('./test-config');
 const { createUsableTestAccount, waitForCondition: waitForConditionBase, etherealAccountPayload } = require('../helpers/ethereal');
 
@@ -46,4 +47,107 @@ function extractCrumb(setCookie) {
     return null;
 }
 
-module.exports = { createUsableTestAccount, waitForCondition, etherealAccountPayload, signBlob, extractCrumb, SERVICE_SECRET, ACCESS_TOKEN };
+// Scripted mock IMAP server for hermetic connection tests - just enough protocol for ImapFlow
+// to get through the connection setup. Default handlers cover CAPABILITY/ID/LOGIN/LOGOUT and
+// answer everything else with a tagged OK; `onCommand({ tag, cmd, args, send, session })` runs
+// first and takes over a command by returning true (per-connection state can be stashed on
+// `session`; the default LOGIN handler stores the login user in `session.user`). Resolves to
+// `{ port, close }`; `close()` destroys lingering client sockets first, because server.close()
+// fires its callback only after every socket has ended, and accounts keep retrying against the
+// mock until they are deleted. phantom-folder-test.js keeps its own richer inline mock on
+// purpose (a stateful SELECT/STATUS machine with per-folder failure scripting that would bloat
+// this helper); fold it in only if a third test needs that depth.
+function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCommand } = {}) {
+    const sockets = new Set();
+
+    const mockServer = net.createServer(socket => {
+        sockets.add(socket);
+        socket.on('close', () => sockets.delete(socket));
+        let buf = '';
+        const session = {};
+
+        const send = line => {
+            if (!socket.destroyed) {
+                socket.write(line + '\r\n');
+            }
+        };
+
+        send(`* OK [CAPABILITY ${capabilities}] Mock IMAP ready.`);
+
+        const handle = line => {
+            const m = line.match(/^(\S+)\s+(\S+)(?:\s+(.*))?$/);
+            if (!m) {
+                return;
+            }
+            const [, tag, cmdRaw, args] = m;
+            const cmd = cmdRaw.toUpperCase();
+
+            if (onCommand && onCommand({ tag, cmd, args, send, session }) === true) {
+                return;
+            }
+
+            switch (cmd) {
+                case 'CAPABILITY':
+                    send(`* CAPABILITY ${capabilities}`);
+                    send(`${tag} OK Capability completed.`);
+                    break;
+                case 'ID':
+                    send('* ID ("name" "MockIMAP")');
+                    send(`${tag} OK ID completed.`);
+                    break;
+                case 'LOGIN': {
+                    // ImapFlow sends the credentials as quoted strings
+                    const userMatch = (args || '').match(/^"([^"]*)"/);
+                    session.user = userMatch ? userMatch[1] : null;
+                    send(`${tag} OK [CAPABILITY ${capabilities}] Logged in`);
+                    break;
+                }
+                case 'LOGOUT':
+                    send('* BYE Logging out');
+                    send(`${tag} OK Logout completed.`);
+                    socket.end();
+                    break;
+                default:
+                    send(`${tag} OK ${cmd} completed.`);
+            }
+        };
+
+        socket.on('data', chunk => {
+            buf += chunk.toString('binary');
+            let idx;
+            while ((idx = buf.indexOf('\r\n')) >= 0) {
+                const line = buf.slice(0, idx);
+                buf = buf.slice(idx + 2);
+                handle(line);
+            }
+        });
+
+        socket.on('error', () => {});
+    });
+
+    return new Promise(resolve => {
+        mockServer.listen(0, '127.0.0.1', () => {
+            resolve({
+                port: mockServer.address().port,
+                close: () =>
+                    new Promise(done => {
+                        for (const socket of sockets) {
+                            socket.destroy();
+                        }
+                        mockServer.close(() => done());
+                    })
+            });
+        });
+    });
+}
+
+module.exports = {
+    createUsableTestAccount,
+    waitForCondition,
+    etherealAccountPayload,
+    signBlob,
+    extractCrumb,
+    startMockImapServer,
+    SERVICE_SECRET,
+    ACCESS_TOKEN
+};
