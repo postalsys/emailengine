@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-23 07:22+0000\n"
+"POT-Creation-Date: 2026-07-23 15:18+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3201
@@ -99,6 +99,32 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:29
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:33
+#: views/accounts/register/imap-server.hbs:39
+#: views/accounts/register/imap-server.hbs:146
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:39
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:45
+msgid "Continue"
+msgstr ""
+
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
 msgstr ""
@@ -114,12 +140,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:25
 #: views/accounts/register/imap-server.hbs:132
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:39
-#: views/accounts/register/imap-server.hbs:146
-#: views/accounts/register/imap.hbs:33
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:51
@@ -224,26 +244,6 @@ msgstr ""
 
 #: views/accounts/register/imap-server.hbs:483
 msgid "Request failed."
-msgstr ""
-
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:29
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:39
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:45
-msgid "Continue"
 msgstr ""
 
 #: lib/autodetect-imap-settings.js:90
@@ -357,33 +357,33 @@ msgstr ""
 msgid "Indefinite"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:127
+#: lib/ui-routes/route-helpers.js:130
 msgid ""
 "Connection timed out. This usually occurs if you are behind a firewall or "
 "connecting to the wrong port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:130
+#: lib/ui-routes/route-helpers.js:133
 msgid "The server unexpectedly closed the connection."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:133
+#: lib/ui-routes/route-helpers.js:136
 msgid ""
 "The server unexpectedly closed the connection. This usually happens when "
 "attempting to connect to a TLS port without TLS enabled."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:138
+#: lib/ui-routes/route-helpers.js:141
 msgid ""
 "The server refused the connection. This typically occurs if the server is "
 "not running, is overloaded, or you are connecting to the wrong host or port."
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:192
+#: lib/ui-routes/route-helpers.js:195
 msgid "Delegated"
 msgstr ""
 
-#: lib/ui-routes/route-helpers.js:193
+#: lib/ui-routes/route-helpers.js:196
 msgid "Using credentials from \"%s\""
 msgstr ""
 
