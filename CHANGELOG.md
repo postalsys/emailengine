@@ -1,5 +1,49 @@
 # Changelog
 
+## [2.74.0](https://github.com/postalsys/emailengine/compare/v2.73.1...v2.74.0) (2026-07-23)
+
+
+### Features
+
+* **imap:** add a per-account IMAP4rev2 opt-out and account-level TLS certificate override ([59764fd](https://github.com/postalsys/emailengine/commit/59764fd16f5c895b2c3e714fc769482830a19a36))
+* **ui:** add the account-level invalid-certificate override to the SMTP settings as well ([7d1b9e4](https://github.com/postalsys/emailengine/commit/7d1b9e44e91e9a251743e8b61413b4ef91a177b3))
+
+
+### Bug Fixes
+
+* **accounts:** back out the OAuth2 auth-failure park ([bc431bd](https://github.com/postalsys/emailengine/commit/bc431bd3ede97d06f58788c66b7dfa8958380c49))
+* **accounts:** make the auth-failure auto-disable work for OAuth2 accounts ([77f78b4](https://github.com/postalsys/emailengine/commit/77f78b4bd852c1662fee9657d84625ccdc58f143))
+* **api:** require an admin session for the Bull Board queue browser ([392723e](https://github.com/postalsys/emailengine/commit/392723e746a83dc8fc7a96fd4c719114667f8b56))
+* **api:** revert the Bull Board admin-session requirement ([14590b8](https://github.com/postalsys/emailengine/commit/14590b86e1557f3b6284401fbd4e1c06a9a72d01))
+* **ci:** give the Docker builds a cache backend and smoke test by digest ([4554d90](https://github.com/postalsys/emailengine/commit/4554d90b5bf38f649b8c27c65a9c26cf39951e0d))
+* **ci:** smoke-test the image before publishing and harden the allowlist test ([c285fcb](https://github.com/postalsys/emailengine/commit/c285fcbbd258846537447cd730342423e6b2eaf7))
+* **deps:** update dependencies ([3370f0a](https://github.com/postalsys/emailengine/commit/3370f0aa3afeb3b07bb5627602a314ec6aaf89fa))
+* **deps:** update dependencies ([e1256b2](https://github.com/postalsys/emailengine/commit/e1256b296f83be3fe161f38af5087d231c8fa3bf))
+* **deps:** update dependencies (imapflow 1.5.0) ([8cc45ac](https://github.com/postalsys/emailengine/commit/8cc45acacb8572d5cf9a187a34d6d284b57d4b99))
+* **docker:** ship the root-level CLI modules in the image ([a63cb4e](https://github.com/postalsys/emailengine/commit/a63cb4e17b3fac9b8e003914b3472f1da20dd6ec))
+* **gitignore:** cover every local env file, not just the exact name ([16124d5](https://github.com/postalsys/emailengine/commit/16124d5e83cb9ead3a0c8520db7fcb4e5eefedaa))
+* **imap:** park phantom folders and throttle short-lived-connection reconnects ([da97da3](https://github.com/postalsys/emailengine/commit/da97da31eddcb327672daf28938efec11b5e55f7))
+* **imap:** store the connection error response as text, not as a parsed object ([3cf8d2e](https://github.com/postalsys/emailengine/commit/3cf8d2e016ce0e8ce623468689ef6f21a90cd6f1))
+* **oauth:** drop the transient token-refresh carve-out, keep the stale-token fix ([63c2d8c](https://github.com/postalsys/emailengine/commit/63c2d8c261a71158ea5670ddc7e080c690240265))
+* **oauth:** make the transient token-failure and delivery-retry fixes actually fire ([5049fea](https://github.com/postalsys/emailengine/commit/5049fea5f1724d4e7ae2fa6f2b58a642af4f7f6b))
+* **oauth:** report transient token failures instead of stalling on them ([10b3480](https://github.com/postalsys/emailengine/commit/10b348082016f047eda641602bfe370d1195e222))
+* **oauth:** stop reporting a rate-limited token endpoint as bad credentials ([de27fca](https://github.com/postalsys/emailengine/commit/de27fca5ed0c42cabb95553a00323dc82fc422bc))
+* **setup:** create production secret files owner-only ([52f0527](https://github.com/postalsys/emailengine/commit/52f052741558e9b3a5478fe2f0ecc5fb0a1679f9))
+* **submit:** retry transient 4xx SMTP rejections and gate token minting on the request principal ([1688c86](https://github.com/postalsys/emailengine/commit/1688c86522d9e79715569e6735353c333d7e527c))
+* **submit:** stop discarding queued mail on non-SMTP 5xx errors ([f80f475](https://github.com/postalsys/emailengine/commit/f80f4754c76e230db529031c0549caf26468d891))
+* **test:** provision scope-test tokens as a trusted local caller ([20ca781](https://github.com/postalsys/emailengine/commit/20ca7817f3679797bb07e17d00e9b4cd5d6d7c4b))
+* **tokens:** refuse to mint an access token before an admin password is set ([ff3dd47](https://github.com/postalsys/emailengine/commit/ff3dd47b06ebac2d7f861fe66e26549db193a9f8))
+
+
+### Performance Improvements
+
+* **docker:** cache the dependency install and smoke test the CLI in the image ([e275733](https://github.com/postalsys/emailengine/commit/e275733dacc85ba72ea3465013242785c2d7adcf))
+
+
+### Reverts
+
+* back out the OAuth2 token-failure rework, keep the delivery and token fixes ([496ac3d](https://github.com/postalsys/emailengine/commit/496ac3d9c8737fecaf5ccf21bf98d1bd51e7af5c))
+
 ## [2.73.1](https://github.com/postalsys/emailengine/compare/v2.73.0...v2.73.1) (2026-07-21)
 
 
