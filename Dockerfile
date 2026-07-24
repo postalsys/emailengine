@@ -1,5 +1,5 @@
-#  node:22.13.1-alpine
-FROM --platform=${TARGETPLATFORM} node@sha256:e2b39f7b64281324929257d0f8004fb6cb4bf0fdfb9aa8cedb235a766aec31da
+#  node:24.18.0-alpine
+FROM --platform=${TARGETPLATFORM} node@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd
 
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM

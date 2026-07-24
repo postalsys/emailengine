@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-23 15:18+0000\n"
+"POT-Creation-Date: 2026-07-24 07:59+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3201
@@ -26,30 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-msgid "Try Again"
-msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -99,6 +75,38 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+msgid "Try Again"
+msgstr ""
+
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -123,14 +131,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:45
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:22
