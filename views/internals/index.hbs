@@ -15,20 +15,48 @@
 </div>
 {{/if}}
 
+{{#each groups}}
 <div class="card bg-base-100 shadow-md mb-6">
+
+    {{!-- Pool header: worst-member health dot + kind name and purpose on the left;
+          running/expected count and the configured env var (shown once per pool) on
+          the right. --}}
+    <div class="card-header flex flex-wrap items-start justify-between gap-3">
+        <div class="flex items-start gap-2">
+            {{#> ui/tooltip text=healthLabel class="mt-1.5"}}
+            <span class="size-2.5 rounded-full bg-{{healthVariant}} shrink-0"></span>
+            {{/ui/tooltip}}
+            <div>
+                <h6 class="card-title text-primary mb-0">{{description}}</h6>
+                {{#if purpose}}
+                <p class="text-base-content/60 text-sm mt-1 mb-0 max-w-2xl">{{purpose}}</p>
+                {{/if}}
+            </div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+            {{#if hasExpected}}
+            {{#> ui/tooltip text="Worker threads running vs. the number configured to run"}}
+            {{> ui/badge label=countLabel variant=countVariant}}
+            {{/ui/tooltip}}
+            {{else}}
+            {{> ui/badge label=countLabel variant="neutral"}}
+            {{/if}}
+            {{#if configRef}}
+            <span class="text-base-content/60 text-sm whitespace-nowrap"><code>{{configRef}}</code></span>
+            {{/if}}
+        </div>
+    </div>
 
     <div class="overflow-x-auto">
         <table class="table">
 
             <thead>
                 <tr>
-                    <th>Thread Type</th>
-                    <th class="text-end">ID</th>
+                    <th>Status</th>
+                    <th>ID</th>
                     <th>Uptime</th>
                     <th class="text-end">Memory</th>
                     <th class="text-end">Accounts</th>
-                    <th class="text-end">Sent</th>
-                    <th class="text-end">Received</th>
                     <th><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
@@ -36,35 +64,25 @@
             <tbody>
                 {{#each threads}}
                 <tr{{#if isUnresponsive}} class="bg-error/10"{{/if}}>
-                    <td>{{description}}
-
-                        {{#if config}}
-                        {{#> ui/tooltip-rich icon="icon-[tabler--info-circle]"}}
-                        <strong>Configuration</strong><br>
-                        {{config.key}}={{config.value}}
-                        {{/ui/tooltip-rich}}
-                        {{/if}}
-
-                        {{#if isUnresponsive}}
-                        {{> ui/badge label="Unresponsive" variant="error"}}
-                        {{#if errorMessage}}
-                        {{#> ui/tooltip-rich icon="icon-[tabler--alert-triangle] text-error"}}
-                        <strong>Error</strong><br>
-                        {{errorMessage}}
-                        {{/ui/tooltip-rich}}
-                        {{/if}}
-                        {{else if healthBadge}}
-                        {{> ui/badge label=healthBadge variant=healthBadgeType}}
-                        {{/if}}
-
+                    <td>
+                        <span class="inline-flex items-center gap-2">
+                            <span class="size-2.5 rounded-full bg-{{statusVariant}} shrink-0"></span>
+                            <span>{{statusLabel}}</span>
+                            {{#if errorMessage}}
+                            {{#> ui/tooltip-rich icon="icon-[tabler--alert-triangle] text-error"}}
+                            <strong>Error</strong><br>
+                            {{errorMessage}}
+                            {{/ui/tooltip-rich}}
+                            {{/if}}
+                        </span>
                     </td>
-                    <td class="text-end">{{formatInteger threadId userLocale}}</td>
+                    <td><span class="text-base-content/60 font-mono text-sm">#{{formatInteger threadId userLocale}}</span></td>
                     <td>
                         <span class="relative-time" data-time="{{timeStr}}"></span>
                     </td>
                     <td class="text-end">
                         {{#if isUnresponsive}}
-                        <span class="text-error font-bold">{{heapUsed}}</span>
+                        <span class="text-base-content/40">-</span>
                         {{else}}
                         {{heapUsed}}
                         {{/if}}
@@ -77,8 +95,6 @@
                         {{formatInteger accounts userLocale}}
                         {{/if}}
                     </td>
-                    <td class="text-end">{{formatInteger called userLocale}}</td>
-                    <td class="text-end">{{formatInteger messages userLocale}}</td>
                     <td class="relative text-end">
                         {{#> ui/row-actions label="Worker actions"}}
                         <li>
@@ -103,6 +119,7 @@
     </div>
 
 </div>
+{{/each}}
 
 {{#> ui/details summary="About workers" class="card bg-base-100 shadow-md mb-6"}}
 <div>
@@ -110,6 +127,11 @@
         delivery, message submission, and exports. Their counts are set at startup with environment variables such as
         <code>EENGINE_WORKERS</code> (account sync), <code>EENGINE_WORKERS_API</code>, <code>EENGINE_WORKERS_WEBHOOKS</code>,
         and <code>EENGINE_WORKERS_SUBMIT</code>.</p>
+    <p class="mb-4">Most worker types can be scaled to several threads with those variables. The HTTP and API server is
+        the exception: running more than one API worker requires <code>SO_REUSEPORT</code>, which is available only on
+        Linux with Node.js 23.1 or newer. On macOS, Windows, or older Node.js versions EmailEngine falls back to a
+        single API worker even when <code>EENGINE_WORKERS_API</code> is higher, so its count may read lower than
+        configured.</p>
     <p class="mb-4">Use the row actions to restart an individual thread or download a memory snapshot for debugging; a
         row highlighted in red is unresponsive.</p>
     <p class="mb-0"><a href="https://learn.emailengine.app/docs/advanced/performance-tuning" target="_blank"
