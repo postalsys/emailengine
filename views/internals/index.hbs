@@ -56,7 +56,9 @@
                     <th>ID</th>
                     <th>Uptime</th>
                     <th class="text-end">Memory</th>
+                    {{#if showAccounts}}
                     <th class="text-end">Accounts</th>
+                    {{/if}}
                     <th><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
@@ -87,6 +89,7 @@
                         {{heapUsed}}
                         {{/if}}
                     </td>
+                    {{#if ../showAccounts}}
                     <td class="text-end">
                         {{#if accounts}}
                         <a href="/admin/internals/thread/{{threadId}}"
@@ -95,6 +98,7 @@
                         {{formatInteger accounts userLocale}}
                         {{/if}}
                     </td>
+                    {{/if}}
                     <td class="relative text-end">
                         {{#> ui/row-actions label="Worker actions"}}
                         <li>
