@@ -9,10 +9,13 @@
     to ongoing challenges in maintaining consistent synchronization between email accounts and their
     mirrored content on the ElasticSearch server.</p>
 <ul class="list-disc ps-6">
-    <li>The Document Store feature will not be removed from EmailEngine, and you can continue to use it
-        as per your current needs.</li>
-    <li>However, please be aware that as a deprecated feature, it will no longer receive new
-        updates or enhancements.</li>
+    <li>Starting <strong>October 1, 2026</strong>, the Document Store will be removed from EmailEngine
+        releases. After that, syncing emails to ElasticSearch and the related endpoints (chat with email,
+        unified search) will no longer be available.</li>
+    <li>As a deprecated feature, it no longer receives new updates or enhancements.</li>
+    <li>If you want to keep using the Document Store, do not upgrade this EmailEngine instance beyond the
+        last release that still includes it. Be aware that such a frozen version will not receive security
+        updates, so continuing to run it is entirely at your own risk.</li>
 </ul>
 {{/ui/stat-card}}
 

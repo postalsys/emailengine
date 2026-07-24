@@ -259,6 +259,28 @@
                 {{/unless}}
                 {{/unless}}
 
+                {{!-- Deprecated Document Store removal notice. Shown (and not dismissible) on every admin
+                      page whenever the Document Store is genuinely active (feature gate on + setting on).
+                      Rendered as a SOLID error alert (not a stat-card) so it stands out from the page's
+                      white cards. Removal date is 2026-10-01. --}}
+                {{#if showDocumentStore}}
+                <div class="alert alert-error border-2 shadow-lg mb-6 flex items-start gap-4" role="alert">
+                    <span class="icon-[tabler--alert-triangle] size-8 shrink-0 mt-0.5"></span>
+                    <div class="grow">
+                        <h4 class="text-lg font-bold mb-2">Document Store is being removed</h4>
+                        <p class="mb-2">This instance still has the deprecated <strong>Document Store</strong>
+                            enabled. Starting <strong>October 1, 2026</strong>, the Document Store will be removed
+                            from EmailEngine releases. After that, syncing emails to ElasticSearch and the related
+                            endpoints (chat with email, unified search) will no longer be available.</p>
+                        <p class="mb-3">If you want to keep using the Document Store, <strong>do not upgrade</strong>
+                            this EmailEngine instance beyond the last release that still includes it. Be aware that
+                            such a frozen version will <strong>not receive security updates</strong>, so continuing
+                            to run it is entirely at your own risk.</p>
+                        {{> ui/btn href="/admin/config/document-store" variant="neutral" size="sm" icon="icon-[tabler--arrow-right]" label="Review Document Store settings"}}
+                    </div>
+                </div>
+                {{/if}}
+
                 {{{content}}}
 
             </div>
