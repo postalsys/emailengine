@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.74.1](https://github.com/postalsys/emailengine/compare/v2.74.0...v2.74.1) (2026-07-24)
+
+
+### Bug Fixes
+
+* **deps:** update dependencies (@postalsys/email-ai-tools 1.13.14) ([027f065](https://github.com/postalsys/emailengine/commit/027f0654a1a5d844dd02a22d1f594927e4c4e258))
+* **ui:** document Azure OpenAI endpoints and refresh the fallback AI model list ([defef18](https://github.com/postalsys/emailengine/commit/defef1832165069d6657ebdd9a6f0c261631105a))
+* **ui:** group the workers page by kind with pool health and descriptions ([8ae65a9](https://github.com/postalsys/emailengine/commit/8ae65a9e5942c2b24b76b2e815d56725567a3d59))
+* **ui:** show the workers page Accounts column only for email workers ([d0fb2ef](https://github.com/postalsys/emailengine/commit/d0fb2efbb7fccb64469f2333e88d2a6768104bdf))
+* **ui:** warn that Document Store will be removed on 2026-10-01 ([1415af6](https://github.com/postalsys/emailengine/commit/1415af687e24d86846482c292065916c24a9dfae))
+
 ## [2.74.0](https://github.com/postalsys/emailengine/compare/v2.73.1...v2.74.0) (2026-07-23)
 
 
