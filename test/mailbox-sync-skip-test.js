@@ -3,49 +3,11 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-// Mock the db module before any other imports to prevent real Redis/BullMQ
-// connections from being created. The exercised sync() path only uses the
-// mailbox context's own redis stub, so the module-level mocks stay empty.
-const mockQueue = {
-    add: async () => ({}),
-    close: async () => {},
-    on: () => {},
-    off: () => {}
-};
+// Must run before the module under test is required: it pulls in lib/db, which
+// opens real Redis connections at load time. The exercised sync() path only uses
+// the mailbox context's own redis stub.
+require('./helpers/mock-db').installDbMock();
 
-const mockRedis = {};
-
-const dbPath = require.resolve('../lib/db');
-require.cache[dbPath] = {
-    id: dbPath,
-    filename: dbPath,
-    loaded: true,
-    parent: null,
-    children: [],
-    exports: {
-        redis: mockRedis,
-        queueConf: { connection: {} },
-        notifyQueue: mockQueue,
-        submitQueue: mockQueue,
-        documentsQueue: mockQueue,
-        exportQueue: mockQueue,
-        getFlowProducer: () => ({}),
-        REDIS_CONF: {},
-        getRedisURL: () => 'redis://mock'
-    }
-};
-
-const getSecretPath = require.resolve('../lib/get-secret');
-require.cache[getSecretPath] = {
-    id: getSecretPath,
-    filename: getSecretPath,
-    loaded: true,
-    parent: null,
-    children: [],
-    exports: async () => null
-};
-
-// Now safe to import
 const { Mailbox } = require('../lib/email-client/imap/mailbox');
 const { MAILBOX_NEW_NOTIFY, PHANTOM_SELECT_FAIL_THRESHOLD, PHANTOM_REPROBE_INTERVAL } = require('../lib/consts');
 
