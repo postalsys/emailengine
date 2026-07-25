@@ -17,8 +17,7 @@ const util = require('util');
 const { redis } = require('../lib/db');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const { Splitter, Joiner } = require('@zone-eu/mailsplit');
-const { HeadersRewriter } = require('../lib/headers-rewriter');
+const { collectMessage } = require('../lib/smtp-message-processor');
 const settings = require('../lib/settings');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
@@ -112,31 +111,6 @@ for (let level of ['trace', 'debug', 'info', 'warn', 'error', 'fatal']) {
 // without booting this worker. The shared ACCOUNT_CACHE and call() are injected
 // so onAuth caches the Account for later processing steps.
 const onAuth = createSmtpAuthHandler({ accountCache: ACCOUNT_CACHE, call });
-
-function processMessage(stream, session, meta) {
-    meta = meta || {};
-    const splitter = new Splitter();
-    const joiner = new Joiner();
-
-    const headersRewriter = new HeadersRewriter(async headers => {
-        let requestedAccount = headers.getFirst('x-ee-account');
-        headers.remove('x-ee-account');
-        if (requestedAccount) {
-            meta.requestedAccount = requestedAccount;
-        }
-
-        let idempotencyKey = headers.getFirst('x-ee-idempotency-key');
-        headers.remove('x-ee-idempotency-key');
-        if (idempotencyKey) {
-            meta.idempotencyKey = idempotencyKey;
-        }
-    });
-
-    stream.once('error', err => joiner.emit('error', err));
-    headersRewriter.once('error', err => joiner.emit('error', err));
-
-    return stream.pipe(splitter).pipe(headersRewriter).pipe(joiner);
-}
 
 async function checkAccountData(session, messageMeta) {
     let accountObject;
@@ -243,74 +217,59 @@ async function init() {
     };
 
     serverOptions.onData = (rawStream, session, callback) => {
-        let chunks = [];
-        let chunklen = 0;
-
         let messageMeta = {};
-        let stream = processMessage(rawStream, session, messageMeta);
 
-        stream.on('readable', () => {
-            let chunk;
-            while ((chunk = stream.read()) !== null) {
-                if (!stream.sizeExceeded) {
-                    chunks.push(chunk);
-                    chunklen += chunk.length;
+        // Collecting the message lives in lib/smtp-message-processor.js so that the control
+        // header stripping, the stream error handling and the size verdict are unit testable -
+        // this worker can not be required from a test, it boots an SMTP server on load.
+        // collectMessage() rejects on a processing error instead of leaving it unhandled, which
+        // used to kill the entire worker thread rather than the one failing submission.
+        collectMessage(rawStream, messageMeta)
+            .then(async ({ message, sizeExceeded }) => {
+                if (sizeExceeded) {
+                    let err = new Error('Message exceeds fixed maximum message size');
+                    err.responseCode = 552;
+                    throw err;
                 }
-            }
-        });
 
-        stream.on('end', () => {
-            let err;
-            if (stream.sizeExceeded) {
-                err = new Error('Message exceeds fixed maximum message size');
-                err.responseCode = 552;
-                return callback(err);
-            }
+                let accountObject = await checkAccountData(session, messageMeta);
 
-            checkAccountData(session, messageMeta)
-                .then(accountObject => {
-                    let message = Buffer.concat(chunks, chunklen);
+                let payload = {
+                    envelope: {
+                        from: session.envelope.mailFrom.address,
+                        to: session.envelope.rcptTo.map(entry => entry.address)
+                    },
+                    raw: message
+                };
 
-                    let payload = {
-                        envelope: {
-                            from: session.envelope.mailFrom.address,
-                            to: session.envelope.rcptTo.map(entry => entry.address)
-                        },
-                        raw: message
-                    };
+                let res = await accountObject.queueMessage(payload, {
+                    source: 'smtp',
+                    idempotencyKey: messageMeta.idempotencyKey
+                });
 
-                    accountObject
-                        .queueMessage(payload, {
-                            source: 'smtp',
-                            idempotencyKey: messageMeta.idempotencyKey
-                        })
-                        .then(res => {
-                            // queued for later
-                            metrics(logger, 'events', 'inc', {
-                                event: 'smtpSubmitQueued'
-                            });
+                // queued for later
+                metrics(logger, 'events', 'inc', {
+                    event: 'smtpSubmitQueued'
+                });
 
-                            logger.info({
-                                msg: 'Message queued',
-                                account: session.user,
-                                messageId: res.messageId,
-                                sendAt: res.sendAt,
-                                queueId: res.queueId,
-                                idempotency: res.idempotency
-                            });
+                logger.info({
+                    msg: 'Message queued',
+                    account: session.user,
+                    messageId: res.messageId,
+                    sendAt: res.sendAt,
+                    queueId: res.queueId,
+                    idempotency: res.idempotency
+                });
 
-                            return callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
-                        })
-                        .catch(err => {
-                            metrics(logger, 'events', 'inc', {
-                                event: 'smtpSubmitFail'
-                            });
-                            logger.error({ msg: 'Failed to submit message', account: session.user, err });
-                            callback(err);
-                        });
-                })
-                .catch(err => callback(err));
-        });
+                callback(null, `Message queued for delivery as ${res.queueId} (${new Date(res.sendAt).toISOString()})`);
+            })
+            .catch(err => {
+                metrics(logger, 'events', 'inc', {
+                    event: 'smtpSubmitFail'
+                });
+                logger.error({ msg: 'Failed to submit message', account: session.user, err });
+                callback(err);
+            });
     };
 
     let tls = await settings.get('smtpServerTLSEnabled');
