@@ -138,7 +138,7 @@ class ConnectionHandler {
                         .exec()
                         .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
                 } catch (err) {
-                    this.logger.error({ msg: 'Failed to encode log entry', account, entry, err });
+                    logger.error({ msg: 'Failed to encode log entry', account, entry, err });
                 }
             },
             async reload() {
