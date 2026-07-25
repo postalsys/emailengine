@@ -1,14 +1,44 @@
 'use strict';
 
+// Mailbox listing tests.
+//
+// These used to be "simulate what getCurrentListing does" blocks that re-implemented the
+// comparison, the Redis pipeline merge and the Gmail label cache inside the test file, so none
+// of them could fail when the production code changed. They now drive the real code:
+//
+//   * lib/email-client/imap/listing-diff.js  - the pure new/changed/deleted comparison and the
+//     stored-listing encode/decode that IMAPClient.getCurrentListing() runs on every sync pass
+//   * IMAPClient.getCurrentListing()         - the sync pass itself, reached through the
+//     prototype with the LIST call and the per-folder clear stubbed
+//   * Account.getMailboxListing()            - the batched Redis read that backs
+//     GET /v1/account/{account}/mailboxes and the admin folder pickers
+//   * GmailClient.listMailboxes()            - the 60 second detailed-label cache that spares
+//     one API call per label
+//
+// lib/db is stubbed out before any production import so nothing opens a real Redis connection.
+
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const crypto = require('crypto');
 const msgpack = require('msgpack5')();
 
 // --- Mock setup ---
 
 let mockRedisData = {};
 let pipelineCalls = [];
+// Set to a path to make that key's pipeline entry come back as an error, the way ioredis
+// reports a per-command failure inside an otherwise successful pipeline.
+let pipelineErrorKeys = new Set();
+
+// Writes hash fields the way a real round trip through Redis does. ioredis serializes an object
+// argument with Object.keys() and rebuilds the reply with Object.defineProperty (see the hgetall
+// reply transformer in node_modules/ioredis/built/Command.js), so a field literally named
+// __proto__ survives. A plain assignment or Object.assign() here would silently drop it and hide
+// the very bug these tests cover.
+function assignHashFields(target, data) {
+    for (const field of Object.keys(data)) {
+        Object.defineProperty(target, field, { value: data[field], configurable: true, enumerable: true, writable: true });
+    }
+}
 
 function createMockRedis() {
     return {
@@ -16,7 +46,7 @@ function createMockRedis() {
         hget: async (key, field) => (mockRedisData[key] && mockRedisData[key][field]) || null,
         hset: async (key, field, value) => {
             if (!mockRedisData[key]) mockRedisData[key] = {};
-            mockRedisData[key][field] = value;
+            assignHashFields(mockRedisData[key], { [field]: value });
         },
         hgetall: async key => mockRedisData[key] || null,
         hdel: async () => {},
@@ -25,7 +55,7 @@ function createMockRedis() {
         hgetBuffer: async (key, field) => (mockRedisData[key] && mockRedisData[key][field]) || null,
         hmset: async (key, data) => {
             if (!mockRedisData[key]) mockRedisData[key] = {};
-            Object.assign(mockRedisData[key], data);
+            assignHashFields(mockRedisData[key], data);
         },
         multi: () => {
             const ops = [];
@@ -57,10 +87,18 @@ function createMockRedis() {
                     return this;
                 },
                 async exec() {
+                    // Redis refuses an HMSET with no fields at queue time, and EXEC then
+                    // discards the entire transaction: the DEL queued next to it does not run
+                    // either, and ioredis rejects. Reproduced here so a caller that queues an
+                    // empty write is caught by these tests rather than in production.
+                    if (ops.some(op => op.cmd === 'hmset' && !Object.keys(op.data).length)) {
+                        throw new Error('EXECABORT Transaction discarded because of previous errors.');
+                    }
+
                     for (const op of ops) {
                         if (op.cmd === 'hmset') {
                             if (!mockRedisData[op.key]) mockRedisData[op.key] = {};
-                            Object.assign(mockRedisData[op.key], op.data);
+                            assignHashFields(mockRedisData[op.key], op.data);
                         } else if (op.cmd === 'del') {
                             delete mockRedisData[op.key];
                         }
@@ -82,7 +120,11 @@ function createMockRedis() {
                     let results = [];
                     for (const op of ops) {
                         if (op.cmd === 'hgetall') {
-                            results.push([null, mockRedisData[op.key] || null]);
+                            if (pipelineErrorKeys.has(op.key)) {
+                                results.push([new Error('Redis error'), null]);
+                            } else {
+                                results.push([null, mockRedisData[op.key] || null]);
+                            }
                         }
                     }
                     return results;
@@ -93,7 +135,7 @@ function createMockRedis() {
         eval: async () => 1,
         smembers: async () => [],
         srem: async () => {},
-        exists: async () => 0,
+        exists: async key => (mockRedisData[key] ? 1 : 0),
         get: async () => null,
         set: async () => 'OK',
         scan: async () => ['0', []],
@@ -148,613 +190,814 @@ require.cache[getSecretPath] = {
     exports: async () => null
 };
 
-const { normalizePath } = require('../lib/tools');
-const { REDIS_PREFIX, MAILBOX_HASH } = require('../lib/consts');
+const registerRedisTeardown = require('./helpers/redis-teardown');
+const { getMailboxStatusKey } = require('../lib/tools');
+const { REDIS_PREFIX } = require('../lib/consts');
+const { decodeStoredListing, diffMailboxListing, buildStoredListingObject } = require('../lib/email-client/imap/listing-diff');
+const { Account } = require('../lib/account');
+const { IMAPClient } = require('../lib/email-client/imap-client');
 
-test('Mailbox listing performance tests', async t => {
-    t.beforeEach(() => {
-        mockRedisData = {};
-        pipelineCalls = [];
+// One ROOT after-hook for the whole file. Registering the force-exit on the first suite instead
+// would arm a 1s process.exit() timer while the later suites are still running, so on a loaded
+// runner they would vanish from a green report.
+registerRedisTeardown();
+
+const ACCOUNT = 'test-account';
+const accountKey = `${REDIS_PREFIX}iad:${ACCOUNT}`;
+const mailboxListKey = `${REDIS_PREFIX}ial:${ACCOUNT}`;
+
+// Seeds the stored mailbox listing the way getCurrentListing() persists it
+function seedStoredListing(entries) {
+    mockRedisData[mailboxListKey] = buildStoredListingObject(entries);
+}
+
+// Seeds a plain IMAP account whose state keeps getMailboxListing() on the stored-listing path
+// (no LIST round trip): not CONNECTED, not UNSET, not INIT, and the listing key exists.
+function seedAccount(state = 'syncing') {
+    mockRedisData[accountKey] = { account: ACCOUNT, state };
+}
+
+function createAccountObject(callImpl) {
+    return new Account({
+        redis: mockRedis,
+        account: ACCOUNT,
+        call: callImpl || (async () => ({})),
+        secret: 'test-secret'
     });
+}
 
-    // --- Change 1: getCurrentListing O(n) comparison tests ---
-
-    await t.test('getCurrentListing detects new, changed, and deleted mailboxes with Map/Set lookups', async () => {
-        // Simulate what getCurrentListing does with the Map/Set approach
-
-        // Stored listing (from Redis) - has INBOX, Sent, and OldFolder
-        let storedListing = [
+test('Mailbox listing comparison (listing-diff)', async t => {
+    await t.test('detects new, changed and deleted mailboxes in one pass', () => {
+        const stored = [
             { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
             { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
             { path: 'OldFolder', delimiter: '/', specialUseSource: undefined, noInferiors: false }
         ];
 
-        // Server listing - has INBOX (changed delimiter), Sent (unchanged), NewFolder (new)
-        let listing = [
+        const listing = [
+            // delimiter changed
             { path: 'INBOX', delimiter: '.', specialUseSource: 'extension', noInferiors: false },
+            // unchanged
             { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
+            // new
             { path: 'NewFolder', delimiter: '/', specialUseSource: undefined, noInferiors: false }
         ];
 
-        // Build lookup map from stored listing (the fix)
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, stored);
 
-        let hasChanges = false;
-
-        // Detect new/changed
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            } else if (
-                existingMailbox.delimiter !== mailbox.delimiter ||
-                existingMailbox.specialUseSource !== mailbox.specialUseSource ||
-                existingMailbox.noInferiors !== mailbox.noInferiors
-            ) {
-                hasChanges = true;
-            }
-        }
-
-        // Detect deleted
-        const listingPathSet = new Set(listing.map(mailbox => normalizePath(mailbox.path)));
-        let deletedPaths = [];
-        for (let entry of storedListing) {
-            if (!listingPathSet.has(normalizePath(entry.path))) {
-                deletedPaths.push(entry.path);
-                hasChanges = true;
-            }
-        }
-
-        assert.ok(hasChanges, 'Should detect changes');
-        assert.ok(listing[2].isNew, 'NewFolder should be marked as new');
-        assert.strictEqual(listing[0].isNew, undefined, 'INBOX should not be marked as new (it exists but changed)');
-        assert.deepStrictEqual(deletedPaths, ['OldFolder'], 'OldFolder should be detected as deleted');
+        assert.strictEqual(hasChanges, true);
+        assert.deepStrictEqual(
+            listing.filter(entry => entry.isNew).map(entry => entry.path),
+            ['NewFolder'],
+            'only the unseen folder carries the one-shot isNew flag that triggers mailboxNew'
+        );
+        assert.deepStrictEqual(
+            deletedEntries.map(entry => entry.path),
+            ['OldFolder']
+        );
     });
 
-    await t.test('getCurrentListing handles case-insensitive INBOX normalization', async () => {
-        let storedListing = [{ path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false }];
-
-        let listing = [{ path: 'inbox', delimiter: '/', specialUseSource: 'extension', noInferiors: false }];
-
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
-
-        let existingMailbox = storedListingMap.get(normalizePath(listing[0].path));
-        assert.ok(existingMailbox, 'Should find INBOX via case-insensitive normalization');
-    });
-
-    await t.test('getCurrentListing handles large folder counts efficiently', async () => {
-        let count = 5000;
-        let storedListing = [];
-        let listing = [];
-
-        for (let i = 0; i < count; i++) {
-            storedListing.push({ path: `Folder${i}`, delimiter: '/', specialUseSource: undefined, noInferiors: false });
-            listing.push({ path: `Folder${i}`, delimiter: '/', specialUseSource: undefined, noInferiors: false });
-        }
-
-        // Add one new, remove one old
-        listing.push({ path: 'BrandNew', delimiter: '/', specialUseSource: undefined, noInferiors: false });
-        storedListing.push({ path: 'WillBeDeleted', delimiter: '/', specialUseSource: undefined, noInferiors: false });
-
-        const start = Date.now();
-
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
-
-        let hasChanges = false;
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            }
-        }
-
-        const listingPathSet = new Set(listing.map(mailbox => normalizePath(mailbox.path)));
-        let deletedCount = 0;
-        for (let entry of storedListing) {
-            if (!listingPathSet.has(normalizePath(entry.path))) {
-                deletedCount++;
-                hasChanges = true;
-            }
-        }
-
-        let elapsed = Date.now() - start;
-
-        assert.ok(hasChanges, 'Should detect changes');
-        assert.ok(listing[count].isNew, 'BrandNew should be marked as new');
-        assert.strictEqual(deletedCount, 1, 'Should detect one deleted folder');
-        assert.ok(elapsed < 500, `Should complete in under 500ms for ${count} folders, took ${elapsed}ms`);
-    });
-
-    await t.test('getCurrentListing marks all entries as new when stored listing is empty', async () => {
-        let storedListing = [];
-        let listing = [
+    await t.test('identical listings report no changes and no isNew flags', () => {
+        const entries = () => [
             { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
             { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
-            { path: 'Drafts', delimiter: '/', specialUseSource: 'extension', noInferiors: false }
+            { path: 'Archive/2024', delimiter: '/', specialUseSource: undefined, noInferiors: false }
         ];
 
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
+        const listing = entries();
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, entries());
 
-        let hasChanges = false;
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            }
-        }
-
-        assert.ok(hasChanges, 'Should detect changes when stored listing is empty');
-        for (let mailbox of listing) {
-            assert.ok(mailbox.isNew, `${mailbox.path} should be marked as new`);
-        }
+        assert.strictEqual(hasChanges, false, 'a no-op sync must not rewrite the listing hash');
+        assert.deepStrictEqual(deletedEntries, []);
+        assert.ok(!listing.some(entry => entry.isNew));
     });
 
-    await t.test('getCurrentListing detects no changes when listings are identical', async () => {
-        let entries = [
-            { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false },
+    await t.test('INBOX is matched case-insensitively so a re-cased server does not churn', () => {
+        // Servers are inconsistent about "INBOX" vs "Inbox"; normalizePath() folds the case.
+        // Without it every sync would report the folder as both deleted and new, re-emitting
+        // mailboxNew and wiping the message index each pass.
+        const listing = [{ path: 'Inbox', delimiter: '/', specialUseSource: 'extension', noInferiors: false }];
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, [
+            { path: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false }
+        ]);
+
+        assert.strictEqual(hasChanges, false);
+        assert.deepStrictEqual(deletedEntries, []);
+        assert.ok(!listing[0].isNew);
+    });
+
+    await t.test('case matters for every other folder name', () => {
+        // Only INBOX is case-insensitive per RFC 3501; "Sent" and "sent" are distinct folders.
+        const listing = [{ path: 'sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false }];
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, [
             { path: 'Sent', delimiter: '/', specialUseSource: 'extension', noInferiors: false }
-        ];
-        let storedListing = entries.map(e => ({ ...e }));
-        let listing = entries.map(e => ({ ...e }));
+        ]);
 
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
-
-        let hasChanges = false;
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            } else if (
-                existingMailbox.delimiter !== mailbox.delimiter ||
-                existingMailbox.specialUseSource !== mailbox.specialUseSource ||
-                existingMailbox.noInferiors !== mailbox.noInferiors
-            ) {
-                hasChanges = true;
-            }
-        }
-
-        const listingPathSet = new Set(listing.map(mailbox => normalizePath(mailbox.path)));
-        for (let entry of storedListing) {
-            if (!listingPathSet.has(normalizePath(entry.path))) {
-                hasChanges = true;
-            }
-        }
-
-        assert.ok(!hasChanges, 'Should not detect changes when listings are identical');
+        assert.strictEqual(hasChanges, true);
+        assert.strictEqual(listing[0].isNew, true);
+        assert.deepStrictEqual(
+            deletedEntries.map(e => e.path),
+            ['Sent']
+        );
     });
 
-    await t.test('getCurrentListing handles special characters and prototype-named paths', async () => {
-        let storedListing = [
-            { path: 'Gesendet/Entwurfe', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: '__proto__', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: 'constructor', delimiter: '/', specialUseSource: undefined, noInferiors: false }
+    await t.test('every entry is new when nothing is stored yet (first sync)', () => {
+        const listing = [
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'Sent', delimiter: '/', noInferiors: false },
+            { path: 'Drafts', delimiter: '/', noInferiors: false }
         ];
 
-        let listing = [
-            { path: 'Gesendet/Entwurfe', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: '__proto__', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: 'constructor', delimiter: '/', specialUseSource: undefined, noInferiors: false }
-        ];
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, []);
 
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
-
-        let hasChanges = false;
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            }
-        }
-
-        assert.ok(!hasChanges, 'Should find all entries including prototype-named paths');
-        assert.strictEqual(storedListingMap.size, 3, 'Map should have 3 entries');
-        assert.ok(storedListingMap.has('__proto__'), '__proto__ should be a valid Map key');
-        assert.ok(storedListingMap.has('constructor'), 'constructor should be a valid Map key');
+        assert.strictEqual(hasChanges, true);
+        assert.deepStrictEqual(deletedEntries, []);
+        assert.strictEqual(listing.filter(entry => entry.isNew).length, 3);
     });
 
-    await t.test('getCurrentListing handles deeply nested paths', async () => {
-        let storedListing = [
-            { path: 'A/B/C/D/E', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: 'X.Y.Z', delimiter: '.', specialUseSource: undefined, noInferiors: false }
+    await t.test('folder names that collide with Object.prototype keys are handled', () => {
+        // The lookup is a Map, not a plain object, so "constructor"/"__proto__" folders can not
+        // resolve to inherited properties and be mistaken for already-known folders.
+        const listing = [
+            { path: '__proto__', delimiter: '/', noInferiors: false },
+            { path: 'constructor', delimiter: '/', noInferiors: false },
+            { path: 'toString', delimiter: '/', noInferiors: false },
+            { path: 'Folder with spaces & symbols!', delimiter: '/', noInferiors: false }
         ];
 
-        let listing = [
-            { path: 'A/B/C/D/E', delimiter: '/', specialUseSource: undefined, noInferiors: false },
-            { path: 'X.Y.Z', delimiter: '.', specialUseSource: undefined, noInferiors: false }
-        ];
+        const { hasChanges } = diffMailboxListing(listing, []);
 
-        const storedListingMap = new Map();
-        for (const entry of storedListing) {
-            storedListingMap.set(normalizePath(entry.path), entry);
-        }
-
-        let hasChanges = false;
-        for (let mailbox of listing) {
-            let existingMailbox = storedListingMap.get(normalizePath(mailbox.path));
-            if (!existingMailbox) {
-                mailbox.isNew = true;
-                hasChanges = true;
-            }
-        }
-
-        assert.ok(!hasChanges, 'Should match deeply nested paths');
-        assert.ok(storedListingMap.has('A/B/C/D/E'), 'Deep slash path should be found');
-        assert.ok(storedListingMap.has('X.Y.Z'), 'Deep dot path should be found');
+        assert.strictEqual(hasChanges, true);
+        assert.strictEqual(listing.filter(entry => entry.isNew).length, 4, 'every prototype-named folder must be reported as new exactly once');
     });
 
-    // --- Change 2: getMailboxListing Redis pipeline tests ---
-
-    await t.test('getMailboxListing uses pipeline for batch Redis lookups', async () => {
-        let paths = ['INBOX', 'Sent', 'Drafts'];
-        let storedListing = {};
-
-        // Set up stored listing in mock Redis
-        for (let path of paths) {
-            storedListing[path] = msgpack.encode({
-                path,
-                delimiter: '/',
-                name: path,
-                listed: true,
-                subscribed: true
-            });
-        }
-
-        // Set up mailbox info data in mock Redis
-        for (let path of paths) {
-            let redisKey = BigInt('0x' + crypto.createHash(MAILBOX_HASH).update(normalizePath(path)).digest('hex')).toString(36);
-            mockRedisData[`${REDIS_PREFIX}iam:testaccount:h:${redisKey}`] = {
-                path,
-                messages: '42',
-                uidNext: '100'
-            };
-        }
-
-        // Simulate what getMailboxListing does with pipeline
-        let pipeline = mockRedis.pipeline();
-        for (let path of paths) {
-            let redisKey = BigInt('0x' + crypto.createHash(MAILBOX_HASH).update(normalizePath(path)).digest('hex')).toString(36);
-            pipeline.hgetall(`${REDIS_PREFIX}iam:testaccount:h:${redisKey}`);
-        }
-        let pipelineResults = await pipeline.exec();
-
-        assert.strictEqual(pipelineResults.length, paths.length, 'Pipeline should return results for all paths');
-        assert.strictEqual(pipelineCalls.length, paths.length, 'Pipeline should batch all hgetall calls');
-
-        // Verify results are correctly extracted
-        for (let i = 0; i < paths.length; i++) {
-            let [err, data] = pipelineResults[i];
-            assert.strictEqual(err, null, 'No pipeline error');
-            assert.ok(data, 'Should have data for path');
-            assert.strictEqual(data.path, paths[i]);
-            assert.strictEqual(data.messages, '42');
-        }
-    });
-
-    await t.test('getMailboxListing merges pipeline results with stored listing and status', async () => {
-        let paths = ['INBOX', 'Sent'];
-        let storedListing = {};
-
-        for (let path of paths) {
-            storedListing[path] = msgpack.encode({
-                path,
-                delimiter: '/',
-                name: path,
-                listed: true,
-                subscribed: true
-            });
-        }
-
-        // Set up mailbox info
-        for (let path of paths) {
-            let redisKey = BigInt('0x' + crypto.createHash(MAILBOX_HASH).update(normalizePath(path)).digest('hex')).toString(36);
-            mockRedisData[`${REDIS_PREFIX}iam:testaccount:h:${redisKey}`] = {
-                path,
-                messages: '10',
-                uidNext: '50'
-            };
-        }
-
-        // Simulate mailboxListing with status (from IMAP LIST command)
-        let mailboxListing = [
-            { path: 'INBOX', status: { messages: 10, unseen: 3, path: 'INBOX' } },
-            { path: 'Sent', status: { messages: 5, unseen: 0, path: 'Sent' } }
-        ];
-
-        // Build map (the fix)
-        let mailboxListingMap = new Map();
-        for (let entry of mailboxListing) {
-            if (entry.status) {
-                delete entry.status.path;
-            }
-            mailboxListingMap.set(entry.path, entry);
-        }
-
-        // Pipeline
-        let pipeline = mockRedis.pipeline();
-        for (let path of paths) {
-            let redisKey = BigInt('0x' + crypto.createHash(MAILBOX_HASH).update(normalizePath(path)).digest('hex')).toString(36);
-            pipeline.hgetall(`${REDIS_PREFIX}iam:testaccount:h:${redisKey}`);
-        }
-        let pipelineResults = await pipeline.exec();
-
-        // Build mailboxes
-        let mailboxes = [];
-        for (let i = 0; i < paths.length; i++) {
-            let path = paths[i];
-            let decoded = msgpack.decode(storedListing[path]);
-            let listedMailboxInfo = mailboxListingMap.get(path);
-
-            let mailboxInfo = {};
-            let [pipelineErr, data] = pipelineResults[i] || [];
-            if (!pipelineErr && data && Object.keys(data).length) {
-                mailboxInfo = {
-                    path: data.path || path,
-                    messages: data.messages && !isNaN(data.messages) ? Number(data.messages) : false,
-                    uidNext: data.uidNext && !isNaN(data.uidNext) ? Number(data.uidNext) : false
-                };
-            }
-
-            mailboxes.push(Object.assign(decoded, mailboxInfo, listedMailboxInfo && listedMailboxInfo.status ? { status: listedMailboxInfo.status } : {}));
-        }
-
-        assert.strictEqual(mailboxes.length, 2);
-        assert.strictEqual(mailboxes[0].path, 'INBOX');
-        assert.strictEqual(mailboxes[0].messages, 10);
-        assert.strictEqual(mailboxes[0].uidNext, 50);
-        assert.deepStrictEqual(mailboxes[0].status, { messages: 10, unseen: 3 });
-        assert.strictEqual(mailboxes[1].path, 'Sent');
-        assert.deepStrictEqual(mailboxes[1].status, { messages: 5, unseen: 0 });
-    });
-
-    await t.test('getMailboxListing handles missing mailbox info gracefully', async () => {
-        // No mailbox info data set up -- pipeline returns null
-        let path = 'EmptyFolder';
-        let storedListing = {
-            [path]: msgpack.encode({
-                path,
-                delimiter: '/',
-                name: path,
-                listed: true,
-                subscribed: true
-            })
+    await t.test('a change in any persisted field alone counts as a change', () => {
+        // Everything buildStoredListingObject() persists has to be compared. The mailboxes API
+        // answers from the stored hash, so a field that changes without setting hasChanges is
+        // never written back and the stale value is served until an unrelated folder happens to
+        // be created or deleted. `subscribed` is the one a client can move on demand: PUT
+        // /v1/account/{account}/mailbox issues UNSUBSCRIBE and refreshes the listing expecting
+        // exactly this to be picked up.
+        const base = {
+            path: 'Archive',
+            name: 'Archive',
+            delimiter: '/',
+            specialUse: '\\Archive',
+            specialUseSource: 'extension',
+            listed: true,
+            subscribed: true,
+            noInferiors: false
         };
 
-        let pipeline = mockRedis.pipeline();
-        let redisKey = BigInt('0x' + crypto.createHash(MAILBOX_HASH).update(normalizePath(path)).digest('hex')).toString(36);
-        pipeline.hgetall(`${REDIS_PREFIX}iam:testaccount:h:${redisKey}`);
-        let pipelineResults = await pipeline.exec();
-
-        let [pipelineErr, data] = pipelineResults[0];
-        let mailboxInfo = {};
-        if (!pipelineErr && data && Object.keys(data).length) {
-            mailboxInfo = {
-                path: data.path || path,
-                messages: data.messages && !isNaN(data.messages) ? Number(data.messages) : false,
-                uidNext: data.uidNext && !isNaN(data.uidNext) ? Number(data.uidNext) : false
-            };
+        for (let [field, changed] of [
+            ['subscribed', false],
+            ['listed', false],
+            ['specialUse', '\\Junk'],
+            ['name', 'Archived'],
+            ['delimiter', '.'],
+            ['specialUseSource', 'name'],
+            ['noInferiors', true]
+        ]) {
+            const { hasChanges } = diffMailboxListing([Object.assign({}, base, { [field]: changed })], [Object.assign({}, base)]);
+            assert.strictEqual(hasChanges, true, `a changed ${field} must be persisted`);
         }
 
-        let decoded = msgpack.decode(storedListing[path]);
-        let result = Object.assign(decoded, mailboxInfo);
-
-        assert.strictEqual(result.path, path);
-        assert.strictEqual(result.messages, undefined, 'Should not have messages when no mailbox info');
+        // and the same entry twice still must not churn
+        assert.strictEqual(diffMailboxListing([Object.assign({}, base)], [Object.assign({}, base)]).hasChanges, false);
     });
 
-    await t.test('getMailboxListing handles edge case message count values', async () => {
-        // Test the expression: data.messages && !isNaN(data.messages) ? Number(data.messages) : false
-        let testCases = [
-            { input: '42', expected: 42, label: 'normal string number' },
-            { input: '0', expected: 0, label: 'zero string is truthy, yields 0' },
-            { input: '', expected: false, label: 'empty string is falsy' },
-            { input: 'NaN', expected: false, label: 'NaN string is detected by isNaN, filtered out' },
-            { input: null, expected: false, label: 'null is falsy' },
-            { input: '-1', expected: -1, label: 'negative number' },
-            { input: undefined, expected: false, label: 'undefined is falsy' }
-        ];
+    await t.test('deeply nested paths are compared by their full path', () => {
+        const stored = [{ path: 'A/B/C/D/E', delimiter: '/', noInferiors: false }];
 
-        for (let tc of testCases) {
-            let result = tc.input && !isNaN(tc.input) ? Number(tc.input) : false;
-            assert.strictEqual(result, tc.expected, `messages='${tc.input}': ${tc.label}`);
+        const unchanged = diffMailboxListing([{ path: 'A/B/C/D/E', delimiter: '/', noInferiors: false }], stored);
+        assert.strictEqual(unchanged.hasChanges, false);
+
+        const moved = diffMailboxListing([{ path: 'A/B/C/D/F', delimiter: '/', noInferiors: false }], stored);
+        assert.strictEqual(moved.hasChanges, true);
+        assert.deepStrictEqual(
+            moved.deletedEntries.map(e => e.path),
+            ['A/B/C/D/E']
+        );
+    });
+
+    await t.test('a large folder count is compared without a quadratic scan', () => {
+        // Shared/public namespaces routinely list thousands of folders. The Map/Set lookups keep
+        // this linear; a nested scan would take seconds here and stall the sync loop.
+        const stored = [];
+        const listing = [];
+        for (let i = 0; i < 5000; i++) {
+            stored.push({ path: `Folder${i}`, delimiter: '/', noInferiors: false });
+            listing.push({ path: `Folder${i}`, delimiter: '/', noInferiors: false });
         }
+        // one added, one removed
+        listing.push({ path: 'BrandNew', delimiter: '/', noInferiors: false });
+        listing.splice(0, 1);
+
+        const started = process.hrtime.bigint();
+        const { hasChanges, deletedEntries } = diffMailboxListing(listing, stored);
+        const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+
+        assert.strictEqual(hasChanges, true);
+        assert.deepStrictEqual(
+            deletedEntries.map(e => e.path),
+            ['Folder0']
+        );
+        assert.deepStrictEqual(
+            listing.filter(e => e.isNew).map(e => e.path),
+            ['BrandNew']
+        );
+        assert.ok(elapsedMs < 1000, `comparing 5000 folders took ${elapsedMs.toFixed(1)}ms, expected well under 1s`);
     });
+});
 
-    await t.test('getMailboxListing computes parentPath for nested folders', async () => {
-        let testCases = [
-            { path: 'Folder/Sub', delimiter: '/', expectedParent: 'Folder' },
-            { path: 'A.B.C', delimiter: '.', expectedParent: 'A.B' },
-            { path: 'A/B/C/D', delimiter: '/', expectedParent: 'A/B/C' },
-            { path: 'INBOX', delimiter: '/', expectedParent: undefined },
-            { path: 'TopLevel', delimiter: '.', expectedParent: undefined }
-        ];
-
-        for (let tc of testCases) {
-            let decoded = { path: tc.path, delimiter: tc.delimiter, name: tc.path, listed: true, subscribed: true };
-
-            if (decoded.path && decoded.delimiter && decoded.path.indexOf(decoded.delimiter) >= 0) {
-                decoded.parentPath = decoded.path.substring(0, decoded.path.lastIndexOf(decoded.delimiter));
-            }
-
-            assert.strictEqual(decoded.parentPath, tc.expectedParent, `parentPath for '${tc.path}' with '${tc.delimiter}' delimiter`);
-        }
-    });
-
-    await t.test('getMailboxListing handles pipeline error for individual mailbox', async () => {
-        let paths = ['INBOX', 'Sent'];
-        let storedListing = {};
-
-        for (let path of paths) {
-            storedListing[path] = msgpack.encode({
-                path,
+test('Stored mailbox listing encode/decode (listing-diff)', async t => {
+    await t.test('only the persisted field subset is stored, keyed by normalized path', () => {
+        const stored = buildStoredListingObject([
+            {
+                path: 'Inbox',
+                name: 'Inbox',
                 delimiter: '/',
-                name: path,
+                specialUse: '\\Inbox',
+                specialUseSource: 'extension',
                 listed: true,
-                subscribed: true
-            });
-        }
+                subscribed: true,
+                noInferiors: false,
+                // derived state that must NOT be persisted in the listing hash
+                flags: new Set(['\\HasNoChildren']),
+                status: { messages: 12 },
+                isNew: true
+            }
+        ]);
 
-        // Simulate pipeline results where one succeeds and one fails
-        let pipelineResults = [
-            [null, { path: 'INBOX', messages: '10', uidNext: '50' }], // success
-            [new Error('REDIS_ERR'), null] // failure
+        const keys = Object.keys(stored);
+        assert.deepStrictEqual(keys, ['INBOX'], 'the hash field is the normalized path');
+
+        // Spelled out rather than compared against the production constant: asserting the
+        // filter's output against the filter's own input list can never fail, and adding a
+        // field to the constant would silently update the expectation.
+        const decoded = msgpack.decode(stored.INBOX);
+        assert.deepStrictEqual(
+            Object.keys(decoded).sort(),
+            ['delimiter', 'listed', 'name', 'noInferiors', 'path', 'specialUse', 'specialUseSource', 'subscribed'],
+            'the persisted field set changed - confirm the new field is intended before updating this list'
+        );
+        assert.strictEqual(decoded.isNew, undefined, 'isNew is a one-shot in-memory flag and must never be persisted');
+        assert.strictEqual(decoded.flags, undefined);
+        assert.strictEqual(decoded.status, undefined);
+        assert.strictEqual(decoded.specialUse, '\\Inbox');
+    });
+
+    await t.test('a round trip through decodeStoredListing preserves the compared fields', () => {
+        const listing = [
+            { path: 'INBOX', name: 'INBOX', delimiter: '/', specialUseSource: 'extension', noInferiors: false, listed: true, subscribed: true },
+            { path: 'Archive/2024', name: '2024', delimiter: '/', specialUseSource: undefined, noInferiors: true, listed: true, subscribed: false }
         ];
 
-        let mailboxes = [];
-        for (let i = 0; i < paths.length; i++) {
-            let path = paths[i];
-            let decoded = msgpack.decode(storedListing[path]);
+        const { entries } = decodeStoredListing(buildStoredListingObject(listing));
 
-            let mailboxInfo = {};
-            let [pipelineErr, data] = pipelineResults[i] || [];
-            if (!pipelineErr && data && Object.keys(data).length) {
-                mailboxInfo = {
-                    path: data.path || path,
-                    messages: data.messages && !isNaN(data.messages) ? Number(data.messages) : false,
-                    uidNext: data.uidNext && !isNaN(data.uidNext) ? Number(data.uidNext) : false
-                };
+        // A second sync against the round-tripped state must see no changes at all
+        const { hasChanges, deletedEntries } = diffMailboxListing(structuredClone(listing), entries);
+        assert.strictEqual(hasChanges, false, 'a persist-then-reload cycle must not look like a change');
+        assert.deepStrictEqual(deletedEntries, []);
+    });
+
+    await t.test('an undecodable entry is dropped from the listing but reported as corrupt', () => {
+        const stored = buildStoredListingObject([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+        stored.Broken = Buffer.from('not msgpack at all');
+
+        const { entries, corruptPaths } = decodeStoredListing(stored);
+
+        assert.deepStrictEqual(
+            entries.map(entry => entry.path),
+            ['INBOX'],
+            'one corrupt hash field must not take down the listing for every other folder'
+        );
+        // A dropped entry is invisible to the comparison, so it can never show up as deleted
+        // either. Unless the caller is told about it, the bad field survives every sync forever.
+        assert.deepStrictEqual(corruptPaths, ['Broken']);
+    });
+
+    await t.test('a missing listing hash decodes to an empty array', () => {
+        assert.deepStrictEqual(decodeStoredListing(null), { entries: [], corruptPaths: [] });
+        assert.deepStrictEqual(decodeStoredListing(undefined), { entries: [], corruptPaths: [] });
+        assert.deepStrictEqual(decodeStoredListing({}), { entries: [], corruptPaths: [] });
+    });
+
+    await t.test('a folder named __proto__ is actually persisted in the hash', () => {
+        // Assigning to listingObject['__proto__'] on a plain object hits the Object.prototype
+        // setter instead of creating an own property, so Object.keys() - which is how ioredis
+        // serializes the hash - omitted the folder entirely. It then looked unseen on every
+        // following sync: another mailboxNew plus a full initial sync of that folder, forever.
+        const stored = buildStoredListingObject([
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: '__proto__', delimiter: '/', noInferiors: false },
+            { path: 'constructor', delimiter: '/', noInferiors: false }
+        ]);
+
+        assert.deepStrictEqual(Object.keys(stored).sort(), ['INBOX', '__proto__', 'constructor'], 'every folder must reach the hash written to Redis');
+
+        const { entries } = decodeStoredListing(stored);
+        assert.deepStrictEqual(entries.map(entry => entry.path).sort(), ['INBOX', '__proto__', 'constructor'], 'and must be read back as an ordinary folder');
+
+        // The round trip has to be stable, otherwise the folder churns on every sync pass.
+        const { hasChanges } = diffMailboxListing(
+            [
+                { path: 'INBOX', delimiter: '/', noInferiors: false },
+                { path: '__proto__', delimiter: '/', noInferiors: false },
+                { path: 'constructor', delimiter: '/', noInferiors: false }
+            ],
+            entries
+        );
+        assert.strictEqual(hasChanges, false);
+    });
+
+    await t.test('an empty listing builds an empty hash', () => {
+        // HMSET refuses an empty hash and that error aborts the surrounding MULTI, taking the
+        // DEL down with it. getCurrentListing() must not queue the write in this state.
+        assert.deepStrictEqual(Object.keys(buildStoredListingObject([])), []);
+    });
+});
+
+test('Account.getMailboxListing', async t => {
+    t.beforeEach(() => {
+        mockRedisData = {};
+        pipelineCalls = [];
+        pipelineErrorKeys = new Set();
+    });
+
+    await t.test('reads every folder status hash in a single pipeline', async () => {
+        // One Redis round trip regardless of folder count - a per-folder hgetall makes the
+        // mailboxes endpoint scale with latency times folder count.
+        seedAccount();
+        const paths = ['INBOX', 'Sent', 'Drafts', 'Trash'];
+        seedStoredListing(paths.map(path => ({ path, delimiter: '/', noInferiors: false })));
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+
+        assert.strictEqual(mailboxes.length, 4);
+        assert.deepStrictEqual(
+            pipelineCalls.sort(),
+            paths.map(path => getMailboxStatusKey(ACCOUNT, path)).sort(),
+            'every folder must be fetched through the pipeline'
+        );
+    });
+
+    await t.test('merges the stored listing with the per-folder counters', async () => {
+        seedAccount();
+        seedStoredListing([
+            { path: 'INBOX', name: 'INBOX', delimiter: '/', specialUse: '\\Inbox', noInferiors: false },
+            { path: 'Sent', name: 'Sent', delimiter: '/', specialUse: '\\Sent', noInferiors: false }
+        ]);
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'INBOX')] = { path: 'INBOX', messages: '42', uidNext: '99' };
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'Sent')] = { path: 'Sent', messages: '7', uidNext: '8' };
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+        const inbox = mailboxes.find(mailbox => mailbox.path === 'INBOX');
+
+        assert.strictEqual(inbox.messages, 42, 'counters are stored as strings and must come back as numbers');
+        assert.strictEqual(inbox.uidNext, 99);
+        assert.strictEqual(inbox.specialUse, '\\Inbox', 'fields from the stored listing survive the merge');
+        assert.strictEqual(inbox.name, 'INBOX');
+    });
+
+    await t.test('a folder with no status hash yet is still listed', async () => {
+        // A folder discovered by LIST but not synced yet has no status hash.
+        seedAccount();
+        seedStoredListing([
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'NeverSynced', delimiter: '/', noInferiors: false }
+        ]);
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'INBOX')] = { path: 'INBOX', messages: '5', uidNext: '6' };
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+        const neverSynced = mailboxes.find(mailbox => mailbox.path === 'NeverSynced');
+
+        assert.ok(neverSynced, 'a folder without counters must not disappear from the listing');
+        assert.strictEqual(neverSynced.messages, undefined);
+        assert.strictEqual(neverSynced.uidNext, undefined);
+    });
+
+    await t.test('non-numeric and zero counter values are normalized', async () => {
+        seedAccount();
+        seedStoredListing([
+            { path: 'Empty', delimiter: '/', noInferiors: false },
+            { path: 'Garbage', delimiter: '/', noInferiors: false }
+        ]);
+        // An empty mailbox legitimately reports 0; a corrupt value must not surface as NaN
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'Empty')] = { path: 'Empty', messages: '0', uidNext: '1' };
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'Garbage')] = { path: 'Garbage', messages: 'not-a-number', uidNext: '' };
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+        const empty = mailboxes.find(mailbox => mailbox.path === 'Empty');
+        const garbage = mailboxes.find(mailbox => mailbox.path === 'Garbage');
+
+        assert.strictEqual(empty.messages, 0, 'an empty mailbox reports a real 0, not false');
+        assert.strictEqual(empty.uidNext, 1);
+        assert.strictEqual(garbage.messages, false, 'an unparseable counter degrades to false rather than NaN');
+        assert.ok(!Number.isNaN(garbage.messages));
+        assert.strictEqual(garbage.uidNext, false, 'an empty string counter degrades to false');
+    });
+
+    await t.test('a corrupt stored listing entry is skipped, not returned as a garbage mailbox', async () => {
+        // msgpack5 decodes some corrupt buffers to a primitive instead of throwing. Without a
+        // shape check that primitive gets boxed by Object.assign() and shipped to the caller.
+        seedAccount();
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+        mockRedisData[mailboxListKey].Broken = Buffer.from('not msgpack at all');
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'INBOX')] = { path: 'INBOX', messages: '5', uidNext: '6' };
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+
+        assert.deepStrictEqual(
+            mailboxes.map(mailbox => mailbox.path),
+            ['INBOX'],
+            'the healthy folders must still be listed and the corrupt one dropped'
+        );
+        assert.ok(
+            mailboxes.every(mailbox => typeof mailbox === 'object' && !(mailbox instanceof Number)),
+            'no boxed primitive may reach the API response'
+        );
+    });
+
+    await t.test('parentPath is derived for nested folders only', async () => {
+        seedAccount();
+        seedStoredListing([
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'Archive/2024', delimiter: '/', noInferiors: false },
+            { path: 'Archive/2024/Q1', delimiter: '/', noInferiors: false }
+        ]);
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+        const byPath = new Map(mailboxes.map(mailbox => [mailbox.path, mailbox]));
+
+        assert.strictEqual(byPath.get('INBOX').parentPath, undefined, 'a top level folder has no parent');
+        assert.strictEqual(byPath.get('Archive/2024').parentPath, 'Archive');
+        assert.strictEqual(byPath.get('Archive/2024/Q1').parentPath, 'Archive/2024');
+    });
+
+    await t.test('a failed pipeline entry drops only that folder counters', async () => {
+        seedAccount();
+        seedStoredListing([
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'Sent', delimiter: '/', noInferiors: false }
+        ]);
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'INBOX')] = { path: 'INBOX', messages: '10', uidNext: '50' };
+        mockRedisData[getMailboxStatusKey(ACCOUNT, 'Sent')] = { path: 'Sent', messages: '3', uidNext: '4' };
+        pipelineErrorKeys.add(getMailboxStatusKey(ACCOUNT, 'Sent'));
+
+        const mailboxes = await createAccountObject().getMailboxListing({});
+        const byPath = new Map(mailboxes.map(mailbox => [mailbox.path, mailbox]));
+
+        assert.strictEqual(byPath.get('INBOX').messages, 10);
+        assert.strictEqual(byPath.get('Sent').messages, undefined, 'the failed entry loses its counters');
+        assert.strictEqual(byPath.get('Sent').path, 'Sent', 'but the folder itself still comes from the stored listing');
+    });
+
+    await t.test('a not-yet-initialized account is reported as NotYetConnected', async () => {
+        seedAccount('init');
+
+        await assert.rejects(
+            () => createAccountObject().getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 503);
+                assert.strictEqual(err.output.payload.code, 'NotYetConnected');
+                return true;
             }
-
-            mailboxes.push(Object.assign(decoded, mailboxInfo));
-        }
-
-        assert.strictEqual(mailboxes.length, 2);
-        // First mailbox should have pipeline data
-        assert.strictEqual(mailboxes[0].messages, 10);
-        assert.strictEqual(mailboxes[0].uidNext, 50);
-        // Second mailbox should have no pipeline data due to error
-        assert.strictEqual(mailboxes[1].messages, undefined, 'Failed pipeline entry should have no messages');
-        assert.strictEqual(mailboxes[1].uidNext, undefined, 'Failed pipeline entry should have no uidNext');
-        assert.strictEqual(mailboxes[1].path, 'Sent', 'Path should still come from stored listing');
+        );
     });
 
-    // --- Change 3: Gmail detailed label cache tests ---
+    await t.test('an account with syncing disabled is reported as NotSyncing', async () => {
+        seedAccount('unset');
 
-    await t.test('Gmail label detail cache avoids repeated API calls', async () => {
-        let apiCallCount = 0;
-
-        // Simulate the caching logic from gmail-client listMailboxes
-        let cachedDetailedLabels = null;
-        let cachedDetailedLabelsTime = null;
-
-        let labels = [
-            { id: 'Label_1', name: 'Work', type: 'user' },
-            { id: 'Label_2', name: 'Personal', type: 'user' },
-            { id: 'INBOX', name: 'INBOX', type: 'system' }
-        ];
-
-        let fetchDetailedLabels = async () => {
-            let results = [];
-            for (let label of labels) {
-                apiCallCount++;
-                results.push({ ...label, messagesTotal: 100, messagesUnread: 5 });
+        await assert.rejects(
+            () => createAccountObject().getMailboxListing({}),
+            err => {
+                assert.strictEqual(err.output.statusCode, 503);
+                assert.strictEqual(err.output.payload.code, 'NotSyncing');
+                return true;
             }
-            return results;
-        };
-
-        // First call -- should fetch
-        let now = Date.now();
-        let resultLabels;
-        if (!cachedDetailedLabels || now > cachedDetailedLabelsTime + 60 * 1000) {
-            resultLabels = await fetchDetailedLabels();
-            cachedDetailedLabels = resultLabels;
-            cachedDetailedLabelsTime = now;
-        } else {
-            resultLabels = cachedDetailedLabels;
-        }
-
-        assert.strictEqual(apiCallCount, 3, 'First call should make API requests');
-        assert.strictEqual(resultLabels.length, 3);
-
-        // Second call within 60s -- should use cache
-        let resultLabels2;
-        let now2 = Date.now();
-        let cacheValid = cachedDetailedLabels && now2 <= cachedDetailedLabelsTime + 60 * 1000;
-        if (!cacheValid) {
-            resultLabels2 = await fetchDetailedLabels();
-            cachedDetailedLabels = resultLabels2;
-        } else {
-            resultLabels2 = cachedDetailedLabels;
-        }
-
-        assert.strictEqual(apiCallCount, 3, 'Second call should use cache, no new API requests');
-        assert.strictEqual(resultLabels2.length, 3);
-        assert.strictEqual(resultLabels2, cachedDetailedLabels, 'Should return cached reference');
+        );
     });
 
-    await t.test('Gmail label detail cache expires after 60 seconds', async () => {
-        let cachedDetailedLabels = [{ id: 'Label_1', name: 'Test' }];
-        let cachedDetailedLabelsTime = Date.now() - 61 * 1000; // 61 seconds ago
+    await t.test('status counters from a live LIST are merged onto the stored listing', async () => {
+        // With ?counters=true (or a connected account) the API runs a real LIST through the IMAP
+        // worker and folds its STATUS counters into the response.
+        seedAccount('connected');
+        seedStoredListing([
+            { path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'Sent', name: 'Sent', delimiter: '/', noInferiors: false }
+        ]);
 
-        let now = Date.now();
-        let cacheHit = cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60 * 1000;
+        const accountObject = createAccountObject(async message => {
+            assert.strictEqual(message.cmd, 'listMailboxes');
+            assert.deepStrictEqual(message.options.statusQuery, { messages: true, unseen: true });
+            return [
+                { path: 'INBOX', status: { path: 'INBOX', messages: 120, unseen: 4 } },
+                { path: 'Sent', status: { path: 'Sent', messages: 9, unseen: 0 } }
+            ];
+        });
 
-        assert.strictEqual(cacheHit, false, 'Cache should be expired after 60 seconds');
+        const mailboxes = await accountObject.getMailboxListing({ counters: true });
+        const inbox = mailboxes.find(mailbox => mailbox.path === 'INBOX');
+
+        assert.deepStrictEqual(inbox.status, { messages: 120, unseen: 4 }, 'the redundant path field is stripped from the status object');
+        assert.strictEqual(inbox.name, 'INBOX');
     });
 
-    await t.test('Gmail label detail cache clears on label mutation', async () => {
-        let cache = { labels: [{ id: 'Label_1', name: 'Test' }], time: Date.now() };
+    await t.test('a LIST failure surfaces as an error rather than a silently empty listing', async () => {
+        seedAccount('connected');
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
 
-        // Simulate label create/update/delete clearing the cache
-        cache.labels = null;
+        const accountObject = createAccountObject(async () => ({ error: 'Failed to list mailboxes', statusCode: 502, code: 'ListFailed' }));
 
-        let now = Date.now();
-        let cacheHit = !!(cache.labels && now <= cache.time + 60 * 1000);
-
-        assert.strictEqual(cacheHit, false, 'Cache should miss after mutation clears it');
-    });
-
-    await t.test('Gmail listMailboxes without counters does not use detailed cache', async () => {
-        let cachedDetailedLabels = [{ id: 'Label_1', name: 'Cached', messagesTotal: 999 }];
-        let cachedDetailedLabelsTime = Date.now();
-
-        let options = {}; // No statusQuery
-        let resultLabels;
-
-        if (options && options.statusQuery?.unseen) {
-            let now = Date.now();
-            if (cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60 * 1000) {
-                resultLabels = cachedDetailedLabels;
+        await assert.rejects(
+            () => accountObject.getMailboxListing({ counters: true }),
+            err => {
+                assert.strictEqual(err.output.statusCode, 502);
+                assert.strictEqual(err.output.payload.code, 'ListFailed');
+                return true;
             }
-        } else {
-            resultLabels = [{ id: 'Label_1', name: 'Fresh' }]; // basic labels
-        }
+        );
+    });
+});
 
-        assert.strictEqual(resultLabels[0].name, 'Fresh', 'Without counters, should use basic labels not cache');
+// Drives the REAL IMAPClient.getCurrentListing() with stubbed collaborators (the LIST round
+// trip, the per-folder clear, the logger). Everything under test - the \Noselect filter, the
+// empty-listing guard, the corrupt-entry purge and the Redis write - is the production method
+// itself, reached through IMAPClient.prototype rather than a copy of its logic.
+function createListingClient(list) {
+    const cleared = [];
+    let closed = false;
+
+    return {
+        cleared,
+        wasClosed: () => closed,
+        client: {
+            account: ACCOUNT,
+            redis: mockRedis,
+            logger: { error: () => {}, info: () => {}, debug: () => {}, trace: () => {} },
+            accountObject: { loadAccountData: async () => ({ account: ACCOUNT }) },
+            imapClient: {
+                close: () => {
+                    closed = true;
+                }
+            },
+            checkIMAPConnection: () => true,
+            getImapConnection: async () => ({ list: async () => list }),
+            clearMailboxEntry: async entry => {
+                cleared.push(entry.path);
+            },
+            getMailboxListKey: () => mailboxListKey,
+            getCurrentListing: IMAPClient.prototype.getCurrentListing
+        }
+    };
+}
+
+function serverFolder(path, flags = ['\\HasNoChildren']) {
+    return { path, name: path, delimiter: '/', flags: new Set(flags), listed: true, subscribed: true, specialUseSource: undefined };
+}
+
+test('IMAPClient.getCurrentListing', async t => {
+    t.beforeEach(() => {
+        mockRedisData = {};
     });
 
-    await t.test('Gmail label detail cache treats empty array as valid cache hit', async () => {
-        let cachedDetailedLabels = [];
-        let cachedDetailedLabelsTime = Date.now();
+    await t.test('a listing with nothing selectable is rejected instead of clearing every folder', async () => {
+        // INBOX always exists and is always selectable, so this is the same server bug as an
+        // empty response. Trusting it would clear every stored folder - dropping each folder's
+        // message index and firing a mailboxDeleted webhook per folder - and then abort the
+        // MULTI on the empty HMSET, leaving the stored listing in place to repeat the whole
+        // cycle on the next pass.
+        seedStoredListing([
+            { path: 'INBOX', delimiter: '/', noInferiors: false },
+            { path: 'Archive', delimiter: '/', noInferiors: false }
+        ]);
+        const before = mockRedisData[mailboxListKey].INBOX;
 
-        // The cache check: cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60s
-        // An empty array is truthy in JS, so it should be a cache hit
-        let now = Date.now();
-        let cacheHit = !!(cachedDetailedLabels && now <= cachedDetailedLabelsTime + 60 * 1000);
+        const { client, cleared, wasClosed } = createListingClient([serverFolder('Shared', ['\\Noselect']), serverFolder('Public', ['\\NonExistent'])]);
 
-        assert.ok(cacheHit, 'Empty array should be a valid cache hit (arrays are truthy)');
-        assert.deepStrictEqual(cachedDetailedLabels, [], 'Cache should hold the empty array');
+        await assert.rejects(
+            () => client.getCurrentListing({}, {}),
+            err => err.code === 'ServerBug'
+        );
+
+        assert.deepStrictEqual(cleared, [], 'no folder may be cleared on a listing this broken');
+        assert.strictEqual(mockRedisData[mailboxListKey].INBOX, before, 'the stored listing must survive untouched');
+        assert.ok(mockRedisData[mailboxListKey].Archive);
+        assert.strictEqual(wasClosed(), true, 'the connection is dropped so the next pass starts clean');
+    });
+
+    await t.test('an empty listing is still rejected', async () => {
+        seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
+        const { client, cleared } = createListingClient([]);
+
+        await assert.rejects(
+            () => client.getCurrentListing({}, {}),
+            err => err.code === 'ServerBug'
+        );
+        assert.deepStrictEqual(cleared, []);
+    });
+
+    await t.test('a corrupt stored entry is purged even when nothing else changed', async () => {
+        // The corrupt value never decodes into the comparison, so it can not be reported as a
+        // deleted folder either. Without forcing the rewrite it survives every sync pass forever
+        // while the mailboxes API keeps skipping that folder.
+        // Seeded to match the server folder exactly, so nothing but the corrupt field can make
+        // this pass report a change.
+        seedStoredListing([{ path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false, listed: true, subscribed: true }]);
+        mockRedisData[mailboxListKey].Broken = Buffer.from('not msgpack at all');
+
+        const { client, cleared } = createListingClient([serverFolder('INBOX')]);
+
+        await client.getCurrentListing({}, {});
+
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX'], 'the unusable field must be gone');
+        assert.deepStrictEqual(cleared, [], 'a corrupt entry is not a deleted folder');
+    });
+
+    await t.test('an unchanged listing is not rewritten', async () => {
+        seedStoredListing([{ path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false, listed: true, subscribed: true }]);
+        const before = mockRedisData[mailboxListKey].INBOX;
+
+        const { client } = createListingClient([serverFolder('INBOX')]);
+        await client.getCurrentListing({}, {});
+
+        assert.strictEqual(mockRedisData[mailboxListKey].INBOX, before, 'a no-op sync must not rewrite the listing hash');
+    });
+
+    await t.test('a folder the server no longer lists is cleared and dropped from the hash', async () => {
+        seedStoredListing([
+            { path: 'INBOX', name: 'INBOX', delimiter: '/', noInferiors: false, listed: true, subscribed: true },
+            { path: 'Old', name: 'Old', delimiter: '/', noInferiors: false, listed: true, subscribed: true }
+        ]);
+
+        const { client, cleared } = createListingClient([serverFolder('INBOX')]);
+        const listing = await client.getCurrentListing({}, {});
+
+        assert.deepStrictEqual(cleared, ['Old']);
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX']);
+        assert.deepStrictEqual(
+            listing.map(entry => entry.path),
+            ['INBOX']
+        );
+    });
+
+    await t.test('non-selectable folders are dropped from the returned listing', async () => {
+        const { client } = createListingClient([serverFolder('INBOX'), serverFolder('Shared', ['\\Noselect']), serverFolder('Gone', ['\\NonExistent'])]);
+
+        const listing = await client.getCurrentListing({}, {});
+
+        assert.deepStrictEqual(
+            listing.map(entry => entry.path),
+            ['INBOX'],
+            'a folder the sync can not SELECT must not enter the listing'
+        );
+        assert.deepStrictEqual(Object.keys(mockRedisData[mailboxListKey]), ['INBOX']);
+    });
+
+    await t.test('a folder named __proto__ round trips through the stored hash', async () => {
+        const { client } = createListingClient([serverFolder('INBOX'), serverFolder('__proto__')]);
+
+        const first = await client.getCurrentListing({}, {});
+        assert.deepStrictEqual(
+            first
+                .filter(entry => entry.isNew)
+                .map(entry => entry.path)
+                .sort(),
+            ['INBOX', '__proto__']
+        );
+
+        const stored = mockRedisData[mailboxListKey];
+        assert.deepStrictEqual(Object.keys(stored).sort(), ['INBOX', '__proto__']);
+
+        // Second pass: nothing may look new any more, otherwise the folder re-syncs and fires a
+        // fresh mailboxNew webhook on every pass forever.
+        const { client: second } = createListingClient([serverFolder('INBOX'), serverFolder('__proto__')]);
+        const again = await second.getCurrentListing({}, {});
+        assert.deepStrictEqual(
+            again.filter(entry => entry.isNew).map(entry => entry.path),
+            [],
+            'a known folder must not be reported as new again'
+        );
+    });
+});
+
+// Drives the REAL GmailClient.listMailboxes() detailed-label cache, reached through
+// GmailClient.prototype with the API collaborators stubbed. The previous coverage was a set of
+// "let cache = {...}" simulations inside the test file, so it could not fail when the real cache
+// changed; deleting those left the cache with no coverage at all. What matters here: the cache
+// spares one API call PER LABEL (an account with 60 labels pays 60 requests per uncached call),
+// and a stale hit would report wrong unread counts after a label mutation.
+const { GmailClient } = require('../lib/email-client/gmail-client');
+
+const GMAIL_LABELS = [
+    { id: 'INBOX', name: 'INBOX', type: 'system' },
+    { id: 'Label_1', name: 'Work', type: 'user' },
+    { id: 'Label_2', name: 'Personal', type: 'user' }
+];
+
+function createGmailClient() {
+    const detailRequests = [];
+
+    const client = {
+        cachedDetailedLabels: null,
+        cachedDetailedLabelsTime: null,
+        cachedLabels: null,
+        cachedLabelsTime: null,
+        logger: { error: () => {}, info: () => {}, debug: () => {}, trace: () => {} },
+        prepare: async () => {},
+        getLabels: async () => GMAIL_LABELS,
+        // Resolves a path to an existing label the way the real lookup does; rename and delete
+        // both go through it before issuing the mutation.
+        getLabel: async path => GMAIL_LABELS.find(label => label.name === [].concat(path || '').join('/')) || false,
+        request: async (url, method) => {
+            const labelId = url.split('/labels/')[1];
+            // Only a GET of a single label is a detail fetch; the mutation paths below hit the
+            // same URL shape with a method, and counting those would mask a missing refetch.
+            if (labelId && !method) {
+                detailRequests.push(labelId);
+                return { id: labelId, name: GMAIL_LABELS.find(label => label.id === labelId).name, type: 'user', messagesTotal: 100, messagesUnread: 5 };
+            }
+            return { id: labelId || 'Label_new', name: 'New Label', type: 'user' };
+        },
+        listMailboxes: GmailClient.prototype.listMailboxes
+    };
+
+    return { client, detailRequests };
+}
+
+const UNSEEN_QUERY = { statusQuery: { unseen: true } };
+
+test('Gmail detailed label cache', async t => {
+    await t.test('a second call inside the window is served from the cache', async () => {
+        const { client, detailRequests } = createGmailClient();
+
+        const first = await client.listMailboxes(UNSEEN_QUERY);
+        const afterFirst = detailRequests.length;
+        const second = await client.listMailboxes(UNSEEN_QUERY);
+
+        assert.strictEqual(afterFirst, GMAIL_LABELS.length, 'the first call fetches every label individually');
+        assert.strictEqual(detailRequests.length, afterFirst, 'the second call must not hit the API again');
+        assert.deepStrictEqual(
+            second.map(mailbox => mailbox.path),
+            first.map(mailbox => mailbox.path)
+        );
+    });
+
+    await t.test('the cache expires after 60 seconds', async () => {
+        const { client, detailRequests } = createGmailClient();
+
+        await client.listMailboxes(UNSEEN_QUERY);
+        const afterFirst = detailRequests.length;
+
+        // Age the cache past the window rather than waiting a minute
+        client.cachedDetailedLabelsTime -= 61 * 1000;
+        await client.listMailboxes(UNSEEN_QUERY);
+
+        assert.strictEqual(detailRequests.length, afterFirst * 2, 'an expired cache must be refetched');
+    });
+
+    await t.test('the cache is still fresh one second before it expires', async () => {
+        const { client, detailRequests } = createGmailClient();
+
+        await client.listMailboxes(UNSEEN_QUERY);
+        const afterFirst = detailRequests.length;
+
+        client.cachedDetailedLabelsTime -= 59 * 1000;
+        await client.listMailboxes(UNSEEN_QUERY);
+
+        assert.strictEqual(detailRequests.length, afterFirst, 'the window must not be cut short');
+    });
+
+    await t.test('a label mutation invalidates the cache', async () => {
+        // Creating, renaming or deleting a label changes what the next listing must report, so
+        // every mutation path clears the cache. Driven through the real methods.
+        for (const [label, mutate] of [
+            ['createMailbox', client => GmailClient.prototype.createMailbox.call(client, 'New Label')],
+            ['renameMailbox', client => GmailClient.prototype.renameMailbox.call(client, 'Work', 'Work 2')],
+            ['deleteMailbox', client => GmailClient.prototype.deleteMailbox.call(client, 'Work')]
+        ]) {
+            const { client, detailRequests } = createGmailClient();
+
+            await client.listMailboxes(UNSEEN_QUERY);
+            const afterFirst = detailRequests.length;
+            assert.ok(client.cachedDetailedLabels, 'sanity check: the listing populated the cache');
+
+            await mutate(client);
+            assert.strictEqual(client.cachedDetailedLabels, null, `${label} must clear the detailed label cache`);
+
+            await client.listMailboxes(UNSEEN_QUERY);
+            assert.strictEqual(detailRequests.length, afterFirst * 2, `${label} must force the next listing to refetch`);
+        }
+    });
+
+    await t.test('a listing without an unseen query never touches the per-label endpoint', async () => {
+        // The expensive fan-out only exists to answer unread counts.
+        const { client, detailRequests } = createGmailClient();
+
+        await client.listMailboxes({});
+
+        assert.deepStrictEqual(detailRequests, [], 'a plain listing must be served from the label list alone');
+        assert.strictEqual(client.cachedDetailedLabels, null);
     });
 });
