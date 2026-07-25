@@ -20,7 +20,18 @@ const {
 const { getDuration, readEnvValue, threadStats, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const settings = require('../lib/settings');
-const { Export, isTransientError, isSkippableError, isFolderMissingError, isRetryableError } = require('../lib/export');
+const {
+    Export,
+    isTransientError,
+    isSkippableError,
+    isFolderMissingError,
+    isRetryableError,
+    resolveExportLimit,
+    isExportLimitReached,
+    parseActiveEntry,
+    getExportKey,
+    ACTIVE_EXPORTS_KEY
+} = require('../lib/export');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('export');
@@ -174,7 +185,7 @@ async function indexMessages(job, exportData) {
 
     await Export.update(account, exportId, { foldersTotal: foldersToProcess.length });
 
-    const maxMessages = Number(await settings.get('exportMaxMessages')) || DEFAULT_EXPORT_MAX_MESSAGES;
+    const maxMessages = resolveExportLimit(await settings.get('exportMaxMessages'), DEFAULT_EXPORT_MAX_MESSAGES);
 
     logger.info({ msg: 'Starting export indexing', account, exportId, foldersToProcess: foldersToProcess.length, maxMessages: maxMessages || 'unlimited' });
 
@@ -249,7 +260,7 @@ async function indexMessages(job, exportData) {
         // The folder indexed successfully (failures throw above); count it toward progress.
         await Export.update(account, exportId, { foldersScanned: i + 1 });
 
-        if (maxMessages && totalIndexed >= maxMessages) {
+        if (isExportLimitReached(totalIndexed, maxMessages)) {
             truncated = true;
             logger.warn({
                 msg: 'Export indexing truncated: message limit reached',
@@ -354,8 +365,8 @@ async function exportMessages(job, exportData) {
     const rawMaxBytes = Number(exportData.maxBytes);
     // Preserve an explicit 0 ("unlimited" per the API contract); only fall back when unset/invalid.
     const maxBytes = Number.isFinite(rawMaxBytes) ? rawMaxBytes : 5 * 1024 * 1024;
-    const maxMessageSize = (await settings.get('exportMaxMessageSize')) || DEFAULT_EXPORT_MAX_MESSAGE_SIZE;
-    const maxExportSize = Number(await settings.get('exportMaxSize')) || DEFAULT_EXPORT_MAX_SIZE;
+    const maxMessageSize = resolveExportLimit(await settings.get('exportMaxMessageSize'), DEFAULT_EXPORT_MAX_MESSAGE_SIZE);
+    const maxExportSize = resolveExportLimit(await settings.get('exportMaxSize'), DEFAULT_EXPORT_MAX_SIZE);
     const isEncrypted = exportData.isEncrypted === '1';
 
     const accountObject = new Account({
@@ -576,7 +587,7 @@ async function exportMessages(job, exportData) {
                                 }
                             } else if (result && result.data) {
                                 await processMessage(result.data, entry);
-                                if (maxExportSize && totalBytesWritten >= maxExportSize) {
+                                if (isExportLimitReached(totalBytesWritten, maxExportSize)) {
                                     sizeLimitReached = true;
                                     break;
                                 }
@@ -661,7 +672,7 @@ async function exportMessages(job, exportData) {
 
                     if (message) {
                         await processMessage(message, entry);
-                        if (maxExportSize && totalBytesWritten >= maxExportSize) {
+                        if (isExportLimitReached(totalBytesWritten, maxExportSize)) {
                             sizeLimitReached = true;
                             break;
                         }
@@ -883,16 +894,19 @@ function onCommand(command) {
     setInterval(
         async () => {
             try {
-                const activeExports = await redis.smembers(`${REDIS_PREFIX}exp:active`);
+                // The set key, the entry encoding and the export key all come from lib/export.js.
+                // Hand-building them here meant this cleanup and the limiter that writes the
+                // entries could drift apart: entries added under one encoding and removed under
+                // another leave the active set growing forever, and once it reaches the global
+                // limit every export in the deployment is refused with 429.
+                const activeExports = await redis.smembers(ACTIVE_EXPORTS_KEY);
                 for (const entry of activeExports) {
-                    const separatorIndex = entry.lastIndexOf(':exp_');
-                    if (separatorIndex === -1) continue;
-                    const entryAccount = entry.substring(0, separatorIndex);
-                    const entryExportId = entry.substring(separatorIndex + 1);
-                    const exists = await redis.exists(`${REDIS_PREFIX}exp:${entryAccount}:${entryExportId}`);
+                    const parsed = parseActiveEntry(entry);
+                    if (!parsed) continue;
+                    const exists = await redis.exists(getExportKey(parsed.account, parsed.exportId));
                     if (!exists) {
-                        await redis.srem(`${REDIS_PREFIX}exp:active`, entry);
-                        logger.info({ msg: 'Cleaned stale active set entry', account: entryAccount, exportId: entryExportId });
+                        await redis.srem(ACTIVE_EXPORTS_KEY, entry);
+                        logger.info({ msg: 'Cleaned stale active set entry', account: parsed.account, exportId: parsed.exportId });
                     }
                 }
             } catch (err) {
