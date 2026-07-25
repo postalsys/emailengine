@@ -112,6 +112,21 @@ test('Subconnection.start() previous client cleanup', async t => {
         assert.equal(hSetExistsCalls.filter(args => args[1] === 'connections').length, 1);
     });
 
+    await t.test('leaves an error sink on the replaced client', async () => {
+        // Same reasoning as in IMAPClient.start(): the replaced client is closed
+        // but its socket teardown continues, and an ImapFlow client with no
+        // 'error' listener rethrows the failure into the global handler
+        const { subconnection, parent, stopError } = makeSubconnection();
+        const prev = makeFakePrevClient();
+        subconnection.imapClient = prev;
+        parent.connections.add(prev);
+
+        await assert.rejects(() => subconnection.start(), stopError);
+
+        assert.equal(prev.listenerCount('error'), 1, 'the replaced client must keep an error listener');
+        assert.doesNotThrow(() => prev.emit('error', Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })));
+    });
+
     await t.test('untracks the client when connect() bails after close()', async () => {
         // start() registers the new client in parent connection tracking
         // before connect() runs its isClosing/isClosed check. When close()

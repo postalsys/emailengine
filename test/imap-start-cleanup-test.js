@@ -102,6 +102,21 @@ test('IMAPClient.start() previous client cleanup', async t => {
         assert.equal(hSetExistsCalls.filter(args => args[1] === 'connections').length, 1);
     });
 
+    await t.test('leaves an error sink on the replaced client', async () => {
+        // close() only starts the socket teardown, so a reset can still arrive
+        // afterwards and would otherwise kill the worker. The sink's own behavior
+        // is covered by test/detach-client-test.js
+        const { client } = makeClient();
+        const prev = makeFakePrevClient();
+        client.imapClient = prev;
+        client.connections.add(prev);
+
+        await client.start();
+
+        assert.equal(prev.listenerCount('error'), 1, 'the replaced client must keep an error listener');
+        assert.doesNotThrow(() => prev.emit('error', Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })));
+    });
+
     await t.test('no double decrement if the replaced client emits close later', async () => {
         const { client, hSetExistsCalls } = makeClient();
         const prev = makeFakePrevClient();
