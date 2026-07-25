@@ -61,7 +61,7 @@ const HapiSwagger = require('hapi-swagger');
 const pathlib = require('path');
 
 const crypto = require('crypto');
-const { Transform, finished } = require('stream');
+const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
 const { oauth2Apps, OAUTH_PROVIDERS } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
@@ -101,27 +101,10 @@ const {
     NONCE_BYTES
 } = consts;
 
-const templateRoutes = require('../lib/api-routes/template-routes');
-const chatRoutes = require('../lib/api-routes/chat-routes');
+const registerApiRoutes = require('../lib/api-routes');
 const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
-const accountRoutes = require('../lib/api-routes/account-routes');
-const messageRoutes = require('../lib/api-routes/message-routes');
-const exportRoutes = require('../lib/api-routes/export-routes');
-const pubsubRoutes = require('../lib/api-routes/pubsub-routes');
-const tokenRoutes = require('../lib/api-routes/token-routes');
-const mailboxRoutes = require('../lib/api-routes/mailbox-routes');
-const settingsRoutes = require('../lib/api-routes/settings-routes');
-const statsRoutes = require('../lib/api-routes/stats-routes');
-const licenseRoutes = require('../lib/api-routes/license-routes');
-const outboxRoutes = require('../lib/api-routes/outbox-routes');
-const webhookRouteRoutes = require('../lib/api-routes/webhook-route-routes');
-const oauth2AppRoutes = require('../lib/api-routes/oauth2-app-routes');
-const gatewayRoutes = require('../lib/api-routes/gateway-routes');
-const deliveryTestRoutes = require('../lib/api-routes/delivery-test-routes');
-const blocklistRoutes = require('../lib/api-routes/blocklist-routes');
-const submitRoutes = require('../lib/api-routes/submit-routes');
 
-const { imapSchema, smtpSchema, oauth2Schema, accountIdSchema, headerTimeoutSchema, errorResponses } = require('../lib/schemas');
+const { imapSchema, smtpSchema, oauth2Schema, accountIdSchema, headerTimeoutSchema } = require('../lib/schemas');
 
 const OAuth2ProviderSchema = Joi.string()
     .valid(...Object.keys(OAUTH_PROVIDERS))
@@ -278,73 +261,6 @@ logger.info({
 });
 
 const TRACKER_IMAGE = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-
-let registeredPublishers = new Set();
-
-class ResponseStream extends Transform {
-    constructor() {
-        super();
-        registeredPublishers.add(this);
-        this.periodicKeepAliveTimer = false;
-        this.updateTimer();
-
-        this._finalized = false;
-
-        // Ensure cleanup on all stream end scenarios
-        this.on('error', () => this.finalize());
-        this.once('close', () => this.finalize());
-        this.once('end', () => this.finalize());
-    }
-
-    updateTimer() {
-        clearTimeout(this.periodicKeepAliveTimer);
-        this.periodicKeepAliveTimer = setTimeout(() => {
-            if (this._finalized || this.destroyed) return;
-            this.write(': still here\n\n');
-            if (this._compressor) {
-                this._compressor.flush();
-            }
-            this.updateTimer();
-        }, 90 * 1000);
-        this.periodicKeepAliveTimer.unref();
-    }
-
-    setCompressor(compressor) {
-        this._compressor = compressor;
-    }
-
-    sendMessage(payload) {
-        if (this._finalized || this.destroyed) return;
-        let sendData = JSON.stringify(payload);
-        this.write('event: message\ndata:' + sendData + '\n\n');
-        if (this._compressor) {
-            this._compressor.flush();
-        }
-        this.updateTimer();
-    }
-
-    finalize() {
-        if (this._finalized) return; // Prevent double cleanup
-        this._finalized = true;
-
-        clearTimeout(this.periodicKeepAliveTimer);
-        registeredPublishers.delete(this);
-
-        if (!this.destroyed) {
-            this.destroy();
-        }
-    }
-
-    _transform(data, encoding, done) {
-        this.push(data);
-        done();
-    }
-
-    _flush(done) {
-        this.finalize();
-        done();
-    }
-}
 
 let callQueue = new Map();
 let mids = 0;
@@ -2779,124 +2695,26 @@ Include your token in requests using one of these methods:
         }
     });
 
-    // setup template routes
-    await templateRoutes({ server, call, CORS_CONFIG });
-
-    // setup "chat with email" routes (deprecated Document Store feature; only when enabled)
-    if (documentStoreFeatureEnabled) {
-        await chatRoutes({ server, call, CORS_CONFIG });
-    }
-
-    // setup account CRUD routes
-    await accountRoutes({
+    // setup every /v1 route module (wiring lives in lib/api-routes/index.js so the route table
+    // can be captured without booting this worker - see test/api-routes-table-test.js)
+    await registerApiRoutes({
         server,
         call,
+        notify,
         documentsQueue,
-        oauth2Schema,
-        imapSchema,
-        smtpSchema,
+        metrics,
         CORS_CONFIG,
-        AccountTypeSchema,
-        OAuth2ProviderSchema,
-        metrics
-    });
-
-    // setup message routes
-    await messageRoutes({
-        server,
-        call,
-        CORS_CONFIG,
+        FLAG_SORT_ORDER,
+        SMTP_TEST_HOST,
         MAX_ATTACHMENT_SIZE,
         MAX_BODY_SIZE,
         MAX_PAYLOAD_TIMEOUT,
-        documentStoreFeatureEnabled
-    });
-
-    // setup export routes
-    await exportRoutes({
-        server,
-        CORS_CONFIG
-    });
-
-    // setup Pub/Sub status route
-    await pubsubRoutes({ server, CORS_CONFIG });
-
-    // setup access token routes
-    await tokenRoutes({ server, call, CORS_CONFIG });
-
-    // setup mailbox routes
-    await mailboxRoutes({ server, call, CORS_CONFIG, FLAG_SORT_ORDER });
-
-    // setup settings routes
-    await settingsRoutes({ server, notify, CORS_CONFIG });
-
-    // setup stats route
-    await statsRoutes({ server, call, CORS_CONFIG });
-
-    // setup license routes
-    await licenseRoutes({ server, call, CORS_CONFIG });
-
-    // setup outbox routes
-    await outboxRoutes({ server, CORS_CONFIG });
-
-    // setup webhook route management routes
-    await webhookRouteRoutes({ server, CORS_CONFIG });
-
-    // setup OAuth2 application routes
-    await oauth2AppRoutes({ server, call, CORS_CONFIG, OAuth2ProviderSchema });
-
-    // setup SMTP gateway routes
-    await gatewayRoutes({ server, call, CORS_CONFIG });
-
-    // setup delivery test routes
-    await deliveryTestRoutes({ server, call, CORS_CONFIG, SMTP_TEST_HOST });
-
-    // setup blocklist routes
-    await blocklistRoutes({ server, call, CORS_CONFIG });
-
-    // setup message submit route
-    await submitRoutes({ server, call, CORS_CONFIG, MAX_ATTACHMENT_SIZE, MAX_BODY_SIZE, MAX_PAYLOAD_TIMEOUT });
-
-    server.route({
-        method: 'GET',
-        path: '/v1/changes',
-
-        async handler(request, h) {
-            request.app.stream = new ResponseStream();
-            finished(request.app.stream, err => request.app.stream.finalize(err));
-            setImmediate(() => {
-                try {
-                    request.app.stream.write(`: EmailEngine v${packageData.version}\n\n`);
-                } catch (err) {
-                    // ignore
-                }
-            });
-            return h
-                .response(request.app.stream)
-                .header('X-Accel-Buffering', 'no')
-                .header('Connection', 'keep-alive')
-                .header('Cache-Control', 'no-cache')
-                .type('text/event-stream');
-        },
-
-        options: {
-            description: 'Stream state changes',
-            notes: 'Stream account state changes as an EventSource',
-            tags: ['api', 'Account'],
-
-            plugins: {
-                'hapi-swagger': {
-                    produces: ['text/event-stream'],
-                    responses: errorResponses(401, 403, 429, 500)
-                }
-            },
-
-            auth: {
-                strategy: 'api-token',
-                mode: 'required'
-            },
-            cors: CORS_CONFIG
-        }
+        documentStoreFeatureEnabled,
+        oauth2Schema,
+        imapSchema,
+        smtpSchema,
+        AccountTypeSchema,
+        OAuth2ProviderSchema
     });
 
     // Web UI routes
@@ -3266,23 +3084,9 @@ Include your token in requests using one of these methods:
         method: 'GET',
         path: '/admin/changes',
 
-        async handler(request, h) {
-            request.app.stream = new ResponseStream();
-            finished(request.app.stream, err => request.app.stream.finalize(err));
-            setImmediate(() => {
-                try {
-                    request.app.stream.write(`: EmailEngine v${packageData.version}\n\n`);
-                } catch (err) {
-                    // ignore
-                }
-            });
-            return h
-                .response(request.app.stream)
-                .header('X-Accel-Buffering', 'no')
-                .header('Connection', 'keep-alive')
-                .header('Cache-Control', 'no-cache')
-                .type('text/event-stream');
-        }
+        // Same feed as /v1/changes (lib/api-routes/changes-routes.js), opened through the shared
+        // helper so the two can not drift apart on framing or on stream cleanup.
+        handler: openChangeStream
     });
 
     // setup web UI
