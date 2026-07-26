@@ -1,10 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-23 15:18+0000\n"
+"POT-Creation-Date: 2026-07-26 05:20+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:3201
+#: workers/api.js:3019
 msgid "Something went wrong"
 msgstr ""
 
@@ -26,30 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-msgid "Try Again"
-msgstr ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
@@ -97,6 +73,30 @@ msgstr ""
 #: views/unsubscribe.hbs:70
 #: views/accounts/register/imap.hbs:23
 msgid "Email address"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -254,19 +254,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1040
+#: lib/tools.js:1056
 #: lib/ui-routes/unsubscribe-routes.js:28
 #: lib/ui-routes/unsubscribe-routes.js:92
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:1877
+#: lib/tools.js:1893
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1900
-#: lib/tools.js:1906
-#: lib/tools.js:1911
+#: lib/tools.js:1916
+#: lib/tools.js:1922
+#: lib/tools.js:1927
 #: lib/ui-routes/account-routes.js:976
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -277,8 +277,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:748
 #: lib/ui-routes/account-routes.js:1006
 #: lib/ui-routes/account-routes.js:1098
-#: workers/api.js:2376
-#: workers/api.js:2730
+#: workers/api.js:2292
+#: workers/api.js:2646
 msgid "Email Account Setup"
 msgstr ""
 
@@ -399,7 +399,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:3200
-#: workers/api.js:3315
+#: workers/api.js:3018
+#: workers/api.js:3119
 msgid "Requested page not found"
 msgstr ""
