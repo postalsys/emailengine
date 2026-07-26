@@ -49,6 +49,9 @@ const DEFAULT_STATES = {
     disconnected: 0
 };
 
+// Minimum interval between reports about failed account log writes, see getAccountLogger()
+const LOG_FAILURE_REPORT_INTERVAL = 60 * 1000;
+
 const NO_ACTIVE_HANDLER_RESP_ERR = new Error('No active handler for requested account. Try again later.');
 NO_ACTIVE_HANDLER_RESP_ERR.statusCode = 503;
 NO_ACTIVE_HANDLER_RESP_ERR.code = 'WorkerNotAvailable';
@@ -116,11 +119,42 @@ class ConnectionHandler {
         let logKey = this.getLogKey(account);
         let logging = await settings.getLoggingInfo(account);
 
-        return {
+        // log() runs once per protocol line, so a persistent write failure (Redis OOM, MISCONF,
+        // READONLY) would report itself on every single line. Report the first failure, then at
+        // most one summary per interval, otherwise a failing account log floods the main log.
+        let lastFailureReport = 0;
+        let suppressedFailures = 0;
+        let reportFailure = (msg, err) => {
+            let now = Date.now();
+            if (now - lastFailureReport < LOG_FAILURE_REPORT_INTERVAL) {
+                suppressedFailures++;
+                return;
+            }
+
+            // ioredis attaches the failed command to the error, and the arguments of these
+            // writes include the encoded log entry itself (protocol traces, and even raw
+            // credentials when EENGINE_LOG_RAW is set), so such errors are summarized instead
+            // of being handed to the log serializer, which copies all enumerable properties
+            let reported = err && (err.command || err.previousErrors) ? { name: err.name, code: err.code, message: err.message } : err;
+
+            let payload = { msg, account, err: reported };
+            if (suppressedFailures) {
+                payload.suppressed = suppressedFailures;
+            }
+            logger.error(payload);
+
+            lastFailureReport = now;
+            suppressedFailures = 0;
+        };
+
+        // Members are referenced by name instead of through `this` as this object is passed
+        // around to client classes that might call log() detached from its receiver
+        let accountLogger = {
             enabled: logging.enabled,
             maxLogLines: logging.maxLogLines,
+
             log(entry) {
-                if (!this.maxLogLines || !this.enabled) {
+                if (!accountLogger.maxLogLines || !accountLogger.enabled) {
                     return;
                 }
 
@@ -134,19 +168,22 @@ class ConnectionHandler {
                     redis
                         .multi()
                         .rpush(logKey, logRow)
-                        .ltrim(logKey, -this.maxLogLines, -1)
+                        .ltrim(logKey, -accountLogger.maxLogLines, -1)
                         .exec()
-                        .catch(err => this.logger.error({ msg: 'Failed to update log entries', account, err }));
+                        .catch(err => reportFailure('Failed to update log entries', err));
                 } catch (err) {
-                    this.logger.error({ msg: 'Failed to encode log entry', account, entry, err });
+                    reportFailure('Failed to encode log entry', err);
                 }
             },
+
             async reload() {
-                logging = await settings.getLoggingInfo(account);
-                this.enabled = logging.enabled;
-                this.maxLogLines = logging.maxLogLines;
+                let updated = await settings.getLoggingInfo(account);
+                accountLogger.enabled = updated.enabled;
+                accountLogger.maxLogLines = updated.maxLogLines;
             }
         };
+
+        return accountLogger;
     }
 
     async assignConnection(account, runIndex, initOpts) {
@@ -264,7 +301,7 @@ class ConnectionHandler {
 
         if (accountData.state) {
             await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', accountData.state);
-            await emitChangeEvent(this.logger, account, 'state', accountData.state);
+            await emitChangeEvent(logger, account, 'state', accountData.state);
         }
 
         // do not wait before returning as it may take forever
@@ -299,7 +336,7 @@ class ConnectionHandler {
                 let state = 'connecting';
                 await redis.hSetExists(accountObject.connection.getAccountKey(), 'state', state);
                 accountObject.connection.state = state;
-                await emitChangeEvent(this.logger, account, 'state', state);
+                await emitChangeEvent(logger, account, 'state', state);
                 await accountObject.connection.reconnect(true);
             }
         }
