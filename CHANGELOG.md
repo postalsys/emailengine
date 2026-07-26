@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.74.2](https://github.com/postalsys/emailengine/compare/v2.74.1...v2.74.2) (2026-07-26)
+
+
+### Bug Fixes
+
+* **api:** bring /v1/changes under the route-table guardrail ([d685ad8](https://github.com/postalsys/emailengine/commit/d685ad849fd46d0c15837278b9d30a7f195400a2))
+* **auth:** normalize the rate-limit window and reject a negative cost ([4c58678](https://github.com/postalsys/emailengine/commit/4c586783b350c38e9dd016f334b00c3d7c29cfd4))
+* **export:** correct the concurrency limits and the active-set ownership ([690934a](https://github.com/postalsys/emailengine/commit/690934a0ecf8cbaa5374f0d44ae6881f708ff914))
+* **imap:** keep an error sink on abandoned IMAP connections ([a9ef9e3](https://github.com/postalsys/emailengine/commit/a9ef9e3fe380cd3752a1121a0741559fbd8229b7))
+* **imap:** report account log write failures instead of crashing the worker ([e881e65](https://github.com/postalsys/emailengine/commit/e881e6593ffa0f4ace027e9287124b3bde3a3edb))
+* **imap:** stop wiping the folder listing on an unusable LIST response ([f6229bb](https://github.com/postalsys/emailengine/commit/f6229bb72a8a6cd415a3c738740b9dc64dfbfb9d))
+* **imap:** tolerate a FETCH response that omits FLAGS ([b78b314](https://github.com/postalsys/emailengine/commit/b78b314396ea6eec7e23d707044cf46d1f51899c))
+* **smtp:** handle MIME parse errors and enforce the message size limit ([e70eb7d](https://github.com/postalsys/emailengine/commit/e70eb7df40245118752cf276cb70090647573216))
+* **smtp:** reject an unparseable message permanently instead of with a 450 ([ef77542](https://github.com/postalsys/emailengine/commit/ef775420a15d94c6a46d6eefe6d37413b5330e6c))
+* **ui:** flag recently restarted workers on the internals page ([435a932](https://github.com/postalsys/emailengine/commit/435a93233ca56c61c42f17d80fb2d4d39fb88381))
+
 ## [2.74.1](https://github.com/postalsys/emailengine/compare/v2.74.0...v2.74.1) (2026-07-24)
 
 
