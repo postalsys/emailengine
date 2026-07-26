@@ -17,7 +17,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 const { Readable } = require('node:stream');
 
-const { processMessage, collectMessage, ACCOUNT_HEADER, IDEMPOTENCY_HEADER } = require('../lib/smtp-message-processor');
+const { processMessage, collectMessage, ACCOUNT_HEADER, IDEMPOTENCY_HEADER, PARSE_FAILURE_RESPONSE_CODE } = require('../lib/smtp-message-processor');
 
 function buildMessage(headerLines, body = 'Message body here.') {
     return [...headerLines, '', body].join('\r\n');
@@ -36,6 +36,19 @@ function rawDataStream(source, { sizeExceeded = false } = {}) {
 // submission port can send one.
 function oversizedHeaderMessage() {
     return buildMessage(['From: sender@example.com', `X-Padding: ${'a'.repeat(1024 * 1024 + 16)}`]);
+}
+
+// Drains a processMessage() stream that is expected to fail and returns the error itself, so a
+// test can assert on the SMTP reply code it carries and not just on the message text.
+async function collectError(stream) {
+    try {
+        for await (const chunk of stream) {
+            void chunk;
+        }
+    } catch (err) {
+        return err;
+    }
+    assert.fail('expected the stream to fail');
 }
 
 // Runs a raw message through processMessage() and returns the rewritten message plus the meta
@@ -188,14 +201,9 @@ test('SMTP submission message processing', async t => {
 
         const stream = processMessage(failing, {});
 
-        await assert.rejects(
-            (async () => {
-                for await (const chunk of stream) {
-                    void chunk;
-                }
-            })(),
-            /connection reset mid-DATA/
-        );
+        const err = await collectError(stream);
+        assert.match(err.message, /connection reset mid-DATA/);
+        assert.strictEqual(err.responseCode, undefined, 'a dropped connection is not a verdict on the message, so it must keep the retryable default');
     });
 
     await t.test('a MIME parse error surfaces on the returned stream instead of going unhandled', async () => {
@@ -206,14 +214,20 @@ test('SMTP submission message processing', async t => {
         // client that reaches the submission port kills the whole SMTP worker thread.
         const stream = processMessage(Readable.from([Buffer.from(oversizedHeaderMessage())]), {});
 
-        await assert.rejects(
-            (async () => {
-                for await (const chunk of stream) {
-                    void chunk;
-                }
-            })(),
-            /Max header size/
-        );
+        const err = await collectError(stream);
+        assert.match(err.message, /Max header size/);
+    });
+
+    await t.test('a MIME parse error is reported as a permanent rejection', async () => {
+        // The splitter only ever fails on a structural property of the message, so redelivering
+        // the same bytes can only fail the same way. Without a responseCode smtp-server answers
+        // 450 and a conforming client retries the unparseable message for its whole queue
+        // lifetime.
+        const err = await collectError(processMessage(Readable.from([Buffer.from(oversizedHeaderMessage())]), {}));
+
+        assert.strictEqual(err.code, 'EMAXLEN');
+        assert.strictEqual(err.responseCode, PARSE_FAILURE_RESPONSE_CODE);
+        assert.ok(err.responseCode >= 500 && err.responseCode < 600, 'must be a permanent SMTP reply code');
     });
 });
 
@@ -258,5 +272,17 @@ test('SMTP submission message collection', async t => {
 
     await t.test('a MIME parse error rejects instead of killing the worker', async () => {
         await assert.rejects(collectMessage(rawDataStream(oversizedHeaderMessage()), {}), /Max header size/);
+    });
+
+    await t.test('the rejection carries the permanent reply code through to onData', async () => {
+        // workers/smtp.js hands the rejection straight to the smtp-server callback, which reads
+        // responseCode off it, so the tag has to survive collectMessage() and not just
+        // processMessage().
+        const err = await collectMessage(rawDataStream(oversizedHeaderMessage()), {}).then(
+            () => assert.fail('an unparseable message must not resolve'),
+            err => err
+        );
+
+        assert.strictEqual(err.responseCode, PARSE_FAILURE_RESPONSE_CODE);
     });
 });
