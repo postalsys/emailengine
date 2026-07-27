@@ -90,22 +90,42 @@ function createMockLogger() {
 }
 
 // Builds a mock `this` for Account.prototype.update and records every RPC call() it issues.
-function createCtx(oldAccountData) {
+// `lockEvents` records the update lock's lifecycle interleaved with the RPC dispatches, so a test
+// can assert the lock is released before update() reaches into the IMAP worker.
+function createCtx(oldAccountData, lockOverrides) {
     let calls = [];
-    let ctx = {
+    let lockEvents = [];
+    let lock = Object.assign(
+        {
+            waitAcquireLock: async key => {
+                lockEvents.push({ event: 'acquire', key });
+                return { success: true, id: key, index: 1 };
+            },
+            releaseLock: async held => {
+                lockEvents.push({ event: 'release', key: held && held.id });
+            }
+        },
+        lockOverrides || {}
+    );
+
+    // Inherit from the real prototype so update() reaches the real persistUpdate() and
+    // dispatchPostUpdateCommands(); only the collaborators below are stubbed.
+    let ctx = Object.assign(Object.create(Account.prototype), {
         account: oldAccountData.account,
         timeout: 1000,
         logger: createMockLogger(),
         redis: mockRedis,
+        getLock: () => lock,
         getAccountKey: () => `iad:${oldAccountData.account}`,
         serializeAccountData: () => ({}),
         loadAccountData: async () => oldAccountData,
         call: async message => {
             calls.push(message);
+            lockEvents.push({ event: 'call', cmd: message.cmd });
             return true;
         }
-    };
-    return { ctx, calls };
+    });
+    return { ctx, calls, lockEvents };
 }
 
 const REAUTHORIZED = { reauthorized: true };
@@ -271,5 +291,125 @@ test('Account.update OAuth re-auth reconnect gate', async t => {
         await assert.doesNotReject(Account.prototype.update.call(ctx, { account: 'acc10', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED));
 
         assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'reconnect was attempted');
+    });
+});
+
+// Per-account serialization of the read-modify-write half of update(). Two writers interleaving
+// between loadAccountData() and the hmset lose one of the merges; the case that matters is an
+// unattended token refresh landing inside an admin update and restoring a stale refreshToken.
+test('Account.update serialization', async t => {
+    await t.test('takes and releases a per-account update lock', async () => {
+        let { ctx, lockEvents } = createCtx({
+            account: 'acc11',
+            state: 'connected',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'acc11', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } });
+
+        assert.deepStrictEqual(
+            lockEvents.map(e => e.event),
+            ['acquire', 'release']
+        );
+        // Keyed per account, so an update to one account never blocks another
+        assert.strictEqual(lockEvents[0].key, 'account:update:acc11');
+    });
+
+    await t.test('releases the lock before dispatching to the IMAP worker', async () => {
+        // The dispatch is an RPC whose connection setup can itself persist an account change (a
+        // token renewal during connect). Holding the lock across it would make a writer wait on
+        // its own dispatch until the 5s acquisition timeout expires.
+        let { ctx, lockEvents } = createCtx({
+            account: 'acc12',
+            state: 'authenticationError',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        await Account.prototype.update.call(ctx, { account: 'acc12', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        const releaseAt = lockEvents.findIndex(e => e.event === 'release');
+        const dispatchAt = lockEvents.findIndex(e => e.event === 'call');
+
+        assert.ok(releaseAt >= 0, 'lock was released');
+        assert.ok(dispatchAt >= 0, 'a command was dispatched');
+        assert.ok(releaseAt < dispatchAt, 'the lock must be released before the RPC dispatch');
+    });
+
+    await t.test('releases the lock when the write throws', async () => {
+        let { ctx, lockEvents } = createCtx({
+            account: 'acc13',
+            state: 'connected',
+            oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+        });
+
+        ctx.loadAccountData = async () => {
+            throw new Error('redis is gone');
+        };
+
+        await assert.rejects(Account.prototype.update.call(ctx, { account: 'acc13', name: 'x' }), /redis is gone/);
+
+        assert.deepStrictEqual(
+            lockEvents.map(e => e.event),
+            ['acquire', 'release'],
+            'a failed write must not leak the lock'
+        );
+    });
+
+    await t.test('proceeds when the lock cannot be acquired', async () => {
+        // Fail-open: the critical section is a few Redis round trips, so a timeout here means
+        // Redis is already unhealthy. Refusing the write would break token refreshes for every
+        // account rather than losing a rare merge.
+        let { ctx, calls, lockEvents } = createCtx(
+            {
+                account: 'acc14',
+                state: 'authenticationError',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                waitAcquireLock: async () => ({ success: false })
+            }
+        );
+
+        await Account.prototype.update.call(ctx, { account: 'acc14', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }, REAUTHORIZED);
+
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 1, 'the update still went through');
+        // Nothing was acquired, so nothing may be released
+        assert.strictEqual(lockEvents.filter(e => e.event === 'release').length, 0, 'a lock that was never acquired must not be released');
+    });
+
+    await t.test('proceeds when the lock backend throws', async () => {
+        let { ctx, calls } = createCtx(
+            {
+                account: 'acc15',
+                state: 'connected',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                waitAcquireLock: async () => {
+                    throw new Error('lock backend unavailable');
+                }
+            }
+        );
+
+        await assert.doesNotReject(Account.prototype.update.call(ctx, { account: 'acc15', oauth2: { accessToken: 'NEW', refreshToken: 'R1' } }));
+        assert.strictEqual(calls.filter(c => c.cmd === 'reconnect').length, 0);
+    });
+
+    await t.test('a failed release does not mask the result', async () => {
+        let { ctx } = createCtx(
+            {
+                account: 'acc16',
+                state: 'connected',
+                oauth2: { accessToken: 'OLD', refreshToken: 'R0' }
+            },
+            {
+                releaseLock: async () => {
+                    throw new Error('release failed');
+                }
+            }
+        );
+
+        const result = await Account.prototype.update.call(ctx, { account: 'acc16', name: 'x' });
+        assert.deepStrictEqual(result, { account: 'acc16' });
     });
 });
