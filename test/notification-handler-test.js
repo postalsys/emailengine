@@ -25,6 +25,7 @@ const {
     MAILBOX_DELETED_NOTIFY,
     AUTH_ERROR_NOTIFY
 } = require('../lib/consts');
+const { FAILED_JOB_RETENTION_AGE, FAILED_JOB_RETENTION_COUNT } = require('../lib/queue-retention');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -81,20 +82,37 @@ test('buildJobOptions', async t => {
 
     await t.test('maps a numeric queueKeep to age+count retention', () => {
         const opts = handler.buildJobOptions(500);
-        const retention = { age: 24 * 3600, count: 500 };
-        assert.deepStrictEqual(opts.notify.removeOnComplete, retention);
-        assert.deepStrictEqual(opts.notify.removeOnFail, retention);
-        assert.deepStrictEqual(opts.documents.removeOnComplete, retention);
+        assert.deepStrictEqual(opts.notify.removeOnComplete, { age: 24 * 3600, count: 500 });
+        assert.deepStrictEqual(opts.documents.removeOnComplete, { age: 24 * 3600, count: 500 });
         // Attempt counts come from the respective base option sets.
         assert.strictEqual(opts.notify.attempts, 10);
         assert.strictEqual(opts.documents.attempts, 16);
     });
 
-    await t.test('passes a boolean queueKeep through unchanged', () => {
+    await t.test('keeps failed entries on their own retention floor', () => {
+        // An exhausted notification is a lost event, so it outlives the completed-entry policy
+        // no matter how low queueKeep is set. See lib/queue-retention.js
+        const opts = handler.buildJobOptions(0);
+        assert.deepStrictEqual(opts.notify.removeOnComplete, { age: 24 * 3600, count: 0 });
+        assert.deepStrictEqual(opts.notify.removeOnFail, {
+            age: FAILED_JOB_RETENTION_AGE,
+            count: FAILED_JOB_RETENTION_COUNT
+        });
+        assert.deepStrictEqual(opts.documents.removeOnFail, {
+            age: FAILED_JOB_RETENTION_AGE,
+            count: FAILED_JOB_RETENTION_COUNT
+        });
+    });
+
+    await t.test('passes a boolean queueKeep through for completed entries', () => {
         const opts = handler.buildJobOptions(true);
         assert.strictEqual(opts.notify.removeOnComplete, true);
-        assert.strictEqual(opts.notify.removeOnFail, true);
         assert.strictEqual(opts.documents.removeOnComplete, true);
+        // ...but failures still get the floor rather than being dropped on arrival
+        assert.deepStrictEqual(opts.notify.removeOnFail, {
+            age: FAILED_JOB_RETENTION_AGE,
+            count: FAILED_JOB_RETENTION_COUNT
+        });
     });
 
     await t.test('does not mutate the shared base option objects', () => {
