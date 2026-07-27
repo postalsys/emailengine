@@ -54,6 +54,9 @@ Path-scoped rules in `.claude/rules/` load automatically when you work with the 
 - `EENGINE_QUEUE_KEEP_FAILED` - Failed entries retained per queue, regardless of `queueKeep` (default: 500). Failures are the only record that a delivery was given up on, so they are never dropped on arrival; raise or lower this against Redis memory, remembering a `messageNew` payload can carry up to `notifyTextSize` of message text
 - `EENGINE_QUEUE_KEEP_FAILED_AGE` - How long failed entries are retained, in seconds (default: 604800, 7 days)
 
+**Message rendering:**
+- `EENGINE_DISABLE_THREAD_COLLAPSE` - Set to `true` to stop web-safe HTML from folding quoted thread history into a collapsed `<details class="ee-collapsed-thread">` block (default: folding enabled). The marker carries class names only - its `<summary>` is empty on purpose, so a renderer that does not know about it shows nothing extra. See `lib/web-safe-html.js`
+
 **Prepared configuration** (applied on startup):
 - `EENGINE_SETTINGS` - JSON settings object
 - `EENGINE_PREPARED_TOKEN` - Base64url msgpack-encoded API token
