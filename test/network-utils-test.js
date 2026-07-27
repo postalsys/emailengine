@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { matchIp, googleCrawlerMap, detectAutomatedRequest, updatePublicInterfaces, getLocalAddress } = require('../lib/utils/network');
+const { matchIp, resolveClientIp, googleCrawlerMap, detectAutomatedRequest, updatePublicInterfaces, getLocalAddress } = require('../lib/utils/network');
 
 test('Network Utilities tests', async t => {
     t.after(() => {
@@ -86,6 +86,99 @@ test('Network Utilities tests', async t => {
 
         // Non-matching address returns false (even with mixed list)
         assert.strictEqual(matchIp('8.8.8.8', addresses), false);
+    });
+
+    await t.test('matchIp() fails closed for an unparseable subject address', async () => {
+        // A non-IP value reaching an allowlist check must match nothing rather than throw. These
+        // all used to escape matchIp() and surface as a 500 on any allowlist-protected route.
+        for (let bad of ['not-an-ip', '', ' 1.2.3.4', '1.2.3.4:5678', '[::1]:443', 'unknown', '1.2.3.4.5']) {
+            assert.strictEqual(matchIp(bad, ['1.2.3.4', '10.0.0.0/8']), false, `expected no match for ${JSON.stringify(bad)}`);
+        }
+    });
+
+    // resolveClientIp tests
+    // Every case shares the same peer address and an enabled proxy setting; each test varies only
+    // the key it is actually about.
+    const resolveFrom = overrides => resolveClientIp(Object.assign({ remoteAddress: '10.0.0.9', enableApiProxy: true }, overrides));
+
+    await t.test('resolveClientIp() uses the socket address when the API proxy is disabled', async () => {
+        assert.strictEqual(resolveFrom({ forwardedFor: '8.8.8.8', enableApiProxy: false }), '10.0.0.9');
+    });
+
+    await t.test('resolveClientIp() uses the socket address when no header is present', async () => {
+        assert.strictEqual(resolveFrom({}), '10.0.0.9');
+    });
+
+    await t.test('resolveClientIp() ignores a forwarded value that is not a bare IP', async () => {
+        for (let bad of ['unknown', '8.8.8.8:1234', '[2001:db8::1]:443', 'garbage', '']) {
+            assert.strictEqual(resolveFrom({ forwardedFor: bad }), '10.0.0.9', `expected fallback for ${JSON.stringify(bad)}`);
+        }
+    });
+
+    await t.test('resolveClientIp() discards the header entirely when the peer is not a declared proxy', async () => {
+        assert.strictEqual(resolveFrom({ remoteAddress: '203.0.113.5', forwardedFor: '8.8.8.8', trustedProxies: ['10.0.0.0/8'] }), '203.0.113.5');
+    });
+
+    await t.test('resolveClientIp() takes the entry the closest trusted proxy observed, not the left-most one', async () => {
+        // THE bypass this list exists to stop. Proxies APPEND to X-Forwarded-For rather than
+        // overwriting it (nginx `$proxy_add_x_forwarded_for`, Apache mod_proxy, HAProxy
+        // `option forwardfor`), so a caller that sends its own X-Forwarded-For has its value
+        // preserved as the left-most entry. Reading left-most would hand an internet caller the
+        // office address that EENGINE_ADMIN_ACCESS_ADDRESSES is gating on.
+        const resolved = resolveFrom({
+            remoteAddress: '10.0.0.2', // nginx
+            forwardedFor: '203.0.113.10, 198.51.100.77', // spoofed by the caller, then the real peer nginx saw
+            trustedProxies: ['10.0.0.2']
+        });
+
+        assert.strictEqual(resolved, '198.51.100.77');
+        assert.strictEqual(matchIp(resolved, ['203.0.113.10']), false, 'the spoofed address must not satisfy an allowlist');
+    });
+
+    await t.test('resolveClientIp() walks back through a whole chain of declared proxies', async () => {
+        // attacker -> nginx1 (10.0.0.2) -> nginx2 (10.0.0.3) -> EmailEngine
+        assert.strictEqual(
+            resolveFrom({
+                remoteAddress: '10.0.0.3',
+                forwardedFor: '203.0.113.10, 198.51.100.77, 10.0.0.2',
+                trustedProxies: ['10.0.0.0/8']
+            }),
+            '198.51.100.77'
+        );
+    });
+
+    await t.test('resolveClientIp() handles a single-entry chain from an overwriting proxy', async () => {
+        // A proxy configured to replace rather than append leaves exactly one entry, which is the
+        // real client either way
+        assert.strictEqual(resolveFrom({ remoteAddress: '10.0.0.2', forwardedFor: '198.51.100.77', trustedProxies: ['10.0.0.2'] }), '198.51.100.77');
+    });
+
+    await t.test('resolveClientIp() falls back to the peer when every hop is one of ours', async () => {
+        assert.strictEqual(resolveFrom({ remoteAddress: '10.0.0.3', forwardedFor: '10.0.0.2, 10.0.0.4', trustedProxies: ['10.0.0.0/8'] }), '10.0.0.3');
+    });
+
+    await t.test('resolveClientIp() falls back to the peer when the observed entry is not an IP', async () => {
+        assert.strictEqual(resolveFrom({ remoteAddress: '10.0.0.2', forwardedFor: 'unknown, garbage', trustedProxies: ['10.0.0.2'] }), '10.0.0.2');
+    });
+
+    await t.test('resolveClientIp() trims whitespace around chain entries', async () => {
+        assert.strictEqual(
+            resolveFrom({ remoteAddress: '10.0.0.2', forwardedFor: ' 203.0.113.10 ,  198.51.100.77 ', trustedProxies: ['10.0.0.2'] }),
+            '198.51.100.77'
+        );
+    });
+
+    await t.test('resolveClientIp() keeps legacy left-most behavior when no trusted proxies are configured', async () => {
+        // Without a proxy list there is no way to know how many hops to believe, so existing
+        // deployments keep the address they have always logged. Documented as unsafe for
+        // allowlists; the API worker warns about exactly this combination at startup.
+        for (let trustedProxies of [null, undefined, []]) {
+            assert.strictEqual(resolveFrom({ remoteAddress: '203.0.113.5', forwardedFor: '8.8.8.8, 10.0.0.9', trustedProxies }), '8.8.8.8');
+        }
+    });
+
+    await t.test('resolveClientIp() accepts IPv6 forwarded addresses', async () => {
+        assert.strictEqual(resolveFrom({ remoteAddress: '::1', forwardedFor: '2001:db8::1', trustedProxies: ['::1'] }), '2001:db8::1');
     });
 
     // googleCrawlerMap tests

@@ -30,6 +30,7 @@ const {
     runPrechecks,
     matcher,
     readEnvValue,
+    readEnvList,
     threadStats,
     hasEnvValue,
     getBoolean,
@@ -42,7 +43,7 @@ const {
     releaseFormNonce,
     setAdminSession
 } = require('../lib/tools');
-const { matchIp, detectAutomatedRequest } = require('../lib/utils/network');
+const { matchIp, resolveClientIp, detectAutomatedRequest } = require('../lib/utils/network');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('api');
@@ -201,12 +202,11 @@ const USE_REUSE_PORT = !!(workerData && workerData.reusePort);
 // that must execute exactly once across all API workers.
 const IS_PRIMARY_API_WORKER = WORKER_INDEX === 0;
 
-const ADMIN_ACCESS_ADDRESSES = hasEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
-    ? readEnvValue('EENGINE_ADMIN_ACCESS_ADDRESSES')
-          .split(',')
-          .map(v => v.trim())
-          .filter(v => v)
-    : null;
+const ADMIN_ACCESS_ADDRESSES = readEnvList('EENGINE_ADMIN_ACCESS_ADDRESSES');
+
+// Peers allowed to set X-Forwarded-For. Unset means the header is honored from any peer whenever
+// the API proxy setting is on, which is the historical behavior; see resolveClientIp().
+const API_PROXY_ADDRESSES = readEnvList('EENGINE_API_PROXY_ADDRESSES');
 
 const IMAP_WORKER_COUNT = getWorkerCount(readEnvValue('EENGINE_WORKERS') || (config.workers && config.workers.imap)) || 4;
 
@@ -778,19 +778,19 @@ const init = async () => {
         // set default, will be overriden once active language is resolved
         request.app.gt = gt;
 
+        // Both settings are needed on every request and neither depends on the other, so they are
+        // read in a single HMGET rather than two serialized round trips
+        let { enableApiProxy, disableTokens } = await settings.getMulti('enableApiProxy', 'disableTokens');
+
         // check if client IP is resolved from X-Forwarded-For or not
-        let enableApiProxy = (await settings.get('enableApiProxy')) || false;
-        if (enableApiProxy) {
-            // check for the IP address from the Forwarded-For header
-            const xFF = request.headers['x-forwarded-for'];
-            request.app.ip = xFF ? xFF.split(',')[0] : request.info.remoteAddress;
-        } else {
-            // use socket address
-            request.app.ip = request.info.remoteAddress;
-        }
+        request.app.ip = resolveClientIp({
+            remoteAddress: request.info.remoteAddress,
+            forwardedFor: request.headers['x-forwarded-for'],
+            enableApiProxy: enableApiProxy || false,
+            trustedProxies: API_PROXY_ADDRESSES
+        });
 
         // check if access tokens for api requests are required
-        let disableTokens = await settings.get('disableTokens');
         if (disableTokens && !request.url.searchParams.get('access_token') && !request.headers.authorization) {
             // make sure that we have a access_token value set in query args
             let url = new URL(request.url.href);
@@ -3148,6 +3148,17 @@ Include your token in requests using one of these methods:
                 reusePortListener.removeListener('error', onError);
                 onError(err);
             }
+        });
+    }
+
+    // An IP allowlist is only as trustworthy as the address it matches against. If the deployment
+    // takes the client address from X-Forwarded-For but does not say which peers may set it, any
+    // client that can reach this port can present whatever address the allowlist expects.
+    if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length && !API_PROXY_ADDRESSES && (await settings.get('enableApiProxy'))) {
+        logger.warn({
+            msg: 'Admin IP allowlist is spoofable because X-Forwarded-For is trusted from any peer. Set EENGINE_API_PROXY_ADDRESSES to the addresses of your proxies, or disable the API proxy setting.',
+            component: 'api',
+            allowedAddresses: ADMIN_ACCESS_ADDRESSES
         });
     }
 
