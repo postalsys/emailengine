@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-26 05:20+0000\n"
+"POT-Creation-Date: 2026-07-27 17:59+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3019
@@ -125,14 +125,6 @@ msgstr ""
 msgid "Continue"
 msgstr ""
 
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
-msgstr ""
-
 #: views/accounts/register/imap-server.hbs:22
 msgid "IMAP"
 msgstr ""
@@ -246,6 +238,14 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
 #: lib/autodetect-imap-settings.js:90
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
@@ -345,7 +345,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:171
+#: lib/ui-routes/admin-config-routes.js:170
 msgid "Invalid API key for OpenAI"
 msgstr ""
 

@@ -488,10 +488,11 @@ export class EmailEngineClient {
         const style = document.createElement('style');
         style.textContent = `
             .ee-client {
+                --ee-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 display: flex;
                 height: 100%;
                 min-height: 400px;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                font-family: var(--ee-font);
                 font-size: 14px;
                 line-height: 1.5;
                 color: #333;
@@ -685,7 +686,8 @@ export class EmailEngineClient {
                 box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
-            .ee-button {
+            .ee-button,
+            .ee-collapsed-thread-toggle {
                 padding: 4px 10px;
                 border: 1px solid #ddd;
                 background: white;
@@ -702,7 +704,8 @@ export class EmailEngineClient {
                 height: 24px;
             }
             
-            .ee-button:hover:not(:disabled) {
+            .ee-button:hover:not(:disabled),
+            .ee-collapsed-thread-toggle:hover {
                 background: #f0f0f0;
             }
             
@@ -744,7 +747,30 @@ export class EmailEngineClient {
                 max-width: 100%;
                 height: auto;
             }
-            
+
+            /* Quoted thread history, folded away by EmailEngine - see _labelCollapsedThreads() */
+            .ee-collapsed-thread {
+                margin-top: 12px;
+            }
+
+            .ee-collapsed-thread-toggle {
+                display: inline-block;
+                height: auto;
+                /* The message brings its own fonts along; the control keeps the client's */
+                font-family: var(--ee-font);
+                user-select: none;
+                list-style: none;
+            }
+
+            /* Same, for Safari before it supported list-style on a summary */
+            .ee-collapsed-thread-toggle::-webkit-details-marker {
+                display: none;
+            }
+
+            .ee-collapsed-thread[open] > .ee-collapsed-thread-toggle {
+                margin-bottom: 12px;
+            }
+
             .ee-attachments {
                 margin-top: 16px;
                 padding-top: 16px;
@@ -1184,13 +1210,15 @@ export class EmailEngineClient {
                 border-color: #333;
             }
 
-            .ee-dark-mode .ee-button {
+            .ee-dark-mode .ee-button,
+            .ee-dark-mode .ee-collapsed-thread-toggle {
                 background: #333;
                 border-color: #444;
                 color: #e0e0e0;
             }
 
-            .ee-dark-mode .ee-button:hover {
+            .ee-dark-mode .ee-button:hover,
+            .ee-dark-mode .ee-collapsed-thread-toggle:hover {
                 background: #444;
                 border-color: #555;
             }
@@ -1610,6 +1638,8 @@ export class EmailEngineClient {
         `;
         viewer.innerHTML = html;
 
+        this._labelCollapsedThreads(viewer);
+
         viewer.querySelector('[data-action="toggle-read"]').addEventListener('click', () => {
             const currentlyUnseen = msg.unseen;
             this.markAsRead(msg.id, currentlyUnseen);
@@ -1648,6 +1678,25 @@ export class EmailEngineClient {
         });
 
         // Message content scrolling is now handled in loadMessage method
+    }
+
+    // EmailEngine's web-safe HTML folds quoted thread history (reply history, forwarded content,
+    // disclaimers) into a <details class="ee-collapsed-thread"> whose <summary> it leaves empty on
+    // purpose, for the renderer to label. The fold is closed until the reader opens it.
+    //
+    // A sender can put the same markup in their own HTML - it survives sanitization - so every
+    // match is relabelled rather than trusted, and the control always reads as one of these two
+    // labels instead of whatever text came with the message.
+    _labelCollapsedThreads(viewer) {
+        viewer.querySelectorAll('details.ee-collapsed-thread > summary.ee-collapsed-thread-toggle').forEach(toggle => {
+            const details = toggle.parentElement;
+            const applyLabel = () => {
+                toggle.textContent = details.open ? 'Hide quoted text' : 'Show quoted text';
+            };
+
+            applyLabel();
+            details.addEventListener('toggle', applyLabel);
+        });
     }
 
     createLayout() {
