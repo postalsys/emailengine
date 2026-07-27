@@ -130,3 +130,69 @@ test('sendWebhookRequest still ignores non-timeout drain errors', async () => {
     const status = await sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', { method: 'post' });
     assert.strictEqual(status, 204);
 });
+
+// Egress policy plumbing. A validateTarget callback both vets the destination before the request
+// and switches redirect handling to manual, because fetch() would otherwise follow a Location
+// header to a destination the policy never got to inspect. See lib/egress-filter.js
+
+test('sendWebhookRequest vets the destination before issuing the request', async () => {
+    let fetched = false;
+    const fakeFetch = async () => {
+        fetched = true;
+        return fakeResponse().res;
+    };
+
+    await assert.rejects(
+        sendWebhookRequest(fakeFetch, 'http://169.254.169.254/hook', {
+            method: 'post',
+            validateTarget: async () => {
+                let err = new Error('Refusing to deliver to a blocked address');
+                err.code = 'EEGRESSBLOCKED';
+                throw err;
+            }
+        }),
+        err => err.code === 'EEGRESSBLOCKED'
+    );
+
+    assert.strictEqual(fetched, false, 'a blocked destination must never be contacted');
+});
+
+test('sendWebhookRequest switches to manual redirects only when a target validator is set', async () => {
+    let seenOptions;
+    const fakeFetch = async (url, options) => {
+        seenOptions = options;
+        return fakeResponse().res;
+    };
+
+    await sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', { method: 'post', validateTarget: async () => {} });
+    assert.strictEqual(seenOptions.redirect, 'manual');
+    // The callback itself must not leak into the fetch options
+    assert.ok(!('validateTarget' in seenOptions));
+
+    // With the policy off there is nothing to vet, so fetch keeps following redirects as before
+    await sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', { method: 'post' });
+    assert.strictEqual(seenOptions.redirect, undefined);
+});
+
+test('sendWebhookRequest reports a redirect instead of following it', async () => {
+    // undici returns the 3xx itself under redirect:'manual'
+    const { res } = fakeResponse({ ok: false, status: 307, statusText: 'Temporary Redirect' });
+    const fakeFetch = async () => res;
+
+    await assert.rejects(
+        sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', {
+            method: 'post',
+            validateTarget: async () => {}
+        }),
+        err => err.code === 'EREDIRECTNOTFOLLOWED'
+    );
+});
+
+test('sendWebhookRequest passes a 3xx through as an ordinary failure without a validator', async () => {
+    // With the policy off, redirect:'follow' is left in place and a 3xx only reaches here if the
+    // caller opted out of manual handling, so it must not be reported as a redirect refusal
+    const { res } = fakeResponse({ ok: false, status: 302, statusText: 'Found' });
+    const fakeFetch = async () => res;
+
+    await assert.rejects(sendWebhookRequest(fakeFetch, 'http://webhook.test/hook', { method: 'post' }), err => err.statusCode === 302 && !err.code);
+});

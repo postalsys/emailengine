@@ -12,12 +12,13 @@ const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
 const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
+const { assertAllowedUrl, normalizePolicy, POLICY_OFF } = require('../lib/egress-filter');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
 
 const { redis, queueConf } = require('../lib/db');
-const { Worker } = require('bullmq');
+const { Worker, UnrecoverableError } = require('bullmq');
 const settings = require('../lib/settings');
 
 const { REDIS_PREFIX, ACCOUNT_DELETED_NOTIFY, MESSAGE_NEW_NOTIFY } = require('../lib/consts');
@@ -38,6 +39,17 @@ const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EEN
 // Wall-clock cap for a single webhook delivery attempt; falls back to the
 // DEFAULT_WEBHOOK_REQUEST_TIMEOUT baked into sendWebhookRequest when unset
 const WEBHOOK_TIMEOUT = getDuration(readEnvValue('EENGINE_WEBHOOK_TIMEOUT')) || false;
+
+// Which destinations webhook deliveries may reach. An account-scoped API token can set both the
+// webhook URL and its custom headers, so without this the least-privileged credential in the
+// system can aim EmailEngine at anything its host can route to. Defaults to blocking the
+// link-local range (cloud instance metadata); `private` also blocks RFC1918 and friends, `off`
+// disables the check and restores redirect following. See lib/egress-filter.js
+const WEBHOOK_EGRESS_POLICY = normalizePolicy(readEnvValue('EENGINE_WEBHOOK_EGRESS_POLICY'));
+
+// Built once rather than per delivery. Null when the policy is off, which also restores fetch's
+// own redirect following in sendWebhookRequest().
+const validateWebhookTarget = WEBHOOK_EGRESS_POLICY === POLICY_OFF ? null : target => assertAllowedUrl(target, { policy: WEBHOOK_EGRESS_POLICY });
 
 let callQueue = new Map();
 let mids = 0;
@@ -413,7 +425,8 @@ const notifyWorker = new Worker(
                     body,
                     headers,
                     dispatcher: httpAgent.retry,
-                    timeout: WEBHOOK_TIMEOUT
+                    timeout: WEBHOOK_TIMEOUT,
+                    validateTarget: validateWebhookTarget
                 });
                 duration = Date.now() - start;
             } catch (err) {
@@ -513,6 +526,13 @@ const notifyWorker = new Worker(
                 event: job.name,
                 status: 'fail'
             });
+
+            // A destination the egress policy rejects will be rejected identically on every
+            // retry, so spending the remaining attempts on it only delays the operator seeing
+            // the real reason in the error flag. Fail the job now and keep the message.
+            if (err.code === 'EEGRESSBLOCKED') {
+                throw new UnrecoverableError(err.message);
+            }
 
             throw err;
         } finally {
