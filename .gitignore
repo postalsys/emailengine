@@ -17,7 +17,8 @@ config/development*
 .vscode
 .okta.env
 keylog.txt
-.claude
+.claude/*
+!.claude/rules/
 issue*
 patch*
 manual-test/
