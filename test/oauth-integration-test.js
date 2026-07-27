@@ -430,26 +430,33 @@ test('OAuth integration tests', async t => {
         await fs.promises.writeFile(tokenPath, 'subject-token', 'utf8');
 
         try {
-            let externalAccount = JSON.stringify({
+            const buildConfig = tokenUrl => ({
                 type: 'external_account',
                 audience: '//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q',
                 subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
-                token_url: `${base}/sts`,
+                token_url: tokenUrl,
                 service_account_impersonation_url: `${base}/v1/projects/-/serviceAccounts/svc@proj.iam.gserviceaccount.com:generateAccessToken`,
                 credential_source: { file: tokenPath }
             });
 
+            // The constructor's own signer is replaced below, so it only has to be structurally
+            // valid - and token_url is pinned to Google STS, so it has to name the real endpoint.
             let gmail = new GmailOauth({
                 ...baseOpts,
                 serviceClient: '7103296518315821565203',
                 serviceClientEmail: 'svc@proj.iam.gserviceaccount.com',
                 authMethod: 'externalAccount',
-                externalAccount
+                externalAccount: JSON.stringify(buildConfig('https://sts.googleapis.com/v1/token'))
             });
 
             // Redirect the Google token endpoint and the signer's iamcredentials base to the mock.
             gmail.tokenUrl = `${base}/token`;
-            gmail.signer = new ExternalAccountSigner({ config: JSON.parse(externalAccount), iamCredentialsBaseUrl: base });
+            // allowedTokenHosts is the injection point that lets the STS exchange reach the mock
+            gmail.signer = new ExternalAccountSigner({
+                config: buildConfig(`${base}/sts`),
+                allowedTokenHosts: ['127.0.0.1'],
+                iamCredentialsBaseUrl: base
+            });
 
             let result = await gmail.refreshToken({ user: 'user@example.com' });
 

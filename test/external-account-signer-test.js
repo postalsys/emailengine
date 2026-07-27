@@ -471,6 +471,72 @@ test('ExternalAccountSigner', async t => {
         assert.strictEqual(calls.filter(c => c.url.includes(':signJwt')).length, 10);
     });
 
+    // token_url pinning. The subject token is read from this host and POSTed verbatim as
+    // `subject_token`, so a caller-chosen token_url turns any readable file into an exfiltration
+    // channel: point it at your own server and the file contents are delivered to you, with the
+    // response echoed back through the /v1/oauth2/{app}/verify report.
+    await t.test('validateConfig rejects a token_url that is not a Google STS endpoint', () => {
+        for (let tokenUrl of [
+            'https://attacker.example.com/v1/token',
+            'https://sts.googleapis.com.attacker.example.com/v1/token',
+            'http://sts.googleapis.com/v1/token',
+            'https://evil.sts.googleapis.com.co/v1/token',
+            'https://169.254.169.254/v1/token'
+        ]) {
+            assert.throws(
+                () => validateConfig(Object.assign({}, VALID_FILE_CONFIG, { token_url: tokenUrl })),
+                err => err.code === 'EExternalAccountConfig' && /Google STS endpoint/.test(err.message),
+                `expected ${tokenUrl} to be rejected`
+            );
+        }
+    });
+
+    await t.test('validateConfig rejects a malformed token_url', () => {
+        assert.throws(
+            () => validateConfig(Object.assign({}, VALID_FILE_CONFIG, { token_url: 'not a url' })),
+            err => err.code === 'EExternalAccountConfig'
+        );
+    });
+
+    await t.test('validateConfig accepts the global and regional Google STS endpoints', () => {
+        for (let tokenUrl of [
+            'https://sts.googleapis.com/v1/token',
+            'https://sts.europe-west1.rep.googleapis.com/v1/token',
+            'https://sts.us-central1.rep.googleapis.com/v1/token'
+        ]) {
+            validateConfig(Object.assign({}, VALID_FILE_CONFIG, { token_url: tokenUrl }));
+        }
+    });
+
+    await t.test('validateConfig honors allowedTokenHosts, the test injection point', () => {
+        // Production callers never pass this; it exists so the integration suites can drive a
+        // local STS double, mirroring the signer's iamCredentialsBaseUrl option.
+        let config = Object.assign({}, VALID_FILE_CONFIG, { token_url: 'http://127.0.0.1:9999/sts' });
+
+        assert.throws(
+            () => validateConfig(config),
+            err => err.code === 'EExternalAccountConfig'
+        );
+        validateConfig(config, { allowedTokenHosts: ['127.0.0.1'] });
+
+        // ...and it does not widen anything beyond the hosts named
+        assert.throws(
+            () => validateConfig(config, { allowedTokenHosts: ['localhost'] }),
+            err => err.code === 'EExternalAccountConfig'
+        );
+    });
+
+    await t.test('the signer constructor enforces the token_url pin', () => {
+        assert.throws(
+            () =>
+                new ExternalAccountSigner({
+                    config: Object.assign({}, VALID_FILE_CONFIG, { token_url: 'https://attacker.example.com/v1/token' }),
+                    fetchImpl: async () => makeResponse()
+                }),
+            err => err.code === 'EExternalAccountConfig'
+        );
+    });
+
     await t.test('describeCredentialSource reports the active source type', () => {
         let signer = new ExternalAccountSigner({ config: VALID_FILE_CONFIG, fetchImpl: async () => makeResponse() });
         assert.deepStrictEqual(signer.describeCredentialSource(), { type: 'file', location: VALID_FILE_CONFIG.credential_source.file });

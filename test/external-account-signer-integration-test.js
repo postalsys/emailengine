@@ -28,6 +28,11 @@ const { ExternalAccountSigner } = require('../lib/oauth/external-account-signer'
 
 const TARGET_SA = 'integration@proj.iam.gserviceaccount.com';
 
+// token_url is pinned to Google STS in production so the subject token can only ever be delivered
+// to Google. These tests point it at a local mock, which is exactly what the injection point is
+// for; production callers never pass it. See lib/oauth/external-account-config.js
+const LOCAL_STS_HOSTS = ['127.0.0.1', 'localhost'];
+
 function readBody(req) {
     return new Promise((resolve, reject) => {
         let chunks = [];
@@ -144,6 +149,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             let signer = new ExternalAccountSigner({
                 config: buildFileConfig(server.baseUrl, tokenPath),
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
@@ -186,6 +192,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             let signer = new ExternalAccountSigner({
                 config: buildUrlConfig(server.baseUrl),
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
@@ -211,6 +218,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             let signer = new ExternalAccountSigner({
                 config: buildFileConfig(server.baseUrl, tokenPath),
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
@@ -242,6 +250,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             let signer = new ExternalAccountSigner({
                 config: buildFileConfig(server.baseUrl, tokenPath),
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
@@ -276,6 +285,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
 
             let signer = new ExternalAccountSigner({
                 config: buildFileConfig(server.baseUrl, tokenPath),
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
@@ -314,6 +324,7 @@ test('ExternalAccountSigner integration (mock server)', async t => {
                     service_account_impersonation_url: `${server.baseUrl}/v1/projects/-/serviceAccounts/${TARGET_SA}:generateAccessToken`,
                     credential_source: { url: `${server.baseUrl}/oidc-token`, format: { type: 'json', subject_token_field_name: 'access_token' } }
                 },
+                allowedTokenHosts: LOCAL_STS_HOSTS,
                 iamCredentialsBaseUrl: server.baseUrl
             });
 
