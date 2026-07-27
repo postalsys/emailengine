@@ -826,20 +826,21 @@ class ConnectionHandler {
         };
     }
 
-    async kill() {
-        if (this.killed) {
+    // Shutdown teardown: closes every account connection this worker owns. The main thread owns
+    // the worker's lifetime and terminates it once the drain returns, so this deliberately does
+    // not exit the process itself.
+    async closeConnections() {
+        if (this.connectionsClosed) {
             return;
         }
-        logger.error({ msg: 'Terminating process' });
-        this.killed = true;
+        logger.info({ msg: 'Closing account connections', accounts: this.accounts.size });
+        this.connectionsClosed = true;
 
         this.accounts.forEach(accountObject => {
             if (accountObject && accountObject.connection) {
                 accountObject.connection.close();
             }
         });
-
-        logger.flush(() => process.exit());
     }
 
     // some general message
@@ -881,6 +882,13 @@ class ConnectionHandler {
         switch (message.cmd) {
             case 'resource-usage':
                 return threadStats.usage();
+
+            // Shutdown drain. Signals reach the main thread only, so this worker cannot notice
+            // SIGTERM itself; server.js forwards it here on the way down so accounts get a chance
+            // to close their connections cleanly instead of having the sockets cut.
+            case 'close':
+                await this.closeConnections();
+                return true;
 
             case 'delete':
             case 'update':
@@ -1031,19 +1039,9 @@ parentPort.on('message', message => {
     connectionHandler.onMessage(message).catch(err => logger.error({ msg: 'Failed to process IPC message', err }));
 });
 
-process.on('SIGTERM', () => {
-    connectionHandler.kill().catch(err => {
-        logger.error({ msg: 'Execution failed', err });
-        logger.flush(() => process.exit(4));
-    });
-});
-
-process.on('SIGINT', () => {
-    connectionHandler.kill().catch(err => {
-        logger.error({ msg: 'Execution failed', err });
-        logger.flush(() => process.exit(5));
-    });
-});
+// NB! No SIGTERM/SIGINT handlers here. Node delivers signals to the main thread only, so handlers
+// registered in a worker thread never run. Shutdown reaches this worker as a 'close' command from
+// server.js instead; see onCommand().
 
 main().catch(err => {
     logger.fatal({ msg: 'Execution failed', err });

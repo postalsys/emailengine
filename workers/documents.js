@@ -92,6 +92,12 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+
+        // Shutdown drain, forwarded by server.js because signals only reach the main thread
+        case 'close':
+            await documentsWorker.close();
+            return true;
+
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;

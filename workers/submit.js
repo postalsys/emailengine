@@ -421,6 +421,16 @@ async function onCommand(command) {
     switch (command.cmd) {
         case 'resource-usage':
             return threadStats.usage();
+
+        // Shutdown drain. Signals reach the main thread only, so server.js forwards them here.
+        // This matters more than for the other queues: the `iaq:` entry is cleared in the
+        // 'completed' handler, so a thread terminated mid-delivery leaves the job to be recovered
+        // as stalled and re-run - re-sending a message the MTA had already accepted. A graceful
+        // close stops fetching new jobs immediately and waits for the in-flight one.
+        case 'close':
+            await submitWorker.close();
+            return true;
+
         default:
             logger.debug({ msg: 'Unhandled command', command });
             return 999;

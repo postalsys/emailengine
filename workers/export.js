@@ -853,10 +853,17 @@ exportWorker.on('failed', async (job, err) => {
     });
 });
 
-function onCommand(command) {
+async function onCommand(command) {
     if (command.cmd === 'resource-usage') {
         return threadStats.usage();
     }
+
+    // Shutdown drain, forwarded by server.js because signals only reach the main thread
+    if (command.cmd === 'close') {
+        await exportWorker.close();
+        return true;
+    }
+
     logger.debug({ msg: 'Unhandled command', command });
     return 999;
 }

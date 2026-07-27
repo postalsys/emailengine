@@ -133,6 +133,7 @@ const { QueueEvents } = require('bullmq');
 const getSecret = require('./lib/get-secret');
 
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
+const { RespawnTracker } = require('./lib/respawn-backoff');
 
 const msgpack = require('msgpack5')();
 
@@ -713,6 +714,14 @@ const MAX_ASSIGN_RETRIES = 3; // Max consecutive safety-net retries before givin
 // Worker management
 let imapInitialWorkersLoaded = false; // Have all initial IMAP workers started?
 let workers = new Map(); // Map of type -> Set of workers
+const respawnTracker = new RespawnTracker(); // paces respawns for worker types that keep crashing
+
+// Shutdown drain budget. A worker with no in-flight job answers immediately, so this only costs
+// real time when there is genuinely something to finish - which is exactly when waiting is worth
+// it, because the alternative is a re-sent message. Kept under Docker's 10s default SIGKILL grace
+// so the drain completes rather than being cut halfway.
+const SHUTDOWN_DRAIN_TIMEOUT = 8000;
+const WORKER_DRAIN_TIMEOUT = 7000;
 let workersMeta = new WeakMap(); // Worker metadata
 let availableIMAPWorkers = new Set(); // IMAP workers ready to accept accounts
 
@@ -1056,6 +1065,7 @@ let spawnWorker = async (type, opts) => {
     }
 
     // Create new worker thread
+    let spawnedAt = Date.now();
     let worker = new WorkerThread(pathlib.join(__dirname, 'workers', `${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.js`), {
         argv,
         env: SHARE_ENV,
@@ -1218,8 +1228,15 @@ let spawnWorker = async (type, opts) => {
                 logger.error({ msg: 'Worker unexpectedly exited', exitCode, type });
             }
 
-            // Respawn worker after delay, preserving any spawn options (e.g. API worker index)
-            await new Promise(r => setTimeout(r, 1000));
+            // Respawn worker after delay, preserving any spawn options (e.g. API worker index).
+            // The delay grows while a worker type keeps dying on startup, so a deterministic
+            // crash no longer respawns once a second forever.
+            let respawnDelay = respawnTracker.recordExit(type, Date.now() - spawnedAt);
+            let streak = respawnTracker.streakFor(type);
+            if (streak > 1) {
+                logger.warn({ msg: 'Worker is crash looping, delaying respawn', type, consecutiveFailures: streak, respawnDelay });
+            }
+            await new Promise(r => setTimeout(r, respawnDelay));
             await spawnWorker(type, opts);
         };
 
@@ -2999,12 +3016,19 @@ async function collectMetrics() {
 const closeQueues = cb => {
     let proms = [];
 
-    // Signal webhooks workers to stop Pub/Sub pull loops before exiting
-    if (workers.has('webhooks')) {
-        for (let worker of workers.get('webhooks')) {
+    // Signal every worker to wind down before exiting. Signals only reach this thread, so a worker
+    // cannot notice the shutdown on its own - without this its sockets are simply cut and any
+    // BullMQ job it was running is recovered as stalled and re-run, which for the submit queue
+    // means re-sending a message the MTA had already accepted.
+    //
+    // Broadcast rather than an allowlist of types: a worker with nothing to drain answers the
+    // unknown command with 999 and costs one round trip, whereas a list here has to be kept in
+    // sync with every worker that later grows a drain.
+    for (let [type, typeWorkers] of workers) {
+        for (let worker of typeWorkers) {
             proms.push(
-                call(worker, { cmd: 'close', timeout: 4000 }).catch(err => {
-                    logger.error({ msg: 'Failed to signal webhooks worker to close', err });
+                call(worker, { cmd: 'close', timeout: WORKER_DRAIN_TIMEOUT }).catch(err => {
+                    logger.error({ msg: 'Failed to signal worker to close', type, err });
                 })
             );
         }
@@ -3026,9 +3050,10 @@ const closeQueues = cb => {
         if (returned) {
             return;
         }
+        logger.warn({ msg: 'Shutdown drain did not finish in time, exiting anyway', timeout: SHUTDOWN_DRAIN_TIMEOUT });
         returned = true;
         cb();
-    }, 5000);
+    }, SHUTDOWN_DRAIN_TIMEOUT);
 
     Promise.allSettled(proms).then(() => {
         clearTimeout(closeTimeout);
