@@ -285,7 +285,7 @@ class="mb-1"}}
         document.getElementById('test-payload-btn').addEventListener('click', e => {
             e.preventDefault()
             sendTestPayload().then(data => {
-                showToast(data.error ? data.error : (data.success ? 'Test payload sent' : 'Failed to send payload'), data.success ? 'check-circle' : 'alert-triangle');
+                uiToastResult(data, 'Test payload sent', 'Failed to send payload');
             }).catch(err => {
                 showToast('Request failed\n' + err.message, 'alert-triangle');
             })

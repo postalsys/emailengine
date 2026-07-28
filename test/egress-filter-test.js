@@ -162,6 +162,16 @@ test('assertAllowedUrl', async t => {
     await t.test('defaults to the link-local policy when none is given', async () => {
         await assertBlocked('http://169.254.169.254/', {});
     });
+
+    await t.test('names the policy setting in a rejection', async () => {
+        // The message is what the admin UI shows and what the delivery log carries, and a refusal
+        // that does not say what refused leaves the operator with nothing to look up
+        const resolve = resolvesTo('169.254.169.254');
+
+        for (let url of ['http://169.254.169.254/', 'https://metadata.example.com/hook']) {
+            await assert.rejects(assertAllowedUrl(url, { policy: POLICY_LINK_LOCAL, resolve }), err => err.message.includes('EENGINE_WEBHOOK_EGRESS_POLICY'));
+        }
+    });
 });
 
 test('assertAllowedUrl verdict caching', async t => {

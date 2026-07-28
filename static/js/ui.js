@@ -398,6 +398,19 @@ window.uiPostJson = async (url, payload) => {
     return await res.json();
 };
 
+// Report the outcome of an admin JSON action as a toast. These endpoints answer
+// with {success, error, statusCode}, and every caller used to spell out the same
+// three-way ternary, which is why a failing endpoint named the HTTP status it got
+// on one page and not on the next.
+window.uiToastResult = (data, okMessage, failMessage) => {
+    if (data.success) {
+        window.showToast(okMessage, 'check-circle');
+        return;
+    }
+    const status = data.statusCode ? `HTTP ${data.statusCode}: ` : '';
+    window.showToast(data.error ? status + data.error : failMessage, 'alert-triangle');
+};
+
 // Toggle an async action button's busy state: disable the button and swap its
 // icon span to a spinner while busy, restoring the original icon after
 window.uiButtonBusy = (btn, busy) => {

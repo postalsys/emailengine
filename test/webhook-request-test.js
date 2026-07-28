@@ -184,7 +184,7 @@ test('sendWebhookRequest reports a redirect instead of following it', async () =
             method: 'post',
             validateTarget: async () => {}
         }),
-        err => err.code === 'EREDIRECTNOTFOLLOWED'
+        err => err.code === 'EREDIRECTNOTFOLLOWED' && err.statusCode === 307
     );
 });
 
