@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.75.0](https://github.com/postalsys/emailengine/compare/v2.74.2...v2.75.0) (2026-07-28)
+
+
+### Features
+
+* **web-safe-html:** fold quoted thread history into a collapse marker ([25d45bf](https://github.com/postalsys/emailengine/commit/25d45bf5b8dcc64443272f4b85178ee2c497d79c))
+
+
+### Bug Fixes
+
+* **account:** serialize account updates so a refreshed token is not lost ([e577825](https://github.com/postalsys/emailengine/commit/e5778255710b1be912e6b259073ec963c2da03a2))
+* **api:** match IPv4-mapped peer addresses against the address allowlists ([5acff06](https://github.com/postalsys/emailengine/commit/5acff061b31af6db49ffe9d856a5017bdfcaf4e7))
+* **api:** trust X-Forwarded-For only from declared proxies ([6e93ea7](https://github.com/postalsys/emailengine/commit/6e93ea714cd75aa876f713345d675a5416b36aeb))
+* **api:** warn about a spoofable admin allowlist when the proxy list is empty ([4309abe](https://github.com/postalsys/emailengine/commit/4309abe2d45652699f76b4adc31ff37e79802a53))
+* **deps:** bump imapflow to 1.6.1 to restore IMAP account verification ([c2a5437](https://github.com/postalsys/emailengine/commit/c2a543779b29c369d35bfbbc175810fc1d96f02c))
+* **deps:** update @postalsys/email-ai-tools to 1.13.15 ([89ec145](https://github.com/postalsys/emailengine/commit/89ec145a8f43a29405cf154825601dd8ba10fae6))
+* **deps:** update dependencies ([@bull-board](https://github.com/bull-board) 8.3.2) ([a5644f3](https://github.com/postalsys/emailengine/commit/a5644f34e56128451c642d2034ddf7db0d1cc7a8))
+* **logging:** stop logging decrypted setting values and lower Redis reconnect noise ([5c62ac4](https://github.com/postalsys/emailengine/commit/5c62ac486112688e8a964c66a43eb609abe7c8da))
+* **oauth:** pin external account token_url to Google STS ([27ade81](https://github.com/postalsys/emailengine/commit/27ade8183cd31b503077ebefd5724f2f0620947d))
+* **queue:** retain failed queue entries instead of deleting them on arrival ([e83af35](https://github.com/postalsys/emailengine/commit/e83af359aafc49d584cd0c234e089e9dceb83f3b))
+* **server:** drain workers on shutdown and back off crash-looping respawns ([29b3b5d](https://github.com/postalsys/emailengine/commit/29b3b5d0d7b76793ea2852c9a37a8c622217a6ea))
+* **webhooks:** filter webhook egress and stop following redirects ([e44bed5](https://github.com/postalsys/emailengine/commit/e44bed549848d8eb2b04bb991aa2c6cee0bb47c2))
+* **webhooks:** report the refused redirect status and probe through the delivery path ([9f7c666](https://github.com/postalsys/emailengine/commit/9f7c666f5e2a0bfae069a0c43c33a75d04922747))
+* **webhooks:** stop retrying an endpoint that answers with a redirect ([bbb6055](https://github.com/postalsys/emailengine/commit/bbb605560d31bb494495b46a57cd233a78024d99))
+
 ## [2.74.2](https://github.com/postalsys/emailengine/compare/v2.74.1...v2.74.2) (2026-07-26)
 
 
