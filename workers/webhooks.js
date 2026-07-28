@@ -527,10 +527,11 @@ const notifyWorker = new Worker(
                 status: 'fail'
             });
 
-            // A destination the egress policy rejects will be rejected identically on every
-            // retry, so spending the remaining attempts on it only delays the operator seeing
-            // the real reason in the error flag. Fail the job now and keep the message.
-            if (err.code === 'EEGRESSBLOCKED') {
+            // Neither of these changes on a retry: the egress policy rejects the same destination
+            // every time, and an endpoint configured to redirect keeps redirecting. Spending the
+            // remaining attempts on them only delays the operator seeing the real reason in the
+            // error flag. Fail the job now and keep the message.
+            if (err.code === 'EEGRESSBLOCKED' || err.code === 'EREDIRECTNOTFOLLOWED') {
                 throw new UnrecoverableError(err.message);
             }
 
