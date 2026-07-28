@@ -91,7 +91,7 @@
         "html-to-text": "10.0.0",
         "ical.js": "1.5.0",
         "iconv-lite": "0.7.3",
-        "imapflow": "1.6.1",
+        "imapflow": "1.6.3",
         "ioredfour": "1.4.2",
         "ioredis": "5.11.1",
         "ipaddr.js": "2.4.0",
@@ -121,7 +121,7 @@
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
-        "@iconify-json/tabler": "1.2.37",
+        "@iconify-json/tabler": "1.2.38",
         "@iconify/tailwind4": "1.2.3",
         "@playwright/test": "1.62.0",
         "@tailwindcss/cli": "4.3.3",

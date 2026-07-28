@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-28 14:15+0000\n"
+"POT-Creation-Date: 2026-07-28 17:48+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3019
@@ -27,6 +27,10 @@ msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
 msgstr ""
@@ -49,10 +53,6 @@ msgstr ""
 
 #: views/oauth-scope-error.hbs:28
 msgid "Try Again"
-msgstr ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
