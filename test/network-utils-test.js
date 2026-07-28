@@ -59,8 +59,28 @@ test('Network Utilities tests', async t => {
     await t.test('matchIp() handles IPv4-mapped IPv6 addresses', async () => {
         // IPv4-mapped IPv6 addresses match other IPv4-mapped addresses
         assert.strictEqual(matchIp('::ffff:192.168.1.1', ['::ffff:192.168.1.1']), true);
-        // Note: Direct comparison between IPv4 and IPv4-mapped IPv6 may not work
-        // due to different address family handling in ipaddr.js
+    });
+
+    await t.test('matchIp() treats an IPv4-mapped address as the IPv4 address it carries', async () => {
+        // A dual-stack listener reports an IPv4 peer as ::ffff:a.b.c.d, while the allowlist is
+        // written in plain IPv4. The two used to never compare equal, which silently disabled
+        // EENGINE_API_PROXY_ADDRESSES on any deployment bound to `::`.
+        assert.strictEqual(matchIp('::ffff:10.0.0.5', ['10.0.0.5']), true);
+        assert.strictEqual(matchIp('::ffff:10.0.0.5', ['10.0.0.0/8']), true);
+        assert.strictEqual(matchIp('::ffff:10.0.0.5', ['10.0.0.6']), false);
+        assert.strictEqual(matchIp('::ffff:11.0.0.5', ['10.0.0.0/8']), false);
+
+        // and the same in reverse, for an allowlist written in the mapped form
+        assert.strictEqual(matchIp('10.0.0.5', ['::ffff:10.0.0.5']), true);
+        assert.strictEqual(matchIp('10.0.0.5', ['::ffff:10.0.0.0/104']), true);
+        assert.strictEqual(matchIp('11.0.0.5', ['::ffff:10.0.0.0/104']), false);
+    });
+
+    await t.test('matchIp() does not match a real IPv6 address against an IPv4 range', async () => {
+        // The unwrap above must not turn a family mismatch into a match
+        assert.strictEqual(matchIp('2001:db8::1', ['0.0.0.0/0']), false);
+        assert.strictEqual(matchIp('::1', ['127.0.0.1']), false);
+        assert.strictEqual(matchIp('127.0.0.1', ['::1']), false);
     });
 
     await t.test('matchIp() returns false for empty address list', async () => {
@@ -73,8 +93,8 @@ test('Network Utilities tests', async t => {
     });
 
     await t.test('matchIp() handles mixed IPv4 and IPv6 in list gracefully', async () => {
-        // When matching IPv4 address against a list with IPv6 entries,
-        // the IPv6 entries are skipped (logged as errors but not thrown)
+        // Entries of the other family are simply not a match. A list mixing both is ordinary
+        // configuration rather than a mistake, so it does not log an error per entry per request.
         const addresses = ['192.168.1.0/24', '2001:db8::/32', '10.0.0.1'];
 
         // IPv4 addresses match IPv4 entries in the list
@@ -179,6 +199,24 @@ test('Network Utilities tests', async t => {
 
     await t.test('resolveClientIp() accepts IPv6 forwarded addresses', async () => {
         assert.strictEqual(resolveFrom({ remoteAddress: '::1', forwardedFor: '2001:db8::1', trustedProxies: ['::1'] }), '2001:db8::1');
+    });
+
+    await t.test('resolveClientIp() recognizes a declared proxy reported in the IPv4-mapped form', async () => {
+        // A listener bound to `::` reports an IPv4 proxy as ::ffff:10.0.0.5, while the operator
+        // configured EENGINE_API_PROXY_ADDRESSES as plain IPv4. The peer used to fail the trust
+        // check, so the header was discarded and the admin allowlist then saw the proxy's own
+        // address instead of the client's - locking out the very setup the startup warning asks for.
+        assert.strictEqual(resolveFrom({ remoteAddress: '::ffff:10.0.0.5', forwardedFor: '203.0.113.9', trustedProxies: ['10.0.0.5'] }), '203.0.113.9');
+        assert.strictEqual(resolveFrom({ remoteAddress: '::ffff:10.0.0.5', forwardedFor: '203.0.113.9', trustedProxies: ['10.0.0.0/8'] }), '203.0.113.9');
+
+        // chain entries arrive in the mapped form too when the hop itself is dual-stack
+        assert.strictEqual(
+            resolveFrom({ remoteAddress: '::ffff:10.0.0.5', forwardedFor: '203.0.113.9, ::ffff:10.0.0.6', trustedProxies: ['10.0.0.0/8'] }),
+            '203.0.113.9'
+        );
+
+        // and a peer that is still not one of ours gets no say
+        assert.strictEqual(resolveFrom({ remoteAddress: '::ffff:192.0.2.1', forwardedFor: '203.0.113.9', trustedProxies: ['10.0.0.5'] }), '::ffff:192.0.2.1');
     });
 
     // googleCrawlerMap tests
