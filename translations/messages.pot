@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-07-27 19:00+0000\n"
+"POT-Creation-Date: 2026-07-28 07:52+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:3019
@@ -29,30 +29,6 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -99,12 +75,62 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+msgid "Try Again"
+msgstr ""
+
 #: views/accounts/register/index.hbs:6
 msgid "Choose your email account provider"
 msgstr ""
 
 #: views/accounts/register/index.hbs:19
 msgid "Standard IMAP"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:29
+msgid "Enter your email address"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:33
+#: views/accounts/register/imap-server.hbs:39
+#: views/accounts/register/imap-server.hbs:146
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:39
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:45
+msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:22
@@ -114,12 +140,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:25
 #: views/accounts/register/imap-server.hbs:132
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:39
-#: views/accounts/register/imap-server.hbs:146
-#: views/accounts/register/imap.hbs:33
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:51
@@ -226,26 +246,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:29
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:39
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:45
-msgid "Continue"
-msgstr ""
-
 #: lib/autodetect-imap-settings.js:90
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
@@ -345,7 +345,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:170
+#: lib/ui-routes/admin-config-routes.js:173
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
