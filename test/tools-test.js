@@ -453,4 +453,27 @@ test('Tools utility tests', async t => {
         const result = tools.prepareUrl('/path', 'https://example.com');
         assert.strictEqual(result, 'https://example.com/path');
     });
+
+    await t.test('readEnvList() parses, trims and drops blanks', async () => {
+        process.env.EENGINE_TEST_ENV_LIST = ' 10.0.0.1 , , 192.168.0.0/16 ';
+        try {
+            assert.deepStrictEqual(tools.readEnvList('EENGINE_TEST_ENV_LIST'), ['10.0.0.1', '192.168.0.0/16']);
+        } finally {
+            delete process.env.EENGINE_TEST_ENV_LIST;
+        }
+    });
+
+    await t.test('readEnvList() distinguishes unset from present-but-empty', async () => {
+        // An empty value yields [], which is TRUTHY. Callers that gate a security warning or an
+        // allowlist on this must check the length, not the value; see the X-Forwarded-For warning
+        // in workers/api.js and resolveClientIp() in lib/utils/network.js
+        assert.strictEqual(tools.readEnvList('EENGINE_TEST_ENV_LIST_UNSET'), null);
+
+        process.env.EENGINE_TEST_ENV_LIST = '  ,  ';
+        try {
+            assert.deepStrictEqual(tools.readEnvList('EENGINE_TEST_ENV_LIST'), []);
+        } finally {
+            delete process.env.EENGINE_TEST_ENV_LIST;
+        }
+    });
 });

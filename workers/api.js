@@ -3154,7 +3154,11 @@ Include your token in requests using one of these methods:
     // An IP allowlist is only as trustworthy as the address it matches against. If the deployment
     // takes the client address from X-Forwarded-For but does not say which peers may set it, any
     // client that can reach this port can present whatever address the allowlist expects.
-    if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length && !API_PROXY_ADDRESSES && (await settings.get('enableApiProxy'))) {
+    // Length-checked, not just null-checked: readEnvList returns [] for a variable that is present
+    // but empty (an unset shell interpolation, an empty secret), which is truthy. resolveClientIp
+    // treats that as no proxies configured, so the warning has to agree or it goes quiet in
+    // exactly the deployment it exists to warn.
+    if (ADMIN_ACCESS_ADDRESSES && ADMIN_ACCESS_ADDRESSES.length && !API_PROXY_ADDRESSES?.length && (await settings.get('enableApiProxy'))) {
         logger.warn({
             msg: 'Admin IP allowlist is spoofable because X-Forwarded-For is trusted from any peer. Set EENGINE_API_PROXY_ADDRESSES to the addresses of your proxies, or disable the API proxy setting.',
             component: 'api',
