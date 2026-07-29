@@ -250,6 +250,12 @@ const REQUIRE_API_AUTH = hasEnvValue('EENGINE_REQUIRE_API_AUTH') ? getBoolean(re
 // Opt-out for the license-validation feature beacon (telemetry rides on the existing license call)
 const BEACON_DISABLED = hasEnvValue('EENGINE_BEACON_DISABLED') ? getBoolean(readEnvValue('EENGINE_BEACON_DISABLED')) : false;
 
+// Opt-out for the GitHub releases update check, the only background network
+// call that is not tied to a subscription license. With this and a perpetual
+// license an instance makes no background calls at all (strict-egress and
+// air-gapped deployments).
+const UPDATE_CHECK_DISABLED = hasEnvValue('EENGINE_UPDATE_CHECK_DISABLED') ? getBoolean(readEnvValue('EENGINE_UPDATE_CHECK_DISABLED')) : false;
+
 // OAuth2 token access configuration
 const ENABLE_OAUTH_TOKENS_API = hasEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API') ? getBoolean(readEnvValue('EENGINE_ENABLE_OAUTH_TOKENS_API')) : null;
 
@@ -2000,6 +2006,12 @@ function checkActiveLicense() {
  */
 let processCheckUpgrade = async () => {
     try {
+        if (UPDATE_CHECK_DISABLED) {
+            // Clear any marker stored before the check was disabled, otherwise
+            // the dashboard banner would advertise a stale version forever
+            await redis.hdel(`${REDIS_PREFIX}settings`, 'upgrade');
+            return;
+        }
         let updateInfo = await checkForUpgrade();
         if (updateInfo.canUpgrade) {
             logger.info({ msg: 'EmailEngine update available', updateInfo });
