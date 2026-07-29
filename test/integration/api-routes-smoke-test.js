@@ -93,6 +93,7 @@ const AUTH_REQUIRED_ROUTES = [
 
     // submit-routes.js
     ['post', '/v1/account/main-account/submit'],
+    ['post', '/v1/account/main-account/message/AAAAAQAACnA/submit'],
 
     // pubsub-routes.js
     ['get', '/v1/pubsub/status'],

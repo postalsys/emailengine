@@ -100,6 +100,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/account/{account}/export',
     'POST /v1/account/{account}/mailbox',
     'POST /v1/account/{account}/message',
+    'POST /v1/account/{account}/message/{message}/submit',
     'POST /v1/account/{account}/search',
     'POST /v1/account/{account}/submit',
     'POST /v1/authentication/form',

@@ -28,6 +28,54 @@ async function waitForCondition(checkFn, options = {}) {
     return waitForConditionBase(checkFn, { interval, timeout, message });
 }
 
+// Poll the account state through the REST API until it reaches 'connected'. Throws early when the
+// account settles in an error state. `server` is the supertest agent of the calling spec.
+async function waitForAccountConnected(server, account, timeout) {
+    await waitForCondition(
+        async () => {
+            const response = await server.get(`/v1/account/${account}`);
+            if (response.status !== 200) {
+                return false;
+            }
+            switch (response.body.state) {
+                case 'authenticationError':
+                case 'connectError':
+                    throw new Error('Invalid account state ' + response.body.state);
+                case 'connected':
+                    return true;
+            }
+            return false;
+        },
+        { timeout, message: `Account ${account} connection timeout` }
+    );
+}
+
+// Wait for a messageSent webhook with the given queue id to land on the shared webhook receiver.
+async function waitForMessageSent(account, queueId, timeout, message) {
+    const webhooksServer = require('./webhooks-server');
+    return await waitForCondition(
+        async () => {
+            const webhooks = webhooksServer.webhooks.get(account) || [];
+            return webhooks.find(wh => wh.event === 'messageSent' && wh.data.queueId === queueId);
+        },
+        { timeout, message }
+    );
+}
+
+// Poll a mailbox listing through the REST API until the predicate over the message array settles.
+async function waitForListing(server, account, path, predicate, timeout, message) {
+    return await waitForCondition(
+        async () => {
+            const res = await server.get(`/v1/account/${account}/messages?path=${encodeURIComponent(path)}&pageSize=20`);
+            if (res.status !== 200) {
+                return false;
+            }
+            return predicate(res.body.messages || []);
+        },
+        { timeout, message }
+    );
+}
+
 // Sign a payload object the way EmailEngine signs tracking / unsubscribe blobs: base64url(JSON) as
 // `data` and base64url(HMAC-SHA256(JSON)) as `sig`. Mirrors lib/tools.js getSignedFormDataSync.
 function signBlob(obj) {
@@ -145,6 +193,9 @@ function startMockImapServer({ capabilities = 'IMAP4rev1 IDLE ID UIDPLUS', onCom
 module.exports = {
     createUsableTestAccount,
     waitForCondition,
+    waitForAccountConnected,
+    waitForMessageSent,
+    waitForListing,
     etherealAccountPayload,
     signBlob,
     extractCrumb,
