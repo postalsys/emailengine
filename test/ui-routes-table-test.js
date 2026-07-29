@@ -19,7 +19,7 @@
 // (not by this refactor). A diff here means a route was dropped, duplicated, or its
 // method/path was altered during a move - exactly the failure modes the extraction risks.
 //
-// server.table() is unreachable from the external Grunt test process and the Swagger
+// server.table() is unreachable from the external test runner process and the Swagger
 // spec omits UI routes, so this must run in-process. Because requiring routes-ui.js
 // transitively opens a Redis connection and BullMQ queues (lib/db.js), the test force
 // exits after running, mirroring the convention in test/tokens-test.js.

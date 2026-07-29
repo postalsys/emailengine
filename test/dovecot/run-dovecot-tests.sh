@@ -32,13 +32,9 @@ SERVER_PID=""
 
 cd "$PROJECT_DIR"
 
-# Redis URL and API port come from config/test.toml - the same source the test
-# server, wait-for-server.js and the test files read, so they cannot drift
-eval "$(NODE_ENV=test node -e '
-    const config = require("@zone-eu/wild-config");
-    console.log(`REDIS_URL=${JSON.stringify(config.dbs.redis)}`);
-    console.log(`API_PORT=${config.api.port}`);
-')"
+# The API port comes from config/test.toml - the same source the test server,
+# wait-for-server.js and the test files read, so they cannot drift
+API_PORT="$(NODE_ENV=test node -p 'require("@zone-eu/wild-config").api.port')"
 
 cleanup() {
     if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -87,11 +83,7 @@ docker run ${PLATFORM_ARG:+"$PLATFORM_ARG"} -d --name "$CONTAINER_NAME" \
 # EmailEngine does not need Dovecot to boot (accounts are only created inside
 # the tests), so start it right away and let the two readiness waits overlap
 echo "Flushing Redis test database..."
-node -e "
-    const Redis = require('ioredis');
-    const redis = new Redis(process.argv[1]);
-    redis.flushdb().then(() => redis.quit()).catch(err => { console.error(err); process.exit(1); });
-" "$REDIS_URL"
+NODE_ENV=test node test/helpers/flush-redis.js
 
 echo "Starting EmailEngine test server..."
 NODE_ENV=test node server.js > "$SERVER_LOG" 2>&1 &

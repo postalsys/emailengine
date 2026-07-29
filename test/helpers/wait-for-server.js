@@ -2,9 +2,10 @@
 
 // Polls the /health endpoint until the API server reports ready (HTTP 200).
 // The /health route only succeeds once all IMAP workers are up and Redis is
-// responding, so this replaces the fixed startup delay previously used by the
-// Grunt test task. Helper modules live outside the *-test.js patterns so the
-// test runner never executes them as test files.
+// responding, so this replaces a fixed startup delay. Used in-process by
+// test/run-tests.js and as a standalone command by
+// test/dovecot/run-dovecot-tests.sh. Helper modules live outside the *-test.js
+// patterns so the test runner never executes them as test files.
 
 const config = require('@zone-eu/wild-config');
 const { fetch } = require('undici');
@@ -12,9 +13,8 @@ const { fetch } = require('undici');
 const POLL_INTERVAL = 500;
 const TIMEOUT = 120 * 1000;
 
-const url = `http://127.0.0.1:${config.api.port}/health`;
-
-async function main() {
+async function waitForServer() {
+    const url = `http://127.0.0.1:${config.api.port}/health`;
     let started = Date.now();
     while (Date.now() - started < TIMEOUT) {
         try {
@@ -33,7 +33,11 @@ async function main() {
     throw new Error(`Server did not become ready at ${url} within ${TIMEOUT / 1000}s`);
 }
 
-main().catch(err => {
-    console.error(err.message);
-    process.exit(1);
-});
+module.exports = { waitForServer };
+
+if (require.main === module) {
+    waitForServer().catch(err => {
+        console.error(err.message);
+        process.exit(1);
+    });
+}

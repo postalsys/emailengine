@@ -21,7 +21,7 @@
 // returned not-found for a bogus id" (also 404). Those, plus all POST routes, are covered
 // by the route-table snapshot test instead.
 //
-// Runs against the shared test server started by the Grunt test task (config/test.toml,
+// Runs against the shared test server started by test/run-tests.js (config/test.toml,
 // port 7077), same harness as test/api-routes-smoke-test.js.
 
 require('dotenv').config({ quiet: true });

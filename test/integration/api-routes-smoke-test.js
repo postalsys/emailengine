@@ -10,7 +10,7 @@
 //   2. The read/list handlers actually execute end-to-end and return 200 with a valid
 //      token (proves dependency injection / requires are wired correctly at runtime).
 //
-// Runs against the shared test server started by the Grunt test task (config/test.toml,
+// Runs against the shared test server started by test/run-tests.js (config/test.toml,
 // port 7077, prepared token with scope "*").
 
 require('dotenv').config({ quiet: true });

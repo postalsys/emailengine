@@ -4,7 +4,7 @@
 // fallback poller. The client OAuth2 app is created WITHOUT pubSubApp, so no topic or subscription
 // is ever provisioned - a messageNew for account1 can therefore ONLY come from the periodic history
 // poll, never from push. The poll interval is shortened for the test run via
-// EENGINE_GMAIL_FALLBACK_POLL_INTERVAL (set on the live server in Gruntfile.js).
+// EENGINE_GMAIL_FALLBACK_POLL_INTERVAL (set on the live server in test/run-tests.js).
 
 require('dotenv').config({ quiet: true });
 

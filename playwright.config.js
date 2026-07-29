@@ -30,7 +30,7 @@ module.exports = defineConfig({
     projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
     webServer: {
         // Flush the isolated e2e Redis DB so every run starts from a clean, unconfigured instance.
-        command: 'node test/e2e/flush-redis.js && node server.js',
+        command: 'node test/helpers/flush-redis.js && node server.js',
         url: BASE_URL,
         timeout: 120000,
         // Always boot fresh: the suite asserts fresh-instance behaviour (enabling auth, activating

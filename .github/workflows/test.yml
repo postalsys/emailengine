@@ -78,11 +78,6 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - name: Setup Redis CLI
-              uses: shogo82148/actions-setup-redis@v1
-              with:
-                  redis-version: '7.x'
-                  auto-start: 'false'
             - run: npm install
             - name: Run unit tests
               run: |
@@ -157,11 +152,6 @@ jobs:
               with:
                   node-version: 24
                   cache: npm
-            - name: Setup Redis CLI
-              uses: shogo82148/actions-setup-redis@v1
-              with:
-                  redis-version: '7.x'
-                  auto-start: 'false'
             - run: npm install
             - name: Run integration tests
               run: |

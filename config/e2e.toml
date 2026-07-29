@@ -27,7 +27,7 @@ imap = 1
 level = "warn"
 
 [dbs]
-# Isolated Redis DB for e2e; flushed before each run by test/e2e/flush-redis.js
+# Isolated Redis DB for e2e; flushed before each run by test/helpers/flush-redis.js
 redis = "redis://127.0.0.1:6379/14"
 
 [api]

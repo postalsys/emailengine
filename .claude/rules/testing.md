@@ -2,7 +2,6 @@
 description: Test tiers, the route-table guardrails, and rules for authoring tests in this repo.
 paths:
   - "test/**"
-  - "Gruntfile.js"
   - "lib/api-routes/**"
   - "lib/ui-routes/**"
   - "lib/routes-ui.js"
@@ -11,15 +10,16 @@ paths:
 ## Testing
 
 - Uses Node.js native test runner with native assert module
-- Tests run via Grunt: `npm test` executes `grunt` which runs Node.js test runner
-- Uses Redis database 13 for test isolation (`config/test.toml`)
+- Both tiers are sequenced by `test/run-tests.js`, which flushes Redis, boots a live server when the tier needs one, and shells out to `node --test`. No build tool and no test-runner devDependency is involved
+- Uses Redis database 13 for test isolation (`config/test.toml`). `NODE_ENV=test` must be set before `@zone-eu/wild-config` loads, otherwise the development database is flushed instead - the npm scripts set it, and `test/run-tests.js` defaults it
 - Two test tiers:
   - **Unit tier** (`/test/*-test.js`): self-contained tests that need Redis but not the live server; run in parallel with default `node --test` concurrency. Run with `npm run test:unit`
-  - **Integration tier** (`/test/integration/*-test.js`): tests that run against a live EmailEngine server booted by Grunt (api-test, sendonly-test, api-routes-smoke-test, ui-routes-smoke-test); run serially. Server readiness is detected by polling `/health` (`test/helpers/wait-for-server.js`). Run with `npm run test:integration`
+  - **Integration tier** (`/test/integration/*-test.js`): tests that run against a live EmailEngine server booted by `test/run-tests.js` (api-test, sendonly-test, api-routes-smoke-test, ui-routes-smoke-test); run serially. Server readiness is detected by polling `/health` (`test/helpers/wait-for-server.js`), and the server is killed on exit even when the tests fail or the run is interrupted. Run with `npm run test:integration`
 - Test files must be named `*-test.js` - the runner globs only match that pattern, so helper modules (e.g. `test/integration/test-config.js`, `test/helpers/*`) are never executed as tests
 - New tests go in `/test` unless they make HTTP requests to the live server, in which case they go in `/test/integration`
 - The integration tier is non-hermetic: api-test.js talks to live Gmail/MS Graph and needs credentials from `.env`; failures there are often external-state flakes, re-run before blaming a change
-- Run `npm test` for the full suite with linting (unit tier, then integration tier)
+- Run `npm test` for the full suite with linting (unit tier, then integration tier). It lints via `npm run lint:src`, which deliberately covers a narrower set than `npm run lint` (no `test/**`) - CI runs the wider `npm run lint` in its own job
+- Every tier flushes its Redis database through the shared `test/helpers/flush-redis.js`, which resolves the database from `NODE_ENV` (db 13 for the test tiers, db 14 for e2e). It uses ioredis, so no `redis-cli` binary has to be on PATH
 - CI (`.github/workflows/test.yml`) runs lint, unit, and integration as separate parallel jobs, so a failed section (usually the flaky integration tier) can be re-run alone via "Re-run failed jobs"
 - **Dovecot tier** (`/test/dovecot/`): live IMAP tests against a real IMAP4rev2 server (Dovecot 2.4+ in Docker), NOT part of `npm test`. Run with `npm run test:dovecot` (needs Docker + local Redis; flushes the test db and boots a test server like the integration tier). CI runs it as the hermetic `dovecot` job in `.github/workflows/test.yml`. Coverage notes in `test/dovecot/README.md`
 - **E2E tier** (`/test/e2e/*.spec.js`): a separate, browser-driven happy-path suite using Playwright (`@playwright/test`), NOT part of `npm test`. It boots a fresh instance (isolated Redis db 14, `config/e2e.toml`, `NODE_ENV=e2e`), drives the admin UI to enable auth + activate a 14-day trial + create an API token, then exercises the REST API end to end against an Ethereal mailbox. Run with `npm run test:e2e` (one-time `npm run test:e2e:install` to fetch Chromium). It runs in its own workflow (`.github/workflows/e2e.yml`, `workflow_dispatch` + push to master) so it is easy to re-run, and is non-hermetic: it needs outbound internet (Ethereal + the postalsys.com trial endpoint)
