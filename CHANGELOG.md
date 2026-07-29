@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.76.0](https://github.com/postalsys/emailengine/compare/v2.75.0...v2.76.0) (2026-07-29)
+
+
+### Features
+
+* add an API endpoint for sending stored drafts ([16e759a](https://github.com/postalsys/emailengine/commit/16e759aab429160d312827618841222c7704057d))
+* add EENGINE_UPDATE_CHECK_DISABLED to opt out of the GitHub update check ([e92bfe6](https://github.com/postalsys/emailengine/commit/e92bfe6e9b01ae9abe1cc782b51d39aac94b2341))
+
+
+### Bug Fixes
+
+* **deps:** update dependencies (imapflow 1.6.3) ([7dc423c](https://github.com/postalsys/emailengine/commit/7dc423cafe45206c36b8293f1a57f47f56594dfe))
+* **deps:** update dependencies (imapflow 1.6.5) ([6a350e1](https://github.com/postalsys/emailengine/commit/6a350e1ab7e8b96ae089d0768c2a9300e0a405e0))
+* **imap:** stop re-listing the folders on every connection setup ([6d79eb3](https://github.com/postalsys/emailengine/commit/6d79eb3f67a3d2bb826f43483c4e51d03ea98d8a))
+
 ## [2.75.0](https://github.com/postalsys/emailengine/compare/v2.74.2...v2.75.0) (2026-07-28)
 
 
