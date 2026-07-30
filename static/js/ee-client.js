@@ -310,14 +310,25 @@ export class EmailEngineClient {
         }
     }
 
+    _normalizeRecipients(to) {
+        return Array.isArray(to)
+            ? to.map(addr => (typeof addr === 'string' ? { address: addr } : addr))
+            : [typeof to === 'string' ? { address: to } : to];
+    }
+
+    // Account details (name, email address) fetched once and cached for the lifetime
+    // of the instance; used as the From identity of saved drafts.
+    async _getAccountInfo() {
+        if (!this._accountInfo) {
+            this._accountInfo = await this.apiRequest('GET', `/v1/account/${this.account}`);
+        }
+        return this._accountInfo;
+    }
+
     async sendMessage(to, subject, text) {
         try {
-            const toAddresses = Array.isArray(to)
-                ? to.map(addr => (typeof addr === 'string' ? { address: addr } : addr))
-                : [typeof to === 'string' ? { address: to } : to];
-
             const messageData = {
-                to: toAddresses,
+                to: this._normalizeRecipients(to),
                 subject: subject,
                 text: text
             };
@@ -330,6 +341,77 @@ export class EmailEngineClient {
             this._parseApiError(error);
             throw error;
         }
+    }
+
+    async saveDraft(to, subject, text) {
+        try {
+            if (!this.folders.length) {
+                await this.loadFolders();
+            }
+            const draftsFolder = this.folders.find(f => f.specialUse === '\\Drafts');
+            if (!draftsFolder) {
+                throw new Error('No Drafts folder found for this account');
+            }
+
+            const messageData = {
+                path: draftsFolder.path,
+                flags: ['\\Draft'],
+                subject: subject,
+                text: text
+            };
+
+            const recipients = to ? this._normalizeRecipients(to) : [];
+            if (recipients.length) {
+                messageData.to = recipients;
+            }
+
+            // The upload endpoint does not add a From header on its own, but the draft
+            // needs one to be deliverable later - use the account's own identity.
+            try {
+                const accountInfo = await this._getAccountInfo();
+                if (accountInfo && accountInfo.email) {
+                    messageData.from = { name: accountInfo.name || '', address: accountInfo.email };
+                }
+            } catch (err) {
+                // Non-fatal: the draft is saved without a From header
+            }
+
+            const response = await this.apiRequest('POST', `/v1/account/${this.account}/message`, messageData);
+            return response;
+        } catch (error) {
+            console.error('Failed to save draft:', error);
+            this._parseApiError(error);
+            throw error;
+        }
+    }
+
+    async submitDraft(messageId, options = null) {
+        try {
+            const response = await this.apiRequest(
+                'POST',
+                `/v1/account/${this.account}/message/${messageId}/submit`,
+                options
+            );
+            return response;
+        } catch (error) {
+            console.error('Failed to submit draft:', error);
+            this._parseApiError(error);
+            throw error;
+        }
+    }
+
+    // A message counts as a draft when the server marks it as one (the \Draft flag on IMAP,
+    // the DRAFT label on Gmail, a draft message on MS Graph) or when it sits in the Drafts
+    // special-use folder.
+    _isDraftMessage(msg) {
+        if (!msg) {
+            return false;
+        }
+        if (msg.draft || msg.messageSpecialUse === '\\Drafts') {
+            return true;
+        }
+        const folder = this.folders.find(f => f.path === this.currentFolder);
+        return !!(folder && folder.specialUse === '\\Drafts');
     }
 
     _parseApiError(error) {
@@ -368,7 +450,10 @@ export class EmailEngineClient {
             return mainMessage;
         }
 
-        // Fallback to generic error message
+        // No field-level details - fall back to the API-provided message, then to a generic one
+        if (error.details && typeof error.details.message === 'string' && error.details.message) {
+            return error.details.message;
+        }
         return 'Failed to send email. Please check your input and try again.';
     }
 
@@ -1095,9 +1180,32 @@ export class EmailEngineClient {
                 font-size: 14px;
                 cursor: pointer;
             }
-            
+
             .ee-compose-cancel:hover {
                 background: #545b62;
+            }
+
+            .ee-compose-save-draft {
+                background: transparent;
+                color: #007bff;
+                border: 1px solid #007bff;
+                padding: 10px 20px;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+            }
+
+            .ee-compose-save-draft:hover:not(:disabled) {
+                background: #007bff;
+                color: white;
+            }
+
+            .ee-compose-save-draft:disabled {
+                color: #6c757d;
+                border-color: #6c757d;
+                cursor: not-allowed;
+                opacity: 0.6;
             }
 
             /* Dark mode toggle button */
@@ -1313,6 +1421,16 @@ export class EmailEngineClient {
 
             .ee-dark-mode .ee-compose-cancel:hover {
                 background: #555;
+            }
+
+            .ee-dark-mode .ee-compose-save-draft {
+                color: #66b2ff;
+                border-color: #66b2ff;
+            }
+
+            .ee-dark-mode .ee-compose-save-draft:hover:not(:disabled) {
+                background: #66b2ff;
+                color: #1a1a1a;
             }
         `;
         document.head.appendChild(style);
@@ -1564,8 +1682,10 @@ export class EmailEngineClient {
 
         const msg = this.currentMessage;
         const isUnseen = msg.unseen;
+        const isDraft = this._isDraftMessage(msg);
         const html = `
             <div class="ee-message-actions">
+                ${isDraft ? '<button class="ee-button" data-action="send-draft">Send Draft</button>' : ''}
                 <button class="ee-button" data-action="toggle-read">Mark as ${isUnseen ? 'seen' : 'unseen'}</button>
                 <button class="ee-button" data-action="delete">Delete</button>
                 <button class="ee-button" data-action="download-original">Download Original</button>
@@ -1639,6 +1759,41 @@ export class EmailEngineClient {
         viewer.innerHTML = html;
 
         this._labelCollapsedThreads(viewer);
+
+        const sendDraftButton = viewer.querySelector('[data-action="send-draft"]');
+        if (sendDraftButton) {
+            sendDraftButton.addEventListener('click', async () => {
+                const result = await this.confirmMethod(
+                    'Send this draft to its recipients now? The draft is removed from the Drafts folder once it has been sent.',
+                    'Send Draft',
+                    'Cancel',
+                    'Send'
+                );
+                if (!result) {
+                    return;
+                }
+
+                const originalText = sendDraftButton.textContent;
+                sendDraftButton.disabled = true;
+                sendDraftButton.textContent = 'Sending...';
+
+                try {
+                    await this.submitDraft(msg.id);
+                    await this.alertMethod('Draft queued for delivery.', 'Success', null, 'OK');
+                    // Refresh the folder view - the provider removes the draft once it is sent,
+                    // immediately for Gmail and MS Graph, after SMTP delivery for IMAP accounts.
+                    if (!this._destroyed && this.currentFolder) {
+                        await this.loadMessages(this.currentFolder);
+                    }
+                } catch (error) {
+                    console.error('Failed to send draft:', error);
+                    const errorMessage = this._formatSendError(error);
+                    await this.alertMethod(errorMessage, 'Send Error', null, 'OK');
+                    sendDraftButton.disabled = false;
+                    sendDraftButton.textContent = originalText;
+                }
+            });
+        }
 
         viewer.querySelector('[data-action="toggle-read"]').addEventListener('click', () => {
             const currentlyUnseen = msg.unseen;
@@ -1754,6 +1909,7 @@ export class EmailEngineClient {
                     </form>
                     <div class="ee-compose-actions">
                         <button type="button" class="ee-compose-cancel">Cancel</button>
+                        <button type="button" class="ee-compose-save-draft">Save Draft</button>
                         <button type="button" class="ee-compose-send">Send</button>
                     </div>
                 </div>
@@ -1776,6 +1932,7 @@ export class EmailEngineClient {
         const modal = this.container.querySelector('.ee-compose-modal');
         const closeButton = this.container.querySelector('.ee-compose-close');
         const cancelButton = this.container.querySelector('.ee-compose-cancel');
+        const saveDraftButton = this.container.querySelector('.ee-compose-save-draft');
         const sendButton = this.container.querySelector('.ee-compose-send');
         const form = this.container.querySelector('.ee-compose-form');
 
@@ -1810,6 +1967,52 @@ export class EmailEngineClient {
             }
         };
         document.addEventListener('keydown', this._composeKeydownHandler);
+
+        // Save the composed message as a draft instead of sending it
+        saveDraftButton.addEventListener('click', async () => {
+            const formData = new FormData(form);
+            const to = formData.get('to').trim();
+            const subject = formData.get('subject').trim();
+            const message = formData.get('message').trim();
+
+            if (!to && !subject && !message) {
+                modal.classList.remove('show');
+                await this.alertMethod(
+                    'Nothing to save - fill in at least one field first.',
+                    'Validation Error',
+                    null,
+                    'OK'
+                );
+                modal.classList.add('show');
+                setTimeout(() => form.querySelector('input[name="to"]').focus(), 100);
+                return;
+            }
+
+            const originalText = saveDraftButton.textContent;
+            saveDraftButton.disabled = true;
+            saveDraftButton.textContent = 'Saving...';
+
+            try {
+                const response = await this.saveDraft(to || null, subject, message);
+                closeModal();
+                await this.alertMethod('Draft saved to the Drafts folder.', 'Success', null, 'OK');
+                // Refresh the list when the user is looking at the Drafts folder
+                if (!this._destroyed && response && response.path && this.currentFolder === response.path) {
+                    await this.loadMessages(this.currentFolder);
+                }
+            } catch (error) {
+                console.error('Failed to save draft:', error);
+                // Close modal before showing error alert, then reopen with preserved values
+                modal.classList.remove('show');
+                const errorMessage = this._formatSendError(error);
+                await this.alertMethod(errorMessage, 'Save Error', null, 'OK');
+                modal.classList.add('show');
+                setTimeout(() => form.querySelector('input[name="to"]').focus(), 100);
+            } finally {
+                saveDraftButton.disabled = false;
+                saveDraftButton.textContent = originalText;
+            }
+        });
 
         // Send email
         sendButton.addEventListener('click', async () => {
@@ -1889,6 +2092,17 @@ export class EmailEngineClient {
             const buttonSize = 56; // Button width/height
             const margin = 20; // Desired margin from edges
 
+            // A hidden container (display: none) reports a zero-size rect; positioning
+            // against it would push the fixed-position button off-screen. Hide the button
+            // instead and let the ResizeObserver below restore it once the container is
+            // shown - hosts often create the client inside a container that is only made
+            // visible afterwards.
+            if (!containerRect.width && !containerRect.height) {
+                composeButton.style.display = 'none';
+                return;
+            }
+            composeButton.style.display = '';
+
             // Calculate the ideal position (bottom-right of container with margin)
             const idealBottom = window.innerHeight - containerRect.bottom + margin;
             const idealRight = window.innerWidth - containerRect.right + margin;
@@ -1917,10 +2131,26 @@ export class EmailEngineClient {
         window.addEventListener('scroll', updateWithThrottle);
         window.addEventListener('resize', updateWithThrottle);
 
-        // Store cleanup function for potential future use
+        // Reposition when the container itself changes size or becomes visible - window
+        // scroll/resize events never fire for those. Calls the update directly instead of
+        // the throttled wrapper: the throttle drops trailing calls, which would leave the
+        // button hidden when the observer fires twice in quick succession (initial
+        // notification followed by the container being shown). Observer callbacks are
+        // already batched per frame by the browser, so there is nothing to throttle.
+        let resizeObserver = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(updateButtonPosition);
+            resizeObserver.observe(this.container);
+        }
+
+        // Cleanup runs from destroy()
         this._composeButtonCleanup = () => {
             window.removeEventListener('scroll', updateWithThrottle);
             window.removeEventListener('resize', updateWithThrottle);
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+                resizeObserver = null;
+            }
         };
     }
 
