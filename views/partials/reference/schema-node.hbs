@@ -23,7 +23,7 @@
         <span class="text-primary text-xs font-medium">{{typeLabel}}</span>
         {{#if required}}<span class="text-error text-2xs font-semibold tracking-wide uppercase">required</span>{{/if}}
         {{#if nullable}}<span class="ee-chip">nullable</span>{{/if}}
-        {{#if deprecated}}{{> ui/badge label="deprecated" variant="warning" soft=true icon="" id="" class=""}}{{/if}}
+        {{#if deprecated}}{{> ui/badge label="deprecated" variant="warning" soft=true icon="" class=""}}{{/if}}
         {{#each constraints}}<span class="ee-chip">{{this}}</span>{{/each}}
     </div>
 

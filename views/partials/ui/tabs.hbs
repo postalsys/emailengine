@@ -6,14 +6,14 @@
       {{/ui/tabs}}
     Params:
       label - aria-label describing the strip (required)
-      id    - element id (optional)
+      elId  - element id (optional; see ui/badge for why it is not called `id`)
       class - extra classes on the nav, e.g. "mb-4" (optional)
     Panels are the caller's responsibility: each ui/tab target must match a
     tabpanel element with that id (role="tabpanel" aria-labelledby="<target>-tab").
     The auth-method tabs in oauth_form.hbs intentionally do NOT use this partial -
     they run a custom script instead of the FlyonUI data-tabs plugin.
 --}}
-<nav class="tabs tabs-bordered{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if id}} id="{{id}}"{{/if}} data-tabs>
+<nav class="tabs tabs-bordered{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
     {{!-- own hash params neutralized against fallthrough into the block --}}
     {{> @partial-block label="" id="" class=""}}
 </nav>

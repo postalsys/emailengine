@@ -6,10 +6,12 @@
                 (default neutral; the legacy "danger" normalizes to error via eeColor)
       soft    - true for the soft (tinted) style
       icon    - full iconify class (optional)
-      id      - element id (optional)
+      elId    - element id (optional). NOT named `id`: Handlebars merges hash params
+                into the caller's context, so a partial reading `id` also inherits one
+                that merely happens to be in scope - a row's id inside {{#each}}
       class   - extra classes, e.g. "state-info" hooks (optional)
 --}}
-<span {{#if id}}id="{{id}}" {{/if}}class="badge badge-{{eeColor variant}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
+<span {{#if elId}}id="{{elId}}" {{/if}}class="badge badge-{{eeColor variant}}{{#if soft}} badge-soft{{/if}}{{#if class}} {{class}}{{/if}}">
     {{~#if icon}}<span class="{{icon}} size-3.5 shrink-0"></span>{{/if~}}
     {{~#if label includeZero=true}}{{label}}{{else if @partial-block}}{{> @partial-block label="" variant="" soft="" icon="" id="" class=""}}{{/if~}}
 </span>

@@ -79,6 +79,7 @@ const { getESClient, documentStoreFeatureEnabled } = require('../lib/document-st
 const sso = require('../lib/sso');
 
 const routesUi = require('../lib/routes-ui');
+const specOptions = require('../lib/swagger-options');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
@@ -841,11 +842,13 @@ const init = async () => {
     });
 
     const swaggerOptions = {
+        // Spec-shaping options (tag list and order, security scheme, external docs) live in
+        // lib/swagger-options.js so the document can be reproduced outside a running server
+        ...specOptions,
+
         swaggerUI: true,
         jsonPath: '/swagger.json',
         swaggerUIPath: '/admin/swagger/resources/',
-
-        OAS: 'v3.0',
 
         expanded: 'list',
         sortEndpoints: 'method',
@@ -854,8 +857,6 @@ const init = async () => {
         tryItOutEnabled: true,
 
         templates: Path.join(__dirname, '..', 'views', 'swagger', 'ui'),
-
-        grouping: 'tags',
 
         info: {
             title: 'EmailEngine API',
@@ -893,130 +894,9 @@ Include your token in requests using one of these methods:
             }
         },
 
-        externalDocs: {
-            description: 'EmailEngine Documentation',
-            url: 'https://learn.emailengine.app/'
-        },
-
-        securityDefinitions: {
-            bearerAuth: {
-                type: 'http',
-                scheme: 'bearer',
-                bearerFormat: 'JWT',
-                description: 'Enter your access token'
-            }
-        },
-
-        security: [{ bearerAuth: [] }],
-
-        definitionPrefix: 'useLabel',
-
         cors: !!CORS_CONFIG,
         cache: {
             expiresIn: 7 * 24 * 60 * 60 * 1000
-        },
-
-        tags: [
-            {
-                name: 'Account',
-                description: 'Manage email accounts, including IMAP/SMTP configuration, OAuth2 authentication, and account health monitoring'
-            },
-            {
-                name: 'Mailbox',
-                description: 'List, create, modify, and manage mailbox folders. Retrieve folder statistics and special-use designations'
-            },
-            {
-                name: 'Message',
-                description: 'Search, retrieve, update, and delete email messages. Manage flags, labels, and message content'
-            },
-            {
-                name: 'Submit',
-                description:
-                    'Send emails with attachments, reply to threads, forward messages, and upload to folders. Supports both immediate and scheduled sending',
-                externalDocs: {
-                    description: 'Sending Emails Documentation',
-                    url: 'https://learn.emailengine.app/docs/sending'
-                }
-            },
-            {
-                name: 'Outbox',
-                description: 'Monitor and manage the email sending queue. View pending messages, retry failed deliveries, and track sending progress'
-            },
-            {
-                name: 'Delivery Test',
-                description: 'Test email deliverability and authentication. Verify SPF, DKIM signatures, DMARC alignment, and analyze potential delivery issues'
-            },
-            {
-                name: 'Access Tokens',
-                description: 'Create and manage API access tokens with customizable permissions, IP restrictions, and rate limits'
-            },
-            {
-                name: 'Settings',
-                description: 'Configure EmailEngine runtime settings including webhooks, tracking, AI features, and email processing options'
-            },
-            {
-                name: 'Templates',
-                description: 'Create and manage reusable email templates with variable substitution, HTML/text content, and attachments',
-                externalDocs: {
-                    description: 'Email Templates Documentation',
-                    url: 'https://learn.emailengine.app/docs/sending/templates'
-                }
-            },
-            {
-                name: 'Logs',
-                description: 'Access system and account-level logs for debugging, monitoring, and audit purposes'
-            },
-            {
-                name: 'Stats',
-                description: 'Retrieve usage statistics, performance metrics, and account activity data',
-                externalDocs: {
-                    description: 'Monitoring and Analytics',
-                    url: 'https://learn.emailengine.app/docs/advanced/monitoring'
-                }
-            },
-            {
-                name: 'License',
-                description: 'Manage EmailEngine licensing, view license status, and handle license-related operations'
-            },
-            {
-                name: 'Webhooks',
-                description: 'Configure webhook endpoints, manage event subscriptions, and monitor webhook delivery status',
-                externalDocs: {
-                    description: 'Webhooks Guide',
-                    url: 'https://learn.emailengine.app/docs/webhooks/overview'
-                }
-            },
-            {
-                name: 'OAuth2 Applications',
-                description: 'Configure OAuth2 applications for Gmail, Outlook, and other providers. Manage client credentials and authentication flows',
-                externalDocs: {
-                    description: 'OAuth2 Configuration Guide',
-                    url: 'https://learn.emailengine.app/docs/configuration/oauth2-configuration'
-                }
-            },
-            {
-                name: 'SMTP Gateway',
-                description: 'Configure and manage the built-in SMTP server for receiving emails and integrating with external systems'
-            },
-            {
-                name: 'Blocklists',
-                description: 'Manage email address blocklists to prevent sending to specific recipients or domains'
-            },
-            {
-                name: 'Multi Message Actions',
-                description: 'Perform bulk operations on multiple messages simultaneously, such as marking as read, moving, or deleting'
-            },
-            {
-                name: 'Export (Beta)',
-                description:
-                    'Bulk export messages from email accounts. This feature is in beta and the API may change in future releases. Export files are encrypted at rest when a service secret is configured.'
-            }
-        ],
-
-        // Custom vendor extensions for additional metadata
-        'x-logo': {
-            url: 'https://emailengine.dev/static/logo.png',
-            altText: 'EmailEngine Logo'
         }
     };
 

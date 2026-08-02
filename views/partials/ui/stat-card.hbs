@@ -10,7 +10,9 @@
       title   - header label next to the icon (optional)
       value   - large value text; ignored when a block is given (optional)
       icon    - full iconify class shown in the tinted container (optional)
-      id      - element id (optional)
+      elId    - element id (optional). NOT named `id`: Handlebars merges hash params
+                into the caller's context, so a partial reading `id` also inherits one
+                that merely happens to be in scope - a row's id inside {{#each}}
       class   - extra classes (optional)
 --}}
 {{#*inline "iconBox"}}
@@ -18,7 +20,7 @@
     <span class="{{icon}} size-5"></span>
 </div>
 {{/inline}}
-<div {{#if id}}id="{{id}}" {{/if}}class="card bg-base-100 shadow-md{{#if class}} {{class}}{{/if}}">
+<div {{#if elId}}id="{{elId}}" {{/if}}class="card bg-base-100 shadow-md{{#if class}} {{class}}{{/if}}">
     <div class="card-body">
         {{#if title}}
         <div class="flex items-center gap-3 mb-2">

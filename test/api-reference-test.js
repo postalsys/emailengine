@@ -1,26 +1,40 @@
 'use strict';
 
-// Unit tests for the API reference model (lib/api-reference/), using the committed
-// swagger.json as the fixture - it is the real document the pages render from, so a
-// schema shape the builder mishandles fails here without booting a server.
+// Unit tests for the API reference model (lib/api-reference/).
 //
-// Only the pure modules are required. lib/api-reference/index.js pulls in lib/settings
-// (Redis), which would keep the unit tier's process alive.
+// The spec is generated in-process from the REAL route table (test/helpers/build-openapi-spec.js)
+// rather than read from swagger.json, which is gitignored - `npm run swagger` writes it by
+// booting a server, so it is absent on a fresh checkout and in CI. Generating it here also
+// means these assertions run against what the current routes actually produce, so a route
+// whose spec entry regresses (a missing 2xx, an unresolvable $ref) fails here.
+//
+// Only the pure modules of lib/api-reference are exercised here; the request-scoped half
+// (lib/api-reference/index.js) is covered by test/e2e/reference.spec.js against a live server.
 
-const test = require('node:test');
+const { test, before } = require('node:test');
 const assert = require('node:assert').strict;
-const pathlib = require('path');
 
-const spec = require(pathlib.join(__dirname, '..', 'swagger.json'));
+const { redis } = require('../lib/db');
+const registerRedisTeardown = require('./helpers/redis-teardown');
+const { buildOpenApiSpec } = require('./helpers/build-openapi-spec');
 
 const { buildModel } = require('../lib/api-reference/model');
-const { buildSchemaTree, buildExample } = require('../lib/api-reference/schema-tree');
+const { buildSchemaTree, buildExample, typeLabel } = require('../lib/api-reference/schema-tree');
 const { buildCodeSamples } = require('../lib/api-reference/code-samples');
-const { formatDescription, slugify, typeLabel, constraintList } = require('../lib/api-reference/format');
+const { formatDescription, slugify, constraintList } = require('../lib/api-reference/format');
 
-const model = buildModel(spec);
+let spec;
+let model;
+let allOperations;
 
-const allOperations = model.tags.flatMap(tag => tag.operations);
+before(async () => {
+    spec = await buildOpenApiSpec();
+    model = buildModel(spec);
+    allOperations = model.tags.flatMap(tag => tag.operations);
+});
+
+// Requiring lib/api-routes opens Redis and BullMQ handles that outlive the tests.
+registerRedisTeardown(redis);
 
 function walkTree(node, visit) {
     if (!node) {
@@ -64,19 +78,34 @@ test('API reference model', async t => {
         assert.equal(new Set(tabIds).size, tabIds.length, 'response tab ids collide');
     });
 
-    await t.test('every operation documents a success response', () => {
-        // Five streaming/binary downloads declare only error responses; the model
-        // synthesizes their success row from the route's produces type
+    await t.test('every operation declares a success response in the spec', () => {
+        // The streaming and binary downloads have no response.schema for hapi-swagger to
+        // derive a 200 from, so they need an explicit entry (streamResponses() in
+        // lib/schemas.js). Without it the generated spec documents only their error cases
+        // and EVERY consumer - Swagger UI, Postman, code generators - sees an operation
+        // with no success response.
+        const missing = [];
+        for (const path of Object.keys(spec.paths)) {
+            for (const method of Object.keys(spec.paths[path])) {
+                const codes = Object.keys(spec.paths[path][method].responses || {});
+                if (!codes.some(code => /^2/.test(code))) {
+                    missing.push(`${method.toUpperCase()} ${path}`);
+                }
+            }
+        }
+        assert.deepEqual(missing, []);
+    });
+
+    await t.test('the model carries a success response through for every operation', () => {
         for (const operation of allOperations) {
             const success = operation.responses.filter(response => response.variant === 'success');
             assert.ok(success.length, `${operation.methodLabel} ${operation.path} has no 2xx response`);
         }
 
+        // the binary download is the case that used to be missing entirely
         const download = allOperations.find(operation => operation.id === 'getV1AccountAccountAttachmentAttachment');
-        const synthesized = download.responses.find(response => response.synthesized);
-        assert.ok(synthesized);
-        assert.equal(synthesized.code, '200');
-        assert.equal(synthesized.contentType, 'application/octet-stream');
+        assert.ok(download);
+        assert.ok(download.responses.some(response => response.code === '200'));
     });
 
     await t.test('every schema node resolves to a concrete type', () => {
@@ -272,9 +301,13 @@ test('API reference formatting', async t => {
         }
     });
 
-    await t.test('labels arrays by their item type', () => {
-        assert.equal(typeLabel({ type: 'array', items: { type: 'string' } }), 'array of string');
-        assert.equal(typeLabel({ type: 'object' }), 'object');
-        assert.equal(typeLabel({}), 'any');
+    await t.test('labels arrays by their item type, following $refs', () => {
+        assert.equal(typeLabel(spec, { type: 'array', items: { type: 'string' } }), 'array of string');
+        assert.equal(typeLabel(spec, { type: 'object' }), 'object');
+        assert.equal(typeLabel(spec, {}), 'any');
+
+        // the case a spec-free implementation cannot answer: items behind a $ref
+        const refName = Object.keys(spec.components.schemas).find(name => spec.components.schemas[name].type === 'object');
+        assert.equal(typeLabel(spec, { type: 'array', items: { $ref: `#/components/schemas/${refName}` } }), 'array of object');
     });
 });

@@ -236,7 +236,7 @@
 
                 {{#unless licenseInfo.active}}
                 {{#unless hideLicenseWarning}}
-                {{#> ui/stat-card id="license-warning" variant="error" title="License key missing" icon="icon-[tabler--key]" class="mb-6"}}
+                {{#> ui/stat-card elId="license-warning" variant="error" title="License key missing" icon="icon-[tabler--key]" class="mb-6"}}
 
                 {{#if licenseInfo.suspended}}
                 <div class="alert alert-soft alert-error mb-6" role="alert">

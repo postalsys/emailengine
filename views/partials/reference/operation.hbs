@@ -9,17 +9,17 @@
     then a closed tag set added back), which is why they render unescaped.
 
     Tab ids (response.tabId, sample.tabId) are precomputed in the model: ui/tabs
-    neutralizes its own hash params inside the partial block, so the operation id
-    cannot be composed with them from here.
+    neutralizes its own hash params inside the partial block, so the operation id is
+    not reachable from there to compose them with.
 --}}
 <section id="{{id}}" class="ee-ref-op card bg-base-100 mb-6 scroll-mt-20 shadow-md">
     <div class="card-body">
 
         <div class="flex flex-wrap items-center gap-2">
-            {{> ui/badge label=methodLabel variant=methodVariant icon="" id="" class="font-mono" soft=""}}
+            {{> ui/badge label=methodLabel variant=methodVariant icon="" class="font-mono" soft=""}}
             <code class="text-sm font-semibold break-all">{{path}}</code>
             {{#if deprecated}}
-            {{> ui/badge label="Deprecated" variant="warning" soft=true icon="" id="" class=""}}
+            {{> ui/badge label="Deprecated" variant="warning" soft=true icon="" class=""}}
             {{/if}}
             <a href="#{{id}}" class="text-base-content/40 hover:text-primary ms-auto shrink-0"
                 aria-label="Link to this operation">
@@ -59,9 +59,7 @@
         {{#if responses.length}}
         <div class="mt-5">
             {{> reference/section-heading label="Responses" class="mb-2"}}
-            {{!-- id="" is required: ui/tabs renders whatever `id` resolves to in the
-                  surrounding context, which here is the operation's own id --}}
-            {{#> ui/tabs label="Response status codes" class="mb-3" id=""}}
+            {{#> ui/tabs label="Response status codes" class="mb-3"}}
             {{#each responses}}
             {{> ui/tab target=tabId label=code active=active}}
             {{/each}}
@@ -69,7 +67,7 @@
             {{#each responses}}
             <div id="{{tabId}}" role="tabpanel" aria-labelledby="{{tabId}}-tab" {{#unless active}}class="hidden" {{/unless}}>
                 <div class="flex flex-wrap items-center gap-2">
-                    {{> ui/badge label=code variant=variant soft=true icon="" id="" class=""}}
+                    {{> ui/badge label=code variant=variant soft=true icon="" class=""}}
                     {{#if contentType}}<span class="text-base-content/50 text-xs">{{contentType}}</span>{{/if}}
                 </div>
                 {{#if descriptionHtml}}
@@ -91,8 +89,7 @@
         {{#if samples.length}}
         <div class="mt-5">
             {{> reference/section-heading label="Code samples" class="mb-2"}}
-            {{!-- id="" as above --}}
-            {{#> ui/tabs label="Code sample languages" class="mb-3" id=""}}
+            {{#> ui/tabs label="Code sample languages" class="mb-3"}}
             {{#each samples}}
             {{> ui/tab target=tabId label=label active=active}}
             {{/each}}

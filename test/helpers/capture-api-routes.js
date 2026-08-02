@@ -123,4 +123,4 @@ async function captureApiRoutes(overrides) {
     return { routes, registeredPlugins };
 }
 
-module.exports = { captureApiRoutes };
+module.exports = { captureApiRoutes, buildMockArgs };
