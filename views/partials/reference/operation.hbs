@@ -35,6 +35,19 @@
         <div class="text-base-content/70 mt-1 text-sm"><p>{{{descriptionHtml}}}</p></div>
         {{/if}}
 
+        {{#if behavior.length}}
+        {{!-- notes are pre-escaped by formatDescription, hence the triple stash --}}
+        <div class="alert alert-soft alert-info mt-4 flex items-start gap-3" role="note">
+            <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+            <div class="min-w-0 text-sm">
+                <div class="mb-1 font-semibold">Behavior</div>
+                <ul class="list-disc space-y-1 ps-4">
+                    {{#each behavior}}<li>{{{this}}}</li>{{/each}}
+                </ul>
+            </div>
+        </div>
+        {{/if}}
+
         {{> reference/params title="Path parameters" params=pathParams}}
         {{> reference/params title="Query parameters" params=queryParams}}
         {{> reference/params title="Headers" params=headerParams}}

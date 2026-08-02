@@ -108,6 +108,95 @@ test('API reference model', async t => {
         assert.ok(download.responses.some(response => response.code === '200'));
     });
 
+    await t.test('every operation documents what its success response returns', () => {
+        // "Successful" is hapi-swagger's placeholder; apiResponses() in lib/schemas.js
+        // replaces it with prose per operation, which is what a caller actually needs
+        const placeholder = [];
+        for (const path of Object.keys(spec.paths)) {
+            for (const method of Object.keys(spec.paths[path])) {
+                const ok = (spec.paths[path][method].responses || {})['200'];
+                if (!ok || !ok.description || ok.description === 'Successful') {
+                    placeholder.push(`${method.toUpperCase()} ${path}`);
+                }
+            }
+        }
+        assert.deepEqual(placeholder, []);
+    });
+
+    await t.test('documented enum values reach the model with their descriptions', () => {
+        const documented = [];
+        everyTree(node => {
+            if (node.enumDocumented) {
+                documented.push(node);
+            }
+        });
+
+        assert.ok(documented.length, 'no enum carried per-value descriptions');
+
+        // every value of a documented enum must be described - a half-filled map is worse
+        // than none, because the gaps read as "this value means nothing"
+        for (const node of documented) {
+            for (const entry of node.enumValues) {
+                assert.ok(entry.description, `${node.name}: value "${entry.value}" has no description`);
+            }
+        }
+
+        // the account state is the one operators hit most, so assert it specifically
+        const state = documented.find(node => node.enumValues.some(entry => entry.value === 'authenticationError'));
+        assert.ok(state, 'account state enum is not documented');
+        assert.match(state.enumValues.find(entry => entry.value === 'connected').description, /steady state/);
+    });
+
+    await t.test('behavior notes reach the operations that need them', () => {
+        const withBehavior = allOperations.filter(operation => operation.behavior.length);
+        assert.ok(withBehavior.length >= 15, `only ${withBehavior.length} operations carry behavior notes`);
+
+        // submitting is the case the notes exist for: a 2xx means queued, not sent
+        const submit = allOperations.find(operation => operation.id === 'postV1AccountAccountSubmit');
+        assert.ok(submit.behavior.length);
+        assert.ok(
+            submit.behavior.some(note => /queued, not that it was sent/.test(note)),
+            'the submit operation does not warn that a 2xx only means queued'
+        );
+
+        // notes are pre-escaped for the template's triple stash
+        for (const operation of allOperations) {
+            for (const note of operation.behavior) {
+                assert.ok(!/<(?!code|a|br|\/)/.test(note), `unexpected markup in a behavior note on ${operation.id}`);
+            }
+        }
+    });
+
+    await t.test('behavior notes also reach the standard description field', () => {
+        // Routes declare each note twice: in the `notes` array, which hapi-swagger joins
+        // into `description` for every consumer of the spec, and under x-ee-behavior so
+        // this renderer can pull it into a callout. A note present in only the extension
+        // would be invisible to Postman, Redoc and code generators - which is the audience
+        // most likely to ship "a 2xx means sent".
+        const missing = [];
+        for (const path of Object.keys(spec.paths)) {
+            for (const method of Object.keys(spec.paths[path])) {
+                const operation = spec.paths[path][method];
+                for (const note of operation['x-ee-behavior'] || []) {
+                    if (!(operation.description || '').includes(note)) {
+                        missing.push(`${method.toUpperCase()} ${path}: ${note.slice(0, 50)}...`);
+                    }
+                }
+            }
+        }
+        assert.deepEqual(missing, []);
+    });
+
+    await t.test('the operation prose does not repeat its behavior notes', () => {
+        // The notes arrive inside `description`, so the model has to strip them back out or
+        // the page shows each one twice - once in the prose, once in the callout.
+        for (const operation of allOperations) {
+            for (const note of operation.behavior) {
+                assert.ok(!operation.descriptionHtml.includes(note), `${operation.id} renders a behavior note in its prose as well as the callout`);
+            }
+        }
+    });
+
     await t.test('every schema node resolves to a concrete type', () => {
         // "any" means a $ref the tree builder failed to follow - the bug that made
         // 46 array properties render as "array of any"

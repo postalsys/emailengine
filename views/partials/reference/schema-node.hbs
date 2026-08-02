@@ -32,10 +32,25 @@
     {{/if}}
 
     {{#if enumValues}}
+    {{#if enumDocumented}}
+    {{!-- documented values get a row each; joi .meta({enumDescriptions}) is the source --}}
+    <div class="mt-1">
+        <span class="text-base-content/50 text-2xs tracking-wide uppercase">Allowed values</span>
+        <ul class="ee-ref-nest mt-1 space-y-1">
+            {{#each enumValues}}
+            <li class="flex flex-wrap items-baseline gap-x-2 text-sm">
+                <code class="ee-chip">{{value}}</code>
+                {{#if description}}<span class="text-base-content/70">{{description}}</span>{{/if}}
+            </li>
+            {{/each}}
+        </ul>
+    </div>
+    {{else}}
     <div class="mt-1 flex flex-wrap items-baseline gap-1">
         <span class="text-base-content/50 text-2xs tracking-wide uppercase">Allowed</span>
-        {{#each enumValues}}<code class="ee-chip">{{this}}</code>{{/each}}
+        {{#each enumValues}}<code class="ee-chip">{{value}}</code>{{/each}}
     </div>
+    {{/if}}
     {{/if}}
 
     {{#if defaultValue}}

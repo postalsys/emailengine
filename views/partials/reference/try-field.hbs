@@ -22,7 +22,7 @@
     {{else if enumValues}}
     <select class="select select-sm mt-1" data-param="{{name}}" data-in="{{in}}">
         <option value=""></option>
-        {{#each enumValues}}<option value="{{this}}">{{this}}</option>{{/each}}
+        {{#each enumValues}}<option value="{{value}}">{{value}}</option>{{/each}}
     </select>
     {{else}}
     <input type="text" class="input input-sm mt-1" data-param="{{name}}" data-in="{{in}}"
