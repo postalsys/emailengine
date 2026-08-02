@@ -79,6 +79,7 @@ const { getESClient, documentStoreFeatureEnabled } = require('../lib/document-st
 const sso = require('../lib/sso');
 
 const routesUi = require('../lib/routes-ui');
+const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
 const { Certs } = require('@postalsys/certs');
@@ -439,6 +440,8 @@ parentPort.on('message', message => {
     if (message && message.cmd === 'settings') {
         // Keep this worker's in-memory HTTP proxy agent in sync when proxy settings change
         maybeReloadHttpProxyAgent(message.data);
+        // ...and the API reference's memoized serviceUrl, which its code samples embed
+        clearServiceUrlCache();
     }
 });
 
@@ -3166,18 +3169,16 @@ Include your token in requests using one of these methods:
         });
     }
 
-    // trigger a request to cache swagger.json
+    // Warm the swagger.json cache, and with it the /admin/reference render model - which
+    // reads the same document back and costs ~12ms to build. Doing both here keeps that
+    // work off the first visitor's request.
     setImmediate(() => {
-        server
-            .inject({
-                method: 'get',
-                url: '/swagger.json'
-            })
-            .then(res => {
-                logger.debug({ msg: 'Triggered swagger caching request', statusCode: res.statusCode });
+        getApiReferenceModel(server)
+            .then(model => {
+                logger.debug({ msg: 'Built the API reference model', operations: model.operationCount });
             })
             .catch(err => {
-                logger.debug({ msg: 'Failed to trigger swagger caching request', err });
+                logger.debug({ msg: 'Failed to build the API reference model', err });
             });
     });
 

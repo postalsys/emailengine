@@ -1,0 +1,28 @@
+{{!--
+    API reference page for one endpoint group (/admin/reference/{tag}). Every operation
+    in the group is rendered in full - see lib/api-reference/ for the model.
+--}}
+{{> reference/token-alert}}
+
+{{> ui/breadcrumb parentHref="/admin/reference" parentLabel="API Reference" current=tag.name class="mb-2"}}
+
+{{> ui/page-header title=tag.name icon="icon-[tabler--api]" class="mb-4"}}
+
+{{#if tag.descriptionHtml}}
+<p class="text-base-content/70 mb-4">{{{tag.descriptionHtml}}}</p>
+{{/if}}
+
+{{#if tag.externalDocs}}
+<p class="mb-4 text-sm">
+    <a href="{{tag.externalDocs.url}}" class="link link-primary" target="_blank" rel="noopener noreferrer">
+        {{#if tag.externalDocs.description}}{{tag.externalDocs.description}}{{else}}Documentation{{/if}}
+    </a>
+</p>
+{{/if}}
+
+{{#each operations}}
+{{> reference/operation}}
+{{/each}}
+
+{{!-- deferred highlighting, sidebar filter and try-it runner; the page content itself is server-rendered --}}
+<script src="/static/js/reference.js" defer></script>

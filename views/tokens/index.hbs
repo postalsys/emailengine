@@ -30,8 +30,16 @@
                 {{#each data.tokens}}
                 <tr>
                     <td>
-                        <div><strong>{{description}}</strong></div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <strong>{{description}}</strong>
+                            {{#if expiresStr}}
+                            {{> ui/badge label="Expires" variant="warning" soft=true icon="" id="" class=""}}
+                            {{/if}}
+                        </div>
                         {{> ui/entity-id id=id short=idShort label="Token ID"}}
+                        {{#if expiresStr}}
+                        <div class="text-base-content/60 text-xs">Expires <span class="relative-time" data-time="{{expiresStr}}"></span></div>
+                        {{/if}}
                     </td>
 
                     <td>

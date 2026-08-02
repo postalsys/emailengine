@@ -1,0 +1,16 @@
+{{!--
+    reference/section-heading - small uppercase label for a block inside an operation
+    card (Path parameters, Request body, Responses, Code samples).
+    Params:
+      label  - heading text (required)
+      suffix - muted normal-case text after the label, e.g. a content type (optional)
+      class  - extra classes on the heading (optional; the caller owns spacing)
+
+    Not ui/section-title: that partial emits an <h2> for page-level groups of cards.
+    These sit under the operation's own <h3>, so they have to be <h4> to keep the
+    heading outline in order.
+--}}
+<h4 class="text-base-content/50 text-xs font-semibold tracking-wide uppercase{{#if class}} {{class}}{{/if}}">
+    {{~label~}}
+    {{#if suffix}} <span class="text-base-content/40 normal-case">({{suffix}})</span>{{/if}}
+</h4>

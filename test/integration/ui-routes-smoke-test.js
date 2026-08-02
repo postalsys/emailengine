@@ -65,6 +65,7 @@ const GET_ROUTES = [
     '/admin/internals',
     '/admin/legal',
     '/admin/login',
+    '/admin/reference',
     '/admin/swagger',
     '/admin/templates',
     '/admin/templates/new',

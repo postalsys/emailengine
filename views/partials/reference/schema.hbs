@@ -1,0 +1,19 @@
+{{!--
+    reference/schema - root of a schema tree. Renders the top-level properties as a
+    list of reference/schema-node rows, or a single type line when the schema has no
+    properties to expand (a bare string, an array of scalars).
+    Context is a node from buildSchemaTree().
+--}}
+{{#if children.length}}
+<ul class="ee-ref-props">
+    {{#each children}}{{> reference/schema-node}}{{/each}}
+</ul>
+{{else}}
+<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <span class="text-primary text-xs font-medium">{{typeLabel}}</span>
+    {{#each constraints}}<span class="ee-chip">{{this}}</span>{{/each}}
+</div>
+{{#if descriptionHtml}}
+<div class="text-base-content/70 mt-1 text-sm"><p>{{{descriptionHtml}}}</p></div>
+{{/if}}
+{{/if}}

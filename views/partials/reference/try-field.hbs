@@ -1,0 +1,31 @@
+{{!--
+    reference/try-field - one input in a try-it form. Renders a select for booleans and
+    enums and a text field otherwise; static/js/reference.js reads data-param/data-in to
+    place the value in the path, the query string or a header.
+
+    Context is a parameter view model from lib/api-reference/model.js, which already
+    carries `in` - so the three groups render from one partial rather than three
+    near-identical blocks.
+
+    Path parameters are prefilled (an operation is not callable without them); query and
+    header values start empty with the sample shown as a placeholder, so an unset
+    parameter is not silently sent.
+--}}
+<label class="block">
+    <span class="text-base-content/70 text-xs font-semibold">{{name}}{{#if required}} <span class="text-error">*</span>{{/if}}</span>
+    {{#if isBoolean}}
+    <select class="select select-sm mt-1" data-param="{{name}}" data-in="{{in}}">
+        <option value=""></option>
+        <option value="true">true</option>
+        <option value="false">false</option>
+    </select>
+    {{else if enumValues}}
+    <select class="select select-sm mt-1" data-param="{{name}}" data-in="{{in}}">
+        <option value=""></option>
+        {{#each enumValues}}<option value="{{this}}">{{this}}</option>{{/each}}
+    </select>
+    {{else}}
+    <input type="text" class="input input-sm mt-1" data-param="{{name}}" data-in="{{in}}"
+        {{#equals in "path"}}value="{{tryValue}}" {{/equals}}placeholder="{{#if tryValue}}{{tryValue}}{{else}}{{typeLabel}}{{/if}}">
+    {{/if}}
+</label>

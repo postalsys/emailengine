@@ -1,0 +1,37 @@
+{{!--
+    reference/disclosure - inline collapsible section used throughout the API reference:
+    example payloads, nested property groups, and the try-it panel. Block form; the block
+    is the body:
+      {{#> reference/disclosure label="Example response"}} ...body... {{/reference/disclosure}}
+
+    Params:
+      label       - summary text (required)
+      elId        - element id on the <details> (optional). Deliberately NOT named `id`:
+                    Handlebars merges a partial's hash params into the caller's context,
+                    so a partial that reads `id` also picks up an `id` that merely
+                    happens to be on the surrounding context - and every call site here
+                    sits inside an operation whose model has one. That silently emitted
+                    the operation id on four elements per operation.
+      open        - true to render expanded (optional)
+      primary     - true for the larger primary-colored summary (the try-it panel);
+                    default is the muted text-xs look used by the example blocks
+      class       - extra classes on the <details> (optional; the caller owns spacing)
+
+    The chevron rotation is driven by .ee-ref-disclosure in app.tailwind.css rather than
+    Tailwind's group-open variant: these disclosures nest (a property group inside a
+    property group), and a named group matches ANY open ancestor, so an inner collapsed
+    group's chevron would rotate whenever an outer one was open. The stylesheet uses a
+    child combinator, which is exact at every depth.
+
+    Not ui/details: that one hardcodes a card shell plus font-bold text-primary on the
+    summary, which is the wrong weight for an inline disclosure inside a card body.
+--}}
+<details class="ee-ref-disclosure{{#if class}} {{class}}{{/if}}" {{#if elId}}id="{{elId}}" {{/if}}{{#if open}}open{{/if}}>
+    <summary
+        class="flex cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden {{#if primary}}text-primary hover:text-primary/80 text-sm font-semibold{{else}}text-base-content/60 hover:text-base-content text-xs{{/if}}">
+        <span class="ee-ref-chevron icon-[tabler--chevron-right] shrink-0 {{#if primary}}size-4{{else}}size-3.5{{/if}}"></span>
+        {{label}}
+    </summary>
+    {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
+    {{> @partial-block label="" elId="" open="" primary="" class=""}}
+</details>

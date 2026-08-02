@@ -1,0 +1,76 @@
+{{!--
+    reference/schema-node - one property row in an API reference schema tree.
+
+    Recursive: the nested-properties block renders this same partial for each child,
+    which terminates because lib/api-reference/schema-tree.js builds a finite tree
+    (depth-capped, with $ref cycles marked instead of followed).
+
+    Also rendered directly for operation parameters (reference/params) - the parameter
+    view models from buildParameter() carry the same field names and simply have no
+    children or variants, so the nested blocks below render nothing for them.
+
+    Context is a node from buildSchemaTree(): name, typeLabel, required, nullable,
+    deprecated, constraints[], enumValues[], defaultValue, descriptionHtml, children[],
+    variants[], openByDefault, truncated, circular, unresolved.
+
+    descriptionHtml is pre-escaped by lib/api-reference/format.js (escape first, then a
+    closed set of tags added back), which is why it renders unescaped.
+--}}
+<li class="ee-ref-prop min-w-0">
+
+    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {{#if name}}<code class="text-sm font-semibold break-all">{{name}}</code>{{/if}}
+        <span class="text-primary text-xs font-medium">{{typeLabel}}</span>
+        {{#if required}}<span class="text-error text-2xs font-semibold tracking-wide uppercase">required</span>{{/if}}
+        {{#if nullable}}<span class="ee-chip">nullable</span>{{/if}}
+        {{#if deprecated}}{{> ui/badge label="deprecated" variant="warning" soft=true icon="" id="" class=""}}{{/if}}
+        {{#each constraints}}<span class="ee-chip">{{this}}</span>{{/each}}
+    </div>
+
+    {{#if descriptionHtml}}
+    <div class="text-base-content/70 mt-1 text-sm"><p>{{{descriptionHtml}}}</p></div>
+    {{/if}}
+
+    {{#if enumValues}}
+    <div class="mt-1 flex flex-wrap items-baseline gap-1">
+        <span class="text-base-content/50 text-2xs tracking-wide uppercase">Allowed</span>
+        {{#each enumValues}}<code class="ee-chip">{{this}}</code>{{/each}}
+    </div>
+    {{/if}}
+
+    {{#if defaultValue}}
+    <div class="text-base-content/50 mt-1 text-xs">Default <code class="ee-chip">{{defaultValue}}</code></div>
+    {{/if}}
+
+    {{#if circular}}
+    <div class="text-warning mt-1 text-xs">Recursive reference - see the parent definition</div>
+    {{/if}}
+
+    {{#if truncated}}
+    <div class="text-warning mt-1 text-xs">Nesting too deep to display</div>
+    {{/if}}
+
+    {{#if unresolved}}
+    <div class="text-warning mt-1 text-xs">Unresolved reference {{unresolved}}</div>
+    {{/if}}
+
+    {{#if variants.length}}
+    <div class="ee-ref-nest mt-2 space-y-2">
+        {{#each variants}}
+        <div>
+            <div class="text-base-content/50 text-2xs tracking-wide uppercase">Either</div>
+            <ul class="ee-ref-props">{{> reference/schema-node}}</ul>
+        </div>
+        {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if children.length}}
+    {{#> reference/disclosure label=childLabel open=openByDefault class="mt-2"}}
+    <ul class="ee-ref-props ee-ref-nest mt-2">
+        {{#each children}}{{> reference/schema-node}}{{/each}}
+    </ul>
+    {{/reference/disclosure}}
+    {{/if}}
+
+</li>

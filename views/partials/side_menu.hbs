@@ -11,7 +11,9 @@
     {{> ui/menu-item href="/admin/templates" label="Templates" icon="icon-[tabler--template] size-4.5" active=menuTemplates}}
 
     {{> ui/menu-title label="Integrations"}}
-    {{> ui/menu-item href="/admin/swagger" label="API Reference" icon="icon-[tabler--file-code] size-4.5" active=menuSwagger}}
+    {{!-- points at the server-rendered reference; the swagger-ui page is still served at
+          /admin/swagger but is no longer linked, pending its removal --}}
+    {{> ui/menu-item href="/admin/reference" label="API Reference" icon="icon-[tabler--file-code] size-4.5" active=menuReference}}
     {{> ui/menu-item href="/admin/tokens" label="Access Tokens" icon="icon-[tabler--key] size-4.5" active=menuTokens}}
     {{> ui/menu-item href="/admin/config/oauth" label="OAuth2 Apps" icon="icon-[tabler--brand-oauth] size-4.5" active=menuOauthApps}}
     {{> ui/menu-item href="/admin/webhooks" label="Webhook Routes" icon="icon-[tabler--webhook] size-4.5" active=menuWebhooks}}

@@ -1,0 +1,80 @@
+{{!--
+    API reference landing page (/admin/reference). Server-rendered from the same
+    OpenAPI document that /swagger.json serves - see lib/api-reference/.
+--}}
+{{> reference/token-alert}}
+
+{{> ui/page-header title="API Reference" icon="icon-[tabler--api]" class="mb-4"
+subtitle="Every EmailEngine REST endpoint, generated from the same schemas the API validates against."}}
+
+{{#> ui/card title="Getting started" bodyClass="space-y-4"}}
+
+<dl class="ee-dl">
+    <dt>Base URL</dt>
+    <dd><code class="ee-chip">{{baseUrl}}</code></dd>
+    <dt>Endpoints</dt>
+    <dd>{{operationCount}} across {{tags.length}} groups</dd>
+    <dt>API version</dt>
+    <dd>{{version}}</dd>
+    <dt>Specification</dt>
+    <dd><a href="/swagger.json" class="link link-primary" target="_blank" rel="noopener noreferrer">/swagger.json</a>
+        for Postman and code generators</dd>
+</dl>
+
+<div>
+    <h3 class="text-base-content mb-1 font-semibold">Authentication</h3>
+    <p class="text-base-content/70 text-sm">Every request needs an access token, either as an
+        <code class="ee-chip">Authorization: Bearer &lt;token&gt;</code> header or an
+        <code class="ee-chip">?access_token=</code> query argument. The code samples on each endpoint read the
+        token from an <code class="ee-chip">EMAILENGINE_TOKEN</code> environment variable.
+    </p>
+</div>
+
+<div>
+    <h3 class="text-base-content mb-1 font-semibold">Errors</h3>
+    <p class="text-base-content/70 text-sm">Every failure returns the same JSON envelope, so each endpoint below lists
+        only its status codes and their meaning rather than repeating the shape:</p>
+    <pre class="ee-code-block mt-2"><code class="language-json">{
+  "statusCode": 400,
+  "error": "Bad Request",
+  "message": "Invalid request payload input"
+}</code></pre>
+</div>
+
+<div>
+    <h3 class="text-base-content mb-1 font-semibold">Request processing</h3>
+    <p class="text-base-content/70 text-sm">Requests against the same email account are processed sequentially, so
+        simultaneous calls queue up behind each other. Long operations can be given more room with the
+        <code class="ee-chip">x-ee-timeout</code> header, in milliseconds.
+    </p>
+</div>
+
+<div class="flex flex-wrap gap-2">
+    {{> ui/btn href="/admin/tokens" variant="primary" size="sm" icon="icon-[tabler--key]" label="Access tokens"}}
+    {{> ui/btn href="https://learn.emailengine.app/" variant="neutral" style="soft" size="sm"
+    icon="icon-[tabler--book]" label="Documentation" external=true}}
+</div>
+
+{{/ui/card}}
+
+{{> ui/section-title label="Endpoint groups" class="mt-8 mb-3"}}
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    {{#each tags}}
+    <a href="/admin/reference/{{slug}}"
+        class="card bg-base-100 hover:border-primary/40 border border-transparent shadow-md transition-colors">
+        <div class="card-body gap-1 p-4">
+            <div class="flex items-baseline justify-between gap-2">
+                <h3 class="text-primary font-semibold">{{name}}</h3>
+                <span class="text-base-content/40 text-xs">{{operationCount}}</span>
+            </div>
+            {{#if descriptionHtml}}
+            <p class="text-base-content/70 text-sm">{{{descriptionHtml}}}</p>
+            {{/if}}
+        </div>
+    </a>
+    {{/each}}
+</div>
+
+{{!-- deferred highlighting, sidebar filter and try-it runner; the page content itself is server-rendered --}}
+<script src="/static/js/reference.js" defer></script>

@@ -1,0 +1,19 @@
+{{!--
+    ui/search-input - text input with a leading magnifier, the standard search field
+    look used by the topbar search and the API reference filter.
+      {{> ui/search-input id="ref-filter" placeholder="Filter endpoints"}}
+    Params:
+      id          - element id, for the script that reads the value (optional)
+      name        - form field name, for inputs that submit (optional)
+      value       - initial value (optional)
+      placeholder - placeholder text, also used as the aria-label (required)
+      type        - input type, "search" or "text" (default "search")
+      class       - extra classes on the wrapper, e.g. "grow" (optional)
+    The wrapper is the FlyonUI .input; the actual <input> inside it is unstyled and
+    grows to fill, which is why the classes sit where they do.
+--}}
+<div class="input input-sm{{#if class}} {{class}}{{/if}}">
+    <span class="icon-[tabler--search] text-base-content/60 my-auto me-2 size-4 shrink-0"></span>
+    <input type="{{#if type}}{{type}}{{else}}search{{/if}}" class="grow" placeholder="{{placeholder}}" aria-label="{{placeholder}}"
+        autocomplete="off" {{#if id}}id="{{id}}" {{/if}}{{#if name}}name="{{name}}" {{/if}}{{#if value}}value="{{value}}" {{/if}}>
+</div>

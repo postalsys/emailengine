@@ -398,4 +398,90 @@ test('Token management tests', async t => {
         const expectedHash = crypto.createHash('sha256').update(Buffer.from(token, 'hex')).digest('hex');
         assert.ok(keys.includes(expectedHash), 'Hashed token should be stored');
     });
+    await t.test('provision() stores an expiry and get() honors it', async () => {
+        const token = await tokens.provision({
+            description: 'expiring token',
+            scopes: ['api'],
+            expires: Date.now() + 60000,
+            nolog: true
+        });
+
+        createdTokens.push(token);
+
+        const tokenData = await tokens.get(token);
+        assert.ok(tokenData.expires, 'expiry is stored on the token record');
+        assert.ok(tokenData.expires > Date.now());
+    });
+
+    await t.test('get() rejects an expired token and cleans it up', async () => {
+        const token = await tokens.provision({
+            description: 'already expired',
+            scopes: ['api'],
+            expires: Date.now() - 1000,
+            nolog: true
+        });
+
+        await assert.rejects(
+            () => tokens.get(token),
+            err => err.code === 'ExpiredToken'
+        );
+
+        // the record is removed rather than left to accumulate; the cleanup is fired
+        // without awaiting inside get(), so give it a turn to land
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const hashedToken = crypto.createHash('sha256').update(Buffer.from(token, 'hex')).digest('hex');
+        const stored = await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken);
+        assert.equal(stored, null, 'expired token is dropped from the token hash');
+    });
+
+    await t.test('a token with no expiry never expires', async () => {
+        const token = await tokens.provision({
+            description: 'permanent token',
+            nolog: true
+        });
+
+        createdTokens.push(token);
+
+        const tokenData = await tokens.get(token);
+        assert.equal(typeof tokenData.expires, 'undefined');
+    });
+
+    await t.test('delete() can still remove an expired token', async () => {
+        const token = await tokens.provision({
+            description: 'expired but deletable',
+            expires: Date.now() - 1000,
+            nolog: true
+        });
+
+        // get() would reject it, but delete() resolves it with allowExpired
+        assert.equal(await tokens.delete(token), true);
+    });
+    await t.test('provision() rejects a malformed expiry instead of dropping it', async () => {
+        // Number('soon') is NaN, and NaN is falsy at the expiry check in get() - coercing
+        // would silently mean "never expires" on the field that bounds a credential
+        await assert.rejects(
+            () => tokens.provision({ description: 'bad expiry', expires: 'soon', nolog: true }),
+            err => err.code === 'InvalidExpiry'
+        );
+    });
+
+    await t.test('list() exposes the expiry as a date', async () => {
+        const expires = Date.now() + 60000;
+        const token = await tokens.provision({
+            account: 'expiry-list-test',
+            description: 'listed expiring token',
+            expires,
+            nolog: true
+        });
+
+        createdTokens.push(token);
+
+        const listed = await tokens.list('expiry-list-test', 0, 20);
+        const entry = listed.tokens.find(item => item.description === 'listed expiring token');
+
+        assert.ok(entry);
+        assert.ok(entry.expires instanceof Date, 'expiry is a Date, matching created');
+        assert.equal(entry.expires.getTime(), expires);
+    });
 });

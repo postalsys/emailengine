@@ -1,0 +1,20 @@
+{{!--
+    reference/params - one parameter group (path, query or header) for an operation.
+    Renders nothing when the group is empty, so callers can include all three
+    unconditionally.
+    Params:
+      title  - group heading, e.g. "Path parameters" (required)
+      params - array of parameter view models from lib/api-reference/model.js (required)
+
+    Rows are reference/schema-node: buildParameter() emits the same field names as a
+    schema tree node, so a parameter renders identically to a property without a
+    second copy of the row markup.
+--}}
+{{#if params.length}}
+<div class="mt-4">
+    {{> reference/section-heading label=title class="mb-2"}}
+    <ul class="ee-ref-props">
+        {{#each params}}{{> reference/schema-node}}{{/each}}
+    </ul>
+</div>
+{{/if}}

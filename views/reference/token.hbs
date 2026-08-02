@@ -1,0 +1,49 @@
+{{!--
+    Access-token page for the API reference (/admin/reference/token).
+
+    The single place the try-it token is entered. It is held for the browser tab only
+    (sessionStorage, see static/js/reference.js) and reused by the try-it panels on every
+    endpoint page, so it does not have to be re-entered while navigating.
+--}}
+{{> ui/breadcrumb parentHref="/admin/reference" parentLabel="API Reference" current="Access token" class="mb-2"}}
+
+{{> ui/page-header title="Access token" icon="icon-[tabler--key]" class="mb-4"
+subtitle="Enables the Try it panels on the endpoint pages."}}
+
+{{#> ui/card id="ref-token" bodyClass="space-y-4"}}
+
+<p class="text-base-content/70 text-sm">The token is held for this browser tab only - it is never written to permanent
+    storage, and it is only ever sent to this EmailEngine instance, by requests you trigger yourself.</p>
+
+<div>
+    {{> reference/section-heading label="Use an existing token" class="mb-2"}}
+    <div class="flex flex-wrap items-center gap-2">
+        <input type="password" id="ref-access-token" class="input input-sm max-w-sm grow font-mono" placeholder="Paste an access token"
+            autocomplete="off" spellcheck="false">
+        {{> ui/btn id="ref-token-set" variant="primary" size="sm" icon="icon-[tabler--check]" label="Set token"}}
+    </div>
+    <p class="text-base-content/50 mt-2 text-xs">Create one on the
+        <a href="/admin/tokens" class="link link-primary">Access Tokens</a> page.</p>
+</div>
+
+<div>
+    {{> reference/section-heading label="Or mint a temporary one" class="mb-2"}}
+    <div class="flex flex-wrap items-center gap-2">
+        {{> ui/btn id="ref-token-mint" variant="primary" size="sm" icon="icon-[tabler--clock-plus]"
+        label="Mint temporary token" class="ref-token-mint"}}
+        {{!-- shown by static/js/reference.js only while a token is actually held --}}
+        <span id="ref-token-clear-wrap" class="hidden">
+            {{> ui/btn id="ref-token-clear" variant="neutral" style="text" size="sm" icon="icon-[tabler--x]" label="Clear"}}
+        </span>
+    </div>
+    <p class="text-base-content/50 mt-2 text-xs">Creates an API-scoped token that expires in one hour and activates it
+        here. It is a real token until then - it appears on the
+        <a href="/admin/tokens" class="link link-primary">Access Tokens</a> page and can be revoked there.</p>
+</div>
+
+<p id="ref-token-feedback" class="text-base-content/70 text-sm"></p>
+
+{{/ui/card}}
+
+{{!-- deferred highlighting, sidebar filter and try-it runner; the page content itself is server-rendered --}}
+<script src="/static/js/reference.js" defer></script>

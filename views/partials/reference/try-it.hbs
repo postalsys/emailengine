@@ -1,0 +1,74 @@
+{{!--
+    reference/try-it - live request runner for one operation.
+
+    The form is rendered server-side (one field per parameter, prefilled from the
+    schema example) and static/js/reference.js reads it to build and send the request.
+    Requests go to this same instance, so they need a real access token - the shared
+    token field at the top of the page feeds every panel.
+
+    The request body is a plain <textarea> rather than an ACE editor on purpose: a tag
+    page carries up to 13 operations, and mounting that many editors costs far more
+    than the syntax highlighting is worth on a form that is usually submitted as-is.
+
+    Context is an operation view model from lib/api-reference/model.js.
+--}}
+{{#> reference/disclosure label="Try it" primary=true elId=(concat "try-" id) class="mt-4"}}
+
+<form class="ee-ref-try border-base-content/20 mt-3 rounded-box border p-4" data-method="{{method}}" data-path="{{path}}">
+
+    {{#> ui/alert-banner variant="warning"}}
+    <div class="text-sm">Requests run against this EmailEngine instance with real data. A
+        <code class="ee-code">{{methodLabel}}</code> here has the same effect as calling the API directly.
+    </div>
+    {{/ui/alert-banner}}
+
+    {{#if pathParams.length}}
+    <div class="mb-3 grid gap-3 sm:grid-cols-2">
+        {{#each pathParams}}{{> reference/try-field}}{{/each}}
+    </div>
+    {{/if}}
+
+    {{#if queryParams.length}}
+    <div class="mb-3">
+        {{> reference/section-heading label="Query" class="mb-2"}}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {{#each queryParams}}{{> reference/try-field}}{{/each}}
+        </div>
+    </div>
+    {{/if}}
+
+    {{#if headerParams.length}}
+    <div class="mb-3">
+        {{> reference/section-heading label="Headers" class="mb-2"}}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {{#each headerParams}}{{> reference/try-field}}{{/each}}
+        </div>
+    </div>
+    {{/if}}
+
+    {{#if body}}
+    <label class="mb-3 block">
+        {{> reference/section-heading label="Request body" suffix=body.contentType}}
+        <textarea class="textarea mt-1 font-mono text-xs" rows="10" data-body spellcheck="false">{{body.exampleJson}}</textarea>
+    </label>
+    {{/if}}
+
+    <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" class="btn btn-primary btn-sm">
+            <span class="icon-[tabler--send] size-4"></span>
+            Send request
+        </button>
+        <span class="ee-ref-try-status text-base-content/60 text-sm"></span>
+    </div>
+
+    <div class="ee-ref-try-result mt-4 hidden">
+        <div class="mb-2 flex flex-wrap items-center gap-2">
+            <span class="ee-ref-try-code badge badge-sm"></span>
+            <span class="ee-ref-try-time text-base-content/50 text-xs"></span>
+        </div>
+        <pre class="ee-code-block"><code class="ee-ref-try-body language-json"></code></pre>
+    </div>
+
+</form>
+
+{{/reference/disclosure}}

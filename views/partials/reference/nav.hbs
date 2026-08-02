@@ -1,0 +1,81 @@
+{{!--
+    reference/nav - the API reference's section navigation: an operation filter over the
+    whole API, and the tag list with the current tag's operations expanded.
+
+    Rendered by views/layout/app.hbs into the secondary-nav column (the route sets
+    `secondaryNav: 'reference/nav'`), so this partial owns only its inner content - the
+    column's surface, border, width and sticky behavior belong to the layout. It emits
+    no card or shadow on purpose: the column sits flush against the main sidebar and has
+    to read as a continuation of it.
+
+    The filter list is rendered server-side (all operations, hidden until the box has
+    input) and narrowed by static/js/reference.js. There is no client-side index to
+    fetch or build - filtering is plain DOM work over markup that is already there.
+
+    Params (from the reference view context):
+      nav         - tags with { name, slug, operationCount, active, operations[] }
+      searchIndex - flat operation list backing the filter
+--}}
+<div class="flex flex-col gap-3 p-3">
+
+    {{!-- Back to the reference home. Without it the only way out of a group page is the
+          main side menu, which is easy to miss. --}}
+    <a href="/admin/reference"
+        class="flex items-center gap-2 rounded-field px-2 py-1.5 text-sm{{#if overviewActive}} bg-primary/10 text-primary font-semibold{{else}} hover:bg-base-200{{/if}}">
+        <span class="icon-[tabler--home] size-4 shrink-0"></span>
+        Overview
+    </a>
+
+    {{!-- Access-token status. Always a link to the control on the overview page, whatever
+          the current state - the try-it panels on every group page depend on it, so it has
+          to be reachable from all of them. The state text is repainted by
+          static/js/reference.js from the token held for this tab. --}}
+    <a href="/admin/reference/token"
+        class="flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-sm{{#if tokenActive}} bg-primary/10 text-primary font-semibold{{else}} hover:bg-base-200{{/if}}">
+        <span class="flex items-center gap-2">
+            <span class="icon-[tabler--key] size-4 shrink-0"></span>
+            Access token
+        </span>
+        <span id="ref-token-state" class="text-base-content/50 text-2xs">Not set</span>
+    </a>
+
+    {{> ui/search-input id="ref-filter" placeholder="Filter endpoints" name="" value="" type="" class=""}}
+
+    <ul id="ref-filter-results" class="flex flex-col gap-0.5 hidden">
+        {{#each searchIndex}}
+        <li class="ee-ref-hit" data-search="{{method}} {{path}} {{summary}} {{tag}}">
+            <a href="{{url}}" class="hover:bg-base-200 block rounded-field px-2 py-1.5">
+                <span class="flex items-center gap-2">
+                    <span class="text-{{methodVariant}} shrink-0 font-mono text-2xs font-semibold">{{method}}</span>
+                    <span class="text-base-content/80 truncate text-xs">{{path}}</span>
+                </span>
+                {{#if summary}}<span class="text-base-content/50 block truncate ps-1 text-2xs">{{summary}}</span>{{/if}}
+            </a>
+        </li>
+        {{/each}}
+        <li id="ref-filter-empty" class="text-base-content/50 hidden px-2 py-2 text-xs">No matching endpoints</li>
+    </ul>
+
+    <ul id="ref-tag-list" class="flex flex-col gap-0.5">
+        {{#each nav}}
+        <li>
+            <a href="/admin/reference/{{slug}}"
+                class="flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-sm{{#if active}} bg-primary/10 text-primary font-semibold{{else}} hover:bg-base-200{{/if}}">
+                <span class="truncate">{{name}}</span>
+                <span class="text-base-content/40 text-2xs">{{operationCount}}</span>
+            </a>
+            {{#if operations.length}}
+            <ul class="border-base-content/10 my-1 ms-3 border-s ps-2">
+                {{#each operations}}
+                <li>
+                    <a href="#{{id}}"
+                        class="text-base-content/70 hover:bg-base-200 hover:text-base-content block truncate rounded-field px-2 py-1 text-xs">{{summary}}</a>
+                </li>
+                {{/each}}
+            </ul>
+            {{/if}}
+        </li>
+        {{/each}}
+    </ul>
+
+</div>

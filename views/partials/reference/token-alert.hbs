@@ -1,0 +1,24 @@
+{{!--
+    reference/token-alert - "no access token set" banner shown at the top of the reference
+    pages. Server-rendered but hidden by default; static/js/reference.js unhides it when
+    the tab holds no token, because whether one is set is client state.
+
+    Rendered only when a token is actually required: with the `disableTokens` setting on,
+    the API accepts uncredentialed callers, so the banner would be wrong.
+
+    Not shown on the access-token page itself - the control is already there.
+--}}
+{{#unless disableTokens}}
+<div id="ref-token-alert" class="alert alert-soft alert-warning mb-6 hidden flex-wrap items-center gap-3" role="alert">
+    <span class="icon-[tabler--key-off] size-5 shrink-0"></span>
+    <div class="min-w-0 grow text-sm">
+        No access token is set, so the <strong>Try it</strong> panels on this page will be rejected with a 401.
+    </div>
+    <div class="flex shrink-0 flex-wrap items-center gap-2">
+        {{> ui/btn variant="primary" size="sm" icon="icon-[tabler--clock-plus]" label="Mint temporary token"
+        class="ref-token-mint" id="" href="" style="" bare="" type="" overlay="" external=""}}
+        {{> ui/btn href="/admin/reference/token" variant="neutral" style="soft" size="sm" label="Set a token" icon=""
+        id="" bare="" type="" overlay="" external=""}}
+    </div>
+</div>
+{{/unless}}

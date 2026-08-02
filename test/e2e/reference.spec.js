@@ -1,0 +1,446 @@
+/* global document, window */
+'use strict';
+
+// E2E coverage for the server-rendered API reference (/admin/reference).
+//
+// This page has no client-side renderer: lib/api-reference/ turns the OpenAPI document
+// into finished HTML on the server, and static/js/reference.js only adds deferred
+// syntax highlighting, the sidebar filter and the try-it runner. The tests below check
+// both halves - that every reference URL renders real content, and that the three
+// pieces of browser behavior work.
+//
+// Every tag page is visited, so a schema shape that breaks the renderer (an unresolved
+// $ref, a type the tree builder does not handle) fails here rather than in production.
+//
+// Shares the Playwright webServer and Redis db 14 with the other specs (files run
+// alphabetically with one worker, so the instance is already bootstrapped by the time
+// this file runs; the helpers are idempotent either way).
+//
+// Run once:  npm run test:e2e:install
+// Run suite: npm run test:e2e
+
+const os = require('os');
+const path = require('path');
+const { test, expect } = require('@playwright/test');
+const { ensureAdminSession, createApiToken, trackConsoleErrors } = require('./helpers/bootstrap');
+
+// One real login for the whole file, reused via storageState - logging in per test
+// trips the login rate limiter (same pattern as pages-admin.spec.js).
+const STATE_FILE = path.join(os.tmpdir(), 'ee-e2e-reference-state.json');
+
+// A GET with no required parameters, so the try-it test can send a real request without
+// inventing an account id.
+const TRY_IT_TAG = 'stats';
+const TRY_IT_OPERATION = 'getV1Stats';
+
+test.describe('API reference', () => {
+    test.use({ storageState: STATE_FILE });
+
+    test.beforeAll(async ({ browser }) => {
+        const page = await browser.newPage({ storageState: undefined });
+        await ensureAdminSession(page);
+        await page.context().storageState({ path: STATE_FILE });
+        await page.close();
+    });
+
+    test('landing page lists every endpoint group', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference');
+
+        await expect(page.getByRole('heading', { name: 'API Reference', exact: true })).toBeVisible();
+
+        // Getting-started block: base URL, counts and the spec link the page documents
+        await expect(page.getByText('Base URL')).toBeVisible();
+        await expect(page.getByRole('link', { name: '/swagger.json' })).toBeVisible();
+
+        // One card per tag, and the sidebar lists the same tags
+        const cards = page.locator('a[href^="/admin/reference/"]');
+        expect(await cards.count()).toBeGreaterThan(10);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('side menu points at the reference and marks it active', async ({ page }) => {
+        // The main menu's "API Reference" entry targets this page, not /admin/swagger,
+        // and every reference URL has to light it up - the active state is the only
+        // signal that the second navigation column belongs to that menu entry.
+        await page.goto('/admin/reference');
+
+        const entry = page.locator('#layout-sidebar').getByRole('link', { name: 'API Reference' });
+        await expect(entry).toHaveAttribute('href', '/admin/reference');
+        await expect(entry).toHaveClass(/menu-active/);
+
+        // ...including the per-group pages
+        await page.goto('/admin/reference/message');
+        await expect(page.locator('#layout-sidebar').getByRole('link', { name: 'API Reference' })).toHaveClass(/menu-active/);
+    });
+
+    test('the group navigation renders as an attached second column', async ({ page }) => {
+        // It must sit flush against the main sidebar (no gap, no card) and stick under
+        // the topbar, otherwise it reads as a panel floating in the page instead of a
+        // second level of the same menu.
+        await page.setViewportSize({ width: 1440, height: 950 });
+        await page.goto('/admin/reference/message');
+
+        const geometry = await page.evaluate(() => {
+            const rect = sel => {
+                const el = document.querySelector(sel);
+                return el ? el.getBoundingClientRect() : null;
+            };
+            const sidebar = rect('#layout-sidebar');
+            const nav = rect('aside[aria-label="Section navigation"]');
+            const topbar = rect('header');
+            return nav && sidebar && topbar ? { navLeft: nav.left, sidebarRight: sidebar.right, navTop: nav.top, topbarBottom: topbar.bottom } : null;
+        });
+
+        expect(geometry).not.toBeNull();
+        // flush against the sidebar and directly below the topbar (1px for rounding)
+        expect(Math.abs(geometry.navLeft - geometry.sidebarRight)).toBeLessThanOrEqual(1);
+        expect(Math.abs(geometry.navTop - geometry.topbarBottom)).toBeLessThanOrEqual(1);
+
+        // and it stays there while the operations scroll past
+        await page.evaluate(() => window.scrollTo(0, 1500));
+        await page.waitForTimeout(200);
+        const stuckTop = await page.evaluate(() => document.querySelector('aside[aria-label="Section navigation"]').getBoundingClientRect().top);
+        expect(Math.abs(stuckTop - geometry.topbarBottom)).toBeLessThanOrEqual(1);
+    });
+
+    test('every endpoint group page renders its operations', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference');
+
+        // Drive the walk from the rendered nav rather than a hardcoded list, so a tag
+        // added to the API is covered automatically
+        const slugs = await page.evaluate(() =>
+            Array.from(document.querySelectorAll('#ref-tag-list a[href^="/admin/reference/"]')).map(link => link.getAttribute('href').split('/').pop())
+        );
+
+        expect(slugs.length).toBeGreaterThan(10);
+
+        for (const slug of slugs) {
+            const response = await page.goto(`/admin/reference/${slug}`);
+            expect(response.status(), `GET /admin/reference/${slug}`).toBe(200);
+
+            // Each page must render at least one operation with a method badge, a path
+            // and a response tab strip - i.e. the model actually produced content
+            const operations = page.locator('.ee-ref-op');
+            expect(await operations.count(), `operations on /admin/reference/${slug}`).toBeGreaterThan(0);
+
+            const first = operations.first();
+            await expect(first.locator('.badge').first()).toBeVisible();
+            await expect(first.locator('[role="tablist"]').first()).toBeVisible();
+        }
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('operation markup carries no duplicate element ids', async ({ page }) => {
+        // A tag page renders the same partials once per operation, and the ui/* partials
+        // fall back to whatever `id` resolves to in the surrounding context - so a missing
+        // id="" at a call site silently emits the operation id several times over. Deep
+        // links and every getElementById lookup break quietly when that happens.
+        await page.goto('/admin/reference/message');
+
+        const duplicates = await page.evaluate(() => {
+            const counts = new Map();
+            for (const el of document.querySelectorAll('[id]')) {
+                counts.set(el.id, (counts.get(el.id) || 0) + 1);
+            }
+            return Array.from(counts.entries())
+                .filter(([, count]) => count > 1)
+                .map(([id, count]) => `${id} x${count}`);
+        });
+
+        expect(duplicates).toEqual([]);
+    });
+
+    test('unknown endpoint group returns 404', async ({ page }) => {
+        const response = await page.goto('/admin/reference/not-a-real-group');
+        expect(response.status()).toBe(404);
+    });
+
+    test('operation renders parameters, schema tree and examples', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/message');
+
+        const operation = page.locator('#getV1AccountAccountMessageMessage');
+        await expect(operation).toBeVisible();
+
+        // Signature
+        await expect(operation.getByText('/v1/account/{account}/message/{message}')).toBeVisible();
+        await expect(operation.locator('.badge').first()).toHaveText('GET');
+
+        // Path parameters with the joi constraints swagger-ui never displayed
+        await expect(operation.getByRole('heading', { name: 'Path parameters' })).toBeVisible();
+        await expect(operation.locator('.ee-ref-prop', { hasText: 'account' }).first()).toContainText('max 256 chars');
+
+        // Response schema tree: nested properties render through the recursive partial
+        const properties = operation.locator('.ee-ref-props .ee-ref-prop');
+        expect(await properties.count()).toBeGreaterThan(10);
+
+        // Example payload is present but collapsed until asked for
+        const example = operation.locator('details', { hasText: 'Example response' }).first();
+        await expect(example).toBeVisible();
+        await expect(example.locator('pre')).toBeHidden();
+        await example.locator('summary').click();
+        await expect(example.locator('pre')).toBeVisible();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('response and code sample tabs switch panels', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/message');
+
+        const operation = page.locator('#getV1AccountAccountMessageMessage');
+
+        // Responses: 200 is selected on load, clicking 404 swaps the panel
+        await expect(operation.locator('#getV1AccountAccountMessageMessage-resp-200')).toBeVisible();
+        await expect(operation.locator('#getV1AccountAccountMessageMessage-resp-404')).toBeHidden();
+        await operation.locator('#getV1AccountAccountMessageMessage-resp-404-tab').click();
+        await expect(operation.locator('#getV1AccountAccountMessageMessage-resp-404')).toBeVisible();
+        await expect(operation.locator('#getV1AccountAccountMessageMessage-resp-200')).toBeHidden();
+
+        // Code samples: curl is shown first, Python is reachable and gets highlighted
+        // once visible (highlighting is deferred until a block enters the viewport)
+        const curl = operation.locator('#getV1AccountAccountMessageMessage-sample-curl-code');
+        await expect(curl).toContainText('curl -X GET');
+        await expect(curl).toContainText('Authorization: Bearer $EMAILENGINE_TOKEN');
+
+        await operation.locator('#getV1AccountAccountMessageMessage-sample-python-tab').click();
+        const python = operation.locator('#getV1AccountAccountMessageMessage-sample-python-code');
+        await expect(python).toContainText('import requests');
+        await expect(python.locator('.hljs-keyword').first()).toBeVisible();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('sidebar filter narrows the endpoint list and restores it', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference');
+
+        const tagList = page.locator('#ref-tag-list');
+        const hits = page.locator('#ref-filter-results .ee-ref-hit:not(.hidden)');
+
+        await expect(tagList).toBeVisible();
+
+        await page.fill('#ref-filter', 'blocklist');
+        await expect(tagList).toBeHidden();
+        expect(await hits.count()).toBeGreaterThan(0);
+        await expect(page.locator('#ref-filter-empty')).toBeHidden();
+
+        // All terms must match, so a nonsense query empties the list
+        await page.fill('#ref-filter', 'definitelynotanendpoint');
+        await expect(hits).toHaveCount(0);
+        await expect(page.locator('#ref-filter-empty')).toBeVisible();
+
+        // Clearing restores the tag list
+        await page.fill('#ref-filter', '');
+        await expect(tagList).toBeVisible();
+        await expect(page.locator('#ref-filter-results')).toBeHidden();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('deep link scrolls to the operation', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/message#putV1AccountAccountMessageMessage');
+
+        const offset = await page.evaluate(() => {
+            const el = document.getElementById('putV1AccountAccountMessageMessage');
+            return el ? el.getBoundingClientRect().top : null;
+        });
+
+        expect(offset).not.toBeNull();
+        // scroll-mt-20 parks the section just below the sticky topbar
+        expect(offset).toBeLessThan(300);
+        expect(offset).toBeGreaterThan(-50);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('a pasted token is set once and reused across group pages', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        const token = await createApiToken(page, 'e2e reference reuse');
+
+        // The control exists only on the dedicated access-token page
+        await page.goto('/admin/reference/token');
+        await page.fill('#ref-access-token', token);
+        await page.click('#ref-token-set');
+        await expect(page.locator('#ref-token-state')).toHaveText('Active');
+
+        // ...and the status survives navigation to a group page, which carries no input
+        await page.goto(`/admin/reference/${TRY_IT_TAG}`);
+        await expect(page.locator('#ref-access-token')).toHaveCount(0);
+        await expect(page.locator('#ref-token-state')).toHaveText('Active');
+
+        // ...and is actually used by a request from that page
+        const form = page.locator(`#${TRY_IT_OPERATION} .ee-ref-try`);
+        await page.locator(`#try-${TRY_IT_OPERATION} summary`).click();
+        await form.locator('button[type="submit"]').click();
+        await expect(form.locator('.ee-ref-try-code')).toContainText('200', { timeout: 20000 });
+
+        // clearing it takes effect everywhere too
+        await page.goto('/admin/reference/token');
+        await page.click('#ref-token-clear');
+        await page.goto(`/admin/reference/${TRY_IT_TAG}`);
+        await expect(page.locator('#ref-token-state')).toHaveText('Not set');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('minting a temporary token activates it and it expires', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/token');
+        await page.click('#ref-token-mint');
+
+        // The status reports a lifetime, not a bare "Active" - this is the expiring kind
+        await expect(page.locator('#ref-token-state')).toContainText('min left', { timeout: 20000 });
+        await expect(page.locator('#ref-token-feedback')).toContainText('Temporary token minted');
+
+        const stored = await page.evaluate(() => JSON.parse(window.sessionStorage.getItem('eeRefToken')));
+        expect(stored.token).toMatch(/^[0-9a-f]{64}$/);
+        // one hour, allowing a little slack for the round trip
+        expect(stored.expires - Date.now()).toBeGreaterThan(59 * 60 * 1000);
+        expect(stored.expires - Date.now()).toBeLessThanOrEqual(60 * 60 * 1000);
+
+        // It is a real api-scoped token: a live request with it succeeds
+        await page.goto(`/admin/reference/${TRY_IT_TAG}`);
+        const form = page.locator(`#${TRY_IT_OPERATION} .ee-ref-try`);
+        await page.locator(`#try-${TRY_IT_OPERATION} summary`).click();
+        await form.locator('button[type="submit"]').click();
+        await expect(form.locator('.ee-ref-try-code')).toContainText('200', { timeout: 20000 });
+
+        // ...and the client drops it once past its expiry rather than sending a dead token
+        await page.evaluate(() => {
+            const entry = JSON.parse(window.sessionStorage.getItem('eeRefToken'));
+            entry.expires = Date.now() - 1000;
+            window.sessionStorage.setItem('eeRefToken', JSON.stringify(entry));
+        });
+        await page.reload();
+        await expect(page.locator('#ref-token-state')).toHaveText('Not set');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the sidebar links back to the reference overview', async ({ page }) => {
+        await page.goto('/admin/reference/message');
+
+        const overview = page.locator('aside[aria-label="Section navigation"]').getByRole('link', { name: 'Overview' });
+        await expect(overview).toHaveAttribute('href', '/admin/reference');
+
+        await overview.click();
+        await expect(page).toHaveURL(/\/admin\/reference$/);
+        await expect(page.getByRole('heading', { name: 'API Reference', exact: true })).toBeVisible();
+    });
+
+    test('the sidebar token status always links to the token page', async ({ page }) => {
+        // Whatever the state, this has to reach the control - the try-it panels on every
+        // group page depend on it, and the control lives on its own page.
+        for (const url of ['/admin/reference/message', '/admin/reference']) {
+            await page.goto(url);
+            const status = page.locator('#ref-token-state').locator('xpath=ancestor::a[1]');
+            await expect(status).toHaveAttribute('href', '/admin/reference/token');
+        }
+
+        // it still points there once a token is held, not just while unset
+        await page.goto('/admin/reference/token');
+        await page.click('#ref-token-mint');
+        await expect(page.locator('#ref-token-state')).toContainText('min left', { timeout: 20000 });
+
+        await page.goto('/admin/reference/message');
+        const status = page.locator('#ref-token-state').locator('xpath=ancestor::a[1]');
+        await expect(status).toHaveAttribute('href', '/admin/reference/token');
+        await status.click();
+        await expect(page).toHaveURL(/\/admin\/reference\/token$/);
+        await expect(page.getByRole('heading', { name: 'Access token' })).toBeVisible();
+    });
+
+    test('the missing-token banner appears on every reference page and mints in place', async ({ page }) => {
+        const banner = page.locator('#ref-token-alert');
+
+        // shown wherever try-it panels could be used without a token
+        for (const url of ['/admin/reference', '/admin/reference/message']) {
+            await page.goto(url);
+            await expect(banner).toBeVisible();
+            await expect(banner).toContainText('No access token is set');
+        }
+
+        // the banner's own mint button works without leaving the page
+        await page.locator('#ref-token-alert .ref-token-mint').click();
+        await expect(banner).toBeHidden({ timeout: 20000 });
+        await expect(page.locator('#ref-token-state')).toContainText('min left');
+
+        // ...and stays gone on the next page now that a token is held
+        await page.goto('/admin/reference/submit');
+        await expect(banner).toBeHidden();
+
+        // the access-token page never shows it - the control is already there
+        await page.goto('/admin/reference/token');
+        await expect(page.locator('#ref-token-alert')).toHaveCount(0);
+    });
+
+    test('clear is offered only while a token is held', async ({ page }) => {
+        await page.goto('/admin/reference/token');
+        await expect(page.locator('#ref-token-clear-wrap')).toBeHidden();
+
+        await page.click('#ref-token-mint');
+        await expect(page.locator('#ref-token-clear-wrap')).toBeVisible({ timeout: 20000 });
+
+        await page.click('#ref-token-clear');
+        await expect(page.locator('#ref-token-clear-wrap')).toBeHidden();
+        await expect(page.locator('#ref-token-state')).toHaveText('Not set');
+    });
+
+    test('try it sends a real request and renders the response', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        const token = await createApiToken(page, 'e2e reference try-it');
+
+        await page.goto('/admin/reference/token');
+        await page.fill('#ref-access-token', token);
+        await page.click('#ref-token-set');
+
+        await page.goto(`/admin/reference/${TRY_IT_TAG}`);
+
+        const operation = page.locator(`#${TRY_IT_OPERATION}`);
+        await operation.locator(`#try-${TRY_IT_OPERATION} summary`).click();
+
+        const form = operation.locator('.ee-ref-try');
+        await form.locator('button[type="submit"]').click();
+
+        // A 2xx badge and a JSON body prove the request was built, sent and rendered
+        const status = form.locator('.ee-ref-try-code');
+        await expect(status).toContainText('200', { timeout: 20000 });
+        await expect(form.locator('.ee-ref-try-body')).toContainText('"version"');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('try it reports an invalid request body without sending it', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/blocklists');
+
+        // The one operation in this group that carries a request body
+        const operation = page.locator('#postV1BlocklistListid');
+        await operation.locator('#try-postV1BlocklistListid summary').click();
+
+        const form = operation.locator('.ee-ref-try');
+        await form.locator('[data-body]').fill('{ not json');
+        await form.locator('button[type="submit"]').click();
+
+        await expect(form.locator('.ee-ref-try-status')).toContainText('not valid JSON');
+        await expect(form.locator('.ee-ref-try-result')).toBeHidden();
+
+        expect(errors).toHaveLength(0);
+    });
+});

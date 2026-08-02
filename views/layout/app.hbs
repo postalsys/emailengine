@@ -204,8 +204,23 @@
         <!-- End of Topbar -->
 
         <!-- Page content -->
-        <div id="content" class="grow">
-            <div class="w-full px-6 py-6">
+        <div id="content" class="grow lg:flex lg:items-start">
+
+            {{#if secondaryNav}}
+            <!-- Secondary navigation column. Rendered flush against the main sidebar
+                 (no card, no gap, matching surface and border) so it reads as a second
+                 level of the same menu rather than a panel floating in the page. A page
+                 opts in by setting `secondaryNav` to a partial name in its view context;
+                 every other page renders exactly as before.
+                 On small screens it becomes a bounded scroll strip above the content,
+                 because the sidebar drawer has no room for a second column. -->
+            <aside class="bg-base-100 border-base-content/20 max-h-48 shrink-0 overflow-y-auto border-b lg:sticky lg:top-topbar lg:h-[calc(100vh-var(--spacing-topbar))] lg:max-h-none lg:w-64 lg:self-start lg:border-e lg:border-b-0"
+                aria-label="Section navigation">
+                {{> (lookup . "secondaryNav")}}
+            </aside>
+            {{/if}}
+
+            <div class="w-full min-w-0 px-6 py-6">
 
                 <div id="toastContainer" class="fixed top-16 right-6 z-[10000] w-80 max-w-[90vw]"></div>
 
