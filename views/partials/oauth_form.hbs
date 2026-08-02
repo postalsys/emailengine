@@ -23,7 +23,7 @@ interactive logins.
 </p>
 <p class="mt-2 mb-0">
     Accounts using service access can only be added via the
-    <a href="/admin/swagger#/Account/postV1Account" class="link link-animated">REST API</a>, not through the hosted
+    <a href="/admin/reference/account#postV1Account" class="link link-animated">REST API</a>, not through the hosted
     authentication form.{{#if providerData.tutorialUrl}} Read the
     <a href="{{providerData.tutorialUrl}}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"
         class="link link-animated">setup guide</a> for both methods.{{/if}}
@@ -38,7 +38,7 @@ client credentials, with no interactive user login required. The Entra app regis
 <strong>application permissions</strong> (not delegated) with admin consent. Use this for
 service integrations, shared mailboxes, or when you cannot perform interactive logins.
 Accounts using application access can only be added via the
-<a href="/admin/swagger#/Account/postV1Account" class="link link-animated">REST API</a>,
+<a href="/admin/reference/account#postV1Account" class="link link-animated">REST API</a>,
 not through the hosted authentication form.
 {{#if providerData.tutorialUrl}}
 Read about setting up {{providerData.comment}} from <a href="{{providerData.tutorialUrl}}" target="_blank"
@@ -780,7 +780,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <p>
             If your EmailEngine instance cannot be exposed directly, configure a public
             proxy domain in <span class="text-base-content/60 code-link"><a
-                    href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
+                    href="/admin/reference/settings#postV1Settings" target="_blank" rel="noopener noreferrer"
                     class="link link-animated">notificationBaseUrl</a></span>. Microsoft Graph will then
             post to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code> instead of
             <code>{{mainServiceUrl}}</code>.
@@ -823,7 +823,7 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         <p>
             If your EmailEngine instance cannot be exposed directly, configure a public
             proxy domain in <span class="text-base-content/60 code-link"><a
-                    href="/admin/swagger#/Settings/postV1Settings" target="_blank" rel="noopener noreferrer"
+                    href="/admin/reference/settings#postV1Settings" target="_blank" rel="noopener noreferrer"
                     class="link link-animated">notificationBaseUrl</a></span>. Microsoft Graph will then
             post to <code>https://&lt;proxy-domain&gt;/oauth/msg/...</code> instead of
             <code>{{mainServiceUrl}}</code>.

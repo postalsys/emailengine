@@ -33,11 +33,11 @@
                 <span class="helper-text">If enabled, then EmailEngine uses the OpenAI API to produce text embeddings
                     for emails in the document store. For this feature to work, ensure document store syncing is active
                     and that the OpenAI API key is configured. You can run chat requests with the <a
-                        href="/admin/swagger#/Chat/postV1ChatAccount" target="_blank" rel="noopener noreferrer"
+                        href="/admin/reference/deprecated-endpoints-document-store#postV1ChatAccount" target="_blank" rel="noopener noreferrer"
                         class="link link-animated">Chat API method</a>.</span>
                 <div class="mt-2"><small><strong>Important:</strong> EmailEngine will only create embeddings for emails
                         processed when the feature is active. To generate embeddings for previously stored emails,
-                        utilize the <a href="/admin/swagger#/Account/putV1AccountAccountFlush" target="_blank"
+                        utilize the <a href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
                             rel="noopener noreferrer" class="link link-animated">Flush API method</a>. This will force
                         EmailEngine to re-process all emails in the Document Store.</small>
                 </div>
@@ -51,10 +51,10 @@
                 <div class="space-y-1">
                     {{> ui/setting-ref name="documentStoreGenerateEmbeddings" class="whitespace-nowrap"}}
 
-                    {{> ui/setting-ref name="Chat with emails" href="/admin/swagger#/Chat/postV1ChatAccount"
+                    {{> ui/setting-ref name="Chat with emails" href="/admin/reference/deprecated-endpoints-document-store#postV1ChatAccount"
                     nofloat=true class="whitespace-nowrap"}}
 
-                    {{> ui/setting-ref name="Request account flush" href="/admin/swagger#/Account/putV1AccountAccountFlush"
+                    {{> ui/setting-ref name="Request account flush" href="/admin/reference/account#putV1AccountAccountFlush"
                     nofloat=true class="whitespace-nowrap"}}
 
                     <div>
@@ -125,7 +125,7 @@
 <form id="chatPayloadForm" method="post" action=".">
     <div class="modal-body space-y-4">
         <div>
-            {{> ui/setting-ref prefix="API Reference: " name="/v1/chat/{account}" href="/admin/swagger#/Chat/postV1ChatAccount"}}
+            {{> ui/setting-ref prefix="API Reference: " name="/v1/chat/{account}" href="/admin/reference/deprecated-endpoints-document-store#postV1ChatAccount"}}
             {{#> ui/form-field id="inputAccount" label="Account ID"}}
             <input type="text" class="input" name="account" id="inputAccount" aria-describedby="inputAccountHelp"
                 value="" required>

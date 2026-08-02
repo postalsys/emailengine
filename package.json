@@ -159,7 +159,6 @@
             "views/**/*",
             "lib/lua/**/*",
             "node_modules/bull/lib/commands/**/*",
-            "node_modules/swagger-ui-dist/**/*",
             "translations/**/*",
             "node_modules/@postalsys/joi-messages/translations/*",
             "node_modules/@postalsys/bounce-classifier/model/**/*",

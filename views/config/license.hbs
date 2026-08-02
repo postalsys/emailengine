@@ -101,7 +101,7 @@ class="mb-1"}}
     </div>
 
     <div class="mb-6">
-        {{> ui/setting-ref name="license" href="/admin/swagger#/license/postV1License"}}
+        {{> ui/setting-ref name="license" href="/admin/reference/license#postV1License"}}
         {{#> ui/form-field id="licenseTextElement" label="Or paste license key here" error=errors.license}}
         <textarea class="textarea w-full droptxt autoselect{{#if errors.license}} is-invalid{{/if}}"
             id="licenseTextElement" name="license" rows="9" data-enable-grammarly="false" spellcheck="false"

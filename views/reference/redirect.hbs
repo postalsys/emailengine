@@ -1,0 +1,49 @@
+{{!--
+    Compatibility shim for the retired swagger-ui page.
+
+    /admin/swagger used to deep link as `#/Tag/operationId`. A URL fragment is never sent to
+    the server, so the mapping has to happen in the browser - and a 302 would not do either,
+    since the browser carries the original fragment through to the new location. Links inside
+    this EmailEngine point at /admin/reference directly; this is for bookmarks and for links
+    written by older versions.
+
+    The content below is what remains visible if the lookup falls through or JavaScript is
+    off. The redirect normally fires first.
+
+    redirectMap is serialized by jsonForScript() in lib/api-reference/index.js, which escapes
+    `<` so the literal cannot terminate this script element.
+--}}
+<script>
+    (() => {
+        const map = {{{redirectMap}}};
+        const fallback = '/admin/reference';
+
+        // "#/Account/getV1AccountAccount" -> ["Account", "getV1AccountAccount"]
+        const parts = window.location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+        const operationId = parts[parts.length - 1];
+
+        // Own-property lookups only: a bare index walks Object.prototype, so a hash ending in
+        // "toString" would resolve to a native function and navigate somewhere absurd.
+        const lookup = (table, key) => (key && Object.prototype.hasOwnProperty.call(table, key) ? table[key] : null);
+
+        // Resolve on the operation id. The tag in the old hash is ignored on purpose - tags
+        // have been renamed since those links were written - and is consulted only as a
+        // fallback for a link whose operation is gone but whose group still exists.
+        const operationSlug = lookup(map.operations, operationId);
+        const slug = operationSlug || lookup(map.tags, (parts[0] || '').toLowerCase());
+
+        window.location.replace(slug ? `/admin/reference/${slug}${operationSlug ? `#${operationId}` : ''}` : fallback);
+    })();
+</script>
+
+{{> ui/page-header title="API Reference" icon="icon-[tabler--api]" class="mb-4"}}
+
+<div class="alert alert-soft alert-info flex items-start gap-3" role="alert">
+    <span class="icon-[tabler--info-circle] size-5 shrink-0"></span>
+    <div class="min-w-0 text-sm">
+        <p>The API reference has moved. You should be redirected automatically.</p>
+        <p class="mt-2">
+            {{> ui/btn href="/admin/reference" variant="primary" size="sm" icon="icon-[tabler--arrow-right]" label="Open the API Reference"}}
+        </p>
+    </div>
+</div>

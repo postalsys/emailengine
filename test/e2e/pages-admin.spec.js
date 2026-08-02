@@ -1,4 +1,4 @@
-/* global document, window, navigator, localStorage, fetch */
+/* global document, window, navigator, fetch */
 'use strict';
 
 // Per-page smoke tests for the admin UI (Tailwind v4 + FlyonUI theme). Each admin page gets at
@@ -340,30 +340,32 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
     });
 
-    test('swagger reference renders as a light island in the dark theme', async ({ page }) => {
-        // swagger-ui ships no dark styles (its stylesheet assumes a light
-        // page); with a dark admin theme its transparent panels used to sit
-        // unreadably on the dark page background, so the reference is pinned
-        // to a light data-theme subtree
-        await page.addInitScript(() => {
-            localStorage.setItem('eeTheme', 'dark');
-        });
+    test('the retired swagger page redirects old deep links to the new reference', async ({ page }) => {
+        // /admin/swagger no longer serves swagger-ui. It stays only as a shim for bookmarks
+        // and for links written by older EmailEngine versions, which used the swagger-ui
+        // deep-link format. A fragment never reaches the server, so the mapping is done in
+        // the browser - see views/reference/redirect.hbs.
         const errors = trackConsoleErrors(page);
         await ensureAdminSession(page);
+
+        // a deep link resolves to the operation's group page, keeping the operation anchor
+        await page.goto('/admin/swagger#/Account/postV1Account');
+        await page.waitForURL(/\/admin\/reference\/account#postV1Account$/, { timeout: 20000 });
+        await expect(page.locator('#postV1Account')).toBeVisible();
+
+        // ...even when the tag in the old link has since been renamed: the Chat endpoints
+        // now sit under "Deprecated endpoints (Document Store)", so resolving by tag would
+        // strand this one
+        await page.goto('/admin/swagger#/Chat/postV1ChatAccount');
+        await page.waitForURL(/\/admin\/reference\/[a-z-]+#postV1ChatAccount$/, { timeout: 20000 });
+
+        // a bare visit lands on the overview
         await page.goto('/admin/swagger');
-        await expect(page.locator('#swagger-ui .info')).toBeVisible({ timeout: 20000 });
-        const probe = await page.evaluate(() => {
-            const island = document.querySelector('[data-theme="light"]');
-            const cs = window.getComputedStyle(island);
-            return {
-                background: cs.backgroundColor,
-                colorScheme: cs.colorScheme,
-                pageTheme: document.documentElement.getAttribute('data-theme')
-            };
-        });
-        expect(probe.pageTheme).toBe('dark');
-        expect(probe.background).toBe('rgb(255, 255, 255)');
-        expect(probe.colorScheme).toBe('light');
+        await page.waitForURL(/\/admin\/reference$/, { timeout: 20000 });
+
+        // an unknown operation falls back rather than 404ing
+        await page.goto('/admin/swagger#/Nope/getV1DoesNotExist');
+        await page.waitForURL(/\/admin\/reference$/, { timeout: 20000 });
 
         expect(errors, errors.join('\n')).toHaveLength(0);
     });

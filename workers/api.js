@@ -846,17 +846,15 @@ const init = async () => {
         // lib/swagger-options.js so the document can be reproduced outside a running server
         ...specOptions,
 
-        swaggerUI: true,
+        // hapi-swagger is kept ONLY as the spec generator: it turns the route joi schemas
+        // into the OpenAPI document served at jsonPath. Its bundled swagger-ui page is off -
+        // the reference is server-rendered at /admin/reference (lib/api-reference/), and
+        // leaving the UI on would also pull swagger-ui-dist's assets into the pkg binary.
+        // Dropping them from pkg.assets saves ~9MB per target; hapi-swagger still requires the
+        // package at load time, so its ~1.8MB of browser bundles are snapshotted regardless.
+        swaggerUI: false,
+        documentationPage: false,
         jsonPath: '/swagger.json',
-        swaggerUIPath: '/admin/swagger/resources/',
-
-        expanded: 'list',
-        sortEndpoints: 'method',
-        sortTags: 'unsorted',
-
-        tryItOutEnabled: true,
-
-        templates: Path.join(__dirname, '..', 'views', 'swagger', 'ui'),
 
         info: {
             title: 'EmailEngine API',

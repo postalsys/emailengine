@@ -49,6 +49,8 @@
 
         write(token, expires) {
             try {
+                // `expires` doubles as the "this page minted it" marker: only the mint path
+                // sets one, so a pasted token is exactly an entry without it
                 window.sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expires: expires || null }));
             } catch (err) {
                 // storage blocked - the token still works for this page load
@@ -331,7 +333,23 @@
         window.showToast(message, ok ? 'check-circle' : 'alert-triangle');
     };
 
-    const activate = (token, expires, message) => {
+    const revokeMinted = async token => {
+        try {
+            await window.uiPostJson('/admin/reference/token/revoke', { token });
+            return true;
+        } catch (err) {
+            return false;
+        }
+    };
+
+    const activate = async (token, expires, message) => {
+        // Replacing a minted token would otherwise leave it working in Redis for the rest of
+        // its hour with nothing pointing at it
+        const previous = tokenStore.read();
+        if (previous && previous.expires && previous.token !== token) {
+            await revokeMinted(previous.token);
+        }
+
         tokenStore.write(token, expires);
         const field = document.getElementById('ref-access-token');
         if (field) {
@@ -359,7 +377,7 @@
                 if (!data || !data.success) {
                     throw new Error((data && data.message) || 'Request failed');
                 }
-                activate(data.token, data.expires, `Temporary token minted, valid for ${minutesLeft(data.expires)} minutes.`);
+                await activate(data.token, data.expires, `Temporary token minted, valid for ${minutesLeft(data.expires)} minutes.`);
             } catch (err) {
                 say(`Could not mint a token: ${err.message}`, false);
             } finally {
@@ -387,14 +405,25 @@
                 say('Paste a token first.', false);
                 return;
             }
-            activate(token, null, 'Token set for this tab.');
+            activate(token, null, 'Token set for this tab.').catch(err => say(err.message, false));
         });
 
-        document.getElementById('ref-token-clear').addEventListener('click', () => {
+        document.getElementById('ref-token-clear').addEventListener('click', async () => {
+            const entry = tokenStore.read();
+
+            // Drop it locally first, so the field is cleared even if the revoke call fails
             tokenStore.clear();
             field.value = '';
             paintTokenStatus();
-            say('Token cleared.', false);
+
+            // A token this page minted is deleted for real rather than left working in
+            // Redis until it expires. A pasted token belongs to the user - only forget it.
+            if (!entry || !entry.expires) {
+                say('Token cleared.', false);
+                return;
+            }
+
+            say((await revokeMinted(entry.token)) ? 'Temporary token cleared and revoked.' : 'Token cleared here, but revoking it on the server failed.', false);
         });
     };
 

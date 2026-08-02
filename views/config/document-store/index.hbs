@@ -39,7 +39,7 @@
 
                 <div class="mt-2"><small><strong>Important:</strong> EmailEngine only saves emails to the Document
                         Store if processed while the feature is active. To add existing emails, use the <a
-                            href="/admin/swagger#/Account/putV1AccountAccountFlush" target="_blank"
+                            href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
                             rel="noopener noreferrer" class="link link-animated">Flush API method</a>. This makes
                         EmailEngine re-process all emails for a specific account.</small>
                 </div>
@@ -49,7 +49,7 @@
                 {{> ui/setting-ref name="documentStoreEnabled" class="whitespace-nowrap"}}
 
                 <div class="text-base-content/60 code-link whitespace-nowrap">[<a
-                        href="/admin/swagger#/Account/putV1AccountAccountFlush" target="_blank"
+                        href="/admin/reference/account#putV1AccountAccountFlush" target="_blank"
                         rel="noopener noreferrer" class="link link-animated">Request&nbsp;account&nbsp;flush</a>]</div>
 
                 {{#if values.documentStoreEnabled}}
