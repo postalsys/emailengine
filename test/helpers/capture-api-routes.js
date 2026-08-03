@@ -11,8 +11,8 @@
 //
 // Mirrors test/helpers/capture-ui-routes.js, which does the same for lib/routes-ui.js.
 
-const Joi = require('joi');
-const { imapSchema, smtpSchema, oauth2Schema } = require('../../lib/schemas');
+const { imapSchema, smtpSchema, oauth2Schema, oauth2ProviderSchema, accountTypeSchema } = require('../../lib/schemas');
+const { DEFAULT_MAX_ATTACHMENT_SIZE, DEFAULT_MAX_BODY_SIZE, DEFAULT_MAX_PAYLOAD_TIMEOUT } = require('../../lib/consts');
 const registerApiRoutes = require('../../lib/api-routes');
 
 // Stand-ins for the values workers/api.js passes in. Only shape matters: these are read at
@@ -35,9 +35,11 @@ function buildMockArgs(server, overrides) {
             CORS_CONFIG: false,
             FLAG_SORT_ORDER: ['\\Inbox', '\\Flagged', '\\Sent', '\\Drafts', '\\All', '\\Archive', '\\Junk', '\\Trash'],
             SMTP_TEST_HOST: 'https://api.nodemailer.com',
-            MAX_ATTACHMENT_SIZE: 25 * 1024 * 1024,
-            MAX_BODY_SIZE: 25 * 1024 * 1024,
-            MAX_PAYLOAD_TIMEOUT: 10 * 1000,
+            // The shipped defaults, not round numbers: these end up as `maxLength` in the generated
+            // OpenAPI document, so a made-up value here would record a document no instance serves
+            MAX_ATTACHMENT_SIZE: DEFAULT_MAX_ATTACHMENT_SIZE,
+            MAX_BODY_SIZE: DEFAULT_MAX_BODY_SIZE,
+            MAX_PAYLOAD_TIMEOUT: DEFAULT_MAX_PAYLOAD_TIMEOUT,
             // Defaults to the deprecated Document Store gate ON, so its endpoints appear in the
             // table. The gate is a plain argument here (not an env read at module load like the
             // UI side), so the off state is captured by passing it in - no child process needed.
@@ -47,8 +49,11 @@ function buildMockArgs(server, overrides) {
             oauth2Schema,
             imapSchema,
             smtpSchema,
-            AccountTypeSchema: Joi.string().empty('').allow(false).default(false).example('imap').label('AccountType'),
-            OAuth2ProviderSchema: Joi.string().empty('').max(256).example('gmail').label('OAuth2Provider')
+            // The real schemas, not stand-ins: they carry the provider list into the generated
+            // OpenAPI document, so a simplified copy here would make the recorded document differ
+            // from the one the server serves
+            AccountTypeSchema: accountTypeSchema,
+            OAuth2ProviderSchema: oauth2ProviderSchema
         },
         overrides || {}
     );

@@ -79,10 +79,10 @@ test('API reference model', async t => {
     });
 
     await t.test('every operation declares a success response in the spec', () => {
-        // The streaming and binary downloads have no response.schema for hapi-swagger to
-        // derive a 200 from, so they need an explicit entry (streamResponses() in
+        // The streaming and binary downloads have no response.schema for the generator to
+        // derive a 200 from, so they need an explicit entry (apiResponses() in
         // lib/schemas.js). Without it the generated spec documents only their error cases
-        // and EVERY consumer - Swagger UI, Postman, code generators - sees an operation
+        // and EVERY consumer - this page, Postman, code generators - sees an operation
         // with no success response.
         const missing = [];
         for (const path of Object.keys(spec.paths)) {
@@ -109,7 +109,7 @@ test('API reference model', async t => {
     });
 
     await t.test('every operation documents what its success response returns', () => {
-        // "Successful" is hapi-swagger's placeholder; apiResponses() in lib/schemas.js
+        // "Successful" is the generator's placeholder; apiResponses() in lib/schemas.js
         // replaces it with prose per operation, which is what a caller actually needs
         const placeholder = [];
         for (const path of Object.keys(spec.paths)) {
@@ -168,7 +168,7 @@ test('API reference model', async t => {
     });
 
     await t.test('behavior notes also reach the standard description field', () => {
-        // Routes declare each note twice: in the `notes` array, which hapi-swagger joins
+        // Routes declare each note twice: in the `notes` array, which the generator joins
         // into `description` for every consumer of the spec, and under x-ee-behavior so
         // this renderer can pull it into a callout. A note present in only the extension
         // would be invisible to Postman, Redoc and code generators - which is the audience
@@ -228,7 +228,7 @@ test('API reference model', async t => {
         });
 
         assert.ok(variants.length, 'no anyOf nodes found');
-        // x-alt-definitions refs must be resolved for the summary line to be useful
+        // The branch refs must be resolved for the summary line to be useful
         for (const label of variants) {
             assert.ok(label.includes(' or '), `variant label not composed: ${label}`);
         }

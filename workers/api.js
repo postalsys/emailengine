@@ -57,13 +57,12 @@ const hapiPino = require('hapi-pino');
 const Inert = require('@hapi/inert');
 const Vision = require('@hapi/vision');
 const Accept = require('@hapi/accept');
-const HapiSwagger = require('hapi-swagger');
 
 const pathlib = require('path');
 
 const crypto = require('crypto');
 const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
-const { oauth2Apps, OAUTH_PROVIDERS } = require('../lib/oauth2-apps');
+const { oauth2Apps } = require('../lib/oauth2-apps');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -80,6 +79,7 @@ const sso = require('../lib/sso');
 
 const routesUi = require('../lib/routes-ui');
 const specOptions = require('../lib/swagger-options');
+const { registerOpenApiRoute } = require('../lib/openapi');
 const { getModel: getApiReferenceModel, clearServiceUrlCache } = require('../lib/api-reference');
 
 const { encrypt, decrypt } = require('../lib/encrypt');
@@ -107,23 +107,15 @@ const {
 const registerApiRoutes = require('../lib/api-routes');
 const bullBoardRoutes = require('../lib/api-routes/bull-board-routes');
 
-const { imapSchema, smtpSchema, oauth2Schema, accountIdSchema, headerTimeoutSchema } = require('../lib/schemas');
-
-const OAuth2ProviderSchema = Joi.string()
-    .valid(...Object.keys(OAUTH_PROVIDERS))
-    .required()
-    .example('gmail')
-    .description('OAuth2 provider')
-    .label('OAuth2Provider');
-
-const AccountTypeSchema = Joi.string()
-    .valid(...['imap'].concat(Object.keys(OAUTH_PROVIDERS)).concat(['oauth2', 'delegated', 'sending', 'invalid']))
-    .example('outlook')
-    .description(
-        'Account type: "imap" for IMAP accounts, an OAuth2 provider name for OAuth2 accounts, "oauth2" when the OAuth2 application is missing, "delegated" for delegated accounts, "sending" for send-only accounts, "invalid" when delegation cannot be resolved'
-    )
-    .required()
-    .label('AccountType');
+const {
+    imapSchema,
+    smtpSchema,
+    oauth2Schema,
+    accountIdSchema,
+    apiHeadersSchema,
+    oauth2ProviderSchema: OAuth2ProviderSchema,
+    accountTypeSchema: AccountTypeSchema
+} = require('../lib/schemas');
 
 const SUPPORTED_LOCALES = locales.map(locale => locale.locale);
 
@@ -564,9 +556,7 @@ const init = async () => {
                         language: 'en' // Default language
                     }
                 },
-                headers: Joi.object({
-                    'x-ee-timeout': headerTimeoutSchema
-                }).unknown()
+                headers: apiHeadersSchema
             }
         }
     };
@@ -841,20 +831,10 @@ const init = async () => {
         return h.continue;
     });
 
-    const swaggerOptions = {
+    const openApiOptions = {
         // Spec-shaping options (tag list and order, security scheme, external docs) live in
         // lib/swagger-options.js so the document can be reproduced outside a running server
         ...specOptions,
-
-        // hapi-swagger is kept ONLY as the spec generator: it turns the route joi schemas
-        // into the OpenAPI document served at jsonPath. Its bundled swagger-ui page is off -
-        // the reference is server-rendered at /admin/reference (lib/api-reference/), and
-        // leaving the UI on would also pull swagger-ui-dist's assets into the pkg binary.
-        // Dropping them from pkg.assets saves ~9MB per target; hapi-swagger still requires the
-        // package at load time, so its ~1.8MB of browser bundles are snapshotted regardless.
-        swaggerUI: false,
-        documentationPage: false,
-        jsonPath: '/swagger.json',
 
         info: {
             title: 'EmailEngine API',
@@ -892,10 +872,7 @@ Include your token in requests using one of these methods:
             }
         },
 
-        cors: !!CORS_CONFIG,
-        cache: {
-            expiresIn: 7 * 24 * 60 * 60 * 1000
-        }
+        cors: !!CORS_CONFIG
     };
 
     await server.register(AuthBearer);
@@ -1366,14 +1343,11 @@ Include your token in requests using one of these methods:
         }
     });
 
-    await server.register([
-        Inert,
-        Vision,
-        {
-            plugin: HapiSwagger,
-            options: swaggerOptions
-        }
-    ]);
+    await server.register([Inert, Vision]);
+
+    // Position is not load-bearing: the document is generated from the finished route table on the
+    // first request, not at registration time
+    registerOpenApiRoute(server, openApiOptions);
 
     server.events.on('response', request => {
         const tags = request.route && request.route.settings && request.route.settings.tags;

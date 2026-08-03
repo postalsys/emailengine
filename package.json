@@ -87,7 +87,6 @@
         "handlebars": "4.7.9",
         "hapi-auth-bearer-token": "8.0.0",
         "hapi-pino": "13.0.0",
-        "hapi-swagger": "17.3.2",
         "he": "1.2.0",
         "html-to-text": "10.0.0",
         "ical.js": "1.5.0",

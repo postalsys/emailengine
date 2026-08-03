@@ -58,7 +58,7 @@ A headless email client application that provides access to IMAP, SMTP, Gmail AP
 
 -   [Documentation](https://learn.emailengine.app/)
 -   [API Reference](https://learn.emailengine.app/docs/api/emailengine-api)
--   OpenAPI specification for Postman and code generators: every instance serves its own at `/swagger.json`, or use the hosted copy at [emailengine.dev/swagger.json](https://emailengine.dev/swagger.json)
+-   OpenAPI specification for Postman and code generators: every instance serves its own at `/swagger.json`. To work against a specific version instead, download [the copy published with each release](https://go.emailengine.app/swagger.json) - it describes exactly the release it ships with, while [emailengine.dev/swagger.json](https://emailengine.dev/swagger.json) tracks the latest build.
 
 ## Configuring EmailEngine
 

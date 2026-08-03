@@ -7,34 +7,46 @@
 // and fetching /swagger.json - so a test may not assume it exists. Rather than checking in
 // a fixture that drifts from the routes, this registers the REAL route table
 // (lib/api-routes/index.js, the same entry point workers/api.js uses) on a real Hapi server
-// with hapi-swagger and injects /swagger.json. Tests therefore always see the spec the
-// current route definitions produce.
+// and asks the real document route (lib/openapi/index.js) for the spec. Tests therefore
+// always see the spec the current route definitions produce.
+//
+// What this server has to reproduce is everything the generated document is derived from, not
+// just the routes: the server-wide route defaults (every operation documents the X-EE-Timeout
+// header), the real account schemas and the real size limits all end up in the document, so a
+// simplified stand-in here would record a document no instance serves. That equivalence is worth
+// keeping - it is what makes test/fixtures/openapi-golden.json a guard on the shipped artifact.
 //
 // The spec-shaping options come from lib/swagger-options.js, the same module workers/api.js
-// spreads into its hapi-swagger config. That matters beyond tidiness: the curated `tags`
-// array drives tag ORDER and descriptions, which lib/api-reference/model.js seeds its
-// navigation from - a local copy here would leave that branch untested and free to drift.
-// Only the presentation-only options (swaggerUI, templates, cache, info prose) are set
-// locally, since none of them affect what the tests assert on.
+// passes in. That matters beyond tidiness: the curated `tags` array drives tag ORDER and
+// descriptions, which lib/api-reference/model.js seeds its navigation from - a local copy
+// here would leave that branch untested and free to drift. Only the version is set locally,
+// since no assertion reads the rest of `info`.
 //
 // Requiring lib/api-routes transitively opens a Redis connection and BullMQ queues
 // (lib/db.js), so a suite using this must close Redis in an after() hook, the same way
 // test/ui-routes-table-test.js does.
 
 const Hapi = require('@hapi/hapi');
-const Inert = require('@hapi/inert');
-const Vision = require('@hapi/vision');
-const HapiSwagger = require('hapi-swagger');
 
 const { buildMockArgs } = require('./capture-api-routes');
 const registerApiRoutes = require('../../lib/api-routes');
 const specOptions = require('../../lib/swagger-options');
+const { registerOpenApiRoute, JSON_PATH } = require('../../lib/openapi');
+const { apiHeadersSchema } = require('../../lib/schemas');
 
 async function buildOpenApiSpec(overrides) {
-    const server = Hapi.server({ port: 0, host: '127.0.0.1' });
+    const server = Hapi.server({
+        port: 0,
+        host: '127.0.0.1',
+
+        // The same server-wide route default workers/api.js applies. It is documentation-visible:
+        // without it every operation would lose its X-EE-Timeout header parameter, and the recorded
+        // document would describe an API no instance serves.
+        routes: { validate: { headers: apiHeadersSchema } }
+    });
 
     // The api-token strategy the /v1 routes declare. Never exercised - nothing is injected
-    // but /swagger.json - but every route names it, so it has to exist for registration.
+    // but the document route - but every route names it, so it has to exist for registration.
     server.auth.scheme('mock-api-token', () => ({
         authenticate(request, h) {
             return h.authenticated({ credentials: {} });
@@ -42,22 +54,18 @@ async function buildOpenApiSpec(overrides) {
     }));
     server.auth.strategy('api-token', 'mock-api-token');
 
-    await server.register([Inert, Vision]);
-    await server.register({
-        plugin: HapiSwagger,
-        options: Object.assign({}, specOptions, {
-            swaggerUI: false,
-            documentationPage: false,
-            jsonPath: '/swagger.json',
+    registerOpenApiRoute(
+        server,
+        Object.assign({}, specOptions, {
             // version only - the rest of `info` is prose that no assertion reads
             info: { title: 'EmailEngine API', version: '0.0.0' }
         })
-    });
+    );
 
     await registerApiRoutes(buildMockArgs(server, overrides));
     await server.initialize();
 
-    const res = await server.inject({ method: 'get', url: '/swagger.json' });
+    const res = await server.inject({ method: 'get', url: JSON_PATH });
     if (res.statusCode !== 200) {
         throw new Error(`Failed to generate the OpenAPI document (HTTP ${res.statusCode})`);
     }

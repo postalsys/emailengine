@@ -12,6 +12,12 @@ Always use `npm run update` to bump dependencies - never edit versions in packag
 
 The Document Store is disabled by default. It only runs when EmailEngine is started with the `--documentStore.enabled` CLI flag, the `[documentStore] enabled = true` config value, or `EENGINE_DOCUMENT_STORE_ENABLED=true`. The gate is exposed as `documentStoreFeatureEnabled` (sync) and `isDocumentStoreEnabled()` (sync flag AND the `documentStoreEnabled` setting) from `lib/document-store.js`. When the gate is off: the `documents` worker is not spawned, every document-store-only endpoint (`/v1/chat/{account}`, `/v1/unified/search`, `/admin/config/document-store/*`) is unregistered and returns 404, all runtime document-store code takes its existing "disabled" path, and the admin UI shows an error alert if the `documentStoreEnabled` setting is still on. Runtime reads of the `documentStoreEnabled` setting use `isDocumentStoreEnabled()` so the feature-off state reuses the already-tested setting-off paths.
 
+## OpenAPI document
+
+`/swagger.json` is generated in-house by `lib/openapi/` from the route joi schemas - there is no documentation-generator dependency (hapi-swagger was archived upstream and is gone). `joi-schema.js` converts joi `describe()` output into Schema Objects, `build-document.js` walks `server.table()`, `index.js` registers the route. Document-level options (tag list and order, security scheme) live in `lib/swagger-options.js`; per-route documentation metadata lives in each route's `plugins.openapi` block (`responses`, `produces`, `x-ee-behavior`).
+
+The document is a published surface: the README points at it, emailengine.dev mirrors it, and it feeds Postman and code generators. `.label()` on a joi schema is therefore a public type name, and the endpoint is intentionally unauthenticated. Any change that alters the document has to be acknowledged by re-recording `test/fixtures/openapi-golden.json` (see `.claude/rules/testing.md`).
+
 ## Detailed guidance (loaded on demand)
 
 Path-scoped rules in `.claude/rules/` load automatically when you work with the matching files. Read the relevant one before changing that area:
