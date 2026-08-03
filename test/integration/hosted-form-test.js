@@ -18,6 +18,7 @@ require('dotenv').config({ quiet: true });
 
 const config = require('@zone-eu/wild-config');
 const supertest = require('supertest');
+const he = require('he');
 const crypto = require('node:crypto');
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -287,22 +288,26 @@ test('Hosted form enforces the expected account identity on the IMAP arm', async
         assert.equal(acct.status, 404, 'the rejected setup must not have created an account');
     });
 
-    await t.test('a rejection with a redirectUrl honors the documented error contract', async () => {
-        // POST /v1/authentication/form documents error=account_identity_mismatch on the redirect. That
-        // promise is made for the whole form, so the IMAP arm has to keep it too, not just the OAuth arm.
-        const account = `identity-redirect-${crypto.randomBytes(6).toString('hex')}`;
+    await t.test('the rejection names both addresses and offers a way back', async () => {
+        // The user picked the wrong account, which is correctable, so the flow stops on an error page with
+        // a retry link rather than redirecting to the calling application - the hosted form only ever
+        // redirects on success. Naming both addresses is what lets someone spot a near-miss, since the
+        // comparison is exact.
+        const account = `identity-retry-${crypto.randomBytes(6).toString('hex')}`;
         const res = await submit(
             { account, expectedEmail: 'owner@example.com', redirectUrl: 'https://example.com/done' },
             { email: 'someone-else@example.com' }
         );
 
-        assert.equal(res.status, 200, `expected a redirect page, got ${res.status}: ${res.text}`);
-        assert.match(res.text, /error=account_identity_mismatch/, 'the redirect must carry the documented error code');
-        assert.match(res.text, /error_description=/, 'the redirect must explain why');
-        assert.ok(!/[?&]state=/.test(res.text), 'nothing was created, so no account state may be reported');
-
-        const acct = await authed.get(`/v1/account/${account}`);
-        assert.equal(acct.status, 404, 'the rejected setup must not have created an account');
+        assert.equal(res.status, 403, `expected the error page, got ${res.status}: ${res.text}`);
+        // Handlebars entity-escapes the `=` inside the href, so compare against the decoded markup.
+        const html = he.decode(res.text);
+        assert.match(html, /owner@example\.com/, 'the page must name the expected address');
+        assert.match(html, /someone-else@example\.com/, 'the page must name the address that was used');
+        // The blob is still unspent (the nonce is claimed after this check), so the retry link works.
+        // type=imap keeps the user on the arm they chose instead of re-asking the provider question.
+        assert.match(html, /href="\/accounts\/new\?data=[^"]+&sig=[^"]+&type=imap"/, 'the page must offer a way back into the form they were on');
+        assert.ok(!/example\.com\/done/.test(html), 'a rejected setup must not redirect to the calling application');
     });
 
     await t.test('a stored pin applies to a link that carries no expectation of its own', async () => {
