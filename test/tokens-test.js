@@ -484,4 +484,37 @@ test('Token management tests', async t => {
         assert.ok(entry.expires instanceof Date, 'expiry is a Date, matching created');
         assert.equal(entry.expires.getTime(), expires);
     });
+    await t.test('list() drops and reaps an expired token', async () => {
+        // The reap in get() only fires when someone presents the token, so a token that is
+        // minted and never used was listed forever even though it could not authenticate -
+        // exactly what a temporary API-reference token does when the tab is just closed.
+        const token = await tokens.provision({
+            description: 'expired and never used',
+            scopes: ['api'],
+            expires: Date.now() - 1000,
+            nolog: true
+        });
+
+        const listed = await tokens.list(false, 0, 50);
+        assert.ok(!listed.tokens.some(entry => entry.description === 'expired and never used'), 'an expired token must not be listed');
+
+        // the record is actually removed, not just filtered out of the response
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const hashedToken = crypto.createHash('sha256').update(Buffer.from(token, 'hex')).digest('hex');
+        assert.equal(await redis.hget(`${REDIS_PREFIX}tokens`, hashedToken), null);
+        assert.equal(await redis.sismember(`${REDIS_PREFIX}iat`, hashedToken), 0);
+    });
+
+    await t.test('list() keeps a token that has not expired yet', async () => {
+        const token = await tokens.provision({
+            description: 'still valid',
+            expires: Date.now() + 60000,
+            nolog: true
+        });
+
+        createdTokens.push(token);
+
+        const listed = await tokens.list(false, 0, 50);
+        assert.ok(listed.tokens.some(entry => entry.description === 'still valid'));
+    });
 });
