@@ -2777,8 +2777,16 @@ async function onCommand(worker, message) {
             return;
 
         case 'new':
-            // Handle new account
-            unassigned.add(message.account);
+            // Handle new account.
+            //
+            // `unassigned` is `false` until assignAccounts() loads the account list from Redis on
+            // its first run, which waits for an IMAP worker to report ready. An account created
+            // before that used to throw here and fail the request with a 500. Skipping the add is
+            // safe rather than merely quiet: the account is already in `ia:accounts` by the time
+            // this message is sent, so the first load picks it up.
+            if (unassigned) {
+                unassigned.add(message.account);
+            }
             assignAccounts()
                 .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
                 .catch(err => logger.error({ msg: 'Account assignment failed', n: 3, err }));
