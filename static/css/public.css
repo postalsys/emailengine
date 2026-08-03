@@ -874,6 +874,9 @@ dialog.ee-modal.ee-modal-wide {
 .ee-dl dd {
     margin: 0 0 0.5rem;
     min-width: 0;
+    /* Values here can be email addresses, which offer no natural break opportunity and would otherwise
+       run past the single-column grid on a narrow screen. */
+    overflow-wrap: anywhere;
 }
 
 @media (min-width: 640px) {

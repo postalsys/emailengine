@@ -6,13 +6,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const {
-    normalizeEmail,
-    matchesExpectedIdentity,
-    pendingSetupExpectation,
-    resolveExpectedIdentity,
-    buildIdentityMismatchUrl
-} = require('../lib/account/expected-identity');
+const { normalizeEmail, matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentity } = require('../lib/account/expected-identity');
 
 test('matchesExpectedIdentity()', async t => {
     await t.test('matches case-insensitively and ignores surrounding whitespace', () => {
@@ -125,25 +119,6 @@ test('pendingSetupExpectation()', async t => {
         assert.equal(pendingSetupExpectation({ account: 'acc' }, {}), null);
         assert.equal(pendingSetupExpectation(null, null), null);
         assert.equal(pendingSetupExpectation(), null);
-    });
-});
-
-test('buildIdentityMismatchUrl()', async t => {
-    await t.test('carries the documented error contract and no state', () => {
-        const href = buildIdentityMismatchUrl('https://app.example.com/done', 'https://ee.example.com', 'acc1');
-        const url = new URL(href);
-
-        assert.equal(url.searchParams.get('error'), 'account_identity_mismatch');
-        assert.ok(url.searchParams.get('error_description'), 'integrators are told why');
-        assert.equal(url.searchParams.get('account'), 'acc1');
-        // Nothing was created, so there is no account state to report.
-        assert.equal(url.searchParams.get('state'), null);
-    });
-
-    await t.test('resolves a relative redirect against the service URL and omits an unknown account', () => {
-        const href = buildIdentityMismatchUrl('/done', 'https://ee.example.com', null);
-        assert.equal(new URL(href).origin, 'https://ee.example.com');
-        assert.equal(new URL(href).searchParams.get('account'), null);
     });
 });
 

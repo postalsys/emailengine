@@ -8,7 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
-const { accountStateLabel, formatServerState } = require('../lib/ui-routes/route-helpers');
+const { accountStateLabel, formatServerState, identityErrorView } = require('../lib/ui-routes/route-helpers');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const featureFlags = require('../lib/feature-flags');
@@ -65,13 +65,8 @@ const { registeredPublishers, openChangeStream } = require('../lib/response-stre
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
 const { resolveOutlookUserInfo } = require('../lib/oauth/outlook-identity');
-const {
-    matchesExpectedIdentity,
-    pendingSetupExpectation,
-    resolveExpectedIdentity,
-    buildIdentityMismatchUrl,
-    IDENTITY_MISMATCH_MESSAGE
-} = require('../lib/account/expected-identity');
+const { buildRetrySetup } = require('../lib/oauth/retry-setup');
+const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentity } = require('../lib/account/expected-identity');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -2065,6 +2060,18 @@ const init = async () => {
 
             const provider = accountData.oauth2.provider;
 
+            // What the caller originally asked for, captured before the provider branches below rewrite
+            // accountData from whoever signed in. A retry has to start from this rather than from the
+            // rejected attempt: `email` may name a shared mailbox to bind (and is otherwise overwritten
+            // with the authenticated address), `name` gets filled in from the rejected user's profile when
+            // the caller supplied none, and `oauth2.auth.delegatedUser` names the mailbox rather than a
+            // credential, so it must survive while the tokens do not.
+            const requestedSetup = {
+                email: accountData.email,
+                name: accountData.name,
+                delegatedUser: accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser
+            };
+
             const oauth2App = await oauth2Apps.get(provider);
             if (!oauth2App) {
                 let error = Boom.boomify(new Error('Missing or disabled OAuth2 app'), { statusCode: 404 });
@@ -2085,6 +2092,21 @@ const init = async () => {
                         layout: 'public'
                     }
                 );
+
+            // Hands the user back to the provider after a failure they can correct themselves, as a fresh
+            // single-use setup. The token-bearing oauth2 object is dropped so the retry starts clean, and
+            // _meta rides along so the redirect URL, the expected identity and the form nonce all survive
+            // it - that nonce is claimed only on success, so it is still unspent here.
+            const startOAuthRetry = async (loginHint, prompt) => {
+                const reAuthState = `account:add:${crypto.randomBytes(NONCE_BYTES).toString('base64url')}`;
+                const reAuthAccountData = buildRetrySetup(accountData, requestedSetup, provider, accountMeta);
+
+                await redis.set(`${REDIS_PREFIX}${reAuthState}`, JSON.stringify(reAuthAccountData), 'EX', Math.floor(MAX_FORM_TTL / 1000));
+
+                // The address to steer the user towards rides on the authorize URL only - persisting it
+                // would overwrite a shared mailbox with the principal that is signing in to reach it.
+                return oAuth2Client.generateAuthUrl({ state: reAuthState, email: loginHint, prompt });
+            };
 
             // Addresses the provider itself returned over a back channel, the only values allowed to
             // satisfy an expected identity (see lib/account/expected-identity.js). Every provider case
@@ -2126,19 +2148,7 @@ const init = async () => {
                             request.logger.error({ msg: 'Failed to revoke partial OAuth2 token', err });
                         });
 
-                        const reAuthNonce = crypto.randomBytes(NONCE_BYTES).toString('base64url');
-                        const reAuthState = `account:add:${reAuthNonce}`;
-                        const reAuthAccountData = Object.assign({}, accountData, {
-                            oauth2: { provider },
-                            _meta: accountMeta
-                        });
-
-                        await redis.set(`${REDIS_PREFIX}${reAuthState}`, JSON.stringify(reAuthAccountData), 'EX', Math.floor(MAX_FORM_TTL / 1000));
-
-                        const reAuthUrl = oAuth2Client.generateAuthUrl({
-                            state: reAuthState,
-                            email: accountData.email
-                        });
+                        const retryUrl = await startOAuthRetry(accountData.email);
 
                         const missingScopesList = missingScopes.map(formatScopeDescription);
 
@@ -2147,7 +2157,7 @@ const init = async () => {
                             {
                                 pageTitleFull: request.app.gt.gettext('Email Account Setup'),
                                 templateLocale: request.app.locale,
-                                reAuthUrl,
+                                retryUrl,
                                 missingScopesList
                             },
                             {
@@ -2442,13 +2452,22 @@ const init = async () => {
                     }
                 }
 
-                if (redirectUrl) {
-                    return renderRedirect(buildIdentityMismatchUrl(redirectUrl, await settings.get('serviceUrl'), accountData.account));
-                }
+                // Stop here with a way back rather than redirecting to the calling application: signing in
+                // as the wrong account is a correctable mistake, and the hosted flow only ever redirects on
+                // success. Hint the address they were supposed to use, and force the account picker:
+                // they are already signed in to the one that just failed, so without select_account Google
+                // would hand back the same account and the retry would loop. Microsoft always shows the
+                // picker and Mail.ru ignores the hint, so this only changes Google's behavior.
+                const retryUrl = await startOAuthRetry(expectedEmail, 'select_account consent');
 
-                let error = Boom.boomify(new Error(IDENTITY_MISMATCH_MESSAGE), { statusCode: 403 });
-                error.output.payload.code = 'AccountIdentityMismatch';
-                throw error;
+                return identityErrorView(request, h, {
+                    expectedEmail,
+                    // The primary address the provider reported. Microsoft can return both a mailbox
+                    // address and a user principal name, and either would have satisfied the pin, so
+                    // naming the first is enough to show which account actually signed in.
+                    actualEmail: providerIdentities[0],
+                    retryUrl
+                });
             }
 
             if (expectedEmail) {

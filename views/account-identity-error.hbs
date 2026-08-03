@@ -1,0 +1,32 @@
+{{!-- Shown when a setup link is restricted to a specific address (expectedEmail) and the account that
+was actually used is a different one; offers a link to restart the setup. Sibling of
+oauth-scope-error.hbs - the user made a correctable choice, so the flow stops here with a way back
+rather than bouncing them to the calling application. --}}
+
+<div class="ee-center">
+    <h1>{{_ "Wrong Email Account" templateLocale}}</h1>
+</div>
+
+<div class="ee-alert ee-alert-error">
+    <span class="ee-icon ee-icon-alert-triangle ee-icon-lg"></span>
+    <span>{{_ "This setup link can only be used with one specific email account, and a different one was used." templateLocale}}</span>
+</div>
+
+<dl class="ee-dl">
+    <dt>{{_ "Expected" templateLocale}}</dt>
+    <dd>{{expectedEmail}}</dd>
+    {{#if actualEmail}}
+    <dt>{{_ "Used" templateLocale}}</dt>
+    <dd>{{actualEmail}}</dd>
+    {{/if}}
+</dl>
+
+<p class="ee-muted">
+    {{_ "Try again and use the expected account. If you believe this is a mistake, contact the service that sent you this link." templateLocale}}
+</p>
+
+<div class="ee-form-actions">
+    <a href="{{retryUrl}}" class="ee-btn ee-btn-primary ee-btn-block">
+        <span class="ee-icon ee-icon-refresh"></span>{{_ "Try Again" templateLocale}}
+    </a>
+</div>
