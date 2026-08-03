@@ -33,6 +33,39 @@ const registerApiRoutes = require('../../lib/api-routes');
 const specOptions = require('../../lib/swagger-options');
 const { registerOpenApiRoute, JSON_PATH } = require('../../lib/openapi');
 const { apiHeadersSchema } = require('../../lib/schemas');
+const packageData = require('../../package.json');
+
+// Stand-in for the running version everywhere it reaches the document, so the recorded golden
+// does not move on a release.
+const PINNED_VERSION = '0.0.0';
+
+// `info.version` is not the only place the running version surfaces: schema examples are built
+// from package.json too (StatsResponse.version is `.example(packageData.version)`), and any of
+// them shifts the golden on every release commit.
+//
+// That is worse than ordinary churn. The commit that moves the version is the one release-please
+// merges, so the failure lands on master with no human in the loop and nobody able to re-record
+// the fixture as part of it - the release is already cut by then. This normalizes examples that
+// echo the running version rather than requiring each one to be found by hand.
+function pinRunningVersion(value) {
+    if (Array.isArray(value)) {
+        return value.map(pinRunningVersion);
+    }
+
+    if (!value || typeof value !== 'object') {
+        return value;
+    }
+
+    for (const key of Object.keys(value)) {
+        if (key === 'example' && value[key] === packageData.version) {
+            value[key] = PINNED_VERSION;
+        } else {
+            value[key] = pinRunningVersion(value[key]);
+        }
+    }
+
+    return value;
+}
 
 async function buildOpenApiSpec(overrides) {
     const server = Hapi.server({
@@ -61,7 +94,7 @@ async function buildOpenApiSpec(overrides) {
             // churn on every release. Everything else is what an instance serves - which
             // matters most for the description: the reference landing page renders it rather
             // than restating it, so its format is a contract a test has to be able to check.
-            info: Object.assign({}, specOptions.info, { version: '0.0.0' })
+            info: Object.assign({}, specOptions.info, { version: PINNED_VERSION })
         })
     );
 
@@ -77,7 +110,7 @@ async function buildOpenApiSpec(overrides) {
 
     await server.stop();
 
-    return spec;
+    return pinRunningVersion(spec);
 }
 
 module.exports = { buildOpenApiSpec };
