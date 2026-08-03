@@ -32,7 +32,9 @@ Three settings in that config are load-bearing, and none of them are cosmetic:
 - `force-tag-creation: true` - GitHub withholds the tag for a draft release, and `upload.sh` builds from the tag (falling back to HEAD behind an interactive prompt without it).
 - `draft: true` - what makes the whole flow work.
 
-Publishing the draft is what triggers the npm publish job in `.github/workflows/release.yaml`. That job must stay in that file: npm trusted publishing (OIDC, which is why no npm token secret exists) is bound to the repository AND the workflow filename. Draft releases raise no event, and an event raised inside Actions by `GITHUB_TOKEN` never triggers another workflow - the job fires only because `upload.sh` publishes with a real user's credentials.
+npm publishes when release-please creates the release, not when the draft is later published - `release_created` reports the release object regardless of its visibility. Deferring it to a `release` event was considered and rejected: draft releases raise no event, and one raised inside Actions by `GITHUB_TOKEN` never triggers a workflow, so such a job would fire only because `upload.sh` publishes with a real user's credentials. Too many conditions, and the failure mode is a silent non-publication. Publishing early is safe because the npm package is the Node source and does not carry the binaries.
+
+The npm job must stay in `.github/workflows/release.yaml`: npm trusted publishing (OIDC, which is why no npm token secret exists) is bound to the repository AND the workflow filename.
 
 ## Detailed guidance (loaded on demand)
 

@@ -3,14 +3,6 @@ on:
         branches:
             - master
 
-    # Fires when the drafted release is published, which upload.sh does as its last step once
-    # the binaries are built, signed, notarized and uploaded. Nothing else can raise it: draft
-    # releases emit no event at all, and an event raised inside Actions by GITHUB_TOKEN never
-    # triggers another workflow run. So this only ever comes from the manual publish that ends
-    # a release - which is exactly the ordering guarantee we want.
-    release:
-        types: [published]
-
 permissions:
     contents: write
     pull-requests: write
@@ -23,7 +15,6 @@ jobs:
     release_please:
         name: Create or prepare release
         runs-on: ubuntu-latest
-        if: github.event_name == 'push'
         outputs:
             major: ${{ steps.release.outputs.major }}
             minor: ${{ steps.release.outputs.minor }}
@@ -42,25 +33,28 @@ jobs:
     publish:
         name: Publish NPM package
         runs-on: ubuntu-latest
-        # Waits for the release to be published rather than firing when the release PR is merged.
-        # An npm publish cannot practically be undone - unpublishing is limited to 72 hours and
-        # breaks anyone who already installed it - so it should not happen until the release is
-        # known to be complete. An abandoned draft now costs nothing; before, it burned a version.
+        needs: release_please
+        # Fires as soon as release-please creates the release, which it does even though the
+        # release is a draft - `release_created` reports the release object, not its visibility.
         #
-        # This job stays in this file deliberately. npm trusted publishing (OIDC, which is why
-        # there is no token secret) is bound to the repository AND the workflow filename, so
-        # moving it to its own workflow would fail authentication until the trusted publisher
-        # config on npmjs.com was updated to match the new filename.
+        # Deliberately NOT deferred until the draft is published. Doing that would mean waiting
+        # on a `release` event, and that event only exists because upload.sh publishes with a
+        # real user's credentials: draft releases raise no event, and one raised inside Actions
+        # by GITHUB_TOKEN never triggers a workflow. Several conditions all having to hold for a
+        # publish to happen makes the failure mode a silent non-publication, discovered late.
+        # Publishing here is one workflow run with nothing to choreograph.
         #
-        # To retry a failed publish, re-run this job from the Actions UI: that replays the same
-        # release event, so it checks out the same tag with the same OIDC context.
-        if: github.event_name == 'release' && !github.event.release.prerelease
+        # Publishing before the binaries exist is not shipping something broken: the npm package
+        # is the Node source and works on its own - it does not carry the pkg binaries, so it
+        # does not depend on the part of a release that can fail late.
+        #
+        # This job also has to stay in this file: npm trusted publishing (OIDC, which is why
+        # there is no token secret) is bound to the repository AND the workflow filename.
+        if: needs.release_please.outputs.release_created
         permissions:
             contents: read
             id-token: write
         steps:
-            # On a release event the default ref is the release tag, so this publishes exactly
-            # the commit that was released rather than whatever master has moved on to
             - uses: actions/checkout@v6
             - uses: actions/setup-node@v6
               with:
@@ -73,10 +67,7 @@ jobs:
         name: Publish Tagged Docker Image
         runs-on: ubuntu-latest
         needs: release_please
-        # Deliberately still on the merge, not on the published release: a Docker tag can be
-        # overwritten if a version is abandoned, unlike an npm publish, and holding the image
-        # back would block users who have nothing to do with the macOS binaries.
-        if: github.event_name == 'push' && needs.release_please.outputs.release_created
+        if: needs.release_please.outputs.release_created
         # Multi-arch builds run the arm64 leg under QEMU emulation, which can
         # hang indefinitely on a misbehaving step. A normal build finishes in
         # ~4 minutes, so fail fast instead of burning the 6-hour default limit.
