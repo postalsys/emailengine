@@ -12,6 +12,11 @@
     input) and narrowed by static/js/reference.js. There is no client-side index to
     fetch or build - filtering is plain DOM work over markup that is already there.
 
+    A hit matches on more than it shows: `data-search` carries the operation id and every
+    parameter and request-body property name as well. What is searchable is decided in one
+    place, searchCorpus() in lib/api-reference/model.js - so "mailbox" or "mailMerge" finds
+    the endpoints that accept them, not only the ones with the word in their path.
+
     Params (from the reference view context):
       nav         - tags with { name, slug, operationCount, active, operations[] }
       searchIndex - flat operation list backing the filter
@@ -39,11 +44,18 @@
         <span id="ref-token-state" class="text-base-content/50 text-2xs">Not set</span>
     </a>
 
-    {{> ui/search-input id="ref-filter" placeholder="Filter endpoints" name="" value="" type="" class=""}}
+    {{> ui/search-input id="ref-filter" placeholder="Filter endpoints" shortcut="Ctrl K" shortcutMac="Cmd K" name="" value="" type="" class=""}}
+
+    {{!-- Result count and key hints, shown only while the filter has input. The count is a
+          live region so it is announced; the key hints are static decoration beside it. --}}
+    <div id="ref-filter-hint" class="text-base-content/50 hidden items-center justify-between gap-2 px-2 text-2xs">
+        <span role="status"></span>
+        <span aria-hidden="true">Up/Down move, Enter open</span>
+    </div>
 
     <ul id="ref-filter-results" class="flex flex-col gap-0.5 hidden">
         {{#each searchIndex}}
-        <li class="ee-ref-hit" data-search="{{method}} {{path}} {{summary}} {{tag}}">
+        <li class="ee-ref-hit" data-search="{{search}}">
             <a href="{{url}}" class="hover:bg-base-200 block rounded-field px-2 py-1.5">
                 <span class="flex items-center gap-2">
                     <span class="text-{{methodVariant}} shrink-0 font-mono text-2xs font-semibold">{{method}}</span>

@@ -21,10 +21,7 @@
             {{#if deprecated}}
             {{> ui/badge label="Deprecated" variant="warning" soft=true icon="" class=""}}
             {{/if}}
-            <a href="#{{id}}" class="text-base-content/40 hover:text-primary ms-auto shrink-0"
-                aria-label="Link to this operation">
-                <span class="icon-[tabler--link] size-4"></span>
-            </a>
+            {{> reference/anchor-link target=id label="Link to this operation" class="ms-auto" small=""}}
         </div>
 
         {{#if summary}}
@@ -99,12 +96,15 @@
         </div>
         {{/if}}
 
+        {{!-- data-sample-tabs marks this strip for static/js/reference.js, which reselects the
+              language the reader last chose so a page of 13 operations does not reset to curl
+              on every one of them --}}
         {{#if samples.length}}
-        <div class="mt-5">
+        <div class="mt-5" data-sample-tabs>
             {{> reference/section-heading label="Code samples" class="mb-2"}}
             {{#> ui/tabs label="Code sample languages" class="mb-3"}}
             {{#each samples}}
-            {{> ui/tab target=tabId label=label active=active}}
+            {{> ui/tab target=tabId label=label active=active key=id}}
             {{/each}}
             {{/ui/tabs}}
             {{#each samples}}

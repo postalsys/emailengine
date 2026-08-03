@@ -1,0 +1,20 @@
+{{!--
+    reference/anchor-link - the link icon that makes something on a reference page
+    addressable. Used once per operation (reference/operation) and once per property row
+    (reference/schema-node), so the two stay identical rather than being kept in step by
+    hand.
+
+    A single element, with the icon mask on the anchor itself and the color and hover in
+    the .ee-ref-anchor rule rather than a utility string: a tag page renders this up to 434
+    times, where a wrapper span and a repeated 68-character class list cost real DOM nodes
+    and parse time. The accessible name comes from aria-label, since there is no text.
+
+    Params:
+      target - the id to link to, without the "#" (required)
+      label  - the full accessible name, e.g. "Link to this operation" (required)
+      small  - true for the smaller icon used on property rows (optional)
+      class  - extra classes on the anchor: the ms-auto that pushes the operation link to
+               the end of its row, or the ee-ref-prop-anchor that keeps a property link
+               hidden until its row is hovered (optional)
+--}}
+<a href="#{{target}}" class="ee-ref-anchor icon-[tabler--link] {{#if small}}size-3.5{{else}}size-4{{/if}}{{#if class}} {{class}}{{/if}}" aria-label="{{label}}"></a>

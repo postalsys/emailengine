@@ -5,5 +5,10 @@
                "<target>-tab" (required)
       label  - button text (required)
       active - true for the initially selected tab
+      key    - stable identity for this tab within its strip, emitted as
+               data-tab-key (optional). For scripts that reselect a tab across
+               pages: `target` carries the operation id so it cannot match
+               anywhere else, and the label is display text that changes when
+               the wording does.
 --}}
-<button type="button" class="tab active-tab:tab-active{{#if active}} active{{/if}}" id="{{target}}-tab" data-tab="#{{target}}" role="tab" aria-controls="{{target}}" aria-selected="{{#if active}}true{{else}}false{{/if}}">{{label}}</button>
+<button type="button" class="tab active-tab:tab-active{{#if active}} active{{/if}}" id="{{target}}-tab" data-tab="#{{target}}" role="tab" aria-controls="{{target}}" aria-selected="{{#if active}}true{{else}}false{{/if}}"{{#if key}} data-tab-key="{{key}}"{{/if}}>{{label}}</button>

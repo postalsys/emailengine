@@ -20,7 +20,7 @@ const { buildOpenApiSpec } = require('./helpers/build-openapi-spec');
 
 const { buildModel } = require('../lib/api-reference/model');
 const { buildSchemaTree, buildExample, typeLabel } = require('../lib/api-reference/schema-tree');
-const { buildCodeSamples } = require('../lib/api-reference/code-samples');
+const { buildCodeSamples, readCodeSamples } = require('../lib/api-reference/code-samples');
 const { formatDescription, slugify, constraintList } = require('../lib/api-reference/format');
 
 let spec;
@@ -76,6 +76,102 @@ test('API reference model', async t => {
 
         const tabIds = allOperations.flatMap(operation => operation.responses.map(response => response.tabId));
         assert.equal(new Set(tabIds).size, tabIds.length, 'response tab ids collide');
+    });
+
+    await t.test('the sidebar filter can match on what an operation accepts', () => {
+        // The filter runs over data-search, not over the row it renders, so a parameter or
+        // request-body field name has to be in the index for "mailbox" to find the endpoints
+        // that take one rather than only the paths spelling it out
+        const messages = model.searchIndex.find(entry => entry.id === 'getV1AccountAccountMessages');
+        assert.ok(messages);
+        assert.ok(messages.search.includes('path'), 'query parameter name missing from the index');
+        assert.ok(messages.search.includes('getV1AccountAccountMessages'), 'operation id missing from the index');
+
+        const submit = model.searchIndex.find(entry => entry.id === 'postV1AccountAccountSubmit');
+        assert.ok(submit.search.includes('mailMerge'), 'request body property missing from the index');
+        // nested (reference.forwardAttachments), to prove the whole tree is walked and not
+        // just the top level
+        assert.ok(submit.search.includes('forwardAttachments'), 'nested request body property missing from the index');
+
+        // ...and what the row itself shows still matches, since the corpus replaced the
+        // template's own interpolation of those fields
+        assert.ok(messages.search.includes(messages.path));
+        assert.ok(messages.search.includes(messages.summary));
+        assert.ok(messages.search.includes(messages.tag));
+
+        // Path parameters are not added as separate terms because the path already spells
+        // them out - which only holds if every one of them is genuinely in there
+        for (const operation of allOperations) {
+            const entry = model.searchIndex.find(candidate => candidate.id === operation.id);
+            for (const parameter of operation.pathParams) {
+                assert.ok(entry.search.includes(parameter.name), `${operation.id}: path parameter "${parameter.name}" is not searchable`);
+            }
+        }
+    });
+
+    await t.test('every property is linkable and no two share an anchor on a page', () => {
+        // A tag page renders all of its operations at once, so the anchors only have to be
+        // unique within a tag - but a collision there means a deep link silently scrolls to
+        // the wrong field
+        for (const tag of model.tags) {
+            const anchors = [];
+
+            for (const operation of tag.operations) {
+                anchors.push(operation.id);
+                for (const parameter of [...operation.pathParams, ...operation.queryParams, ...operation.headerParams]) {
+                    anchors.push(parameter.anchor);
+                }
+                if (operation.body) {
+                    walkTree(operation.body.tree, node => node.anchor && anchors.push(node.anchor));
+                }
+                for (const response of operation.responses) {
+                    walkTree(response.tree, node => node.anchor && anchors.push(node.anchor));
+                }
+            }
+
+            assert.ok(anchors.length, `${tag.name} produced no anchors`);
+            assert.equal(new Set(anchors).size, anchors.length, `${tag.name} has colliding anchors`);
+
+            for (const anchor of anchors) {
+                // has to survive a URL fragment and getElementById without escaping
+                assert.match(anchor, /^[A-Za-z0-9_.-]+$/, `anchor "${anchor}" is not fragment safe`);
+            }
+        }
+
+        const account = allOperations.find(operation => operation.id === 'postV1Account');
+        assert.equal(account.body.tree.children[0].anchor, 'postV1Account.body.account');
+    });
+
+    await t.test('required properties and parameters are listed first', () => {
+        const account = allOperations.find(operation => operation.id === 'postV1Account');
+        const names = account.body.tree.children.map(child => child.name);
+
+        assert.deepEqual(names.slice(0, 2), ['account', 'name']);
+        assert.ok(account.body.tree.children[0].required);
+
+        // declared order is preserved within each group, so grouping never reshuffles the
+        // optional tail
+        const optional = account.body.tree.children.filter(child => !child.required).map(child => child.name);
+        assert.deepEqual(optional.slice(0, 3), ['email', 'path', 'subconnections']);
+
+        for (const operation of allOperations) {
+            for (const group of [operation.queryParams, operation.headerParams]) {
+                const firstOptional = group.findIndex(parameter => !parameter.required);
+                if (firstOptional >= 0) {
+                    assert.ok(
+                        group.slice(firstOptional).every(parameter => !parameter.required),
+                        `${operation.id} has a required parameter after an optional one`
+                    );
+                }
+            }
+        }
+    });
+
+    await t.test('the document introduction is rendered rather than restated', () => {
+        // views/reference/index.hbs shows this instead of prose of its own, so an
+        // info.description written with headings or raw HTML would surface as literal text
+        assert.ok(model.descriptionHtml, 'no introduction reached the model');
+        assert.ok(!/&lt;h[1-6]&gt;|&lt;strong&gt;/.test(model.descriptionHtml), 'introduction contains escaped raw HTML');
     });
 
     await t.test('every operation declares a success response in the spec', () => {
@@ -331,6 +427,70 @@ test('API reference code samples', async t => {
 
         assert.ok(/\b(True|False)\b/.test(python));
         assert.ok(!/: true|: false/.test(python.split('json=')[1] || ''));
+    });
+
+    await t.test('a route that declares x-codeSamples gets it ahead of the generated tabs', () => {
+        // The draft submit endpoint: every property of its payload is an optional override,
+        // so the snippet synthesized from the schema misrepresents the call
+        const draft = allOperations.find(entry => entry.id === 'postV1AccountAccountMessageMessageSubmit');
+
+        assert.equal(draft.codeSamples.length, 1);
+        assert.equal(draft.codeSamples[0].label, 'Minimal');
+        assert.match(draft.codeSamples[0].code, /-d '\{\}'/);
+
+        const samples = buildCodeSamples(draft, 'https://ee.example.com', draft.body.exampleValue, draft.body.exampleJson);
+        assert.equal(samples[0].id, 'custom-0');
+        assert.ok(samples[0].active);
+    });
+
+    await t.test('hand-written x-codeSamples are read and lead the tab set', () => {
+        const samples = readCodeSamples({
+            'x-codeSamples': [
+                { lang: 'Shell', label: 'Minimal send', source: 'curl -X POST ...' },
+                { lang: 'Go', source: 'package main' }
+            ]
+        });
+
+        assert.deepEqual(
+            samples.map(sample => [sample.label, sample.language]),
+            [
+                ['Minimal send', 'shell'],
+                ['Go', 'go']
+            ]
+        );
+
+        const tabs = buildCodeSamples({ method: 'post', path: '/v1/x', pathParams: [], queryParams: [], id: 'x', codeSamples: samples }, 'https://e.test');
+
+        assert.deepEqual(
+            tabs.map(tab => tab.id),
+            ['custom-0', 'custom-1', 'curl', 'node', 'python']
+        );
+        // the hand-written one is what opens - the only reason to add one
+        assert.ok(tabs[0].active);
+        assert.equal(tabs[0].tabId, 'x-sample-custom-0');
+        assert.equal(new Set(tabs.map(tab => tab.tabId)).size, tabs.length, 'sample tab ids collide');
+    });
+
+    await t.test('x-codeSamples the page cannot render are dropped, not blanked', () => {
+        const samples = readCodeSamples({
+            'x-codeSamples': [null, { lang: 'Go' }, { source: 'no lang' }, { lang: 'js', source: 'ok' }]
+        });
+
+        assert.equal(samples.length, 1);
+        assert.equal(samples[0].code, 'ok');
+
+        assert.deepEqual(readCodeSamples({}), []);
+        assert.deepEqual(readCodeSamples({ 'x-codeSamples': 'nope' }), []);
+        // Redoc's older spelling is not accepted: this document is generated from our own
+        // route table, so it can only contain what our routes declare
+        assert.deepEqual(readCodeSamples({ 'x-code-samples': [{ lang: 'js', source: 'ok' }] }), []);
+    });
+
+    await t.test('a sample language never escapes the highlight class', () => {
+        const [sample] = readCodeSamples({ 'x-codeSamples': [{ lang: 'js" onload="alert(1)', source: 'x' }] });
+
+        assert.equal(sample.language, 'jsonloadalert1');
+        assert.match(sample.language, /^[a-z0-9+#._-]*$/);
     });
 
     await t.test('single quotes in a body are escaped for the shell', () => {

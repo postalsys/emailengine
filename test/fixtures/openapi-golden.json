@@ -108,7 +108,17 @@
   },
   "info": {
     "title": "EmailEngine API",
-    "version": "0.0.0"
+    "version": "0.0.0",
+    "contact": {
+      "name": "EmailEngine Support",
+      "url": "https://learn.emailengine.app/docs/support",
+      "email": "support@emailengine.app"
+    },
+    "license": {
+      "name": "EmailEngine License",
+      "url": "https://emailengine.dev/LICENSE_EMAILENGINE.txt"
+    },
+    "description": "EmailEngine provides a RESTful API for managing email accounts, sending messages, and processing email data across multiple providers.\n\nEvery request needs an access token, passed either as an `Authorization: Bearer <token>` header or an `?access_token=` query argument. Tokens are issued and revoked on the Access Tokens page of the EmailEngine admin interface.\n\nRequests against the same email account are processed sequentially to keep its state consistent, so simultaneous calls for one account queue up behind each other. Long-running operations can be given more room with the `x-ee-timeout` header, in milliseconds.\n\nEvery failure returns the same JSON envelope: a numeric `statusCode`, a short `error` label and a human-readable `message`. Each endpoint therefore documents only which status codes it can return and what they mean.\n\nFull documentation: https://learn.emailengine.app/"
   },
   "openapi": "3.0.0",
   "servers": [
@@ -14808,6 +14818,13 @@
         "x-ee-behavior": [
           "Delivery is asynchronous. A 2xx means the message was queued, not that it was sent. Failed attempts are retried with exponential backoff up to the configured deliveryAttempts; follow the outcome through the Outbox endpoints or the messageSent, messageDeliveryError and messageFailed webhooks.",
           "For SMTP accounts EmailEngine uploads the sent message to the Sent Mail folder after delivery. Gmail API and MS Graph accounts file sent messages themselves, so no upload is performed."
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "bash",
+            "label": "Minimal",
+            "source": "curl -X POST \"$EMAILENGINE_URL/v1/account/example/message/AAAAAQAACnA/submit\" \\\n    -H \"Authorization: Bearer $EMAILENGINE_TOKEN\" \\\n    -H \"Content-Type: application/json\" \\\n    -d '{}'"
+          }
         ]
       }
     },

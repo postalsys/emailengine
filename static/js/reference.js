@@ -4,14 +4,22 @@
 //
 // The page arrives as finished HTML - operations, schemas, examples and code samples
 // are all rendered by lib/api-reference/ on the server. Nothing here builds page
-// content; this file only adds the three things that need a browser: deferred syntax
-// highlighting, the sidebar filter, and the try-it request runner.
+// content; this file only adds what genuinely needs a browser: deferred syntax
+// highlighting, the sidebar filter and its keyboard handling, opening the collapsed
+// groups a property deep link lands in, remembering the reader's code sample language,
+// and the try-it request runner.
 
 (() => {
     // Responses larger than this are truncated before being inserted into the DOM.
     // A message export or a full settings dump can be megabytes, and highlighting
     // that much text locks up the tab.
     const MAX_RESPONSE_CHARS = 200000;
+
+    // Shape of the curl command copied from a try-it panel. Both match
+    // lib/api-reference/code-samples.js, so a copied command is indistinguishable from the
+    // generated curl sample above the same operation.
+    const TOKEN_ENV_VAR = 'EMAILENGINE_TOKEN';
+    const INDENT = '    ';
 
     // The try-it token, shared by every reference page.
     //
@@ -130,34 +138,105 @@
         blocks.forEach(block => observer.observe(block));
     };
 
+    // FlyonUI binds its component autoInit to the window `load` event, not DOMContentLoaded.
+    // Anything that drives a tab has to wait for that: a click dispatched earlier lands on a
+    // button whose handler is not attached yet and silently does nothing, which is exactly
+    // how it fails - no error, the tab just stays where it was.
+    const whenComponentsReady = fn => {
+        if (document.readyState === 'complete') {
+            fn();
+            return;
+        }
+        window.addEventListener('load', fn);
+    };
+
+    // Deep links point at a single schema property ("#accountCreate.body.imap.tls"), which
+    // can sit inside collapsed <details> groups and an inactive response tab - neither of
+    // which the browser can scroll to, because they have no layout box. Everything on the
+    // way down is opened first, then the row is scrolled into view. The highlight itself is
+    // :target CSS and needs nothing here.
+    const revealTarget = () => {
+        // No decoding: every anchor the model emits is [A-Za-z0-9_.-], so the fragment and
+        // the id are the same string, and anything else simply does not match an element
+        const target = document.getElementById(window.location.hash.slice(1));
+        if (!target) {
+            return;
+        }
+
+        for (let element = target.parentElement; element; element = element.parentElement) {
+            if (element.tagName === 'DETAILS') {
+                element.open = true;
+            }
+
+            // Response and code-sample panels are plain hidden divs driven by the FlyonUI
+            // tab plugin, so the tab button is what has to be activated. The panel already
+            // names its button in aria-labelledby, so that is read rather than recomposing
+            // ui/tab's "<target>-tab" id convention here.
+            if (element.getAttribute('role') === 'tabpanel' && element.classList.contains('hidden')) {
+                const tab = document.getElementById(element.getAttribute('aria-labelledby') || '');
+                if (tab) {
+                    tab.click();
+                }
+            }
+        }
+
+        target.scrollIntoView({ block: 'start' });
+    };
+
+    // Resolved once - the platform cannot change, and the shortcut check runs on every
+    // keystroke anywhere on the page
+    const IS_MAC = /mac/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '');
+
+    // True while the caret is somewhere the user is typing, so a bare-letter shortcut
+    // does not swallow the keystroke.
+    const isEditable = element => !!element && (element.isContentEditable || /^(input|textarea|select)$/i.test(element.tagName));
+
     // Sidebar filter. Every operation is already in the DOM (hidden until the box has
     // input), so narrowing the list is plain matching - there is no index to fetch.
+    // A hit matches on more than it shows: reference/nav.hbs puts the operation id and
+    // every parameter and request-body property name in data-search, so "mailbox" finds
+    // the endpoints that accept one, not just the ones with the word in their path.
+    //
+    // Keyboard navigation moves real DOM focus between the result links rather than
+    // tracking a selected index behind aria-activedescendant. The results are already
+    // links, so focus gives Enter-to-open, the browser's own focus ring and a correct
+    // screen reader announcement for free, without claiming this is a listbox when the
+    // markup is a list of links.
     const initFilter = () => {
         const input = document.getElementById('ref-filter');
         const results = document.getElementById('ref-filter-results');
         const tagList = document.getElementById('ref-tag-list');
         const empty = document.getElementById('ref-filter-empty');
+        const hint = document.getElementById('ref-filter-hint');
 
-        if (!input || !results || !tagList) {
+        if (!input || !results || !tagList || !hint) {
             return;
         }
 
+        const count = hint.querySelector('[role="status"]');
+
+        // Resolved once: 82 rows, and the arrow keys would otherwise re-query the DOM for
+        // every one of them on every keypress while a key is held down
         const hits = Array.from(results.querySelectorAll('.ee-ref-hit')).map(el => ({
             el,
+            link: el.querySelector('a'),
             text: (el.dataset.search || '').toLowerCase()
         }));
 
-        input.addEventListener('input', () => {
-            const terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+        const visibleLinks = () => hits.filter(hit => !hit.el.classList.contains('hidden')).map(hit => hit.link);
 
-            if (!terms.length) {
-                results.classList.add('hidden');
-                tagList.classList.remove('hidden');
+        const apply = () => {
+            const terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            const filtering = terms.length > 0;
+
+            tagList.classList.toggle('hidden', filtering);
+            results.classList.toggle('hidden', !filtering);
+            hint.classList.toggle('hidden', !filtering);
+            hint.classList.toggle('flex', filtering);
+
+            if (!filtering) {
                 return;
             }
-
-            tagList.classList.add('hidden');
-            results.classList.remove('hidden');
 
             let visible = 0;
             for (const hit of hits) {
@@ -169,6 +248,158 @@
             }
 
             empty.classList.toggle('hidden', visible > 0);
+            count.textContent = `${visible} ${visible === 1 ? 'endpoint' : 'endpoints'}`;
+        };
+
+        // The input and the visible results form a single cycle, so moving up from the
+        // first result - or down past the last - lands back in the field instead of
+        // trapping focus in the list.
+        const move = offset => {
+            const links = visibleLinks();
+            if (!links.length) {
+                return;
+            }
+
+            const current = links.indexOf(document.activeElement);
+            if (current < 0) {
+                // focus is in the field: Down enters at the top, Up at the bottom
+                links[offset > 0 ? 0 : links.length - 1].focus();
+                return;
+            }
+
+            const next = current + offset;
+            if (next < 0 || next >= links.length) {
+                input.focus();
+                return;
+            }
+
+            links[next].focus();
+        };
+
+        const reset = () => {
+            input.value = '';
+            apply();
+        };
+
+        // Shared by both listeners below - only their Escape behavior genuinely differs
+        const arrowNav = event => {
+            if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+                return false;
+            }
+            event.preventDefault();
+            move(event.key === 'ArrowDown' ? 1 : -1);
+            return true;
+        };
+
+        input.addEventListener('input', apply);
+
+        input.addEventListener('keydown', event => {
+            if (arrowNav(event)) {
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                // Typing and pressing Enter opens the top hit, so the common case never
+                // needs the arrow keys
+                const [first] = visibleLinks();
+                if (first) {
+                    event.preventDefault();
+                    first.click();
+                }
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                if (input.value) {
+                    event.preventDefault();
+                    reset();
+                } else {
+                    input.blur();
+                }
+            }
+        });
+
+        results.addEventListener('keydown', event => {
+            if (arrowNav(event)) {
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                input.focus();
+            }
+        });
+
+        // Focus shortcuts. Ctrl+K (Cmd+K on macOS) is the common one; "/" matches what
+        // most documentation sites bind, and is ignored while the caret is in a field so
+        // it can still be typed into the filter itself.
+        window.addEventListener('keydown', event => {
+            const hotkey = (IS_MAC ? event.metaKey : event.ctrlKey) && !event.altKey && event.key.toLowerCase() === 'k';
+            const slash = event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !isEditable(document.activeElement);
+
+            if (!hotkey && !slash) {
+                return;
+            }
+
+            event.preventDefault();
+            input.focus();
+            input.select();
+        });
+    };
+
+    // Code sample language, remembered across operations and page loads.
+    //
+    // localStorage, not sessionStorage (which is what the try-it token uses): this is a
+    // display preference, not a credential, and losing it when the tab closes is exactly
+    // the annoyance the setting exists to fix.
+    //
+    // The stored value is the sample's id (`curl`, `node`, `python`, `custom-0`), carried on
+    // the button as data-tab-key. Not the label: that is display text, so rewording one
+    // would silently reset everybody's choice, and a hand-written x-codeSamples tab labelled
+    // "curl" would take the generated tab's place on operations that have both. An operation
+    // that does not offer the remembered id - hand-written samples exist per operation - just
+    // keeps its own default rather than landing on an unrelated tab.
+    const SAMPLE_LANGUAGE_KEY = 'eeRefSampleLanguage';
+
+    const initSampleTabs = () => {
+        const groups = document.querySelectorAll('[data-sample-tabs]');
+        if (!groups.length) {
+            return;
+        }
+
+        let preferred;
+        try {
+            preferred = window.localStorage.getItem(SAMPLE_LANGUAGE_KEY);
+        } catch (err) {
+            preferred = null;
+        }
+
+        whenComponentsReady(() => {
+            if (preferred) {
+                for (const group of groups) {
+                    const tab = group.querySelector(`[data-tab-key="${CSS.escape(preferred)}"]`);
+                    if (tab && tab.getAttribute('aria-selected') !== 'true') {
+                        tab.click();
+                    }
+                }
+            }
+
+            // Bound only after the restore pass, so those synthetic clicks do not each
+            // rewrite the same value - a 13-operation page would otherwise fire a dozen
+            // storage writes on load. Clicks before this point cannot reach a tab anyway:
+            // FlyonUI is not initialized yet.
+            document.addEventListener('click', event => {
+                const tab = event.target.closest('[data-sample-tabs] [role="tab"]');
+                if (!tab || !tab.dataset.tabKey) {
+                    return;
+                }
+
+                try {
+                    window.localStorage.setItem(SAMPLE_LANGUAGE_KEY, tab.dataset.tabKey);
+                } catch (err) {
+                    // storage blocked - the choice still applies to this page
+                }
+            });
         });
     };
 
@@ -280,9 +511,71 @@
         highlightBlock(bodyEl);
     };
 
+    // Single-quoted shell strings cannot contain a single quote, so each one closes the
+    // string, adds an escaped quote and reopens it. Mirrors shellQuote() in
+    // lib/api-reference/code-samples.js, which does the same for the generated samples.
+    const shellQuote = value => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
+    // Serializes the request the form would actually send as a runnable curl command. The
+    // generated samples above an operation come from its schema examples, so they drift
+    // from the form as soon as anything is edited; this is built from the same
+    // buildRequest() the Send button uses, so the two cannot disagree.
+    //
+    // The access token is replaced with the $EMAILENGINE_TOKEN placeholder the generated
+    // samples read, rather than the token held for this tab. That one is usually a
+    // throwaway minted for the reference page, so pasting it into a snippet produces a
+    // command that stops working within the hour - and a live credential should not be
+    // the thing that ends up in a ticket or a chat message.
+    const curlForRequest = request => {
+        const lines = [
+            `curl -X ${request.method} ${shellQuote(window.location.origin + request.url)}`,
+            // double quotes, so the shell expands the variable
+            `${INDENT}-H "Authorization: Bearer $${TOKEN_ENV_VAR}"`
+        ];
+
+        for (const [name, value] of Object.entries(request.headers)) {
+            if (name !== 'Authorization') {
+                lines.push(`${INDENT}-H ${shellQuote(`${name}: ${value}`)}`);
+            }
+        }
+
+        if (request.body) {
+            lines.push(`${INDENT}-d ${shellQuote(request.body)}`);
+        }
+
+        return lines.join(' \\\n');
+    };
+
+    // Both entry points below - send and copy-as-curl - read the same form and report the
+    // same validation failures in the same place, so they share the preamble. Returns null
+    // when the form is not ready to be turned into a request, having said why.
+    const prepareRequest = form => {
+        const status = form.querySelector('.ee-ref-try-status');
+        status.textContent = '';
+
+        try {
+            return buildRequest(form);
+        } catch (err) {
+            status.textContent = err.message;
+            return null;
+        }
+    };
+
     // One delegated listener for every try-it form on the page, matching how
     // static/js/ui.js handles the copy buttons.
     const initTryIt = () => {
+        document.addEventListener('click', event => {
+            const button = event.target.closest('.ee-ref-try-curl');
+            if (!button) {
+                return;
+            }
+
+            const request = prepareRequest(button.closest('.ee-ref-try'));
+            if (request) {
+                window.uiCopyText(curlForRequest(request), button);
+            }
+        });
+
         document.addEventListener('submit', async event => {
             const form = event.target.closest('.ee-ref-try');
             if (!form) {
@@ -291,17 +584,13 @@
 
             event.preventDefault();
 
-            const status = form.querySelector('.ee-ref-try-status');
-            const button = form.querySelector('button[type="submit"]');
-            status.textContent = '';
-
-            let request;
-            try {
-                request = buildRequest(form);
-            } catch (err) {
-                status.textContent = err.message;
+            const request = prepareRequest(form);
+            if (!request) {
                 return;
             }
+
+            const status = form.querySelector('.ee-ref-try-status');
+            const button = form.querySelector('button[type="submit"]');
 
             window.uiButtonBusy(button, true);
             const started = performance.now();
@@ -430,9 +719,18 @@
     document.addEventListener('DOMContentLoaded', () => {
         initHighlighting();
         initFilter();
+        initSampleTabs();
         initTryIt();
         initMint();
         initTokenForm();
         paintTokenStatus();
+
+        // On load rather than here: a target inside an inactive response tab needs the tab
+        // switched, which needs FlyonUI
+        whenComponentsReady(revealTarget);
     });
+
+    // Same-page property links only change the fragment, so the load-time pass does not
+    // run for them
+    window.addEventListener('hashchange', revealTarget);
 })();

@@ -9,22 +9,30 @@
     view models from buildParameter() carry the same field names and simply have no
     children or variants, so the nested blocks below render nothing for them.
 
-    Context is a node from buildSchemaTree(): name, typeLabel, required, nullable,
+    Context is a node from buildSchemaTree(): name, anchor, typeLabel, required, nullable,
     deprecated, constraints[], enumValues[], defaultValue, descriptionHtml, children[],
     variants[], openByDefault, truncated, circular, unresolved.
+
+    `anchor` is the dotted id of this property within its operation, e.g.
+    "accountCreate.body.imap.tls.rejectUnauthorized", so a single field can be linked to
+    directly. The row highlight on arrival is plain :target CSS; static/js/reference.js only
+    has to open the collapsed groups and response tab the row may be buried in.
 
     descriptionHtml is pre-escaped by lib/api-reference/format.js (escape first, then a
     closed set of tags added back), which is why it renders unescaped.
 --}}
-<li class="ee-ref-prop min-w-0">
+<li class="ee-ref-prop min-w-0 scroll-mt-20"{{#if anchor}} id="{{anchor}}"{{/if}}>
 
-    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <div class="ee-ref-prop-head flex flex-wrap items-baseline gap-x-2 gap-y-1">
         {{#if name}}<code class="text-sm font-semibold break-all">{{name}}</code>{{/if}}
         <span class="text-primary text-xs font-medium">{{typeLabel}}</span>
         {{#if required}}<span class="text-error text-2xs font-semibold tracking-wide uppercase">required</span>{{/if}}
         {{#if nullable}}<span class="ee-chip">nullable</span>{{/if}}
         {{#if deprecated}}{{> ui/badge label="deprecated" variant="warning" soft=true icon="" class=""}}{{/if}}
         {{#each constraints}}<span class="ee-chip">{{this}}</span>{{/each}}
+        {{#if anchor}}
+        {{> reference/anchor-link target=anchor label=(concat "Link to the " name " property") small=true class="ee-ref-prop-anchor"}}
+        {{/if}}
     </div>
 
     {{#if descriptionHtml}}

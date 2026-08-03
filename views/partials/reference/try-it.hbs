@@ -53,11 +53,15 @@
     </label>
     {{/if}}
 
+    {{!-- id="" on both: ui/btn reads `id`, and Handlebars merges a partial's hash params into
+          the caller's context, so without it every button here would carry the surrounding
+          operation's id (the same trap reference/disclosure documents). --}}
     <div class="flex flex-wrap items-center gap-3">
-        <button type="submit" class="btn btn-primary btn-sm">
-            <span class="icon-[tabler--send] size-4"></span>
-            Send request
-        </button>
+        {{> ui/btn label="Send request" variant="primary" size="sm" icon="icon-[tabler--send]" type="submit" id="" class=""}}
+        {{!-- The code samples above are built from the schema examples; this one is built from
+              whatever is in the fields right now, so what you read is what you would run. The
+              token is emitted as $EMAILENGINE_TOKEN, never the live one. --}}
+        {{> ui/btn label="Copy as curl" bare=true style="text" size="sm" icon="icon-[tabler--copy]" class="ee-ref-try-curl" id=""}}
         <span class="ee-ref-try-status text-base-content/60 text-sm"></span>
     </div>
 

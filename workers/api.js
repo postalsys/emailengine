@@ -836,41 +836,10 @@ const init = async () => {
         // lib/swagger-options.js so the document can be reproduced outside a running server
         ...specOptions,
 
-        info: {
-            title: 'EmailEngine API',
-            version: packageData.version,
-
-            description: `EmailEngine provides a RESTful API for managing email accounts, sending messages, and processing email data across multiple providers.
-
-<h3>Authentication</h3>
-All API requests require authentication using an Access Token. You can generate and manage your tokens from the <a href="/admin/tokens" target="_parent"><strong>Access Tokens</strong></a> page.
-
-Include your token in requests using one of these methods:
-- Query parameter: <code>?access_token=YOUR_TOKEN</code>
-- Authorization header: <code>Authorization: Bearer YOUR_TOKEN</code>
-
-<h3>Request Processing</h3>
-
-<strong>Sequential Processing:</strong> Requests to the same email account are processed sequentially to maintain data consistency. Multiple simultaneous requests will be queued.
-
-<strong>Timeouts:</strong> Long-running operations may cause queued requests to timeout. Configure appropriate timeout values using the <code>X-EE-Timeout</code> header (in milliseconds).
-
-<h3>Getting Started</h3>
-1. <a href="/admin/tokens" target="_parent">Generate an Access Token</a>
-2. <a href="/admin/accounts" target="_parent">Add an email account</a>
-3. Start making API requests using the endpoints below`,
-
-            contact: {
-                name: 'EmailEngine Support',
-                url: 'https://learn.emailengine.app/docs/support',
-                email: 'support@emailengine.app'
-            },
-
-            license: {
-                name: 'EmailEngine License',
-                url: 'https://emailengine.dev/LICENSE_EMAILENGINE.txt'
-            }
-        },
+        // The running version is the only part of `info` this worker owns - the rest is static
+        // and lives with the other document metadata in lib/swagger-options.js, so the tests
+        // see the same values a real instance serves
+        info: Object.assign({}, specOptions.info, { version: packageData.version }),
 
         cors: !!CORS_CONFIG
     };

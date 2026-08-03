@@ -8,6 +8,15 @@
       value       - initial value (optional)
       placeholder - placeholder text, also used as the aria-label (required)
       type        - input type, "search" or "text" (default "search")
+      shortcut    - keyboard hint rendered as a <kbd> at the end of the field, for
+                    fields a page binds a focus hotkey to (optional). Decorative:
+                    aria-hidden, because the shortcut belongs in the input's own
+                    accessible name, not as a separate thing to read out.
+      shortcutMac - the macOS spelling of the same hint, e.g. "Cmd K" (optional).
+                    Swapped in by static/js/ui.js, which is where the platform is
+                    known - the server renders the non-Mac form because it cannot
+                    tell. Keeping the swap generic means a page that binds a hotkey
+                    never has to reach into this partial's markup to fix the label.
       class       - extra classes on the wrapper, e.g. "grow" (optional)
     The wrapper is the FlyonUI .input; the actual <input> inside it is unstyled and
     grows to fill, which is why the classes sit where they do.
@@ -16,4 +25,7 @@
     <span class="icon-[tabler--search] text-base-content/60 my-auto me-2 size-4 shrink-0"></span>
     <input type="{{#if type}}{{type}}{{else}}search{{/if}}" class="grow" placeholder="{{placeholder}}" aria-label="{{placeholder}}"
         autocomplete="off" {{#if id}}id="{{id}}" {{/if}}{{#if name}}name="{{name}}" {{/if}}{{#if value}}value="{{value}}" {{/if}}>
+    {{#if shortcut}}
+    <kbd class="kbd kbd-xs my-auto shrink-0" aria-hidden="true"{{#if shortcutMac}} data-mac="{{shortcutMac}}"{{/if}}>{{shortcut}}</kbd>
+    {{/if}}
 </div>

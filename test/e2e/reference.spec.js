@@ -1,4 +1,4 @@
-/* global document, window */
+/* global document, window, navigator */
 'use strict';
 
 // E2E coverage for the server-rendered API reference (/admin/reference).
@@ -261,6 +261,140 @@ test.describe('API reference', () => {
         // scroll-mt-20 parks the section just below the sticky topbar
         expect(offset).toBeLessThan(300);
         expect(offset).toBeGreaterThan(-50);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the filter matches what an operation accepts, not just its path', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference');
+
+        const hits = page.locator('#ref-filter-results .ee-ref-hit:not(.hidden)');
+
+        // "mailMerge" appears in no path or summary - only as a request body property, which
+        // is the whole point of indexing field names
+        await page.fill('#ref-filter', 'mailmerge');
+        await expect(hits).toHaveCount(1);
+        await expect(hits.first()).toContainText('/v1/account/{account}/submit');
+
+        // the match count is announced rather than only implied by the list length
+        await expect(page.locator('#ref-filter-hint')).toContainText('1 endpoint');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the filter can be driven from the keyboard alone', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference');
+
+        // "/" focuses the field from anywhere on the page
+        await page.locator('body').click();
+        await page.keyboard.press('/');
+        await expect(page.locator('#ref-filter')).toBeFocused();
+
+        // ...and the slash itself is not typed into it
+        await expect(page.locator('#ref-filter')).toHaveValue('');
+
+        await page.keyboard.type('blocklist');
+        await expect(page.locator('#ref-tag-list')).toBeHidden();
+
+        // Down enters the result list, and Up from the first result returns to the field
+        await page.keyboard.press('ArrowDown');
+        const first = page.locator('#ref-filter-results .ee-ref-hit:not(.hidden) a').first();
+        await expect(first).toBeFocused();
+        await page.keyboard.press('ArrowUp');
+        await expect(page.locator('#ref-filter')).toBeFocused();
+
+        // Escape clears a filter rather than leaving the list narrowed
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#ref-tag-list')).toBeVisible();
+        await expect(page.locator('#ref-filter')).toHaveValue('');
+
+        // Enter opens the top hit without touching the arrow keys. Navigating is the last
+        // step on purpose: the next page's script binds its own key handling on load, and
+        // racing that would make this test flaky rather than meaningful.
+        await page.keyboard.type('blocklist');
+        await page.keyboard.press('Enter');
+        await expect(page).toHaveURL(/\/admin\/reference\/blocklists#/);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('a property deep link opens the groups it is buried in', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        // Three levels down, inside a collapsed disclosure - the browser cannot scroll to it
+        // on its own because it has no layout box until the group is opened
+        const anchor = 'postV1Account.body.imap.tls.rejectUnauthorized';
+        await page.goto(`/admin/reference/account#${anchor}`);
+
+        const property = page.locator(`[id="${anchor}"]`);
+        await expect(property).toBeVisible();
+        await expect(property).toContainText('rejectUnauthorized');
+
+        const offset = await property.evaluate(el => el.getBoundingClientRect().top);
+        expect(offset).toBeLessThan(300);
+        expect(offset).toBeGreaterThan(-50);
+
+        // Clicking the link on another row moves the highlight without a page load
+        const sibling = page.locator('[id="postV1Account.body.imap.tls.minVersion"]');
+        await sibling.locator('.ee-ref-prop-anchor').click();
+        await expect(page).toHaveURL(/#postV1Account\.body\.imap\.tls\.minVersion$/);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the chosen code sample language sticks across operations and reloads', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/blocklists');
+
+        const operations = page.locator('.ee-ref-op');
+        const firstPython = operations.first().locator('[role="tab"]', { hasText: 'Python' });
+        await firstPython.click();
+        await expect(firstPython).toHaveAttribute('aria-selected', 'true');
+
+        // Every other operation on the page follows on the next load, so a page of endpoints
+        // is not read one language at a time
+        await page.reload();
+        const tabs = page.locator('[data-sample-tabs] [role="tab"][aria-selected="true"]');
+        const labels = await tabs.allTextContents();
+        expect(labels.length).toBeGreaterThan(1);
+        expect(labels.every(label => label.trim() === 'Python')).toBe(true);
+
+        // ...including on a different group page
+        await page.goto('/admin/reference/stats');
+        await expect(page.locator(`#${TRY_IT_OPERATION}-sample-python-tab`)).toHaveAttribute('aria-selected', 'true');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('copy as curl serializes the filled-in try-it form', async ({ page, context }) => {
+        const errors = trackConsoleErrors(page);
+
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+        await page.goto('/admin/reference/message');
+
+        const id = 'getV1AccountAccountMessages';
+        const form = page.locator(`#${id} .ee-ref-try`);
+        await page.locator(`#try-${id} summary`).click();
+
+        // A value the generated samples above the operation cannot know about
+        await form.locator('[data-in="path"][data-param="account"]').fill('e2e-account');
+        await form.locator('[data-in="query"][data-param="path"]').fill('INBOX');
+
+        await form.locator('.ee-ref-try-curl').click();
+
+        const copied = await page.evaluate(() => navigator.clipboard.readText());
+
+        expect(copied).toContain('curl -X GET');
+        expect(copied).toContain('/v1/account/e2e-account/messages');
+        expect(copied).toContain('path=INBOX');
+        // the placeholder, never the token held for this tab
+        expect(copied).toContain('Authorization: Bearer $EMAILENGINE_TOKEN');
 
         expect(errors).toHaveLength(0);
     });

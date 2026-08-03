@@ -57,8 +57,11 @@ async function buildOpenApiSpec(overrides) {
     registerOpenApiRoute(
         server,
         Object.assign({}, specOptions, {
-            // version only - the rest of `info` is prose that no assertion reads
-            info: { title: 'EmailEngine API', version: '0.0.0' }
+            // The real `info`, with only the version pinned so the recorded golden does not
+            // churn on every release. Everything else is what an instance serves - which
+            // matters most for the description: the reference landing page renders it rather
+            // than restating it, so its format is a contract a test has to be able to check.
+            info: Object.assign({}, specOptions.info, { version: '0.0.0' })
         })
     );
 

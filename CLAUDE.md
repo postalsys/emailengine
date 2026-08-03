@@ -14,7 +14,11 @@ The Document Store is disabled by default. It only runs when EmailEngine is star
 
 ## OpenAPI document
 
-`/swagger.json` is generated in-house by `lib/openapi/` from the route joi schemas - there is no documentation-generator dependency (hapi-swagger was archived upstream and is gone). `joi-schema.js` converts joi `describe()` output into Schema Objects, `build-document.js` walks `server.table()`, `index.js` registers the route. Document-level options (tag list and order, security scheme) live in `lib/swagger-options.js`; per-route documentation metadata lives in each route's `plugins.openapi` block (`responses`, `produces`, `x-ee-behavior`).
+`/swagger.json` is generated in-house by `lib/openapi/` from the route joi schemas - there is no documentation-generator dependency (hapi-swagger was archived upstream and is gone). `joi-schema.js` converts joi `describe()` output into Schema Objects, `build-document.js` walks `server.table()`, `index.js` registers the route. Document-level options (tag list and order, security scheme) live in `lib/swagger-options.js`; per-route documentation metadata lives in each route's `plugins.openapi` block (`responses`, `produces`, `x-ee-behavior`, `x-codeSamples`).
+
+`info.description` (in `workers/api.js`) is rendered both by external consumers and by the admin reference landing page, which shows it instead of prose of its own. Keep it to paragraphs, backtick code spans and absolute links: `lib/api-reference/format.js` escapes first and only adds back a closed tag set, so headings, lists or raw HTML render as visible literal text.
+
+`x-codeSamples` is the standard extension for hand-written per-operation snippets (`[{ lang, source, label? }]`, also read by Redoc and Scalar). The reference page puts them ahead of the generated curl/Node/Python tabs. Reach for one when the synthesized example misrepresents an endpoint - the request body of `POST /v1/account/{account}/message/{message}/submit`, for instance, is entirely optional overrides, which the generated snippet shows as if they were the payload.
 
 The document is a published surface: the README points at it, emailengine.dev mirrors it, and it feeds Postman and code generators. `.label()` on a joi schema is therefore a public type name, and the endpoint is intentionally unauthenticated. Any change that alters the document has to be acknowledged by re-recording `test/fixtures/openapi-golden.json` (see `.claude/rules/testing.md`).
 

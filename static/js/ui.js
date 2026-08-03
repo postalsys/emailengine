@@ -250,14 +250,75 @@ window.paintCertData = certData => {
     }
 };
 
+// Keyboard hints that spell a modifier differently on macOS (ui/search-input
+// renders `shortcut` with an optional `shortcutMac`). The server cannot know
+// the platform, so it emits the Ctrl form and the Mac spelling rides along in
+// data-mac; this swaps it in. Generic on purpose - the next page that binds a
+// hotkey gets the right label without reaching into the partial's markup.
+document.addEventListener('DOMContentLoaded', () => {
+    if (!/mac/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '')) {
+        return;
+    }
+
+    for (let elm of document.querySelectorAll('kbd[data-mac]')) {
+        elm.textContent = elm.dataset.mac;
+    }
+});
+
+// Writes a string to the clipboard and confirms it on the button that asked
+// for it (the copy icon flips to a checkmark, a failure raises a toast).
+// Uses the async Clipboard API where available; self-hosted installs served
+// over plain HTTP are not a secure context, so those fall back to execCommand
+// on a throwaway textarea (a selection on the source element itself would not
+// work for password inputs or ACE editors, which only render the visible
+// lines).
+//
+// Exposed rather than kept inside the delegated handler below because not
+// every copyable value can be pointed at: the API reference's copy-as-curl
+// serializes its try-it form at click time, so there is no element holding the
+// text and no data attribute it could have been rendered into.
+window.uiCopyText = (value, btn) => {
+    let copied;
+    if (navigator.clipboard && window.isSecureContext) {
+        copied = navigator.clipboard.writeText(value).then(
+            () => true,
+            () => false
+        );
+    } else {
+        let helper = document.createElement('textarea');
+        helper.value = value;
+        helper.setAttribute('readonly', '');
+        helper.style.position = 'fixed';
+        helper.style.top = '-1000px';
+        document.body.appendChild(helper);
+        helper.select();
+        let ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (err) {
+            ok = false;
+        }
+        helper.remove();
+        copied = Promise.resolve(ok);
+    }
+
+    return copied.then(ok => {
+        if (!ok) {
+            window.showToast('Failed to copy to clipboard', 'alert-triangle');
+            return false;
+        }
+        let icon = btn && btn.querySelector('[class*="icon-"]');
+        if (icon && icon.classList.replace('icon-[tabler--copy]', 'icon-[tabler--check]')) {
+            window.setTimeout(() => icon.classList.replace('icon-[tabler--check]', 'icon-[tabler--copy]'), 1500);
+        }
+        return true;
+    });
+};
+
 // Copy-to-clipboard buttons: a .copy-btn with data-copy-target="#selector"
 // copies the target's value (inputs), ACE editor content (a mounted
 // ui/code-editor div) or text content. Delegated, so buttons inside
-// dynamically injected markup work without re-binding. Uses the async
-// Clipboard API where available; self-hosted installs served over plain HTTP
-// are not a secure context, so those fall back to execCommand on a throwaway
-// textarea (a selection on the target itself would not work for password
-// inputs or ACE editors, which only render the visible lines).
+// dynamically injected markup work without re-binding.
 document.addEventListener('click', e => {
     let btn = e.target.closest('.copy-btn');
     if (!btn) {
@@ -285,40 +346,7 @@ document.addEventListener('click', e => {
         }
     }
 
-    let copied;
-    if (navigator.clipboard && window.isSecureContext) {
-        copied = navigator.clipboard.writeText(value).then(
-            () => true,
-            () => false
-        );
-    } else {
-        let helper = document.createElement('textarea');
-        helper.value = value;
-        helper.setAttribute('readonly', '');
-        helper.style.position = 'fixed';
-        helper.style.top = '-1000px';
-        document.body.appendChild(helper);
-        helper.select();
-        let ok = false;
-        try {
-            ok = document.execCommand('copy');
-        } catch (err) {
-            ok = false;
-        }
-        helper.remove();
-        copied = Promise.resolve(ok);
-    }
-
-    copied.then(ok => {
-        if (!ok) {
-            window.showToast('Failed to copy to clipboard', 'alert-triangle');
-            return;
-        }
-        let icon = btn.querySelector('[class*="icon-"]');
-        if (icon && icon.classList.replace('icon-[tabler--copy]', 'icon-[tabler--check]')) {
-            window.setTimeout(() => icon.classList.replace('icon-[tabler--check]', 'icon-[tabler--copy]'), 1500);
-        }
-    });
+    window.uiCopyText(value, btn);
 });
 
 // Resource-list row delete: a .list-delete-btn (rendered by ui/row-actions in
