@@ -126,6 +126,86 @@ jobs:
               env:
                   EENGINE_DOVECOT_PLATFORM: linux/amd64
 
+    # Nothing else in CI bundles a binary, so pkg failures used to surface only when a release
+    # was cut by hand on a Mac - the one place they are most expensive and least expected. Two
+    # landed in a single day: a local helper named `require` in lib/openapi/ that pkg's module
+    # walker choked on (undetectable by any test, since it runs correctly under Node), and a
+    # dependency shipping a 0-byte ESM entry point that esbuild transformed to nothing. The
+    # first sat undetected for four days and would have broken the next release outright.
+    #
+    # One target, unsigned, uncompressed. Signing and notarization need Apple credentials and
+    # stay on the release machine; neither has any bearing on whether the bundle can be built.
+    pkg_build:
+        name: Binary Build (linux-x64, unsigned)
+        if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
+        timeout-minutes: 20
+        runs-on: ubuntu-24.04
+        services:
+            redis:
+                image: redis
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 6379:6379
+        steps:
+            - uses: actions/checkout@v6
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+
+            # Unpinned on purpose, matching upload.sh: releases are built with whatever pkg is
+            # current, so a pkg regression should fail here rather than mid-release.
+            - name: Install pkg
+              run: npm install -g @yao-pkg/pkg
+
+            # The real production tree rather than a dev install. That distinction matters: the
+            # empty-ESM-file failure only exists under `npm ci --omit=dev`, and
+            # prepare-bundle-deps.sh, which works around it, only runs from this script.
+            - name: Build the production source tree
+              run: npm run build-source
+
+            # Uncompressed - Brotli is minutes of CPU that changes nothing about the module
+            # resolution this job exists to exercise. `--output` ignores the `outputPath` in
+            # package.json, so it names the directory itself; ee-dist is already gitignored,
+            # which keeps a stray 260 MB binary out of the way when running this locally.
+            - name: Bundle a binary
+              run: |
+                  mkdir -p ee-dist
+                  pkg --target node24-linux-x64 --output ee-dist/emailengine-ci package.json
+
+            - name: Smoke test the CLI
+              run: |
+                  ./ee-dist/emailengine-ci --version
+                  ./ee-dist/emailengine-ci help > /dev/null
+
+            # Booting reaches past what the CLI touches: workers, and the views, static files and
+            # lua scripts that are bundled as pkg assets rather than resolved as modules, so a
+            # missing asset shows up here instead of in a released binary.
+            - name: Boot the binary and check it serves
+              env:
+                  EENGINE_REDIS: redis://127.0.0.1:6379/12
+                  EENGINE_PORT: 7311
+                  EENGINE_HOST: 127.0.0.1
+                  EENGINE_LOG_LEVEL: error
+              run: |
+                  ./ee-dist/emailengine-ci &
+                  for i in $(seq 1 60); do
+                      if curl -fsS http://127.0.0.1:7311/health >/dev/null 2>&1; then
+                          echo "binary booted and served /health"
+                          curl -fsS -o /dev/null http://127.0.0.1:7311/swagger.json
+                          echo "generated document served"
+                          exit 0
+                      fi
+                      sleep 2
+                  done
+                  echo "binary never became healthy" >&2
+                  exit 1
+
     integration:
         name: Integration Tests
         if: ${{ !startsWith(github.ref_name, 'release-please--') && !startsWith(github.head_ref, 'release-please--') }}
