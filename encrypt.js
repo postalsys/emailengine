@@ -18,7 +18,8 @@ const { encryptedKeys } = require('./lib/settings');
 const getSecret = require('./lib/get-secret');
 const msgpack = require('msgpack5')();
 
-const { REDIS_PREFIX } = require('./lib/consts');
+const { REDIS_PREFIX, ENCRYPTED_APP_KEYS } = require('./lib/consts');
+const { Settings: CertSettings } = require('@postalsys/certs/lib/settings');
 
 const DECRYPT_PASSWORDS = [].concat(config.decrypt || []);
 
@@ -175,7 +176,10 @@ async function main() {
     console.log(`Updated ${updatedAccounts}/${accounts.length} accounts`);
 
     let updatedGateways = 0;
-    let gateways = await redis.smembers(`${REDIS_PREFIX}ia:gateways`);
+    // NB: the index set is `gateways`, not `ia:gateways` - see lib/gateway.js. Reading the wrong
+    // key made this loop report `0/0` on every rotation while leaving gateway passwords encrypted
+    // with the old secret.
+    let gateways = await redis.smembers(`${REDIS_PREFIX}gateways`);
     for (let gateway of gateways) {
         let pass = await redis.hget(`${REDIS_PREFIX}gateway:${gateway}`, 'pass');
         if (!pass) {
@@ -218,7 +222,7 @@ async function main() {
 
         try {
             let appUpdated = false;
-            for (let key of ['clientSecret', 'serviceKey', 'accessToken']) {
+            for (let key of ENCRYPTED_APP_KEYS) {
                 if (entry[key]) {
                     let value = await processSecret(entry[key], encryptSecret);
                     if (value !== entry[key]) {
@@ -238,11 +242,74 @@ async function main() {
                 updatedApps++;
             }
         } catch (err) {
-            console.error(`Could not process "pass" for OAuth2 App ${app}. Check decryption secrets.`);
+            console.error(`Could not process encrypted values for OAuth2 App ${app}. Check decryption secrets.`);
         }
     }
 
     console.log(`Updated ${updatedApps}/${apps.length} OAuth2 apps`);
+
+    // TLS private keys managed by @postalsys/certs. These live in the module's own hash, not in the
+    // EmailEngine settings hash, so they need their own pass - without it a rotation leaves the ACME
+    // account key and every domain key readable only with the old secret, and TLS fails on the next
+    // renewal with no self-healing path. Every field in that hash is msgpack encoded; only the ACME
+    // account's `privateKey` and the `domain:<name>:privateKey` entries hold encrypted values.
+    let updatedCerts = 0;
+    // Ask the library for the key instead of rebuilding it here: the namespace it is constructed
+    // with is `${REDIS_PREFIX}`, and it appends its own separator, so the hash is
+    // `certs:settings` unprefixed but `<prefix>::certs:settings` when EENGINE_REDIS_PREFIX is set.
+    let certsKey = CertSettings.create({ namespace: `${REDIS_PREFIX}` }).getKey('settings');
+    let certEntries = await redis.hgetallBuffer(certsKey);
+    for (let field of Object.keys(certEntries || {})) {
+        let isAcmeAccount = /^account:/.test(field);
+        let isDomainKey = /^domain:.*:privateKey$/.test(field);
+        if (!isAcmeAccount && !isDomainKey) {
+            continue;
+        }
+
+        let entry;
+        try {
+            entry = msgpack.decode(certEntries[field]);
+        } catch (err) {
+            console.log(`Certificate entry ${field}: failed to parse`);
+            continue;
+        }
+
+        try {
+            let value;
+            if (isAcmeAccount) {
+                if (!entry || !entry.privateKey) {
+                    continue;
+                }
+                let updated = await processSecret(entry.privateKey, encryptSecret);
+                if (updated === entry.privateKey) {
+                    continue;
+                }
+                entry.privateKey = updated;
+                value = entry;
+            } else {
+                if (!entry) {
+                    continue;
+                }
+                let updated = await processSecret(entry, encryptSecret);
+                if (updated === entry) {
+                    continue;
+                }
+                value = updated;
+            }
+
+            let result = await redis.hmset(certsKey, { [field]: msgpack.encode(value) });
+            if (result === 'OK') {
+                console.log(`Certificate entry ${field}: updated`);
+            } else {
+                console.log(`Certificate entry ${field}: Unexpected response from DB: ${result}`);
+            }
+            updatedCerts++;
+        } catch (err) {
+            console.error(`Could not process "${field}". Check decryption secrets.`);
+        }
+    }
+
+    console.log(`Updated ${updatedCerts} TLS private keys`);
 }
 
 main()
