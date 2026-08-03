@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.77.0](https://github.com/postalsys/emailengine/compare/v2.76.0...v2.77.0) (2026-08-03)
+
+
+### Features
+
+* **admin:** make the API reference searchable by field name and linkable per property ([65acf52](https://github.com/postalsys/emailengine/commit/65acf52a79d0002d7cd7cec7e2466f17dea06f13))
+* **admin:** retire the bundled swagger-ui page ([34eb957](https://github.com/postalsys/emailengine/commit/34eb9579b19211b678283d2af62fee7c876ba6f0))
+* **admin:** server-rendered API reference at /admin/reference ([2ae59f9](https://github.com/postalsys/emailengine/commit/2ae59f9377f0f651324e9fbed65970ffaf72c3f5))
+* **api:** document success responses, enum values and per-operation behavior ([bbe36e6](https://github.com/postalsys/emailengine/commit/bbe36e6d0a2c9fb36fc1fb00fdd5f1d7b5d3cc0d))
+* **api:** generate the OpenAPI document without hapi-swagger ([4a87b29](https://github.com/postalsys/emailengine/commit/4a87b2953d136cbc1f9e44786c7dab2d3ce1cc34))
+
+
+### Bug Fixes
+
+* **api:** declare the success response for streaming and binary endpoints ([633362e](https://github.com/postalsys/emailengine/commit/633362e14924ee57709d18405794577285cf287f))
+* **assignment:** do not 500 when an account is created before the first worker is ready ([7c8e5df](https://github.com/postalsys/emailengine/commit/7c8e5dfaf8e06458b124b5c740a1ad917ff76f94))
+* **deps:** update dependencies (@postalsys/ee-client 1.7.0) ([9c440b2](https://github.com/postalsys/emailengine/commit/9c440b2c4e94f975267a0562022bdebc86524c9f))
+* **encrypt:** rotate every stored secret, not just the ones the tool remembered ([35a2cc0](https://github.com/postalsys/emailengine/commit/35a2cc0886c718945f94989799aeef7cda1db8f3))
+* **imapproxy:** keep an error sink on the upstream proxy connection ([653259d](https://github.com/postalsys/emailengine/commit/653259d7e5a9558489eccea1ead8c50856274dd2))
+* **oauth2:** honor useAuthServer on the IMAP and SMTP paths ([0c5c43d](https://github.com/postalsys/emailengine/commit/0c5c43da4b4190bba4e41ecbfa4c24b2e8627397))
+* **openapi:** do not shadow require() in the schema converter ([a63bf90](https://github.com/postalsys/emailengine/commit/a63bf90435eef459513e78f7ed549607923d428a))
+* **tokens:** reap expired tokens from the listing, not only on use ([2564831](https://github.com/postalsys/emailengine/commit/2564831d1b533b26a0c07dabd981a01a36c21e08))
+
 ## [2.76.0](https://github.com/postalsys/emailengine/compare/v2.75.0...v2.76.0) (2026-07-29)
 
 
