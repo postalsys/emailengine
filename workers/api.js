@@ -63,6 +63,15 @@ const pathlib = require('path');
 const crypto = require('crypto');
 const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
 const { oauth2Apps } = require('../lib/oauth2-apps');
+const { decodeJwtPayload } = require('../lib/oauth/decode-jwt-payload');
+const { resolveOutlookUserInfo } = require('../lib/oauth/outlook-identity');
+const {
+    matchesExpectedIdentity,
+    pendingSetupExpectation,
+    resolveExpectedIdentity,
+    buildIdentityMismatchUrl,
+    IDENTITY_MISMATCH_MESSAGE
+} = require('../lib/account/expected-identity');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -2064,6 +2073,29 @@ const init = async () => {
 
             const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
 
+            // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
+            const renderRedirect = httpRedirectUrl =>
+                h.view(
+                    'redirect',
+                    {
+                        pageTitleFull: request.app.gt.gettext('Email Account Setup'),
+                        httpRedirectUrl
+                    },
+                    {
+                        layout: 'public'
+                    }
+                );
+
+            // Addresses the provider itself returned over a back channel, the only values allowed to
+            // satisfy an expected identity (see lib/account/expected-identity.js). Every provider case
+            // fills this in; one that does not leaves it empty, and an empty list fails the check closed.
+            const providerIdentities = [];
+
+            // The token to revoke if the setup is rejected after the code was already exchanged, set by
+            // each provider case because the token response is scoped to the switch. Prefer the refresh
+            // token: revoking either invalidates the grant, but the access token may already be expired.
+            let grantToken;
+
             // `app.provider` is for example "gmail", `provider` is oauth2 app id
             switch (oauth2App.provider) {
                 case 'gmail': {
@@ -2130,20 +2162,14 @@ const init = async () => {
 
                     // With OpenID Connect scopes (openid, email, profile), the ID token contains user info
                     // This works for all account types including send-only accounts
-                    if (r.id_token && typeof r.id_token === 'string') {
-                        let [, encodedValue] = r.id_token.split('.');
-                        if (encodedValue) {
-                            try {
-                                let decodedValue = JSON.parse(Buffer.from(encodedValue, 'base64url').toString());
-                                if (decodedValue && typeof decodedValue.email === 'string' && isEmail(decodedValue.email)) {
-                                    userEmail = decodedValue.email;
-                                    userName = decodedValue.name || null;
-                                    request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
-                                }
-                            } catch (err) {
-                                request.logger.error({ msg: 'Failed to decode Gmail ID token', err });
-                            }
-                        }
+                    const idTokenPayload = decodeJwtPayload(r.id_token);
+                    if (r.id_token && !idTokenPayload) {
+                        request.logger.error({ msg: 'Failed to decode Gmail ID token' });
+                    }
+                    if (idTokenPayload && typeof idTokenPayload.email === 'string' && isEmail(idTokenPayload.email)) {
+                        userEmail = idTokenPayload.email;
+                        userName = idTokenPayload.name || null;
+                        request.logger.info({ msg: 'Extracted user info from ID token', userEmail, userName });
                     }
 
                     // If ID token didn't provide email, fall back to Gmail API profile endpoint
@@ -2188,6 +2214,11 @@ const init = async () => {
                         throw error;
                     }
 
+                    // Back-channel only: either the id_token from the token endpoint or the Gmail profile
+                    // API response, never a value that travelled through the browser.
+                    providerIdentities.push(userEmail);
+                    grantToken = r.refresh_token || r.access_token;
+
                     accountData.email = isEmail(userEmail) ? userEmail : accountData.email;
 
                     const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
@@ -2222,43 +2253,31 @@ const init = async () => {
                         throw error;
                     }
 
-                    let userInfo = {};
+                    let userInfo;
 
                     if (!oauth2App.baseScopes || oauth2App.baseScopes === 'imap') {
-                        // Read account info from GET arguments
-                        // This is needed because previously EmailEngine did not request for the User.Read scope
+                        // Read account info from the id_token, falling back to the client_info GET argument.
+                        // The fallback is needed because previously EmailEngine did not request for the
+                        // User.Read scope - but client_info arrives through the browser, so it is a display
+                        // fallback only and never counts as identity evidence. See lib/oauth/outlook-identity.js.
 
-                        let clientInfo = request.query.client_info ? JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString()) : false;
-
-                        if (clientInfo && typeof clientInfo.name === 'string') {
-                            userInfo.name = clientInfo.name;
-                        }
-
-                        if (clientInfo && clientInfo.preferred_username && isEmail(clientInfo.preferred_username)) {
-                            userInfo.email = clientInfo.preferred_username;
-                        }
-
-                        if (r.id_token && typeof r.id_token === 'string') {
-                            let [, encodedValue] = r.id_token.split('.');
-                            if (encodedValue) {
-                                try {
-                                    let decodedValue = JSON.parse(Buffer.from(encodedValue, 'base64url').toString());
-                                    if (decodedValue && typeof decodedValue.name === 'string') {
-                                        userInfo.name = decodedValue.name;
-                                    }
-
-                                    if (decodedValue && typeof decodedValue.email === 'string' && isEmail(decodedValue.email)) {
-                                        userInfo.email = decodedValue.email;
-                                    }
-
-                                    if (decodedValue && typeof decodedValue.preferred_username === 'string' && isEmail(decodedValue.preferred_username)) {
-                                        userInfo.username = decodedValue.preferred_username;
-                                    }
-                                } catch (err) {
-                                    request.logger.error({ msg: 'Failed to decode JWT payload', err, encodedValue });
-                                }
+                        let clientInfo = false;
+                        if (request.query.client_info) {
+                            try {
+                                clientInfo = JSON.parse(Buffer.from(request.query.client_info, 'base64url').toString());
+                            } catch (err) {
+                                // Base64-shaped but not JSON. It is an optional display hint, so log and continue
+                                // rather than failing the whole setup on a value we do not trust anyway.
+                                request.logger.warn({ msg: 'Failed to decode Outlook client_info argument', err });
                             }
                         }
+
+                        const idTokenPayload = decodeJwtPayload(r.id_token);
+                        if (r.id_token && !idTokenPayload) {
+                            request.logger.error({ msg: 'Failed to decode JWT payload' });
+                        }
+
+                        userInfo = resolveOutlookUserInfo({ clientInfo, idTokenPayload });
                     } else {
                         // Request profile info from API
 
@@ -2275,28 +2294,14 @@ const init = async () => {
                             throw err;
                         }
 
+                        userInfo = resolveOutlookUserInfo({ profile: profileRes });
+
                         request.logger.info({
                             msg: 'User profile returned by MS Graph API',
                             user: userInfo.email,
                             provider: oauth2App.provider,
                             profile: profileRes
                         });
-
-                        if (profileRes.displayName) {
-                            userInfo.name = profileRes.displayName;
-                        }
-
-                        if (profileRes.mail) {
-                            userInfo.email = profileRes.mail;
-                        }
-
-                        if (profileRes.userPrincipalName) {
-                            userInfo.username = profileRes.userPrincipalName;
-                        }
-                    }
-
-                    if (!userInfo.email && userInfo.username && isEmail(userInfo.username)) {
-                        userInfo.email = userInfo.username;
                     }
 
                     const authData = {
@@ -2307,6 +2312,10 @@ const init = async () => {
                         let error = Boom.boomify(new Error(`Oauth failed: failed to retrieve account email address`), { statusCode: 400 });
                         throw error;
                     }
+
+                    // Only the back-channel addresses, so a forged client_info cannot satisfy an expectation.
+                    providerIdentities.push(...userInfo.verifiedIdentities);
+                    grantToken = r.refresh_token || r.access_token;
 
                     if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
                         // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
@@ -2369,6 +2378,10 @@ const init = async () => {
                         throw error;
                     }
 
+                    // Back-channel only: the Mail.ru userinfo endpoint response.
+                    providerIdentities.push(profileRes.email);
+                    grantToken = r.refresh_token || r.access_token;
+
                     accountData.name = accountData.name || profileRes.name || '';
                     accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
 
@@ -2396,6 +2409,52 @@ const init = async () => {
                 default: {
                     throw new Error('Unknown OAuth2 provider');
                 }
+            }
+
+            // Expected identity check. Runs before the nonce claim and before create(), so a rejected
+            // setup neither consumes the signed link nor overwrites the credentials already on the
+            // account. The expectation can come from the signed form blob or from the account itself -
+            // persisting it is what makes the constraint outlive the link that introduced it, and it is
+            // why a later link issued without expectedEmail cannot quietly drop the pin.
+            const expectedEmail = await resolveExpectedIdentity(redis, {
+                account: accountData.account,
+                blobExpectation: pendingSetupExpectation(accountData, accountMeta)
+            });
+
+            if (expectedEmail && !matchesExpectedIdentity(expectedEmail, providerIdentities)) {
+                // Neither address is logged: the expectation and the authenticated identity both belong to
+                // the end user, and this line is the one record of a failed attempt. Note the provider
+                // identity was already logged by the "Provisioned OAuth2 tokens" line above.
+                request.logger.warn({
+                    msg: 'OAuth2 identity did not match the expected email address',
+                    account: accountData.account,
+                    provider: oauth2App.provider
+                });
+
+                // The code was already exchanged, so we are holding a refresh token we will never use.
+                // Best effort, and the same duck-typing guard Account.delete({ revoke }) uses: only
+                // GmailOauth implements revokeToken, and a rejected setup must not become a 500.
+                if (grantToken && typeof oAuth2Client.revokeToken === 'function') {
+                    try {
+                        await oAuth2Client.revokeToken(grantToken);
+                    } catch (err) {
+                        request.logger.error({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
+                    }
+                }
+
+                if (redirectUrl) {
+                    return renderRedirect(buildIdentityMismatchUrl(redirectUrl, await settings.get('serviceUrl'), accountData.account));
+                }
+
+                let error = Boom.boomify(new Error(IDENTITY_MISMATCH_MESSAGE), { statusCode: 403 });
+                error.output.payload.code = 'AccountIdentityMismatch';
+                throw error;
+            }
+
+            if (expectedEmail) {
+                // Pin the account so every later setup is checked, including one driven by a link that
+                // carries no expectation of its own.
+                accountData.expectedEmail = expectedEmail;
             }
 
             if ('delegated' in accountData) {
@@ -2463,17 +2522,7 @@ const init = async () => {
                 httpRedirectUrl = `/admin/accounts/${result.account}`;
             }
 
-            // have to use HTML redirect, otherwise samesite=strict cookies are not passed on
-            return h.view(
-                'redirect',
-                {
-                    pageTitleFull: request.app.gt.gettext('Email Account Setup'),
-                    httpRedirectUrl
-                },
-                {
-                    layout: 'public'
-                }
-            );
+            return renderRedirect(httpRedirectUrl);
         },
         options: {
             description: 'OAuth2 response endpoint',
@@ -2504,7 +2553,9 @@ const init = async () => {
                         .description('OAuth2 scopes'),
                     client_info: Joi.string()
                         .empty('')
-                        .max(1024 * 1024)
+                        // A few hundred bytes of JSON in practice. Bounded tightly because this is an
+                        // unauthenticated route and the value is JSON.parse-d.
+                        .max(4 * 1024)
                         .base64({ urlSafe: true, paddingRequired: false })
                         .description('Outlook client info'),
                     error: Joi.string()

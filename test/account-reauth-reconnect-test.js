@@ -413,3 +413,83 @@ test('Account.update serialization', async t => {
         assert.deepStrictEqual(result, { account: 'acc16' });
     });
 });
+
+// Persisting a partial update. An empty payload - and, before serializeAccountData learned to write a
+// cleared marker, a payload that only removed a field - serializes to no field/value pairs at all. Redis
+// rejects an hmset with none ("wrong number of arguments"), which surfaced as a 500 on a valid request,
+// so the write has to be skipped rather than issued empty.
+test('Account.update field persistence', async t => {
+    // Records the commands queued on the pipeline. The shared mock above accepts anything and always
+    // reports OK, which is precisely why the empty-hmset bug went unnoticed there.
+    function createRecordingCtx(serialized) {
+        const commands = [];
+        const pipeline = {
+            exec: async () => commands.map(command => [null, command.name === 'hmset' ? 'OK' : 1]),
+            hmset(key, fields) {
+                commands.push({ name: 'hmset', key, fields });
+                return this;
+            },
+            hdel(key, field) {
+                commands.push({ name: 'hdel', key, field });
+                return this;
+            },
+            hset() {
+                return this;
+            },
+            sadd() {
+                return this;
+            },
+            srem() {
+                return this;
+            }
+        };
+
+        // Same collaborators as createCtx above; only the pipeline and the serializer differ.
+        const { ctx } = createCtx({ account: 'acc-fields', state: 'connected' });
+        Object.assign(ctx, {
+            redis: Object.assign({}, mockRedis, { multi: () => pipeline }),
+            getAccountKey: () => 'iad:acc-fields',
+            serializeAccountData: () => serialized
+        });
+
+        return { ctx, commands };
+    }
+
+    await t.test('writes the serialized fields when there are any', async () => {
+        const { ctx, commands } = createRecordingCtx({ name: 'Nyan Cat' });
+
+        await Account.prototype.update.call(ctx, { account: 'acc-fields', name: 'Nyan Cat' });
+
+        assert.deepStrictEqual(
+            commands.map(command => command.name),
+            ['hmset']
+        );
+        assert.deepStrictEqual(commands[0].fields, { name: 'Nyan Cat' });
+    });
+
+    await t.test('skips the write when the payload serializes to nothing', async () => {
+        const { ctx, commands } = createRecordingCtx({});
+
+        await assert.doesNotReject(Account.prototype.update.call(ctx, { account: 'acc-fields' }));
+
+        assert.deepStrictEqual(commands, [], 'an empty hmset must never be queued');
+    });
+});
+
+// The identity pin has to be removable, so it cannot ride serializeAccountData's default branch: that
+// drops nulls, and hmset only ever adds keys, which would leave the pin settable but never clearable.
+test('Account expectedEmail round-trip', async t => {
+    const serialize = accountData => Account.prototype.serializeAccountData.call({ logger: createMockLogger() }, accountData);
+    const unserialize = accountData => Account.prototype.unserializeAccountData.call({ logger: createMockLogger() }, accountData);
+
+    await t.test('stores an address and reads it back', () => {
+        assert.strictEqual(serialize({ expectedEmail: 'owner@example.com' }).expectedEmail, 'owner@example.com');
+        assert.strictEqual(unserialize({ expectedEmail: 'owner@example.com' }).expectedEmail, 'owner@example.com');
+    });
+
+    await t.test('clearing writes a marker that reads back as unset', () => {
+        // null must survive into the write, otherwise the stored value would simply persist.
+        assert.strictEqual(serialize({ expectedEmail: null }).expectedEmail, '');
+        assert.ok(!('expectedEmail' in unserialize({ expectedEmail: '' })), 'a cleared pin must not be reported as set');
+    });
+});

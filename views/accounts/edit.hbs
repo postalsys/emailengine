@@ -15,6 +15,7 @@
 
             {{> ui/form-field id="name" label="Full name" value=values.name error=errors.name hint="Full name of the user"}}
             {{> ui/form-field id="email" type="email" label="Email" value=values.email error=errors.email hint="Email address of the user"}}
+            {{> ui/form-field id="expectedEmail" type="email" label="Expected identity" value=values.expectedEmail error=errors.expectedEmail hint="Optional. Setups through the hosted authentication form are rejected unless the identity they authenticate matches this address. Clear the field to remove the restriction."}}
 
         </div>
     </div>

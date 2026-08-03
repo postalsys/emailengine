@@ -52,6 +52,13 @@ const serverFields = Object.assign({ email: 'user@example.com', imap_disabled: '
 // Static access token (scope "*") from config/test.toml - verifies created accounts and cleans up.
 const authed = supertest.agent(baseUrl).auth(ACCESS_TOKEN, { type: 'bearer' });
 
+// The setup endpoints answer with an HTML redirect page rather than a Location header, so the created
+// account id has to come out of the rendered link.
+function extractAccountId(text) {
+    const m = /account=([^&"'<>\s]+)/.exec(text || '');
+    return m ? m[1] : null;
+}
+
 async function crumbAgent() {
     const agent = supertest.agent(baseUrl);
     const page = await agent.get('/admin/login');
@@ -190,11 +197,6 @@ test('Hosted form account creation dedupes the single-use nonce', async t => {
         }
     });
 
-    const extractAccountId = text => {
-        const m = /account=([^&"'<>\s]+)/.exec(text || '');
-        return m ? m[1] : null;
-    };
-
     const submitFields = crumb => {
         const n = crypto.randomBytes(16).toString('base64url');
         const { data, sig } = signBlob({ n, t: Date.now(), redirectUrl: 'https://example.com/done' });
@@ -235,6 +237,112 @@ test('Hosted form account creation dedupes the single-use nonce', async t => {
         // Same signed blob (same nonce): now consumed, so the replay must be rejected.
         const replay = await agent.post('/accounts/new/imap/server').type('form').send(fields);
         assert.equal(replay.status, 403, `replay should be rejected, got ${replay.status}`);
+    });
+});
+
+test('Hosted form enforces the expected account identity on the IMAP arm', async t => {
+    // The IMAP arm is the sidestep the OAuth-only version of this constraint left open: a form that offers
+    // both tabs would let the user pick IMAP and attach any mailbox with a password. The evidence here is
+    // only the submitted address (working credentials do not prove the address belongs to that mailbox),
+    // so what is asserted is "the account is registered under the expected address, or not at all".
+    const createdAccounts = [];
+
+    t.after(async () => {
+        for (const id of createdAccounts) {
+            await authed.delete(`/v1/account/${id}`).catch(() => {});
+        }
+    });
+
+    const submit = async (blob, overrides) => {
+        const { agent, crumb } = await crumbAgent();
+        const { data, sig } = signBlob(Object.assign({ n: crypto.randomBytes(16).toString('base64url'), t: Date.now() }, blob));
+        return agent
+            .post('/accounts/new/imap/server')
+            .type('form')
+            .send(Object.assign({ crumb, data, sig }, serverFields, overrides));
+    };
+
+    await t.test('a matching address is accepted and the pin is stored on the account', async () => {
+        const res = await submit({ expectedEmail: 'user@example.com', redirectUrl: 'https://example.com/done' });
+        assert.equal(res.status, 200, `expected 200, got ${res.status}: ${res.text}`);
+
+        const id = extractAccountId(res.text);
+        assert.ok(id, 'the successful response should reference the created account id');
+        createdAccounts.push(id);
+
+        // Persisted, so it also applies to later setups driven by a link that carries no expectation.
+        const acct = await authed.get(`/v1/account/${id}`);
+        assert.equal(acct.status, 200, 'the created account should exist');
+        assert.equal(acct.body.expectedEmail, 'user@example.com', 'the expectation should be pinned to the account');
+    });
+
+    await t.test('a different address is rejected and no account is created', async () => {
+        const account = `identity-mismatch-${crypto.randomBytes(6).toString('hex')}`;
+        const res = await submit({ account, expectedEmail: 'owner@example.com' }, { email: 'someone-else@example.com' });
+
+        assert.equal(res.status, 403, `expected 403, got ${res.status}: ${res.text}`);
+        // The rejection must happen before create(), not after - an account written and then reported as
+        // rejected would be the exact failure this constraint exists to prevent.
+        const acct = await authed.get(`/v1/account/${account}`);
+        assert.equal(acct.status, 404, 'the rejected setup must not have created an account');
+    });
+
+    await t.test('a rejection with a redirectUrl honors the documented error contract', async () => {
+        // POST /v1/authentication/form documents error=account_identity_mismatch on the redirect. That
+        // promise is made for the whole form, so the IMAP arm has to keep it too, not just the OAuth arm.
+        const account = `identity-redirect-${crypto.randomBytes(6).toString('hex')}`;
+        const res = await submit(
+            { account, expectedEmail: 'owner@example.com', redirectUrl: 'https://example.com/done' },
+            { email: 'someone-else@example.com' }
+        );
+
+        assert.equal(res.status, 200, `expected a redirect page, got ${res.status}: ${res.text}`);
+        assert.match(res.text, /error=account_identity_mismatch/, 'the redirect must carry the documented error code');
+        assert.match(res.text, /error_description=/, 'the redirect must explain why');
+        assert.ok(!/[?&]state=/.test(res.text), 'nothing was created, so no account state may be reported');
+
+        const acct = await authed.get(`/v1/account/${account}`);
+        assert.equal(acct.status, 404, 'the rejected setup must not have created an account');
+    });
+
+    await t.test('a stored pin applies to a link that carries no expectation of its own', async () => {
+        const account = `identity-stored-${crypto.randomBytes(6).toString('hex')}`;
+        const created = await authed.post('/v1/account').send({
+            account,
+            name: 'Pinned Account',
+            email: 'owner@example.com',
+            expectedEmail: 'owner@example.com',
+            imap: { auth: { user: 'owner@example.com', pass: 'secret' }, host: '127.0.0.1', port: 1, secure: false },
+            smtp: { auth: { user: 'owner@example.com', pass: 'secret' }, host: '127.0.0.1', port: 1, secure: false }
+        });
+        assert.equal(created.status, 200, `account setup failed: ${created.text}`);
+        createdAccounts.push(account);
+
+        // No expectedEmail in the blob: this is the admin re-authenticate case, and an older API-issued
+        // link behaves the same. The pin must be inherited rather than dropped.
+        const rejected = await submit({ account }, { email: 'someone-else@example.com' });
+        assert.equal(rejected.status, 403, `expected the stored pin to reject, got ${rejected.status}`);
+
+        // And clearing it through the authenticated API lets the same submission through, which is the
+        // escape hatch for a legitimate mailbox migration.
+        const cleared = await authed.put(`/v1/account/${account}`).send({ expectedEmail: null });
+        assert.equal(cleared.status, 200, `failed to clear the pin: ${cleared.text}`);
+
+        const accepted = await submit({ account }, { email: 'someone-else@example.com' });
+        assert.equal(accepted.status, 200, `expected the cleared account to accept, got ${accepted.status}: ${accepted.text}`);
+    });
+
+    await t.test('page 1 rejects a mismatched address before autodiscovery runs', async () => {
+        const { agent, crumb } = await crumbAgent();
+        const { data, sig } = signBlob({
+            expectedEmail: 'owner@example.com',
+            n: crypto.randomBytes(16).toString('base64url'),
+            t: Date.now()
+        });
+
+        const res = await agent.post('/accounts/new/imap').type('form').send({ crumb, data, sig, email: 'someone-else@example.com', password: 'secret' });
+
+        assert.equal(res.status, 403, `expected 403, got ${res.status}`);
     });
 });
 
