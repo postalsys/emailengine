@@ -22,6 +22,18 @@ The Document Store is disabled by default. It only runs when EmailEngine is star
 
 The document is a published surface: the README points at it, emailengine.dev mirrors it, and it feeds Postman and code generators. `.label()` on a joi schema is therefore a public type name, and the endpoint is intentionally unauthenticated. Any change that alters the document has to be acknowledged by re-recording `test/fixtures/openapi-golden.json` (see `.claude/rules/testing.md`).
 
+## Releases
+
+Releases are drafted, not published, by `release-please` (`release-please-config.json`, manifest mode - the `draft` option has no action input, which is why the config file exists). The binaries are built, signed and notarized outside CI by `upload.sh`, which uploads them to the draft and then publishes it. Nobody can reach a version whose binaries do not exist yet.
+
+Three settings in that config are load-bearing, and none of them are cosmetic:
+
+- `include-component-in-tag: false` - it defaults to TRUE, which would tag releases `emailengine-app-v2.77.0` instead of `v2.77.0` and break `upload.sh`, every download URL and the whole tag history.
+- `force-tag-creation: true` - GitHub withholds the tag for a draft release, and `upload.sh` builds from the tag (falling back to HEAD behind an interactive prompt without it).
+- `draft: true` - what makes the whole flow work.
+
+Publishing the draft is what triggers the npm publish job in `.github/workflows/release.yaml`. That job must stay in that file: npm trusted publishing (OIDC, which is why no npm token secret exists) is bound to the repository AND the workflow filename. Draft releases raise no event, and an event raised inside Actions by `GITHUB_TOKEN` never triggers another workflow - the job fires only because `upload.sh` publishes with a real user's credentials.
+
 ## Detailed guidance (loaded on demand)
 
 Path-scoped rules in `.claude/rules/` load automatically when you work with the matching files. Read the relevant one before changing that area:
