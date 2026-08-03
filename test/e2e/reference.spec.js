@@ -1,4 +1,4 @@
-/* global document, window, navigator */
+/* global document, window, navigator, getComputedStyle */
 'use strict';
 
 // E2E coverage for the server-rendered API reference (/admin/reference).
@@ -318,6 +318,49 @@ test.describe('API reference', () => {
         await page.keyboard.type('blocklist');
         await page.keyboard.press('Enter');
         await expect(page).toHaveURL(/\/admin\/reference\/blocklists#/);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the sidebar marks the operation being read as you scroll', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/account');
+
+        const marked = page.locator('.ee-ref-op-nav a[aria-current]');
+
+        // Something is marked from the start, without having to scroll first. The marker is
+        // repainted on an animation frame, so every assertion here has to be a retrying one.
+        await expect(marked).toHaveCount(1);
+        await expect(marked).toHaveText('Get account info');
+
+        // The marker has to actually LOOK marked. Asserting only the attribute hid a real bug:
+        // the styling first lived in a components-layer rule, which loses to the
+        // text-base-content/70 utility on the same element, so the colour silently never applied.
+        const [markedColor, plainColor] = await Promise.all([
+            marked.evaluate(el => getComputedStyle(el).color),
+            page
+                .locator('.ee-ref-op-nav a:not([aria-current])')
+                .first()
+                .evaluate(el => getComputedStyle(el).color)
+        ]);
+        expect(markedColor).not.toBe(plainColor);
+
+        // Scroll to a specific operation and the sidebar should follow it
+        const target = 'getV1AccountAccountOauthtoken';
+        await page.locator(`#${target}`).scrollIntoViewIfNeeded();
+        await page.mouse.wheel(0, 1);
+
+        await expect(page.locator(`.ee-ref-op-nav a[href="#${target}"]`)).toHaveAttribute('aria-current', 'location');
+
+        // ...and only ever one entry is marked, so the previous one was cleared
+        await expect(marked).toHaveCount(1);
+        await expect(marked).toHaveText('Get OAuth2 access token');
+
+        // Scrolling back up returns the marker to the first operation
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await expect(marked).toHaveCount(1);
+        await expect(marked).toHaveText('Get account info');
 
         expect(errors).toHaveLength(0);
     });

@@ -347,6 +347,132 @@
         });
     };
 
+    // Marks the operation you are currently reading in the sidebar.
+    //
+    // Slack between the line an operation has to cross and the point it parks at when linked
+    // to directly. Without it the two are equal and sub-pixel rounding decides which section
+    // a deep link marks; with it, landing on a section always marks that section.
+    const SPY_SLACK = 16;
+
+    // The auto-scroll below only applies where the sidebar is a full-height column of its own.
+    // Under this width it is a short strip above the content that the reader may have scrolled
+    // themselves, and moving it under them would be rude.
+    const SIDEBAR_COLUMN = '(min-width: 1024px)';
+
+    const initScrollSpy = () => {
+        const list = document.querySelector('.ee-ref-op-nav');
+        const panel = list && list.closest('aside');
+        if (!panel) {
+            return;
+        }
+
+        // Walked in DOCUMENT order, from the sections rather than from the nav. The two happen
+        // to agree today - both come from tag.operations - but only this direction is true by
+        // construction, and the scan below is meaningless if the order is wrong. Sorting the
+        // nav some other way later would silently break a nav-ordered list.
+        //
+        // One array of pairs, not a Map plus a copy of its keys: every use wants both halves.
+        const entries = [];
+        for (const section of document.querySelectorAll('.ee-ref-op[id]')) {
+            const link = list.querySelector(`a[href="#${CSS.escape(section.id)}"]`);
+            if (link) {
+                entries.push({ link, section });
+            }
+        }
+
+        if (!entries.length) {
+            return;
+        }
+
+        const last = entries[entries.length - 1];
+
+        // Derived from the sections themselves rather than restated as a number here: scroll-mt-20
+        // in reference/operation.hbs is what decides where a linked section lands, and a spy line
+        // that disagreed with it would mark the wrong row on arrival.
+        const line = parseFloat(window.getComputedStyle(entries[0].section).scrollMarginTop || '0') + SPY_SLACK;
+
+        const current = () => {
+            // Recomputed from scratch every time rather than tracked incrementally, so it cannot
+            // drift out of step with the page
+            const found = entries.findLast(entry => entry.section.getBoundingClientRect().top <= line) || entries[0];
+
+            // A final section shorter than the space below it never reaches the line, so it
+            // would never light up. Only the pick just before it can be wrong this way, which
+            // keeps the scrollHeight read - the one most likely to force layout, on a page whose
+            // height moves as code blocks highlight - off all but the last screenful.
+            if (found === entries[entries.length - 2] && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+                return last;
+            }
+
+            return found;
+        };
+
+        // Scrolls the sidebar itself rather than calling scrollIntoView, which also scrolls the
+        // window - that would move the sections being measured and could oscillate. Returns the
+        // delta instead of applying it so paint() can finish measuring before it writes.
+        const panelDelta = link => {
+            if (!window.matchMedia(SIDEBAR_COLUMN).matches) {
+                return 0;
+            }
+
+            const linkBox = link.getBoundingClientRect();
+            const panelBox = panel.getBoundingClientRect();
+
+            if (linkBox.top < panelBox.top) {
+                return linkBox.top - panelBox.top - 8;
+            }
+            if (linkBox.bottom > panelBox.bottom) {
+                return linkBox.bottom - panelBox.bottom + 8;
+            }
+            return 0;
+        };
+
+        let marked = null;
+
+        const paint = () => {
+            const entry = current();
+            if (entry === marked) {
+                return;
+            }
+
+            // Measured before anything is written: setting aria-current restyles the link, so
+            // reading its box afterwards would force a synchronous style and layout pass at the
+            // exact moment the marker moves.
+            const delta = panelDelta(entry.link);
+
+            if (marked) {
+                marked.link.removeAttribute('aria-current');
+            }
+
+            marked = entry;
+            // `location` rather than `page`: the tag entry above is the current page, this is a
+            // position within it
+            entry.link.setAttribute('aria-current', 'location');
+
+            if (delta) {
+                panel.scrollTop += delta;
+            }
+        };
+
+        let queued = false;
+        const schedule = () => {
+            if (queued) {
+                return;
+            }
+            queued = true;
+            // Reads happen inside the frame callback, before the browser's own style and layout
+            // phase, so the flush they force is work the frame was going to do anyway
+            window.requestAnimationFrame(() => {
+                queued = false;
+                paint();
+            });
+        };
+
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule, { passive: true });
+        paint();
+    };
+
     // Code sample language, remembered across operations and page loads.
     //
     // localStorage, not sessionStorage (which is what the try-it token uses): this is a
@@ -719,6 +845,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         initHighlighting();
         initFilter();
+        initScrollSpy();
         initSampleTabs();
         initTryIt();
         initMint();

@@ -76,12 +76,19 @@
                 <span class="truncate">{{name}}</span>
                 <span class="text-base-content/40 text-2xs">{{operationCount}}</span>
             </a>
+            {{!-- ee-ref-op-nav is the hook static/js/reference.js scroll-spies on: it marks the
+                  operation being read with aria-current="location" as the page scrolls. The
+                  current-state styling is written as aria-[current] variants here rather than a
+                  rule in app.tailwind.css because a components-layer rule loses to the
+                  text-base-content/70 utility on this same element - utilities are emitted later,
+                  so the colour would silently not apply. Same utilities as the active tag entry
+                  above, so the two levels read as one marker. --}}
             {{#if operations.length}}
-            <ul class="border-base-content/10 my-1 ms-3 border-s ps-2">
+            <ul class="ee-ref-op-nav border-base-content/10 my-1 ms-3 border-s ps-2">
                 {{#each operations}}
                 <li>
                     <a href="#{{id}}"
-                        class="text-base-content/70 hover:bg-base-200 hover:text-base-content block truncate rounded-field px-2 py-1 text-xs">{{summary}}</a>
+                        class="text-base-content/70 hover:bg-base-200 hover:text-base-content aria-[current=location]:bg-primary/10 aria-[current=location]:text-primary aria-[current=location]:font-semibold block truncate rounded-field px-2 py-1 text-xs">{{summary}}</a>
                 </li>
                 {{/each}}
             </ul>
