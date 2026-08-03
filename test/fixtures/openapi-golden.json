@@ -6148,6 +6148,14 @@
               "email": true
             }
           },
+          "expectedEmail": {
+            "type": "string",
+            "description": "Rejects OAuth authorization when the provider identity does not match this email address.",
+            "example": "user@example.com",
+            "x-format": {
+              "email": true
+            }
+          },
           "delegated": {
             "type": "boolean",
             "description": "If true, configures this account as a shared mailbox. Currently supported by MS365 OAuth2 accounts",

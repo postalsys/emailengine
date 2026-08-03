@@ -191,13 +191,14 @@ test('Tools utility tests', async t => {
 
     await t.test('getSignedFormDataSync() data can be decoded', async () => {
         const secret = 'test-secret';
-        const opts = { account: 'my-account', name: 'John Doe' };
+        const opts = { account: 'my-account', name: 'John Doe', expectedEmail: 'owner@example.com' };
 
         const result = tools.getSignedFormDataSync(secret, opts);
         const decoded = JSON.parse(Buffer.from(result.data, 'base64url').toString());
 
         assert.strictEqual(decoded.account, 'my-account');
         assert.strictEqual(decoded.name, 'John Doe');
+        assert.strictEqual(decoded.expectedEmail, 'owner@example.com');
     });
 
     await t.test('getSignedFormDataSync() filters empty values', async () => {

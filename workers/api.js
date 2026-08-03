@@ -63,6 +63,7 @@ const pathlib = require('path');
 const crypto = require('crypto');
 const { registeredPublishers, openChangeStream } = require('../lib/response-stream');
 const { oauth2Apps } = require('../lib/oauth2-apps');
+const { matchesExpectedOAuthIdentity } = require('../lib/oauth/expected-identity');
 
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
@@ -2063,6 +2064,8 @@ const init = async () => {
             }
 
             const oAuth2Client = await oauth2Apps.getClient(oauth2App.id);
+            // Only provider responses are identity evidence. accountData contains caller-supplied hints.
+            const providerIdentities = [];
 
             // `app.provider` is for example "gmail", `provider` is oauth2 app id
             switch (oauth2App.provider) {
@@ -2188,6 +2191,7 @@ const init = async () => {
                         throw error;
                     }
 
+                    providerIdentities.push(userEmail);
                     accountData.email = isEmail(userEmail) ? userEmail : accountData.email;
 
                     const defaultScopes = (oauth2App.baseScopes && GMAIL_SCOPES[oauth2App.baseScopes]) || GMAIL_SCOPES.imap;
@@ -2308,6 +2312,8 @@ const init = async () => {
                         throw error;
                     }
 
+                    providerIdentities.push(userInfo.email, userInfo.username);
+
                     if (accountData.oauth2 && accountData.oauth2.auth && accountData.oauth2.auth.delegatedUser) {
                         // Delegated user (shared mailbox) specified in oauth2.auth.delegatedUser
                         authData.delegatedUser = accountData.oauth2.auth.delegatedUser;
@@ -2369,6 +2375,7 @@ const init = async () => {
                         throw error;
                     }
 
+                    providerIdentities.push(profileRes.email);
                     accountData.name = accountData.name || profileRes.name || '';
                     accountData.email = isEmail(profileRes.email) ? profileRes.email : accountData.email;
 
@@ -2396,6 +2403,37 @@ const init = async () => {
                 default: {
                     throw new Error('Unknown OAuth2 provider');
                 }
+            }
+
+            if (accountMeta.expectedEmail && !matchesExpectedOAuthIdentity(accountMeta.expectedEmail, providerIdentities)) {
+                request.logger.warn({
+                    msg: 'OAuth identity did not match the expected email address',
+                    account: accountData.account,
+                    provider: oauth2App.provider
+                });
+
+                if (redirectUrl) {
+                    const serviceUrl = await settings.get('serviceUrl');
+                    const url = new URL(redirectUrl, serviceUrl);
+                    if (accountData.account) {
+                        url.searchParams.set('account', accountData.account);
+                    }
+                    url.searchParams.set('error', 'account_identity_mismatch');
+                    url.searchParams.set('error_description', 'Authenticated account does not match the expected email address');
+
+                    return h.view(
+                        'redirect',
+                        {
+                            pageTitleFull: request.app.gt.gettext('Email Account Setup'),
+                            httpRedirectUrl: url.href
+                        },
+                        {
+                            layout: 'public'
+                        }
+                    );
+                }
+
+                throw Boom.badRequest('Authenticated account does not match the expected email address');
             }
 
             if ('delegated' in accountData) {
