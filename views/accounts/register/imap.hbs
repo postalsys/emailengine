@@ -19,14 +19,24 @@ step (/accounts/new/imap/server). --}}
             <span class="ee-hint">{{_ "Enter your full name" templateLocale }}</span>
         </div>
 
+        {{!-- When the setup link pins an expected address the field is fixed. This is a convenience
+        only: the server rejects a mismatch regardless of what is submitted. --}}
         <div class="ee-field">
             <label class="ee-label" for="email">{{_ "Email address" templateLocale }}</label>
+            {{!-- autofocus only when the field is editable: focusing a readonly input strands the caret --}}
             <input type="email" class="ee-input{{#if errors.email}} ee-invalid{{/if}}" id="email" name="email"
-                value="{{values.email}}" {{#if values.name}}autofocus{{/if}} required />
+                value="{{values.email}}" {{#unless values.emailPinned}}{{#if values.name}}autofocus{{/if}}{{/unless}}
+                {{#if values.emailPinned}}readonly{{/if}} required />
             {{#if errors.email}}
             <span class="ee-field-error">{{errors.email}}</span>
             {{/if}}
-            <span class="ee-hint">{{_ "Enter your email address" templateLocale }}</span>
+            <span class="ee-hint">
+                {{#if values.emailPinned}}
+                {{_ "This setup link is restricted to this email address" templateLocale }}
+                {{else}}
+                {{_ "Enter your email address" templateLocale }}
+                {{/if}}
+            </span>
         </div>
 
         <div class="ee-field">

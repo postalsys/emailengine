@@ -152,7 +152,7 @@ test('API reference model', async t => {
         // declared order is preserved within each group, so grouping never reshuffles the
         // optional tail
         const optional = account.body.tree.children.filter(child => !child.required).map(child => child.name);
-        assert.deepEqual(optional.slice(0, 3), ['email', 'path', 'subconnections']);
+        assert.deepEqual(optional.slice(0, 3), ['email', 'expectedEmail', 'path']);
 
         for (const operation of allOperations) {
             for (const group of [operation.queryParams, operation.headerParams]) {
