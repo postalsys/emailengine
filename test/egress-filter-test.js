@@ -1,13 +1,18 @@
 'use strict';
 
 // Unit tests for lib/egress-filter.js. The module is pure apart from an optional DNS lookup, which
-// is injected here, so this suite needs no Redis and no network.
+// is injected here, so this suite needs no Redis and no outbound network. The last block does open
+// a loopback socket, deliberately: the point of createEgressLookup() is which address gets
+// connected to, and only a real connection can show that.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
+const { Agent, fetch: fetchCmd } = require('undici');
+const { withCapturingServer } = require('./helpers/capture-http-server');
 
 const {
     assertAllowedUrl,
+    createEgressLookup,
     isBlockedAddress,
     normalizePolicy,
     clearVerdictCache,
@@ -237,5 +242,87 @@ test('assertAllowedUrl verdict caching', async t => {
 
         await assertBlocked('http://169.254.169.254/', { policy: POLICY_LINK_LOCAL, resolve });
         assert.strictEqual(calls, 0, 'a literal needs no resolution');
+    });
+});
+
+test('createEgressLookup', async t => {
+    // Promisified, since the lookup speaks the callback shape net.connect expects
+    const lookup = (fn, hostname, options = {}) =>
+        new Promise((resolve, reject) => {
+            fn(hostname, options, (err, ...result) => (err ? reject(err) : resolve(result)));
+        });
+
+    await t.test('passes through a public address', async () => {
+        const fn = createEgressLookup(POLICY_LINK_LOCAL, { resolve: resolvesTo('93.184.216.34') });
+        assert.deepStrictEqual(await lookup(fn, 'hooks.example.com'), ['93.184.216.34', 4]);
+    });
+
+    await t.test('blocks an address the policy refuses', async () => {
+        const fn = createEgressLookup(POLICY_LINK_LOCAL, { resolve: resolvesTo('169.254.169.254') });
+        await assert.rejects(lookup(fn, 'metadata.example.com'), err => err.code === 'EEGRESSBLOCKED');
+    });
+
+    await t.test('blocks when any resolved address is blocked', async () => {
+        // Connecting to the permitted half of a mixed answer would still be reaching a name that
+        // is trying to hand us an internal address
+        const fn = createEgressLookup(POLICY_PRIVATE, { resolve: resolvesTo('93.184.216.34', '10.0.0.5') });
+        await assert.rejects(lookup(fn, 'mixed.example.com'), err => err.code === 'EEGRESSBLOCKED');
+    });
+
+    await t.test('applies the policy it was built with', async () => {
+        const resolve = resolvesTo('10.1.2.3');
+        assert.deepStrictEqual(await lookup(createEgressLookup(POLICY_LINK_LOCAL, { resolve }), 'internal.example.com'), ['10.1.2.3', 4]);
+        await assert.rejects(lookup(createEgressLookup(POLICY_PRIVATE, { resolve }), 'internal.example.com'), err => err.code === 'EEGRESSBLOCKED');
+    });
+
+    await t.test('returns the full list when `all` is requested', async () => {
+        // autoSelectFamily (Happy Eyeballs) asks for `all`; handing it a bare string breaks connect
+        const fn = createEgressLookup(POLICY_LINK_LOCAL, { resolve: resolvesTo('93.184.216.34', '2606:2800:220:1::1') });
+        const [addresses] = await lookup(fn, 'hooks.example.com', { all: true });
+
+        assert.deepStrictEqual(addresses, [
+            { address: '93.184.216.34', family: 4 },
+            { address: '2606:2800:220:1::1', family: 6 }
+        ]);
+    });
+
+    await t.test('surfaces a resolver failure as the transport error', async () => {
+        const fn = createEgressLookup(POLICY_LINK_LOCAL, {
+            resolve: async () => {
+                throw Object.assign(new Error('getaddrinfo ENOTFOUND'), { code: 'ENOTFOUND' });
+            }
+        });
+        await assert.rejects(lookup(fn, 'nx.example.com'), err => err.code === 'ENOTFOUND');
+    });
+
+    await t.test('refuses an empty answer rather than connecting to nothing', async () => {
+        const fn = createEgressLookup(POLICY_LINK_LOCAL, { resolve: async () => [] });
+        await assert.rejects(lookup(fn, 'empty.example.com'), err => err.code === 'ENOTFOUND');
+    });
+
+    await t.test('stops a DNS rebind that the pre-check already allowed', async () => {
+        // The reported bypass, end to end: assertAllowedUrl() resolves the name and sees a public
+        // address, then the connect resolves it again and gets an internal one. The pre-check has
+        // to allow here (that is the premise), so the delivery is only stopped if the lookup the
+        // socket uses applies the policy itself.
+        await withCapturingServer(null, async ({ baseUrl, getCaptured }) => {
+            // The rebinding nameserver: public on the first query, loopback on every one after
+            let queries = 0;
+            const rebind = async () => [{ address: ++queries === 1 ? '93.184.216.34' : '127.0.0.1', family: 4 }];
+
+            const url = `http://rebind.example.com:${new URL(baseUrl).port}/hook`;
+            const dispatcher = new Agent({ connect: { lookup: createEgressLookup(POLICY_PRIVATE, { resolve: rebind }) } });
+
+            try {
+                clearVerdictCache();
+                await assertAllowedUrl(url, { policy: POLICY_PRIVATE, resolve: rebind });
+                assert.strictEqual(queries, 1, 'the pre-check must have been the one that saw the public address');
+
+                await assert.rejects(fetchCmd(url, { method: 'post', body: '{}', dispatcher }), err => (err.cause || err).code === 'EEGRESSBLOCKED');
+                assert.strictEqual(getCaptured(), null, 'the internal service must not have been reached');
+            } finally {
+                await dispatcher.close();
+            }
+        });
     });
 });

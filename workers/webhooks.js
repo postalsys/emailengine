@@ -12,7 +12,7 @@ const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
 const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
-const { assertAllowedUrl, normalizePolicy, POLICY_OFF } = require('../lib/egress-filter');
+const { validateWebhookTarget } = require('../lib/webhook-egress');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
@@ -39,17 +39,6 @@ const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EEN
 // Wall-clock cap for a single webhook delivery attempt; falls back to the
 // DEFAULT_WEBHOOK_REQUEST_TIMEOUT baked into sendWebhookRequest when unset
 const WEBHOOK_TIMEOUT = getDuration(readEnvValue('EENGINE_WEBHOOK_TIMEOUT')) || false;
-
-// Which destinations webhook deliveries may reach. An account-scoped API token can set both the
-// webhook URL and its custom headers, so without this the least-privileged credential in the
-// system can aim EmailEngine at anything its host can route to. Defaults to blocking the
-// link-local range (cloud instance metadata); `private` also blocks RFC1918 and friends, `off`
-// disables the check and restores redirect following. See lib/egress-filter.js
-const WEBHOOK_EGRESS_POLICY = normalizePolicy(readEnvValue('EENGINE_WEBHOOK_EGRESS_POLICY'));
-
-// Built once rather than per delivery. Null when the policy is off, which also restores fetch's
-// own redirect following in sendWebhookRequest().
-const validateWebhookTarget = WEBHOOK_EGRESS_POLICY === POLICY_OFF ? null : target => assertAllowedUrl(target, { policy: WEBHOOK_EGRESS_POLICY });
 
 let callQueue = new Map();
 let mids = 0;
@@ -424,7 +413,7 @@ const notifyWorker = new Worker(
                     method: 'post',
                     body,
                     headers,
-                    dispatcher: httpAgent.retry,
+                    dispatcher: httpAgent.webhook,
                     timeout: WEBHOOK_TIMEOUT,
                     validateTarget: validateWebhookTarget
                 });
