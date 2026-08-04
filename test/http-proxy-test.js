@@ -287,6 +287,33 @@ test('HTTP proxy agent management', async t => {
         }
     });
 
+    await t.test('Webhook dispatcher - dedicated without a proxy, shared behind one', async () => {
+        // Webhook deliveries go through their own dispatcher so the egress policy is applied by
+        // the lookup the socket actually uses. Behind a proxy the target is resolved at the proxy,
+        // so there is nothing local to bind and the shared dispatcher is used instead.
+        setMockSetting('httpProxyEnabled', false);
+        await reloadHttpProxyAgent();
+
+        assert.ok(httpAgent.webhook, 'webhook dispatcher should exist');
+        assert.notStrictEqual(httpAgent.webhook, httpAgent.retry, 'webhook deliveries should not share the general dispatcher');
+
+        const proxy = await startProxyServer();
+        try {
+            setMockSetting('httpProxyEnabled', true);
+            setMockSetting('httpProxyUrl', proxy.url);
+            await reloadHttpProxyAgent();
+
+            assert.strictEqual(httpAgent.webhook, httpAgent.retry, 'behind a proxy the webhook dispatcher should fall back to the shared one');
+
+            setMockSetting('httpProxyEnabled', false);
+            await reloadHttpProxyAgent();
+
+            assert.notStrictEqual(httpAgent.webhook, httpAgent.retry, 'dropping the proxy should restore the dedicated dispatcher');
+        } finally {
+            await stopServer(proxy.server);
+        }
+    });
+
     await t.test('Shared object reference - httpAgent identity is stable across reloads', async () => {
         const agentRef = httpAgent;
         const oldFetch = httpAgent.fetch;
