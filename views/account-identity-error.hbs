@@ -12,11 +12,13 @@ rather than bouncing them to the calling application. --}}
     <span>{{_ "This setup link can only be used with one specific email account, and a different one was used." templateLocale}}</span>
 </div>
 
+{{!-- These labels are whole phrases rather than "Expected" / "Used": the gettext helper has no message
+context, so a bare participle gives a translator nothing to disambiguate against. --}}
 <dl class="ee-dl">
-    <dt>{{_ "Expected" templateLocale}}</dt>
+    <dt>{{_ "Expected account" templateLocale}}</dt>
     <dd>{{expectedEmail}}</dd>
     {{#if actualEmail}}
-    <dt>{{_ "Used" templateLocale}}</dt>
+    <dt>{{_ "Account used" templateLocale}}</dt>
     <dd>{{actualEmail}}</dd>
     {{/if}}
 </dl>

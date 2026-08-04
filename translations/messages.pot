@@ -1,17 +1,10 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-03 20:37+0000\n"
-
-#: views/config/license.hbs:20
-#: lib/ui-routes/oauth-config-routes.js:217
-msgid "%d day"
-msgid_plural "%d days"
-msgstr[0] ""
-msgstr[1] ""
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 
 #: views/error.hbs:6
-#: workers/api.js:2902
+#: workers/api.js:2913
 msgid "Something went wrong"
 msgstr ""
 
@@ -27,8 +20,40 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
+#: views/config/license.hbs:20
+#: lib/ui-routes/oauth-config-routes.js:217
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
+
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -73,31 +98,6 @@ msgstr ""
 #: views/unsubscribe.hbs:70
 #: views/accounts/register/imap.hbs:25
 msgid "Email address"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:30
-msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13
@@ -261,15 +261,15 @@ msgid ""
 "different one was used."
 msgstr ""
 
-#: views/account-identity-error.hbs:16
-msgid "Expected"
+#: views/account-identity-error.hbs:18
+msgid "Expected account"
 msgstr ""
 
-#: views/account-identity-error.hbs:19
-msgid "Used"
+#: views/account-identity-error.hbs:21
+msgid "Account used"
 msgstr ""
 
-#: views/account-identity-error.hbs:25
+#: views/account-identity-error.hbs:27
 msgid ""
 "Try again and use the expected account. If you believe this is a mistake, "
 "contact the service that sent you this link."
@@ -307,8 +307,8 @@ msgstr ""
 #: lib/ui-routes/account-routes.js:816
 #: lib/ui-routes/account-routes.js:1169
 #: lib/ui-routes/route-helpers.js:353
-#: workers/api.js:2075
-#: workers/api.js:2147
+#: workers/api.js:2088
+#: workers/api.js:2158
 msgid "Email Account Setup"
 msgstr ""
 
@@ -429,7 +429,7 @@ msgstr ""
 msgid "Couldn't process request. Try again."
 msgstr ""
 
-#: workers/api.js:2901
-#: workers/api.js:3002
+#: workers/api.js:2912
+#: workers/api.js:3013
 msgid "Requested page not found"
 msgstr ""
