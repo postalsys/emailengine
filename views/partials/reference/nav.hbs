@@ -18,7 +18,7 @@
     the endpoints that accept them, not only the ones with the word in their path.
 
     Params (from the reference view context):
-      nav         - tags with { name, slug, operationCount, active, operations[] }
+      nav         - tags with { name, slug, url, operationCount, active, operations[] }
       searchIndex - flat operation list backing the filter
 --}}
 <div class="flex flex-col gap-3 p-3">
@@ -68,31 +68,51 @@
         <li id="ref-filter-empty" class="text-base-content/50 hidden px-2 py-2 text-xs">No matching endpoints</li>
     </ul>
 
+    {{!-- Every group carries its operations, so the list of a group you are not on can be
+          opened without loading its page. Below the layout's lg breakpoint the nav is a
+          disclosure, and there static/js/reference.js turns a tap on a group row into opening
+          that list instead of a page load - the chevron is the affordance for it. Which list
+          is open is aria-expanded on the group row and nothing else: the attribute is the
+          state, `max-lg:peer-aria-expanded:block` is the rendering.
+
+          As a column it is not a disclosure at all - the active group's list is shown by
+          lg:block and every other stays hidden, no matter what the reader last expanded on a
+          narrow window. Without that, widening after collapsing the active group would leave
+          the column with no list and no control to bring one back.
+
+          Not FlyonUI's collapse or accordion, though both are in the bundle: HSCollapse
+          animates an inline height that would fight lg:block (and strand a stale one when the
+          viewport crosses lg), HSAccordion needs a <button> where these rows have to stay
+          links above lg, and neither has any notion of a breakpoint - which is the whole
+          problem here. --}}
     <ul id="ref-tag-list" class="flex flex-col gap-0.5">
         {{#each nav}}
         <li>
-            <a href="/admin/reference/{{slug}}"
-                class="flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-sm{{#if active}} bg-primary/10 text-primary font-semibold{{else}} hover:bg-base-200{{/if}}">
+            <a href="{{url}}" aria-controls="ref-ops-{{slug}}" aria-expanded="{{#if active}}true{{else}}false{{/if}}"
+                class="peer group flex items-center justify-between gap-2 rounded-field px-2 py-1.5 text-sm{{#if active}} bg-primary/10 text-primary font-semibold{{else}} hover:bg-base-200{{/if}}">
                 <span class="truncate">{{name}}</span>
-                <span class="text-base-content/40 text-2xs">{{operationCount}}</span>
+                <span class="flex shrink-0 items-center gap-1">
+                    <span class="text-base-content/40 text-2xs">{{operationCount}}</span>
+                    <span
+                        class="icon-[tabler--chevron-down] text-base-content/40 size-3.5 transition-transform duration-200 group-aria-expanded:rotate-180 lg:hidden"></span>
+                </span>
             </a>
-            {{!-- ee-ref-op-nav is the hook static/js/reference.js scroll-spies on: it marks the
-                  operation being read with aria-current="location" as the page scrolls. The
-                  current-state styling is written as aria-[current] variants here rather than a
-                  rule in app.tailwind.css because a components-layer rule loses to the
+            {{!-- ee-ref-op-nav marks the ACTIVE group's list only: it is the hook static/js/
+                  reference.js scroll-spies on, and only that list holds in-page anchors to mark.
+                  The current-state styling is written as aria-[current] variants here rather than
+                  a rule in app.tailwind.css because a components-layer rule loses to the
                   text-base-content/70 utility on this same element - utilities are emitted later,
                   so the colour would silently not apply. Same utilities as the active tag entry
                   above, so the two levels read as one marker. --}}
-            {{#if operations.length}}
-            <ul class="ee-ref-op-nav border-base-content/10 my-1 ms-3 border-s ps-2">
+            <ul id="ref-ops-{{slug}}"
+                class="{{#if active}}ee-ref-op-nav lg:block {{/if}}border-base-content/10 my-1 ms-3 hidden border-s ps-2 max-lg:peer-aria-expanded:block">
                 {{#each operations}}
                 <li>
-                    <a href="#{{id}}"
+                    <a href="{{url}}"
                         class="text-base-content/70 hover:bg-base-200 hover:text-base-content aria-[current=location]:bg-primary/10 aria-[current=location]:text-primary aria-[current=location]:font-semibold block truncate rounded-field px-2 py-1 text-xs">{{summary}}</a>
                 </li>
                 {{/each}}
             </ul>
-            {{/if}}
         </li>
         {{/each}}
     </ul>

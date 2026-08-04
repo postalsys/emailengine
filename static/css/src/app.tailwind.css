@@ -96,6 +96,18 @@
 }
 
 @layer base {
+    /* The admin shell's topbar is sticky, and a page may stick a band of its own under it
+     * (the API reference's "no access token" banner, whose measured height static/js/
+     * reference.js publishes). Telling the scroller about that inset covers every way
+     * something is scrolled into view - fragment links, scrollIntoView, find-in-page, the
+     * focus moving through a Try it panel - instead of only the classes that carry a
+     * scroll-margin of their own. On the class rather than on html because the login and
+     * public layouts load this stylesheet too and have no topbar to clear; the class is on
+     * <html> in views/layout/app.hbs. */
+    .ee-app-chrome {
+        scroll-padding-top: calc(var(--spacing-topbar) + var(--ee-sticky-band-h, 0px));
+    }
+
     /* Tailwind preflight leaves hr at "1px solid currentColor" - a harsh
      * full-contrast line in both themes; default every hr to the standard
      * content-border token instead of classing each instance */
@@ -239,6 +251,17 @@
     .ee-ref-nest {
         border-inline-start: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
         padding-inline-start: 0.75rem;
+    }
+
+    /* Room to breathe above a jump target - operations linked from the sidebar and from
+     * #operationId, property rows from #operation.body.field. The sticky chrome above them is
+     * NOT in here: that is scroll-padding on the scroller (.ee-app-chrome in @layer base), and
+     * counting it twice would park every deep link a band's height below where it belongs.
+     * Also keep any scroll-mt-* utility off these elements - utilities are emitted after this
+     * layer and would silently replace it. */
+    .ee-ref-op,
+    .ee-ref-prop {
+        scroll-margin-top: 2rem;
     }
 
     /* Deep-link icons (reference/anchor-link), on operation headings and on every

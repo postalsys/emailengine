@@ -106,15 +106,117 @@ test.describe('API reference', () => {
         expect(Math.abs(stuckTop - geometry.topbarBottom)).toBeLessThanOrEqual(1);
     });
 
+    test('the group navigation collapses to a disclosure on a phone', async ({ page }) => {
+        // Below lg there is no room for the column, and the strip it used to become showed
+        // a fifth of the list inside its own scrollbar. The mechanism is the layout's
+        // (views/layout/app.hbs + static/js/app.js); the reference is its only caller.
+        const errors = trackConsoleErrors(page);
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto('/admin/reference/message');
+
+        const toggle = page.locator('#secondary-nav-toggle');
+        const panel = page.locator('#secondary-nav-panel');
+        const column = page.locator('aside[aria-label="Section navigation"]');
+
+        await expect(toggle).toBeVisible();
+        await expect(panel).toBeHidden();
+        await expect(toggle).toContainText('Endpoints');
+        // one row, so the page below it starts on the first screen
+        expect((await column.boundingBox()).height).toBeLessThan(100);
+
+        await toggle.click();
+        await expect(panel).toBeVisible();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+        // Opened it takes at most the screen, and scrolls itself past that. The filter is the
+        // case that proves it: its 82 hits are several thousand pixels of rows, and without a
+        // cap they push the page heading and every operation below the fold.
+        const panelHeight = async () => (await panel.boundingBox()).height;
+        expect(await panelHeight()).toBeLessThanOrEqual(844);
+
+        await page.fill('#ref-filter', 'a');
+        await expect(page.locator('#ref-filter-results')).toBeVisible();
+        expect(await panelHeight()).toBeLessThanOrEqual(844);
+        await page.fill('#ref-filter', '');
+
+        // Escape puts it away from the keyboard, wherever the reader has scrolled to
+        await page.keyboard.press('Escape');
+        await expect(panel).toBeHidden();
+        await toggle.click();
+        await expect(panel).toBeVisible();
+
+        // Tapping a group opens its endpoints in place. As a link it would load that group's
+        // page and take the menu with it, which is the opposite of looking inside a group.
+        const groupRow = slug => panel.locator(`#ref-tag-list a[href="/admin/reference/${slug}"]`);
+
+        await groupRow('account').click();
+        await expect(page.locator('#ref-ops-account')).toBeVisible();
+        await expect(groupRow('account')).toHaveAttribute('aria-expanded', 'true');
+        await expect(page).toHaveURL(/\/admin\/reference\/message$/);
+
+        // one group at a time, so the menu cannot grow past the control that closes it - the
+        // group the page is on gives way like any other
+        await expect(page.locator('#ref-ops-message')).toBeHidden();
+        await groupRow('mailbox').click();
+        await expect(page.locator('#ref-ops-mailbox')).toBeVisible();
+        await expect(page.locator('#ref-ops-account')).toBeHidden();
+
+        // tapping the open one puts it away
+        await groupRow('mailbox').click();
+        await expect(page.locator('#ref-ops-mailbox')).toBeHidden();
+
+        // an in-page jump closes the menu, so it is not left covering what was jumped to
+        await groupRow('message').click();
+        await panel.locator('.ee-ref-op-nav a').first().click();
+        await expect(panel).toBeHidden();
+
+        // the filter hotkey has to open the panel on its way to the field - focusing an input
+        // inside a collapsed panel does nothing, and this is the width where an 82-endpoint
+        // list needs the filter most (a narrow desktop window lands here too, with a keyboard)
+        await page.keyboard.press('/');
+        await expect(panel).toBeVisible();
+        await expect(page.locator('#ref-filter')).toBeFocused();
+
+        // Nothing a reader collapsed on a phone may strand the wide-screen column: the group
+        // rows are plain links there, so a hidden active list would have no way back. Leave the
+        // current group collapsed and another one open, then widen - the column has to come up
+        // showing the group the page is on, and only that one.
+        await groupRow('message').click();
+        await expect(page.locator('#ref-ops-message')).toBeHidden();
+        await groupRow('account').click();
+        await expect(page.locator('#ref-ops-account')).toBeVisible();
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await expect(toggle).toBeHidden();
+        await expect(panel).toBeVisible();
+        await expect(page.locator('#ref-ops-message')).toBeVisible();
+        await expect(page.locator('#ref-ops-account')).toBeHidden();
+
+        // ...and the rows announce the state the column is actually in: at this width the
+        // group the page is on is the expanded one, whatever was tapped on a narrow screen
+        await expect(groupRow('message')).toHaveAttribute('aria-expanded', 'true');
+        await expect(groupRow('account')).toHaveAttribute('aria-expanded', 'false');
+
+        // where the column is always on screen a group row is a plain link again - one click
+        // to the group instead of two, and nothing to put away afterwards
+        await groupRow('account').click();
+        await expect(page).toHaveURL(/\/admin\/reference\/account$/);
+
+        expect(errors).toHaveLength(0);
+    });
+
     test('every endpoint group page renders its operations', async ({ page }) => {
         const errors = trackConsoleErrors(page);
 
         await page.goto('/admin/reference');
 
         // Drive the walk from the rendered nav rather than a hardcoded list, so a tag
-        // added to the API is covered automatically
+        // added to the API is covered automatically. The group rows are the ones that own an
+        // operation list (aria-controls); the rows inside those lists link into a group's page
+        // rather than to it.
         const slugs = await page.evaluate(() =>
-            Array.from(document.querySelectorAll('#ref-tag-list a[href^="/admin/reference/"]')).map(link => link.getAttribute('href').split('/').pop())
+            Array.from(document.querySelectorAll('#ref-tag-list a[aria-controls]')).map(link => link.getAttribute('href').split('/').pop())
         );
 
         expect(slugs.length).toBeGreaterThan(10);
@@ -258,7 +360,7 @@ test.describe('API reference', () => {
         });
 
         expect(offset).not.toBeNull();
-        // scroll-mt-20 parks the section just below the sticky topbar
+        // the scroller's own top inset parks the section just below the sticky topbar
         expect(offset).toBeLessThan(300);
         expect(offset).toBeGreaterThan(-50);
 
@@ -541,7 +643,7 @@ test.describe('API reference', () => {
         await expect(page.getByRole('heading', { name: 'Access token' })).toBeVisible();
     });
 
-    test('the missing-token banner appears on every reference page and mints in place', async ({ page }) => {
+    test('the missing-token banner shows on every reference page, sticks below the topbar and mints in place', async ({ page }) => {
         const banner = page.locator('#ref-token-alert');
 
         // shown wherever try-it panels could be used without a token
@@ -551,12 +653,45 @@ test.describe('API reference', () => {
             await expect(banner).toContainText('No access token is set');
         }
 
+        // The try-it panels it warns about are hundreds of pixels down the page, so the
+        // banner stays put while they scroll under it rather than leaving with the header.
+        const lastOperation = page.locator('.ee-ref-op').last();
+        await lastOperation.scrollIntoViewIfNeeded();
+        await expect(banner).toBeInViewport();
+
+        // Staying put must not cost access to anything: a deep link still has to land clear of
+        // the band, which is what the measured --ee-ref-alert-h offset buys. A middle
+        // operation, not the last one - at the end of the document the browser runs out of
+        // scroll and parks the section wherever it lands, which would pass on its own.
+        const operations = page.locator('.ee-ref-op');
+        const id = await operations.nth(Math.floor((await operations.count()) / 2)).getAttribute('id');
+        await page.goto(`/admin/reference/message#${id}`);
+        await expect(banner).toBeInViewport();
+
+        const landing = await page.evaluate(elId => {
+            const operation = document.getElementById(elId);
+            return {
+                bannerBottom: document.getElementById('ref-token-alert').getBoundingClientRect().bottom,
+                operationTop: operation.getBoundingClientRect().top,
+                inset: parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)
+            };
+        }, id);
+
+        // clear of the band, and only just - the gap is the section's own scroll-margin, so a
+        // height that was published wrong (or not at all) moves this out of range
+        expect(landing.operationTop - landing.bannerBottom).toBeGreaterThanOrEqual(0);
+        expect(landing.operationTop - landing.bannerBottom).toBeLessThanOrEqual(64);
+
         // the banner's own mint button works without leaving the page
         await page.locator('#ref-token-alert .ref-token-mint').click();
         await expect(banner).toBeHidden({ timeout: 20000 });
         await expect(page.locator('#ref-token-state')).toContainText('min left');
 
-        // ...and stays gone on the next page now that a token is held
+        // ...and the inset it was holding open goes with it, back to plain page flow
+        const cleared = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop));
+        expect(cleared).toBeLessThan(landing.inset);
+
+        // ...and it stays gone on the next page now that a token is held
         await page.goto('/admin/reference/submit');
         await expect(banner).toBeHidden();
 

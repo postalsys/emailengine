@@ -76,6 +76,59 @@
 
     const minutesLeft = expires => Math.max(0, Math.round((expires - Date.now()) / 60000));
 
+    // The "no token set" banner sticks below the topbar (reference/token-alert.hbs), so it
+    // adds to what a jump target has to clear. Its measured height is published to the
+    // stylesheet rather than hard-coded there, because the band wraps to two rows on a narrow
+    // viewport - the layout's scroll-padding (.ee-app-chrome) adds it to the scroller's top
+    // inset. Kept as a number too, for the scroll spy: that line moves with the same inset,
+    // and reading it back out of the cascade on every scrolled frame would force a style
+    // recalc to do it.
+    let alertHeight = 0;
+
+    // Written only when it actually changes. Setting an inherited custom property on the root
+    // element invalidates style for the whole document - measured at ~7ms on a tag page, and
+    // the same with no rule reading the property at all, so this is the cost of the write
+    // itself rather than of the 434 rows that resolve it. The observer below makes an
+    // unchanged republish easy to hit, since it fires on width too, which moves on every frame
+    // of a resize drag while the height sits still.
+    const publishAlertHeight = alert => {
+        // `hidden` is display: none, so a hidden band measures 0 without a special case
+        const height = alert.offsetHeight;
+        if (height === alertHeight) {
+            return;
+        }
+
+        alertHeight = height;
+        document.documentElement.style.setProperty('--ee-sticky-band-h', `${height}px`);
+        return true;
+    };
+
+    // A band that changes height after revealTarget has landed a deep link leaves the section
+    // under a band that is opaque, not merely offset - the web font swapping in and rewrapping
+    // the warning is the case that hits a cold load. Re-land it, but only while the reader is
+    // still exactly where the jump left them: past that they have scrolled on, and yanking the
+    // page back would be worse than the offset.
+    const relandIfUnmoved = () => {
+        if (landedAt !== null && Math.round(window.scrollY) === landedAt) {
+            revealTarget();
+        }
+    };
+
+    // Show and hide are published by paintTokenStatus rather than left to the observer below:
+    // both run at DOMContentLoaded, and revealTarget scrolls to the deep link at `load` with
+    // whatever margin is in effect by then. This covers the band changing height on its own,
+    // which it does when a viewport narrow enough to wrap it is resized.
+    const initAlertHeight = () => {
+        const alert = document.getElementById('ref-token-alert');
+        if (alert) {
+            new ResizeObserver(() => {
+                if (publishAlertHeight(alert)) {
+                    relandIfUnmoved();
+                }
+            }).observe(alert);
+        }
+    };
+
     // Repaints the always-visible status in the sidebar, and shows the Clear control on
     // the overview page only while there is something to clear.
     const paintTokenStatus = () => {
@@ -98,7 +151,7 @@
         const alert = document.getElementById('ref-token-alert');
         if (alert) {
             alert.classList.toggle('hidden', !!entry);
-            alert.classList.toggle('flex', !entry);
+            publishAlertHeight(alert);
         }
     };
 
@@ -150,6 +203,10 @@
         window.addEventListener('load', fn);
     };
 
+    // Where the last deep-link jump left the page, so a band that grows afterwards can tell
+    // "the reader has not moved yet" from "they have scrolled on". Null until one happens.
+    let landedAt = null;
+
     // Deep links point at a single schema property ("#accountCreate.body.imap.tls"), which
     // can sit inside collapsed <details> groups and an inactive response tab - neither of
     // which the browser can scroll to, because they have no layout box. Everything on the
@@ -181,6 +238,83 @@
         }
 
         target.scrollIntoView({ block: 'start' });
+        landedAt = Math.round(window.scrollY);
+    };
+
+    // Group rows in the nav. As a column they are plain links to the group's page. Below the
+    // layout's lg breakpoint the whole nav is a disclosure, and a link there is a bad deal: the
+    // tap that was meant to look inside a group loads its page and takes the menu with it. So
+    // in that mode the row opens its own operation list instead, and the reader picks the
+    // endpoint they actually wanted - which is the only navigation that ends the menu.
+    //
+    // Which mode the column is in is the layout's own question, answered by the small API
+    // static/js/app.js publishes for it.
+    const initTagRows = () => {
+        const list = document.getElementById('ref-tag-list');
+        const nav = window.uiSecondaryNav;
+        if (!list || !nav) {
+            return;
+        }
+
+        list.addEventListener('click', event => {
+            // aria-controls is what a group row has and an operation row does not
+            const row = event.target.closest('a[aria-controls]');
+            if (!row || !nav.collapsible()) {
+                return;
+            }
+
+            // A modified click is asking for the group's page in a new tab or window, which is
+            // still what the href says. Swallowing it would make the row mean one thing to the
+            // left button and another to every other way of opening a link.
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            // preventDefault is also what tells the layout's panel handler to leave the menu
+            // open: a link that did not navigate has not finished with the reader.
+            event.preventDefault();
+
+            const expand = row.getAttribute('aria-expanded') !== 'true';
+            const before = row.getBoundingClientRect().top;
+
+            // One group at a time, which is the state the page is served in and keeps the menu
+            // to a screen or two. Opening all nineteen would put 3000px of navigation above the
+            // page, with the control to put it away scrolled off the top.
+            for (const open of list.querySelectorAll('a[aria-expanded="true"]')) {
+                open.setAttribute('aria-expanded', 'false');
+            }
+
+            row.setAttribute('aria-expanded', String(expand));
+
+            // Closing a group above this one pulls the list out from under the finger that
+            // just tapped it - by the height of whatever was open, which is most of a screen.
+            // Put the row back where it was touched.
+            const drift = row.getBoundingClientRect().top - before;
+            if (drift) {
+                if (nav.panel.scrollHeight > nav.panel.clientHeight) {
+                    nav.panel.scrollTop += drift;
+                } else {
+                    window.scrollBy(0, drift);
+                }
+            }
+        });
+
+        // Crossing back into column mode resets the rows to what the server renders: there
+        // lg:block shows the group the page is on and hides every other, so a row still saying
+        // "expanded" from a narrow window would announce the opposite of what is on screen -
+        // and no click can reconcile it, because the rows are plain links at that width. The
+        // active group is the one carrying the spy hook. Watching the toggle's box is how this
+        // hears the mode change without naming the breakpoint.
+        new ResizeObserver(() => {
+            if (nav.collapsible()) {
+                return;
+            }
+
+            for (const row of list.querySelectorAll('a[aria-controls]')) {
+                const ops = document.getElementById(row.getAttribute('aria-controls'));
+                row.setAttribute('aria-expanded', String(!!ops && ops.classList.contains('ee-ref-op-nav')));
+            }
+        }).observe(nav.toggle);
     };
 
     // Resolved once - the platform cannot change, and the shortcut check runs on every
@@ -342,6 +476,14 @@
             }
 
             event.preventDefault();
+
+            // Below the layout's lg breakpoint this whole column is a disclosure, and focusing
+            // an input inside a display:none subtree does nothing at all - which is the width
+            // where a narrow window most needs the filter. Open it on the way to the field.
+            if (window.uiSecondaryNav && window.uiSecondaryNav.collapsible()) {
+                window.uiSecondaryNav.open();
+            }
+
             input.focus();
             input.select();
         });
@@ -353,11 +495,6 @@
     // to directly. Without it the two are equal and sub-pixel rounding decides which section
     // a deep link marks; with it, landing on a section always marks that section.
     const SPY_SLACK = 16;
-
-    // The auto-scroll below only applies where the sidebar is a full-height column of its own.
-    // Under this width it is a short strip above the content that the reader may have scrolled
-    // themselves, and moving it under them would be rude.
-    const SIDEBAR_COLUMN = '(min-width: 1024px)';
 
     const initScrollSpy = () => {
         const list = document.querySelector('.ee-ref-op-nav');
@@ -386,14 +523,23 @@
 
         const last = entries[entries.length - 1];
 
-        // Derived from the sections themselves rather than restated as a number here: scroll-mt-20
-        // in reference/operation.hbs is what decides where a linked section lands, and a spy line
-        // that disagreed with it would mark the wrong row on arrival.
-        const line = parseFloat(window.getComputedStyle(entries[0].section).scrollMarginTop || '0') + SPY_SLACK;
+        // Read from the cascade rather than restated as a number here: a linked section parks
+        // at the scroller's own top inset (the sticky chrome, html's scroll-padding-top) plus
+        // its scroll-margin, and a spy line that disagreed with the two would mark the wrong
+        // row on arrival. Whatever the banner contributes right now is taken back out and
+        // re-added per read: that makes this independent of whether the banner has been
+        // measured yet, and follows it disappearing when a token is minted, which shortens the
+        // inset without the page reloading.
+        const staticLine =
+            parseFloat(window.getComputedStyle(document.documentElement).scrollPaddingTop || '0') -
+            alertHeight +
+            parseFloat(window.getComputedStyle(entries[0].section).scrollMarginTop || '0') +
+            SPY_SLACK;
 
         const current = () => {
             // Recomputed from scratch every time rather than tracked incrementally, so it cannot
             // drift out of step with the page
+            const line = staticLine + alertHeight;
             const found = entries.findLast(entry => entry.section.getBoundingClientRect().top <= line) || entries[0];
 
             // A final section shorter than the space below it never reaches the line, so it
@@ -411,7 +557,17 @@
         // window - that would move the sections being measured and could oscillate. Returns the
         // delta instead of applying it so paint() can finish measuring before it writes.
         const panelDelta = link => {
-            if (!window.matchMedia(SIDEBAR_COLUMN).matches) {
+            // Only the full-height column scrolls on its own. Below the layout's lg breakpoint
+            // the same markup is a disclosure in normal page flow, with nothing to scroll -
+            // asking whether it overflows answers that without naming the breakpoint again.
+            if (panel.scrollHeight <= panel.clientHeight) {
+                return 0;
+            }
+
+            // While the filter has input the whole tag list is display:none, so these links
+            // have no box at all - and a zero rect against the panel's top reads as "scrolled
+            // far above", which would drag the sidebar up a row at a time behind the results.
+            if (!link.offsetParent) {
                 return 0;
             }
 
@@ -845,11 +1001,13 @@
     document.addEventListener('DOMContentLoaded', () => {
         initHighlighting();
         initFilter();
+        initTagRows();
         initScrollSpy();
         initSampleTabs();
         initTryIt();
         initMint();
         initTokenForm();
+        initAlertHeight();
         paintTokenStatus();
 
         // On load rather than here: a target inside an inactive response tab needs the tab

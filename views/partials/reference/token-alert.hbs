@@ -3,22 +3,47 @@
     pages. Server-rendered but hidden by default; static/js/reference.js unhides it when
     the tab holds no token, because whether one is set is client state.
 
+    The banner sticks below the topbar instead of scrolling away, because the Try it panels
+    it warns about sit hundreds of pixels down a group page - a warning only visible at the
+    top of the page is read once and then gone. Sticky, not fixed: the band keeps its place
+    in normal flow, so at rest it pushes the page down instead of covering it, and it takes
+    the page background with it so operations passing underneath do not show through.
+    Nothing ends up permanently hidden behind it either - reference.js publishes the band's
+    measured height as --ee-sticky-band-h, and the layout's scroll-padding (.ee-app-chrome in
+    app.tailwind.css) adds it to the scroller's top inset, so anything scrolled into view -
+    a deep link, find-in-page, the focus moving through a Try it panel - lands below it.
+
     Rendered only when a token is actually required: with the `disableTokens` setting on,
     the API accepts uncredentialed callers, so the banner would be wrong.
 
     Not shown on the access-token page itself - the control is already there.
 --}}
 {{#unless disableTokens}}
-<div id="ref-token-alert" class="alert alert-soft alert-warning mb-6 hidden flex-wrap items-center gap-3" role="alert">
-    <span class="icon-[tabler--key-off] size-5 shrink-0"></span>
-    <div class="min-w-0 grow text-sm">
-        No access token is set, so the <strong>Try it</strong> panels on this page will be rejected with a 401.
-    </div>
-    <div class="flex shrink-0 flex-wrap items-center gap-2">
-        {{> ui/btn variant="primary" size="sm" icon="icon-[tabler--clock-plus]" label="Mint temporary token"
-        class="ref-token-mint" id="" href="" style="" bare="" type="" overlay="" external=""}}
-        {{> ui/btn href="/admin/reference/token" variant="neutral" style="soft" size="sm" label="Set a token" icon=""
-        id="" bare="" type="" overlay="" external=""}}
+{{!-- -mx-6/px-6 is the content column's own gutter (views/layout/app.hbs), cancelled out so
+      the opaque band reaches the column edges and nothing scrolls up beside it. The vertical
+      padding is the rest of that band: it keeps a strip of page background between the alert
+      and whatever is passing underneath, instead of content touching the alert's edge. Both
+      pairs cancel to the spacing this banner had before it became sticky. --}}
+<div id="ref-token-alert" class="bg-base-200 @container sticky top-topbar z-20 -mx-6 -mt-2 mb-3 hidden px-6 pt-2 pb-3">
+    {{!-- One row wherever there is room for one: with wrapping on, flex breaks the line on the
+          text's full width, so the actions drop below it even where they would have fitted
+          beside a text column half as wide. Asked of the container rather than the viewport,
+          because the constraint is this column - at lg the sidebar and the section nav take
+          544px out of the window, and a viewport breakpoint would unwrap the band exactly
+          where the column is at its narrowest, stacking the sentence seven lines high. 42rem
+          is where the text still fits two lines beside the actions: measured 84-94px for the
+          one-row form above it, against 168px for the wrapped form below it. --}}
+    <div class="alert alert-soft alert-warning flex flex-wrap items-center gap-3 @2xl:flex-nowrap" role="alert">
+        <span class="icon-[tabler--key-off] size-5 shrink-0"></span>
+        <div class="min-w-0 grow text-sm">
+            No access token is set, so <strong>Try it</strong> requests will be rejected with a 401.
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            {{> ui/btn variant="primary" size="sm" icon="icon-[tabler--clock-plus]" label="Mint temporary token"
+            class="ref-token-mint" id="" href="" style="" bare="" type="" overlay="" external=""}}
+            {{> ui/btn href="/admin/reference/token" variant="neutral" style="soft" size="sm" label="Set a token"
+            icon="" id="" bare="" type="" overlay="" external=""}}
+        </div>
     </div>
 </div>
 {{/unless}}

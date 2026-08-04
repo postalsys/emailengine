@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="ee-app-chrome">
 
 <head>
 
@@ -208,11 +208,35 @@
                  level of the same menu rather than a panel floating in the page. A page
                  opts in by setting `secondaryNav` to a partial name in its view context;
                  every other page renders exactly as before.
-                 On small screens it becomes a bounded scroll strip above the content,
-                 because the sidebar drawer has no room for a second column. -->
-            <aside class="bg-base-100 border-base-content/20 max-h-48 shrink-0 overflow-y-auto border-b lg:sticky lg:top-topbar lg:h-[calc(100vh-var(--spacing-topbar))] lg:max-h-none lg:w-64 lg:self-start lg:border-e lg:border-b-0"
+
+                 Below lg there is no room for a second column, so the whole thing collapses
+                 to the row below, closed by default. It used to be a 192px scroll strip
+                 pinned above the content, which showed about a fifth of the list, hid the
+                 rest behind a nested scrollbar most people never notice, and still pushed
+                 the page heading off the first screen. A disclosure costs one row instead.
+                 Opened, it is capped at the screen and scrolls itself - the difference from
+                 what it replaced is that the space is asked for, not permanently taken, and
+                 that the filter's 82 hits cannot push the page a thousand pixels down.
+
+                 aria-expanded on the button is the only state there is: below lg the panel
+                 derives its visibility from it, above lg it is a column regardless of what
+                 the button last said. -->
+            <aside class="bg-base-100 border-base-content/20 shrink-0 border-b lg:sticky lg:top-topbar lg:h-[calc(100vh-var(--spacing-topbar))] lg:w-64 lg:overflow-y-auto lg:border-e lg:border-b-0"
                 aria-label="Section navigation">
-                {{> (lookup . "secondaryNav")}}
+
+                <button type="button" id="secondary-nav-toggle" aria-expanded="false" aria-controls="secondary-nav-panel"
+                    class="peer group hover:bg-base-200 flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-3 text-sm font-semibold lg:hidden">
+                    <span class="flex items-center gap-2">
+                        <span class="icon-[tabler--list-search] size-4 shrink-0"></span>
+                        {{#if secondaryNavLabel}}{{secondaryNavLabel}}{{else}}Sections{{/if}}
+                    </span>
+                    <span class="icon-[tabler--chevron-down] size-4 shrink-0 transition-transform duration-200 group-aria-expanded:rotate-180"></span>
+                </button>
+
+                <div id="secondary-nav-panel"
+                    class="border-base-content/10 hidden border-t max-lg:max-h-[calc(100dvh-var(--spacing-topbar))] max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:peer-aria-expanded:block lg:block lg:border-t-0">
+                    {{> (lookup . "secondaryNav")}}
+                </div>
             </aside>
             {{/if}}
 

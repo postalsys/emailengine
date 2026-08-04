@@ -219,6 +219,75 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Secondary navigation column (views/layout/app.hbs): a full column beside the content
+    // from lg up, a disclosure below that. aria-expanded on the button is the whole state -
+    // the panel derives its visibility from it in CSS (peer-aria-expanded:block), so there is
+    // no second flag to keep in step. Above lg the button is display:none and lg:block on the
+    // panel outranks the peer rule, so the writes below are inert rather than wrong there.
+    let secondaryNavToggle = document.getElementById('secondary-nav-toggle');
+    let secondaryNavPanel = document.getElementById('secondary-nav-panel');
+    if (secondaryNavToggle && secondaryNavPanel) {
+        let setSecondaryNav = expanded => secondaryNavToggle.setAttribute('aria-expanded', String(expanded));
+
+        secondaryNavToggle.addEventListener('click', () => setSecondaryNav(secondaryNavToggle.getAttribute('aria-expanded') !== 'true'));
+
+        // Closing takes focus with it when the caret is inside the panel: the subtree becomes
+        // display:none, and focus would fall back to <body> - the reader's next Tab would
+        // restart from the top of the page. Hand it back to the control they came from.
+        let closeSecondaryNav = () => {
+            let focused = document.activeElement;
+            setSecondaryNav(false);
+            if (focused && secondaryNavPanel.contains(focused)) {
+                secondaryNavToggle.focus();
+            }
+        };
+
+        // Page scripts have business with this too - the reference's filter shortcut has to
+        // open the panel before it can focus the field inside it, and its group rows behave
+        // differently depending on which mode the column is in. Publishing the facts they need
+        // keeps the toggle's id, and the fact that a click is what opens it, in this file.
+        // `collapsible` reads the button's own box: it is lg:hidden, so being laid out at all
+        // is the answer, and the breakpoint stays in the stylesheet.
+        window.uiSecondaryNav = {
+            // the elements too: the toggle so a page script can watch its box for the mode
+            // change, the panel because below lg it is the scroller the nav lives in
+            toggle: secondaryNavToggle,
+            panel: secondaryNavPanel,
+            collapsible: () => !!secondaryNavToggle.offsetParent,
+            open: () => setSecondaryNav(true),
+            close: closeSecondaryNav
+        };
+
+        secondaryNavPanel.addEventListener('click', event => {
+            // A link to another page reloads and closes this anyway, but an in-page anchor
+            // does not - it would leave the panel expanded over the section just jumped to.
+            // Closing before the browser acts on the fragment also keeps the landing position
+            // right: the page shrinks first and the scroll is measured after.
+            //
+            // Two links are left alone: one something else already handled (defaultPrevented -
+            // the reference's group rows open their own list in place), and one opened
+            // elsewhere by a modifier, which leaves this page exactly where it was.
+            if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+
+            if (event.target.closest('a')) {
+                closeSecondaryNav();
+            }
+        });
+
+        // Escape is the way out of any disclosure. Without it the only way to put the panel
+        // away is to find the row that opened it, which by then may be a screen above. Same
+        // rule as the click handler: a keystroke something else has already acted on is not
+        // ours - the reference's filter takes Escape to clear its query, and clearing a query
+        // should not also close the panel it was being typed into.
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !event.defaultPrevented && secondaryNavToggle.getAttribute('aria-expanded') === 'true') {
+                closeSecondaryNav();
+            }
+        });
+    }
+
     // show or hide the error tooltip attached to a state badge (the badge sits
     // inside a ui/state-badge tooltip wrapper). The empty state is gated with
     // ee-tooltip-empty on the wrapper, not with hidden on the content -
