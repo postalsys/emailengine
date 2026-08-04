@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -37,6 +37,34 @@ msgstr[1] "%d dagen"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Klik <a href=\"%s\">hier</a> om door te gaan&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Onvoldoende rechten"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Alle gevraagde machtigingen zijn vereist om deze dienst correct te laten "
+"werken. Bij het inloggen zijn sommige vereiste machtigingen niet verleend."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "De volgende machtigingen zijn niet verleend:"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Probeer het nog eens en zorg ervoor dat alle selectievakjes voor toestemming "
+"op het toestemmingsscherm van Google zijn aangevinkt."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Probeer opnieuw"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
 msgid "Unsubscribe"
@@ -79,34 +107,6 @@ msgstr "Je e-mailadres <em>%s</em> is opnieuw geabonneerd."
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
 msgstr "E-mailadres"
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr "Onvoldoende rechten"
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"Alle gevraagde machtigingen zijn vereist om deze dienst correct te laten "
-"werken. Bij het inloggen zijn sommige vereiste machtigingen niet verleend."
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr "De volgende machtigingen zijn niet verleend:"
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Probeer het nog eens en zorg ervoor dat alle selectievakjes voor toestemming "
-"op het toestemmingsscherm van Google zijn aangevinkt."
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr "Probeer opnieuw"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"

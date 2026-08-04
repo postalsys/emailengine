@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: 2026-03-31 16:57+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -37,6 +37,30 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
@@ -77,30 +101,6 @@ msgstr ""
 
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr ""
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
 msgstr ""
 
 #: views/accounts/register/imap.hbs:13

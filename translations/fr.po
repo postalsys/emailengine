@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -37,6 +37,35 @@ msgstr[1] "%d jours"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Cliquez sur <a href=\"%s\">ici</a> pour continuer&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Autorisations insuffisantes"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Toutes les autorisations demandées sont nécessaires au bon fonctionnement de "
+"ce service. Certaines autorisations requises n'ont pas été accordées lors de "
+"la connexion."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "Les autorisations suivantes n'ont pas été accordées :"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Veuillez réessayer et vous assurer que toutes les cases d'autorisation sont "
+"cochées sur l'écran de consentement de Google."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Essayer de nouveau"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
 msgid "Unsubscribe"
@@ -77,35 +106,6 @@ msgstr "Votre adresse e-mail <em>%s</em> a été réinscrite."
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
 msgstr "Adresse e-mail"
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr "Autorisations insuffisantes"
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"Toutes les autorisations demandées sont nécessaires au bon fonctionnement de "
-"ce service. Certaines autorisations requises n'ont pas été accordées lors de "
-"la connexion."
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr "Les autorisations suivantes n'ont pas été accordées :"
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Veuillez réessayer et vous assurer que toutes les cases d'autorisation sont "
-"cochées sur l'écran de consentement de Google."
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr "Essayer de nouveau"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
