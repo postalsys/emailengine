@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -36,6 +36,34 @@ msgstr[0] "%d日"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "続き<a href=\"%s\">はこちら</a>をクリック&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "権限不足"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"このサービスが正常に動作するには、要求されたすべての権限が必要です。サインイ"
+"ン時に、必要な権限の一部が付与されませんでした。"
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "以下の権限は付与されませんでした："
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"もう一度お試しいただき、Googleの同意画面で全ての権限のチェックボックスが選択"
+"されていることをご確認ください。"
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "もう一度試してください"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
 msgid "Unsubscribe"
@@ -76,34 +104,6 @@ msgstr "メールアドレス<em>%s</em>が再購読されました。"
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
 msgstr "メールアドレス"
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr "権限不足"
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"このサービスが正常に動作するには、要求されたすべての権限が必要です。サインイ"
-"ン時に、必要な権限の一部が付与されませんでした。"
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr "以下の権限は付与されませんでした："
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"もう一度お試しいただき、Googleの同意画面で全ての権限のチェックボックスが選択"
-"されていることをご確認ください。"
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr "もう一度試してください"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"

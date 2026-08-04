@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -39,6 +39,34 @@ msgstr[2] "%d dni"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Kliknij <a href=\"%s\">tutaj</a>, aby kontynuować&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Niewystarczające uprawnienia"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Wszystkie wymagane uprawnienia są niezbędne do prawidłowego działania tej "
+"usługi. Niektóre z nich nie zostały przyznane podczas logowania."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "Nie przyznano następujących uprawnień:"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Spróbuj ponownie i upewnij się, że na ekranie zgody Google zaznaczone są "
+"wszystkie pola wyboru dotyczące uprawnień."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Spróbuj ponownie"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
 msgid "Unsubscribe"
@@ -80,34 +108,6 @@ msgstr "Twój adres e-mail <em>%s</em> został ponownie zasubskrybowany."
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
 msgstr "Adres e-mail"
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr "Niewystarczające uprawnienia"
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"Wszystkie wymagane uprawnienia są niezbędne do prawidłowego działania tej "
-"usługi. Niektóre z nich nie zostały przyznane podczas logowania."
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr "Nie przyznano następujących uprawnień:"
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Spróbuj ponownie i upewnij się, że na ekranie zgody Google zaznaczone są "
-"wszystkie pola wyboru dotyczące uprawnień."
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr "Spróbuj ponownie"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: 2026-08-04 05:20+0000\n"
+"POT-Creation-Date: 2026-08-04 05:25+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -37,6 +37,34 @@ msgstr[1] "%d päeva"
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
 msgstr "Kliki <a href=\"%s\">siin</a>, et jätkata&mldr;"
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr "Puuduvad õigused"
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+"Teenuse korrektseks toimimiseks on vajalikud kõik taotletud õigused. "
+"Mõningaid vajalikke õigusi ei antud sisselogimisel."
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr "Järgmisi õigusi ei antud:"
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on the "
+"Google consent screen."
+msgstr ""
+"Palun proovige uuesti ja veenduge, et Google’i nõusolekuaknas oleksid kõik "
+"lubade valikukastid märgitud."
+
+#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
+msgid "Try Again"
+msgstr "Proovige uuesti"
 
 #: views/unsubscribe.hbs:7 views/unsubscribe.hbs:60 views/unsubscribe.hbs:75
 msgid "Unsubscribe"
@@ -80,34 +108,6 @@ msgstr "Teie e-posti aadress <em>%s</em> lisati uuesti tellijate nimekirja."
 #: views/unsubscribe.hbs:70 views/accounts/register/imap.hbs:25
 msgid "Email address"
 msgstr "E-posti aadress"
-
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
-msgstr "Puuduvad õigused"
-
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
-msgstr ""
-"Teenuse korrektseks toimimiseks on vajalikud kõik taotletud õigused. "
-"Mõningaid vajalikke õigusi ei antud sisselogimisel."
-
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
-msgstr "Järgmisi õigusi ei antud:"
-
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on the "
-"Google consent screen."
-msgstr ""
-"Palun proovige uuesti ja veenduge, et Google’i nõusolekuaknas oleksid kõik "
-"lubade valikukastid märgitud."
-
-#: views/oauth-scope-error.hbs:28 views/account-identity-error.hbs:32
-msgid "Try Again"
-msgstr "Proovige uuesti"
 
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
