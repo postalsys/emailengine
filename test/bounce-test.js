@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { bounceDetect } = require('../lib/bounce-detect');
+const { bounceDetect, decodeDeliveryStatus } = require('../lib/bounce-detect');
 const fs = require('fs');
 
 const Path = require('path');
@@ -147,5 +147,64 @@ test('Bounce parsing tests', async t => {
             '5.2.1 The email account that you tried to reach is disabled. Learn more at 5.2.1  https://support.google.com/mail/?p=DisabledUser j8-20020a170903024800b001946612570csi19333477plh.316 - gsmtp'
         );
         assert.strictEqual(bounce.messageId, '<63d982c2660381675199170@smtppro.zoho.com>');
+    });
+});
+
+test('decodeDeliveryStatus', async t => {
+    await t.test('reads the per-recipient block that follows the per-message block', () => {
+        const entries = decodeDeliveryStatus(
+            [
+                'Reporting-MTA: dns; mx.example.com',
+                'Arrival-Date: Mon, 10 Oct 2022 01:37:21 -0400 (EDT)',
+                '',
+                'Final-Recipient: rfc822; user@example.com',
+                'Action: failed',
+                'Status: 5.1.1',
+                ''
+            ].join('\r\n')
+        );
+
+        assert.deepStrictEqual(entries['reporting-mta'], ['dns; mx.example.com']);
+        assert.deepStrictEqual(entries['final-recipient'], ['rfc822; user@example.com']);
+        assert.deepStrictEqual(entries.action, ['failed']);
+        assert.deepStrictEqual(entries.status, ['5.1.1']);
+    });
+
+    await t.test('collects a field reported for more than one recipient', () => {
+        const entries = decodeDeliveryStatus(
+            [
+                'Reporting-MTA: dns; mx.example.com',
+                '',
+                'Final-Recipient: rfc822; first@example.com',
+                'Action: failed',
+                '',
+                'Final-Recipient: rfc822; second@example.com',
+                'Action: delayed'
+            ].join('\r\n')
+        );
+
+        assert.deepStrictEqual(entries['final-recipient'], ['rfc822; first@example.com', 'rfc822; second@example.com']);
+        assert.deepStrictEqual(entries.action, ['failed', 'delayed']);
+    });
+
+    await t.test('unfolds a continuation line inside a block', () => {
+        const entries = decodeDeliveryStatus(
+            ['Final-Recipient: rfc822; user@example.com', 'Diagnostic-Code: smtp; 550 5.1.1 <user@example.com>: Recipient address', '    rejected'].join('\r\n')
+        );
+
+        assert.deepStrictEqual(entries['diagnostic-code'], ['smtp; 550 5.1.1 <user@example.com>: Recipient address rejected']);
+    });
+
+    await t.test('a "__proto__" field does not reach Object.prototype', () => {
+        const entries = decodeDeliveryStatus(['__proto__: polluted', '', 'Action: failed'].join('\r\n'));
+
+        assert.deepStrictEqual(entries['__proto__'], ['polluted']);
+        assert.deepStrictEqual(entries.action, ['failed']);
+        assert.strictEqual({}.polluted, undefined);
+    });
+
+    await t.test('tolerates an empty body', () => {
+        assert.deepStrictEqual(Object.keys(decodeDeliveryStatus('')), []);
+        assert.deepStrictEqual(Object.keys(decodeDeliveryStatus(null)), []);
     });
 });
