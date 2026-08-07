@@ -7,7 +7,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { arfDetect } = require('../lib/arf-detect');
+const { arfDetect, camelCaseComplaint } = require('../lib/arf-detect');
 const { simpleParser } = require('mailparser');
 const fs = require('fs');
 
@@ -301,5 +301,25 @@ test('mightBeAComplaint drift between BaseClient and Mailbox', async t => {
         assert.strictEqual(mightBeAComplaint({ ...base, attachments: [] }), true);
         // With an embedded message both accept.
         assert.strictEqual(baseClientComplaint({ ...base, attachments: [{ contentType: 'message/rfc822' }] }), true);
+    });
+});
+
+test('camelCaseComplaint', async t => {
+    await t.test('camelCases both sections of a report', () => {
+        const complaint = camelCaseComplaint({
+            arf: { 'feedback-type': 'abuse', 'original-rcpt-to': ['user@example.com'] },
+            headers: { 'message-id': '<a@b>', subject: 'x' }
+        });
+
+        assert.deepStrictEqual(complaint, {
+            arf: { feedbackType: 'abuse', originalRcptTo: ['user@example.com'] },
+            headers: { messageId: '<a@b>', subject: 'x' }
+        });
+    });
+
+    await t.test('leaves a section out when it holds no fields', () => {
+        const complaint = camelCaseComplaint({ arf: { 'feedback-type': 'abuse' }, headers: {} });
+
+        assert.deepStrictEqual(Object.keys(complaint), ['arf']);
     });
 });

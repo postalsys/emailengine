@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { bounceDetect, decodeDeliveryStatus, parseDeliveryReport } = require('../lib/bounce-detect');
+const { bounceDetect, decodeDeliveryStatus, parseDeliveryReport, applyDeliveryReport } = require('../lib/bounce-detect');
+const msgpack = require('msgpack5')();
 const fs = require('fs');
 
 const Path = require('path');
@@ -170,7 +171,7 @@ test('decodeDeliveryStatus', async t => {
         assert.deepStrictEqual(entries.status, ['5.1.1']);
     });
 
-    await t.test('collects a field reported for more than one recipient', () => {
+    await t.test('reports only the first recipient when several are listed', () => {
         const entries = decodeDeliveryStatus(
             [
                 'Reporting-MTA: dns; mx.example.com',
@@ -183,8 +184,35 @@ test('decodeDeliveryStatus', async t => {
             ].join('\r\n')
         );
 
-        assert.deepStrictEqual(entries['final-recipient'], ['rfc822; first@example.com', 'rfc822; second@example.com']);
-        assert.deepStrictEqual(entries.action, ['failed', 'delayed']);
+        assert.deepStrictEqual(entries['final-recipient'], ['rfc822; first@example.com']);
+        assert.deepStrictEqual(entries.action, ['failed']);
+        // per-message fields still come through
+        assert.deepStrictEqual(entries['reporting-mta'], ['dns; mx.example.com']);
+    });
+
+    await t.test('does not pair a recipient with the diagnostic code of another', () => {
+        const entries = decodeDeliveryStatus(
+            [
+                'Reporting-MTA: dns; mx.example.com',
+                '',
+                'Final-Recipient: rfc822; first@example.com',
+                'Action: failed',
+                '',
+                'Final-Recipient: rfc822; second@example.com',
+                'Action: failed',
+                'Diagnostic-Code: smtp; 550 No such user'
+            ].join('\r\n')
+        );
+
+        assert.deepStrictEqual(entries['final-recipient'], ['rfc822; first@example.com']);
+        assert.strictEqual(entries['diagnostic-code'], undefined);
+    });
+
+    await t.test('merges the whole body when no recipient is reported', () => {
+        const entries = decodeDeliveryStatus(['Reporting-MTA: dns; mx.example.com', '', 'Action: failed'].join('\r\n'));
+
+        assert.deepStrictEqual(entries['reporting-mta'], ['dns; mx.example.com']);
+        assert.deepStrictEqual(entries.action, ['failed']);
     });
 
     await t.test('a "__proto__" field does not reach Object.prototype', () => {
@@ -227,18 +255,103 @@ test('parseDeliveryReport', async t => {
         assert.strictEqual(parseDeliveryReport('Arrival-Date: whenever').arrivalDate, 'whenever');
     });
 
-    await t.test('drops a field that carries an address type', () => {
-        // Long-standing behavior, see the note on parseDeliveryReport. Pinned so that
-        // starting to report these is a deliberate change to the webhook payload
+    await t.test('reports a field that carries an address type as label and value', () => {
         const report = parseDeliveryReport(body);
 
-        assert.strictEqual(report.finalRecipient, undefined);
-        assert.strictEqual(report.reportingMta, undefined);
+        assert.deepStrictEqual(report.finalRecipient, { label: 'rfc822', value: 'user@example.com' });
+        assert.deepStrictEqual(report.reportingMta, { label: 'dns', value: 'mx.example.com' });
     });
 
-    await t.test('keeps the last value of a field reported for several recipients', () => {
-        const report = parseDeliveryReport(['Reporting-MTA: dns; mx.example.com', '', 'Action: failed', '', 'Action: delayed'].join('\r\n'));
+    await t.test('reports the diagnostic code of the recipient it describes', () => {
+        const report = parseDeliveryReport(
+            [
+                'Reporting-MTA: dns; mx.example.com',
+                '',
+                'Final-Recipient: rfc822; first@example.com',
+                'Action: delayed',
+                'Diagnostic-Code: smtp; 450 Greylisted',
+                '',
+                'Final-Recipient: rfc822; second@example.com',
+                'Action: failed',
+                'Diagnostic-Code: smtp; 550 No such user'
+            ].join('\r\n')
+        );
 
+        assert.deepStrictEqual(report.finalRecipient, { label: 'rfc822', value: 'first@example.com' });
         assert.strictEqual(report.action, 'delayed');
+        assert.deepStrictEqual(report.diagnosticCode, { label: 'smtp', value: '450 Greylisted' });
+    });
+
+    await t.test('unfolds a Diagnostic-Code split over several lines', () => {
+        const report = parseDeliveryReport(
+            ['Final-Recipient: rfc822; user@example.com', 'Diagnostic-Code: smtp; 550 5.1.1 <user@example.com>: Recipient address', '    rejected'].join('\r\n')
+        );
+
+        assert.deepStrictEqual(report.diagnosticCode, { label: 'smtp', value: '550 5.1.1 <user@example.com>: Recipient address rejected' });
+    });
+
+    await t.test('tolerates an empty body', () => {
+        assert.deepStrictEqual(parseDeliveryReport(''), {});
+        assert.deepStrictEqual(parseDeliveryReport(null), {});
+    });
+
+    await t.test('drops a "__proto__" field instead of reporting it', () => {
+        // An address-typed value is an object, so assigning it would swap the report's prototype
+        // for attacker-supplied data, and keeping it as an own key makes msgpack refuse to decode
+        const report = parseDeliveryReport(['Final-Recipient: rfc822; user@example.com', '__proto__: rfc822; injected'].join('\r\n'));
+
+        assert.strictEqual(Object.getPrototypeOf(report), Object.prototype);
+        assert.deepStrictEqual(Object.keys(report), ['finalRecipient']);
+        assert.deepStrictEqual(report.finalRecipient, { label: 'rfc822', value: 'user@example.com' });
+        assert.strictEqual({}.label, undefined);
+        assert.deepStrictEqual(msgpack.decode(msgpack.encode(report)), { finalRecipient: { label: 'rfc822', value: 'user@example.com' } });
+    });
+
+    await t.test('ignores a block that is only a continuation line', () => {
+        // decodeHeaders returns a single empty key for such a block, which is not a header
+        const report = parseDeliveryReport(['Reporting-MTA: dns; mx.example.com', '', '  orphaned continuation', '', 'Action: failed'].join('\r\n'));
+
+        assert.deepStrictEqual(Object.keys(report).sort(), ['action', 'reportingMta']);
+        assert.strictEqual(report.action, 'failed');
+    });
+});
+
+test('applyDeliveryReport', async t => {
+    const logger = { debug: () => false };
+    const dsn = action => ({
+        attachments: [
+            {
+                contentType: 'message/delivery-status',
+                content: ['Reporting-MTA: dns; mx.example.com', '', 'Final-Recipient: rfc822; user@example.com', `Action: ${action}`].join('\r\n')
+            }
+        ]
+    });
+
+    await t.test('sets deliveryReport for a delivered notification', () => {
+        const messageInfo = {};
+
+        assert.strictEqual(applyDeliveryReport(dsn('delivered'), messageInfo, logger), true);
+        assert.deepStrictEqual(messageInfo.deliveryReport.finalRecipient, { label: 'rfc822', value: 'user@example.com' });
+    });
+
+    await t.test('sets deliveryReport for a delayed notification', () => {
+        const messageInfo = {};
+
+        assert.strictEqual(applyDeliveryReport(dsn('delayed'), messageInfo, logger), true);
+        assert.strictEqual(messageInfo.deliveryReport.action, 'delayed');
+    });
+
+    await t.test('leaves a failure to the bounce path', () => {
+        const messageInfo = {};
+
+        assert.strictEqual(applyDeliveryReport(dsn('failed'), messageInfo, logger), false);
+        assert.strictEqual(messageInfo.deliveryReport, undefined);
+    });
+
+    await t.test('does nothing without a delivery-status part', () => {
+        const messageInfo = {};
+
+        assert.strictEqual(applyDeliveryReport({ attachments: [{ contentType: 'text/plain', content: 'x' }] }, messageInfo, logger), false);
+        assert.strictEqual(messageInfo.deliveryReport, undefined);
     });
 });
