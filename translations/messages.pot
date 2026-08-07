@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-04 05:25+0000\n"
+"POT-Creation-Date: 2026-08-07 10:48+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:2913
@@ -26,10 +26,6 @@ msgid "%d day"
 msgid_plural "%d days"
 msgstr[0] ""
 msgstr[1] ""
-
-#: views/redirect.hbs:1
-msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
-msgstr ""
 
 #: views/oauth-scope-error.hbs:5
 msgid "Insufficient Permissions"
@@ -100,6 +96,14 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
+#: views/accounts/register/index.hbs:6
+msgid "Choose your email account provider"
+msgstr ""
+
+#: views/accounts/register/index.hbs:19
+msgid "Standard IMAP"
+msgstr ""
+
 #: views/accounts/register/imap.hbs:13
 msgid "Your name"
 msgstr ""
@@ -128,14 +132,6 @@ msgstr ""
 
 #: views/accounts/register/imap.hbs:55
 msgid "Continue"
-msgstr ""
-
-#: views/accounts/register/index.hbs:6
-msgid "Choose your email account provider"
-msgstr ""
-
-#: views/accounts/register/index.hbs:19
-msgid "Standard IMAP"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:22
@@ -251,6 +247,10 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
+#: views/redirect.hbs:1
+msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
 msgstr ""
@@ -283,19 +283,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1057
+#: lib/tools.js:1091
 #: lib/ui-routes/unsubscribe-routes.js:28
 #: lib/ui-routes/unsubscribe-routes.js:92
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:1878
+#: lib/tools.js:1912
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1901
-#: lib/tools.js:1907
-#: lib/tools.js:1912
+#: lib/tools.js:1935
+#: lib/tools.js:1941
+#: lib/tools.js:1946
 #: lib/ui-routes/account-routes.js:1056
 msgid "Invalid or expired account setup URL"
 msgstr ""
@@ -375,7 +375,7 @@ msgstr ""
 msgid "Temporary error, please try again"
 msgstr ""
 
-#: lib/ui-routes/admin-config-routes.js:173
+#: lib/ui-routes/admin-config-routes.js:168
 msgid "Invalid API key for OpenAI"
 msgstr ""
 
