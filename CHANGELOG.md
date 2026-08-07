@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.78.0](https://github.com/postalsys/emailengine/compare/v2.77.0...v2.78.0) (2026-08-07)
+
+
+### Features
+
+* **accounts:** pin an account to an expected email identity ([a64bb60](https://github.com/postalsys/emailengine/commit/a64bb6009163bed0835cb3f8342e5d0ec20549b3)), closes [#626](https://github.com/postalsys/emailengine/issues/626)
+* **admin-ui:** keep the access-token banner in view and make the reference nav usable on a phone ([a4bb55f](https://github.com/postalsys/emailengine/commit/a4bb55f7a416a74c65b50a0b69879b5b21915711))
+* **admin:** mark the operation being read in the API reference sidebar ([700eab7](https://github.com/postalsys/emailengine/commit/700eab7716bec0362b73bf5e8f498be971071e7e))
+
+
+### Bug Fixes
+
+* **accounts:** let a wrong-account setup be retried instead of bouncing it back ([4cd6ac4](https://github.com/postalsys/emailengine/commit/4cd6ac4d0b935244accc55b1f9abb41cf906a2dc))
+* **accounts:** remove the messages an account had queued when it is deleted ([ba6897f](https://github.com/postalsys/emailengine/commit/ba6897f4a5966a1a0dcddd7c514a3804e31591c4))
+* **bounces:** read every block of a delivery-status body ([a99878e](https://github.com/postalsys/emailengine/commit/a99878eaf2970b36a7cc0ac50a725292405c6ab3))
+* **bounces:** report every delivery-status field and describe one recipient ([71300c3](https://github.com/postalsys/emailengine/commit/71300c3fcf72065764857b1e90f43626b5e258e7))
+* **deps:** update dependencies (libmime 5.4.2, nodemailer 9.0.5, imapflow 1.6.6) ([abd8034](https://github.com/postalsys/emailengine/commit/abd8034d1e365c5e523a361a0379649fa9c6c29c))
+* **deps:** update our own packages so the tree carries one copy of each ([4a6e79f](https://github.com/postalsys/emailengine/commit/4a6e79fcaf2d11a35870e557c4a8e6756d05b4b4))
+* **webhooks:** bind the egress check to the address actually connected to ([#631](https://github.com/postalsys/emailengine/issues/631)) ([2d68b37](https://github.com/postalsys/emailengine/commit/2d68b37a1d186c7f9894e4b1425c1c52870c7cb5))
+
+
+### Performance Improvements
+
+* **accounts:** unlink the account keys instead of deleting them inline ([ec11210](https://github.com/postalsys/emailengine/commit/ec11210a750021c1ccbf2df3637816974c0f995c))
+
 ## [2.77.0](https://github.com/postalsys/emailengine/compare/v2.76.0...v2.77.0) (2026-08-03)
 
 
