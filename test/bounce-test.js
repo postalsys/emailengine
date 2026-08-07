@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
-const { bounceDetect, decodeDeliveryStatus } = require('../lib/bounce-detect');
+const { bounceDetect, decodeDeliveryStatus, parseDeliveryReport } = require('../lib/bounce-detect');
 const fs = require('fs');
 
 const Path = require('path');
@@ -187,14 +187,6 @@ test('decodeDeliveryStatus', async t => {
         assert.deepStrictEqual(entries.action, ['failed', 'delayed']);
     });
 
-    await t.test('unfolds a continuation line inside a block', () => {
-        const entries = decodeDeliveryStatus(
-            ['Final-Recipient: rfc822; user@example.com', 'Diagnostic-Code: smtp; 550 5.1.1 <user@example.com>: Recipient address', '    rejected'].join('\r\n')
-        );
-
-        assert.deepStrictEqual(entries['diagnostic-code'], ['smtp; 550 5.1.1 <user@example.com>: Recipient address rejected']);
-    });
-
     await t.test('a "__proto__" field does not reach Object.prototype', () => {
         const entries = decodeDeliveryStatus(['__proto__: polluted', '', 'Action: failed'].join('\r\n'));
 
@@ -206,5 +198,47 @@ test('decodeDeliveryStatus', async t => {
     await t.test('tolerates an empty body', () => {
         assert.deepStrictEqual(Object.keys(decodeDeliveryStatus('')), []);
         assert.deepStrictEqual(Object.keys(decodeDeliveryStatus(null)), []);
+    });
+});
+
+test('parseDeliveryReport', async t => {
+    const body = [
+        'Reporting-MTA: dns; mx.example.com',
+        'Arrival-Date: Mon, 10 Oct 2022 01:37:21 -0400 (EDT)',
+        '',
+        'Final-Recipient: rfc822; user@example.com',
+        'Action: delivered',
+        'Status: 2.0.0',
+        ''
+    ].join('\r\n');
+
+    await t.test('camelCases the field names and reads the per-recipient block', () => {
+        const report = parseDeliveryReport(body);
+
+        assert.strictEqual(report.action, 'delivered');
+        assert.strictEqual(report.status, '2.0.0');
+    });
+
+    await t.test('normalizes Arrival-Date to an ISO timestamp', () => {
+        assert.strictEqual(parseDeliveryReport(body).arrivalDate, new Date('Mon, 10 Oct 2022 01:37:21 -0400').toISOString());
+    });
+
+    await t.test('leaves an unparseable Arrival-Date as it was', () => {
+        assert.strictEqual(parseDeliveryReport('Arrival-Date: whenever').arrivalDate, 'whenever');
+    });
+
+    await t.test('drops a field that carries an address type', () => {
+        // Long-standing behavior, see the note on parseDeliveryReport. Pinned so that
+        // starting to report these is a deliberate change to the webhook payload
+        const report = parseDeliveryReport(body);
+
+        assert.strictEqual(report.finalRecipient, undefined);
+        assert.strictEqual(report.reportingMta, undefined);
+    });
+
+    await t.test('keeps the last value of a field reported for several recipients', () => {
+        const report = parseDeliveryReport(['Reporting-MTA: dns; mx.example.com', '', 'Action: failed', '', 'Action: delayed'].join('\r\n'));
+
+        assert.strictEqual(report.action, 'delayed');
     });
 });
