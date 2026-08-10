@@ -9,8 +9,9 @@
 // The pure helpers are exercised directly. The resolver is exercised through the
 // public autodetectImapSettings() with dns.promises mocked, staying on the MX
 // branch (and the Gmail -> SRV branch) so no real DNS or HTTP is performed - the
-// HTTP-based fallback resolvers (autoconfig/well-known/mozilla/autodiscover) are
-// intentionally out of scope here.
+// network halves of the HTTP-based fallback resolvers (autoconfig/well-known/
+// mozilla/autodiscover) are intentionally out of scope here, while their response
+// processing is covered via processAutoconfigFile/processAutodiscoverResponse.
 
 const test = require('node:test');
 const { mock } = require('node:test');
@@ -18,7 +19,7 @@ const assert = require('node:assert').strict;
 
 const dns = require('dns').promises;
 
-const { autodetectImapSettings, processAutoconfigFile, getAppPassword, escapeXml } = require('../lib/autodetect-imap-settings');
+const { autodetectImapSettings, processAutoconfigFile, processAutodiscoverResponse, getAppPassword, escapeXml } = require('../lib/autodetect-imap-settings');
 const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 
@@ -193,6 +194,82 @@ test('processAutoconfigFile', async t => {
         assert.strictEqual(res.imap.host, 'imap.example.com');
         // No <username> element -> no auth block is added.
         assert.strictEqual(res.imap.auth, undefined);
+    });
+
+    await t.test('rejects a malformed document (HTML error page)', async () => {
+        await assert.rejects(processAutoconfigFile('john@example.com', null, '<html><body><p>Not found<br></body></html>', 'autoconfig'));
+    });
+
+    await t.test('decodes XML entities in element values', async () => {
+        const text = xml(
+            `<incomingServer type="imap">
+        <hostname>imap.example.com</hostname>
+        <port>993</port>
+        <socketType>SSL</socketType>
+        <username>john&amp;doe@example.com</username>
+      </incomingServer>`,
+            ''
+        );
+        const res = await processAutoconfigFile('john&doe@example.com', null, text, 'autoconfig');
+        assert.strictEqual(res.imap.auth.user, 'john&doe@example.com');
+    });
+});
+
+test('processAutodiscoverResponse', async t => {
+    const pox = accounts => `<?xml version="1.0" encoding="utf-8"?>
+<Autodiscover xmlns="http://schemas.microsoft.com/exchange/autodiscover/responseschema/2006">
+  <Response xmlns="http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a">
+    ${accounts}
+  </Response>
+</Autodiscover>`;
+
+    const emailAccount = `<Account>
+      <AccountType>email</AccountType>
+      <Action>settings</Action>
+      <Protocol>
+        <Type>IMAP</Type>
+        <Server>imap.example.com</Server>
+        <Port>993</Port>
+        <LoginName>john@example.com</LoginName>
+        <SSL>on</SSL>
+      </Protocol>
+      <Protocol>
+        <Type>SMTP</Type>
+        <Server>smtp.example.com</Server>
+        <Port>587</Port>
+        <LoginName>john@example.com</LoginName>
+        <SSL>off</SSL>
+      </Protocol>
+    </Account>`;
+
+    await t.test('parses IMAP and SMTP protocol entries of an email account', async () => {
+        const res = await processAutodiscoverResponse(pox(emailAccount), 'autodiscover');
+        assert.deepStrictEqual(res, {
+            imap: { host: 'imap.example.com', port: 993, secure: true, auth: { user: 'john@example.com' } },
+            smtp: { host: 'smtp.example.com', port: 587, secure: false, auth: { user: 'john@example.com' } },
+            _source: 'autodiscover'
+        });
+    });
+
+    await t.test('defaults the source label', async () => {
+        const res = await processAutodiscoverResponse(pox(emailAccount));
+        assert.strictEqual(res._source, 'autodiscover');
+    });
+
+    await t.test('ignores accounts that are not of type email', async () => {
+        const res = await processAutodiscoverResponse(pox(emailAccount.replace(/email/, 'notes')), 'autodiscover');
+        assert.strictEqual(res.imap, false);
+        assert.strictEqual(res.smtp, false);
+    });
+
+    await t.test('returns false entries for an empty response body', async () => {
+        const res = await processAutodiscoverResponse('', 'autodiscover');
+        assert.strictEqual(res.imap, false);
+        assert.strictEqual(res.smtp, false);
+    });
+
+    await t.test('rejects a malformed document', async () => {
+        await assert.rejects(processAutodiscoverResponse('<Autodiscover><Response>', 'autodiscover'));
     });
 });
 
