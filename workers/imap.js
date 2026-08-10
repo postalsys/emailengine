@@ -23,7 +23,7 @@ const { MessagePortWritable, pipeToMessagePort } = require('../lib/message-port-
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 const { getESClient } = require('../lib/document-store');
 const settings = require('../lib/settings');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 
 const getSecret = require('../lib/get-secret');
 

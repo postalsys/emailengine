@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert').strict;
 
 const { bounceDetect, decodeDeliveryStatus, parseDeliveryReport, applyDeliveryReport } = require('../lib/bounce-detect');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 const fs = require('fs');
 
 const Path = require('path');

@@ -135,7 +135,7 @@ const getSecret = require('./lib/get-secret');
 const { rejectWorkerCalls } = require('./lib/reject-worker-calls');
 const { RespawnTracker } = require('./lib/respawn-backoff');
 
-const msgpack = require('msgpack5')();
+const msgpack = require('./lib/msgpack');
 
 // Initialize default configuration values if not set
 config.service = config.service || {};

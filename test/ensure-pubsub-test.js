@@ -209,7 +209,7 @@ require.cache[ioredfourPath] = {
 };
 
 // Now safe to import production modules
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 const { oauth2Apps } = require('../lib/oauth2-apps');
 const settings = require('../lib/settings');
 const { GMAIL_PUBSUB_DEFAULT_EXPIRATION_TTL } = require('../lib/consts');

@@ -19,7 +19,7 @@ const { redis, queueConf, submitQueue } = require('../lib/db');
 const { Worker } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 
 const { EMAIL_FAILED_NOTIFY } = require('../lib/consts');
 

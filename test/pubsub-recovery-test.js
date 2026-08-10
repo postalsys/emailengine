@@ -244,7 +244,7 @@ require.cache[getSecretPath] = {
 // Now safe to import production modules
 const { PubSubInstance, GooglePubSub } = require('../lib/oauth/pubsub/google');
 const { oauth2Apps } = require('../lib/oauth2-apps');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 const { REDIS_PREFIX } = require('../lib/consts');
 
 // Helper to create a mock 404 error matching the shape from lib/oauth/gmail.js

@@ -16,7 +16,7 @@ const config = require('@zone-eu/wild-config');
 const { encrypt, decrypt, parseEncryptedData } = require('./lib/encrypt');
 const { encryptedKeys } = require('./lib/settings');
 const getSecret = require('./lib/get-secret');
-const msgpack = require('msgpack5')();
+const msgpack = require('./lib/msgpack');
 
 const { REDIS_PREFIX, ENCRYPTED_APP_KEYS } = require('./lib/consts');
 const { Settings: CertSettings } = require('@postalsys/certs/lib/settings');

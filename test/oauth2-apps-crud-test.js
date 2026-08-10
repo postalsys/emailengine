@@ -15,7 +15,7 @@ const { redis } = require('../lib/db');
 const registerRedisTeardown = require('./helpers/redis-teardown');
 const { REDIS_PREFIX } = require('../lib/consts');
 
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 
 const createdIds = [];
 

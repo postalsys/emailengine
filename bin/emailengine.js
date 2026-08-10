@@ -14,7 +14,7 @@ const getSecret = require('../lib/get-secret');
 const { redis } = require('../lib/db');
 
 const argv = require('minimist')(process.argv.slice(2));
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 const crypto = require('crypto');
 
 // Command definitions for dynamic help generation

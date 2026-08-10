@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const crypto = require('crypto');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 
 // Mock the db module before any other imports to prevent real Redis/BullMQ
 // connections from being created.

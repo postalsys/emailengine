@@ -10,7 +10,7 @@ const { promisify } = require('node:util');
 
 const Redis = require('ioredis');
 const config = require('@zone-eu/wild-config');
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 const { Settings: CertSettings } = require('@postalsys/certs/lib/settings');
 
 const { encrypt, decrypt } = require('../lib/encrypt');

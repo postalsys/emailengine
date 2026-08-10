@@ -19,7 +19,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
-const msgpack = require('msgpack5')();
+const msgpack = require('../lib/msgpack');
 
 // --- Mock setup ---
 
@@ -599,8 +599,8 @@ test('Account.getMailboxListing', async t => {
     });
 
     await t.test('a corrupt stored listing entry is skipped, not returned as a garbage mailbox', async () => {
-        // msgpack5 decodes some corrupt buffers to a primitive instead of throwing. Without a
-        // shape check that primitive gets boxed by Object.assign() and shipped to the caller.
+        // The msgpack decoder resolves some corrupt buffers to a primitive instead of throwing.
+        // Without a shape check that primitive gets boxed by Object.assign() and shipped to the caller.
         seedAccount();
         seedStoredListing([{ path: 'INBOX', delimiter: '/', noInferiors: false }]);
         mockRedisData[mailboxListKey].Broken = Buffer.from('not msgpack at all');
