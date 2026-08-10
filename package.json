@@ -77,7 +77,6 @@
         "@zone-eu/mailsplit": "5.4.15",
         "@zone-eu/wild-config": "1.7.6",
         "ace-builds": "1.44.0",
-        "base32.js": "0.1.0",
         "bullmq": "5.81.3",
         "compare-versions": "6.1.1",
         "dotenv": "17.4.2",
@@ -114,7 +113,6 @@
         "qrcode": "1.5.4",
         "smtp-server": "3.19.3",
         "socks": "2.8.9",
-        "speakeasy": "2.0.0",
         "timezones-list": "3.1.0",
         "undici": "7.29.0",
         "xml2js": "0.6.2"
