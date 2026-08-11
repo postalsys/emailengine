@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-07 13:01+0000\n"
+"POT-Creation-Date: 2026-08-11 12:06+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:2913
@@ -29,6 +29,31 @@ msgstr[1] ""
 
 #: views/redirect.hbs:1
 msgid "Click <a href=\"%s\">here</a> to continue&mldr;"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:5
+msgid "Insufficient Permissions"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:10
+msgid ""
+"All requested permissions are required for this service to function "
+"properly. Some required permissions were not granted during sign-in."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:14
+msgid "The following permissions were not granted:"
+msgstr ""
+
+#: views/oauth-scope-error.hbs:23
+msgid ""
+"Please try again and make sure all permission checkboxes are selected on "
+"the Google consent screen."
+msgstr ""
+
+#: views/oauth-scope-error.hbs:28
+#: views/account-identity-error.hbs:32
+msgid "Try Again"
 msgstr ""
 
 #: views/unsubscribe.hbs:7
@@ -75,29 +100,34 @@ msgstr ""
 msgid "Email address"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:5
-msgid "Insufficient Permissions"
+#: views/accounts/register/imap.hbs:13
+msgid "Your name"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:10
-msgid ""
-"All requested permissions are required for this service to function "
-"properly. Some required permissions were not granted during sign-in."
+#: views/accounts/register/imap.hbs:19
+msgid "Enter your full name"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:14
-msgid "The following permissions were not granted:"
+#: views/accounts/register/imap.hbs:35
+msgid "This setup link is restricted to this email address"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:23
-msgid ""
-"Please try again and make sure all permission checkboxes are selected on "
-"the Google consent screen."
+#: views/accounts/register/imap.hbs:37
+msgid "Enter your email address"
 msgstr ""
 
-#: views/oauth-scope-error.hbs:28
-#: views/account-identity-error.hbs:32
-msgid "Try Again"
+#: views/accounts/register/imap.hbs:43
+#: views/accounts/register/imap-server.hbs:39
+#: views/accounts/register/imap-server.hbs:146
+msgid "Password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:49
+msgid "Enter your account password"
+msgstr ""
+
+#: views/accounts/register/imap.hbs:55
+msgid "Continue"
 msgstr ""
 
 #: views/accounts/register/index.hbs:6
@@ -115,12 +145,6 @@ msgstr ""
 #: views/accounts/register/imap-server.hbs:25
 #: views/accounts/register/imap-server.hbs:132
 msgid "Username"
-msgstr ""
-
-#: views/accounts/register/imap-server.hbs:39
-#: views/accounts/register/imap-server.hbs:146
-#: views/accounts/register/imap.hbs:43
-msgid "Password"
 msgstr ""
 
 #: views/accounts/register/imap-server.hbs:51
@@ -227,30 +251,6 @@ msgstr ""
 msgid "Request failed."
 msgstr ""
 
-#: views/accounts/register/imap.hbs:13
-msgid "Your name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:19
-msgid "Enter your full name"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:35
-msgid "This setup link is restricted to this email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:37
-msgid "Enter your email address"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:49
-msgid "Enter your account password"
-msgstr ""
-
-#: views/accounts/register/imap.hbs:55
-msgid "Continue"
-msgstr ""
-
 #: views/account-identity-error.hbs:7
 msgid "Wrong Email Account"
 msgstr ""
@@ -275,7 +275,7 @@ msgid ""
 "contact the service that sent you this link."
 msgstr ""
 
-#: lib/autodetect-imap-settings.js:90
+#: lib/autodetect-imap-settings.js:109
 msgid ""
 "Microsoft has disabled password-based sign-ins (including app passwords) "
 "for Outlook.com, Hotmail.com, and Microsoft 365 email accounts. To "
@@ -283,19 +283,19 @@ msgid ""
 "connect your account."
 msgstr ""
 
-#: lib/tools.js:1091
+#: lib/tools.js:1157
 #: lib/ui-routes/unsubscribe-routes.js:28
 #: lib/ui-routes/unsubscribe-routes.js:92
 msgid "Invalid input"
 msgstr ""
 
-#: lib/tools.js:1912
+#: lib/tools.js:1978
 msgid "Signature validation failed"
 msgstr ""
 
-#: lib/tools.js:1935
-#: lib/tools.js:1941
-#: lib/tools.js:1946
+#: lib/tools.js:2001
+#: lib/tools.js:2007
+#: lib/tools.js:2012
 #: lib/ui-routes/account-routes.js:1056
 msgid "Invalid or expired account setup URL"
 msgstr ""
