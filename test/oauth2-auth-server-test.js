@@ -7,6 +7,11 @@
 // which never looked at the flag and renewed from a stored refresh token instead - a token an
 // auth-server-backed account does not have. Setting the flag on an OAuth2 account that syncs over
 // IMAP was therefore accepted, stored, and silently ignored.
+//
+// Because the flag used to be ignored, long-lived instances carry it on accounts that were never
+// auth-server backed and sync fine on their stored tokens. Honoring such a stale flag on an
+// instance with no auth server configured can only fail, so useAuthServerForOAuth2() ignores it
+// and the stored tokens win - the fallback cases below pin that down.
 
 const test = require('node:test');
 const assert = require('node:assert').strict;
@@ -34,6 +39,14 @@ realTools.resolveCredentials = async (account, proto) => {
 const appsPath = require.resolve('../lib/oauth2-apps');
 const realApps = require(appsPath);
 realApps.oauth2Apps.get = async () => ({ id: 'app-1', provider: 'gmail', baseScopes: 'imap' });
+
+// shouldUseAuthServer() reads the `authServer` setting to decide whether a stale flag can be
+// honored at all. Configured by default so the tests above the fallback cases keep their meaning.
+const settingsPath = require.resolve('../lib/settings');
+const realSettings = require(settingsPath);
+const realSettingsGet = realSettings.get.bind(realSettings);
+let configuredAuthServer = 'https://auth.example.com/creds';
+realSettings.get = async key => (key === 'authServer' ? configuredAuthServer : realSettingsGet(key));
 
 const { BaseClient } = require('../lib/email-client/base-client');
 
@@ -97,6 +110,7 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
         authServerCalls.length = 0;
         authServerError = null;
         authServerResponse = { user: 'from-auth-server@example.com', accessToken: 'ACCESS-TOKEN-FROM-AUTH-SERVER' };
+        configuredAuthServer = 'https://auth.example.com/creds';
     });
 
     await t.test('IMAP: fetches the token from the auth server instead of renewing', async () => {
@@ -120,7 +134,7 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
         assert.strictEqual(fixture.renewCalls.length, 0);
     });
 
-    await t.test('a stored access token is ignored while the flag is set', async () => {
+    await t.test('a stored access token is ignored while the flag is set and an auth server is configured', async () => {
         // A token left over from before the flag was set must not be preferred over the auth server.
         const fixture = makeFixture({
             useAuthServer: true,
@@ -132,6 +146,56 @@ test('OAuth2 accounts honor useAuthServer on the IMAP and SMTP paths', async t =
 
         assert.strictEqual(credentials.accessToken, 'ACCESS-TOKEN-FROM-AUTH-SERVER');
         assert.strictEqual(authServerCalls.length, 1);
+    });
+
+    await t.test('a stale flag with no auth server configured falls back to the stored access token', async () => {
+        configuredAuthServer = null;
+        const fixture = makeFixture({
+            useAuthServer: true,
+            accessToken: 'STORED-TOKEN',
+            expires: new Date(Date.now() + 3600 * 1000)
+        });
+
+        const credentials = await load(fixture, 'imap');
+
+        assert.strictEqual(authServerCalls.length, 0, 'there is no auth server to consult');
+        assert.strictEqual(fixture.renewCalls.length, 0, 'the stored token is still valid');
+        assert.strictEqual(credentials.accessToken, 'STORED-TOKEN');
+        assert.strictEqual(credentials.oauth2User, 'stored-user@example.com');
+    });
+
+    await t.test('a stale flag with no auth server configured renews from the stored refresh token', async () => {
+        configuredAuthServer = null;
+        const fixture = makeFixture({
+            useAuthServer: true,
+            refreshToken: 'STORED-REFRESH-TOKEN'
+        });
+
+        const credentials = await load(fixture, 'imap');
+
+        assert.strictEqual(authServerCalls.length, 0);
+        assert.strictEqual(fixture.renewCalls.length, 1, 'EmailEngine renews the token itself');
+        assert.strictEqual(credentials.accessToken, 'TOKEN-RENEWED-BY-EMAILENGINE');
+    });
+
+    await t.test('no auth server and no stored tokens still surfaces the configuration error', async () => {
+        // With nothing to fall back to, the flag must stay in force so the operator sees the
+        // missing auth server instead of a silent no-op.
+        configuredAuthServer = null;
+        const fixture = makeFixture({ useAuthServer: true });
+        authServerError = new Error('Authentication server requested but not set');
+
+        await assert.rejects(
+            () => load(fixture, 'imap'),
+            err => {
+                assert.strictEqual(err.authenticationFailed, true);
+                return true;
+            }
+        );
+
+        assert.strictEqual(authServerCalls.length, 1, 'the auth server path is still taken');
+        assert.strictEqual(fixture.notifications.length, 1);
+        assert.strictEqual(fixture.notifications[0].event, 'authenticationError');
     });
 
     await t.test('without the flag, EmailEngine still manages the token itself', async () => {

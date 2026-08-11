@@ -478,4 +478,23 @@ test('Tools utility tests', async t => {
             delete process.env.EENGINE_TEST_ENV_LIST;
         }
     });
+
+    // The fallback credential predicates for shouldUseAuthServer(). They must only report
+    // credentials the non-auth-server code paths can actually consume, or a stale useAuthServer
+    // flag would be ignored in favor of credentials that cannot work.
+    await t.test('hasStoredOAuth2Tokens() only counts top-level tokens', async () => {
+        assert.strictEqual(tools.hasStoredOAuth2Tokens({ refreshToken: 'r' }), true);
+        assert.strictEqual(tools.hasStoredOAuth2Tokens({ accessToken: 'a' }), true);
+        assert.strictEqual(tools.hasStoredOAuth2Tokens({ auth: { user: 'u@example.com' } }), false);
+        // The renew and cached-token paths never read tokens nested under `auth`
+        assert.strictEqual(tools.hasStoredOAuth2Tokens({ auth: { user: 'u@example.com', accessToken: 'a' } }), false);
+    });
+
+    await t.test('hasStoredServerCredentials() requires a user and a password or token', async () => {
+        assert.strictEqual(tools.hasStoredServerCredentials({ auth: { user: 'u', pass: 'p' } }), true);
+        assert.strictEqual(tools.hasStoredServerCredentials({ auth: { user: 'u', accessToken: 'a' } }), true);
+        assert.strictEqual(tools.hasStoredServerCredentials({ auth: { user: 'u' } }), false);
+        assert.strictEqual(tools.hasStoredServerCredentials({ auth: false }), false);
+        assert.strictEqual(tools.hasStoredServerCredentials({}), false);
+    });
 });
