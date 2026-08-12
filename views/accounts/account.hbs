@@ -685,26 +685,88 @@
             <dd><code class="text-base-content/60">{{account.proxy}}</code></dd>
             {{/if}}
 
-            {{#if account.webhooks}}
-            <dt>Webhook URL</dt>
-            <dd><code class="text-base-content/60">{{account.webhooks}}</code></dd>
+        </dl>
+
+    </div>
+</div>
+{{/if}}
+
+{{!-- Effective webhook routing for this account. Mirrors the precedence the notify worker
+     applies (custom route target, account override, global setting) so a misdirected webhook
+     can be debugged from one place. --}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="card-header"><h6 class="card-title text-primary">Webhook routing</h6>
+    </div>
+    <div class="card-body">
+
+        {{#unless webhookRouting.enabled}}
+        {{#> ui/alert-banner variant="warning" title="Webhook delivery is disabled"}}
+        Webhooks are turned off globally, so no events are delivered for any account. Enable them under <a href="/admin/config/webhooks" class="link">Webhook settings</a>.
+        {{/ui/alert-banner}}
+        {{/unless}}
+
+        <dl class="ee-dl">
+
+            <dt>Default webhook target</dt>
+            <dd>
+                {{#if webhookRouting.defaultRoute.url}}
+                <code class="text-base-content/60">{{webhookRouting.defaultRoute.url}}</code>
+                {{#equals webhookRouting.defaultRoute.source "account"}}
+                {{> ui/badge label="account override" variant="info" soft=true}}
+                {{else}}
+                {{> ui/badge label="global setting" variant="neutral" soft=true}}
+                {{/equals}}
+                {{else}}
+                <span class="text-base-content/60">Not configured - events are only delivered to matching webhook routes</span>
+                {{/if}}
+            </dd>
+
+            {{#if webhookRouting.defaultRoute.url}}
+            <dt>Event types</dt>
+            <dd>
+                {{#if webhookRouting.defaultRoute.allEvents}}
+                All event types
+                {{else if webhookRouting.defaultRoute.events.length}}
+                {{#each webhookRouting.defaultRoute.events}}<code class="text-base-content/60">{{this}}</code>{{#unless @last}}, {{/unless}}{{/each}}
+                {{else}}
+                <span class="text-base-content/60">None selected - the default target receives no events</span>
+                {{/if}}
+                {{#if webhookRouting.defaultRoute.inboxNewOnly}}
+                <div><small>New-message notifications are limited to INBOX (<em>inboxNewOnly</em>).</small></div>
+                {{/if}}
+            </dd>
             {{/if}}
+
+            {{#if webhookRouting.defaultRoute.customHeadersLabel}}
+            <dt>Custom headers</dt>
+            <dd>{{webhookRouting.defaultRoute.customHeadersLabel}}</dd>
+            {{/if}}
+
+            <dt>Webhook routes</dt>
+            <dd>
+                {{#if webhookRouting.customRoutes.length}}
+                <ul class="list-none p-0 m-0">
+                    {{#each webhookRouting.customRoutes}}
+                    <li><a href="/admin/webhooks/webhook/{{this.id}}" class="link link-primary">{{this.name}}</a> <code class="text-base-content/60">{{this.targetUrl}}</code></li>
+                    {{/each}}
+                </ul>
+                <small class="text-base-content/60">Enabled webhook routes deliver independently of the default target; each route applies its own filter function instead of the event type list.</small>
+                {{else}}
+                <span class="text-base-content/60">None enabled</span>
+                {{/if}}
+            </dd>
 
         </dl>
 
-        {{#if account.webhooks}}
         {{#if account.webhookErrorFlag.message}}
         <hr />
 
         <div><small><strong>Note:</strong> The last webhook attempt failed with the following response.</small></div>
         <div><code>{{account.webhookErrorFlag.message}}</code></div>
-
-        {{/if}}
         {{/if}}
 
     </div>
 </div>
-{{/if}}
 
 {{#> ui/modal id="renewGrantModal" title="Re-authenticate account"}}
 <div class="modal-body">

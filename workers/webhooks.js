@@ -13,6 +13,7 @@ const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
+const { resolveTargetUrl, isDeliverableRoute, eventAllowed } = require('../lib/webhook-routing');
 
 const { initSentry } = require('../lib/sentry');
 initSentry('webhooks');
@@ -222,14 +223,15 @@ const notifyWorker = new Worker(
             customRoute = await Webhooks.getMeta(job.data._route.id);
             customMapping = job.data._route.mapping;
             delete job.data._route;
-            if (!customRoute || !customRoute.enabled || !customRoute.targetUrl) {
+            if (!isDeliverableRoute(customRoute)) {
                 return;
             }
         }
 
         let accountWebhooks = await redis.hget(accountKey, 'webhooks');
 
-        let webhooks = (customRoute && customRoute.targetUrl) || accountWebhooks || (await settings.get('webhooks'));
+        // the global setting is only fetched when neither a custom route nor the account override decides the target
+        let webhooks = resolveTargetUrl(customRoute && customRoute.targetUrl, accountWebhooks, null).url || (await settings.get('webhooks'));
         if (!webhooks) {
             // logger.debug({ msg: 'Webhook URL is not set', action: 'webhook', event: job.name, account: job.data.account });
             return;
@@ -255,7 +257,7 @@ const notifyWorker = new Worker(
         if (!customRoute) {
             // custom routes have their own mappings
             let webhookEvents = (await settings.get('webhookEvents')) || [];
-            if (!webhookEvents.includes('*') && !webhookEvents.includes(job.name)) {
+            if (!eventAllowed(webhookEvents, job.name)) {
                 logger.trace({
                     msg: 'Webhook event not in whitelist',
                     action: 'webhook',
