@@ -53,26 +53,16 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
 
         <div>
             {{#> ui/form-field id="name" label="Application name" error=errors.name}}
-            {{#if appData.legacy}}
-            <input type="text" class="input{{#if errors.name}} is-invalid{{/if}}" id="name" value="{{appData.name}}"
-                placeholder="Enter application name, eg. &quot;My App&quot;&mldr;" disabled />
-            {{else}}
             <input type="text" class="input{{#if errors.name}} is-invalid{{/if}}" id="name" name="name"
                 value="{{values.name}}" placeholder="Enter application name, eg. &quot;My App&quot;&mldr;" required />
-            {{/if}}
             <span class="helper-text">Application name used when listing apps.</span>
             {{/ui/form-field}}
         </div>
 
         <div>
             {{#> ui/form-field id="description" label="Description" error=errors.description}}
-            {{#if appData.legacy}}
-            <input type="text" class="input{{#if errors.description}} is-invalid{{/if}}" id="description"
-                value="{{appData.description}}" placeholder="" disabled />
-            {{else}}
             <input type="text" class="input{{#if errors.description}} is-invalid{{/if}}" id="description"
                 name="description" value="{{values.description}}" placeholder="" />
-            {{/if}}
             <span class="helper-text">Optional application description or a comment.</span>
             {{/ui/form-field}}
         </div>
@@ -80,13 +70,8 @@ Read about setting up {{providerData.comment}} from <a href="{{providerData.tuto
         {{#unless activeGmailService}}{{#unless activeOutlookService}}
         <div>
             {{#> ui/form-field id="title" label="Display title" error=errors.title}}
-            {{#if appData.legacy}}
-            <input type="text" class="input{{#if errors.title}} is-invalid{{/if}}" id="title" value="{{appData.title}}"
-                placeholder="" disabled />
-            {{else}}
             <input type="text" class="input{{#if errors.title}} is-invalid{{/if}}" id="title" name="title"
                 value="{{values.title}}" placeholder="" />
-            {{/if}}
             <span class="helper-text">Optional display title next to the application button on the account type
                 selection page.</span>
             {{/ui/form-field}}

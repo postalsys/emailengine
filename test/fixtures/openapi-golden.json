@@ -7445,15 +7445,10 @@
             "description": "Is the application enabled",
             "example": true
           },
-          "legacy": {
-            "type": "boolean",
-            "description": "`true` for older OAuth2 apps set via the settings endpoint",
-            "example": true
-          },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "The time this entry was added. Not present for legacy apps",
+            "description": "The time this entry was added",
             "example": "2021-02-17T13:43:18.860Z"
           },
           "updated": {
@@ -7931,15 +7926,10 @@
             "description": "Is the application enabled",
             "example": true
           },
-          "legacy": {
-            "type": "boolean",
-            "description": "`true` for older OAuth2 apps set via the settings endpoint",
-            "example": true
-          },
           "created": {
             "type": "string",
             "format": "date-time",
-            "description": "The time this entry was added. Not present for legacy apps",
+            "description": "The time this entry was added",
             "example": "2021-02-17T13:43:18.860Z"
           },
           "updated": {
@@ -8016,7 +8006,7 @@
           },
           "accounts": {
             "type": "integer",
-            "description": "The number of accounts registered with this application. Not available for legacy apps.",
+            "description": "The number of accounts registered with this application",
             "example": 12
           },
           "extraScopes": {
@@ -8304,11 +8294,6 @@
             "type": "boolean",
             "description": "Was the application updated",
             "example": true
-          },
-          "legacy": {
-            "type": "boolean",
-            "description": "`true` for older OAuth2 apps set via the settings endpoint",
-            "example": false
           }
         },
         "required": [
@@ -8329,14 +8314,9 @@
             "description": "Was the OAuth2 application deleted",
             "default": true
           },
-          "legacy": {
-            "type": "boolean",
-            "description": "`true` for older OAuth2 apps set via the settings endpoint",
-            "example": false
-          },
           "accounts": {
             "type": "integer",
-            "description": "The number of accounts registered with this application. Not available for legacy apps.",
+            "description": "The number of accounts registered with this application",
             "example": 12
           }
         },
@@ -9187,30 +9167,6 @@
           "notifyCalendarEvents": {
             "type": "boolean",
             "description": "Include parsed calendar event data in webhook payloads",
-            "nullable": true
-          },
-          "gmailClientSecret": {
-            "type": "boolean",
-            "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
-            "example": true,
-            "nullable": true
-          },
-          "outlookClientSecret": {
-            "type": "boolean",
-            "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
-            "example": true,
-            "nullable": true
-          },
-          "mailRuClientSecret": {
-            "type": "boolean",
-            "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
-            "example": true,
-            "nullable": true
-          },
-          "serviceKey": {
-            "type": "boolean",
-            "description": "Whether a value is set for this setting. Secret values are never returned, only a boolean marker",
-            "example": true,
             "nullable": true
           },
           "documentStorePassword": {
@@ -20003,158 +19959,6 @@
           },
           {
             "name": "notifyCalendarEvents",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "gmailEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "gmailClientId",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "gmailClientSecret",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "gmailRedirectUrl",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "gmailExtraScopes",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookClientId",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookClientSecret",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookRedirectUrl",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookAuthority",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "outlookExtraScopes",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "mailRuEnabled",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "mailRuClientId",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "mailRuClientSecret",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "mailRuRedirectUrl",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "mailRuExtraScopes",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "serviceClient",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "serviceKey",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "serviceExtraScopes",
             "in": "query",
             "schema": {
               "type": "boolean",

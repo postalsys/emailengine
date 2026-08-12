@@ -122,6 +122,7 @@ const { compare: cv } = require('compare-versions');
 const Joi = require('joi');
 const { settingsSchema } = require('./lib/schemas');
 const settings = require('./lib/settings');
+const { oauth2Apps } = require('./lib/oauth2-apps');
 const { documentStoreFeatureEnabled } = require('./lib/document-store');
 const { attachBeacon, persistBeaconMarkers } = require('./lib/license-beacon');
 const tokens = require('./lib/tokens');
@@ -3180,6 +3181,15 @@ const startApplication = async () => {
     processCheckUpgrade().catch(err => {
         logger.error({ msg: 'Update check failed', err });
     });
+
+    // Move any settings-based OAuth2 configuration into the app registry before workers spawn.
+    // A failure is not fatal: the source settings keys stay in place, so the migration retries
+    // on the next startup (the legacy config is simply not visible until it succeeds).
+    try {
+        await oauth2Apps.migrateLegacyApps();
+    } catch (err) {
+        logger.error({ msg: 'Failed to migrate legacy OAuth2 apps', err });
+    }
 
     // Apply prepared settings
     if (preparedSettings) {
