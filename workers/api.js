@@ -11,7 +11,6 @@ const { loadTranslations, gt, joiLocales, locales } = require('../lib/translatio
 const { accountStateLabel, formatServerState, identityErrorView } = require('../lib/ui-routes/route-helpers');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
-const featureFlags = require('../lib/feature-flags');
 const Bell = require('@hapi/bell');
 const marked = require('marked');
 
@@ -484,13 +483,6 @@ const init = async () => {
     handlebars.registerHelper('isodate', time => new Date(Number(time)).toISOString());
 
     handlebars.registerHelper('ngettext', (msgid, plural, count) => util.format(gt.ngettext(msgid, plural, count), count));
-
-    handlebars.registerHelper('featureFlag', function (flag, options) {
-        if (featureFlags.enabled(flag)) {
-            return options.fn(this);
-        }
-        return options.inverse(this);
-    });
 
     handlebars.registerHelper('equals', function (compareVal, baseVal, options) {
         if (baseVal === compareVal) {

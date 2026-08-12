@@ -70,12 +70,12 @@ test('license beacon', async t => {
         assert.match(result.fh, /^[0-9a-f]{12}$/, 'fh is a 12-char hex digest');
         assert.equal(result.diag.v, 1, 'schema version is present');
 
-        for (const key of ['feat', 'prov', 'oapp', 'use', 'dep', 'flags']) {
+        for (const key of ['feat', 'prov', 'oapp', 'use', 'dep']) {
             assert.ok(Array.isArray(result.diag[key]), `${key} is an array`);
         }
 
         // feat/dep/etc. are presence-only: every entry is a non-empty string code, never a boolean.
-        for (const key of ['feat', 'prov', 'oapp', 'use', 'dep', 'flags']) {
+        for (const key of ['feat', 'prov', 'oapp', 'use', 'dep']) {
             for (const entry of result.diag[key]) {
                 assert.equal(typeof entry, 'string', `${key} entries are strings`);
                 assert.ok(entry.length, `${key} entries are non-empty`);
