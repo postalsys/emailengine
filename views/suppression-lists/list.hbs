@@ -1,0 +1,72 @@
+{{> ui/breadcrumb parentHref="/admin/suppression-lists" parentLabel="Suppression Lists" current=listId class="mb-6"}}
+
+{{#> ui/card}}
+
+    {{#> ui/detail-toolbar label="Suppression list actions"}}
+    {{> ui/btn variant="primary" style="outline" size="sm" icon="icon-[tabler--plus]" label="Add address" overlay="#addAddressModal"}}
+    {{> ui/btn variant="error" style="outline" size="sm" icon="icon-[tabler--trash]" label="Delete list" overlay="#deleteListModal"}}
+    {{/ui/detail-toolbar}}
+
+    <h6 class="card-title">{{listId}}</h6>
+    <h6 class="mb-6 text-base-content/60">{{total}} suppressed {{#equals total 1}}address{{else}}addresses{{/equals}}</h6>
+
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>Reason</th>
+                    <th>Source</th>
+                    <th>Account</th>
+                    <th>Added</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each addresses}}
+                <tr class="hover:bg-base-200/60">
+                    <td><strong>{{recipient}}</strong></td>
+                    <td>{{reason}}</td>
+                    <td>{{source}}</td>
+                    <td>
+                        {{#if account}}
+                        <a href="/admin/accounts/{{account}}" class="link link-primary">{{account}}</a>
+                        {{else}}
+                        <span class="text-base-content/60">-</span>
+                        {{/if}}
+                    </td>
+                    <td><span class="text-base-content/60">{{created}}</span></td>
+                    <td class="relative text-end">
+                        {{> ui/row-actions label="Address actions" deleteModal="#deleteEntry" deleteId=recipient deleteName=recipient}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+
+{{/ui/card}}
+
+{{#> ui/modal id="addAddressModal" title="Add suppressed address"}}
+<form method="post" action="/admin/suppression-lists/add">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <input type="hidden" name="listId" value="{{listId}}">
+    <div class="modal-body space-y-4">
+        {{> ui/form-field id="add-recipient" name="recipient" label="Email address" type="email" required=true placeholder="user@example.com"}}
+        {{> ui/form-field id="add-reason" name="reason" label="Reason" placeholder="block" hint="Optional identifier stored with the entry (default: block)."}}
+    </div>
+    <div class="modal-footer">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=closeOverlay}}
+        {{> ui/btn label="Add address" variant="primary" type="submit" icon="icon-[tabler--plus]"}}
+    </div>
+</form>
+{{/ui/modal}}
+
+{{> ui/delete-modal id="deleteEntry" noun="address" action=(concat "/admin/suppression-lists/list/" listId "/remove") fieldName="recipient"}}
+
+{{#> ui/confirm-modal id="deleteListModal" title="Delete suppression list" action="/admin/suppression-lists/delete" fieldName="listId" fieldValue=listId submitLabel="Delete list"}}
+Are you sure you want to delete <strong>{{listId}}</strong> with all of its addresses? Everyone on this list becomes reachable again. This action cannot be undone.
+{{/ui/confirm-modal}}

@@ -11,6 +11,7 @@ const { loadTranslations, gt, joiLocales, locales } = require('../lib/translatio
 const { accountStateLabel, formatServerState, identityErrorView } = require('../lib/ui-routes/route-helpers');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
+const { lists } = require('../lib/lists');
 const Bell = require('@hapi/bell');
 const marked = require('marked');
 
@@ -1707,22 +1708,14 @@ const init = async () => {
 
             // Record the suppression. A transient backend failure here is intentionally NOT swallowed to
             // a 2xx: it propagates as a 5xx so the client retries rather than dropping the unsubscribe.
-            let isNew = await redis.eeListAdd(
-                `${REDIS_PREFIX}lists:unsub:lists`,
-                `${REDIS_PREFIX}lists:unsub:entries:${data.list}`,
-                data.list,
-                data.rcpt.toLowerCase().trim(),
-                JSON.stringify({
-                    recipient: data.rcpt,
-                    account: data.acc,
-                    source: 'one-click',
-                    reason: 'unsubscribe',
-                    messageId: data.msg,
-                    remoteAddress: request.app.ip,
-                    userAgent: request.headers['user-agent'],
-                    created: new Date().toISOString()
-                })
-            );
+            let isNew = await lists.add(data.list, data.rcpt, {
+                account: data.acc,
+                source: 'one-click',
+                reason: 'unsubscribe',
+                messageId: data.msg,
+                remoteAddress: request.app.ip,
+                userAgent: request.headers['user-agent']
+            });
 
             if (isNew) {
                 // The suppression is already stored; a webhook delivery hiccup must not fail (and thus

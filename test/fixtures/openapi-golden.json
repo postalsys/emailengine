@@ -91,7 +91,7 @@
     },
     {
       "name": "Blocklists",
-      "description": "Manage email address blocklists to prevent sending to specific recipients or domains"
+      "description": "Manage suppression lists (blocklists) of addresses that must not receive further emails. The same lists are populated by unsubscribe actions and can be managed in the admin UI under Suppression Lists"
     },
     {
       "name": "Multi Message Actions",
@@ -16823,7 +16823,7 @@
       "get": {
         "summary": "List blocklist entries",
         "operationId": "getV1BlocklistListid",
-        "description": "List blocked addresses for a list",
+        "description": "List suppressed addresses for a list",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -16956,7 +16956,7 @@
       "post": {
         "summary": "Add to blocklist",
         "operationId": "postV1BlocklistListid",
-        "description": "Add an email address to a blocklist",
+        "description": "Add an email address to a suppression list. Sending with this listId skips the address",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -17072,7 +17072,7 @@
       "delete": {
         "summary": "Remove from blocklist",
         "operationId": "deleteV1BlocklistListid",
-        "description": "Delete a blocked email address from a list",
+        "description": "Remove a suppressed email address from a list",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -17195,7 +17195,7 @@
       "get": {
         "summary": "List blocklists",
         "operationId": "getV1Blocklists",
-        "description": "List blocklists with blocked addresses",
+        "description": "List suppression lists (blocklists) with the number of blocked addresses on each",
         "parameters": [
           {
             "name": "x-ee-timeout",

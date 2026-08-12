@@ -1,0 +1,76 @@
+{{#> ui/page-header title="Suppression Lists" icon="icon-[tabler--mail-off]" subtitle="Recipients that EmailEngine refuses to send to. Sending with a listId skips every address on that list." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{> ui/btn label="Add address" icon="icon-[tabler--plus]" overlay="#addAddressModal"}}
+{{/ui/page-header}}
+
+{{#if suppressionLists}}
+<div class="card bg-base-100 shadow-md mb-6">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>List ID</th>
+                    <th>Addresses</th>
+                    <th class="w-12"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {{#each suppressionLists}}
+                <tr class="hover:bg-base-200/60">
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/suppression-lists/list/" listId) label="Open suppression list"}}
+                        <strong>{{listId}}</strong>
+                    </td>
+
+                    <td class="relative">
+                        {{> ui/row-link href=(concat "/admin/suppression-lists/list/" listId)}}{{count}}
+                    </td>
+
+                    <td class="relative text-end">
+                        {{> ui/row-actions openHref=(concat "/admin/suppression-lists/list/" listId) label="Suppression list actions"
+                        deleteModal="#deleteList" deleteId=listId deleteName=listId}}
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
+</div>
+{{else}}
+{{> ui/list-empty noun="suppression lists" firstPage=firstPage createOverlay="#addAddressModal" createLabel="Add your first suppressed address"}}
+{{/if}}
+
+{{#> ui/details summary="How suppression lists work" class="card bg-base-100 shadow-md mb-6"}}
+<div>
+    <p class="mb-2">
+        Suppression lists collect addresses that must not receive further emails. An address is
+        added when a recipient unsubscribes through the hosted subscription management page or
+        the one-click <em>List-Unsubscribe</em> action, through the <em>Blocklists</em> API, or
+        manually from this page. When a message is submitted with a <code>listId</code>,
+        recipients on that list are skipped.
+    </p>
+    <p class="mb-0">
+        Lists are registered on first use: adding an address to a new list ID creates the list,
+        and removing the last address deletes it.
+    </p>
+</div>
+{{/ui/details}}
+
+{{#> ui/modal id="addAddressModal" title="Add suppressed address"}}
+<form method="post" action="/admin/suppression-lists/add">
+    <input type="hidden" name="crumb" value="{{crumb}}">
+    <div class="modal-body space-y-4">
+        {{> ui/form-field id="add-list-id" name="listId" label="List ID" required=true placeholder="e.g. newsletter" hint="Subdomain name format. An unknown ID registers a new list."}}
+        {{> ui/form-field id="add-recipient" name="recipient" label="Email address" type="email" required=true placeholder="user@example.com"}}
+        {{> ui/form-field id="add-reason" name="reason" label="Reason" placeholder="block" hint="Optional identifier stored with the entry (default: block)."}}
+    </div>
+    <div class="modal-footer">
+        {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=closeOverlay}}
+        {{> ui/btn label="Add address" variant="primary" type="submit" icon="icon-[tabler--plus]"}}
+    </div>
+</form>
+{{/ui/modal}}
+
+{{> ui/delete-modal id="deleteList" noun="suppression list" action="/admin/suppression-lists/delete" fieldName="listId"}}
