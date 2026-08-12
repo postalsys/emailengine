@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=ascii\n"
-"POT-Creation-Date: 2026-08-11 12:06+0000\n"
+"POT-Creation-Date: 2026-08-12 07:25+0000\n"
 
 #: views/error.hbs:6
 #: workers/api.js:2913
