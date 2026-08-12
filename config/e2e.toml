@@ -12,7 +12,8 @@
 settings = '''
 {
   "serviceUrl": "https://e2e.emailengine.app/",
-  "ignoreMailCertErrors": true
+  "ignoreMailCertErrors": true,
+  "sentryEnabled": false
 }
 '''
 

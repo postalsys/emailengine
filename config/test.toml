@@ -14,7 +14,8 @@ settings = '''
   ],
   "serviceUrl": "http://127.0.0.1:7077",
   "ignoreMailCertErrors": true,
-  "serviceSecret": "a cat"
+  "serviceSecret": "a cat",
+  "sentryEnabled": false
 }
 '''
 

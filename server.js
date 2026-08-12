@@ -1905,7 +1905,7 @@ let licenseCheckHandler = async opts => {
                         if (res === 2) {
                             // Grace period expired
                             logger.info({ msg: 'License validation failed', license: licenseInfo.details, data });
-                            await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
+                            await settings.removeLicense();
                             licenseInfo.active = false;
                             licenseInfo.details = false;
                             licenseInfo.type = packageData.license;
@@ -2383,7 +2383,7 @@ async function onCommand(worker, message) {
         case 'removeLicense': {
             // Remove existing license
             try {
-                await redis.multi().hdel(`${REDIS_PREFIX}settings`, 'license').hdel(`${REDIS_PREFIX}settings`, 'subexp').exec();
+                await settings.removeLicense();
 
                 licenseInfo.active = false;
                 licenseInfo.details = false;

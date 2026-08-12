@@ -41,6 +41,12 @@
                 removed.</div>
             {{/if}}
 
+            {{#if sentryTrialManaged}}
+            <div class="alert alert-soft alert-info">Error reporting was enabled automatically when the trial license
+                was activated, so that problems with evaluation instances reach the EmailEngine developers. It turns
+                itself off when a full license is activated. Saving this page stores your own choice instead.</div>
+            {{/if}}
+
             <div>
                 {{> ui/setting-ref name="sentryEnabled"}}
                 {{> ui/checkbox id="settingsSentryEnabled" name="sentryEnabled"
