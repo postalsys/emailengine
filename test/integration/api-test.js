@@ -612,14 +612,27 @@ test('API tests', async t => {
 
         assert.strictEqual(response.body.uid, 1);
 
-        const responseSearchTarget = await server
-            .post(`/v1/account/${defaultAccountId}/search?path=${encodeURIComponent('My Final Folder')}`)
-            .send({
-                search: {
-                    uid: '1'
-                }
-            })
-            .expect(200);
+        // The move and the search may run on different IMAP connections (the move falls back to
+        // the secondary connection whenever the primary is still seeding the just-renamed
+        // folder), and a search on a connection that already had the target folder selected can
+        // miss a message moved through the other connection until the server syncs the session
+        // state. Poll briefly instead of assuming immediate cross-connection visibility.
+        let responseSearchTarget;
+        for (let attempt = 0; attempt < 20; attempt++) {
+            responseSearchTarget = await server
+                .post(`/v1/account/${defaultAccountId}/search?path=${encodeURIComponent('My Final Folder')}`)
+                .send({
+                    search: {
+                        uid: '1'
+                    }
+                })
+                .expect(200);
+
+            if (responseSearchTarget.body.total === 1) {
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
 
         assert.strictEqual(responseSearchTarget.body.total, 1);
         assert.strictEqual(responseSearchTarget.body.messages[0].messageId, '<test2@example.com>');
