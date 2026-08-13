@@ -70,15 +70,21 @@
 </div>
 
 {{else}}
-{{#> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{!-- The condition sits OUTSIDE the ui/list-empty block on purpose: a partial block whose
+     content is nothing but a {{#if}} wrapper loses its content to a Handlebars
+     program-association bug (the account note never rendered). Keep the block's first
+     content token a static element. --}}
 {{#if account}}
+{{#> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
 <div class="mb-2">
     Currently showing tokens for <strong><a href="/admin/accounts/{{account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
     These tokens cannot be used by other accounts.
 </div>
-{{/if}}
 {{/ui/list-empty}}
+{{else}}
+{{> ui/list-empty noun="access tokens" query=query firstPage=firstPage createHref=newLink createLabel="Create your first access token" clearHref="/admin/tokens"}}
+{{/if}}
 {{/if}}
 
 

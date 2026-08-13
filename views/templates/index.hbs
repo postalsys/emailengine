@@ -57,15 +57,21 @@
     {{> ui/pagination showPaging=showPaging prevPage=prevPage nextPage=nextPage pageLinks=pageLinks}}
 </div>
 {{else}}
-{{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
+{{!-- The condition sits OUTSIDE the ui/list-empty block on purpose: a partial block whose
+     content is nothing but a {{#if}} wrapper loses its content to a Handlebars
+     program-association bug (the account note never rendered). Keep the block's first
+     content token a static element. --}}
 {{#if account}}
+{{#> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
 <div class="mb-2">
     Currently showing email templates for <strong><a href="/admin/accounts/{{account.account}}"
             class="link link-animated">{{#if account.name}}{{account.name}}{{else}}{{account.email}}{{/if}}</a></strong>.
     These templates cannot be used by other accounts.
 </div>
-{{/if}}
 {{/ui/list-empty}}
+{{else}}
+{{> ui/list-empty noun="templates" query=query firstPage=firstPage createHref=newLink createLabel="Create your first template" clearHref="/admin/templates"}}
+{{/if}}
 {{/if}}
 
 {{> ui/delete-modal id="deleteTemplate" noun="template" action="/admin/templates/delete" fieldName="template"}}
