@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert').strict;
 const os = require('os');
+const crypto = require('crypto');
 
 const tools = require('../lib/tools');
 
@@ -496,5 +497,46 @@ test('Tools utility tests', async t => {
         assert.strictEqual(tools.hasStoredServerCredentials({ auth: { user: 'u' } }), false);
         assert.strictEqual(tools.hasStoredServerCredentials({ auth: false }), false);
         assert.strictEqual(tools.hasStoredServerCredentials({}), false);
+    });
+
+    // The signed subscription-management URL, shared by the mailer's List-Unsubscribe header
+    // and the suppression-list admin UI
+    await t.test('buildUnsubscribeUrl() signs the unsubscribe payload', async () => {
+        const secret = 'unsub test secret';
+
+        const url = new URL(
+            tools.buildUnsubscribeUrl(secret, 'https://ee.example.com', {
+                account: 'acc1',
+                list: 'newsletter',
+                recipient: 'User@Example.com',
+                messageId: '<msg1@example.com>'
+            })
+        );
+
+        assert.strictEqual(url.origin, 'https://ee.example.com');
+        assert.strictEqual(url.pathname, '/unsubscribe');
+
+        const raw = Buffer.from(url.searchParams.get('data'), 'base64url').toString();
+        const payload = JSON.parse(raw);
+        assert.deepStrictEqual(payload, { act: 'unsub', acc: 'acc1', list: 'newsletter', rcpt: 'User@Example.com', msg: '<msg1@example.com>' });
+
+        // the signature must verify with the same HMAC the unsubscribe page checks
+        const expected = crypto.createHmac('sha256', secret).update(raw).digest('base64url');
+        assert.strictEqual(url.searchParams.get('sig'), expected);
+    });
+
+    await t.test('buildUnsubscribeUrl() stays host-relative without a base URL and omits a missing message ID', async () => {
+        const link = tools.buildUnsubscribeUrl('unsub test secret', null, {
+            account: 'acc1',
+            list: 'newsletter',
+            recipient: 'user@example.com'
+        });
+
+        // no placeholder host may leak into the link
+        assert.ok(link.startsWith('/unsubscribe?data='), 'link is host-relative');
+
+        const url = new URL(link, 'http://localhost');
+        const payload = JSON.parse(Buffer.from(url.searchParams.get('data'), 'base64url').toString());
+        assert.deepStrictEqual(payload, { act: 'unsub', acc: 'acc1', list: 'newsletter', rcpt: 'user@example.com' });
     });
 });

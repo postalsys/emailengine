@@ -1,4 +1,4 @@
-{{#> ui/page-header title="Suppression Lists" icon="icon-[tabler--mail-off]" subtitle="Recipients that EmailEngine refuses to send to. Sending with a listId skips every address on that list." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{#> ui/page-header title="Suppression Lists" icon="icon-[tabler--mail-off]" subtitle="Recipients excluded from list-based sending. Only messages submitted with a listId are checked against these lists - the send skips every listed address. Messages without a listId are not affected." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
 {{> ui/btn label="Add address" icon="icon-[tabler--plus]" overlay="#addAddressModal"}}
 {{/ui/page-header}}
 
@@ -49,12 +49,21 @@
         added when a recipient unsubscribes through the hosted subscription management page or
         the one-click <em>List-Unsubscribe</em> action, through the <em>Blocklists</em> API, or
         manually from this page. When a message is submitted with a <code>listId</code>,
-        recipients on that list are skipped.
+        recipients on that list are skipped; messages submitted without a
+        <code>listId</code> are never checked against these lists.
     </p>
-    <p class="mb-0">
+    <p class="mb-2">
         Lists are registered on first use: adding an address to a new list ID creates the list,
         and removing the last address deletes it.
     </p>
+    <p class="mb-2">
+        Each listed address links to its public subscription management page, the same page the
+        <em>List-Unsubscribe</em> link in emails opens. Use it to preview the page or send the
+        link to a recipient who wants to re-subscribe themselves.
+    </p>
+    <p class="mb-0"><a href="https://learn.emailengine.app/docs/advanced/virtual-lists" target="_blank"
+            rel="noopener noreferrer" referrerpolicy="no-referrer" class="link link-animated">Learn more about virtual
+            lists and sending with a listId</a>.</p>
 </div>
 {{/ui/details}}
 

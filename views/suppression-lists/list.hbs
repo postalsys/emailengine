@@ -38,7 +38,22 @@
                     </td>
                     <td><span class="text-base-content/60">{{created}}</span></td>
                     <td class="relative text-end">
+                        {{!-- The condition sits OUTSIDE the ui/row-actions block on purpose: a partial
+                             block whose content is nothing but a {{#if}} wrapper loses its content to a
+                             Handlebars program-association bug (the menu rendered without the items).
+                             Keep the block's first content token a static element. --}}
+                        {{#if unsubscribeUrl}}
+                        {{#> ui/row-actions label="Address actions" deleteModal="#deleteEntry" deleteId=recipient deleteName=recipient}}
+                        <li><a class="dropdown-item" href="{{unsubscribeUrl}}" target="_blank" rel="noopener noreferrer">
+                                <span class="icon-[tabler--external-link] size-4"></span>
+                                Subscription page</a></li>
+                        <li><button type="button" class="dropdown-item copy-btn" data-copy-value="{{unsubscribeUrl}}">
+                                <span class="icon-[tabler--copy] size-4"></span>
+                                Copy page link</button></li>
+                        {{/ui/row-actions}}
+                        {{else}}
                         {{> ui/row-actions label="Address actions" deleteModal="#deleteEntry" deleteId=recipient deleteName=recipient}}
+                        {{/if}}
                     </td>
                 </tr>
                 {{/each}}
