@@ -187,7 +187,7 @@ class ConnectionHandler {
     }
 
     async assignConnection(account, runIndex, initOpts) {
-        logger.info({ msg: 'Assigned account to worker', account });
+        logger.debug({ msg: 'Assigned account to worker', account });
 
         if (!this.runIndex) {
             this.runIndex = runIndex;
@@ -306,7 +306,7 @@ class ConnectionHandler {
 
         // do not wait before returning as it may take forever
         accountObject.connection.init(initOpts).catch(err => {
-            logger.error({ account, err });
+            logger.error({ msg: 'Failed to initialize account connection', account, err });
         });
     }
 
@@ -322,7 +322,7 @@ class ConnectionHandler {
     }
 
     async updateConnection(account) {
-        logger.info({ msg: 'Account reconnect requested', account });
+        logger.info({ msg: 'Account update requested', account });
         if (this.accounts.has(account)) {
             let accountObject = this.accounts.get(account);
             if (accountObject.connection) {
@@ -330,7 +330,7 @@ class ConnectionHandler {
                     level: 'info',
                     t: Date.now(),
                     cid: accountObject.connection.cid,
-                    msg: 'Account reconnect requested'
+                    msg: 'Account update requested'
                 });
 
                 let state = 'connecting';
@@ -1031,7 +1031,13 @@ parentPort.on('message', message => {
                 if (message.message && message.message.data && message.message.data.raw) {
                     message.message.data.raw = message.message.data.raw.length;
                 }
-                logger.error(Object.assign({ msg: 'Command failed' }, message, { err }));
+                // Anything with a client-facing status (404 not found, 503 no active handler) is
+                // reported back to the caller as the command response, so it is not a server fault.
+                // 503 is excluded from the error branch on purpose: both "no active handler" and
+                // IMAPConnectionClosing carry it, and a worker taking over accounts answers every
+                // in-flight command with one until the reassignment settles.
+                let isServerFault = !err.statusCode || (err.statusCode >= 500 && err.statusCode !== 503);
+                logger[isServerFault ? 'error' : 'debug'](Object.assign({ msg: 'Command failed' }, message, { err }));
                 parentPort.postMessage(Object.assign({ cmd: 'resp', mid: message.mid }, packRpcError(err)));
             });
     }
@@ -1044,6 +1050,6 @@ parentPort.on('message', message => {
 // server.js instead; see onCommand().
 
 main().catch(err => {
-    logger.fatal({ msg: 'Execution failed', err });
+    logger.fatal({ msg: 'IMAP worker startup failed', err });
     logger.flush(() => process.exit(6));
 });

@@ -8,7 +8,7 @@ const logger = require('../lib/logger');
 const Path = require('path');
 const Gettext = require('@postalsys/gettext');
 const { loadTranslations, gt, joiLocales, locales } = require('../lib/translations');
-const { accountStateLabel, formatServerState, identityErrorView } = require('../lib/ui-routes/route-helpers');
+const { accountStateLabel, formatServerState, identityErrorView, isClientError } = require('../lib/ui-routes/route-helpers');
 const util = require('util');
 const { webhooks: Webhooks } = require('../lib/webhooks');
 const { lists } = require('../lib/lists');
@@ -151,7 +151,11 @@ function formatScopeDescription(scope) {
     return shortName.replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-const REDACTED_KEYS = ['req.headers.authorization', 'req.headers.cookie', 'err.rawPacket'];
+// The two MS Graph subscription routes are unauthenticated and deliberately carry no payload
+// schema: they must answer 202 to anything, because a 400 would make Graph tear the subscription
+// down, and the validation handshake posts an empty body. So the payload is arbitrary JSON and
+// every read of it has to be defensive.
+const graphNotificationEntries = payload => (Array.isArray(payload && payload.value) ? payload.value.filter(entry => entry && typeof entry === 'object') : []);
 
 const SMTP_TEST_HOST = 'https://api.nodemailer.com';
 
@@ -381,7 +385,7 @@ function publishChangeEvent(data) {
         try {
             stream.sendMessage({ account, type, key, payload, stateLabel });
         } catch (err) {
-            logger.error({ msg: 'Failed to publish change event', err, account, type, key, payload });
+            logger.warn({ msg: 'Failed to publish change event', err, account, type, key, payload });
         }
     }
 }
@@ -907,7 +911,7 @@ const init = async () => {
 
             if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
                 // failed scope validation
-                logger.error({
+                logger.warn({
                     msg: 'Trying to use invalid scope for a token',
                     tokenAccount: tokenData.account,
                     tokenId: tokenData.id,
@@ -960,7 +964,7 @@ const init = async () => {
                 }
 
                 if (accountIdSource !== tokenData.account) {
-                    logger.error({
+                    logger.warn({
                         msg: 'Trying to use invalid account for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
@@ -974,7 +978,7 @@ const init = async () => {
 
             if (tokenData.restrictions) {
                 if (tokenData.restrictions.addresses && !matchIp(request.app.ip, tokenData.restrictions.addresses)) {
-                    logger.error({
+                    logger.warn({
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
@@ -993,7 +997,7 @@ const init = async () => {
                     tokenData.restrictions.referrers.length &&
                     !matcher(tokenData.restrictions.referrers, request.headers.referer)
                 ) {
-                    logger.error({
+                    logger.warn({
                         msg: 'Trying to use invalid referer for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
@@ -1015,7 +1019,7 @@ const init = async () => {
                     );
 
                     if (!rateLimit.success) {
-                        logger.error({ msg: 'Rate limited', token: tokenData.id, rateLimit });
+                        logger.warn({ msg: 'Rate limited', token: tokenData.id, rateLimit });
                         let error = Boom.tooManyRequests('Rate limit exceeded');
                         error.output.payload.ttl = Math.ceil(rateLimit.ttl);
                         error.output.headers = {
@@ -1303,9 +1307,9 @@ const init = async () => {
     await server.register({
         plugin: hapiPino,
         options: {
-            instance: logger.child({ component: 'api' }, { redact: REDACTED_KEYS }),
+            instance: logger.child({ component: 'api' }, { redact: consts.REDACTED_LOG_KEYS }),
             // Redact Authorization headers, see https://getpino.io/#/docs/redaction
-            redact: REDACTED_KEYS
+            redact: consts.REDACTED_LOG_KEYS
         }
     });
 
@@ -1544,7 +1548,7 @@ const init = async () => {
                     userAgent: request.headers['user-agent']
                 });
             } else {
-                request.logger.info({
+                request.logger.debug({
                     msg: 'Detected automated request',
                     account: data.acc,
                     event: TRACK_CLICK_NOTIFY,
@@ -1608,7 +1612,7 @@ const init = async () => {
                     userAgent: request.headers['user-agent']
                 });
             } else {
-                request.logger.info({
+                request.logger.debug({
                     msg: 'Detected automated request',
                     account: data.acc,
                     event: TRACK_OPEN_NOTIFY,
@@ -1729,7 +1733,7 @@ const init = async () => {
                         userAgent: request.headers['user-agent']
                     });
                 } catch (err) {
-                    request.logger.error({ msg: 'Failed to send one-click unsubscribe webhook', err });
+                    request.logger.error({ msg: 'Failed to send one-click unsubscribe webhook', account: data.acc, listId: data.list, err });
                 }
             }
 
@@ -1801,14 +1805,20 @@ const init = async () => {
                 throw err;
             }
 
+            const notificationEntries = graphNotificationEntries(request.payload);
+
             if (!accountData.outlookSubscription) {
-                request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
+                request.logger.warn({
+                    msg: 'Subscription not found for account',
+                    account: request.query.account,
+                    subscriptionIds: notificationEntries.map(entry => entry.subscriptionId)
+                });
                 return h.response(Buffer.alloc(0)).code(202);
             }
 
             const outlookSubscription = accountData.outlookSubscription;
 
-            for (let entry of (request.payload && request.payload.value) || []) {
+            for (let entry of notificationEntries) {
                 // enumerate and queue all entries
                 const subscriptionIdMatch = entry.subscriptionId === outlookSubscription.id;
                 const clientStateMatch = constantTimeEqual(entry.clientState, outlookSubscription.clientState);
@@ -1895,8 +1905,14 @@ const init = async () => {
                 throw err;
             }
 
+            const lifecycleEntries = graphNotificationEntries(request.payload);
+
             if (!accountData.outlookSubscription) {
-                request.logger.error({ msg: 'Subscription not found for account', account: request.query.account, payload: request.payload });
+                request.logger.warn({
+                    msg: 'Subscription not found for account',
+                    account: request.query.account,
+                    subscriptionIds: lifecycleEntries.map(entry => entry.subscriptionId)
+                });
                 return h.response(Buffer.alloc(0)).code(202);
             }
 
@@ -1906,7 +1922,7 @@ const init = async () => {
             // concurrent handlers racing (e.g., two subscriptionRemoved entries)
             const seenLifecycleEvents = new Set();
 
-            for (let entry of (request.payload && request.payload.value) || []) {
+            for (let entry of lifecycleEntries) {
                 request.logger.debug({
                     msg: 'MS Graph subscription event',
                     type: 'lifecycle',
@@ -2130,7 +2146,7 @@ const init = async () => {
 
                         // Best-effort revocation of the partial token
                         oAuth2Client.revokeToken(r.refresh_token || r.access_token).catch(err => {
-                            request.logger.error({ msg: 'Failed to revoke partial OAuth2 token', err });
+                            request.logger.warn({ msg: 'Failed to revoke partial OAuth2 token', err });
                         });
 
                         const retryUrl = await startOAuthRetry(accountData.email);
@@ -2159,7 +2175,7 @@ const init = async () => {
                     // This works for all account types including send-only accounts
                     const idTokenPayload = decodeJwtPayload(r.id_token);
                     if (r.id_token && !idTokenPayload) {
-                        request.logger.error({ msg: 'Failed to decode Gmail ID token' });
+                        request.logger.warn({ msg: 'Failed to decode Gmail ID token' });
                     }
                     if (idTokenPayload && typeof idTokenPayload.email === 'string' && isEmail(idTokenPayload.email)) {
                         userEmail = idTokenPayload.email;
@@ -2179,13 +2195,13 @@ const init = async () => {
 
                         if (hasProfileScope) {
                             try {
-                                request.logger.info({ msg: 'Attempting Gmail profile endpoint as fallback' });
+                                request.logger.debug({ msg: 'Attempting Gmail profile endpoint as fallback' });
                                 profileRes = await oAuth2Client.request(r.access_token, 'https://gmail.googleapis.com/gmail/v1/users/me/profile');
                                 if (profileRes && profileRes.emailAddress) {
                                     userEmail = profileRes.emailAddress;
                                 }
                             } catch (err) {
-                                request.logger.error({ msg: 'Failed to fetch user info from Gmail API', err: err.message });
+                                request.logger.error({ msg: 'Failed to fetch user info from Gmail API', err });
                                 let response = err.oauthRequest && err.oauthRequest.response;
                                 if (response && response.error) {
                                     let message;
@@ -2269,7 +2285,7 @@ const init = async () => {
 
                         const idTokenPayload = decodeJwtPayload(r.id_token);
                         if (r.id_token && !idTokenPayload) {
-                            request.logger.error({ msg: 'Failed to decode JWT payload' });
+                            request.logger.warn({ msg: 'Failed to decode Outlook ID token' });
                         }
 
                         userInfo = resolveOutlookUserInfo({ clientInfo, idTokenPayload });
@@ -2294,8 +2310,7 @@ const init = async () => {
                         request.logger.info({
                             msg: 'User profile returned by MS Graph API',
                             user: userInfo.email,
-                            provider: oauth2App.provider,
-                            profile: profileRes
+                            provider: oauth2App.provider
                         });
                     }
 
@@ -2433,7 +2448,7 @@ const init = async () => {
                     try {
                         await oAuth2Client.revokeToken(grantToken);
                     } catch (err) {
-                        request.logger.error({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
+                        request.logger.warn({ msg: 'Failed to revoke the OAuth2 grant after an identity mismatch', err });
                     }
                 }
 
@@ -2933,7 +2948,7 @@ const init = async () => {
             return h.response(request.errorInfo).code(request.errorInfo.statusCode || 500);
         }
 
-        logger.error({ path: request.path, method: request.method, err: error });
+        logger[isClientError(error) ? 'debug' : 'error']({ msg: 'Web request failed', path: request.path, method: request.method, err: error });
 
         return h
             .view('error', ctx, {
@@ -3081,7 +3096,7 @@ const init = async () => {
                     await certHandler.acquireCert(serviceDomain);
                     await call({ cmd: 'smtpReload' });
                 } catch (err) {
-                    logger.error({ err });
+                    logger.error({ msg: 'Failed to acquire TLS certificate', serviceDomain, err });
                 } finally {
                     try {
                         await certHandler.setCertificateData(serviceDomain, { lastCheck: new Date() });
@@ -3099,7 +3114,7 @@ const init = async () => {
 // dynamic imports first, use a wrapper function or eslint parser will crash
 init()
     .then(() => {
-        logger.debug({
+        logger.info({
             msg: 'Started API server thread',
             port: API_PORT,
             host: API_HOST,
@@ -3120,6 +3135,6 @@ init()
         }, 10 * 1000).unref();
     })
     .catch(err => {
-        logger.error({ msg: 'Failed to initialize API', err });
+        logger.fatal({ msg: 'Failed to initialize API', err });
         logger.flush(() => process.exit(3));
     });

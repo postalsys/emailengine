@@ -658,8 +658,7 @@ async function exportMessages(job, exportData) {
                                     attempt,
                                     maxAttempts: IMAP_MESSAGE_MAX_RETRIES,
                                     delayMs: delay,
-                                    errorCode: err.code,
-                                    errorMessage: err.message
+                                    err
                                 });
                                 await new Promise(resolve => setTimeout(resolve, delay));
                                 continue;
@@ -785,7 +784,13 @@ const exportWorker = new Worker(
 
             logger.info({ msg: 'Export job completed', account, exportId, duration: Date.now() - startTime });
         } catch (err) {
-            logger.error({ msg: 'Export job failed', account, exportId, err });
+            // a user-requested cancellation or a deleted account is not an operational failure
+            let failLevel = err.code === 'ExportCancelled' ? 'info' : err.code === 'AccountDeleted' ? 'warn' : 'error';
+            logger[failLevel]({ msg: 'Export job failed', account, exportId, err });
+
+            // Tells the 'failed' handler that this failure has already been reported with full
+            // context. Failures that never reach this catch (see that handler) have not been.
+            job.__failureLogged = true;
 
             const exportData = await redis.hgetall(`${REDIS_PREFIX}exp:${account}:${exportId}`).catch(() => ({}));
 
@@ -834,22 +839,29 @@ const exportWorker = new Worker(
 
 exportWorker.on('completed', async job => {
     metrics(logger, 'queuesProcessed', 'inc', { queue: 'export', status: 'completed' });
-    logger.info({ msg: 'Export queue entry completed', queue: job.queue.name, job: job.id, account: job.data.account, exportId: job.data.exportId });
+    logger.debug({ msg: 'Export queue entry completed', queue: job.queue.name, job: job.id, account: job.data.account, exportId: job.data.exportId });
 });
 
 exportWorker.on('failed', async (job, err) => {
     metrics(logger, 'queuesProcessed', 'inc', { queue: 'export', status: 'failed' });
     if (!job) {
-        logger.error({ msg: 'Export queue entry failed', err: err.message });
+        logger.error({ msg: 'Export queue entry failed', err });
         return;
     }
-    logger.error({
+    // A stalled job (worker killed mid-export, lock lost) is failed by BullMQ through its
+    // deferred-failure path, which skips the processor entirely - so its catch never logged the
+    // failure and never ran Export.fail(). That leaves a dead export recoverable only by the
+    // startup pass, and this event is the sole record of it. Anything the processor did report is
+    // demoted to debug to avoid logging the same failure twice.
+    let level = job.__failureLogged ? 'debug' : 'error';
+    logger[level]({
         msg: 'Export queue entry failed',
         queue: job.queue.name,
         job: job.id,
         account: job.data.account,
         exportId: job.data.exportId,
-        failedReason: job.failedReason
+        failedReason: job.failedReason,
+        reachedProcessor: !!job.__failureLogged
     });
 });
 
@@ -969,4 +981,4 @@ parentPort.on('message', message => {
     }
 });
 
-logger.info({ msg: 'Started export worker thread', version: packageData.version });
+logger.info({ msg: 'Started Export worker thread', version: packageData.version });

@@ -10,8 +10,9 @@ const { webhooks: Webhooks } = require('../lib/webhooks');
 
 const { GooglePubSub } = require('../lib/oauth/pubsub/google');
 
-const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent } = require('../lib/tools');
+const { readEnvValue, threadStats, getDuration, httpAgent, getServiceSecret, maybeReloadHttpProxyAgent, redactUrlCredentials } = require('../lib/tools');
 const { sendWebhookRequest } = require('../lib/webhook-request');
+const { willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { validateWebhookTarget } = require('../lib/webhook-egress');
 const { resolveTargetUrl, isDeliverableRoute, eventAllowed } = require('../lib/webhook-routing');
 
@@ -40,6 +41,11 @@ const NOTIFY_QC = (readEnvValue('EENGINE_NOTIFY_QC') && Number(readEnvValue('EEN
 // Wall-clock cap for a single webhook delivery attempt; falls back to the
 // DEFAULT_WEBHOOK_REQUEST_TIMEOUT baked into sendWebhookRequest when unset
 const WEBHOOK_TIMEOUT = getDuration(readEnvValue('EENGINE_WEBHOOK_TIMEOUT')) || false;
+
+// Neither of these changes on a retry: the egress policy rejects the same destination every time,
+// and an endpoint configured to redirect keeps redirecting. Such a delivery is final on its first
+// failure, which decides both the log level and whether the remaining attempts are spent.
+const isUnrecoverableWebhookError = err => !!err && (err.code === 'EEGRESSBLOCKED' || err.code === 'EREDIRECTNOTFOLLOWED');
 
 let callQueue = new Map();
 let mids = 0;
@@ -197,11 +203,18 @@ const notifyWorker = new Worker(
         //return new Promise((resolve, reject) => {});
         let accountKey = getAccountKey(job.data.account);
 
+        // Keep the route id reachable for the completed/failed event handlers, which see this same
+        // job instance after _route has been deleted from the payload. Stashed before the early
+        // returns below so a job that never reaches delivery still reports which route queued it.
+        if (job.data._route && job.data._route.id) {
+            job.__routeId = job.data._route.id;
+        }
+
         // validate if we should even process this webhook
         let accountExists = await redis.hexists(accountKey, 'account');
         if (!accountExists && job.name !== ACCOUNT_DELETED_NOTIFY) {
             logger.debug({
-                msg: 'Account is not enabled',
+                msg: 'Account not found',
                 action: 'webhook',
                 queue: job.queue.name,
                 code: 'account_not_found',
@@ -243,12 +256,13 @@ const notifyWorker = new Worker(
             try {
                 accountWebhooksCustomHeaders = JSON.parse(accountWebhooksCustomHeadersJson);
             } catch (err) {
+                // do not log the header values, they may carry authentication secrets
                 logger.debug({
                     msg: 'Failed to parse custom webhook headers',
                     action: 'webhook',
                     event: job.name,
                     account: job.data.account,
-                    json: accountWebhooksCustomHeadersJson,
+                    jsonLength: accountWebhooksCustomHeadersJson.length,
                     err
                 });
             }
@@ -266,8 +280,7 @@ const notifyWorker = new Worker(
                     job: job.id,
                     event: job.name,
                     account: job.data.account,
-                    webhookEvents,
-                    data: job.data
+                    webhookEvents
                 });
                 return;
             }
@@ -333,13 +346,18 @@ const notifyWorker = new Worker(
             }
         }
 
+        // never log the raw target URL, it may embed basic auth credentials; keep the redacted
+        // form reachable for the failed event handler
+        let redactedWebhooks = redactUrlCredentials(webhooks);
+        job.__redactedTargetUrl = redactedWebhooks;
+
         logger.trace({
             msg: 'Processing webhook',
             action: 'webhook',
             queue: job.queue.name,
             code: 'processing',
             job: job.id,
-            webhooks,
+            webhooks: redactedWebhooks,
             accountWebhooks: !!accountWebhooks,
             event: job.name,
             data: filteredData,
@@ -431,7 +449,7 @@ const notifyWorker = new Worker(
                 queue: job.queue.name,
                 code: 'result_success',
                 job: job.id,
-                webhooks,
+                webhooks: redactedWebhooks,
                 requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
@@ -457,13 +475,16 @@ const notifyWorker = new Worker(
                 status: 'success'
             });
         } catch (err) {
-            logger.error({
+            // egress and redirect failures are thrown as UnrecoverableError below, so they are final as well
+            let isFinalAttempt = willBeFinalAttempt(job) || isUnrecoverableWebhookError(err);
+
+            logger[isFinalAttempt ? 'error' : 'warn']({
                 msg: 'Failed posting webhook',
                 action: 'webhook',
                 queue: job.queue.name,
                 code: 'result_fail',
                 job: job.id,
-                webhooks,
+                webhooks: redactedWebhooks,
                 requestBodySize: body.length,
                 accountWebhooks: !!accountWebhooks,
                 event: job.name,
@@ -518,12 +539,14 @@ const notifyWorker = new Worker(
                 status: 'fail'
             });
 
-            // Neither of these changes on a retry: the egress policy rejects the same destination
-            // every time, and an endpoint configured to redirect keeps redirecting. Spending the
-            // remaining attempts on them only delays the operator seeing the real reason in the
-            // error flag. Fail the job now and keep the message.
-            if (err.code === 'EEGRESSBLOCKED' || err.code === 'EREDIRECTNOTFOLLOWED') {
-                throw new UnrecoverableError(err.message);
+            // Spending the remaining attempts on an unrecoverable failure only delays the operator
+            // seeing the real reason in the error flag. Fail the job now and keep the message.
+            if (isUnrecoverableWebhookError(err)) {
+                // UnrecoverableError copies the message only, and the failed-event handler logs the
+                // error it is given, so carry the code over or that log loses the actual reason
+                let unrecoverableErr = new UnrecoverableError(err.message);
+                unrecoverableErr.code = err.code;
+                throw unrecoverableErr;
             }
 
             throw err;
@@ -558,31 +581,40 @@ notifyWorker.on('completed', async job => {
         status: 'completed'
     });
 
-    logger.info({
+    logger.debug({
         msg: 'Notification queue entry completed',
         action: 'webhook',
         queue: job.queue.name,
         code: 'completed',
         job: job.id,
+        event: job.name,
         account: job.data.account,
-        route: job.data._route && job.data._route.id
+        // a completed job always ran the processor, which stashes this before any early return
+        route: job.__routeId
     });
 });
 
-notifyWorker.on('failed', async job => {
+notifyWorker.on('failed', async (job, err) => {
     metrics(logger, 'queuesProcessed', 'inc', {
         queue: 'notify',
         status: 'failed'
     });
 
-    logger.info({
+    let isFinal = isFinalFailedAttempt(job);
+
+    logger[isFinal ? 'error' : 'debug']({
         msg: 'Notification queue entry failed',
         action: 'webhook',
         queue: job.queue.name,
         code: 'failed',
         job: job.id,
+        event: job.name,
         account: job.data.account,
-        route: job.data._route && job.data._route.id,
+        // the fallback covers jobs that stalled out before this worker instance ever processed
+        // them, where the stash was never set and _route is still in the payload
+        route: job.__routeId || (job.data._route && job.data._route.id),
+        webhooks: job.__redactedTargetUrl,
+        err,
 
         failedReason: job.failedReason,
         stacktrace: job.stacktrace,
@@ -603,10 +635,10 @@ let startRetryTimer = null;
             let delay;
             if (attempt < maxNormalAttempts) {
                 delay = Math.min(5000 * Math.pow(2, Math.min(attempt, 10)), 60000);
-                logger.error({ msg: 'Failed to start processing Google pub/sub', err, attempt: attempt + 1, retryMs: delay });
+                logger.warn({ msg: 'Failed to start processing Google pub/sub', err, attempt: attempt + 1, retryMs: delay });
             } else {
                 delay = 5 * 60 * 1000;
-                logger.warn({ msg: 'Failed to start processing Google pub/sub (reduced frequency)', err, attempt: attempt + 1, retryMs: delay });
+                logger.error({ msg: 'Failed to start processing Google pub/sub (reduced frequency)', err, attempt: attempt + 1, retryMs: delay });
             }
             startRetryTimer = setTimeout(() => startGooglePubSub(attempt + 1), delay);
         });

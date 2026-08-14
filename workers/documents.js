@@ -9,6 +9,7 @@ const settings = require('../lib/settings');
 const crypto = require('crypto');
 
 const { readEnvValue, threadStats, getDuration } = require('../lib/tools');
+const { isFinalFailedAttempt } = require('../lib/delivery-error');
 
 const GB_COLLECT_DELAY = 6 * 3600 * 1000; // 6h
 const GB_FAILURE_DELAY = 3 * 1000;
@@ -189,7 +190,7 @@ const documentsWorker = new Worker(
                             });
                             deletedCount += deleteResult[indexName].deleted || 0;
                         } catch (err) {
-                            logger.error({
+                            logger.warn({
                                 msg: 'Failed to delete account emails from index',
                                 action: 'document',
                                 queue: job.queue.name,
@@ -254,7 +255,7 @@ const documentsWorker = new Worker(
                             query: filterQuery
                         });
                     } catch (err) {
-                        logger.error({
+                        logger.warn({
                             msg: 'Failed to delete messages from a mailbox',
                             action: 'document',
                             queue: job.queue.name,
@@ -305,15 +306,15 @@ const documentsWorker = new Worker(
                     .exec();
 
                 if (err1) {
-                    logger.trace({ msg: 'Failed checking tombstone', key: tombstoneTdy, err: err1 });
+                    logger.trace({ msg: 'Failed to check tombstone', key: tombstoneTdy, err: err1 });
                 }
 
                 if (err2) {
-                    logger.trace({ msg: 'Failed checking tombstone', key: tombstoneYdy, err: err2 });
+                    logger.trace({ msg: 'Failed to check tombstone', key: tombstoneYdy, err: err2 });
                 }
 
                 if (isDeleted1 || isDeleted2) {
-                    logger.info({
+                    logger.debug({
                         msg: 'Skipped deleted email',
                         action: 'document',
                         queue: job.queue.name,
@@ -419,7 +420,7 @@ const documentsWorker = new Worker(
                         throw new Error('Empty index response');
                     }
                 } catch (err) {
-                    logger.error({
+                    logger.warn({
                         msg: 'Failed to index new email',
                         action: 'document',
                         queue: job.queue.name,
@@ -428,7 +429,7 @@ const documentsWorker = new Worker(
                         event: job.name,
                         account: job.data.account,
                         entryId: messageId,
-                        request: { index, id: `${job.data.account}:${messageId}`, document: messageData },
+                        request: { index, id: `${job.data.account}:${messageId}` },
                         err
                     });
                     throw err;
@@ -550,8 +551,9 @@ const documentsWorker = new Worker(
                                     });
                                     storedEmbeddings = false;
                                 } else {
-                                    logger.info({
+                                    logger.debug({
                                         msg: 'Stored embeddings for a message',
+                                        account: job.data.account,
                                         messageId: messageData.messageId,
                                         items: bulkResponse.items?.length
                                     });
@@ -568,7 +570,7 @@ const documentsWorker = new Worker(
                             }
                         }
                     } else {
-                        logger.info({ msg: 'Skipped embeddings, already exist', account: job.data.account, messageId: messageData.messageId });
+                        logger.debug({ msg: 'Skipped embeddings, already exist', account: job.data.account, messageId: messageData.messageId });
                         storedEmbeddings = false;
                     }
                 }
@@ -654,7 +656,7 @@ const documentsWorker = new Worker(
 
                                 break;
                             default:
-                                logger.error({
+                                logger.warn({
                                     msg: 'Failed to delete email',
                                     action: 'document',
                                     queue: job.queue.name,
@@ -753,7 +755,7 @@ ${Object.keys(params)
                                     updateResult = Object.assign({ failed: true }, err.meta.body);
                                     break;
                                 default:
-                                    logger.error({
+                                    logger.warn({
                                         msg: 'Failed to update email',
                                         action: 'document',
                                         queue: job.queue.name,
@@ -856,7 +858,7 @@ if( ctx._source.bounces != null) {
                                 updateResult = Object.assign({ failed: true }, err.meta.body);
                                 break;
                             default:
-                                logger.error({
+                                logger.warn({
                                     msg: 'Failed to update email',
                                     action: 'document',
                                     queue: job.queue.name,
@@ -913,7 +915,7 @@ documentsWorker.on('completed', async job => {
         status: 'completed'
     });
 
-    logger.info({
+    logger.debug({
         msg: 'Document queue entry completed',
         action: 'document',
         queue: job.queue.name,
@@ -923,19 +925,23 @@ documentsWorker.on('completed', async job => {
     });
 });
 
-documentsWorker.on('failed', async job => {
+documentsWorker.on('failed', async (job, err) => {
     metrics(logger, 'queuesProcessed', 'inc', {
-        queue: 'document',
+        queue: 'documents',
         status: 'failed'
     });
 
-    logger.info({
+    let isFinal = isFinalFailedAttempt(job);
+
+    logger[isFinal ? 'error' : 'debug']({
         msg: 'Document queue entry failed',
         action: 'document',
         queue: job.queue.name,
         code: 'failed',
         job: job.id,
+        event: job.name,
         account: job.data.account,
+        err,
 
         failedReason: job.failedReason,
         stacktrace: job.stacktrace,
@@ -991,7 +997,12 @@ const clearExpungedEmbeddings = async () => {
 
                 const { index, client } = await getESClient(logger);
                 if (!client) {
-                    // Document store not enabled
+                    // Document store not enabled. Returning bare would spin, because the collector
+                    // re-invokes itself as soon as this resolves and the queue is not empty.
+                    await new Promise(resolve => {
+                        let timer = setTimeout(resolve, GB_EMPTY_DELAY);
+                        timer.unref();
+                    });
                     return;
                 }
 
@@ -1005,12 +1016,6 @@ const clearExpungedEmbeddings = async () => {
                     });
 
                     if (!existingResult || !existingResult.hits) {
-                        logger.error({
-                            msg: 'Failed to run query to find emails by Message-ID. Empty result.',
-                            account,
-                            messageId,
-                            existingResult
-                        });
                         throw new Error('Empty result');
                     }
                 } catch (err) {
@@ -1067,12 +1072,18 @@ const clearExpungedEmbeddings = async () => {
                             messageId
                         });
                     } catch (err) {
-                        logger.info({
-                            msg: 'Dailed to delete embeddings for a missing email',
+                        // The zrem that retires this entry sits after the delete, so a failure
+                        // leaves it at the head of the queue. Push it back instead of retrying
+                        // straight away, otherwise a permanently failing entry (a missing
+                        // .embeddings index, say) blocks every other entry and re-logs on every
+                        // pass of the collector.
+                        logger.warn({
+                            msg: 'Failed to delete embeddings for a missing email',
                             account,
                             messageId,
                             err
                         });
+                        await redis.zadd(`${REDIS_PREFIX}expungequeue`, Date.now(), expungedEntry);
                     }
                 } else {
                     // clear existing entry
@@ -1083,10 +1094,19 @@ const clearExpungedEmbeddings = async () => {
                         messageId
                     });
                 }
+            } else {
+                // A member that does not split into both halves can never be processed. Retire it
+                // rather than fall through, because the collector re-invokes itself immediately and
+                // this entry would otherwise stay at the head of the queue and pin the loop.
+                logger.warn({ msg: 'Removing malformed expunge queue entry', entry: expungedEntry });
+                await redis.zrem(`${REDIS_PREFIX}expungequeue`, expungedEntry);
             }
         }
     } catch (err) {
-        logger.error({ msg: 'Failed to retrieve expunged entries', rangeStart: 0, rangeEnd, err });
+        // The collector re-runs itself immediately, so this pass repeats every GB_FAILURE_DELAY for
+        // as long as the failure lasts. Keep it visible: nothing else reports that embedding
+        // cleanup has stopped making progress.
+        logger.warn({ msg: 'Failed to retrieve expunged entries', rangeStart: 0, rangeEnd, err });
         await new Promise(resolve => {
             let timer = setTimeout(resolve, GB_FAILURE_DELAY);
             timer.unref();

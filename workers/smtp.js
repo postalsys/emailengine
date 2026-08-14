@@ -124,10 +124,10 @@ async function checkAccountData(session, messageMeta) {
             accountData = await accountObject.loadAccountData();
             if (accountData) {
                 ACCOUNT_CACHE.set(session, accountObject);
-                logger.info({ msg: 'Resolved requested account', account: messageMeta.requestedAccount });
+                logger.debug({ msg: 'Resolved requested account', account: messageMeta.requestedAccount });
             }
         } catch (err) {
-            logger.error({ msg: 'Failed resolving requested account', account: messageMeta.requestedAccount, err });
+            logger.warn({ msg: 'Failed to resolve requested account', account: messageMeta.requestedAccount, err });
         }
     } else {
         accountObject = ACCOUNT_CACHE.get(session);
@@ -254,7 +254,7 @@ async function init() {
 
                 logger.info({
                     msg: 'Message queued',
-                    account: session.user,
+                    account: accountObject.account,
                     messageId: res.messageId,
                     sendAt: res.sendAt,
                     queueId: res.queueId,
@@ -267,7 +267,13 @@ async function init() {
                 metrics(logger, 'events', 'inc', {
                     event: 'smtpSubmitFail'
                 });
-                logger.error({ msg: 'Failed to submit message', account: session.user, err });
+                // a responseCode means the submission was refused with an SMTP reply,
+                // which is a client-caused rejection rather than a server fault
+                logger[err.responseCode ? 'warn' : 'error']({
+                    msg: 'Failed to submit message',
+                    account: session.user || messageMeta.requestedAccount,
+                    err
+                });
                 callback(err);
             });
     };
@@ -315,7 +321,7 @@ async function init() {
                         return;
                     }
                     logger.error({
-                        msg: 'SMTP Server Error',
+                        msg: 'SMTP server error',
                         err
                     });
                 });
@@ -398,13 +404,13 @@ parentPort.on('message', message => {
 init()
     .then(smtpServer => {
         let address = smtpServer.server.address();
-        logger.debug({
+        logger.info({
             msg: 'Started SMTP server thread',
             address,
             version: packageData.version
         });
     })
     .catch(err => {
-        logger.error({ msg: 'Failed to initialize SMTP', err });
+        logger.fatal({ msg: 'Failed to initialize SMTP server', err });
         logger.flush(() => process.exit(3));
     });

@@ -59,13 +59,13 @@ parentPort.on('message', message => {
 run()
     .then(imapServer => {
         let address = imapServer.server.address();
-        logger.debug({
+        logger.info({
             msg: 'Started IMAP proxy server thread',
             address,
             version: packageData.version
         });
     })
     .catch(err => {
-        logger.error({ msg: 'Failed to initialize IMAP server', err });
+        logger.fatal({ msg: 'Failed to initialize IMAP proxy server', err });
         logger.flush(() => process.exit(3));
     });

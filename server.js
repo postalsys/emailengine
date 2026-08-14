@@ -73,7 +73,8 @@ const {
     threadStats,
     httpAgent,
     reloadHttpProxyAgent,
-    maybeReloadHttpProxyAgent
+    maybeReloadHttpProxyAgent,
+    redactValidationError
 } = require('./lib/tools');
 const MetricsCollector = require('./lib/metrics-collector');
 
@@ -301,6 +302,20 @@ const licenseInfo = {
 };
 
 /**
+ * Copy of license details that is safe for logging (the raw license key is removed)
+ * @param {Object|boolean} license - License details object
+ * @returns {Object|boolean} Redacted copy
+ */
+const redactLicense = license => {
+    if (!license || typeof license !== 'object') {
+        return license;
+    }
+    let copy = Object.assign({}, license);
+    delete copy.key;
+    return copy;
+};
+
+/**
  * Human-readable thread type names for display
  * @const {Object<string, string>}
  */
@@ -443,7 +458,9 @@ if (preparedSettingsString) {
 
         preparedSettings = value;
     } catch (err) {
-        logger.error({ msg: 'Invalid settings configuration provided', input: preparedSettingsString, err });
+        // A joi failure here carries every submitted setting - including smtpServerPassword,
+        // imapProxyServerPassword and serviceSecret - and this logger has no redaction of its own
+        logger.fatal({ msg: 'Invalid settings configuration provided', err: redactValidationError(err) });
         logger.flush(() => process.exit(1));
     }
 }
@@ -458,7 +475,7 @@ if (preparedTokenString) {
             throw new Error('Token format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Invalid API token provided', input: preparedTokenString, err });
+        logger.fatal({ msg: 'Invalid API token provided', inputLength: preparedTokenString.length, err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -473,7 +490,7 @@ if (preparedPasswordString) {
             throw new Error('Password format is invalid');
         }
     } catch (err) {
-        logger.error({ msg: 'Invalid password hash provided', err });
+        logger.fatal({ msg: 'Invalid password hash provided', err });
         logger.flush(() => process.exit(1));
     }
 }
@@ -1100,7 +1117,7 @@ let spawnWorker = async (type, opts) => {
         // Handle worker coming online
         worker.on('online', () => {
             if (['smtp', 'imapProxy'].includes(type)) {
-                updateServerState(type, 'initializing').catch(err => logger.error({ msg: `Unable to update ${type} server state`, err }));
+                updateServerState(type, 'initializing').catch(err => logger.error({ msg: 'Unable to update server state', type, err }));
             }
             onlineWorkers.add(worker);
 
@@ -1216,7 +1233,7 @@ let spawnWorker = async (type, opts) => {
                     }, 10000); // 10 second timeout
 
                     logger.info({
-                        msg: 'Worker crashed, waiting for restart before reassignment',
+                        msg: 'Worker exited, waiting for restart before reassignment',
                         accounts: unassigned.size,
                         expectedWorkers: config.workers.imap,
                         currentWorkers: availableIMAPWorkers.size
@@ -1231,6 +1248,9 @@ let spawnWorker = async (type, opts) => {
             // Log worker exit
             if (suspendedWorkerTypes.has(type)) {
                 logger.info({ msg: 'Worker thread terminated', exitCode, type });
+            } else if (exitCode === 0) {
+                // Clean exit, e.g. the deliberate exit-for-restart after a Redis reconnection
+                logger.info({ msg: 'Worker exited', exitCode, type });
             } else {
                 logger.error({ msg: 'Worker unexpectedly exited', exitCode, type });
             }
@@ -1441,7 +1461,12 @@ let spawnWorker = async (type, opts) => {
                         try {
                             postMessage(worker, message);
                         } catch (err) {
-                            logger.error({ msg: 'Unable to forward settings to worker', worker: worker.threadId, callPayload: message, err });
+                            logger.error({
+                                msg: 'Unable to forward settings to worker',
+                                worker: worker.threadId,
+                                settingsKeys: Object.keys(message.data || {}),
+                                err
+                            });
                         }
                     });
 
@@ -1467,7 +1492,7 @@ let spawnWorker = async (type, opts) => {
                         case 'imapProxyServerState': {
                             let type = message.type.replace(/ServerState$/, '');
                             updateServerState(type, message.key, message.payload).catch(err =>
-                                logger.error({ msg: `Unable to update ${type} server state`, err })
+                                logger.error({ msg: 'Unable to update server state', type, err })
                             );
                             break;
                         }
@@ -1526,7 +1551,7 @@ let spawnWorker = async (type, opts) => {
                                         workers: availableIMAPWorkers.size,
                                         unassigned: unassigned.size
                                     });
-                                    assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', n: 2, err }));
+                                    assignAccounts().catch(err => logger.error({ msg: 'Unable to assign accounts', err }));
                                 } else {
                                     logger.warn({
                                         msg: 'All workers ready but no unassigned accounts found',
@@ -1904,7 +1929,7 @@ let licenseCheckHandler = async opts => {
                         let res = await redis.hUpdateBigger(`${REDIS_PREFIX}settings`, 'subexp', now, now + SUBSCRIPTION_ALLOW_DELAY);
                         if (res === 2) {
                             // Grace period expired
-                            logger.info({ msg: 'License validation failed', license: licenseInfo.details, data });
+                            logger.warn({ msg: 'License validation failed', license: redactLicense(licenseInfo.details), data });
                             await settings.removeLicense();
                             licenseInfo.active = false;
                             licenseInfo.details = false;
@@ -1931,13 +1956,13 @@ let licenseCheckHandler = async opts => {
                     }
                 }
             } catch (err) {
-                logger.error({ msg: 'License validation error', err });
+                logger.warn({ msg: 'License validation error', err });
             }
         }
 
         // Check if license has expired
         if (licenseInfo.active && licenseInfo.details && licenseInfo.details.expires && new Date(licenseInfo.details.expires).getTime() < Date.now()) {
-            logger.info({ msg: 'License has expired', license: licenseInfo.details });
+            logger.info({ msg: 'License has expired', license: redactLicense(licenseInfo.details) });
 
             licenseInfo.active = false;
             licenseInfo.details = false;
@@ -1997,7 +2022,7 @@ let licenseCheckHandler = async opts => {
 function checkActiveLicense() {
     clearTimeout(licenseCheckTimer);
     licenseCheckHandler().catch(err => {
-        logger.error('License check error', err);
+        logger.error({ msg: 'License check error', err });
     });
 }
 
@@ -2023,7 +2048,7 @@ let processCheckUpgrade = async () => {
             await redis.hdel(`${REDIS_PREFIX}settings`, 'upgrade');
         }
     } catch (err) {
-        logger.error({ msg: 'Update check failed', err });
+        logger.warn({ msg: 'Update check failed', err });
     }
 };
 
@@ -2051,7 +2076,7 @@ let upgradeCheckHandler = async () => {
 function checkUpgrade() {
     clearTimeout(upgradeCheckTimer);
     upgradeCheckHandler().catch(err => {
-        logger.error('Update check error', err);
+        logger.error({ msg: 'Update check error', err });
     });
 }
 
@@ -2150,7 +2175,7 @@ const redisPingHandler = async () => {
 function checkRedisPing() {
     clearTimeout(redisPingTimer);
     redisPingHandler().catch(err => {
-        logger.error('Redis ping check error', err);
+        logger.error({ msg: 'Redis ping check error', err });
     });
 }
 
@@ -2232,9 +2257,9 @@ async function updateQueueCounters() {
             .llen(`${REDIS_PREFIX}bull:${queue}:paused`)
             .llen(`${REDIS_PREFIX}bull:${queue}:wait`)
             .exec();
-        if (resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0]) {
-            // Counting failed
-            logger.error({ msg: 'Queue length count failed', queue, active: resActive, delayed: resDelayed, paused: resPaused, waiting: resWaiting });
+        let countError = resActive[0] || resDelayed[0] || resPaused[0] || resWaiting[0];
+        if (countError) {
+            logger.error({ msg: 'Queue length count failed', queue, err: countError });
             return false;
         }
 
@@ -2362,7 +2387,7 @@ async function onCommand(worker, message) {
                     throw new Error('Invalid license provided');
                 }
 
-                logger.info({ msg: 'License updated', license: licenseData, source: 'API' });
+                logger.info({ msg: 'License updated', license: redactLicense(licenseData), source: 'API' });
 
                 await setLicense(licenseData, licenseFile);
 
@@ -2375,7 +2400,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'License update failed', source: 'API', err });
+                logger.warn({ msg: 'License update failed', source: 'API', err });
                 return false;
             }
         }
@@ -2391,7 +2416,7 @@ async function onCommand(worker, message) {
 
                 return licenseInfo;
             } catch (err) {
-                logger.fatal({ msg: 'License removal failed', err });
+                logger.error({ msg: 'License removal failed', err });
                 return false;
             }
         }
@@ -2458,7 +2483,7 @@ async function onCommand(worker, message) {
                 return await bounceClassifier.classify(message.data.message);
             } catch (err) {
                 // ignore
-                logger.error({
+                logger.warn({
                     msg: 'Failed to classify bounce response',
                     bounceResponse: message.data.message,
                     err
@@ -2769,12 +2794,16 @@ async function onCommand(worker, message) {
 
         case 'unsubscribe':
             // Handle list unsubscribe
-            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err => logger.error({ msg: 'Unsubscribe webhook failed', err }));
+            sendWebhook(message.account, LIST_UNSUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Unsubscribe webhook failed', account: message.account, err })
+            );
             return;
 
         case 'subscribe':
             // Handle list subscribe
-            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err => logger.error({ msg: 'Subscribe webhook failed', err }));
+            sendWebhook(message.account, LIST_SUBSCRIBE_NOTIFY, message.payload).catch(err =>
+                logger.error({ msg: 'Subscribe webhook failed', account: message.account, err })
+            );
             return;
 
         case 'new':
@@ -2790,7 +2819,7 @@ async function onCommand(worker, message) {
             }
             assignAccounts()
                 .then(() => sendWebhook(message.account, ACCOUNT_ADDED_NOTIFY, { account: message.account }))
-                .catch(err => logger.error({ msg: 'Account assignment failed', n: 3, err }));
+                .catch(err => logger.error({ msg: 'Account assignment failed', err }));
             return;
 
         case 'delete':
@@ -2809,10 +2838,10 @@ async function onCommand(worker, message) {
                 // Notify worker to clean up
                 call(assignedWorker, message)
                     .then(() => logger.debug('Account cleanup completed'))
-                    .catch(err => logger.error({ msg: 'Account cleanup failed', err }));
+                    .catch(err => logger.error({ msg: 'Account cleanup failed', account: message.account, err }));
             }
             sendWebhook(message.account, ACCOUNT_DELETED_NOTIFY, { account: message.account }).catch(err =>
-                logger.error({ msg: 'Account deletion webhook failed', err })
+                logger.error({ msg: 'Account deletion webhook failed', account: message.account, err })
             );
             return;
 
@@ -2830,7 +2859,7 @@ async function onCommand(worker, message) {
                 let assignedWorker = assigned.get(message.account);
                 call(assignedWorker, message)
                     .then(() => logger.debug('Worker command completed'))
-                    .catch(err => logger.error({ msg: 'Worker command failed', err }));
+                    .catch(err => logger.error({ msg: 'Worker command failed', account: message.account, cmd: message.cmd, err }));
             }
             return;
 
@@ -3011,7 +3040,7 @@ async function collectMetrics() {
                     });
                 }
             } catch (err) {
-                logger.error({ msg: 'Connection count failed', err });
+                logger.warn({ msg: 'Connection count failed', threadId: imapWorker.threadId, err });
             }
         }
     }
@@ -3049,7 +3078,7 @@ const closeQueues = cb => {
         for (let worker of typeWorkers) {
             proms.push(
                 call(worker, { cmd: 'close', timeout: WORKER_DRAIN_TIMEOUT }).catch(err => {
-                    logger.error({ msg: 'Failed to signal worker to close', type, err });
+                    logger.warn({ msg: 'Failed to signal worker to close', type, err });
                 })
             );
         }
@@ -3131,7 +3160,7 @@ const startApplication = async () => {
             if (!licenseData) {
                 throw new Error('Invalid license key');
             }
-            logger.info({ msg: 'License loaded', license: licenseData, source: config.licensePath });
+            logger.info({ msg: 'License loaded', license: redactLicense(licenseData), source: config.licensePath });
 
             await setLicense(licenseData, licenseFile);
         } catch (err) {
@@ -3166,20 +3195,20 @@ const startApplication = async () => {
             licenseInfo.details = licenseData;
             licenseInfo.type = 'EmailEngine License';
             if (!config.licensePath) {
-                logger.info({ msg: 'License loaded', license: licenseData, source: 'db' });
+                logger.info({ msg: 'License loaded', license: redactLicense(licenseData), source: 'db' });
             }
         } catch (err) {
-            logger.fatal({ msg: 'Stored license verification failed', content: licenseFile, err });
+            logger.error({ msg: 'Stored license verification failed', contentLength: licenseFile.length, err });
         }
     }
 
     if (!licenseInfo.active) {
-        logger.fatal({ msg: 'No active license. Running in limited mode.' });
+        logger.error({ msg: 'No active license. Running in limited mode.' });
     }
 
     // Check for updates
     processCheckUpgrade().catch(err => {
-        logger.error({ msg: 'Update check failed', err });
+        logger.warn({ msg: 'Update check failed', err });
     });
 
     // Move any settings-based OAuth2 configuration into the app registry before workers spawn.
@@ -3193,7 +3222,7 @@ const startApplication = async () => {
 
     // Apply prepared settings
     if (preparedSettings) {
-        logger.debug({ msg: 'Applying configuration', settings: preparedSettings });
+        logger.debug({ msg: 'Applying configuration', settingsKeys: Object.keys(preparedSettings) });
 
         for (let key of Object.keys(preparedSettings)) {
             await settings.set(key, preparedSettings[key]);
@@ -3321,7 +3350,7 @@ const startApplication = async () => {
                 logger.debug({ msg: 'Token already exists', token: preparedToken.id });
             }
         } catch (err) {
-            logger.error({ msg: 'Token import failed', token: preparedToken.id });
+            logger.error({ msg: 'Token import failed', token: preparedToken.id, err });
         }
     }
 
@@ -3459,7 +3488,7 @@ const startApplication = async () => {
     try {
         await assignAccounts();
     } catch (err) {
-        logger.error({ msg: 'Initial account assignment failed', n: 4, err });
+        logger.error({ msg: 'Initial account assignment failed', err });
     }
 
     // Start webhook workers

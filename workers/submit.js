@@ -42,7 +42,7 @@ const SUBMIT_QC = (readEnvValue('EENGINE_SUBMIT_QC') && Number(readEnvValue('EEN
 
 const SUBMIT_DELAY = getDuration(readEnvValue('EENGINE_SUBMIT_DELAY') || config.submitDelay) || null;
 
-const { shouldDiscardJob } = require('../lib/delivery-error');
+const { shouldDiscardJob, willBeFinalAttempt, isFinalFailedAttempt } = require('../lib/delivery-error');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 let callQueue = new Map();
@@ -157,7 +157,7 @@ const submitWorker = new Worker(
         try {
             queueEntry = msgpack.decode(queueEntryBuf);
         } catch (err) {
-            logger.error({ msg: 'Failed to parse queued email entry', job: job.data, err });
+            logger.error({ msg: 'Failed to parse queued email entry', job: job.id, account: job.data.account, queueId: job.data.queueId, err });
             try {
                 await redis.hdel(`${REDIS_PREFIX}iaq:${job.data.account}`, job.data.queueId);
             } catch (err) {
@@ -197,7 +197,7 @@ const submitWorker = new Worker(
             let backoffDelay = Number(job.opts.backoff && job.opts.backoff.delay) || 0;
             // job.attemptsMade is not yet incremented for the ongoing attempt, so the
             // next retry (if this attempt fails) is delayed by 2^attemptsMade * base
-            let nextAttempt = job.attemptsMade + 1 < job.opts.attempts ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
+            let nextAttempt = !willBeFinalAttempt(job) ? Math.round(job.processedOn + Math.pow(2, job.attemptsMade) * backoffDelay) : false;
 
             queueEntry.job = {
                 id: job.id,
@@ -248,13 +248,17 @@ const submitWorker = new Worker(
                 }
             } catch (err) {
                 logger.error({
-                    msg: 'Job listing failed',
+                    msg: 'Failed to fetch job status',
                     job: job.id,
+                    account: job.data.account,
                     err
                 });
             }
 
-            logger.error({
+            const discardJob = shouldDiscardJob(err, job);
+            const isFinalAttempt = discardJob || willBeFinalAttempt(job);
+
+            logger[isFinalAttempt ? 'error' : 'warn']({
                 msg: 'Message submission failed',
                 action: 'submit',
                 queue: job.queue.name,
@@ -281,14 +285,18 @@ const submitWorker = new Worker(
                 // ignore
             }
 
-            if (shouldDiscardJob(err, job)) {
+            if (discardJob) {
                 try {
                     // do not retry after 5xx error (except 503 which is transient)
                     await job.discard();
                     logger.info({
                         msg: 'Job discarded',
+                        job: job.id,
                         account: queueEntry.account,
-                        queueId: job.data.queueId
+                        queueId: job.data.queueId,
+                        messageId: job.data.messageId,
+                        errorCode: err.code,
+                        responseCode: err.responseCode
                     });
                 } catch (E) {
                     logger.error({
@@ -403,7 +411,9 @@ submitWorker.on('failed', async job => {
         }
     }
 
-    logger.info({
+    let isFinal = isFinalFailedAttempt(job);
+
+    logger[isFinal ? 'error' : 'debug']({
         msg: 'Submission queue entry failed',
         action: 'submit',
         queue: job.queue.name,
