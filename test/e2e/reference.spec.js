@@ -845,11 +845,70 @@ test.describe('API reference', () => {
         await operation.locator('#try-postV1BlocklistListid summary').click();
 
         const form = operation.locator('.ee-ref-try');
-        await form.locator('[data-body]').fill('{ not json');
+
+        // Typed through the editor the panel upgrades to, which syncs into the textarea the
+        // request builder reads. The editor's own worker flags this too, but submit-time
+        // validation is what has to stop the request.
+        await expect(form.locator('.code-editor')).toBeVisible();
+        await page.evaluate(() => window.ace.edit(document.querySelector('#try-postV1BlocklistListid .code-editor')).setValue('{ not json', 1));
+
         await form.locator('button[type="submit"]').click();
 
         await expect(form.locator('.ee-ref-try-status')).toContainText('not valid JSON');
         await expect(form.locator('.ee-ref-try-result')).toBeHidden();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the request body upgrades to a JSON editor, and only once it is asked for', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        const aceRequests = [];
+        page.on('request', request => {
+            if (request.url().includes('/static/js/ace/')) {
+                aceRequests.push(request.url());
+            }
+        });
+
+        await page.goto('/admin/reference/account');
+        await expect(page.locator('#try-postV1Account')).toBeVisible();
+
+        // 127 KB gzipped of editor that a reader who never opens a Try it panel does not pay for
+        expect(aceRequests).toHaveLength(0);
+
+        await page.locator('#try-postV1Account summary').first().click();
+
+        const editor = page.locator('#try-postV1Account .code-editor');
+        await expect(editor).toBeVisible();
+        expect(aceRequests.some(url => url.endsWith('/ace.js'))).toBe(true);
+
+        // The textarea stays in the DOM holding the value, so prepareRequest, "Copy as curl"
+        // and the no-JS path are all unaffected by the upgrade
+        const textarea = page.locator('#try-postV1Account [data-body]');
+        await expect(textarea).toBeHidden();
+
+        await page.evaluate(() => window.ace.edit(document.querySelector('#try-postV1Account .code-editor')).setValue('{"account":"edited-in-ace"}', 1));
+        expect(await textarea.inputValue()).toBe('{"account":"edited-in-ace"}');
+
+        // Completion is this operation's own fields. Stock language_tools completion is
+        // word-based, which inside a JSON body only ever suggests what is already typed, so
+        // the custom completer has to be the ONLY one registered.
+        const completions = await page.evaluate(async () => {
+            const editorInstance = window.ace.edit(document.querySelector('#try-postV1Account .code-editor'));
+            if ((editorInstance.completers || []).length !== 1) {
+                return null;
+            }
+            return new Promise(resolve =>
+                editorInstance.completers[0].getCompletions(editorInstance, editorInstance.session, { row: 0, column: 0 }, '', (err, list) =>
+                    resolve((list || []).map(item => item.value))
+                )
+            );
+        });
+
+        expect(completions).not.toBeNull();
+        expect(completions).toContain('account');
+        // nested, to prove the whole rendered tree is harvested and not just the top level
+        expect(completions).toContain('imapIndexer');
 
         expect(errors).toHaveLength(0);
     });

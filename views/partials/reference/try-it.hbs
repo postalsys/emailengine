@@ -6,9 +6,17 @@
     Requests go to this same instance, so they need a real access token - the shared
     token field at the top of the page feeds every panel.
 
-    The request body is a plain <textarea> rather than an ACE editor on purpose: a tag
-    page carries up to 13 operations, and mounting that many editors costs far more
-    than the syntax highlighting is worth on a form that is usually submitted as-is.
+    The request body textarea stays in the server-rendered HTML and remains the value
+    everything downstream reads - the submit path, "Copy as curl" and the JSON validation.
+    static/js/reference.js upgrades it to an ACE editor and syncs back into it, so the panel
+    works unchanged with no JS and the editor is purely additive.
+
+    That upgrade is deliberately lazy on both axes. ace.js is 127 KB gzipped and no
+    reference page loads it otherwise, so it is fetched only once someone opens a Try it
+    panel that has a body; and the editor is mounted per panel on first open, because these
+    disclosures start closed and ACE cannot size itself in a container with no layout box.
+    Between them a tag page mounts one or two editors rather than the seven its bodies would
+    suggest, and a reader who never opens Try it pays nothing.
 
     Context is an operation view model from lib/api-reference/model.js.
 --}}
@@ -46,11 +54,17 @@
     </div>
     {{/if}}
 
+    {{!-- Not a <label> wrapper: reference.js replaces the textarea with an ACE mount, which a
+          label cannot legitimately wrap. The heading is tied to the field by aria-label
+          instead, which survives the swap. data-schema names the rendered property tree the
+          completer harvests field names from - already on the page, so nothing is duplicated
+          into the markup for it. --}}
     {{#if body}}
-    <label class="mb-3 block">
+    <div class="mb-3" data-body-field data-schema="{{body.scopeId}}">
         {{> reference/section-heading label="Request body" suffix=body.contentType}}
-        <textarea class="textarea mt-1 font-mono text-xs" rows="10" data-body spellcheck="false">{{body.exampleJson}}</textarea>
-    </label>
+        <textarea class="textarea mt-1 font-mono text-xs" rows="10" data-body spellcheck="false"
+            aria-label="Request body">{{body.exampleJson}}</textarea>
+    </div>
     {{/if}}
 
     {{!-- id="" on both: ui/btn reads `id`, and Handlebars merges a partial's hash params into

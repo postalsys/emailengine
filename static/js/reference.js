@@ -1041,6 +1041,152 @@
         }
     };
 
+    // ---- Try it: JSON body editor ------------------------------------------------
+    //
+    // The request body textarea is upgraded to an ACE editor for JSON highlighting, the
+    // gutter errors its worker reports as you type, and completion over the field names the
+    // operation actually accepts. The textarea stays in the DOM and keeps holding the value,
+    // so prepareRequest(), "Copy as curl" and the JSON validation are untouched and the
+    // panel still works with no JS at all.
+    //
+    // Both halves are lazy. ace.js is 127 KB gzipped and nothing else on a reference page
+    // wants it, so it is fetched the first time a Try it panel with a body is opened; and
+    // each editor is mounted on its own panel's first open, because these disclosures start
+    // closed and ACE cannot measure itself inside a container with no layout box. A tag page
+    // has at most seven request bodies and in practice mounts one or two.
+    const ACE_BASE = '/static/js/ace';
+
+    let acePromise = null;
+
+    const loadScript = src =>
+        new Promise((resolve, reject) => {
+            const element = document.createElement('script');
+            element.src = src;
+            element.onload = resolve;
+            element.onerror = () => reject(new Error(`Failed to load ${src}`));
+            document.head.appendChild(element);
+        });
+
+    const loadAce = () => {
+        if (!acePromise) {
+            acePromise = loadScript(`${ACE_BASE}/ace.js`)
+                .then(() => {
+                    // Modes, themes and the JSON worker are resolved against this. ACE infers
+                    // it from its own <script src> when the page carries one; injected at
+                    // runtime that inference is not worth relying on.
+                    window.ace.config.set('basePath', ACE_BASE);
+                    return loadScript(`${ACE_BASE}/ext-language_tools.js`);
+                })
+                .catch(err => {
+                    // Let a later open try again rather than leaving every panel stuck on a
+                    // one-off network failure
+                    acePromise = null;
+                    throw err;
+                });
+        }
+        return acePromise;
+    };
+
+    // Completion entries for one operation, read off the property tree already rendered on
+    // the page rather than duplicated into the markup for the editor's benefit. Stock
+    // language_tools completion is word-based - inside a JSON body that only ever suggests
+    // words already typed - so this replaces the default completers rather than joining them.
+    //
+    // Deduped by name: the same field legitimately appears at several depths (`auth` under
+    // both imap and smtp), and a completer needs the token, not where it came from.
+    const schemaCompleter = schemaId => {
+        const scope = document.getElementById(schemaId || '');
+        if (!scope) {
+            return null;
+        }
+
+        const fields = new Map();
+        for (const row of scope.querySelectorAll('.ee-ref-prop')) {
+            // The row's OWN rail. A row contains its nested rows, so an unanchored descendant
+            // selector would read a child's name onto the parent.
+            const rail = row.querySelector(':scope > .ee-ref-prop-row > .ee-ref-prop-rail');
+            const name = rail && rail.querySelector('code');
+            if (!name || !name.textContent || fields.has(name.textContent)) {
+                continue;
+            }
+            const type = rail.querySelector('.text-primary');
+            fields.set(name.textContent, type ? type.textContent : '');
+        }
+
+        if (!fields.size) {
+            return null;
+        }
+
+        const list = [...fields].map(([name, meta]) => ({ caption: name, value: name, meta, score: 100 }));
+        return { getCompletions: (editor, session, pos, prefix, callback) => callback(null, list) };
+    };
+
+    const mountBodyEditor = async field => {
+        if (field.dataset.editorMounted) {
+            return;
+        }
+        field.dataset.editorMounted = '1';
+
+        const textarea = field.querySelector('[data-body]');
+        if (!textarea) {
+            return;
+        }
+
+        try {
+            await loadAce();
+        } catch (err) {
+            // The textarea is still there and still holds the value, so the panel keeps
+            // working exactly as it did before the upgrade existed
+            delete field.dataset.editorMounted;
+            return;
+        }
+
+        const mount = document.createElement('div');
+        mount.className = 'code-editor ee-ref-body-editor mt-1';
+        textarea.after(mount);
+        textarea.hidden = true;
+
+        const completer = schemaCompleter(field.dataset.schema);
+        const editor = window.uiAceEditor(mount, 'json', textarea.value, {
+            // Grows with the payload instead of scrolling inside a fixed box - a 62-property
+            // account body is unreadable through an eight-line window - but stops before it
+            // pushes the Send button off screen
+            minLines: 8,
+            maxLines: 24,
+            // The 80-column rule means nothing in a JSON body
+            showPrintMargin: false,
+            // Only this operation's own field names, never the word-based default
+            enableBasicAutocompletion: completer ? [completer] : false,
+            enableLiveAutocompletion: completer ? [completer] : false
+        });
+
+        // The textarea remains what everything downstream reads
+        editor.session.on('change', () => {
+            textarea.value = editor.getValue();
+        });
+    };
+
+    const initTryItEditors = () => {
+        for (const field of document.querySelectorAll('[data-body-field]')) {
+            const details = field.closest('details');
+            if (!details) {
+                continue;
+            }
+
+            if (details.open) {
+                mountBodyEditor(field);
+                continue;
+            }
+
+            // Mounting is idempotent, so a panel opened and closed repeatedly still costs one
+            details.addEventListener('toggle', () => {
+                if (details.open) {
+                    mountBodyEditor(field);
+                }
+            });
+        }
+    };
+
     // One delegated listener for every try-it form on the page, matching how
     // static/js/ui.js handles the copy buttons.
     const initTryIt = () => {
@@ -1205,6 +1351,7 @@
         initSchemaTools();
         initSampleTabs();
         initTryIt();
+        initTryItEditors();
         initMint();
         initTokenForm();
         initAlertHeight();

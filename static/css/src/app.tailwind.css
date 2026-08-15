@@ -309,6 +309,13 @@
         max-width: 34rem;
     }
 
+    /* The Try it request body editor keeps .code-editor's border and radius but sizes itself
+     * from its content: static/js/reference.js gives it minLines/maxLines, which .code-editor's
+     * fixed 14rem would otherwise fight. */
+    .ee-ref-body-editor {
+        height: auto;
+    }
+
     /* Example payloads open by default, so the shape of a response is the first thing a
      * reader meets rather than 128 property rows. That only works if the cost is bounded:
      * the AccountResponse example alone pretty-prints to about 130 lines, and thirteen of
