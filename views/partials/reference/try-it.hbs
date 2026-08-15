@@ -22,7 +22,8 @@
 --}}
 {{#> reference/disclosure label="Try it" primary=true elId=(concat "try-" id) class="mt-4"}}
 
-<form class="ee-ref-try border-base-content/20 mt-3 rounded-box border p-4" data-method="{{method}}" data-path="{{path}}">
+<form class="ee-ref-try border-base-content/20 mt-3 rounded-box border p-4" data-method="{{method}}" data-path="{{path}}"
+    {{#if tryImpact.confirm}}data-confirm="ee-ref-confirm-{{id}}" {{/if}}>
 
     {{!-- Weight tracks consequence - see tryImpact() in lib/api-reference/model.js. A read
           says nothing, an ordinary write gets one muted line, and only the operations that
@@ -94,5 +95,46 @@
     </div>
 
 </form>
+
+{{!-- Sits after the form rather than inside it, so the dialog is not a descendant of the
+      thing it is confirming. Nothing breaks if it moves; it just reads wrong.
+
+      Both buttons dismiss through ui/btn's `overlay` param, which is FlyonUI's own
+      data-overlay path and what every other modal in the admin UI uses. "Run it" carries a
+      class as well, so static/js/reference.js can tell an answer from a dismissal without
+      closing the overlay itself - see the note there. A class rather than an id because
+      ui/modal neutralizes `id` inside its block.
+
+      No neutralizing hash params on these three calls: ui/modal already neutralizes its own
+      for the block, reference/disclosure neutralizes `class`, and nothing else ui/btn reads
+      exists on the operation view model. The `id=""` on the buttons inside the form above is
+      a different case - the operation's own `id` is in context there.
+
+      static=true so neither Escape nor a stray backdrop click dismisses a confirmation; the
+      corner close button remains, and reads as declining like Cancel does. --}}
+{{#if tryImpact.confirm}}
+{{#> ui/modal id=(concat "ee-ref-confirm-" id) title="Run this request?" static=true}}
+<div class="modal-body space-y-3">
+    <p class="text-sm">{{tryImpact.text}}</p>
+    <div>
+        <div class="text-base-content/50 text-2xs mb-1 tracking-wide uppercase">Request</div>
+        <pre class="ee-code-block text-xs"><code class="ee-ref-confirm-request"></code></pre>
+    </div>
+    {{!-- Deleting messages by search, flushing an account, submitting a message: these carry
+          what they act on in the body, so a dialog showing only the path would be confirming
+          the wrong half. Filled and unhidden by static/js/reference.js when the request has
+          one, and capped like the example payloads so a large body cannot outgrow the
+          dialog. --}}
+    <div class="ee-ref-confirm-body-wrap hidden">
+        <div class="text-base-content/50 text-2xs mb-1 tracking-wide uppercase">Body</div>
+        <pre class="ee-code-block ee-ref-example text-xs"><code class="ee-ref-confirm-body"></code></pre>
+    </div>
+</div>
+<div class="modal-footer">
+    {{> ui/btn label="Cancel" variant="neutral" style="soft" overlay=closeOverlay}}
+    {{> ui/btn label="Run it" variant="error" icon="icon-[tabler--alert-triangle]" class="ee-ref-confirm-run" overlay=closeOverlay}}
+</div>
+{{/ui/modal}}
+{{/if}}
 
 {{/reference/disclosure}}

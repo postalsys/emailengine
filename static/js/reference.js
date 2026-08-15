@@ -1187,6 +1187,64 @@
         }
     };
 
+    // Confirmation step for the destructive operations (tryImpact.confirm in
+    // lib/api-reference/model.js). The fields arrive prefilled from the schema example, so
+    // Send on DELETE /v1/account/{account} is one click from a real deletion; this puts the
+    // resolved request in front of the reader first - the actual method and path, with the
+    // values currently in the form - and makes them press a second, differently labelled
+    // button.
+    //
+    // Every button in the dialog dismisses it through data-overlay, FlyonUI's own path and
+    // the one every other modal in the admin UI uses. Nothing here closes the overlay by
+    // hand: HSOverlay defers parts of both open and close to timers and to transitionend, so
+    // driving it from outside races with itself and can strand the dialog on screen - the
+    // worst possible failure for a confirmation. The click on "Run it" therefore only records
+    // the answer, and close.overlay is what settles the promise either way.
+    //
+    // Resolves true to go ahead, false to abandon. reference/try-it renders the dialog and
+    // sets data-confirm from the same condition, so a form asking to confirm always has one
+    // to confirm with; if that ever stops holding, declining is the right way for a safety
+    // gate to break - not running is recoverable, deleting without asking is not.
+    const confirmRequest = (form, request) =>
+        new Promise(resolve => {
+            const modal = document.getElementById(form.dataset.confirm);
+            const run = modal && modal.querySelector('.ee-ref-confirm-run');
+            if (!run) {
+                resolve(false);
+                return;
+            }
+
+            // The rest of the dialog is emitted unconditionally beside the button, by the same
+            // {{#if tryImpact.confirm}} that sets the form's data-confirm, so it is there
+            modal.querySelector('.ee-ref-confirm-request').textContent = `${request.method} ${request.url}`;
+
+            // Shown only when there is one, which among the destructive operations means the
+            // bulk ones, where the body is what decides how much gets removed
+            modal.querySelector('.ee-ref-confirm-body').textContent = request.body || '';
+            modal.querySelector('.ee-ref-confirm-body-wrap').classList.toggle('hidden', !request.body);
+
+            // Anything that closes the dialog without this having been set counts as
+            // declining, which is the safe default for a confirmation
+            let confirmed = false;
+
+            const onConfirm = () => {
+                confirmed = true;
+            };
+
+            // The click listener needs removing by hand - a Cancel leaves it attached, and one
+            // per Send would accumulate on DOM that outlives this promise
+            run.addEventListener('click', onConfirm);
+            modal.addEventListener(
+                'close.overlay',
+                () => {
+                    run.removeEventListener('click', onConfirm);
+                    resolve(confirmed);
+                },
+                { once: true }
+            );
+            window.uiModal.open(modal);
+        });
+
     // One delegated listener for every try-it form on the page, matching how
     // static/js/ui.js handles the copy buttons.
     const initTryIt = () => {
@@ -1218,7 +1276,18 @@
             const status = form.querySelector('.ee-ref-try-status');
             const button = form.querySelector('button[type="submit"]');
 
+            // Busy BEFORE the confirmation, not after it. uiButtonBusy disables the button,
+            // which is what stops a second Send from queueing a second confirmation against
+            // the same dialog - one "Run it" would then resolve both and delete twice.
             window.uiButtonBusy(button, true);
+
+            // Confirmed after prepareRequest, so a malformed body is reported rather than
+            // confirmed, and the dialog can show the request that would actually run
+            if (form.dataset.confirm && !(await confirmRequest(form, request))) {
+                window.uiButtonBusy(button, false);
+                return;
+            }
+
             const started = performance.now();
 
             try {

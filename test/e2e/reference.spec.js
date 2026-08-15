@@ -889,6 +889,88 @@ test.describe('API reference', () => {
         expect(errors).toHaveLength(0);
     });
 
+    test('an irreversible request is confirmed before it runs', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        // The fields arrive prefilled from the schema example, so Send here is otherwise one
+        // click away from a real deletion.
+        const sent = [];
+        page.on('request', request => {
+            if (request.method() === 'DELETE' && request.url().includes('/v1/account/')) {
+                sent.push(request.url());
+            }
+        });
+
+        await page.goto('/admin/reference/account');
+        await page.locator('#try-deleteV1AccountAccount summary').first().click();
+
+        const modal = page.locator('#ee-ref-confirm-deleteV1AccountAccount');
+        await expect(modal).toBeHidden();
+
+        // `opened` rather than merely visible: HSOverlay removes `hidden` first and marks the
+        // dialog opened from a later timer, and its buttons are not wired to close it until
+        // then. Waiting for it is what a reader does by existing.
+        const settled = expect(modal).toHaveClass(/opened/);
+
+        await page.locator('#try-deleteV1AccountAccount button[type="submit"]').click();
+        await settled;
+        expect(sent).toHaveLength(0);
+
+        // The resolved request, not a generic "are you sure" - the account id is the part
+        // worth reading before agreeing
+        await expect(modal.locator('.ee-ref-confirm-request')).toHaveText('DELETE /v1/account/user123');
+
+        await modal.getByRole('button', { name: 'Cancel' }).click();
+        await expect(modal).toBeHidden();
+        expect(sent).toHaveLength(0);
+
+        // Confirming runs it, once
+        await page.locator('#try-deleteV1AccountAccount button[type="submit"]').click();
+        await expect(modal).toHaveClass(/opened/);
+        await modal.getByRole('button', { name: 'Run it' }).click();
+        await expect(modal).toBeHidden();
+        await expect(page.locator('#try-deleteV1AccountAccount .ee-ref-try-result')).toBeVisible();
+        expect(sent).toHaveLength(1);
+
+        // A bulk operation decides how much it deletes in its body, so the dialog has to show
+        // that too - the path alone would be confirming the wrong half
+        await page.goto('/admin/reference/multi-message-actions');
+        await page.locator('#try-putV1AccountAccountMessagesDelete summary').first().click();
+        await page.locator('#try-putV1AccountAccountMessagesDelete button[type="submit"]').click();
+
+        const bulk = page.locator('#ee-ref-confirm-putV1AccountAccountMessagesDelete');
+        await expect(bulk).toHaveClass(/opened/);
+        await expect(bulk.locator('.ee-ref-confirm-request')).toHaveText('PUT /v1/account/user123/messages/delete');
+        await expect(bulk.locator('.ee-ref-confirm-body')).toContainText('"search"');
+
+        // Send is disabled while the dialog is up, so a second click cannot queue a second
+        // confirmation that one "Run it" would then answer twice
+        await expect(page.locator('#try-putV1AccountAccountMessagesDelete button[type="submit"]')).toBeDisabled();
+        await bulk.getByRole('button', { name: 'Cancel' }).click();
+        await expect(bulk).toBeHidden();
+        await expect(page.locator('#try-putV1AccountAccountMessagesDelete button[type="submit"]')).toBeEnabled();
+
+        // Submitting a stored draft confirms too. Its body is entirely optional overrides -
+        // the draft carries its own recipients - so Send there mails people who appear
+        // nowhere in the panel, which is the case with the least in the request to read.
+        await page.goto('/admin/reference/submit');
+        await page.locator('#try-postV1AccountAccountMessageMessageSubmit summary').first().click();
+        await page.locator('#try-postV1AccountAccountMessageMessageSubmit button[type="submit"]').click();
+
+        const draft = page.locator('#ee-ref-confirm-postV1AccountAccountMessageMessageSubmit');
+        await expect(draft).toHaveClass(/opened/);
+        await expect(draft.locator('.ee-ref-confirm-request')).toContainText('/message/');
+        await draft.getByRole('button', { name: 'Cancel' }).click();
+        await expect(draft).toBeHidden();
+
+        // Nothing that only reads carries a dialog
+        await page.goto('/admin/reference/stats');
+        await expect(page.locator('[id^="ee-ref-confirm-"]')).toHaveCount(0);
+
+        // 401s are expected here - this spec holds no token - so only unexpected noise fails
+        expect(errors.filter(text => !/401|Unauthorized/.test(text))).toHaveLength(0);
+    });
+
     test('the request body upgrades to a JSON editor, and only once it is asked for', async ({ page }) => {
         const errors = trackConsoleErrors(page);
 
