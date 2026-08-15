@@ -610,6 +610,38 @@ test.describe('API reference', () => {
         expect(errors).toHaveLength(0);
     });
 
+    test('the minted-token countdown runs down on the open page', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        // Fake timers, so the token's hour is spent in milliseconds. Installed before the
+        // navigation: the countdown schedules its first repaint as the page loads.
+        await page.clock.install();
+
+        await page.goto('/admin/reference/token');
+        await page.click('#ref-token-mint');
+
+        const state = page.locator('#ref-token-state');
+        const badge = page.locator('#ref-token-expiry');
+        await expect(state).toContainText('min left', { timeout: 20000 });
+        await expect(badge).toContainText('min left');
+
+        // Whatever the mint round trip left on the clock, ten minutes take exactly ten off
+        // the label - the countdown is not the value that was painted when the page opened.
+        const minutes = Number((await state.textContent()).match(/\d+/)[0]);
+        await page.clock.fastForward('10:00');
+        await expect(state).toHaveText(`${minutes - 10} min left`);
+        await expect(badge).toHaveText(`${minutes - 10} min left`);
+
+        // ...and the same open page notices the expiry itself, without being reloaded
+        await page.clock.fastForward('01:00:00');
+        await expect(state).toHaveText('Not set');
+        await expect(badge).toBeHidden();
+        await expect(page.locator('#ref-token-clear-wrap')).toBeHidden();
+        expect(await page.evaluate(() => window.sessionStorage.getItem('eeRefToken'))).toBeNull();
+
+        expect(errors).toHaveLength(0);
+    });
+
     test('the sidebar links back to the reference overview', async ({ page }) => {
         await page.goto('/admin/reference/message');
 

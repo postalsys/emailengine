@@ -35,6 +35,10 @@ subtitle="Enables the Try it panels on the endpoint pages."}}
         <span id="ref-token-clear-wrap" class="hidden">
             {{> ui/btn id="ref-token-clear" variant="neutral" style="text" size="sm" icon="icon-[tabler--x]" label="Clear"}}
         </span>
+        {{!-- How much of a minted token's hour is left, filled in and counted down by
+              static/js/reference.js. Deliberately not a live region: it changes every
+              minute, and announcing that each time is noise, not news. --}}
+        {{> ui/badge elId="ref-token-expiry" variant="primary" soft=true class="badge-sm hidden" label="" icon=""}}
     </div>
     <p class="text-base-content/50 mt-2 text-xs">Creates an API-scoped token that expires in one hour and activates it
         here. It is a real token until then - it appears on the

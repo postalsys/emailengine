@@ -74,7 +74,10 @@
         }
     };
 
-    const minutesLeft = expires => Math.max(0, Math.round((expires - Date.now()) / 60000));
+    // Rounded up, so the label counts the minute that is still running rather than the one
+    // nearest: a token with 20 seconds of life left reads "1 min left", and "0" never shows
+    // for a token that still works.
+    const minutesLeft = expires => Math.max(0, Math.ceil((expires - Date.now()) / 60000));
 
     // The "no token set" banner sticks below the topbar (reference/token-alert.hbs), so it
     // adds to what a jump target has to clear. Its measured height is published to the
@@ -129,16 +132,63 @@
         }
     };
 
+    // A minted token's hour runs down while the page stays open, so the countdown below is
+    // repainted on a timer as well as on every change to the token. Not a poll: the repaint
+    // is scheduled for the moment the displayed minute actually changes, so a page left open
+    // does nothing at all in between. The handle doubles as "a countdown is running".
+    let countdownTimer = null;
+
+    const scheduleCountdown = expires => {
+        window.clearTimeout(countdownTimer);
+        countdownTimer = null;
+
+        if (!expires) {
+            return;
+        }
+
+        // The label (a ceil) rolls over on the minute boundaries counted back from the
+        // expiry, not on wall-clock ones. A timeout can fire a hair early, which would
+        // repaint the same number and then schedule another full minute from just short of
+        // the boundary, so aim past it. The store drops an entry the moment it expires, so
+        // what arrives here is always still ahead.
+        const remaining = expires - Date.now();
+        countdownTimer = window.setTimeout(() => paintTokenStatus(), (remaining % 60000 || 60000) + 250);
+    };
+
+    // Whether the "no token set" banner was last painted as shown. Only a change in that
+    // pays for publishAlertHeight, which measures: a forced layout, and one that follows the
+    // label write below, so the timer would be flushing layout for the whole page every
+    // minute for a height a minute rollover cannot have moved. The ResizeObserver in
+    // initAlertHeight still covers the band changing height on its own.
+    let alertShown = null;
+
     // Repaints the always-visible status in the sidebar, and shows the Clear control on
     // the overview page only while there is something to clear.
     const paintTokenStatus = () => {
         const entry = tokenStore.read();
+        const expires = entry && entry.expires;
+        const label = entry ? (expires ? `${minutesLeft(expires)} min left` : 'Active') : 'Not set';
 
         const state = document.getElementById('ref-token-state');
-        if (state) {
-            state.textContent = entry ? (entry.expires ? `${minutesLeft(entry.expires)} min left` : 'Active') : 'Not set';
+        // One guard for both: the class only ever changes along with the text
+        if (state && state.textContent !== label) {
+            state.textContent = label;
             state.className = entry ? 'text-success text-2xs' : 'text-base-content/50 text-2xs';
         }
+
+        // The access-token page's own copy of the countdown. It is there because the
+        // sidebar's is collapsed behind a disclosure below lg, on the one page where the
+        // token is the subject, and it is shown only for a minted token - a pasted one has
+        // no expiry known here.
+        const expiry = document.getElementById('ref-token-expiry');
+        if (expiry) {
+            expiry.classList.toggle('hidden', !expires);
+            if (expires) {
+                expiry.textContent = label;
+            }
+        }
+
+        scheduleCountdown(expires);
 
         const clearWrap = document.getElementById('ref-token-clear-wrap');
         if (clearWrap) {
@@ -151,7 +201,10 @@
         const alert = document.getElementById('ref-token-alert');
         if (alert) {
             alert.classList.toggle('hidden', !!entry);
-            publishAlertHeight(alert);
+            if (alertShown !== !entry) {
+                alertShown = !entry;
+                publishAlertHeight(alert);
+            }
         }
     };
 
@@ -964,10 +1017,11 @@
             return;
         }
 
-        // Reflect what is already held for this tab
+        // Reflect what is already held for this tab. No minute count here - this line is
+        // written once, and the badge beside the Clear button is the one that stays true.
         const existing = tokenStore.read();
         if (existing) {
-            say(existing.expires ? `A temporary token is active, ${minutesLeft(existing.expires)} minutes left.` : 'A token is active.', true);
+            say(existing.expires ? 'A temporary token is active.' : 'A token is active.', true);
         }
 
         document.getElementById('ref-token-set').addEventListener('click', () => {
@@ -1013,6 +1067,16 @@
         // On load rather than here: a target inside an inactive response tab needs the tab
         // switched, which needs FlyonUI
         whenComponentsReady(revealTarget);
+    });
+
+    // A background tab has its timers throttled to about one a minute, and a frozen one gets
+    // none at all, so the countdown can be well behind by the time the reader comes back to
+    // it. Repaint on the way back rather than trusting the schedule to have kept up - but
+    // only with a countdown actually running, since nothing else here moves on its own.
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && countdownTimer) {
+            paintTokenStatus();
+        }
     });
 
     // Same-page property links only change the fragment, so the load-time pass does not
