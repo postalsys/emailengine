@@ -24,11 +24,17 @@
 
 <form class="ee-ref-try border-base-content/20 mt-3 rounded-box border p-4" data-method="{{method}}" data-path="{{path}}">
 
+    {{!-- Weight tracks consequence - see tryImpact() in lib/api-reference/model.js. A read
+          says nothing, an ordinary write gets one muted line, and only the operations that
+          destroy data or send mail get a warning box. The same warning on all 82 operations
+          is what taught readers to skim past the fourteen where it mattered. --}}
+    {{#if tryImpact.warn}}
     {{#> ui/alert-banner variant="warning"}}
-    <div class="text-sm">Requests run against this EmailEngine instance with real data. A
-        <code class="ee-code">{{methodLabel}}</code> here has the same effect as calling the API directly.
-    </div>
+    <div class="text-sm">{{tryImpact.text}}</div>
     {{/ui/alert-banner}}
+    {{else if tryImpact}}
+    <p class="text-base-content/50 mb-3 text-xs">{{tryImpact.text}}</p>
+    {{/if}}
 
     {{#if pathParams.length}}
     <div class="mb-3 grid gap-3 sm:grid-cols-2">

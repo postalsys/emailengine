@@ -243,6 +243,58 @@ test('API reference model', async t => {
         assert.match(state.enumValues.find(entry => entry.value === 'connected').description, /steady state/);
     });
 
+    await t.test('the Try it warning tracks what an operation actually does', () => {
+        // The panel used to carry one warning on all 82 operations, 42 of which only read,
+        // which is how a reader learns to skim past the ones that matter. Weight now follows
+        // lib/api-routes/operation-impact.js: nothing on a read, a muted line on a write, a
+        // warning where the effect cannot be taken back.
+        const known = new Set(['destructive', 'sends', 'readonly']);
+        const declared = [];
+        for (const path of Object.keys(spec.paths)) {
+            for (const method of Object.keys(spec.paths[path])) {
+                const impact = spec.paths[path][method]['x-ee-impact'];
+                if (typeof impact === 'undefined') {
+                    continue;
+                }
+                assert.ok(known.has(impact), `${method.toUpperCase()} ${path} declares an unknown impact "${impact}"`);
+                declared.push(`${method.toUpperCase()} ${path}`);
+            }
+        }
+        assert.ok(declared.length >= 20, `only ${declared.length} operations declare an impact`);
+
+        // Tripwire: the method-derived default calls a DELETE a plain write, so a new one that
+        // forgets the declaration would quietly drop from a warning to a muted line.
+        const undeclared = [];
+        for (const path of Object.keys(spec.paths)) {
+            if (spec.paths[path].delete && spec.paths[path].delete['x-ee-impact'] !== 'destructive') {
+                undeclared.push(`DELETE ${path}`);
+            }
+        }
+        assert.deepEqual(undeclared, [], 'every DELETE has to declare IMPACT.DESTRUCTIVE');
+
+        // ...and the model turns that into what the panel renders
+        const remove = allOperations.find(operation => operation.id === 'deleteV1AccountAccount');
+        assert.ok(remove.tryImpact.warn, 'removing an account renders no warning');
+        assert.match(remove.tryImpact.text, /cannot be undone/);
+
+        const submit = allOperations.find(operation => operation.id === 'postV1AccountAccountSubmit');
+        assert.ok(submit.tryImpact.warn);
+        assert.match(submit.tryImpact.text, /sends real email/);
+
+        // A read says nothing at all, whether it is a GET or a POST that only searches
+        assert.equal(allOperations.find(operation => operation.id === 'getV1Stats').tryImpact, null);
+        assert.equal(allOperations.find(operation => operation.id === 'postV1UnifiedSearch').tryImpact, null);
+
+        // An ordinary write gets the muted line, not a warning box
+        const update = allOperations.find(operation => operation.id === 'putV1AccountAccount');
+        assert.equal(update.tryImpact.warn, false);
+
+        // No GET may end up with a warning through the default
+        for (const operation of allOperations.filter(candidate => candidate.method === 'get')) {
+            assert.equal(operation.tryImpact, null, `${operation.id} warns on a GET`);
+        }
+    });
+
     await t.test('behavior notes reach the operations that need them', () => {
         const withBehavior = allOperations.filter(operation => operation.behavior.length);
         assert.ok(withBehavior.length >= 15, `only ${withBehavior.length} operations carry behavior notes`);

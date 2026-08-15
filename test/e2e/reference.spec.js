@@ -860,6 +860,35 @@ test.describe('API reference', () => {
         expect(errors).toHaveLength(0);
     });
 
+    test('the try it warning appears only where running the request has a consequence', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        // A read says nothing. The blanket warning this replaced fired on all 82 operations,
+        // 42 of which only read, which is what made it invisible on the ones that matter.
+        await page.goto('/admin/reference/stats');
+        await page.locator('#try-getV1Stats summary').first().click();
+        await expect(page.locator('#try-getV1Stats .ee-ref-try')).toBeVisible();
+        await expect(page.locator('#try-getV1Stats .alert-warning')).toHaveCount(0);
+
+        // Removing an account warns, and names the consequence rather than the HTTP method
+        await page.goto('/admin/reference/account');
+        await page.locator('#try-deleteV1AccountAccount summary').first().click();
+        await expect(page.locator('#try-deleteV1AccountAccount .alert-warning')).toContainText('cannot be undone');
+
+        // An ordinary write gets one muted line, not a box
+        await page.locator('#try-putV1AccountAccount summary').first().click();
+        const update = page.locator('#try-putV1AccountAccount');
+        await expect(update.locator('.alert-warning')).toHaveCount(0);
+        await expect(update.getByText('Runs against live data on this instance.')).toBeVisible();
+
+        // Sending is the other irreversible one
+        await page.goto('/admin/reference/submit');
+        await page.locator('#try-postV1AccountAccountSubmit summary').first().click();
+        await expect(page.locator('#try-postV1AccountAccountSubmit .alert-warning')).toContainText('sends real email');
+
+        expect(errors).toHaveLength(0);
+    });
+
     test('the request body upgrades to a JSON editor, and only once it is asked for', async ({ page }) => {
         const errors = trackConsoleErrors(page);
 
