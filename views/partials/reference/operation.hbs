@@ -45,23 +45,30 @@
         </div>
         {{/if}}
 
-        {{> reference/params title="Path parameters" params=pathParams}}
-        {{> reference/params title="Query parameters" params=queryParams}}
-        {{> reference/params title="Headers" params=headerParams}}
+        {{> reference/params title="Path parameters" params=pathParams flags=""}}
+        {{> reference/params title="Query parameters" params=queryParams flags=queryFlags}}
+        {{> reference/params title="Headers" params=headerParams flags=""}}
 
+        {{!-- Example first, and open. It used to sit collapsed below the property tree, so on
+              a 128-property response the one artifact that answers "what does this look like"
+              was 6,700 pixels down and behind a click. The shape is what orients a reader
+              before any individual field matters. --}}
         {{#if body}}
         <div class="mt-5">
             {{> reference/section-heading label="Request body" suffix=body.contentType class="mb-2"}}
             {{#if body.descriptionHtml}}
             <div class="text-base-content/70 mb-2 text-sm"><p>{{{body.descriptionHtml}}}</p></div>
             {{/if}}
-            {{#if body.tree}}
-            {{> reference/schema body.tree}}
-            {{/if}}
             {{#if body.exampleJson}}
-            {{#> reference/disclosure label="Example request body" class="mt-3"}}
-            <pre class="ee-code-block mt-2"><code class="language-json">{{body.exampleJson}}</code></pre>
+            {{#> reference/disclosure label="Example request body" open=true class="mb-3"}}
+            <pre class="ee-code-block ee-ref-example mt-2"><code class="language-json">{{body.exampleJson}}</code></pre>
             {{/reference/disclosure}}
+            {{/if}}
+            {{#if body.tree.showTools}}
+            {{> reference/schema-tools scope=body.scopeId label="Filter request body fields"}}
+            {{/if}}
+            {{#if body.tree}}
+            <div id="{{body.scopeId}}" class="mt-2">{{> reference/schema body.tree}}</div>
             {{/if}}
         </div>
         {{/if}}
@@ -83,13 +90,16 @@
                 {{#if descriptionHtml}}
                 <div class="text-base-content/70 mt-1 text-sm"><p>{{{descriptionHtml}}}</p></div>
                 {{/if}}
-                {{#if tree}}
-                <div class="mt-2">{{> reference/schema tree}}</div>
-                {{/if}}
                 {{#if exampleJson}}
-                {{#> reference/disclosure label="Example response" class="mt-3"}}
-                <pre class="ee-code-block mt-2"><code class="language-json">{{exampleJson}}</code></pre>
+                {{#> reference/disclosure label="Example response" open=true class="mt-3 mb-3"}}
+                <pre class="ee-code-block ee-ref-example mt-2"><code class="language-json">{{exampleJson}}</code></pre>
                 {{/reference/disclosure}}
+                {{/if}}
+                {{#if tree.showTools}}
+                {{> reference/schema-tools scope=scopeId label="Filter response fields"}}
+                {{/if}}
+                {{#if tree}}
+                <div id="{{scopeId}}" class="mt-2">{{> reference/schema tree}}</div>
                 {{/if}}
             </div>
             {{/each}}

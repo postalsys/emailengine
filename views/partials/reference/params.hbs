@@ -3,18 +3,34 @@
     Renders nothing when the group is empty, so callers can include all three
     unconditionally.
     Params:
-      title  - group heading, e.g. "Path parameters" (required)
+      title  - group heading, e.g. "Query parameters" (required)
       params - array of parameter view models from lib/api-reference/model.js (required)
+      flags  - parameter names, when the model recognised the group as a flag list rather
+               than N documented parameters (optional; see flagNames() in model.js)
 
     Rows are reference/schema-node: buildParameter() emits the same field names as a
     schema tree node, so a parameter renders identically to a property without a
     second copy of the row markup.
+
+    A flag list is the exception. GET /v1/settings takes 87 same-typed, undocumented
+    booleans that together answer one question - which settings do you want back - and a
+    row each made roughly 260 lines of page carrying no more information than the chip
+    grid below. The model only sets `flags` when every member of the group is uniform, so
+    nothing with a description or a required member can land here.
 --}}
 {{#if params.length}}
 <div class="mt-4">
     {{> reference/section-heading label=title class="mb-2"}}
+    {{#if flags}}
+    <p class="text-base-content/70 mb-2 text-sm">Set any of these to <code class="ee-chip">true</code> to include it in the
+        response. All default to <code class="ee-chip">false</code>.</p>
+    <div class="flex flex-wrap gap-1">
+        {{#each flags}}<code class="ee-chip">{{this}}</code>{{/each}}
+    </div>
+    {{else}}
     <ul class="ee-ref-props">
         {{#each params}}{{> reference/schema-node}}{{/each}}
     </ul>
+    {{/if}}
 </div>
 {{/if}}

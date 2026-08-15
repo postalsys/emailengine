@@ -6,6 +6,9 @@
 
     Params:
       label       - summary text (required)
+      preview     - muted continuation of the summary, e.g. the first child names of a
+                    collapsed property group (optional). "6 properties" on its own gives a
+                    reader nothing to decide on, and one tag page renders 135 closed groups
       elId        - element id on the <details> (optional). Deliberately NOT named `id`:
                     Handlebars merges a partial's hash params into the caller's context,
                     so a partial that reads `id` also picks up an `id` that merely
@@ -30,8 +33,11 @@
     <summary
         class="flex cursor-pointer list-none items-center gap-1 [&::-webkit-details-marker]:hidden {{#if primary}}text-primary hover:text-primary/80 text-sm font-semibold{{else}}text-base-content/60 hover:text-base-content text-xs{{/if}}">
         <span class="ee-ref-chevron icon-[tabler--chevron-right] shrink-0 {{#if primary}}size-4{{else}}size-3.5{{/if}}"></span>
-        {{label}}
+        {{!-- truncate, not just nowrap: the preview is a hint about what is inside the group,
+              so it gives up its tail rather than pushing the summary past the viewport --}}
+        <span class="min-w-0 truncate">{{label}}{{#if preview}}<span
+                class="text-base-content/45 ms-1.5 font-normal">{{preview}}</span>{{/if}}</span>
     </summary>
     {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
-    {{> @partial-block label="" elId="" open="" primary="" class=""}}
+    {{> @partial-block label="" preview="" elId="" open="" primary="" class=""}}
 </details>

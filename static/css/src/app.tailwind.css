@@ -243,14 +243,81 @@
      * The schema trees are deeply nested lists rendered by a recursive
      * partial, so their look comes from a class rather than utilities. These
      * class names double as the e2e selectors in test/e2e/reference.spec.js. */
+    /* Each list of rows is its own size container, which is what lets a row split on the
+     * width it actually has - see .ee-ref-prop-row. */
     .ee-ref-props {
         display: flex;
         flex-direction: column;
-        gap: 0.625rem;
+        container-type: inline-size;
     }
     .ee-ref-nest {
         border-inline-start: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
         padding-inline-start: 0.75rem;
+    }
+
+    /* One property row: name, type and constraint chips in a rail, prose in a column
+     * beside it. Before this the name sat above its own description at the same left edge,
+     * and the description ran the full 800px content width - about 120 characters against
+     * a comfortable 45 to 75 - so the one token a reader scans for was the least
+     * distinguishable thing on the row and 128 of them read as a single grey field.
+     *
+     * The hairline replaces the old 0.625rem gap rather than adding to it, which keeps a
+     * long list the same height as before while making its rows countable.
+     *
+     * A container query, not a viewport one. A row never sees the viewport: the admin shell
+     * takes an 18rem sidebar and the reference a further 16rem nav column, BOTH of which
+     * appear at lg - so a viewport breakpoint fires just as the row gets narrower, not when
+     * it gets wider. Nesting then subtracts another 0.75rem per level through .ee-ref-nest,
+     * up to nine levels deep. Asking the row's own list how wide it is holds in every one of
+     * those cases with no breakpoint bookkeeping. */
+    .ee-ref-prop-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.1rem 0.9rem;
+        padding-block: 0.3rem;
+        border-block-start: 1px solid color-mix(in oklab, var(--color-base-content) 8%, transparent);
+    }
+    .ee-ref-props > .ee-ref-prop:first-child > .ee-ref-prop-row {
+        border-block-start: 0;
+        padding-block-start: 0;
+    }
+    @container (width >= 30rem) {
+        .ee-ref-prop-row {
+            grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+        }
+    }
+    .ee-ref-prop-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+    }
+    /* The two wrapping lines inside the rail (name, then type and chips). A class rather
+     * than the utility string at both call sites: the recursive partial emits this twice
+     * per property, so on the Account tag page that is 836 copies of it. */
+    .ee-ref-prop-line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        column-gap: 0.375rem;
+        row-gap: 0.25rem;
+    }
+    /* Capped measure for the prose. In rem rather than ch so the cap does not drift with
+     * whatever font-size the row inherits. */
+    .ee-ref-prop-body {
+        min-width: 0;
+        max-width: 34rem;
+    }
+
+    /* Example payloads open by default, so the shape of a response is the first thing a
+     * reader meets rather than 128 property rows. That only works if the cost is bounded:
+     * the AccountResponse example alone pretty-prints to about 130 lines, and thirteen of
+     * those on one tag page is worse than what it replaced. Past this height the block
+     * scrolls inside itself, which keeps every operation the same size on the page. */
+    .ee-ref-example {
+        max-height: 15rem;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     /* Room to breathe above a jump target - operations linked from the sidebar and from
@@ -275,28 +342,28 @@
         color: var(--color-primary);
     }
 
-    /* Property links stay hidden until their row is hovered. The rule hangs off the
-     * header row rather than the list item because the item CONTAINS the nested rows,
-     * so hovering a leaf would reveal the link on every one of its ancestors too. The
-     * header row has no rows inside it, which makes it exact at every depth (same
+    /* Property links stay hidden until their row is hovered. The rule hangs off the row
+     * rather than the list item because the item CONTAINS the nested rows, so hovering a
+     * leaf would reveal the link on every one of its ancestors too. The row holds only
+     * this property's own rail and prose, which makes it exact at every depth (same
      * reasoning as the disclosure chevron below). */
     .ee-ref-prop-anchor {
         opacity: 0;
         transition: opacity 0.15s;
     }
-    .ee-ref-prop-head:hover .ee-ref-prop-anchor,
+    .ee-ref-prop-row:hover .ee-ref-prop-anchor,
     .ee-ref-prop-anchor:focus-visible {
         opacity: 1;
     }
 
     /* Arriving on a linked property. :target needs no script, so the row is marked
      * even if the deep link lands on an already-expanded group. */
-    .ee-ref-prop:target > .ee-ref-prop-head {
+    .ee-ref-prop:target > .ee-ref-prop-row {
         background: color-mix(in oklab, var(--color-primary) 12%, transparent);
         border-radius: var(--radius-field);
         box-shadow: 0 0 0 0.25rem color-mix(in oklab, var(--color-primary) 12%, transparent);
     }
-    .ee-ref-prop:target > .ee-ref-prop-head .ee-ref-prop-anchor {
+    .ee-ref-prop:target > .ee-ref-prop-row .ee-ref-prop-anchor {
         opacity: 1;
     }
 

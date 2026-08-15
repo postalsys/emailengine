@@ -210,9 +210,13 @@
 
     // A tag page carries up to ~150 code blocks, several of them tens of kilobytes,
     // so highlighting all of them up front stalls the page for seconds. Each block is
-    // highlighted the first time it becomes visible instead. That also covers blocks
-    // inside collapsed <details> and inactive tab panels for free: those have no
-    // layout box until they open, so the observer fires exactly then.
+    // highlighted the first time it becomes visible instead - which for most of them is
+    // on scroll, since they are below the fold rather than hidden.
+    //
+    // Blocks with no layout box at all are covered for the same reason and for free: an
+    // inactive response tab panel, or a collapsed <details>, has none until it opens, so
+    // the observer fires exactly then. Example payloads used to be in that second group;
+    // they now render open, so only the non-active response tabs still are.
     const highlightBlock = block => {
         if (block.dataset.eeHighlighted) {
             return;
@@ -682,6 +686,147 @@
         paint();
     };
 
+    // Filter and expand/collapse for one large schema tree (reference/schema-tools).
+    //
+    // Separate from the sidebar filter above on purpose. That one searches operations and
+    // deliberately leaves response property names out of its corpus, because it ANDs plain
+    // substrings and the envelope fields repeat across most endpoints - adding them would
+    // blunt exactly the queries it exists for. The cost was that on a page rendering 418
+    // property rows there was no way to reach `oauth2.expires` except by scrolling and
+    // opening groups. This filter has its own corpus, its own control and its own scope, so
+    // that trade-off is untouched.
+    //
+    // Matching is on the property name alone, not the description: a name is what a caller
+    // has in hand when they come looking, and matching prose would light up most of a tree
+    // for a common word.
+    const SCHEMA_ROW = 'ee-ref-prop';
+    const SCHEMA_GROUP = 'details.ee-ref-disclosure';
+
+    // Everything about a schema tree that the filter needs and that never changes: the rows,
+    // their lowercased names, the parent row each one hangs off, and the disclosures on the
+    // way down to it. Walked once per tree, so a keystroke is a pass over arrays rather than
+    // ~130 selector queries and as many string allocations.
+    //
+    // querySelectorAll returns document order, and an ancestor row always precedes its
+    // descendants, so a parent's entry is already built by the time a child needs it.
+    const indexSchema = scope => {
+        const byElement = new Map();
+
+        return Array.from(scope.querySelectorAll(`.${SCHEMA_ROW}`)).map(element => {
+            const code = element.querySelector('.ee-ref-prop-rail code');
+            // The parent PROPERTY, not the closest ancestor carrying the class - that is the
+            // row itself, which is why the walk starts at parentElement.
+            const parentElement = element.parentElement ? element.parentElement.closest(`.${SCHEMA_ROW}`) : null;
+
+            const groups = [];
+            for (let details = element.closest(SCHEMA_GROUP); details && scope.contains(details); details = details.parentElement.closest(SCHEMA_GROUP)) {
+                groups.push(details);
+            }
+
+            const entry = { element, name: code ? code.textContent.toLowerCase() : '', parent: byElement.get(parentElement) || null, groups };
+            byElement.set(element, entry);
+            return entry;
+        });
+    };
+
+    const applySchemaFilter = (rows, disclosures, openOnLoad, term) => {
+        if (!term) {
+            for (const entry of rows) {
+                entry.element.classList.remove('hidden');
+            }
+            // Back to whatever the server decided, so clearing the box is a real undo rather
+            // than leaving the tree wherever the search happened to open it
+            for (const details of disclosures) {
+                details.open = openOnLoad.has(details);
+            }
+            return 0;
+        }
+
+        const matched = new Set(rows.filter(entry => entry.name.includes(term)));
+
+        // A row survives if it matches, contains a match, or sits inside one - so a hit on an
+        // object still shows the object's own children rather than an empty group.
+        const keep = new Set(matched);
+        for (const entry of matched) {
+            for (let parent = entry.parent; parent; parent = parent.parent) {
+                keep.add(parent);
+            }
+        }
+        for (const entry of rows) {
+            for (let parent = entry.parent; parent; parent = parent.parent) {
+                if (matched.has(parent)) {
+                    keep.add(entry);
+                    break;
+                }
+            }
+        }
+
+        // Only the groups on the way down to a surviving row stay open - otherwise the hits
+        // are inside a collapsed <details> and the filter looks like it found nothing, while
+        // unrelated groups the reader opened earlier stay in the way.
+        const open = new Set();
+        for (const entry of keep) {
+            entry.element.classList.remove('hidden');
+            for (const details of entry.groups) {
+                open.add(details);
+            }
+        }
+        for (const entry of rows) {
+            if (!keep.has(entry)) {
+                entry.element.classList.add('hidden');
+            }
+        }
+        for (const details of disclosures) {
+            details.open = open.has(details);
+        }
+
+        return matched.size;
+    };
+
+    const initSchemaTools = () => {
+        for (const tools of document.querySelectorAll('[data-schema-tools]')) {
+            const scope = document.getElementById(tools.getAttribute('data-schema-scope') || '');
+            if (!scope) {
+                continue;
+            }
+
+            const rows = indexSchema(scope);
+            const disclosures = Array.from(scope.querySelectorAll(SCHEMA_GROUP));
+            const openOnLoad = new Set(disclosures.filter(details => details.open));
+
+            // The input and the two buttons come from ui/search-input and ui/btn, so they
+            // carry no hooks of their own - reference/schema-tools renders exactly one
+            // input and exactly two buttons, in that order, and the container scopes both
+            // lookups.
+            const input = tools.querySelector('input');
+            const count = tools.querySelector('[data-schema-count]');
+            const [expand, collapse] = tools.querySelectorAll('button');
+
+            if (input) {
+                input.addEventListener('input', () => {
+                    const term = input.value.trim().toLowerCase();
+                    const hits = applySchemaFilter(rows, disclosures, openOnLoad, term);
+                    if (count) {
+                        count.textContent = term ? `${hits} ${hits === 1 ? 'match' : 'matches'}` : '';
+                    }
+                });
+            }
+
+            const setAll = open => () => {
+                for (const details of disclosures) {
+                    details.open = open;
+                }
+            };
+
+            if (expand) {
+                expand.addEventListener('click', setAll(true));
+            }
+            if (collapse) {
+                collapse.addEventListener('click', setAll(false));
+            }
+        }
+    };
+
     // Code sample language, remembered across operations and page loads.
     //
     // localStorage, not sessionStorage (which is what the try-it token uses): this is a
@@ -1057,6 +1202,7 @@
         initFilter();
         initTagRows();
         initScrollSpy();
+        initSchemaTools();
         initSampleTabs();
         initTryIt();
         initMint();

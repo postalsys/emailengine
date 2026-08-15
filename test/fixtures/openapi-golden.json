@@ -170,8 +170,14 @@
       },
       "AccountImapIndexer": {
         "type": "string",
-        "description": "Override global IMAP indexing strategy for this account. \"full\" tracks all changes including deletions, \"fast\" only detects new messages.",
+        "description": "Override the global IMAP indexing strategy for this account",
         "example": "full",
+        "x-meta": {
+          "enumDescriptions": {
+            "full": "Track every change, including deletions. Slower but complete",
+            "fast": "Detect new messages only. Cheaper, but deletions and flag changes are missed"
+          }
+        },
         "enum": [
           "full",
           "fast"
@@ -192,7 +198,7 @@
       },
       "ImapAuthentication": {
         "type": "object",
-        "description": "Authentication credentials for the IMAP server",
+        "description": "Authentication credentials for the IMAP server. Not used when `useAuthServer` is enabled - the credentials are fetched from the authentication server instead, and this must be omitted or `false`.",
         "enum": [
           false
         ],
@@ -237,7 +243,7 @@
       },
       "ImapConfiguration": {
         "type": "object",
-        "description": "IMAP configuration",
+        "description": "IMAP configuration. Set to `false` when there is no IMAP access to configure.",
         "enum": [
           false
         ],
@@ -338,7 +344,7 @@
       },
       "SmtpAuthentication": {
         "type": "object",
-        "description": "Authentication credentials for the SMTP server",
+        "description": "Authentication credentials for the SMTP server. Not used when `useAuthServer` is enabled - the credentials are fetched from the authentication server instead, and this must be omitted or `false`.",
         "enum": [
           false
         ],
@@ -383,7 +389,7 @@
       },
       "SmtpConfiguration": {
         "type": "object",
-        "description": "SMTP configuration",
+        "description": "SMTP configuration. Set to `false` when there is no SMTP access to configure.",
         "enum": [
           false
         ],
@@ -454,7 +460,7 @@
       },
       "OAuth2": {
         "type": "object",
-        "description": "OAuth2 configuration",
+        "description": "OAuth2 configuration. Set to `false` when the account does not authenticate with OAuth2.",
         "enum": [
           false
         ],
@@ -707,8 +713,14 @@
       },
       "CreateAccountState": {
         "type": "string",
-        "description": "Is the account new or updated existing. Not present when a redirect URL is returned",
+        "description": "Whether the account was created or updated. Not present when a redirect URL is returned",
         "example": "new",
+        "x-meta": {
+          "enumDescriptions": {
+            "new": "The entry did not exist and was created",
+            "existing": "The entry already existed and was updated"
+          }
+        },
         "enum": [
           "existing",
           "new"
@@ -1246,8 +1258,22 @@
       },
       "AccountType": {
         "type": "string",
-        "description": "Account type: \"imap\" for IMAP accounts, an OAuth2 provider name for OAuth2 accounts, \"oauth2\" when the OAuth2 application is missing, \"delegated\" for delegated accounts, \"sending\" for send-only accounts, \"invalid\" when delegation cannot be resolved",
+        "description": "How the account connects to its mailbox",
         "example": "outlook",
+        "x-meta": {
+          "enumDescriptions": {
+            "imap": "Plain IMAP and SMTP, authenticated with a username and password",
+            "gmail": "Gmail or Google Workspace, through a user-consented OAuth2 app",
+            "gmailService": "Google Workspace through a service account, with no per-user consent screen",
+            "outlook": "Outlook or Microsoft 365, through a user-consented OAuth2 app",
+            "outlookService": "Microsoft 365 through application permissions, with no per-user consent screen",
+            "mailRu": "Mail.ru, through an OAuth2 app",
+            "oauth2": "An OAuth2 account whose application is no longer configured in EmailEngine",
+            "delegated": "A shared or delegated mailbox accessed through another account credentials",
+            "sending": "Send-only. No IMAP access is configured, so nothing is synced",
+            "invalid": "Delegation could not be resolved, so the account cannot be used"
+          }
+        },
         "enum": [
           "imap",
           "gmail",
@@ -1732,7 +1758,7 @@
       },
       "ImapUpdateAuthentication": {
         "type": "object",
-        "description": "Authentication credentials for the IMAP server",
+        "description": "Authentication credentials for the IMAP server. Not used when `useAuthServer` is enabled - the credentials are fetched from the authentication server instead, and this must be omitted or `false`.",
         "enum": [
           false
         ],
@@ -1776,7 +1802,7 @@
       },
       "IMAPUpdate": {
         "type": "object",
-        "description": "IMAP configuration",
+        "description": "IMAP configuration. Set to `false` to remove the stored IMAP configuration from the account.",
         "enum": [
           false
         ],
@@ -1881,7 +1907,7 @@
       },
       "SmtpUpdateAuthentication": {
         "type": "object",
-        "description": "Authentication credentials for the SMTP server",
+        "description": "Authentication credentials for the SMTP server. Not used when `useAuthServer` is enabled - the credentials are fetched from the authentication server instead, and this must be omitted or `false`.",
         "enum": [
           false
         ],
@@ -1925,7 +1951,7 @@
       },
       "SMTPUpdate": {
         "type": "object",
-        "description": "SMTP configuration",
+        "description": "SMTP configuration. Set to `false` to remove the stored SMTP configuration from the account.",
         "enum": [
           false
         ],
@@ -1971,7 +1997,7 @@
       },
       "OAuth2Update": {
         "type": "object",
-        "description": "OAuth2 configuration",
+        "description": "OAuth2 configuration. Set to `false` to remove the stored OAuth2 configuration from the account.",
         "enum": [
           false
         ],
@@ -2232,8 +2258,15 @@
       },
       "ExportTextType": {
         "type": "string",
-        "description": "Text content to include: \"plain\", \"html\", or \"*\" (both)",
+        "description": "Which message bodies to include in the export",
         "example": "*",
+        "x-meta": {
+          "enumDescriptions": {
+            "plain": "Plain text bodies only",
+            "html": "HTML bodies only",
+            "*": "Both the plain text and the HTML body"
+          }
+        },
         "default": "*",
         "enum": [
           "plain",
@@ -2702,8 +2735,15 @@
       },
       "MailboxSpecialUseSource": {
         "type": "string",
-        "description": "How the special use was determined: \"user\" (set via API), \"extension\" (server-provided), or \"name\" (guessed from folder name)",
+        "description": "How the special-use flag was determined",
         "example": "extension",
+        "x-meta": {
+          "enumDescriptions": {
+            "user": "Set explicitly through the API",
+            "extension": "Reported by the mail server through the SPECIAL-USE extension",
+            "name": "Guessed from the folder name"
+          }
+        },
         "enum": [
           "user",
           "extension",
@@ -2838,8 +2878,15 @@
       },
       "MessageAction": {
         "type": "string",
-        "description": "Action type: \"reply\" (reply to sender), \"reply-all\" (reply to all recipients), or \"forward\" (forward to new recipients)",
+        "description": "What to do with the referenced message",
         "example": "reply",
+        "x-meta": {
+          "enumDescriptions": {
+            "reply": "Reply to the sender",
+            "reply-all": "Reply to the sender and every other recipient",
+            "forward": "Forward the message to new recipients"
+          }
+        },
         "default": "reply",
         "enum": [
           "forward",
@@ -4191,8 +4238,14 @@
       },
       "status": {
         "type": "string",
-        "description": "Whether the response was generated now (MISS) or returned from the idempotency cache (HIT)",
+        "description": "Whether this response was produced now or replayed from the idempotency cache",
         "example": "MISS",
+        "x-meta": {
+          "enumDescriptions": {
+            "MISS": "The request ran now and this is its result",
+            "HIT": "An identical request ran earlier and its stored result was replayed"
+          }
+        },
         "enum": [
           "MISS",
           "HIT"
@@ -5370,7 +5423,13 @@
       },
       "RenderFormat": {
         "type": "string",
-        "description": "Markup language for HTML (\"html\" or \"markdown\")",
+        "description": "Markup language the template is written in",
+        "x-meta": {
+          "enumDescriptions": {
+            "html": "The template is already HTML",
+            "markdown": "The template is Markdown and is converted to HTML"
+          }
+        },
         "default": "html",
         "enum": [
           "html",
@@ -5379,7 +5438,7 @@
       },
       "TemplateRender": {
         "type": "object",
-        "description": "Template rendering options",
+        "description": "Template rendering options. Set to `false` to send the template as-is, without rendering it.",
         "enum": [
           false
         ],
@@ -6892,8 +6951,14 @@
       },
       "CreateGatewayState": {
         "type": "string",
-        "description": "Is the gateway new or updated existing",
+        "description": "Whether the gateway was created or updated",
         "example": "new",
+        "x-meta": {
+          "enumDescriptions": {
+            "new": "The entry did not exist and was created",
+            "existing": "The entry already existed and was updated"
+          }
+        },
         "enum": [
           "existing",
           "new"
@@ -7190,6 +7255,7 @@
       },
       "LicenseDetails": {
         "type": "object",
+        "description": "Details of the registered license. False when no license is registered.",
         "enum": [
           false
         ],
@@ -7688,8 +7754,14 @@
       },
       "authMethod": {
         "type": "string",
-        "description": "Authentication method for Gmail service account (\"serviceKey\" or \"externalAccount\")",
+        "description": "How token requests for the Gmail service account are signed",
         "example": "externalAccount",
+        "x-meta": {
+          "enumDescriptions": {
+            "serviceKey": "Sign token requests with an uploaded service account key",
+            "externalAccount": "Sign token requests through Workload Identity Federation, with no key to store"
+          }
+        },
         "enum": [
           "serviceKey",
           "externalAccount"
@@ -8794,8 +8866,14 @@
       },
       "imapIndexerResponse": {
         "type": "string",
-        "description": "IMAP indexing strategy:\n  * full - Detect new, changed, and deleted messages (slower but complete)\n  * fast - Detect only new messages",
+        "description": "How much of a mailbox EmailEngine tracks on each sync",
         "example": "full",
+        "x-meta": {
+          "enumDescriptions": {
+            "full": "Track every change, including deletions. Slower but complete",
+            "fast": "Detect new messages only. Cheaper, but deletions and flag changes are missed"
+          }
+        },
         "enum": [
           "full",
           "fast"
@@ -9489,8 +9567,14 @@
       },
       "ImapIndexer": {
         "type": "string",
-        "description": "IMAP indexing strategy:\n  * full - Detect new, changed, and deleted messages (slower but complete)\n  * fast - Detect only new messages",
+        "description": "How much of a mailbox EmailEngine tracks on each sync",
         "example": "full",
+        "x-meta": {
+          "enumDescriptions": {
+            "full": "Track every change, including deletions. Slower but complete",
+            "fast": "Detect new messages only. Cheaper, but deletions and flag changes are missed"
+          }
+        },
         "enum": [
           "full",
           "fast"

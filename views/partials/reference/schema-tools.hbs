@@ -1,0 +1,25 @@
+{{!--
+    reference/schema-tools - the filter box and expand/collapse pair that sit beside a
+    large schema's heading.
+
+    Params:
+      scope - id of the element holding the property rows these act on (required)
+      label - what is being filtered, used as the placeholder and the accessible name,
+              e.g. "Filter response fields" (required)
+
+    Rendered only for schemas past a size threshold (see reference/operation): on a
+    three-property body a filter is noise, and a tag page would otherwise carry two dozen
+    of them. Behavior lives in static/js/reference.js, keyed off data-schema-tools and the
+    data-schema-scope id - the page itself is server-rendered and works without it, which
+    is why the controls degrade to a plain input and two buttons that simply do nothing if
+    the script never loads.
+
+    The script finds the input and the buttons by their position inside this container
+    rather than by hook attributes, so the shared ui/* partials can be used unchanged.
+--}}
+<div class="flex flex-wrap items-center gap-2" data-schema-tools data-schema-scope="{{scope}}">
+    {{> ui/search-input placeholder=label class="w-48" id="" name="" value="" type="" shortcut="" shortcutMac=""}}
+    {{> ui/btn label="Expand all" bare=true style="text" size="xs" icon="" id="" class="" type=""}}
+    {{> ui/btn label="Collapse all" bare=true style="text" size="xs" icon="" id="" class="" type=""}}
+    <span class="text-base-content/50 text-xs" data-schema-count role="status" aria-live="polite"></span>
+</div>

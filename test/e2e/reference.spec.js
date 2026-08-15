@@ -283,12 +283,78 @@ test.describe('API reference', () => {
         const properties = operation.locator('.ee-ref-props .ee-ref-prop');
         expect(await properties.count()).toBeGreaterThan(10);
 
-        // Example payload is present but collapsed until asked for
+        // The example payload is what orients a reader, so it is open on arrival and sits
+        // above the property tree rather than below it
         const example = operation.locator('details', { hasText: 'Example response' }).first();
         await expect(example).toBeVisible();
-        await expect(example.locator('pre')).toBeHidden();
-        await example.locator('summary').click();
         await expect(example.locator('pre')).toBeVisible();
+
+        const tree = operation.locator('#getV1AccountAccountMessageMessage-resp-200-schema');
+        await expect(tree).toBeVisible();
+        const exampleBox = await example.boundingBox();
+        const treeBox = await tree.boundingBox();
+        expect(exampleBox.y).toBeLessThan(treeBox.y);
+
+        await example.locator('summary').click();
+        await expect(example.locator('pre')).toBeHidden();
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('a large schema can be filtered and expanded in place', async ({ page }) => {
+        // The sidebar filter deliberately does not index response property names, so this is
+        // the only way to reach a single field on a page rendering hundreds of rows.
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/account');
+
+        const scope = page.locator('#getV1AccountAccount-resp-200-schema');
+        const tools = page.locator('[data-schema-scope="getV1AccountAccount-resp-200-schema"]');
+
+        await expect(tools).toBeVisible();
+
+        // The 128-property response arrives collapsed to its top level rather than in full
+        const shown = scope.locator('.ee-ref-prop:visible');
+        const initial = await shown.count();
+        expect(initial).toBeGreaterThan(10);
+        expect(initial).toBeLessThan(60);
+
+        // Filtering hides everything but the hit and the groups it is nested in, opening
+        // whatever it was buried under
+        await tools.locator('input').fill('expires');
+        await expect(tools.locator('[data-schema-count]')).toContainText('match');
+        const filtered = await shown.count();
+        expect(filtered).toBeGreaterThan(0);
+        expect(filtered).toBeLessThan(initial);
+
+        // Clearing is a real undo, back to the server-rendered state
+        await tools.locator('input').fill('');
+        await expect(shown).toHaveCount(initial);
+
+        // Expand all reaches the rows the budget left collapsed
+        await tools.getByRole('button', { name: 'Expand all' }).click();
+        expect(await shown.count()).toBeGreaterThan(initial);
+
+        await tools.getByRole('button', { name: 'Collapse all' }).click();
+        expect(await shown.count()).toBeLessThanOrEqual(initial);
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('a flag parameter list renders as chips rather than a row each', async ({ page }) => {
+        // GET /v1/settings takes 87 undocumented booleans that answer one question between
+        // them; a row each was roughly 260 lines of page carrying no more information.
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/settings');
+
+        const operation = page.locator('#getV1Settings');
+        await expect(operation.getByText('Set any of these to')).toBeVisible();
+        await expect(operation.getByRole('heading', { name: 'Query parameters' })).toBeVisible();
+
+        // The names are still on the page, just not as 87 property rows
+        const chips = operation.locator('.ee-chip', { hasText: 'webhooksEnabled' });
+        await expect(chips.first()).toBeVisible();
 
         expect(errors).toHaveLength(0);
     });
