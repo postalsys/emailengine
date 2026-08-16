@@ -11,8 +11,8 @@
 
     Context is a node from buildSchemaTree(): name, anchor, typeLabel, required, nullable,
     deprecated, constraints[], enumValues[], alsoAccepts[], defaultValue, descriptionHtml,
-    children[], variants[], openByDefault, childLabel, childPreview, truncated, circular,
-    unresolved.
+    usageHtml, example, children[], variants[], openByDefault, childLabel, childPreview,
+    truncated, circular, unresolved.
 
     The row is a two-column grid (.ee-ref-prop-row in app.tailwind.css): the name, type and
     constraint chips sit in a rail on the left, the prose in a column beside it capped at a
@@ -20,6 +20,11 @@
     edge and the description ran the full content width - about 120 characters - so a
     128-property response read as one undifferentiated field. The grid collapses back to a
     single stacked column when the row is too narrow to split.
+
+    A cut example carries the whole value twice, in two forms: `title` is the raw value for
+    the native tooltip, and `data-example` is the JSON form the try-it autocompleter inserts,
+    so the completion is never reconstructed from the rendered text - and never inserts an
+    unquoted string into a JSON body. Only the 54 cut rows in the document emit either.
 
     `anchor` is the dotted id of this property within its operation, e.g.
     "accountCreate.body.imap.tls.rejectUnauthorized", so a single field can be linked to
@@ -51,8 +56,30 @@
 
         <div class="ee-ref-prop-body">
 
+            {{!-- The example rides the end of the description rather than taking a line of
+                  its own. The prose column is 34rem, the median description is 41 characters
+                  and the median example 15, so 86% of these land on a line that already
+                  exists; a line each would have added about 12,500px across five tag pages
+                  that already run to 90,000. Which rows get one is decided by rowExample()
+                  in lib/api-reference/schema-tree.js, not here. --}}
             {{#if descriptionHtml}}
-            <div class="text-base-content/70 text-sm"><p>{{{descriptionHtml}}}</p></div>
+            <div class="text-base-content/70 text-sm"><p>{{{descriptionHtml}}}{{#if example}} <code
+                    class="ee-ref-example-value" {{#if example.title}}title="{{example.title}}" data-example="{{example.full}}"
+                    {{/if}}>{{example.text}}</code>{{/if}}</p>
+            </div>
+            {{else if example}}
+            <div class="text-sm"><code class="ee-ref-example-value" {{#if example.title}}title="{{example.title}}"
+                    data-example="{{example.full}}" {{/if}}>{{example.text}}</code></div>
+            {{/if}}
+
+            {{!-- Long-form guidance, closed. A field without one is unchanged; a field with
+                  one costs a single summary line until someone wants the answer. The
+                  seventeen fields that used to cram this into the description are why the
+                  slot exists - see lib/field-usage.js. --}}
+            {{#if usageHtml}}
+            {{#> reference/disclosure label="When to use this" class="mt-1"}}
+            <div class="ee-ref-usage text-base-content/70 mt-1 text-sm"><p>{{{usageHtml}}}</p></div>
+            {{/reference/disclosure}}
             {{/if}}
 
             {{#if enumValues}}

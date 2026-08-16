@@ -1094,6 +1094,14 @@
     //
     // Deduped by name: the same field legitimately appears at several depths (`auth` under
     // both imap and smtp), and a completer needs the token, not where it came from.
+    //
+    // A row that carries an example completes to the whole pair, `"listId": "test-list"`,
+    // rather than to a bare key. Completing a key alone left the reader with the harder half
+    // of the problem still to solve, which is the same gap the rows themselves used to have.
+    //
+    // The value comes off the row's example chip, so it is the value documented right there.
+    // A cut chip carries the whole value in data-example - reference/schema-node emits it for
+    // exactly this - rather than the completion being reconstructed from the shortened text.
     const schemaCompleter = schemaId => {
         const scope = document.getElementById(schemaId || '');
         if (!scope) {
@@ -1110,15 +1118,46 @@
                 continue;
             }
             const type = rail.querySelector('.text-primary');
-            fields.set(name.textContent, type ? type.textContent : '');
+            const example = row.querySelector(':scope > .ee-ref-prop-row > .ee-ref-prop-body .ee-ref-example-value');
+            const value = example ? example.dataset.example || example.textContent : '';
+
+            fields.set(name.textContent, {
+                caption: name.textContent,
+                value: value ? `"${name.textContent}": ${value}` : name.textContent,
+                meta: type ? type.textContent : '',
+                score: 100
+            });
         }
 
         if (!fields.size) {
             return null;
         }
 
-        const list = [...fields].map(([name, meta]) => ({ caption: name, value: name, meta, score: 100 }));
+        const list = [...fields.values()];
         return { getCompletions: (editor, session, pos, prefix, callback) => callback(null, list) };
+    };
+
+    // Mounted editors, so the "Fill in every field" button can write into one. The editor is
+    // created inside mountBodyEditor and nothing else needed a handle on it before.
+    const bodyEditors = new WeakMap();
+
+    // Swaps the typical payload in the try-it field for the complete one, read back out of
+    // the tab panel rendered above the form rather than from a second copy in the markup.
+    const fillCompleteBody = field => {
+        const source = document.getElementById(field.dataset.completeSource || '');
+        const code = source && source.querySelector('code');
+        const textarea = field.querySelector('[data-body]');
+
+        if (!code || !textarea) {
+            return;
+        }
+
+        textarea.value = code.textContent;
+
+        const editor = bodyEditors.get(field);
+        if (editor) {
+            editor.setValue(code.textContent, -1);
+        }
     };
 
     const mountBodyEditor = async field => {
@@ -1159,6 +1198,8 @@
             enableBasicAutocompletion: completer ? [completer] : false,
             enableLiveAutocompletion: completer ? [completer] : false
         });
+
+        bodyEditors.set(field, editor);
 
         // The textarea remains what everything downstream reads
         editor.session.on('change', () => {
@@ -1218,6 +1259,15 @@
     // static/js/ui.js handles the copy buttons.
     const initTryIt = () => {
         document.addEventListener('click', event => {
+            const fill = event.target.closest('.ee-ref-try-fill');
+            if (fill) {
+                const field = fill.closest('[data-body-field]');
+                if (field) {
+                    fillCompleteBody(field);
+                }
+                return;
+            }
+
             const button = event.target.closest('.ee-ref-try-curl');
             if (!button) {
                 return;

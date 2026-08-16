@@ -67,8 +67,19 @@
           completer harvests field names from - already on the page, so nothing is duplicated
           into the markup for it. --}}
     {{#if body}}
-    <div class="mb-3" data-body-field data-schema="{{body.scopeId}}">
-        {{> reference/section-heading label="Request body" suffix=body.contentType}}
+    <div class="mb-3" data-body-field data-schema="{{body.scopeId}}" {{#if body.completeJson}}data-complete-source="{{body.completeTabId}}" {{/if}}>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+            {{> reference/section-heading label="Request body" suffix=body.contentType class=""}}
+            {{!-- The field starts on the typical payload, which is what most calls are. This
+                  swaps in the complete one, because the panel is exactly where you find out
+                  what else the endpoint takes: the reader is already editing the body.
+                  Reads the JSON back out of the rendered tab panel above rather than
+                  carrying a second copy of it in an attribute. --}}
+            {{#if body.completeJson}}
+            {{> ui/btn label="Fill in every field" bare=true style="text" size="xs" icon="icon-[tabler--list-details]"
+            class="ee-ref-try-fill" id=""}}
+            {{/if}}
+        </div>
         <textarea class="textarea mt-1 font-mono text-xs" rows="10" data-body spellcheck="false"
             aria-label="Request body">{{body.exampleJson}}</textarea>
     </div>

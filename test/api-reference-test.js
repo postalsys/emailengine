@@ -19,7 +19,7 @@ const registerRedisTeardown = require('./helpers/redis-teardown');
 const { buildOpenApiSpec } = require('./helpers/build-openapi-spec');
 
 const { buildModel } = require('../lib/api-reference/model');
-const { buildSchemaTree, buildExample, typeLabel } = require('../lib/api-reference/schema-tree');
+const { buildSchemaTree, buildExample, typeLabel, rowExample, enumInfo } = require('../lib/api-reference/schema-tree');
 const { buildCodeSamples, readCodeSamples } = require('../lib/api-reference/code-samples');
 const { formatDescription, slugify, constraintList } = require('../lib/api-reference/format');
 
@@ -391,7 +391,19 @@ test('API reference model', async t => {
             'x-constraint': { single: true }
         });
 
-        assert.deepEqual(chips, ['max 256 chars', 'URI (http, https)', 'trimmed', 'lowercased', 'single value allowed']);
+        // no `trimmed`: joi trims 162 strings in the document, so it was the most common chip
+        // on the page and it never changed what a caller sends - see constraintList()
+        assert.deepEqual(chips, ['max 256 chars', 'URI (http, https)', 'lowercased', 'single value allowed']);
+    });
+
+    await t.test('a large character limit is stated as a size', () => {
+        assert.deepEqual(constraintList({ type: 'string', maxLength: 5 * 1024 * 1024 }), ['max 5 MB']);
+        assert.deepEqual(constraintList({ type: 'string', maxLength: 100 * 1024 }), ['max 100 KB']);
+        // below the threshold, and not a round size: the exact count is the honest answer
+        assert.deepEqual(constraintList({ type: 'string', maxLength: 1024 }), ['max 1024 chars']);
+        assert.deepEqual(constraintList({ type: 'string', maxLength: 2560 }), ['max 2560 chars']);
+        // a minimum alongside it would mix a character count with a byte size in one phrase
+        assert.deepEqual(constraintList({ type: 'string', minLength: 1, maxLength: 5 * 1024 * 1024 }), ['1 to 5242880 chars']);
     });
 
     await t.test('array item types are resolved through $ref', () => {
@@ -446,6 +458,184 @@ test('API reference examples', async t => {
         assert.equal(buildExample(spec, { type: 'string', enum: ['first', 'second'] }), 'first');
         assert.equal(buildExample(spec, { type: 'string', format: 'date-time' }), '2026-01-15T09:30:00.000Z');
         assert.equal(buildExample(spec, { type: 'boolean' }), false);
+    });
+
+    await t.test('the complete view expands past an object-level example', () => {
+        const schema = {
+            type: 'object',
+            example: { shown: 'curated' },
+            properties: {
+                shown: { type: 'string', example: 'own' },
+                hidden: { type: 'string', example: 'also documented' }
+            }
+        };
+
+        // The typical view is the curated payload, exactly as its author wrote it
+        assert.deepEqual(buildExample(spec, schema), { shown: 'curated' });
+        // The complete view names every key. A property's own example wins, which is what
+        // keeps it in step with the value rendered on that property's row.
+        assert.deepEqual(buildExample(spec, schema, { complete: true }), { shown: 'own', hidden: 'also documented' });
+    });
+
+    await t.test('a property inherits the matching slice of an ancestor example', () => {
+        const tree = buildSchemaTree(
+            spec,
+            {
+                type: 'object',
+                example: { nested: { leaf: 'from the parent' } },
+                properties: {
+                    nested: { type: 'object', properties: { leaf: { type: 'string' } } }
+                }
+            },
+            'x'
+        );
+
+        const leaf = tree.children[0].children[0];
+        assert.equal(leaf.example.text, '"from the parent"');
+    });
+
+    await t.test('rows that would say nothing show no example', () => {
+        // Each of these has an example in the schema and still renders without one - see
+        // rowExample() in lib/api-reference/schema-tree.js
+        const cases = [
+            ['boolean', { type: 'boolean', example: true }],
+            ['enum', { type: 'string', enum: ['a', 'b'], example: 'a' }],
+            ['object', { type: 'object', example: { a: 1 }, properties: { a: { type: 'integer' } } }],
+            ['array of objects', { type: 'array', example: [{ a: 1 }] }],
+            ['empty array', { type: 'array', example: [] }],
+            ['same as the default', { type: 'string', example: 'x', default: 'x' }],
+            ['null', { type: 'string', nullable: true, example: null }]
+        ];
+
+        for (const [label, schema] of cases) {
+            assert.equal(rowExample(schema, { enums: enumInfo(schema) }), null, label);
+        }
+    });
+
+    await t.test('a long example is cut and left as valid JSON', () => {
+        const long = 'x'.repeat(200);
+        const shown = rowExample({ type: 'string', example: long });
+
+        assert.ok(shown.text.length < 60);
+        assert.doesNotThrow(() => JSON.parse(shown.text));
+
+        // The tooltip gets the raw value, the completer gets the JSON form. Handing the
+        // completer the tooltip's value put an unquoted string into the try-it body.
+        assert.equal(shown.title, long);
+        assert.equal(JSON.parse(shown.full), long);
+    });
+
+    await t.test('every cut example carries a JSON-parseable full value', () => {
+        const cut = [];
+        everyTree(node => {
+            if (node.example && node.example.title) {
+                cut.push(node.example);
+            }
+        });
+
+        assert.ok(cut.length, 'no example was long enough to be cut');
+        for (const example of cut) {
+            assert.doesNotThrow(() => JSON.parse(example.full), `full value is not JSON: ${example.text}`);
+        }
+    });
+});
+
+// Coverage guard for what a reader can actually see. Before the property rows rendered an
+// example, a field with nothing authored was invisible: the only place a value appeared was
+// the curated payload, which shows only the keys its author chose. Now such a field is a
+// visibly empty row, and this is what fails when a new one ships.
+//
+// The rule is stated in terms of the RENDERED row rather than the schema behind it: a row a
+// reader expects a value on has to show one, either as an example or as a default. Which
+// rows those are is read off the view model's own display fields - a row that offers a list
+// of allowed values, or expands into child rows, answers the question by itself.
+test('API reference example coverage', async t => {
+    // A row a reader would expect a concrete value on: it holds a value of its own rather
+    // than a group of child rows, and nothing else on it already answers the question.
+    //
+    // The excluded labels are the rows that legitimately show nothing. `boolean` is its own
+    // value domain; an object, a list of objects or a list of tuples states its values on the
+    // child rows below it, or has no declared shape at all - which is the case for the eleven
+    // free-form `Joi.object().unknown()` response fields, where the payload's `{}` is the
+    // honest answer. A denylist rather than an allowlist of scalar labels, because typeLabel()
+    // is a display function: an allowlist keyed on its exact prose would quietly match fewer
+    // rows the day a label is reworded.
+    const VALUELESS = new Set(['boolean', 'object', 'any']);
+
+    const wantsValue = node =>
+        // parameters render through the same partial but carry no children of their own
+        !(node.children || []).length &&
+        !(node.variants || []).length &&
+        // "Allowed" already lists the entire value domain
+        !node.enumValues &&
+        // the Default chip is a concrete value
+        typeof node.defaultValue === 'undefined' &&
+        !VALUELESS.has(node.typeLabel) &&
+        !/^array of (object|any|array)/.test(node.typeLabel);
+
+    // How many rows the assertions below actually checked. A predicate written against
+    // display strings can go quietly vacuous - match nothing, assert nothing, pass - so the
+    // count is asserted too. The floor sits well under the rows it covers today; it is there
+    // to catch the predicate collapsing, not to pin the number.
+    let checked = 0;
+
+    const collect = (node, prefix, into) => {
+        for (const child of [...node.children, ...node.variants]) {
+            const path = prefix && child.name ? `${prefix}.${child.name}` : child.name || prefix;
+
+            if (wantsValue(child)) {
+                checked++;
+                if (!child.example) {
+                    into.push(path);
+                }
+            }
+
+            collect(child, path, into);
+        }
+    };
+
+    await t.test('every request body field and parameter shows a value', () => {
+        const missing = [];
+
+        for (const operation of allOperations) {
+            for (const parameter of [...operation.pathParams, ...operation.queryParams, ...operation.headerParams]) {
+                if (wantsValue(parameter)) {
+                    checked++;
+                    if (!parameter.example) {
+                        missing.push(`${operation.id} ?${parameter.name}`);
+                    }
+                }
+            }
+
+            if (operation.body && operation.body.tree) {
+                const gaps = [];
+                collect(operation.body.tree, '', gaps);
+                missing.push(...gaps.map(path => `${operation.id} ${path}`));
+            }
+        }
+
+        assert.deepEqual(missing, []);
+    });
+
+    await t.test('every response field shows a value', () => {
+        const missing = [];
+
+        for (const operation of allOperations) {
+            for (const response of operation.responses) {
+                if (!response.tree) {
+                    continue;
+                }
+                const gaps = [];
+                collect(response.tree, '', gaps);
+                missing.push(...gaps.map(path => `${operation.id} ${response.code} ${path}`));
+            }
+        }
+
+        assert.deepEqual(missing, []);
+    });
+
+    await t.test('the guard is not vacuous', () => {
+        assert.ok(checked > 1000, `only ${checked} rows were checked - the predicate has stopped matching`);
     });
 });
 

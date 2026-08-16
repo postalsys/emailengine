@@ -59,9 +59,33 @@
             {{#if body.descriptionHtml}}
             <div class="text-base-content/70 mb-2 text-sm"><p>{{{body.descriptionHtml}}}</p></div>
             {{/if}}
+            {{!-- Two views where they differ, one where they do not. The typical payload is
+                  the curated one and stays the default; the complete one fills in every key
+                  the curated example leaves out, which on submit is 61 of 71 fields. Only 8
+                  of the document's 34 bodies differ, and completeJson is non-empty only when
+                  exampleJson is - both come from the same schema - so the tab strip is
+                  conditional inside one disclosure rather than the disclosure being written
+                  out twice. See buildBody() in lib/api-reference/model.js. --}}
             {{#if body.exampleJson}}
             {{#> reference/disclosure label="Example request body" open=true class="mb-3"}}
-            <pre class="ee-code-block ee-ref-example mt-2"><code class="language-json">{{body.exampleJson}}</code></pre>
+            <div>
+                {{#if body.completeJson}}
+                {{#> ui/tabs label="Request body examples" class="mt-2 mb-2"}}
+                {{> ui/tab target=body.exampleTabId label="Typical" active=true}}
+                {{> ui/tab target=body.completeTabId label="Every field" active=""}}
+                {{/ui/tabs}}
+                <div id="{{body.exampleTabId}}" role="tabpanel" aria-labelledby="{{body.exampleTabId}}-tab">
+                    <pre class="ee-code-block ee-ref-example"><code class="language-json">{{body.exampleJson}}</code></pre>
+                </div>
+                <div id="{{body.completeTabId}}" role="tabpanel" aria-labelledby="{{body.completeTabId}}-tab" class="hidden">
+                    <p class="text-base-content/50 mb-2 text-xs">Every documented field, with a sample value. Send only
+                        the ones you need.</p>
+                    <pre class="ee-code-block ee-ref-example"><code class="language-json">{{body.completeJson}}</code></pre>
+                </div>
+                {{else}}
+                <pre class="ee-code-block ee-ref-example mt-2"><code class="language-json">{{body.exampleJson}}</code></pre>
+                {{/if}}
+            </div>
             {{/reference/disclosure}}
             {{/if}}
             {{#if body.tree.showTools}}

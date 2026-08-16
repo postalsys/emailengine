@@ -866,6 +866,97 @@ test.describe('API reference', () => {
         expect(errors).toHaveLength(0);
     });
 
+    test('a property row states the value it expects', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/submit');
+
+        // The example rides the end of the description line. Before this the only place any
+        // value appeared was the curated payload above the tree, which on this operation
+        // names 10 of 71 fields - so 61 documented properties had no value anywhere.
+        const subject = page.locator('#postV1AccountAccountSubmit\\.body\\.subject');
+        await expect(subject.locator('.ee-ref-example-value').first()).toHaveText('"What a wonderful message"');
+
+        // previewText is not in the curated payload at all, which is the case this exists for
+        const preview = page.locator('#postV1AccountAccountSubmit\\.body\\.previewText');
+        await expect(preview.locator('.ee-ref-example-value').first()).toHaveText('"Welcome to our newsletter!"');
+
+        // A long value is cut and stays valid JSON, with the whole thing in the title
+        const raw = page.locator('#postV1AccountAccountSubmit\\.body\\.raw .ee-ref-example-value').first();
+        await expect(raw).toContainText('...');
+        expect(await raw.getAttribute('title')).toContain('TUlNRS1WZXJzaW9uOiAxLjAN');
+
+        // Rows that would say nothing show nothing: an enum lists its own values, a boolean
+        // is its own domain, and an object states its values on the child rows
+        await expect(page.locator('#postV1AccountAccountSubmit\\.body\\.dryRun .ee-ref-example-value')).toHaveCount(0);
+        await expect(page.locator('#postV1AccountAccountSubmit\\.body\\.render\\.format .ee-ref-example-value')).toHaveCount(0);
+
+        // A character limit big enough to be a size is stated as one, and `trimmed` is gone
+        await expect(page.locator('#postV1AccountAccountSubmit\\.body\\.text')).toContainText('max 5 MB');
+        await expect(page.locator('#postV1AccountAccountSubmit')).not.toContainText('trimmed');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('a field with a catch carries its guidance behind one line', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/submit');
+
+        const rawRow = page.locator('#postV1AccountAccountSubmit\\.body\\.raw');
+        const usage = rawRow.locator('summary', { hasText: 'When to use this' }).first();
+
+        // Closed by default, so a field without a note is unchanged and one with a note costs
+        // a single line until someone wants the answer
+        await expect(usage).toBeVisible();
+        await expect(rawRow.locator('.ee-ref-usage')).toBeHidden();
+
+        await usage.click();
+        await expect(rawRow.locator('.ee-ref-usage')).toContainText('already built the MIME message yourself');
+
+        // The description itself is back to one sentence - the caveats moved into the note
+        await expect(rawRow.locator('.ee-ref-prop-body').first()).toContainText('A Base64-encoded email message in RFC 822 format');
+
+        expect(errors).toHaveLength(0);
+    });
+
+    test('the request body example offers every field, not just the typical ones', async ({ page }) => {
+        const errors = trackConsoleErrors(page);
+
+        await page.goto('/admin/reference/submit');
+
+        const typical = page.locator('#postV1AccountAccountSubmit-body-example');
+        const complete = page.locator('#postV1AccountAccountSubmit-body-example-full');
+
+        await expect(typical).toBeVisible();
+        await expect(complete).toBeHidden();
+
+        // The curated payload is the default and stays exactly what its author wrote
+        await expect(typical).toContainText('"subject"');
+        await expect(typical).not.toContainText('"previewText"');
+
+        await page.locator('#postV1AccountAccountSubmit-body-example-full-tab').click();
+        await expect(complete).toBeVisible();
+        await expect(complete).toContainText('"previewText"');
+        await expect(complete).toContainText('"dsn"');
+
+        // ...and the try-it panel can load it, which is where a complete payload is most
+        // useful: the reader is already editing the body
+        await page.locator('#try-postV1AccountAccountSubmit > summary').click();
+        const body = page.locator('#try-postV1AccountAccountSubmit [data-body]');
+        const before = await body.inputValue();
+
+        await page.locator('#postV1AccountAccountSubmit .ee-ref-try-fill').click();
+        const after = await body.inputValue();
+
+        expect(after.length).toBeGreaterThan(before.length);
+        expect(after).toContain('"previewText"');
+        // still valid JSON, so Send and "Copy as curl" are unaffected
+        expect(() => JSON.parse(after)).not.toThrow();
+
+        expect(errors).toHaveLength(0);
+    });
+
     test('the try it warning appears only where running the request has a consequence', async ({ page }) => {
         const errors = trackConsoleErrors(page);
 
@@ -1017,15 +1108,30 @@ test.describe('API reference', () => {
             }
             return new Promise(resolve =>
                 editorInstance.completers[0].getCompletions(editorInstance, editorInstance.session, { row: 0, column: 0 }, '', (err, list) =>
-                    resolve((list || []).map(item => item.value))
+                    resolve((list || []).map(item => ({ caption: item.caption, value: item.value })))
                 )
             );
         });
 
         expect(completions).not.toBeNull();
-        expect(completions).toContain('account');
+
+        // A field whose row shows an example completes to the whole pair, so the reader is
+        // not left holding the harder half of the problem
+        expect(completions).toContainEqual({ caption: 'account', value: '"account": "example"' });
         // nested, to prove the whole rendered tree is harvested and not just the top level
-        expect(completions).toContain('imapIndexer');
+        expect(completions).toContainEqual({ caption: 'host', value: '"host": "imap.gmail.com"' });
+        // ...and a field whose row shows no value - an enum lists its own, a boolean is its
+        // own domain - still completes to the bare key
+        expect(completions).toContainEqual({ caption: 'imapIndexer', value: 'imapIndexer' });
+        expect(completions).toContainEqual({ caption: 'copy', value: 'copy' });
+
+        // Every completion that carries a value has to be insertable into a JSON body. A cut
+        // example is the case that broke: its chip shows a shortened literal, so the value
+        // comes from data-example instead, and that has to be the JSON form rather than the
+        // raw one the tooltip shows.
+        for (const entry of completions.filter(item => item.value !== item.caption)) {
+            expect(() => JSON.parse(`{${entry.value}}`), `not insertable: ${entry.value}`).not.toThrow();
+        }
 
         expect(errors).toHaveLength(0);
     });
