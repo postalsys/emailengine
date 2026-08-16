@@ -79,6 +79,49 @@ window.uiModal = {
     }
 };
 
+// Promise-returning confirmation over a ui/modal. Resolves true only when the element matching
+// `okSelector` was clicked before the dialog closed; every other way out - Cancel, the corner
+// close, Escape, a backdrop click - resolves false, which is the safe answer for a
+// confirmation. A dialog that is not on the page resolves false for the same reason: not
+// running is recoverable, acting without being asked is not.
+//
+// Every button in the dialog must dismiss it through data-overlay, which is FlyonUI's own
+// path. Nothing here closes the overlay, and callers must not either: HSOverlay defers parts
+// of both open and close to timers and to transitionend, so a close driven from outside races
+// with itself. One begun in the 50ms before `opened` is set is simply undone, and one begun
+// mid-transition never re-adds `hidden` - either way the dialog is stranded on screen with no
+// way out, which on a confirmation is the worst failure available.
+//
+// Callers fill in their own text first; only the answer is shared.
+window.uiConfirmModal = (target, okSelector) => {
+    const modal = typeof target === 'string' ? document.querySelector(target) : target;
+    const ok = modal && modal.querySelector(okSelector);
+    if (!ok) {
+        return Promise.resolve(false);
+    }
+
+    return new Promise(resolve => {
+        let confirmed = false;
+        const onConfirm = () => {
+            confirmed = true;
+        };
+
+        // Removed by hand rather than with {once:true}: a dismissal leaves it attached, and
+        // one per call would accumulate on DOM that outlives the promise
+        ok.addEventListener('click', onConfirm);
+        modal.addEventListener(
+            'close.overlay',
+            () => {
+                ok.removeEventListener('click', onConfirm);
+                resolve(confirmed);
+            },
+            { once: true }
+        );
+
+        window.uiModal.open(modal);
+    });
+};
+
 // Re-initialize FlyonUI components inside dynamically injected markup
 window.uiAutoInit = () => {
     if (typeof HSStaticMethods !== 'undefined' && typeof HSStaticMethods.autoInit === 'function') {

@@ -135,6 +135,12 @@ test.describe('API reference', () => {
         const panelHeight = async () => (await panel.boundingBox()).height;
         expect(await panelHeight()).toBeLessThanOrEqual(844);
 
+        // Nothing on the page may make it scroll sideways. Two shared components used to:
+        // ui/tabs laid an operation's eight response-status tabs out as a 464px nowrap row,
+        // and .ee-chip could not break a 366px constraint chip. Asserted on the width rather
+        // than on either fix, so any future offender is caught by the same line.
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
         await page.fill('#ref-filter', 'a');
         await expect(page.locator('#ref-filter-results')).toBeVisible();
         expect(await panelHeight()).toBeLessThanOrEqual(844);

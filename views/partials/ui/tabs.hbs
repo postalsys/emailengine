@@ -8,12 +8,18 @@
       label - aria-label describing the strip (required)
       elId  - element id (optional; see ui/badge for why it is not called `id`)
       class - extra classes on the nav, e.g. "mb-4" (optional)
+    flex-wrap because FlyonUI lays the strip out as a nowrap flex row with no overflow
+    handling, so one wider than its column pushes the whole page sideways instead of
+    adapting: an API reference operation documents up to eight status codes, which is 464px
+    of tabs against a 390px phone. Wrapping rather than scrolling because these are
+    navigation - a second row keeps every tab reachable, where a scroller hides some behind
+    an interaction with no affordance for it. No strip in the app wraps at desktop width.
     Panels are the caller's responsibility: each ui/tab target must match a
     tabpanel element with that id (role="tabpanel" aria-labelledby="<target>-tab").
     The auth-method tabs in oauth_form.hbs intentionally do NOT use this partial -
     they run a custom script instead of the FlyonUI data-tabs plugin.
 --}}
-<nav class="tabs tabs-bordered{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
+<nav class="tabs tabs-bordered flex-wrap{{#if class}} {{class}}{{/if}}" aria-label="{{label}}" role="tablist"{{#if elId}} id="{{elId}}"{{/if}} data-tabs>
     {{!-- own hash params neutralized against fallthrough into the block --}}
     {{> @partial-block label="" id="" class=""}}
 </nav>

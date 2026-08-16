@@ -232,6 +232,12 @@
         padding: 0.0625rem 0.375rem;
         font-family: var(--font-mono, ui-monospace, monospace);
         font-size: 0.75rem;
+    }
+    /* A prose code span holds together on one line. A chip does not: a few spell out a list -
+     * the accepted proxy URI schemes run to 366px - and a chip that cannot break pushed the
+     * whole page sideways on a phone. Chips sit in wrapping flex rows, so one only breaks
+     * internally when it does not fit a line of its own; on the Account page that is 5 of 420. */
+    .ee-code {
         white-space: nowrap;
     }
     /* .ee-chip is the muted variant, for constraint and default markers */

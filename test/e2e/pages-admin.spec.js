@@ -1876,4 +1876,79 @@ test.describe('admin shell', () => {
         expect(errors, errors.join('\n')).toHaveLength(0);
         await context.close();
     });
+    test('message browser dialogs answer through the shared confirm helper', async ({ page, request }) => {
+        // The embed asks this page for confirmations and alerts. Both dialogs used to close the
+        // overlay from their own OK handler, which races with HSOverlay's deferred open and
+        // close and can strand one on screen; they dismiss through data-overlay now and settle
+        // through window.uiConfirmModal.
+        //
+        // Its own account rather than the shared one the other browse test uses: driving the
+        // dialogs needs a page that is not also raising them. Against a working mailbox the
+        // embed is live throughout, and its own confirm/alert traffic answers or outlives the
+        // dialog this test is driving. Credentials that cannot connect give a quiet page, which
+        // is the whole fixture.
+        const errors = trackConsoleErrors(page);
+
+        const token = await createApiToken(page, 'e2e browse-dialog token');
+        const auth = { Authorization: `Bearer ${token}` };
+        const ACCOUNT_ID = 'e2e-browse-dialogs';
+
+        await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth }).catch(() => {});
+        // IMAP config is only there because the route redirects away from an account with no
+        // mail access. It never has to work.
+        const created = await request.post('/v1/account', {
+            headers: auth,
+            data: {
+                account: ACCOUNT_ID,
+                name: 'E2E Browse Dialogs',
+                email: 'e2e-browse-dialogs@ethereal.email',
+                imap: { host: 'imap.ethereal.email', port: 993, secure: true, auth: { user: 'nobody@ethereal.email', pass: 'wrong-password' } }
+            }
+        });
+        expect(created.ok(), `POST /v1/account -> ${created.status()} ${await created.text()}`).toBeTruthy();
+
+        try {
+            await page.goto(`/admin/accounts/${ACCOUNT_ID}/browse`);
+
+            // The helper's promise is left in flight while Playwright waits on the DOM.
+            // Waiting for open.overlay from an in-page listener instead hangs with no
+            // diagnosis whenever it misses that edge, and HSOverlay marks a dialog opened
+            // from a timer. `opened` is the settled state.
+            // okId is what the helper is told counts as confirming; clickId is what actually
+            // gets pressed. They differ for the decline case, and conflating them would make
+            // this test assert that pressing Cancel confirms.
+            const answer = async (modalId, okId, clickId = okId) => {
+                const pending = page.evaluate(ids => window.uiConfirmModal(`#${ids.modal}`, `#${ids.ok}`), { modal: modalId, ok: okId });
+                await expect(page.locator(`#${modalId}`)).toHaveClass(/opened/);
+                await page.locator(`#${clickId}`).click();
+                return pending;
+            };
+
+            // Reopening the same dialog has to wait for the backdrop, not just for the modal
+            // to be hidden. HSOverlay adds `hidden` before it dispatches close.overlay and
+            // removes the backdrop from a later transition, so a dialog that reads as hidden
+            // can still be mid-teardown - and opening into that loses the next answer.
+            const settled = () => expect(page.locator('.overlay-backdrop')).toHaveCount(0);
+
+            expect(await answer('confirmModal', 'confirm-ok')).toBe(true);
+            await settled();
+
+            // Anything other than OK declines, which is the safe answer for a confirmation
+            expect(await answer('confirmModal', 'confirm-ok', 'confirm-cancel')).toBe(false);
+            await settled();
+
+            // The alert has nothing to answer; dismissing it just has to settle
+            await answer('alertModal', 'alert-ok');
+            await settled();
+        } finally {
+            await request.delete(`/v1/account/${ACCOUNT_ID}`, { headers: auth });
+        }
+
+        // The embed cannot reach a mailbox behind credentials that do not work, so its own
+        // folder-load failures and the 503 the mailbox endpoint answers with are this
+        // fixture's expected state. Only 503 is tolerated, not a blanket "failed to load
+        // resource" - that would swallow any 404 or 500 the page itself produced.
+        const unexpected = errors.filter(text => !/Failed to load folders|Failed to auto-select inbox|503 \(Service Unavailable\)/.test(text));
+        expect(unexpected, unexpected.join('\n')).toHaveLength(0);
+    });
 });
