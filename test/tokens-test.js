@@ -517,4 +517,62 @@ test('Token management tests', async t => {
         const listed = await tokens.list(false, 0, 50);
         assert.ok(listed.tokens.some(entry => entry.description === 'still valid'));
     });
+
+    await t.test('list() reports a page count that describes the total it returned', async () => {
+        // `pages` used to be computed before the loop that reaps expired tokens, while `total` was
+        // decremented inside it - so one response could claim more pages than its own total covers,
+        // and a caller comparing the two could not tell a complete listing from a truncated one.
+        const account = 'expired-paging-test';
+        for (let i = 0; i < 3; i++) {
+            await tokens.provision({ account, description: `expired ${i}`, expires: Date.now() - 1000, nolog: true });
+        }
+
+        // Page 0 of 3 at one per page: the single entry it slices is expired, so it is reaped and
+        // dropped, leaving two tokens still to list and therefore two pages. Before this, `pages`
+        // was derived before the reap and came back as 3.
+        const page0 = await tokens.list(account, 0, 1);
+
+        assert.equal(page0.tokens.length, 0, 'an expired token must not be listed');
+        assert.equal(page0.total, 2);
+        assert.equal(page0.pages, 2, 'pages and total in one response must be two views of one number');
+    });
+
+    await t.test('getAccess() reports the last use of a token', async () => {
+        const token = await tokens.provision({ description: 'access probe', nolog: true });
+        createdTokens.push(token);
+
+        const id = tokens.tokenId(token);
+
+        const fresh = await tokens.getAccess(id);
+        assert.equal(fresh.time, null, 'a token that has never been used has no last-use time');
+        assert.equal(fresh.ip, null);
+
+        await tokens.get(token, false, { log: true, remoteAddress: '10.1.2.3' });
+
+        const used = await tokens.getAccess(id);
+        assert.ok(used.time instanceof Date, 'last use is a Date, matching the listing');
+        assert.equal(used.ip, '10.1.2.3');
+    });
+
+    await t.test('list({all}) covers bound and unbound tokens alike', async () => {
+        // What GET /v1/tokens answers by default. "Which credentials exist on this instance" needed
+        // one request per account before it, because root tokens and each account's lived behind
+        // separate endpoints.
+        const account = 'all-mode-test';
+        const bound = await tokens.provision({ account, description: 'all-mode bound', nolog: true });
+        const unbound = await tokens.provision({ description: 'all-mode unbound', nolog: true });
+        createdTokens.push(bound, unbound);
+
+        const rootOnly = await tokens.list(false, 0, 1000);
+        assert.ok(!rootOnly.tokens.some(entry => entry.description === 'all-mode bound'), 'the root listing stays root-only');
+
+        const all = await tokens.list(false, 0, 1000, null, { all: true });
+        const listed = new Map(all.tokens.map(entry => [entry.description, entry]));
+
+        assert.ok(listed.has('all-mode bound'));
+        assert.ok(listed.has('all-mode unbound'));
+        // One shape for both, so a client has a single type for a token
+        assert.equal(listed.get('all-mode bound').account, account);
+        assert.equal(listed.get('all-mode unbound').account, null);
+    });
 });

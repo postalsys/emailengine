@@ -324,6 +324,46 @@ test('API route table and authentication', async t => {
         }
     });
 
+    await t.test('no grantable route takes a payload field that redirects a connection', () => {
+        // `proxy` in a submit payload decides where a session carrying the account's SMTP
+        // credentials connects, so assertNoNetworkOverride() in lib/api-routes/route-helpers.js
+        // refuses it from a narrowed token. That guard is two hand-placed calls, which is the shape
+        // that quietly stops covering the surface: POST /v1/delivery-test/account/{account} is in
+        // the same grantable `submit` group and already takes a routing field, so a third route
+        // growing `proxy` is not hypothetical. Derived from the registered schemas rather than from
+        // a list, so the new route is what fails rather than the customer's threat model.
+        const guarded = ['POST /v1/account/{account}/submit', 'POST /v1/account/{account}/message/{message}/submit'];
+
+        const declaresProxy = route => {
+            const payload = route.payload;
+            if (!payload || typeof payload.describe !== 'function') {
+                return false;
+            }
+            const described = payload.describe();
+            return !!(described.keys && described.keys.proxy);
+        };
+
+        const unguarded = v1Routes
+            .filter(declaresProxy)
+            .filter(route => routeGrant(route).group !== GROUP.ADMIN && !guarded.includes(route.route))
+            .map(route => route.route);
+
+        assert.deepEqual(
+            unguarded,
+            [],
+            'a grantable route accepts a caller-supplied proxy without calling assertNoNetworkOverride(): ' + JSON.stringify(unguarded)
+        );
+
+        // And the guarded list is not stale - a route that stopped taking the field would otherwise
+        // leave an entry here that excuses a future one
+        for (const route of guarded) {
+            assert.ok(
+                v1Routes.some(entry => entry.route === route && declaresProxy(entry)),
+                `${route} no longer takes a proxy payload field, so its entry in this guard is stale`
+            );
+        }
+    });
+
     await t.test('every /v1 DELETE requires the destructive action', () => {
         // The action axis exists so a token can be granted write but not destructive. That only
         // holds if no DELETE resolves to plain write, which used to be the method default and made

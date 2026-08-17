@@ -7,7 +7,7 @@ const assert = require('node:assert').strict;
 const Boom = require('@hapi/boom');
 const Joi = require('joi');
 
-const { handleError, maskCustomHeaders, maskUrlPassword, maskSecrets, MASKED } = require('../lib/api-routes/route-helpers');
+const { handleError, maskCustomHeaders, maskUrlPassword, maskSecrets, assertNoNetworkOverride, MASKED } = require('../lib/api-routes/route-helpers');
 
 // Minimal request stub - handleError logs at warn (4xx) or error (5xx)
 const fakeRequest = { logger: { warn() {}, error() {} } };
@@ -167,9 +167,12 @@ test('secret masking in API responses', async t => {
     await t.test('maskUrlPassword replaces inline credentials but keeps the host', () => {
         // proxyUrl accepts credentials inline, so returning it verbatim published them. Host and
         // port stay because they are operational information a client legitimately reads back.
+        // The username goes too: it is half of the same credential, and on a proxy that keys on a
+        // token it is the whole of it.
         const masked = maskUrlPassword('socks5://user:secret@proxy.example.com:1080');
-        assert.equal(masked, `socks5://user:${MASKED}@proxy.example.com:1080`);
+        assert.equal(masked, `socks5://${MASKED}:${MASKED}@proxy.example.com:1080`);
         assert.ok(!masked.includes('secret'));
+        assert.ok(!masked.includes('user'));
     });
 
     await t.test('maskUrlPassword returns a passwordless URL byte-identical', () => {
@@ -182,10 +185,16 @@ test('secret masking in API responses', async t => {
 
     await t.test('maskUrlPassword masks a token carried in the username', () => {
         // Commercial proxies commonly key on a token in the username with no password at all, and
-        // lib/tools.js reads exactly that shape. Gating only on the password let it straight through.
-        const masked = maskUrlPassword('socks://tok3n@proxy.example.com:1080');
-        assert.ok(!masked.includes('tok3n@'), `username token survived: ${masked}`);
-        assert.ok(masked.includes(MASKED));
+        // lib/tools.js reads exactly that shape. Gating only on the password let it straight through:
+        // the URL came back as `socks://tok3n:******@...`, which discloses the whole credential and
+        // invents a password that was never stored. Asserted on the exact value rather than on the
+        // absence of `tok3n@` - the substring passed while the token was intact, because a colon had
+        // been inserted after it.
+        assert.equal(maskUrlPassword('socks://tok3n@proxy.example.com:1080'), `socks://${MASKED}@proxy.example.com:1080`);
+
+        // The mirror image: a password with no username keeps the empty username rather than
+        // gaining one
+        assert.equal(maskUrlPassword('https://:hookpass@receiver.example.com/hook'), `https://:${MASKED}@receiver.example.com/hook`);
     });
 
     await t.test('maskUrlPassword replaces a value it cannot parse', () => {
@@ -295,5 +304,55 @@ test('maskSecrets covers every credential-bearing field of an entity', async t =
         assert.equal(maskSecrets(null), null);
         assert.equal(maskSecrets('str'), 'str');
         assert.deepEqual(maskSecrets({}), {});
+    });
+
+    await t.test('masks the connection error state under the name the account actually stores', () => {
+        // Account.unserializeAccountData() parses it as `lastErrorState`; only the getter renames it
+        // to `lastError` on the way out, well after the mask runs. Masking one name and not the other
+        // published the proxy of the failed connection from an endpoint whose mask call looked total.
+        const account = { lastErrorState: { response: 'Connection refused', networkRouting: { proxy: credentialedProxy } } };
+        maskSecrets(account);
+        assert.ok(!JSON.stringify(account).includes('ppass'), `a proxy password survived: ${JSON.stringify(account)}`);
+        assert.equal(account.lastErrorState.response, 'Connection refused', 'the error message itself is not a credential');
+    });
+});
+
+// A route-level permission model does not inspect payloads, which is fine until a payload field
+// decides where a credential is sent. `submit` is grantable, so this is the one place the narrowing
+// has to do what the route grant cannot.
+test('assertNoNetworkOverride keeps a narrowed token off the connection route', async t => {
+    const narrowed = { permissions: { actions: ['send'], groups: ['submit'] } };
+    const proxyPayload = { proxy: 'socks5://attacker.example.com:1080' };
+
+    await t.test('refuses a submit-time proxy from a narrowed token', () => {
+        assert.throws(
+            () => assertNoNetworkOverride({ payload: proxyPayload, auth: { artifacts: narrowed } }),
+            err => Boom.isBoom(err) && err.output.statusCode === 403,
+            'a send-only token could redirect the SMTP session and collect the account credentials'
+        );
+    });
+
+    await t.test('reads an unusable permissions record as narrowed', () => {
+        // `{}` is malformed to lib/token-permissions.js, not absent, and both enforcement points
+        // deny on it. This must not be the one reader that takes it for "no narrowing".
+        for (const permissions of [{}, 'nonsense', ['read']]) {
+            assert.throws(() => assertNoNetworkOverride({ payload: proxyPayload, auth: { artifacts: { permissions } } }));
+        }
+    });
+
+    await t.test('leaves an unnarrowed token alone', () => {
+        // It already reaches PUT /v1/account/{account} and can point the account's own proxy
+        // anywhere, so refusing it here would cost a documented capability and buy nothing.
+        assertNoNetworkOverride({ payload: proxyPayload, auth: { artifacts: {} } });
+        assertNoNetworkOverride({ payload: proxyPayload, auth: { artifacts: { permissions: null } } });
+        assertNoNetworkOverride({ payload: proxyPayload, auth: {} });
+        assertNoNetworkOverride({ payload: proxyPayload });
+    });
+
+    await t.test('never refuses a submission that sets no proxy', () => {
+        // Which is every ordinary send, including the draft variant with an empty body
+        assertNoNetworkOverride({ payload: { to: [{ address: 'x@example.com' }] }, auth: { artifacts: narrowed } });
+        assertNoNetworkOverride({ payload: {}, auth: { artifacts: narrowed } });
+        assertNoNetworkOverride({ auth: { artifacts: narrowed } });
     });
 });

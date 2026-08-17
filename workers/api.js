@@ -914,6 +914,11 @@ const init = async () => {
 
             const grant = routeGrant(request.route);
 
+            // This strategy runs before route validation, so `request.query` is whatever the client
+            // sent: a repeated `?account=` arrives as an array. Only a string can name an account,
+            // and this value is persisted into the audit log, so anything else is not one.
+            const queryAccount = request.query && typeof request.query.account === 'string' ? request.query.account : null;
+
             // Shared by every audit entry below, so an allow and a deny describe the same request.
             // Built before the first check that can refuse: a rejection is the strongest signal of
             // credential misuse there is, and a trail that only held the calls that succeeded would
@@ -925,7 +930,16 @@ const init = async () => {
                 path: request.route.path,
                 action: grant.action,
                 group: grant.group,
-                account: (request.params && request.params.account) || tokenData.account || null
+                // The account the REQUEST addressed, which is not always the one in the path: the
+                // routes that take it as a query argument are the ones a bound token gets refused
+                // on, and falling straight through to the token's own account recorded a
+                // cross-account attempt against the account it was entitled to reach - the opposite
+                // of what the entry exists to show. The token's account is still the answer for the
+                // routes that name no account at all.
+                //
+                // The refusals below log this field rather than re-deriving it, so the application
+                // log and the audit row cannot disagree about which account a denial concerned.
+                account: (request.params && request.params.account) || queryAccount || tokenData.account || null
             };
 
             if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
@@ -960,7 +974,7 @@ const init = async () => {
                     msg: 'Token permissions do not allow this operation',
                     tokenAccount: tokenData.account,
                     tokenId: tokenData.id,
-                    account: (request.params && request.params.account) || null,
+                    account: auditEntry.account,
                     reason: permissionCheck.reason,
                     required: permissionCheck.required
                 });
@@ -982,10 +996,19 @@ const init = async () => {
 
                 // allow specific routes that have an account component but not in the URL params section
                 switch (request.route.path) {
+                    // The two listings that take the account as a query argument. `/v1/tokens` is
+                    // here because it replaced GET /v1/tokens/account/{account}, which carried the
+                    // account in the path and so reached a bound token's own tokens through the
+                    // default branch below - the replacement had nothing reading the argument, so
+                    // the capability disappeared with no alias and no error a caller could act on.
+                    // Both stay under the same rule as everything else: the argument has to name the
+                    // token's own account, and omitting it still refuses, because a bound credential
+                    // must not enumerate the instance.
                     case '/v1/templates':
+                    case '/v1/tokens':
                         switch (request.method) {
                             case 'get':
-                                accountIdSource = request.query && request.query.account;
+                                accountIdSource = queryAccount;
                                 break;
                         }
                         break;
@@ -1019,7 +1042,7 @@ const init = async () => {
                         msg: 'Trying to use invalid account for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null
+                        account: auditEntry.account
                     });
 
                     tokenAuditLog.denied(auditEntry, 'account');
@@ -1035,7 +1058,7 @@ const init = async () => {
                         msg: 'Trying to use invalid IP for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null,
+                        account: auditEntry.account,
                         remoteAddress: request.app.ip,
                         addressAllowlist: tokenData.restrictions.addresses
                     });
@@ -1056,7 +1079,7 @@ const init = async () => {
                         msg: 'Trying to use invalid referer for a token',
                         tokenAccount: tokenData.account,
                         tokenId: tokenData.id,
-                        account: (request.params && request.params.account) || null,
+                        account: auditEntry.account,
                         referer: request.headers.referer,
                         referrerAllowlist: tokenData.restrictions.referrers
                     });

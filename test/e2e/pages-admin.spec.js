@@ -1653,7 +1653,7 @@ test.describe('admin shell', () => {
             await page.waitForURL(/[?&]page=2/);
             expect(await page.locator('tbody tr').count()).toBeGreaterThan(0);
         } finally {
-            await Promise.all(created.map(tok => api.delete(`/v1/token/${tok}`).catch(() => {})));
+            await Promise.all(created.map(tok => api.delete(`/v1/tokens/${tok}`).catch(() => {})));
             await api.dispose();
         }
 

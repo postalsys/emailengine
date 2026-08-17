@@ -177,7 +177,7 @@ test('API token scope and account binding', async t => {
         await settings.set('disableTokens', true);
         try {
             const res = await supertest(baseUrl)
-                .post('/v1/token')
+                .post('/v1/tokens')
                 .send({ account: ACCOUNT, description: 'unauthenticated mint attempt', scopes: ['api'] });
 
             assert.equal(res.status, 403, `expected 403, got ${res.status}`);
@@ -193,7 +193,7 @@ test('API token scope and account binding', async t => {
         // not exist, so the handler fails later at loadAccountData() - reaching that failure is the
         // proof, because the gate runs before it.
         const res = await supertest(baseUrl)
-            .post('/v1/token')
+            .post('/v1/tokens')
             .auth(apiToken, { type: 'bearer' })
             .send({ account: ACCOUNT, description: 'authenticated mint', scopes: ['api'] });
 

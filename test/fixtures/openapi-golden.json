@@ -4321,7 +4321,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Optional proxy URL to use when connecting to the SMTP server",
+            "description": "Optional proxy URL to use when connecting to the SMTP server. A token with restricted permissions can not set this - it redirects a session that carries the account credentials",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -5911,7 +5911,7 @@
           },
           "proxy": {
             "type": "string",
-            "description": "Optional proxy URL to use when connecting to the SMTP server",
+            "description": "Optional proxy URL to use when connecting to the SMTP server. A token with restricted permissions can not set this - it redirects a session that carries the account credentials",
             "example": "socks5://proxy.example.com:1080",
             "x-format": {
               "uri": {
@@ -9355,6 +9355,12 @@
               }
             }
           },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false,
+            "nullable": true
+          },
           "proxyEnabled": {
             "type": "boolean",
             "description": "Route outbound connections through a proxy server",
@@ -9584,12 +9590,6 @@
             "example": 50,
             "nullable": true,
             "minimum": 0
-          },
-          "tokenAuditLog": {
-            "type": "boolean",
-            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
-            "example": false,
-            "nullable": true
           },
           "deliveryAttempts": {
             "type": "integer",
@@ -10046,6 +10046,11 @@
               }
             }
           },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false
+          },
           "proxyEnabled": {
             "type": "boolean",
             "description": "Route outbound connections through a proxy server"
@@ -10248,11 +10253,6 @@
             "description": "Number of completed and failed queue entries to retain for debugging",
             "example": 50,
             "minimum": 0
-          },
-          "tokenAuditLog": {
-            "type": "boolean",
-            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
-            "example": false
           },
           "deliveryAttempts": {
             "type": "integer",
@@ -11254,7 +11254,7 @@
             "read": "Read data without changing anything",
             "write": "Create or modify data",
             "send": "Hand a message to a mail server, so it reaches real recipients",
-            "destructive": "Remove data, or discard state that cannot be recovered"
+            "destructive": "Call the endpoints that remove data. Deleting a message is a move to Trash, which a write grant can perform directly, so withholding this narrows the endpoints rather than the outcome for mail"
           }
         },
         "enum": [
@@ -11342,6 +11342,7 @@
           ]
         },
         "nullable": true,
+        "minProperties": 1,
         "properties": {
           "actions": {
             "$ref": "#/components/schemas/TokenActions"
@@ -12615,7 +12616,7 @@
       "get": {
         "summary": "Get account info",
         "operationId": "getV1AccountAccount",
-        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
+        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -18556,7 +18557,7 @@
       "get": {
         "summary": "Get gateway info",
         "operationId": "getV1GatewayGateway",
-        "description": "Returns stored information about the gateway. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
+        "description": "Returns stored information about the gateway. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20029,7 +20030,7 @@
       "get": {
         "summary": "List queued messages",
         "operationId": "getV1Outbox",
-        "description": "Lists messages in the Outbox. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
+        "description": "Lists messages in the Outbox. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20143,7 +20144,7 @@
       "get": {
         "summary": "Get queued message",
         "operationId": "getV1OutboxQueueid",
-        "description": "Gets a queued message in the Outbox. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
+        "description": "Gets a queued message in the Outbox. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -20705,6 +20706,14 @@
             }
           },
           {
+            "name": "tokenAuditLog",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "proxyEnabled",
             "in": "query",
             "schema": {
@@ -21010,14 +21019,6 @@
           },
           {
             "name": "queueKeep",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "tokenAuditLog",
             "in": "query",
             "schema": {
               "type": "boolean",
@@ -22440,11 +22441,21 @@
         ],
         "responses": {
           "200": {
-            "description": "Returns the root access tokens. Token values are never returned after creation.",
+            "description": "Returns the matching access tokens. Token values are never returned after creation.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokensResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
                 }
               }
             }
@@ -22496,7 +22507,7 @@
       "post": {
         "summary": "Provision an access token",
         "operationId": "postV1Tokens",
-        "description": "Provisions a new access token for an account",
+        "description": "Provisions a new access token. Either bind it to an account, or set `permissions` - an instance-wide token that is not narrowed reaches every account and every endpoint, so the API declines to mint one.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23195,7 +23206,7 @@
       "get": {
         "summary": "List webhook routes",
         "operationId": "getV1Webhookroutes",
-        "description": "List custom webhook routes. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
+        "description": "List custom webhook routes. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -23309,7 +23320,7 @@
       "get": {
         "summary": "Get webhook route information",
         "operationId": "getV1WebhookroutesWebhookrouteWebhookroute",
-        "description": "Retrieve webhook route content and information. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
+        "description": "Retrieve webhook route content and information. Credentials are masked: stored passwords, the credentials in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\". A masked value is not the stored one - leave the field out of an update rather than writing it back, otherwise the mask replaces the credential.",
         "parameters": [
           {
             "name": "x-ee-timeout",

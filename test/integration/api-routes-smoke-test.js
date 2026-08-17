@@ -130,14 +130,24 @@ const LIST_ENDPOINTS_OK = [
     '/v1/stats'
 ];
 
-// Provisioned directly rather than through POST /v1/token so these fixtures do not depend on the
+// Provisioned directly rather than through POST /v1/tokens so these fixtures do not depend on the
 // route under test in the same file. They write to the same Redis the shared test server reads.
 const narrowedTokens = [];
-async function narrowed(permissions, description) {
-    const token = await tokens.provision({ scopes: ['api'], permissions, description, nolog: true });
+async function provision(opts) {
+    const token = await tokens.provision(Object.assign({ scopes: ['api'], nolog: true }, opts));
     narrowedTokens.push(token);
-    return supertest.agent(baseUrl).auth(token, { type: 'bearer' });
+    return token;
 }
+
+async function narrowed(permissions, description) {
+    return supertest.agent(baseUrl).auth(await provision({ permissions, description }), { type: 'bearer' });
+}
+
+// The account an account-bound fixture names. Not one of the accounts the other integration files
+// create: the tier runs serially in filename order and this file sorts first, so on a fresh Redis
+// nothing else has created an account yet - a bound fixture that went through POST /v1/tokens failed
+// its account lookup and took the listing tests with it.
+const BOUND_ACCOUNT = 'smoke-bound-account';
 
 registerRedisTeardown(redis, async () => {
     for (const token of narrowedTokens) {
@@ -191,6 +201,25 @@ test('narrowed access tokens', async t => {
             assert.equal(denied.status, 403, `GET ${path} must be refused: it is in the never-grantable admin group`);
             assert.equal(denied.body.requiredPermission.group, 'admin');
         }
+    });
+
+    await t.test('a narrowed token can not redirect a submission through a proxy it names', async () => {
+        // `submit` is grantable, and a submit payload's `proxy` takes precedence over the account's
+        // own route while the SMTP session still carries the account's decrypted credentials - so a
+        // send-only token could point the AUTH exchange at a host it controls and read them off the
+        // wire. The route grant cannot see a payload field, so the narrowing has to.
+        const agent = await narrowed({ actions: ['read', 'send'], groups: ['submit', 'outbox'] }, 'smoke: send only');
+
+        // A non-existent account on purpose: the guard runs before the account is even loaded, which
+        // is what the two statuses below show.
+        const refused = await agent.post('/v1/account/no-such-account/message/AAAAAQAACnA/submit').send({ proxy: 'socks5://proxy.example.com:1080' });
+        assert.equal(refused.status, 403, `a narrowed token must not set a submit-time proxy, got ${refused.status}`);
+        assert.match(refused.body.message, /connection route/i);
+
+        // Without the override the same token gets past the guard and fails on the account, so the
+        // refusal above is about the field rather than about the credential
+        const allowed = await agent.post('/v1/account/no-such-account/message/AAAAAQAACnA/submit').send({});
+        assert.equal(allowed.status, 404, `expected the account lookup to be what fails, got ${allowed.status}`);
     });
 
     await t.test('the API refuses to issue a token naming the admin group', async () => {
@@ -280,22 +309,43 @@ test('narrowed access tokens', async t => {
         assert.equal((await authed.get(`/v1/tokens/${created.body.token}`)).status, 404);
 
         assert.equal((await authed.get(`/v1/tokens/${'a'.repeat(64)}`)).status, 404);
+
+        // Same shape as an entry in the listings, which includes when the credential was last used.
+        // It lives in a second hash, so leaving it out made the one endpoint that describes a single
+        // token the one that could not answer the question most often asked of it.
+        assert.ok(byId.body.access, 'the getter must carry the last-use record the listing reports');
+        assert.equal(byId.body.access.time, null, 'a token that has never authenticated has no last use');
+    });
+
+    await t.test('an account-bound token lists its own tokens and no others', async () => {
+        // GET /v1/tokens/account/{account} carried the account in the path, so a bound token reached
+        // its own tokens through the default branch of the binding check. The replacement takes the
+        // account as a query argument, which that check never read - so the capability disappeared
+        // with no alias and no error a caller could act on.
+        const token = await provision({ account: BOUND_ACCOUNT, description: `smoke: bound self-listing ${Date.now()}` });
+        const boundAgent = supertest.agent(baseUrl).auth(token, { type: 'bearer' });
+
+        const own = await boundAgent.get(`/v1/tokens?account=${BOUND_ACCOUNT}&pageSize=1000`);
+        assert.equal(own.status, 200, `a bound token must still reach its own account's tokens, got ${own.status}`);
+        assert.ok(
+            own.body.tokens.some(entry => entry.id === tokens.tokenId(token)),
+            'the listing did not include the token that asked for it'
+        );
+
+        // And no wider than that: a bound credential must not enumerate the instance, and omitting
+        // the argument is not a way around it
+        assert.equal((await boundAgent.get('/v1/tokens')).status, 403, 'a bound token must not list every token on the instance');
+        assert.equal((await boundAgent.get('/v1/tokens?account=some-other-account')).status, 403);
     });
 
     await t.test('lists every token on the instance, and narrows to one account', async () => {
         // "Which credentials exist here" used to need one request per account: root tokens and each
         // account's tokens sat behind separate endpoints with no union.
-        const bound = await authed.post('/v1/tokens').send({
-            account: 'main-account',
-            description: `smoke: bound ${Date.now()}`,
-            scopes: ['api']
-        });
-        assert.equal(bound.status, 200, `could not create an account-bound token: ${JSON.stringify(bound.body)}`);
-        narrowedTokens.push(bound.body.token);
+        const boundId = tokens.tokenId(await provision({ account: BOUND_ACCOUNT, description: `smoke: bound ${Date.now()}` }));
 
         const all = await authed.get('/v1/tokens?pageSize=1000');
         assert.ok(
-            all.body.tokens.some(entry => entry.id === bound.body.id),
+            all.body.tokens.some(entry => entry.id === boundId),
             'an account-bound token is missing from the instance-wide listing'
         );
         assert.ok(
@@ -306,10 +356,10 @@ test('narrowed access tokens', async t => {
         // Every item carries the account, so a client has one shape rather than one per listing
         assert.ok(all.body.tokens.every(entry => Object.hasOwn(entry, 'account')));
 
-        const scoped = await authed.get('/v1/tokens?account=main-account&pageSize=1000');
+        const scoped = await authed.get(`/v1/tokens?account=${BOUND_ACCOUNT}&pageSize=1000`);
         assert.ok(scoped.body.tokens.length >= 1);
         assert.ok(
-            scoped.body.tokens.every(entry => entry.account === 'main-account'),
+            scoped.body.tokens.every(entry => entry.account === BOUND_ACCOUNT),
             'the account filter returned tokens bound elsewhere'
         );
         assert.ok(scoped.body.total <= all.body.total);

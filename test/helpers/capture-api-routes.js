@@ -74,6 +74,9 @@ function describeRoute(cfg, method) {
         authStrategy: auth && typeof auth === 'object' ? auth.strategy : undefined,
         authMode: auth && typeof auth === 'object' ? auth.mode : undefined,
         tags: options.tags || [],
+        // The request-body schema as registered, so a guardrail can ask what fields a route accepts
+        // rather than reading the route modules by hand. Undefined for routes that take no payload.
+        payload: options.validate && options.validate.payload,
         // Shaped the way a live request.route is, so the described route can be handed straight to
         // routeGrant() rather than reassembled by the caller
         settings: { plugins: options.plugins || {} }
