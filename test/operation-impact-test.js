@@ -19,11 +19,18 @@ describe('operation impact', () => {
             assert.equal(resolveImpact(IMPACT.READONLY, 'post'), IMPACT.READONLY);
         });
 
-        it('defaults an undeclared GET to readonly and everything else to write', () => {
+        it('defaults an undeclared GET to readonly and an ordinary write to write', () => {
             assert.equal(resolveImpact(undefined, 'get'), IMPACT.READONLY);
             assert.equal(resolveImpact(undefined, 'post'), IMPACT.WRITE);
             assert.equal(resolveImpact(undefined, 'put'), IMPACT.WRITE);
-            assert.equal(resolveImpact(undefined, 'delete'), IMPACT.WRITE);
+            assert.equal(resolveImpact(undefined, 'patch'), IMPACT.WRITE);
+        });
+
+        it('defaults an undeclared DELETE to destructive rather than to write', () => {
+            // Fail-closed on the one method whose name says what it does. Defaulting it to WRITE
+            // made destructive opt-in, so a new DELETE that forgot its declaration would be
+            // callable by a token deliberately narrowed to write-but-not-destructive.
+            assert.equal(resolveImpact(undefined, 'delete'), IMPACT.DESTRUCTIVE);
         });
 
         it('accepts the method in any case', () => {

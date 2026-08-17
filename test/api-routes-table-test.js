@@ -32,6 +32,8 @@ const assert = require('node:assert').strict;
 const { redis } = require('../lib/db');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const registerRedisTeardown = require('./helpers/redis-teardown');
+const { ACTION, GROUP, NEVER_GRANTABLE, IMPACT_ACTIONS, ROUTE_GROUPS, routeGrant } = require('../lib/api-routes/permission-map');
+const { IMPACT } = require('../lib/api-routes/operation-impact');
 
 // The complete, sorted set of routes registered by lib/api-routes/index.js, captured with the
 // Document Store feature gate ON (so the deprecated document-store endpoints are included; the
@@ -189,6 +191,129 @@ test('API route table and authentication', async t => {
             golden,
             `API route table changed.\n  Dropped (in golden, not registered): ${JSON.stringify(missing)}\n  New (registered, not in golden): ${JSON.stringify(added)}`
         );
+    });
+
+    // The permission grant a route requires is what a narrowed access token is checked against, so
+    // a /v1 route the map does not describe would be either ungoverned or unreachable depending on
+    // which way the check failed. These assertions are what lets lib/api-routes/permission-map.js
+    // keep the mapping in one central table instead of declaring it on each route.
+
+    await t.test('every /v1 route resolves to a permission action and group', () => {
+        const unresolved = v1Routes
+            .map(route => ({ route: route.route, grant: routeGrant(route) }))
+            .filter(entry => !entry.grant.action || !entry.grant.group)
+            .map(entry => `${entry.route} (action: ${String(entry.grant.action)}, group: ${String(entry.grant.group)})`);
+
+        assert.deepEqual(
+            unresolved,
+            [],
+            'every /v1 route must resolve to an action and a group in lib/api-routes/permission-map.js. ' +
+                'A route with no group is denied to every token that carries `permissions`, which reads as a bug ' +
+                'rather than as a policy. Add it to ROUTE_GROUPS, choosing the group by what a grant EXPOSES: ' +
+                'anything handing out a credential or widening what the instance can do belongs in GROUP.ADMIN.\n' +
+                `Unresolved: ${JSON.stringify(unresolved, null, 2)}`
+        );
+    });
+
+    await t.test('the route map has no entries for routes that do not exist', () => {
+        // The other direction. A stale key is not merely dead: renaming a route and leaving the old
+        // key behind silently drops the new one out of every grant. The map keys are in the same
+        // `METHOD /path` form as `route.route` and GOLDEN_ROUTES, so the two listings of these
+        // routes can be diffed directly.
+        const registered = new Set(v1Routes.map(route => route.route));
+        const stale = [...ROUTE_GROUPS.keys()].filter(key => !registered.has(key));
+
+        assert.deepEqual(stale, [], `lib/api-routes/permission-map.js maps routes that are not registered: ${JSON.stringify(stale)}`);
+
+        // Guards the inversion of GROUP_ROUTES: a route listed under two groups would collapse to
+        // one Map entry, and last-write-wins would silently pick the group.
+        assert.equal(ROUTE_GROUPS.size, v1Routes.length, 'the route map and the /v1 route table differ in size');
+    });
+
+    await t.test('the group vocabulary is frozen', () => {
+        // These slugs become public API the moment they ship: they go into /swagger.json and into
+        // customers' token records. Renaming one silently widens or voids a token that named it, so
+        // the list is asserted against a literal rather than derived from the enum it describes.
+        assert.deepEqual(Object.values(GROUP).sort(), [
+            'account',
+            'admin',
+            'blocklist',
+            'diagnostics',
+            'events',
+            'export',
+            'gateway',
+            'logs',
+            'mailbox',
+            'message',
+            'outbox',
+            'submit',
+            'template',
+            'webhook'
+        ]);
+
+        assert.deepEqual(Object.values(ACTION).sort(), ['destructive', 'read', 'send', 'write']);
+
+        // admin is the whole safety property of the model. If it ever becomes grantable, a narrowed
+        // token can mint itself a wider one and every other rule here is decorative.
+        assert.ok(NEVER_GRANTABLE.has(GROUP.ADMIN), 'the admin group must never be grantable');
+
+        // Every impact has to map to an action. One that does not resolves to undefined, which reads
+        // as an unclassifiable route and denies - and would only surface if some route happened to
+        // declare that impact.
+        assert.deepEqual(Object.keys(IMPACT_ACTIONS).sort(), Object.values(IMPACT).sort());
+    });
+
+    await t.test('nothing that hands out a credential sits outside the admin group', () => {
+        // Derived from the path rather than from a list of the routes that exist today, so a NEW
+        // credential-handling route is covered too. Moving one of these into a grantable group has
+        // to fail here rather than in a customer's threat model.
+        //
+        // The oauth-token route is the sharpest of them: it returns a live OAuth2 access token,
+        // which is a mail credential that outlives any narrowing on the token that read it.
+        const sensitive = /\/v1\/(settings|oauth2|license|tokens?)\b|oauth-token|verifyAccount|authentication\/form/;
+
+        const misfiled = v1Routes
+            .filter(route => sensitive.test(route.path))
+            .map(route => ({ route: route.route, group: routeGrant(route).group }))
+            .filter(entry => entry.group !== GROUP.ADMIN)
+            .map(entry => `${entry.route} -> ${String(entry.group)}`);
+
+        assert.deepEqual(
+            misfiled,
+            [],
+            'a route that hands out a credential or widens what the instance can do must be in GROUP.ADMIN, ' +
+                `which no permissions record can name: ${JSON.stringify(misfiled)}`
+        );
+
+        // The pattern has to actually match something, or the assertion above passes vacuously
+        assert.ok(v1Routes.filter(route => sensitive.test(route.path)).length >= 18);
+    });
+
+    await t.test('editing or creating an account is never grantable', () => {
+        // Not obvious from the route names, so it is asserted rather than left to the map comment.
+        // `imap`/`smtp`/`oauth2` accept `partial: true` and Account.persistUpdate() merges the STORED
+        // object over the payload, so a request that changes only `host` keeps `auth.pass` and the
+        // reconnect gate then authenticates to the new host with it. The same route retargets the
+        // per-account webhook. Either would let a token narrowed to `account` exfiltrate what the
+        // narrowing was supposed to protect.
+        for (const route of ['POST /v1/account', 'PUT /v1/account/{account}']) {
+            assert.equal(ROUTE_GROUPS.get(route), GROUP.ADMIN, `${route} must not be grantable`);
+        }
+    });
+
+    await t.test('every /v1 DELETE requires the destructive action', () => {
+        // The action axis exists so a token can be granted write but not destructive. That only
+        // holds if no DELETE resolves to plain write, which used to be the method default and made
+        // `destructive` opt-in: one forgotten x-ee-impact and the route became callable by a token
+        // issued specifically without destructive rights.
+        const notDestructive = v1Routes
+            .filter(route => route.method === 'delete')
+            .map(route => ({ route: route.route, action: routeGrant(route).action }))
+            .filter(entry => entry.action !== ACTION.DESTRUCTIVE)
+            .map(entry => `${entry.route} -> ${String(entry.action)}`);
+
+        assert.deepEqual(notDestructive, [], `every DELETE must resolve to the destructive action: ${JSON.stringify(notDestructive)}`);
+        assert.ok(v1Routes.filter(route => route.method === 'delete').length >= 12);
     });
 
     await t.test('no plugins are registered during route setup', () => {

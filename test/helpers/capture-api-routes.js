@@ -14,6 +14,7 @@
 const { imapSchema, smtpSchema, oauth2Schema, oauth2ProviderSchema, accountTypeSchema } = require('../../lib/schemas');
 const { DEFAULT_MAX_ATTACHMENT_SIZE, DEFAULT_MAX_BODY_SIZE, DEFAULT_MAX_PAYLOAD_TIMEOUT } = require('../../lib/consts');
 const registerApiRoutes = require('../../lib/api-routes');
+const { routeKey } = require('../../lib/api-routes/permission-map');
 
 // Stand-ins for the values workers/api.js passes in. Only shape matters: these are read at
 // registration time to build Joi schemas and payload limits, never dereferenced deeply.
@@ -65,13 +66,17 @@ function describeRoute(cfg, method) {
     const auth = options.auth;
 
     return {
-        route: `${String(method).toUpperCase()} ${cfg.path}`,
+        route: routeKey(method, cfg.path),
         path: cfg.path,
+        method: String(method).toLowerCase(),
         // Undefined when the route declares no auth at all - it then inherits
         // server.auth.default(), which for a /v1 route is never what you want.
         authStrategy: auth && typeof auth === 'object' ? auth.strategy : undefined,
         authMode: auth && typeof auth === 'object' ? auth.mode : undefined,
-        tags: options.tags || []
+        tags: options.tags || [],
+        // Shaped the way a live request.route is, so the described route can be handed straight to
+        // routeGrant() rather than reassembled by the caller
+        settings: { plugins: options.plugins || {} }
     };
 }
 
