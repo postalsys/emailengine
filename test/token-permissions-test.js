@@ -8,7 +8,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert').strict;
 
-const { check, isNarrowed, REASON } = require('../lib/token-permissions');
+const { check, REASON } = require('../lib/token-permissions');
 const { ACTION, GROUP, GRANTABLE_GROUPS } = require('../lib/api-routes/permission-map');
 
 // A read of a message, which is the operation most of these narrow around
@@ -31,9 +31,8 @@ describe('token permissions', () => {
 
         it('treats an explicitly null record as absent', () => {
             assert.ok(check({ tokenData: { permissions: null }, operation: READ_MESSAGE }).allowed);
-            assert.ok(!isNarrowed({ permissions: null }));
-            assert.ok(!isNarrowed({}));
-            assert.ok(!isNarrowed(undefined));
+            assert.ok(check({ tokenData: {}, operation: READ_MESSAGE }).allowed);
+            assert.ok(check({ tokenData: undefined, operation: READ_MESSAGE }).allowed);
         });
     });
 
@@ -172,8 +171,10 @@ describe('token permissions', () => {
             assert.equal(allow({ actions: ['sends'] }, READ_MESSAGE).reason, REASON.MALFORMED);
         });
 
-        it('counts a malformed record as narrowed, so the UI can flag it', () => {
-            assert.ok(isNarrowed({ permissions: { nonsense: true } }));
+        it('denies rather than ignoring a record it cannot read', () => {
+            // The admin listing flags these separately, through summarize() in
+            // lib/token-permission-view.js - such a token authenticates and then refuses everything
+            assert.equal(allow({ nonsense: true }, READ_MESSAGE).reason, REASON.MALFORMED);
         });
     });
 

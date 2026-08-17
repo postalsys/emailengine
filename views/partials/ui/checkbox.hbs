@@ -29,11 +29,11 @@
     <div class="flex items-center gap-2">
         <input type="checkbox" class="checkbox checkbox-sm{{#if error}} is-invalid{{/if}}{{#if class}} {{class}}{{/if}}"
             id="{{id}}" {{#unless noName}}name="{{#if name}}{{name}}{{else}}{{id}}{{/if}}" {{/unless}}{{#if checked}}checked {{/if}}{{#if
-            dataTarget}}data-target="{{dataTarget}}" {{/if}}{{#if dataReverse}}data-reverse="true" {{/if}}{{#if disabled}}disabled {{/if}}>
+            dataTarget}}data-target="{{dataTarget}}" {{/if}}{{#if dataValue}}data-value="{{dataValue}}" {{/if}}{{#if dataReverse}}data-reverse="true" {{/if}}{{#if disabled}}disabled {{/if}}>
         <label class="label-text p-0" for="{{id}}" {{#if labelTitle}}title="{{labelTitle}}" {{/if}}>{{label}}</label>
         {{#if @partial-block}}
         {{!-- own hash params are neutralized so they cannot fall through into nested ui/* calls inside the block --}}
-        {{> @partial-block id="" label="" name="" noName="" labelTitle="" checked="" tooltip="" hint="" error="" dataTarget="" dataReverse="" disabled="" class=""}}
+        {{> @partial-block id="" label="" name="" noName="" labelTitle="" checked="" tooltip="" hint="" error="" dataTarget="" dataValue="" dataReverse="" disabled="" class=""}}
         {{/if}}
         {{#if tooltip}}
         {{!-- class="" blocks this partial's own class param (meant for the

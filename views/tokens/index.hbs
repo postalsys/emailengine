@@ -44,7 +44,20 @@
 
                     <td>
                         {{#if scopes}}
-                        {{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}
+                        <div>{{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}</div>
+                        {{/if}}
+
+                        {{#if permissionSummary}}
+                        {{#if permissionSummary.unreadable}}
+                        {{> ui/badge label="Unreadable restriction" variant="error" soft=true icon="" class="mt-1"}}
+                        <div class="text-base-content/60 text-xs">Every request with this token is refused. Delete and reissue it.</div>
+                        {{else}}
+                        {{> ui/badge label="Restricted" variant="info" soft=true icon="" class="mt-1"}}
+                        <div class="text-base-content/60 text-xs">
+                            {{#if permissionSummary.actions}}<div>Can: {{permissionSummary.actions}}</div>{{/if}}
+                            {{#if permissionSummary.groups}}<div>In: {{permissionSummary.groups}}</div>{{/if}}
+                        </div>
+                        {{/if}}
                         {{/if}}
                     </td>
 
