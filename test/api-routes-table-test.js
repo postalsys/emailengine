@@ -32,7 +32,8 @@ const assert = require('node:assert').strict;
 const { redis } = require('../lib/db');
 const { captureApiRoutes } = require('./helpers/capture-api-routes');
 const registerRedisTeardown = require('./helpers/redis-teardown');
-const { ACTION, GROUP, NEVER_GRANTABLE, IMPACT_ACTIONS, ROUTE_GROUPS, routeGrant } = require('../lib/api-routes/permission-map');
+const { ACTION, GROUP, GRANTABLE_GROUPS, NEVER_GRANTABLE, IMPACT_ACTIONS, ROUTE_GROUPS, routeGrant } = require('../lib/api-routes/permission-map');
+const { ENUM_DESCRIPTIONS } = require('../lib/enum-descriptions');
 const { IMPACT } = require('../lib/api-routes/operation-impact');
 
 // The complete, sorted set of routes registered by lib/api-routes/index.js, captured with the
@@ -93,6 +94,7 @@ const GOLDEN_ROUTES = [
     'GET /v1/stats',
     'GET /v1/templates',
     'GET /v1/templates/template/{template}',
+    'GET /v1/token/{token}/log',
     'GET /v1/tokens',
     'GET /v1/tokens/account/{account}',
     'GET /v1/webhookRoutes',
@@ -256,6 +258,16 @@ test('API route table and authentication', async t => {
         // admin is the whole safety property of the model. If it ever becomes grantable, a narrowed
         // token can mint itself a wider one and every other rule here is decorative.
         assert.ok(NEVER_GRANTABLE.has(GROUP.ADMIN), 'the admin group must never be grantable');
+
+        // The published per-value documentation spells all 17 slugs a second time, and it is what a
+        // customer reads when choosing a grant. Nothing else asserts the two lists agree, so a group
+        // added here without a description ships an undocumented option.
+        assert.deepEqual(Object.keys(ENUM_DESCRIPTIONS.tokenGroup).sort(), [...GRANTABLE_GROUPS].sort());
+        assert.deepEqual(Object.keys(ENUM_DESCRIPTIONS.tokenAction).sort(), Object.values(ACTION).sort());
+
+        // admin has no description on purpose: it can never be granted, so it is not an option when
+        // issuing a token and documenting it as one would be misleading.
+        assert.ok(!Object.hasOwn(ENUM_DESCRIPTIONS.tokenGroup, GROUP.ADMIN));
 
         // Every impact has to map to an action. One that does not resolves to undefined, which reads
         // as an unclassifiable route and denies - and would only surface if some route happened to

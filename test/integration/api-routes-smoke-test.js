@@ -42,6 +42,7 @@ const AUTH_REQUIRED_ROUTES = [
     // token-routes.js
     ['post', '/v1/token'],
     ['delete', `/v1/token/${'a'.repeat(64)}`],
+    ['get', `/v1/token/${'a'.repeat(64)}/log`],
     ['get', '/v1/tokens'],
     ['get', '/v1/tokens/account/main-account'],
 

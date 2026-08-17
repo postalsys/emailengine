@@ -72,6 +72,7 @@ const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
 const tokenPermissions = require('../lib/token-permissions');
+const tokenAuditLog = require('../lib/token-audit-log');
 const { routeGrant } = require('../lib/api-routes/permission-map');
 
 const { redis, documentsQueue } = require('../lib/db');
@@ -935,7 +936,20 @@ const init = async () => {
             //
             // Only subtracts: a token with no `permissions` field takes the allowed path, which is
             // every token issued before this shipped.
-            const permissionCheck = tokenPermissions.check({ tokenData, operation: routeGrant(request.route) });
+            const grant = routeGrant(request.route);
+
+            // Shared by the audit entries below, so an allow and a deny describe the same request
+            const auditEntry = {
+                tokenId: tokenData.id,
+                ip: request.app.ip,
+                method: request.route.method,
+                path: request.route.path,
+                action: grant.action,
+                group: grant.group,
+                account: (request.params && request.params.account) || tokenData.account || null
+            };
+
+            const permissionCheck = tokenPermissions.check({ tokenData, operation: grant });
             if (!permissionCheck.allowed) {
                 logger.warn({
                     msg: 'Token permissions do not allow this operation',
@@ -949,6 +963,9 @@ const init = async () => {
                 let error = Boom.forbidden('Unauthorized permission');
                 // Mirrors how the scope failure above attaches requestedScope: an agent that gets a
                 // 403 needs to know WHICH grant it lacked, not just that it lacked one.
+                // A refused call is the interesting record, so it is logged before the throw
+                tokenAuditLog.record(Object.assign({ status: 'denied', reason: permissionCheck.reason }, auditEntry));
+
                 error.output.payload.requiredPermission = permissionCheck.required;
                 throw error;
             }
@@ -1065,6 +1082,11 @@ const init = async () => {
                     }
                 }
             }
+
+            // Recorded at the one point every accepted token request passes, after the account
+            // binding and the restrictions - so the trail holds requests that were actually served
+            // rather than ones that merely cleared the permission check.
+            tokenAuditLog.record(Object.assign({ status: 'allowed' }, auditEntry));
 
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }

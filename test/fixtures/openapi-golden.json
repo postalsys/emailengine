@@ -9585,6 +9585,12 @@
             "nullable": true,
             "minimum": 0
           },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/token/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false,
+            "nullable": true
+          },
           "deliveryAttempts": {
             "type": "integer",
             "description": "Maximum number of delivery attempts before marking a message as permanently failed",
@@ -10242,6 +10248,11 @@
             "description": "Number of completed and failed queue entries to retain for debugging",
             "example": 50,
             "minimum": 0
+          },
+          "tokenAuditLog": {
+            "type": "boolean",
+            "description": "Record which requests each access token makes, readable at GET /v1/token/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "example": false
           },
           "deliveryAttempts": {
             "type": "integer",
@@ -11453,6 +11464,130 @@
             "type": "boolean",
             "description": "Was the token deleted",
             "default": true
+          }
+        }
+      },
+      "TokenLogStatus": {
+        "type": "string",
+        "description": "Whether the request was served",
+        "example": "allowed",
+        "enum": [
+          "allowed",
+          "denied"
+        ]
+      },
+      "TokenLogEntry": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the request was made",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Address the request came from",
+            "example": "127.0.0.1",
+            "nullable": true,
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "method": {
+            "type": "string",
+            "description": "HTTP method, or the surface name for SMTP and the IMAP proxy",
+            "example": "get",
+            "nullable": true
+          },
+          "path": {
+            "type": "string",
+            "description": "Route that was called",
+            "example": "/v1/account/{account}/messages",
+            "nullable": true
+          },
+          "action": {
+            "type": "string",
+            "description": "Permission action the operation required",
+            "example": "read",
+            "nullable": true
+          },
+          "group": {
+            "type": "string",
+            "description": "Permission group the operation belongs to",
+            "example": "message",
+            "nullable": true
+          },
+          "account": {
+            "type": "string",
+            "description": "Account the request addressed",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/TokenLogStatus"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why it was refused. Null when it was allowed",
+            "example": "group",
+            "nullable": true
+          }
+        }
+      },
+      "TokenLogEntries": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TokenLogEntry"
+        }
+      },
+      "TokenLogResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many entries are stored for this token",
+            "example": 120
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page (zero indexed)",
+            "example": 0
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total page count",
+            "example": 6
+          },
+          "entries": {
+            "$ref": "#/components/schemas/TokenLogEntries"
           }
         }
       },
@@ -20847,6 +20982,14 @@
             }
           },
           {
+            "name": "tokenAuditLog",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "deliveryAttempts",
             "in": "query",
             "schema": {
@@ -22397,6 +22540,150 @@
         },
         "x-ee-impact": "destructive",
         "x-ee-action": "destructive",
+        "x-ee-group": "admin"
+      }
+    },
+    "/v1/token/{token}/log": {
+      "get": {
+        "summary": "Get token audit log",
+        "operationId": "getV1TokenTokenLog",
+        "description": "Lists recent requests made with an access token, newest first. Requires the tokenAuditLog setting to be enabled; it is off by default, and entries only exist from the point it was switched on.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "token",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "Access token, or the token id from a token listing",
+              "example": "123456",
+              "x-constraint": {
+                "length": 64
+              },
+              "x-format": {
+                "hex": {
+                  "byteAligned": false,
+                  "prefix": false
+                }
+              }
+            },
+            "description": "Access token, or the token id from a token listing",
+            "required": true
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries to return per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 200
+            },
+            "description": "How many entries to return per page"
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the recorded requests for this token, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenLogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-impact": "readonly",
+        "x-ee-action": "read",
         "x-ee-group": "admin"
       }
     },
