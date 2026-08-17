@@ -21,6 +21,14 @@ const crypto = require('crypto');
 const test = require('node:test');
 const assert = require('node:assert').strict;
 
+// Provisioning a narrowed token directly is the only way to get one without an existing account, and
+// it pulls in lib/db - whose Redis and BullMQ handles keep the event loop alive after the tests pass.
+// registerRedisTeardown force-exits for exactly that reason; every other file in this tier talks to
+// the server over HTTP only and needs none of this.
+const tokens = require('../../lib/tokens');
+const { redis } = require('../../lib/db');
+const registerRedisTeardown = require('../helpers/redis-teardown');
+
 // Static access token provisioned via `preparedToken` in config/test.toml (scope "*").
 const accessToken = '2aa97ad0456d6624a55d30780aa2ff61bfb7edc6fa00935b40814b271e718660';
 const baseUrl = `http://127.0.0.1:${config.api.port}`;
@@ -120,6 +128,93 @@ const LIST_ENDPOINTS_OK = [
     '/v1/pubsub/status',
     '/v1/stats'
 ];
+
+// Provisioned directly rather than through POST /v1/token, which needs an existing account. These
+// write to the same Redis the shared test server reads.
+const narrowedTokens = [];
+async function narrowed(permissions, description) {
+    const token = await tokens.provision({ scopes: ['api'], permissions, description, nolog: true });
+    narrowedTokens.push(token);
+    return supertest.agent(baseUrl).auth(token, { type: 'bearer' });
+}
+
+registerRedisTeardown(redis, async () => {
+    for (const token of narrowedTokens) {
+        try {
+            await tokens.delete(token);
+        } catch (err) {
+            // ignore
+        }
+    }
+});
+
+// End-to-end proof that the api-token strategy in workers/api.js enforces the narrowing. The check
+// itself is unit-tested in test/token-permissions-test.js; what only a live server can show is that
+// it is wired into the strategy, sees the right route, and shapes the 403 the way an agent needs.
+test('narrowed access tokens', async t => {
+    await t.test('an un-narrowed token is unaffected', async () => {
+        // The whole change is additive, so the prepared token - which carries no permissions - has to
+        // keep reaching everything it reached before
+        assert.equal((await authed.get('/v1/stats')).status, 200);
+        assert.equal((await authed.get('/v1/settings?webhooks=true')).status, 200);
+    });
+
+    await t.test('a token narrowed to a group reaches that group and nothing else', async () => {
+        const agent = await narrowed({ groups: ['diagnostics'] }, 'smoke: diagnostics only');
+
+        assert.equal((await agent.get('/v1/stats')).status, 200, 'GET /v1/stats is in the diagnostics group');
+
+        const denied = await agent.get('/v1/blocklists');
+        assert.equal(denied.status, 403, 'GET /v1/blocklists is not in the diagnostics group');
+        assert.deepEqual(denied.body.requiredPermission, { action: 'read', group: 'blocklist' });
+    });
+
+    await t.test('a token narrowed to read cannot call a destructive route in its own group', async () => {
+        // The point of separating destructive from write: "may file and reply but not delete"
+        const agent = await narrowed({ actions: ['read'], groups: ['blocklist'] }, 'smoke: read-only blocklist');
+
+        assert.equal((await agent.get('/v1/blocklists')).status, 200);
+
+        const denied = await agent.delete('/v1/blocklist/test-list?recipient=nobody@example.com');
+        assert.equal(denied.status, 403, 'DELETE is destructive, which this token does not hold');
+        assert.equal(denied.body.requiredPermission.action, 'destructive');
+    });
+
+    await t.test('no narrowed token reaches the admin group, whatever it asks for', async () => {
+        // The safety property. A record cannot even name `admin` - the schema refuses it - so this
+        // asks for everything that IS nameable and still has to be refused.
+        const agent = await narrowed({ actions: ['read', 'write', 'send', 'destructive'] }, 'smoke: all actions');
+
+        for (const path of ['/v1/settings?webhooks=true', '/v1/tokens', '/v1/oauth2']) {
+            const denied = await agent.get(path);
+            assert.equal(denied.status, 403, `GET ${path} must be refused: it is in the never-grantable admin group`);
+            assert.equal(denied.body.requiredPermission.group, 'admin');
+        }
+    });
+
+    await t.test('the API refuses to issue a token naming the admin group', async () => {
+        // Belt and braces with the request-time deny above: the schema rejects it at issue time, so
+        // the record never exists in the first place
+        const res = await authed.post('/v1/token').send({
+            account: 'main-account',
+            description: 'smoke: should not be issued',
+            scopes: ['api'],
+            permissions: { groups: ['admin'] }
+        });
+        assert.equal(res.status, 400, `expected a validation failure, got ${res.status}`);
+    });
+
+    await t.test('the API refuses an empty permissions object', async () => {
+        // Ambiguous between "no narrowing" and "grant nothing", so it is refused rather than guessed
+        const res = await authed.post('/v1/token').send({
+            account: 'main-account',
+            description: 'smoke: empty permissions',
+            scopes: ['api'],
+            permissions: {}
+        });
+        assert.equal(res.status, 400, `expected a validation failure, got ${res.status}`);
+    });
+});
 
 test('Extracted API routes smoke test', async t => {
     await t.test('every extracted route enforces authentication (401 without a token)', async () => {

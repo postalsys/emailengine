@@ -71,6 +71,8 @@ const { matchesExpectedIdentity, pendingSetupExpectation, resolveExpectedIdentit
 const handlebars = require('handlebars');
 const AuthBearer = require('hapi-auth-bearer-token');
 const tokens = require('../lib/tokens');
+const tokenPermissions = require('../lib/token-permissions');
+const { routeGrant } = require('../lib/api-routes/permission-map');
 
 const { redis, documentsQueue } = require('../lib/db');
 const { Account } = require('../lib/account');
@@ -921,6 +923,33 @@ const init = async () => {
 
                 let error = Boom.forbidden('Unauthorized scope');
                 error.output.payload.requestedScope = scope;
+                throw error;
+            }
+
+            // Narrowing below the scope. Runs after the scope check and before the account binding,
+            // so the order is: token resolved, scope, permissions, account, restrictions.
+            //
+            // Before the account switch on purpose - that switch reads the account from the query or
+            // from a Redis membership check for the three /v1/templates special cases, and none of
+            // that should happen for a request the permissions already refuse.
+            //
+            // Only subtracts: a token with no `permissions` field takes the allowed path, which is
+            // every token issued before this shipped.
+            const permissionCheck = tokenPermissions.check({ tokenData, operation: routeGrant(request.route) });
+            if (!permissionCheck.allowed) {
+                logger.warn({
+                    msg: 'Token permissions do not allow this operation',
+                    tokenAccount: tokenData.account,
+                    tokenId: tokenData.id,
+                    account: (request.params && request.params.account) || null,
+                    reason: permissionCheck.reason,
+                    required: permissionCheck.required
+                });
+
+                let error = Boom.forbidden('Unauthorized permission');
+                // Mirrors how the scope failure above attaches requestedScope: an agent that gets a
+                // 403 needs to know WHICH grant it lacked, not just that it lacked one.
+                error.output.payload.requiredPermission = permissionCheck.required;
                 throw error;
             }
 

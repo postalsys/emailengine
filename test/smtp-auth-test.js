@@ -25,6 +25,8 @@ const session = (overrides = {}) => Object.assign({ eeAuthEnabled: true, remoteA
 let smtpToken;
 let apiScopeToken;
 let ipRestrictedToken;
+let readOnlyToken;
+let sendPermittedToken;
 let prevSmtpPassword;
 const accountKeys = [];
 
@@ -45,11 +47,28 @@ test.before(async () => {
         description: 'smtp-auth ip restricted',
         nolog: true
     });
+    // A token narrowed to reading must not be able to relay mail, even though it holds the smtp
+    // scope. This is the payoff of putting the permission check in lib/auth-token.js rather than in
+    // the HTTP strategy: the narrowing follows the credential onto the submission surfaces.
+    readOnlyToken = await tokens.provision({
+        account: ACCOUNT,
+        scopes: ['smtp'],
+        permissions: { actions: ['read'] },
+        description: 'smtp-auth read-only permissions',
+        nolog: true
+    });
+    sendPermittedToken = await tokens.provision({
+        account: ACCOUNT,
+        scopes: ['smtp'],
+        permissions: { actions: ['send'], groups: ['submit'] },
+        description: 'smtp-auth send permissions',
+        nolog: true
+    });
     await seedAccount(ACCOUNT);
 });
 
 registerRedisTeardown(redis, async () => {
-    for (const tok of [smtpToken, apiScopeToken, ipRestrictedToken]) {
+    for (const tok of [smtpToken, apiScopeToken, ipRestrictedToken, readOnlyToken, sendPermittedToken]) {
         if (tok) {
             try {
                 await tokens.delete(tok);
@@ -114,9 +133,24 @@ test('SMTP auth handler', async t => {
         }
     });
 
+    await t.test('rejects a token whose permissions do not allow sending', async () => {
+        // Holds the smtp scope, so the scope check passes and only the permission check stands
+        // between this credential and relaying mail
+        await assert.rejects(() => onAuth({ username: ACCOUNT, password: readOnlyToken }, session()), /permissions do not allow/);
+    });
+
     await t.test('accepts a valid scoped token bound to the account', async () => {
         const sess = session();
         const result = await onAuth({ username: ACCOUNT, password: smtpToken }, sess);
+        assert.deepStrictEqual(result, { user: ACCOUNT });
+        assert.ok(accountCache.has(sess));
+    });
+
+    await t.test('accepts a token whose permissions allow sending', async () => {
+        // The narrowing is an allowlist, so a token that names send/submit is not merely un-refused
+        // here - it has to be positively allowed, which is what separates this from the case above
+        const sess = session();
+        const result = await onAuth({ username: ACCOUNT, password: sendPermittedToken }, sess);
         assert.deepStrictEqual(result, { user: ACCOUNT });
         assert.ok(accountCache.has(sess));
     });
