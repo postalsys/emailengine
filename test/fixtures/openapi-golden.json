@@ -11256,6 +11256,108 @@
           }
         }
       },
+      "TokenAction": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "read": "Read data without changing anything",
+            "write": "Create or modify data",
+            "send": "Hand a message to a mail server, so it reaches real recipients",
+            "destructive": "Remove data, or discard state that cannot be recovered"
+          }
+        },
+        "enum": [
+          "read",
+          "write",
+          "send",
+          "destructive"
+        ]
+      },
+      "TokenActions": {
+        "type": "array",
+        "description": "Which kinds of operation this token may perform. Omit to allow all of them",
+        "example": [
+          "read",
+          "write"
+        ],
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "$ref": "#/components/schemas/TokenAction"
+        }
+      },
+      "TokenGroup": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "account": "Manage email accounts and their connection state",
+            "mailbox": "Create, rename, delete and list mailbox folders",
+            "message": "Read, modify, move and delete messages, including bulk actions and search",
+            "submit": "Send email, including scheduled sends and the delivery test",
+            "outbox": "Inspect and cancel queued outbound messages",
+            "export": "Bulk export an account. One call archives every folder, so this is separate from message access",
+            "template": "Manage stored email templates",
+            "blocklist": "Manage suppression lists",
+            "webhook": "Read webhook route definitions",
+            "gateway": "Manage SMTP gateways, which hold outbound SMTP credentials",
+            "events": "Subscribe to the instance-wide change stream, which covers every account",
+            "diagnostics": "Read statistics and service status",
+            "logs": "Read the per-account connection log. Entries are the raw protocol trace, so they include folder names and message subjects"
+          }
+        },
+        "enum": [
+          "account",
+          "mailbox",
+          "message",
+          "submit",
+          "outbox",
+          "export",
+          "template",
+          "blocklist",
+          "webhook",
+          "gateway",
+          "events",
+          "diagnostics",
+          "logs"
+        ]
+      },
+      "TokenGroups": {
+        "type": "array",
+        "description": "Which parts of the API this token may reach. Omit to allow all of them",
+        "example": [
+          "message",
+          "mailbox"
+        ],
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "$ref": "#/components/schemas/TokenGroup"
+        }
+      },
+      "TokenPermissions": {
+        "type": "object",
+        "description": "Restricts a token below its scope. Each axis is an allowlist that only narrows, and both apply together, so an operation must match the actions AND the groups. Endpoints that hand out credentials or change instance configuration can never be reached by a token that sets this field, whatever it lists",
+        "example": {
+          "actions": [
+            "read"
+          ],
+          "groups": [
+            "message",
+            "mailbox"
+          ]
+        },
+        "nullable": true,
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/TokenActions"
+          },
+          "groups": {
+            "$ref": "#/components/schemas/TokenGroups"
+          }
+        }
+      },
       "CreateToken": {
         "type": "object",
         "properties": {
@@ -11288,6 +11390,15 @@
           },
           "restrictions": {
             "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional time when this token stops working. Omit for a token that never expires",
+            "example": "2021-02-17T14:43:18.860Z"
           },
           "ip": {
             "type": "string",
@@ -11442,6 +11553,9 @@
           "restrictions": {
             "$ref": "#/components/schemas/TokenRestrictions"
           },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
           "created": {
             "type": "string",
             "format": "date-time",
@@ -11553,6 +11667,9 @@
           },
           "restrictions": {
             "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
           },
           "created": {
             "type": "string",
@@ -12328,7 +12445,7 @@
       "get": {
         "summary": "Get account info",
         "operationId": "getV1AccountAccount",
-        "description": "Returns stored information about the account. Passwords are not included.<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
+        "description": "Returns stored information about the account. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".<br/><br/>Quota reporting is not available for Gmail API or MS Graph accounts; the quota field is omitted for those.",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -18269,7 +18386,7 @@
       "get": {
         "summary": "Get gateway info",
         "operationId": "getV1GatewayGateway",
-        "description": "Returns stored information about the gateway. Passwords are not included.",
+        "description": "Returns stored information about the gateway. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19742,7 +19859,7 @@
       "get": {
         "summary": "List queued messages",
         "operationId": "getV1Outbox",
-        "description": "Lists messages in the Outbox",
+        "description": "Lists messages in the Outbox. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -19856,7 +19973,7 @@
       "get": {
         "summary": "Get queued message",
         "operationId": "getV1OutboxQueueid",
-        "description": "Gets a queued message in the Outbox",
+        "description": "Gets a queued message in the Outbox. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22690,7 +22807,7 @@
       "get": {
         "summary": "List webhook routes",
         "operationId": "getV1Webhookroutes",
-        "description": "List custom webhook routes",
+        "description": "List custom webhook routes. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
         "parameters": [
           {
             "name": "x-ee-timeout",
@@ -22804,7 +22921,7 @@
       "get": {
         "summary": "Get webhook route information",
         "operationId": "getV1WebhookroutesWebhookrouteWebhookroute",
-        "description": "Retrieve webhook route content and information",
+        "description": "Retrieve webhook route content and information. Credentials are masked: stored passwords, the password in any proxy or webhook URL, and the values of custom webhook headers all read back as \"******\".",
         "parameters": [
           {
             "name": "x-ee-timeout",
