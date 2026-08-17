@@ -6,7 +6,10 @@
 // exists so a bull-board major bump - 9.0.0 redesigned the UI around design tokens - cannot land
 // without something asserting the page still renders inside our admin session.
 //
-// Shares the Playwright webServer and Redis db 14 with the other specs.
+// Shares the Playwright webServer and Redis db 14 with the other specs. The filename has to sort
+// after happy-path.spec.js: files run alphabetically with one worker, and happy-path asserts
+// fresh-instance behaviour (it sets the FIRST admin password, so its form has no current-password
+// field). Anything that bootstraps the instance ahead of it breaks that test.
 
 const os = require('os');
 const path = require('path');
