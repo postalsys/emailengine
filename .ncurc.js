@@ -1,9 +1,16 @@
 module.exports = {
     upgrade: true,
+    // Node 20 is a hard runtime floor, not a preference. The DigitalOcean one-click images run
+    // EmailEngine on Node 20 and ship an upgrade script for EmailEngine but none for Node, so those
+    // installs keep self-updating on a runtime that never moves; raising the floor breaks them on
+    // their next upgrade. Node 20 being EOL upstream, and CI and the pkg targets being on Node 24,
+    // do not lift this. Treat "needs Node >20" as a permanent reject.
+    //
     // Packages capped inside their current major: the next major is ESM-only (this codebase is
-    // CommonJS and is bundled into a binary with pkg) or it breaks a peer dependency. Using 'minor'
-    // instead of a blanket reject so these still receive security/patch updates within the safe
-    // major instead of being frozen at one exact version. Verified against Node 20 (Docker) 2026-06-17.
+    // CommonJS and is bundled into a binary with pkg), needs a Node newer than the floor above, or
+    // is a major we are deliberately soaking. Using 'minor' instead of a blanket reject so these
+    // still receive security/patch updates within the safe major instead of being frozen at one
+    // exact version. Verified against Node 20 (Docker) 2026-06-17.
     target: name =>
         ['nanoid', 'ical.js', 'gettext-parser', 'xgettext-template', 'chai', 'undici', 'marked', 'bullmq', 'ioredis'].includes(name) ? 'minor' : 'latest',
     //   nanoid            - 4.x dropped the CommonJS require export (ESM-only)
@@ -11,15 +18,21 @@ module.exports = {
     //   gettext-parser    - 8.x is ESM-only
     //   xgettext-template - 6.x is ESM-only (translation build tool)
     //   chai              - 5.x is ESM-only (only used by the vendored imap-core tests)
-    //   undici            - 8.x requires Node >=22.19 and crashes at require() on Node 20; EmailEngine supports Node 20+
+    //   undici            - 8.x requires Node >=22.19 and crashes at require() on Node 20. Permanent while the
+    //                       Node 20 floor above stands.
     //   marked            - 16.x dropped the CommonJS build (ESM-only, needs require(esm)/Node >=20.19); 15.x is the
     //                       last require()-compatible line. 15.0.12 verified on Node 20-24 and in a yao/pkg node24 build.
-    //   bullmq            - 6.x drops ioredis entirely, and @bull-board/api still peer-requires bullmq ^5.79.2, so the
-    //                       install fails outright (ERESOLVE) on the queue browser we mount at /admin/bull-board.
-    //                       Lift when bull-board ships bullmq 6 support.
-    //   ioredis           - 6.x is held back BY the bullmq cap above, not on its own merits. lib/db.js creates the
-    //                       client and hands it to bullmq as `connection` for all four queues, while bullmq 5 pins
-    //                       ioredis 5.11.1 as a direct dependency - so bumping ours to 6 would drive bullmq 5's
+    //                       Permanent while the Node 20 floor above stands.
+    //   bullmq            - 6.x is installable as of 2026-08: @bull-board/api 8.6.1 peer-accepts
+    //                       `^5.79.2 || ^6.0.0`, and 6.x demotes ioredis to an optional peer (>=5.0.0) rather than
+    //                       dropping it, which is already how lib/db.js works (it builds the client and passes it
+    //                       as `connection`). Held only to soak the major: 6.0.0 shipped 2026-07-30 and bullmq runs
+    //                       every job in EmailEngine. The bump needs one code change - 6.x removes the `paused` job
+    //                       state and counts paused jobs as `waiting`, so `jobStates` in lib/outbox.js must drop
+    //                       'paused'. Do not make that edit ahead of the bump: under 5.x it would miss jobs while
+    //                       the queue is paused. Upside is cron-parser 4.9.0 (deprecated) -> 5.x, which drops luxon.
+    //   ioredis           - 6.x is held back BY the bullmq cap above, not on its own merits. bullmq 5 pins
+    //                       ioredis 5.11.1 as a direct dependency, so bumping ours to 6 would drive bullmq 5's
     //                       internals with a client it was not written against. These two move together.
     //
     // joi used to be capped here because hapi-swagger peer-required 17.x. That dependency is gone
