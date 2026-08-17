@@ -9587,7 +9587,7 @@
           },
           "tokenAuditLog": {
             "type": "boolean",
-            "description": "Record which requests each access token makes, readable at GET /v1/token/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
             "example": false,
             "nullable": true
           },
@@ -10251,7 +10251,7 @@
           },
           "tokenAuditLog": {
             "type": "boolean",
-            "description": "Record which requests each access token makes, readable at GET /v1/token/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
+            "description": "Record which requests each access token makes, readable at GET /v1/tokens/{token}/log. Disabled by default, and entries only exist from the point it is enabled",
             "example": false
           },
           "deliveryAttempts": {
@@ -11156,32 +11156,12 @@
           "id"
         ]
       },
-      "TokenScope": {
-        "type": "string",
-        "x-meta": {
-          "enumDescriptions": {
-            "api": "Call the REST API",
-            "smtp": "Authenticate against the built-in SMTP submission server",
-            "imap-proxy": "Authenticate against the built-in IMAP proxy"
-          }
-        },
-        "enum": [
-          "api",
-          "smtp",
-          "imap-proxy"
-        ]
-      },
-      "Scopes": {
+      "TokenScopes": {
         "type": "array",
-        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
-        "default": [
-          "api"
-        ],
-        "x-constraint": {
-          "single": true
-        },
+        "description": "Scopes this token is valid for",
         "items": {
-          "$ref": "#/components/schemas/TokenScope"
+          "type": "string",
+          "example": "api"
         }
       },
       "ReferrerAllowlist": {
@@ -11291,6 +11271,7 @@
           "read",
           "write"
         ],
+        "minItems": 1,
         "x-constraint": {
           "single": true
         },
@@ -11305,7 +11286,7 @@
             "account": "Manage email accounts and their connection state",
             "mailbox": "Create, rename, delete and list mailbox folders",
             "message": "Read, modify, move and delete messages, including bulk actions and search",
-            "submit": "Send email, including scheduled sends and the delivery test",
+            "submit": "Send email, including scheduled sends and the delivery test. A send may reference a stored message to forward it, so this also reads the message it names",
             "outbox": "Inspect and cancel queued outbound messages",
             "export": "Bulk export an account. One call archives every folder, so this is separate from message access",
             "template": "Manage stored email templates",
@@ -11340,6 +11321,7 @@
           "message",
           "mailbox"
         ],
+        "minItems": 1,
         "x-constraint": {
           "single": true
         },
@@ -11369,12 +11351,212 @@
           }
         }
       },
+      "TokenAccess": {
+        "type": "object",
+        "description": "Token usage information",
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last time this token was used. Null if the token has never been used",
+            "example": "2021-02-17T13:43:18.860Z",
+            "nullable": true
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the last request that used this token. Null if the address was not available",
+            "example": "127.0.0.1",
+            "nullable": true,
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          }
+        }
+      },
+      "TokensItem": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account this token is bound to, or null for an instance-wide token",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "IP address of the client that created the token",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/TokenScopes"
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token was created",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token stops working. Absent for tokens that never expire",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "access": {
+            "$ref": "#/components/schemas/TokenAccess"
+          },
+          "id": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        }
+      },
+      "TokensEntries": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TokensItem"
+        }
+      },
+      "TokensResponse": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "The account filter that was applied, or null when every token was listed",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many tokens match",
+            "example": 12
+          },
+          "page": {
+            "type": "integer",
+            "description": "Current page (zero indexed)",
+            "example": 0
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Total page count",
+            "example": 1
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/TokensEntries"
+          }
+        }
+      },
+      "TokenScope": {
+        "type": "string",
+        "x-meta": {
+          "enumDescriptions": {
+            "api": "Call the REST API",
+            "smtp": "Authenticate against the built-in SMTP submission server",
+            "imap-proxy": "Authenticate against the built-in IMAP proxy"
+          }
+        },
+        "enum": [
+          "api",
+          "smtp",
+          "imap-proxy"
+        ]
+      },
+      "Scopes": {
+        "type": "array",
+        "description": "Token permission scopes: \"api\" for REST API access, \"smtp\" for SMTP submission, \"imap-proxy\" for IMAP proxy authentication",
+        "default": [
+          "api"
+        ],
+        "x-constraint": {
+          "single": true
+        },
+        "items": {
+          "$ref": "#/components/schemas/TokenScope"
+        }
+      },
       "CreateToken": {
         "type": "object",
         "properties": {
           "account": {
             "type": "string",
-            "description": "Unique identifier for the email account",
+            "description": "Bind the token to one account. Omit for an instance-wide token, which then has to set `permissions`",
             "example": "user123",
             "maxLength": 256,
             "x-convert": {
@@ -11430,7 +11612,6 @@
           }
         },
         "required": [
-          "account",
           "description",
           "scopes"
         ]
@@ -11440,8 +11621,22 @@
         "properties": {
           "token": {
             "type": "string",
-            "description": "Access token",
+            "description": "The access token. This is the only time it is returned - store it now",
             "example": "123456",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Identifier for this token, as reported by the token listings",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
             "x-constraint": {
               "length": 64
             },
@@ -11454,8 +11649,111 @@
           }
         },
         "required": [
-          "token"
+          "token",
+          "id"
         ]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Account this token is bound to, or null for an instance-wide token",
+            "example": "user123",
+            "nullable": true,
+            "maxLength": 256,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Token description",
+            "example": "Token description",
+            "maxLength": 1024,
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "metadata": {
+            "type": "string",
+            "description": "Related metadata in JSON format",
+            "example": "{\"example\": \"value\"}",
+            "maxLength": 1048576
+          },
+          "ip": {
+            "type": "string",
+            "description": "IP address of the requester",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "remoteAddress": {
+            "type": "string",
+            "description": "IP address of the client that created the token",
+            "example": "127.0.0.1",
+            "x-format": {
+              "ip": {
+                "cidr": "forbidden",
+                "version": [
+                  "ipv4",
+                  "ipv6"
+                ]
+              }
+            },
+            "x-convert": {
+              "trim": true
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/TokenScopes"
+          },
+          "restrictions": {
+            "$ref": "#/components/schemas/TokenRestrictions"
+          },
+          "permissions": {
+            "$ref": "#/components/schemas/TokenPermissions"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token was created",
+            "example": "2021-02-17T13:43:18.860Z"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The time this token stops working. Absent for tokens that never expire",
+            "example": "2021-02-17T14:43:18.860Z"
+          },
+          "access": {
+            "$ref": "#/components/schemas/TokenAccess"
+          },
+          "id": {
+            "type": "string",
+            "description": "Token identifier (SHA-256 hash of the token)",
+            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
+            "x-constraint": {
+              "length": 64
+            },
+            "x-format": {
+              "hex": {
+                "byteAligned": false,
+                "prefix": false
+              }
+            }
+          }
+        }
       },
       "DeleteTokenRequestResponse": {
         "type": "object",
@@ -11588,269 +11886,6 @@
           },
           "entries": {
             "$ref": "#/components/schemas/TokenLogEntries"
-          }
-        }
-      },
-      "TokenScopes": {
-        "type": "array",
-        "description": "Scopes this token is valid for",
-        "items": {
-          "type": "string",
-          "example": "api"
-        }
-      },
-      "TokenAccess": {
-        "type": "object",
-        "description": "Token usage information",
-        "properties": {
-          "time": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Last time this token was used. Null if the token has never been used",
-            "example": "2021-02-17T13:43:18.860Z",
-            "nullable": true
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the last request that used this token. Null if the address was not available",
-            "example": "127.0.0.1",
-            "nullable": true,
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          }
-        }
-      },
-      "RootTokensItem": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "Token description",
-            "example": "Token description",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "metadata": {
-            "type": "string",
-            "description": "Related metadata in JSON format",
-            "example": "{\"example\": \"value\"}",
-            "maxLength": 1048576
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the requester",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "remoteAddress": {
-            "type": "string",
-            "description": "IP address of the client that created the token",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "scopes": {
-            "$ref": "#/components/schemas/TokenScopes"
-          },
-          "restrictions": {
-            "$ref": "#/components/schemas/TokenRestrictions"
-          },
-          "permissions": {
-            "$ref": "#/components/schemas/TokenPermissions"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token was created",
-            "example": "2021-02-17T13:43:18.860Z"
-          },
-          "expires": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token stops working. Absent for tokens that never expire",
-            "example": "2021-02-17T14:43:18.860Z"
-          },
-          "access": {
-            "$ref": "#/components/schemas/TokenAccess"
-          },
-          "id": {
-            "type": "string",
-            "description": "Token identifier (SHA-256 hash of the token)",
-            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          }
-        }
-      },
-      "RootTokensEntries": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/RootTokensItem"
-        }
-      },
-      "RootTokensResponse": {
-        "type": "object",
-        "properties": {
-          "tokens": {
-            "$ref": "#/components/schemas/RootTokensEntries"
-          }
-        }
-      },
-      "AccountTokensItem": {
-        "type": "object",
-        "properties": {
-          "account": {
-            "type": "string",
-            "description": "Unique identifier for the email account",
-            "example": "user123",
-            "maxLength": 256,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "description": {
-            "type": "string",
-            "description": "Token description",
-            "example": "Token description",
-            "maxLength": 1024,
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "metadata": {
-            "type": "string",
-            "description": "Related metadata in JSON format",
-            "example": "{\"example\": \"value\"}",
-            "maxLength": 1048576
-          },
-          "ip": {
-            "type": "string",
-            "description": "IP address of the requester",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "remoteAddress": {
-            "type": "string",
-            "description": "IP address of the client that created the token",
-            "example": "127.0.0.1",
-            "x-format": {
-              "ip": {
-                "cidr": "forbidden",
-                "version": [
-                  "ipv4",
-                  "ipv6"
-                ]
-              }
-            },
-            "x-convert": {
-              "trim": true
-            }
-          },
-          "scopes": {
-            "$ref": "#/components/schemas/TokenScopes"
-          },
-          "restrictions": {
-            "$ref": "#/components/schemas/TokenRestrictions"
-          },
-          "permissions": {
-            "$ref": "#/components/schemas/TokenPermissions"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token was created",
-            "example": "2021-02-17T13:43:18.860Z"
-          },
-          "expires": {
-            "type": "string",
-            "format": "date-time",
-            "description": "The time this token stops working. Absent for tokens that never expire",
-            "example": "2021-02-17T14:43:18.860Z"
-          },
-          "access": {
-            "$ref": "#/components/schemas/TokenAccess"
-          },
-          "id": {
-            "type": "string",
-            "description": "Token identifier (SHA-256 hash of the token)",
-            "example": "1bc12baf7f0d5e51fe0a4e0eda06e1be5b8d6cc2c66b95dc0fbe4d2e9f5d5e1a",
-            "x-constraint": {
-              "length": 64
-            },
-            "x-format": {
-              "hex": {
-                "byteAligned": false,
-                "prefix": false
-              }
-            }
-          }
-        },
-        "required": [
-          "account"
-        ]
-      },
-      "AccountTokensEntries": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/AccountTokensItem"
-        }
-      },
-      "AccountsTokensResponse": {
-        "type": "object",
-        "properties": {
-          "tokens": {
-            "$ref": "#/components/schemas/AccountTokensEntries"
           }
         }
       },
@@ -18514,7 +18549,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "gateway"
+        "x-ee-group": "admin"
       }
     },
     "/v1/gateway/{gateway}": {
@@ -18852,7 +18887,7 @@
           }
         },
         "x-ee-action": "write",
-        "x-ee-group": "gateway"
+        "x-ee-group": "admin"
       }
     },
     "/v1/gateways": {
@@ -22327,10 +22362,140 @@
         "x-ee-group": "template"
       }
     },
-    "/v1/token": {
+    "/v1/tokens": {
+      "get": {
+        "summary": "List access tokens",
+        "operationId": "getV1Tokens",
+        "description": "Lists access tokens. Returns every token on the instance unless narrowed with the account argument. Token values are never returned - only the id each token is listed under.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "Page number (zero indexed, so use 0 for first page)",
+              "example": 0,
+              "default": 0,
+              "minimum": 0,
+              "maximum": 1048576
+            },
+            "description": "Page number (zero indexed, so use 0 for first page)"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "description": "How many entries per page",
+              "example": 20,
+              "default": 20,
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "description": "How many entries per page"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Filter by description, id or account",
+              "example": "agent",
+              "maxLength": 1024,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Filter by description, id or account"
+          },
+          {
+            "name": "account",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "description": "Only list tokens bound to this account. Omit to list every token on the instance",
+              "example": "user123",
+              "maxLength": 256,
+              "x-convert": {
+                "trim": true
+              }
+            },
+            "description": "Only list tokens bound to this account. Omit to list every token on the instance"
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the root access tokens. Token values are never returned after creation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
+      },
       "post": {
         "summary": "Provision an access token",
-        "operationId": "postV1Token",
+        "operationId": "postV1Tokens",
         "description": "Provisions a new access token for an account",
         "parameters": [
           {
@@ -22434,10 +22599,126 @@
         "x-ee-group": "admin"
       }
     },
-    "/v1/token/{token}": {
+    "/v1/tokens/{token}": {
+      "get": {
+        "summary": "Get token info",
+        "operationId": "getV1TokensToken",
+        "description": "Returns stored information about a single access token. The token value itself is never returned - it is only shown once, when the token is created.",
+        "parameters": [
+          {
+            "name": "x-ee-timeout",
+            "in": "header",
+            "schema": {
+              "type": "integer",
+              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
+              "example": 30000,
+              "minimum": 0,
+              "maximum": 7200000
+            },
+            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
+          },
+          {
+            "name": "token",
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "description": "The token id, as reported by POST /v1/tokens and the token listing",
+              "example": "123456",
+              "x-constraint": {
+                "length": 64
+              },
+              "x-format": {
+                "hex": {
+                  "byteAligned": false,
+                  "prefix": false
+                }
+              }
+            },
+            "description": "The token id, as reported by POST /v1/tokens and the token listing",
+            "required": true
+          }
+        ],
+        "tags": [
+          "Access Tokens"
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the stored token record. The token value is not included.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found - the requested entity (account, message, mailbox, etc.) does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded - too many requests were made with this access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error - an unexpected error occurred while processing the request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-ee-action": "read",
+        "x-ee-group": "admin"
+      },
       "delete": {
         "summary": "Remove a token",
-        "operationId": "deleteV1TokenToken",
+        "operationId": "deleteV1TokensToken",
         "description": "Delete an access token",
         "parameters": [
           {
@@ -22457,7 +22738,7 @@
             "in": "path",
             "schema": {
               "type": "string",
-              "description": "Access token",
+              "description": "The access token value, or the token id from a listing",
               "example": "123456",
               "x-constraint": {
                 "length": 64
@@ -22469,7 +22750,7 @@
                 }
               }
             },
-            "description": "Access token",
+            "description": "The access token value, or the token id from a listing",
             "required": true
           }
         ],
@@ -22543,10 +22824,10 @@
         "x-ee-group": "admin"
       }
     },
-    "/v1/token/{token}/log": {
+    "/v1/tokens/{token}/log": {
       "get": {
         "summary": "Get token audit log",
-        "operationId": "getV1TokenTokenLog",
+        "operationId": "getV1TokensTokenLog",
         "description": "Lists recent requests made with an access token, newest first. Requires the tokenAuditLog setting to be enabled; it is off by default, and entries only exist from the point it was switched on.",
         "parameters": [
           {
@@ -22566,7 +22847,7 @@
             "in": "path",
             "schema": {
               "type": "string",
-              "description": "Access token, or the token id from a token listing",
+              "description": "The token id, as reported by POST /v1/tokens and the token listing",
               "example": "123456",
               "x-constraint": {
                 "length": 64
@@ -22578,7 +22859,7 @@
                 }
               }
             },
-            "description": "Access token, or the token id from a token listing",
+            "description": "The token id, as reported by POST /v1/tokens and the token listing",
             "required": true
           },
           {
@@ -22589,7 +22870,8 @@
               "description": "Page number (zero indexed, so use 0 for first page)",
               "example": 0,
               "default": 0,
-              "minimum": 0
+              "minimum": 0,
+              "maximum": 1048576
             },
             "description": "Page number (zero indexed, so use 0 for first page)"
           },
@@ -22598,13 +22880,13 @@
             "in": "query",
             "schema": {
               "type": "integer",
-              "description": "How many entries to return per page",
+              "description": "How many entries per page",
               "example": 20,
               "default": 20,
               "minimum": 1,
               "maximum": 200
             },
-            "description": "How many entries to return per page"
+            "description": "How many entries per page"
           }
         ],
         "tags": [
@@ -22683,187 +22965,6 @@
           }
         },
         "x-ee-impact": "readonly",
-        "x-ee-action": "read",
-        "x-ee-group": "admin"
-      }
-    },
-    "/v1/tokens": {
-      "get": {
-        "summary": "List root tokens",
-        "operationId": "getV1Tokens",
-        "description": "Lists access tokens registered for root access",
-        "parameters": [
-          {
-            "name": "x-ee-timeout",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
-              "example": 30000,
-              "minimum": 0,
-              "maximum": 7200000
-            },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
-          }
-        ],
-        "tags": [
-          "Access Tokens"
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the root access tokens. Token values are never returned after creation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RootTokensResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded - too many requests were made with this access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RateLimitErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - an unexpected error occurred while processing the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "x-ee-action": "read",
-        "x-ee-group": "admin"
-      }
-    },
-    "/v1/tokens/account/{account}": {
-      "get": {
-        "summary": "List account tokens",
-        "operationId": "getV1TokensAccountAccount",
-        "description": "Lists access tokens registered for an account",
-        "parameters": [
-          {
-            "name": "x-ee-timeout",
-            "in": "header",
-            "schema": {
-              "type": "integer",
-              "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)",
-              "example": 30000,
-              "minimum": 0,
-              "maximum": 7200000
-            },
-            "description": "Request timeout in milliseconds (overrides EENGINE_TIMEOUT environment variable)"
-          },
-          {
-            "name": "account",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "description": "Unique identifier for the email account",
-              "example": "user123",
-              "maxLength": 256,
-              "x-convert": {
-                "trim": true
-              }
-            },
-            "description": "Unique identifier for the email account",
-            "required": true
-          }
-        ],
-        "tags": [
-          "Access Tokens"
-        ],
-        "responses": {
-          "200": {
-            "description": "Returns the access tokens scoped to the account.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountsTokensResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input - the path parameters, query arguments, or request payload did not pass validation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ValidationErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Authentication failed - the access token is missing, invalid, or was not accepted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthenticationErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access denied - the access token does not grant permission for this operation (token scope, account, or IP address restriction)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccessDeniedErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded - too many requests were made with this access token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RateLimitErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error - an unexpected error occurred while processing the request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InternalErrorResponse"
-                }
-              }
-            }
-          }
-        },
         "x-ee-action": "read",
         "x-ee-group": "admin"
       }

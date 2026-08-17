@@ -40,11 +40,11 @@ const authed = supertest.agent(baseUrl).auth(accessToken, { type: 'bearer' });
 // request must be rejected with 401 before any handler logic runs.
 const AUTH_REQUIRED_ROUTES = [
     // token-routes.js
-    ['post', '/v1/token'],
-    ['delete', `/v1/token/${'a'.repeat(64)}`],
-    ['get', `/v1/token/${'a'.repeat(64)}/log`],
+    ['post', '/v1/tokens'],
+    ['delete', `/v1/tokens/${'a'.repeat(64)}`],
+    ['get', `/v1/tokens/${'a'.repeat(64)}`],
+    ['get', `/v1/tokens/${'a'.repeat(64)}/log`],
     ['get', '/v1/tokens'],
-    ['get', '/v1/tokens/account/main-account'],
 
     // mailbox-routes.js
     ['get', '/v1/account/main-account/mailboxes'],
@@ -130,8 +130,8 @@ const LIST_ENDPOINTS_OK = [
     '/v1/stats'
 ];
 
-// Provisioned directly rather than through POST /v1/token, which needs an existing account. These
-// write to the same Redis the shared test server reads.
+// Provisioned directly rather than through POST /v1/token so these fixtures do not depend on the
+// route under test in the same file. They write to the same Redis the shared test server reads.
 const narrowedTokens = [];
 async function narrowed(permissions, description) {
     const token = await tokens.provision({ scopes: ['api'], permissions, description, nolog: true });
@@ -196,7 +196,7 @@ test('narrowed access tokens', async t => {
     await t.test('the API refuses to issue a token naming the admin group', async () => {
         // Belt and braces with the request-time deny above: the schema rejects it at issue time, so
         // the record never exists in the first place
-        const res = await authed.post('/v1/token').send({
+        const res = await authed.post('/v1/tokens').send({
             account: 'main-account',
             description: 'smoke: should not be issued',
             scopes: ['api'],
@@ -205,9 +205,172 @@ test('narrowed access tokens', async t => {
         assert.equal(res.status, 400, `expected a validation failure, got ${res.status}`);
     });
 
+    await t.test('mints an instance-wide token when it is narrowed', async () => {
+        // The route has no {account} parameter and sits in the never-grantable admin group, so an
+        // account-bound token is refused by the binding check and a narrowed one by the group check.
+        // The caller is therefore always a full-privilege root token, and anything it mints here is
+        // strictly narrower than what it already holds.
+        const res = await authed.post('/v1/tokens').send({
+            description: 'smoke: instance-wide narrowed',
+            scopes: ['api'],
+            permissions: { actions: ['read'], groups: ['diagnostics'] }
+        });
+        assert.equal(res.status, 200, `expected the token to be issued, got ${res.status} ${JSON.stringify(res.body)}`);
+        narrowedTokens.push(res.body.token);
+
+        const agent = supertest.agent(baseUrl).auth(res.body.token, { type: 'bearer' });
+
+        // Instance-wide: reaches a route with no account parameter, which an account-bound token
+        // cannot do at all
+        assert.equal((await agent.get('/v1/stats')).status, 200);
+
+        // Still narrowed, on both axes
+        assert.equal((await agent.get('/v1/blocklists')).status, 403);
+        assert.equal((await agent.get('/v1/settings?webhooks=true')).status, 403);
+    });
+
+    await t.test('returns an id that identifies the new token in the listings', async () => {
+        // The value is never shown again and the listings report only the id, so without this a
+        // caller could not say which of its own tokens it had just created.
+        const description = `smoke: id round trip ${Date.now()}`;
+        const res = await authed.post('/v1/tokens').send({
+            description,
+            scopes: ['api'],
+            permissions: { actions: ['read'], groups: ['diagnostics'] }
+        });
+        assert.equal(res.status, 200);
+        narrowedTokens.push(res.body.token);
+
+        assert.match(res.body.id, /^[0-9a-f]{64}$/);
+        // The id the hash of the value, not a second random string
+        assert.equal(res.body.id, crypto.createHash('sha256').update(Buffer.from(res.body.token, 'hex')).digest('hex'));
+
+        const listing = await authed.get('/v1/tokens');
+        const listed = listing.body.tokens.find(entry => entry.id === res.body.id);
+        assert.ok(listed, 'the returned id does not appear in the token listing');
+        assert.equal(listed.description, description, 'the id resolves to a different token than the one created');
+    });
+
+    await t.test('fetches one token by id, without ever returning its value', async () => {
+        // Previously the only way to see a token's permissions or expiry was to list every token and
+        // filter client-side - and the listing was capped at 1000 with no way to page past it.
+        const description = `smoke: fetch one ${Date.now()}`;
+        const created = await authed.post('/v1/tokens').send({
+            description,
+            scopes: ['api'],
+            permissions: { actions: ['read'], groups: ['diagnostics'] }
+        });
+        assert.equal(created.status, 200);
+        narrowedTokens.push(created.body.token);
+
+        // The id from the create response addresses the record directly
+        const byId = await authed.get(`/v1/tokens/${created.body.id}`);
+        assert.equal(byId.status, 200, `expected the token record, got ${byId.status}`);
+        assert.equal(byId.body.description, description);
+        assert.deepEqual(byId.body.permissions, { actions: ['read'], groups: ['diagnostics'] });
+        assert.equal(byId.body.account, null, 'an instance-wide token should report a null account');
+
+        // The value is shown once, at creation, and never again
+        assert.ok(!JSON.stringify(byId.body).includes(created.body.token), 'the token value came back from the getter');
+
+        // The read routes take the id ONLY. A token value in a URL path is written to the access log
+        // and to any proxy in front of it, and the create response returns the id, so there is no
+        // case that needs the value here. DELETE still accepts either - it predates this and the
+        // value may be all a caller kept.
+        assert.equal((await authed.get(`/v1/tokens/${created.body.token}`)).status, 404);
+
+        assert.equal((await authed.get(`/v1/tokens/${'a'.repeat(64)}`)).status, 404);
+    });
+
+    await t.test('lists every token on the instance, and narrows to one account', async () => {
+        // "Which credentials exist here" used to need one request per account: root tokens and each
+        // account's tokens sat behind separate endpoints with no union.
+        const bound = await authed.post('/v1/tokens').send({
+            account: 'main-account',
+            description: `smoke: bound ${Date.now()}`,
+            scopes: ['api']
+        });
+        assert.equal(bound.status, 200, `could not create an account-bound token: ${JSON.stringify(bound.body)}`);
+        narrowedTokens.push(bound.body.token);
+
+        const all = await authed.get('/v1/tokens?pageSize=1000');
+        assert.ok(
+            all.body.tokens.some(entry => entry.id === bound.body.id),
+            'an account-bound token is missing from the instance-wide listing'
+        );
+        assert.ok(
+            all.body.tokens.some(entry => entry.account === null),
+            'no instance-wide token in the listing'
+        );
+
+        // Every item carries the account, so a client has one shape rather than one per listing
+        assert.ok(all.body.tokens.every(entry => Object.hasOwn(entry, 'account')));
+
+        const scoped = await authed.get('/v1/tokens?account=main-account&pageSize=1000');
+        assert.ok(scoped.body.tokens.length >= 1);
+        assert.ok(
+            scoped.body.tokens.every(entry => entry.account === 'main-account'),
+            'the account filter returned tokens bound elsewhere'
+        );
+        assert.ok(scoped.body.total <= all.body.total);
+    });
+
+    await t.test('pages and filters the token listing', async () => {
+        // The routes used to hardcode a 1000-entry cap with a TODO, and returned no total - so a
+        // caller could not tell a complete listing from a truncated one.
+        const listing = await authed.get('/v1/tokens?pageSize=1');
+        assert.equal(listing.status, 200);
+        assert.equal(listing.body.tokens.length, 1, 'pageSize was ignored');
+        assert.ok(listing.body.total >= 1, 'no total to page against');
+        assert.ok(listing.body.pages >= 1);
+
+        const description = `smoke: filter target ${Date.now()}`;
+        const created = await authed.post('/v1/tokens').send({
+            description,
+            scopes: ['api'],
+            permissions: { actions: ['read'], groups: ['diagnostics'] }
+        });
+        narrowedTokens.push(created.body.token);
+
+        const filtered = await authed.get(`/v1/tokens?query=${encodeURIComponent(description)}`);
+        assert.equal(filtered.body.total, 1, 'the query did not narrow the listing');
+        assert.equal(filtered.body.tokens[0].id, created.body.id);
+    });
+
+    await t.test('refuses an instance-wide token that is not narrowed', async () => {
+        // Without an account binding and without permissions there is nothing limiting the token at
+        // all, so the API declines to mint one. That shape is still reachable deliberately, through
+        // the admin UI or EENGINE_PREPARED_TOKEN.
+        const res = await authed.post('/v1/tokens').send({
+            description: 'smoke: instance-wide unnarrowed',
+            scopes: ['api']
+        });
+        assert.equal(res.status, 400, `expected a validation failure, got ${res.status}`);
+
+        // An explicit null has to be refused too. joi's required() is a presence check and the schema
+        // allows null so the admin form can post "not narrowed", so `permissions: null` - which any
+        // template rendering an unset variable produces - satisfied required() and minted a full
+        // instance-wide token.
+        const explicitNull = await authed.post('/v1/tokens').send({
+            description: 'smoke: instance-wide null permissions',
+            scopes: ['api'],
+            permissions: null
+        });
+        assert.equal(explicitNull.status, 400, `permissions: null must not mint an unnarrowed instance-wide token, got ${explicitNull.status}`);
+
+        // An axis that lists nothing grants nothing, so it is refused rather than issued as a token
+        // that authenticates and then denies every request
+        const emptyAxis = await authed.post('/v1/tokens').send({
+            description: 'smoke: empty axis',
+            scopes: ['api'],
+            permissions: { actions: [] }
+        });
+        assert.equal(emptyAxis.status, 400, `expected an empty axis to be refused, got ${emptyAxis.status}`);
+    });
+
     await t.test('the API refuses an empty permissions object', async () => {
         // Ambiguous between "no narrowing" and "grant nothing", so it is refused rather than guessed
-        const res = await authed.post('/v1/token').send({
+        const res = await authed.post('/v1/tokens').send({
             account: 'main-account',
             description: 'smoke: empty permissions',
             scopes: ['api'],

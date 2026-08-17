@@ -61,7 +61,7 @@ const GOLDEN_ROUTES = [
     'DELETE /v1/outbox/{queueId}',
     'DELETE /v1/templates/account/{account}',
     'DELETE /v1/templates/template/{template}',
-    'DELETE /v1/token/{token}',
+    'DELETE /v1/tokens/{token}',
     'GET /v1/account/{account}',
     'GET /v1/account/{account}/attachment/{attachment}',
     'GET /v1/account/{account}/export/{exportId}',
@@ -94,9 +94,9 @@ const GOLDEN_ROUTES = [
     'GET /v1/stats',
     'GET /v1/templates',
     'GET /v1/templates/template/{template}',
-    'GET /v1/token/{token}/log',
     'GET /v1/tokens',
-    'GET /v1/tokens/account/{account}',
+    'GET /v1/tokens/{token}',
+    'GET /v1/tokens/{token}/log',
     'GET /v1/webhookRoutes',
     'GET /v1/webhookRoutes/webhookRoute/{webhookRoute}',
     'POST /admin/config/document-store/chat/test',
@@ -117,7 +117,7 @@ const GOLDEN_ROUTES = [
     'POST /v1/oauth2/{app}/verify',
     'POST /v1/settings',
     'POST /v1/templates/template',
-    'POST /v1/token',
+    'POST /v1/tokens',
     'POST /v1/unified/search',
     'POST /v1/verifyAccount',
     'PUT /v1/account/{account}',
@@ -222,14 +222,20 @@ test('API route table and authentication', async t => {
         // key behind silently drops the new one out of every grant. The map keys are in the same
         // `METHOD /path` form as `route.route` and GOLDEN_ROUTES, so the two listings of these
         // routes can be diffed directly.
+        // Routes that authenticate with an API token but are registered outside
+        // lib/api-routes/index.js, so captureApiRoutes() cannot see them. Kept to a named list
+        // rather than a pattern: each one is a route this guardrail genuinely does not cover, and
+        // that should be an explicit decision rather than a wildcard.
+        const UNGUARDED_ROUTES = new Set(['GET /metrics']);
+
         const registered = new Set(v1Routes.map(route => route.route));
-        const stale = [...ROUTE_GROUPS.keys()].filter(key => !registered.has(key));
+        const stale = [...ROUTE_GROUPS.keys()].filter(key => !registered.has(key) && !UNGUARDED_ROUTES.has(key));
 
         assert.deepEqual(stale, [], `lib/api-routes/permission-map.js maps routes that are not registered: ${JSON.stringify(stale)}`);
 
         // Guards the inversion of GROUP_ROUTES: a route listed under two groups would collapse to
         // one Map entry, and last-write-wins would silently pick the group.
-        assert.equal(ROUTE_GROUPS.size, v1Routes.length, 'the route map and the /v1 route table differ in size');
+        assert.equal(ROUTE_GROUPS.size, v1Routes.length + UNGUARDED_ROUTES.size, 'the route map and the /v1 route table differ in size');
     });
 
     await t.test('the group vocabulary is frozen', () => {
@@ -301,14 +307,19 @@ test('API route table and authentication', async t => {
         assert.ok(v1Routes.filter(route => sensitive.test(route.path)).length >= 18);
     });
 
-    await t.test('editing or creating an account is never grantable', () => {
-        // Not obvious from the route names, so it is asserted rather than left to the map comment.
-        // `imap`/`smtp`/`oauth2` accept `partial: true` and Account.persistUpdate() merges the STORED
-        // object over the payload, so a request that changes only `host` keeps `auth.pass` and the
-        // reconnect gate then authenticates to the new host with it. The same route retargets the
-        // per-account webhook. Either would let a token narrowed to `account` exfiltrate what the
-        // narrowing was supposed to protect.
-        for (const route of ['POST /v1/account', 'PUT /v1/account/{account}']) {
+    await t.test('a write that can redirect where stored credentials are sent is never grantable', () => {
+        // None of these names a credential in its payload, which is what makes them easy to misfile.
+        // Both records keep their stored password across a partial update - Account.persistUpdate()
+        // merges the STORED imap/smtp/oauth2 object over the payload, and Gateway.update() hmsets
+        // only the keys it was given - so a request that changes nothing but `host` is enough to make
+        // the next connection authenticate to the new host with the old credentials. Reading those
+        // credentials back is masked; sending them somewhere is not.
+        //
+        // The gateway pair was missed on the first pass precisely because the account pair had
+        // already been reasoned about: same shape, different module.
+        const credentialRedirects = ['POST /v1/account', 'PUT /v1/account/{account}', 'POST /v1/gateway', 'PUT /v1/gateway/edit/{gateway}'];
+
+        for (const route of credentialRedirects) {
             assert.equal(ROUTE_GROUPS.get(route), GROUP.ADMIN, `${route} must not be grantable`);
         }
     });

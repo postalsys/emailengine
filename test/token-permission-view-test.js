@@ -15,15 +15,24 @@ const { ACTION, GRANTABLE_GROUPS, GROUP } = require('../lib/api-routes/permissio
 describe('token permission view', () => {
     describe('formModel', () => {
         const model = formModel();
+        const clusteredGroups = model.permissionGroupClusters.flatMap(cluster => cluster.groups);
 
         it('offers every action and every grantable group, and nothing else', () => {
             assert.deepEqual(model.permissionActions.map(entry => entry.value).sort(), Object.values(ACTION).sort());
-            assert.deepEqual(model.permissionGroups.map(entry => entry.value).sort(), [...GRANTABLE_GROUPS].sort());
+            // Clustered for the form, so a group added without a cluster would simply not render -
+            // an option silently missing from the UI while the API still accepts it
+            assert.deepEqual(clusteredGroups.map(entry => entry.value).sort(), [...GRANTABLE_GROUPS].sort());
+        });
+
+        it('puts each group in exactly one cluster', () => {
+            const seen = clusteredGroups.map(entry => entry.value);
+            assert.equal(new Set(seen).size, seen.length, 'a group appears in more than one cluster');
+            assert.ok(model.permissionGroupClusters.every(cluster => cluster.label && cluster.groups.length));
         });
 
         it('never offers the admin group', () => {
             // It can never be granted, so a control for it would be a checkbox that does nothing
-            assert.ok(!model.permissionGroups.some(entry => entry.value === GROUP.ADMIN));
+            assert.ok(!clusteredGroups.some(entry => entry.value === GROUP.ADMIN));
         });
 
         it('gives every control a label, a description and a unique id', () => {
@@ -33,12 +42,12 @@ describe('token permission view', () => {
             for (const entry of model.permissionActions) {
                 assert.ok(Object.hasOwn(ACTION_LABELS, entry.value), `${entry.value} has no label`);
             }
-            for (const entry of model.permissionGroups) {
+            for (const entry of clusteredGroups) {
                 assert.ok(Object.hasOwn(GROUP_LABELS, entry.value), `${entry.value} has no label`);
             }
 
             const ids = new Set();
-            for (const entry of [...model.permissionActions, ...model.permissionGroups]) {
+            for (const entry of [...model.permissionActions, ...clusteredGroups]) {
                 assert.ok(entry.label, `${entry.value} has no label`);
                 assert.ok(entry.description, `${entry.value} has no description`);
                 assert.ok(!ids.has(entry.inputId), `duplicate control id ${entry.inputId}`);
@@ -89,9 +98,32 @@ describe('token permission view', () => {
             assert.equal(summary.groups, GROUP_LABELS.message);
         });
 
-        it('says "none" for an empty allowlist', () => {
-            // Grants nothing, and the list has to show that rather than imply no restriction
+        it('says plainly that an empty allowlist allows nothing', () => {
+            // Grants nothing, so the token authenticates and then refuses every request. The listing
+            // has to say that rather than imply a working narrow credential.
             assert.equal(summarize({ actions: [] }).actions, 'none');
+            assert.match(summarize({ actions: [] }).sentence, /cannot make any request/);
+            assert.match(summarize({ groups: [] }).sentence, /cannot make any request/);
+        });
+
+        it('collapses an axis that names everything instead of enumerating it', () => {
+            // Spelling out all thirteen sections made a line long enough to push the table sideways,
+            // and it read as a detailed restriction when it is the opposite - what such a token
+            // still cannot reach is the interesting part.
+            const everything = summarize({ actions: [...Object.values(ACTION)], groups: [...GRANTABLE_GROUPS] });
+            assert.match(everything.sentence, /^Full access, except/);
+            assert.ok(!everything.sentence.includes('Suppression lists'), 'the section list was enumerated');
+
+            assert.equal(summarize({ actions: ['read'], groups: [...GRANTABLE_GROUPS] }).sentence, 'Can read in every section');
+            assert.equal(summarize({ actions: [...Object.values(ACTION)], groups: ['message'] }).sentence, 'Full access in Messages');
+        });
+
+        it('reads as a sentence rather than as two labelled fields', () => {
+            assert.equal(summarize({ actions: ['read'], groups: ['message', 'mailbox'] }).sentence, 'Can read in Messages, Folders');
+            // An absent axis is not a restriction, so it is left out entirely - "all sections" would
+            // imply a grant the record does not make
+            assert.equal(summarize({ actions: ['read'] }).sentence, 'Can read only');
+            assert.equal(summarize({ groups: ['message'] }).sentence, 'Limited to Messages');
         });
 
         it('flags every record the enforcement refuses, not just the obviously broken ones', () => {
@@ -115,14 +147,6 @@ describe('token permission view', () => {
             const summary = summarize({ groups: ['admin'] });
             assert.equal(summary.unreadable, false);
             assert.equal(summary.groups, 'admin');
-        });
-
-        it('does not read a label off the object prototype', () => {
-            // Same hazard the parse guards with Object.hasOwn. Only reachable through a record the
-            // schema never saw, and the output is escaped, but a slug should never resolve to an
-            // Object.prototype member.
-            const summary = summarize({ groups: ['message'] });
-            assert.equal(summary.groups, GROUP_LABELS.message);
         });
     });
 });

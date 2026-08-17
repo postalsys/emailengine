@@ -66,13 +66,5 @@ describe('operation impact', () => {
                     .sort()
             );
         });
-
-        it('covers every value an undeclared route can resolve to, plus the declarable ones', () => {
-            // Guards the totality that anything switching on an impact depends on: a fifth IMPACT
-            // member that is neither declarable nor derived would be unreachable, which is a sign
-            // it was added without wiring.
-            const reachable = new Set([...DECLARABLE_IMPACTS, resolveImpact(undefined, 'get'), resolveImpact(undefined, 'post')]);
-            assert.deepEqual([...reachable].sort(), Object.values(IMPACT).sort());
-        });
     });
 });

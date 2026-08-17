@@ -938,7 +938,7 @@ const init = async () => {
                     tokenScopes: tokenData.scopes
                 });
 
-                tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'scope' }, auditEntry));
+                tokenAuditLog.denied(auditEntry, 'scope');
 
                 let error = Boom.forbidden('Unauthorized scope');
                 error.output.payload.requestedScope = scope;
@@ -969,7 +969,7 @@ const init = async () => {
                 // Mirrors how the scope failure above attaches requestedScope: an agent that gets a
                 // 403 needs to know WHICH grant it lacked, not just that it lacked one.
                 // A refused call is the interesting record, so it is logged before the throw
-                tokenAuditLog.record(Object.assign({ status: 'denied', reason: permissionCheck.reason }, auditEntry));
+                tokenAuditLog.denied(auditEntry, permissionCheck.reason);
 
                 error.output.payload.requiredPermission = permissionCheck.required;
                 throw error;
@@ -1022,7 +1022,7 @@ const init = async () => {
                         account: (request.params && request.params.account) || null
                     });
 
-                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'account' }, auditEntry));
+                    tokenAuditLog.denied(auditEntry, 'account');
 
                     let error = Boom.forbidden('Unauthorized account');
                     throw error;
@@ -1040,7 +1040,7 @@ const init = async () => {
                         addressAllowlist: tokenData.restrictions.addresses
                     });
 
-                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'address' }, auditEntry));
+                    tokenAuditLog.denied(auditEntry, 'address');
 
                     let error = Boom.forbidden('Unauthorized address');
                     error.output.payload.remoteAddress = request.app.ip;
@@ -1061,7 +1061,7 @@ const init = async () => {
                         referrerAllowlist: tokenData.restrictions.referrers
                     });
 
-                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'referrer' }, auditEntry));
+                    tokenAuditLog.denied(auditEntry, 'referrer');
 
                     let error = Boom.forbidden('Unauthorized referrer');
                     throw error;
@@ -1077,7 +1077,7 @@ const init = async () => {
 
                     if (!rateLimit.success) {
                         logger.warn({ msg: 'Rate limited', token: tokenData.id, rateLimit });
-                        tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'rateLimit' }, auditEntry));
+                        tokenAuditLog.denied(auditEntry, 'rateLimit');
 
                         let error = Boom.tooManyRequests('Rate limit exceeded');
                         error.output.payload.ttl = Math.ceil(rateLimit.ttl);
@@ -1101,7 +1101,7 @@ const init = async () => {
             // payload validation and the handler, so a call recorded here can still end in a 400 or
             // a 404. That is the right boundary for a credential trail - it answers what the token
             // was permitted to attempt.
-            tokenAuditLog.record(Object.assign({ status: 'allowed' }, auditEntry));
+            tokenAuditLog.allowed(auditEntry);
 
             return { isValid: true, credentials: { token }, artifacts: tokenData };
         }

@@ -1,5 +1,14 @@
 {{#> ui/page-header title="Access Tokens" icon="icon-[tabler--key]" subtitle="Bearer tokens that authenticate requests to the EmailEngine API." badgeLabel=total badgeVariant="neutral" class="mb-6"}}
+{{!-- Without an admin session the create form cannot submit, so the button would be an invitation
+     to lose the work. Disabled with the reason rather than hidden: the capability exists, it is the
+     instance that is not ready for it. --}}
+{{#if canProvision}}
 {{> ui/btn href=newLink label="Create access token" icon="icon-[tabler--plus]"}}
+{{else}}
+{{#> ui/tooltip text="Set an admin password to issue access tokens"}}
+{{> ui/btn href="/admin/account/password" variant="primary" style="soft" label="Create access token" icon="icon-[tabler--lock]"}}
+{{/ui/tooltip}}
+{{/if}}
 {{/ui/page-header}}
 
 {{> ui/search-crumb parentHref="/admin/tokens" parentLabel="Access Tokens" query=query}}
@@ -42,9 +51,9 @@
                         {{/if}}
                     </td>
 
-                    <td>
+                    <td class="align-top">
                         {{#if scopes}}
-                        <div>{{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}</div>
+                        <div class="max-w-xs whitespace-normal">{{#each scopes}}{{#unless first}}, {{/unless}}{{name}}{{/each}}</div>
                         {{/if}}
 
                         {{#if permissionSummary}}
@@ -53,10 +62,9 @@
                         <div class="text-base-content/60 text-xs">Every request with this token is refused. Delete and reissue it.</div>
                         {{else}}
                         {{> ui/badge label="Restricted" variant="info" soft=true icon="" class="mt-1"}}
-                        <div class="text-base-content/60 text-xs">
-                            {{#if permissionSummary.actions}}<div>Can: {{permissionSummary.actions}}</div>{{/if}}
-                            {{#if permissionSummary.groups}}<div>In: {{permissionSummary.groups}}</div>{{/if}}
-                        </div>
+                        {{!-- Wraps and is width-capped: a token granted several sections produced one
+                              long line that pushed the whole table into horizontal scroll. --}}
+                        <div class="text-base-content/60 text-xs max-w-xs whitespace-normal">{{permissionSummary.sentence}}</div>
                         {{/if}}
                         {{/if}}
                     </td>
