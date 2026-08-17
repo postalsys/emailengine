@@ -912,6 +912,22 @@ const init = async () => {
                 request.logger.setBindings({ tokenId: tokenData.id, tokenAccount: tokenData.account || null });
             }
 
+            const grant = routeGrant(request.route);
+
+            // Shared by every audit entry below, so an allow and a deny describe the same request.
+            // Built before the first check that can refuse: a rejection is the strongest signal of
+            // credential misuse there is, and a trail that only held the calls that succeeded would
+            // be silent about exactly the ones worth looking at.
+            const auditEntry = {
+                tokenId: tokenData.id,
+                ip: request.app.ip,
+                method: request.route.method,
+                path: request.route.path,
+                action: grant.action,
+                group: grant.group,
+                account: (request.params && request.params.account) || tokenData.account || null
+            };
+
             if (scope && tokenData.scopes && !tokenData.scopes.includes(scope) && !tokenData.scopes.includes('*')) {
                 // failed scope validation
                 logger.warn({
@@ -921,6 +937,8 @@ const init = async () => {
                     requestedScope: scope,
                     tokenScopes: tokenData.scopes
                 });
+
+                tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'scope' }, auditEntry));
 
                 let error = Boom.forbidden('Unauthorized scope');
                 error.output.payload.requestedScope = scope;
@@ -936,19 +954,6 @@ const init = async () => {
             //
             // Only subtracts: a token with no `permissions` field takes the allowed path, which is
             // every token issued before this shipped.
-            const grant = routeGrant(request.route);
-
-            // Shared by the audit entries below, so an allow and a deny describe the same request
-            const auditEntry = {
-                tokenId: tokenData.id,
-                ip: request.app.ip,
-                method: request.route.method,
-                path: request.route.path,
-                action: grant.action,
-                group: grant.group,
-                account: (request.params && request.params.account) || tokenData.account || null
-            };
-
             const permissionCheck = tokenPermissions.check({ tokenData, operation: grant });
             if (!permissionCheck.allowed) {
                 logger.warn({
@@ -1017,6 +1022,8 @@ const init = async () => {
                         account: (request.params && request.params.account) || null
                     });
 
+                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'account' }, auditEntry));
+
                     let error = Boom.forbidden('Unauthorized account');
                     throw error;
                 }
@@ -1032,6 +1039,8 @@ const init = async () => {
                         remoteAddress: request.app.ip,
                         addressAllowlist: tokenData.restrictions.addresses
                     });
+
+                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'address' }, auditEntry));
 
                     let error = Boom.forbidden('Unauthorized address');
                     error.output.payload.remoteAddress = request.app.ip;
@@ -1052,6 +1061,8 @@ const init = async () => {
                         referrerAllowlist: tokenData.restrictions.referrers
                     });
 
+                    tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'referrer' }, auditEntry));
+
                     let error = Boom.forbidden('Unauthorized referrer');
                     throw error;
                 }
@@ -1066,6 +1077,8 @@ const init = async () => {
 
                     if (!rateLimit.success) {
                         logger.warn({ msg: 'Rate limited', token: tokenData.id, rateLimit });
+                        tokenAuditLog.record(Object.assign({ status: 'denied', reason: 'rateLimit' }, auditEntry));
+
                         let error = Boom.tooManyRequests('Rate limit exceeded');
                         error.output.payload.ttl = Math.ceil(rateLimit.ttl);
                         error.output.headers = {
@@ -1083,9 +1096,11 @@ const init = async () => {
                 }
             }
 
-            // Recorded at the one point every accepted token request passes, after the account
-            // binding and the restrictions - so the trail holds requests that were actually served
-            // rather than ones that merely cleared the permission check.
+            // The one point every accepted token request passes. "allowed" means the credential was
+            // accepted, not that the request succeeded: this runs in the auth strategy, before
+            // payload validation and the handler, so a call recorded here can still end in a 400 or
+            // a 404. That is the right boundary for a credential trail - it answers what the token
+            // was permitted to attempt.
             tokenAuditLog.record(Object.assign({ status: 'allowed' }, auditEntry));
 
             return { isValid: true, credentials: { token }, artifacts: tokenData };

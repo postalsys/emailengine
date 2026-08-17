@@ -27,6 +27,16 @@ describe('token permission view', () => {
         });
 
         it('gives every control a label, a description and a unique id', () => {
+            // Object.hasOwn rather than a truthiness check on the rendered label: formModel() falls
+            // back to the slug, so a missing label would still produce a non-empty string and this
+            // assertion could never fail
+            for (const entry of model.permissionActions) {
+                assert.ok(Object.hasOwn(ACTION_LABELS, entry.value), `${entry.value} has no label`);
+            }
+            for (const entry of model.permissionGroups) {
+                assert.ok(Object.hasOwn(GROUP_LABELS, entry.value), `${entry.value} has no label`);
+            }
+
             const ids = new Set();
             for (const entry of [...model.permissionActions, ...model.permissionGroups]) {
                 assert.ok(entry.label, `${entry.value} has no label`);
@@ -84,19 +94,35 @@ describe('token permission view', () => {
             assert.equal(summarize({ actions: [] }).actions, 'none');
         });
 
-        it('flags a record it cannot read', () => {
-            // Every request such a token makes is refused, so showing it as a working credential
-            // would be actively misleading
-            for (const permissions of ['nonsense', 42, ['read']]) {
+        it('flags every record the enforcement refuses, not just the obviously broken ones', () => {
+            // The verdict comes from lib/token-permissions.js rather than being re-derived here. A
+            // view that only looked for a non-object rendered `{actions: ['bogus']}` as
+            // "Restricted / Can: bogus" - a working narrow credential - when in fact every request
+            // it makes is denied.
+            for (const permissions of ['nonsense', 42, ['read'], {}, { foo: 1 }, { actions: ['bogus'] }, { actions: 'read' }]) {
                 const summary = summarize(permissions);
-                assert.equal(summary.unreadable, true, `${JSON.stringify(permissions)} was not flagged`);
+                assert.equal(summary.unreadable, true, `${JSON.stringify(permissions)} was not flagged as unreadable`);
+                assert.equal(summary.actions, null);
+                assert.equal(summary.groups, null);
             }
         });
 
-        it('passes an unknown slug through rather than dropping it', () => {
-            // A record written by a newer version: better to show the raw value than to silently
-            // summarize a narrowing as smaller than it is
-            assert.equal(summarize({ groups: ['something-new'] }).groups, 'something-new');
+        it('reports a record naming only admin as it is, rather than as unreadable', () => {
+            // admin is in the vocabulary on purpose, so a record naming it is well formed - it is
+            // refused because nobody may hold it, which is a different answer from "I could not read
+            // that". The listing shows what the record says and the request-time denial does the
+            // rest; the schema refuses to issue one in the first place.
+            const summary = summarize({ groups: ['admin'] });
+            assert.equal(summary.unreadable, false);
+            assert.equal(summary.groups, 'admin');
+        });
+
+        it('does not read a label off the object prototype', () => {
+            // Same hazard the parse guards with Object.hasOwn. Only reachable through a record the
+            // schema never saw, and the output is escaped, but a slug should never resolve to an
+            // Object.prototype member.
+            const summary = summarize({ groups: ['message'] });
+            assert.equal(summary.groups, GROUP_LABELS.message);
         });
     });
 });

@@ -182,6 +182,21 @@ test('token audit log', async t => {
         assert.equal(await waitForEntries(1, 300), 0);
     });
 
+    await t.test('records the denials that matter most, not just the permission one', async () => {
+        // A leaked token used against the wrong account, or from an unlisted address, is the
+        // strongest signal of credential misuse there is - a trail that held only the calls that
+        // succeeded would be silent about exactly the ones worth looking at.
+        await redis.del(logKey);
+        for (const reason of ['scope', 'account', 'address', 'referrer', 'rateLimit']) {
+            auditLog.record(entry({ status: 'denied', reason }));
+        }
+        await waitForEntries(5);
+
+        const { entries } = await auditLog.list(TOKEN_ID);
+        assert.deepEqual(entries.map(e => e.reason).sort(), ['account', 'address', 'rateLimit', 'referrer', 'scope']);
+        assert.ok(entries.every(e => e.status === 'denied'));
+    });
+
     await t.test('deleting a token removes its log', async () => {
         // The trail describes a credential that no longer exists, and the key is named after the
         // token id, so nothing else would ever collect it
