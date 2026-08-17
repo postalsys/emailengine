@@ -13,7 +13,7 @@ const assert = require('node:assert').strict;
 // modelled here - the `code` (an earlier version of this suite omitted it and so asserted retry
 // behavior production never had), and the RPC round-trip (via the real lib/worker-rpc-error helpers,
 // so a dropped field fails a test instead of silently changing production).
-const { shouldDiscardJob, isPermanentDeliveryError, NON_RETRYABLE_CODES } = require('../lib/delivery-error');
+const { shouldDiscardJob, isPermanentDeliveryError, isFinalFailedAttempt, NON_RETRYABLE_CODES } = require('../lib/delivery-error');
 const { packRpcError, unpackRpcError } = require('../lib/worker-rpc-error');
 
 // How base-client.js stamps a real nodemailer SMTP failure: nodemailer sets `responseCode` and a
@@ -129,5 +129,21 @@ test('submit worker delivery-error classification', async t => {
     await t.test('isPermanentDeliveryError tolerates a missing error object', () => {
         assert.strictEqual(isPermanentDeliveryError(null), false);
         assert.strictEqual(isPermanentDeliveryError(undefined), false);
+    });
+
+    await t.test('isFinalFailedAttempt reads finishedOn, which is what ends a discarded job', () => {
+        // A job ended early by the UnrecoverableError that workers/submit.js throws on a permanent
+        // rejection: BullMQ sets finishedOn even though attempts remain. This used to be detected
+        // via job.discarded, which BullMQ 6 removed along with Job#discard().
+        assert.strictEqual(isFinalFailedAttempt({ finishedOn: Date.now(), attemptsMade: 1, opts: { attempts: 10 } }), true);
+
+        // A routine retryable failure with attempts left: not final, and no finishedOn
+        assert.strictEqual(isFinalFailedAttempt({ attemptsMade: 1, opts: { attempts: 10 } }), false);
+
+        // Attempts exhausted the ordinary way
+        assert.strictEqual(isFinalFailedAttempt({ attemptsMade: 10, opts: { attempts: 10 } }), true);
+
+        // Defaults to a single attempt when the job carries no explicit limit
+        assert.strictEqual(isFinalFailedAttempt({ attemptsMade: 1, opts: {} }), true);
     });
 });

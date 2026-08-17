@@ -78,7 +78,7 @@
         "@zone-eu/mailsplit": "5.4.15",
         "@zone-eu/wild-config": "1.7.6",
         "ace-builds": "1.44.0",
-        "bullmq": "5.81.3",
+        "bullmq": "6.1.2",
         "compare-versions": "6.1.1",
         "dotenv": "17.4.2",
         "encoding-japanese": "2.2.0",

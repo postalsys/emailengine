@@ -16,7 +16,7 @@ initSentry('submit');
 
 const util = require('util');
 const { redis, queueConf, submitQueue } = require('../lib/db');
-const { Worker } = require('bullmq');
+const { Worker, UnrecoverableError } = require('bullmq');
 const { Account } = require('../lib/account');
 const getSecret = require('../lib/get-secret');
 const msgpack = require('../lib/msgpack');
@@ -286,31 +286,29 @@ const submitWorker = new Worker(
             }
 
             if (discardJob) {
-                try {
-                    // do not retry after 5xx error (except 503 which is transient)
-                    await job.discard();
-                    logger.info({
-                        msg: 'Job discarded',
-                        job: job.id,
-                        account: queueEntry.account,
-                        queueId: job.data.queueId,
-                        messageId: job.data.messageId,
-                        errorCode: err.code,
-                        responseCode: err.responseCode
-                    });
-                } catch (E) {
-                    logger.error({
-                        msg: 'Failed to discard job',
-                        action: 'submit',
-                        queue: job.queue.name,
-                        code: 'discard_fail',
-                        job: job.id,
-                        event: job.name,
-                        data: job.data,
-                        account: job.data.account,
-                        err: E
-                    });
-                }
+                // Do not retry after a permanent rejection (5xx except 503, which is transient).
+                // BullMQ 6 removed Job#discard(), so the way to end a job before its attempts are
+                // spent is to throw UnrecoverableError. The stack is carried over because the
+                // 'failed' handler reports job.stacktrace[0] as the error in the failure webhook -
+                // constructing a bare UnrecoverableError would replace the SMTP reason with
+                // "UnrecoverableError" there.
+                let unrecoverableErr = new UnrecoverableError(err.message);
+                unrecoverableErr.stack = err.stack;
+                unrecoverableErr.code = err.code;
+                unrecoverableErr.responseCode = err.responseCode;
+                unrecoverableErr.statusCode = err.statusCode;
+
+                logger.info({
+                    msg: 'Job discarded',
+                    job: job.id,
+                    account: queueEntry.account,
+                    queueId: job.data.queueId,
+                    messageId: job.data.messageId,
+                    errorCode: err.code,
+                    responseCode: err.responseCode
+                });
+
+                throw unrecoverableErr;
             }
 
             throw err;
@@ -377,7 +375,9 @@ submitWorker.on('failed', async job => {
         status: 'failed'
     });
 
-    if (job.finishedOn || job.discarded) {
+    // BullMQ sets finishedOn only when the job is done for good, which covers both exhausting its
+    // attempts and being ended early by the UnrecoverableError thrown for a permanent rejection.
+    if (job.finishedOn) {
         // this was final attempt, remove it
         if (!job.data.queueId && job.data.qId) {
             // this value was used to be called qId

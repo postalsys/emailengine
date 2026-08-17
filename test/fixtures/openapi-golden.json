@@ -10436,8 +10436,8 @@
           },
           "paused": {
             "type": "integer",
-            "description": "Jobs that would be processed once queue processing is resumed",
-            "example": 123
+            "description": "Always 0. BullMQ 6 no longer parks jobs in a separate paused list, so jobs held by a paused queue are counted as waiting. Kept so existing clients still see the key",
+            "example": 0
           },
           "waiting": {
             "type": "integer",
